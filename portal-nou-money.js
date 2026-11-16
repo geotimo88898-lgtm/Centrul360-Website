@@ -41,7 +41,8 @@
     var meth = { card: 0, cash: 0, transfer: 0 };
     day.forEach(function (s) { var m = String(s.method || '').toLowerCase(); var k = /card|pos/.test(m) ? 'card' : /cash|numerar/.test(m) ? 'cash' : /transfer|bank|op/.test(m) ? 'transfer' : ''; if (k) meth[k] += Number(s.amount) || 0; });
     var last = day.slice().sort(function (a, b) { return String(a.createdAt || a.time || '') < String(b.createdAt || b.time || '') ? 1 : -1; })[0];
-    return { total: sum(day), n: day.length, yday: yday ? sum(yday) : null, by: by, meth: meth, last: last };
+    // the count: payments only (a refund is not an încasare; K.pays, as „Azi pe clinici” and KPI); the total is net
+    return { total: sum(day), n: K().pays ? K().pays(day).length : day.length, yday: yday ? sum(yday) : null, by: by, meth: meth, last: last };
   }
 
   // ------------------------------------------------------------------ the block
@@ -96,7 +97,8 @@
       return '<span><i class="is-' + x[0] + '" style="--w:' + Math.round(mt[x[0]] / tot * 100) + '%"></i><em>' + x[1] + '</em><b>' + esc(lei(mt[x[0]])) + '</b></span>';
     }).join('') : '';
     var l = m.last;
-    root.querySelector('[data-last]').innerHTML = l ? 'Ultima: <b>+' + esc(lei(Number(l.amount) || 0)) + '</b> · ' + esc(l.treatment || '') + (l.location ? ' · ' + esc(l.location) : '') : '';
+    var lb = l && Number(l.amount) < 0; // a refund: its own word and sign
+    root.querySelector('[data-last]').innerHTML = l ? 'Ultima: <b>' + (lb ? 'Rambursare -' : '+') + esc(lei(Math.abs(Number(l.amount) || 0))) + '</b> · ' + esc(lb ? String(l.treatment || '').replace(/^Rambursare · /, '') : l.treatment || '') + (l.location ? ' · ' + esc(l.location) : '') : '';
     if (!first) burst(m);
   }
   // the total counts from its last value, fast then gently (1 - 2^(-10p))

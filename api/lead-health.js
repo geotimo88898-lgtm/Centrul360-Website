@@ -60,7 +60,7 @@ module.exports = async (req, res) => {
     const CM = require('./_lib/commission');
     const month = /^\d{4}-\d{2}$/.test(String(req.query.month || '')) ? req.query.month : new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date()).slice(0, 7);
     const [sales, dues, emps] = await Promise.all([readJSON('data/sales.json', []), readJSON('data/client-dues.json', []), readJSON('data/employees.json', [])]);
-    const C = CM.context(sales, dues);
+    const C = CM.context(sales, dues, emps);
     const r2 = (n) => Math.round(n * 100) / 100;
     const people = {}, total = { old: 0, oldWaiting: 0, new: 0, newWaiting: 0, toCome: 0 };
     emps.filter((e) => e && e.role === 'cosmetician').forEach((e) => {
@@ -78,6 +78,65 @@ module.exports = async (req, res) => {
     });
     Object.keys(total).forEach((k) => { total[k] = r2(total[k]); });
     res.status(200).json({ month, rule: CM.NEW_FROM, total, people });
+    return;
+  }
+  // POST ?moneyfix=1 { apply }: the money audit's cases put right in the data, counts only (apply false: what it would do):
+  //   a refund that didn't close its package gives the package its value back (the rule from 16.11: „plătit 0 din 3.000”),
+  //   an approved request without its payment's upsell goes, an approved one under the cash rule follows its package's
+  //   value, a waiting one for someone who can't earn commission goes. Payments dated in a month before stay (counted only).
+  if (req.method === 'POST' && req.query && req.query.moneyfix) {
+    const { writeJSON } = require('./_lib/store');
+    const D = require('./_lib/dues');
+    const apply = !!(req.body && req.body.apply);
+    const [sales, dues, emps] = await Promise.all([readJSON('data/sales.json', []), readJSON(D.KEY, []), readJSON('data/employees.json', [])]);
+    const byId = new Map(sales.filter(Boolean).map((x) => [x.id, x]));
+    const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+    const out = { packagesValueBack: 0, refundsUncut: 0, orphanDropped: 0, valueFollowed: 0, pendingDropped: 0 };
+    sales.forEach((r) => { if (r && r.kind === 'refund' && !(r.restCut || []).length) (r.dues || []).forEach((x) => { if (Number(x.cut) > 0) { out.refundsUncut++; x.cut = 0; } }); });
+    dues.forEach((d) => {
+      const st = byId.get(d.saleId), value = st ? Number(st.packageTotal) || Number(st.upsell) || 0 : 0;
+      if (!(value > 0) || !sales.some((r) => r && r.kind === 'refund' && (r.dues || []).some((x) => x.dueId === d.id))) return;
+      const closing = sales.filter((r) => r && r.kind === 'refund').reduce((a, r) => a + (r.dues || []).filter((x) => x.dueId === d.id).reduce((b, x) => b + Number(x.cut || 0), 0), 0);
+      const want = r2(Math.max(0, value - closing));
+      if (Math.abs(want - Number(d.total)) < 0.005) return;
+      out.packagesValueBack++; d.total = want; d.paid = r2((d.payments || []).reduce((a, q) => a + Number(q.amount || 0), 0));
+      d.closedAt = D.rest(d) <= 0 ? d.closedAt || new Date().toISOString() : null;
+    });
+    const drop = new Set();
+    sales.forEach((u) => {
+      if (!u || u.source !== 'comision' || u.origin !== 'upsell' || !u.incasareId) return;
+      const pay = byId.get(u.incasareId);
+      if (u.status === 'approved' && String(u.date).slice(0, 7) >= '2026-11' && (!pay || !(Number(pay.upsell) > 0))) { drop.add(u.id); out.orphanDropped++; return; }
+      if (u.status === 'approved' && String(u.date).slice(0, 7) >= '2026-11' && pay && Math.abs(Number(pay.upsell) - Number(u.amount)) > 0.005) { u.amount = r2(pay.upsell); out.valueFollowed++; }
+      if (u.status === 'pending' && !emps.some((e) => e && e.id === u.employeeId && e.role === 'cosmetician')) { drop.add(u.id); out.pendingDropped++; }
+    });
+    if (apply) { await writeJSON('data/sales.json', sales.filter((x) => !(x && drop.has(x.id)))); await writeJSON(D.KEY, dues); }
+    res.status(200).json(Object.assign({ applied: apply }, out));
+    return;
+  }
+  // ?moneyaudit=1: counts only (never a name, an id or a sum) of the money audit's cases in the data (16.11):
+  //   orphanApproved   approved upsell requests whose payment is gone or no longer carries an upsell (1)
+  //   refundEdited     packages with a refund whose value was set back to the full package by a later correction (2)
+  //   backDated        payments and refunds dated in a month before the one they were typed in (3)
+  //   upsellBelowValue approved requests (cash rule) worth less than their payment's package value (5)
+  //   pendingNotCosm   requests still waiting for someone who can't earn commission (9)
+  //   refundsCutValue  refunds not closing their package that lowered its value (the rule before 16.11, evening)
+  if (req.query && req.query.moneyaudit) {
+    const [sales, dues, emps] = await Promise.all([readJSON('data/sales.json', []), readJSON('data/client-dues.json', []), readJSON('data/employees.json', [])]);
+    const byId = new Map(sales.filter(Boolean).map((s) => [s.id, s]));
+    const roDay = (iso) => { const t = Date.parse(iso || ''); return Number.isFinite(t) ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date(t)) : ''; };
+    const reqs = sales.filter((s) => s && s.source === 'comision' && s.origin === 'upsell' && s.incasareId);
+    const cash = (u) => String(u.date).slice(0, 7) >= '2026-11';
+    const cutsOf = (dueId) => sales.filter((r) => r && r.kind === 'refund').reduce((a, r) => a + (r.dues || []).filter((x) => x.dueId === dueId).reduce((b, x) => b + Number(x.cut || 0), 0), 0);
+    const out = {
+      orphanApproved: reqs.filter((u) => u.status === 'approved' && cash(u) && (!byId.get(u.incasareId) || !(Number(byId.get(u.incasareId).upsell) > 0))).length,
+      refundEdited: dues.filter((d) => { const c = cutsOf(d.id), st = byId.get(d.saleId); return c > 0 && st && Number(st.upsell) > 0 && Math.abs(Number(d.total) - Number(st.upsell)) < 0.01; }).length,
+      backDated: sales.filter((s) => s && s.source === 'incasare' && s.createdAt && String(s.date).slice(0, 7) < roDay(s.createdAt).slice(0, 7)).length,
+      upsellBelowValue: reqs.filter((u) => u.status === 'approved' && cash(u) && byId.get(u.incasareId) && Number(byId.get(u.incasareId).upsell) - Number(u.amount) > 0.005).length,
+      pendingNotCosm: reqs.filter((u) => u.status === 'pending' && !emps.some((e) => e && e.id === u.employeeId && e.role === 'cosmetician')).length,
+      refundsCutValue: sales.filter((r) => r && r.kind === 'refund' && !(r.restCut || []).length && (r.dues || []).some((x) => Number(x.cut) > 0)).length,
+    };
+    res.status(200).json(out);
     return;
   }
   if (req.query && req.query.verify) {
@@ -649,6 +708,71 @@ async function verifyNumbers(monthQ) {
         bonusAgree: r.filled ? (r.estimate && r.estimate.bonus) === bonus2 : null, profitPositive: r.filled ? r.profit > 0 : null, final: !!r.final });
     }
   } catch (e) { out.managerBonus = { error: String(e.message || e).replace(PHONE, '…').slice(0, 160) }; }
-  out.agree = CITIES.every((c) => out.cities[c].visits60.agree && out.cities[c].month.cosmeticians.agreePay && out.cities[c].month.consults.agree && out.cities[c].month.collections.agree) && out.bothClinics.agree;
+  // the commission: what every screen shows against Salariu (_lib/payroll.js), and a second reading from the definitions
+  try { out.commission = await commissionAgree(month, today); } catch (e) { out.commission = { error: String(e.message || e).replace(PHONE, '…').slice(0, 160), agree: false }; }
+  out.agree = CITIES.every((c) => out.cities[c].visits60.agree && out.cities[c].month.cosmeticians.agreePay && out.cities[c].month.consults.agree && out.cities[c].month.collections.agree) && out.bothClinics.agree && out.commission.agree === true;
   return out;
+}
+
+// The month's commission per cosmetician (C1, C2… by the sum: never a name or an id), as each screen reads it:
+//   salariu     Salariu (payroll.js monthPay, the way portal-data builds it)
+//   vanzari     Echipa → the person → Vânzări „Comision luna” and her card (the payroll row of Echipa → Salarii)
+//   goal        the Panou goal „comision aprobat luna” (the commission plus what was added by hand)
+//   tags        Aprobări's tags („Aprobată · X lei”, commission.js summaryOf) summed over all her approved upsells, against
+//               Salariu summed over every month they have lines in
+//   second      written again from the definitions: 4% (minus 60% costs, 10% of the profit) of each payment that came in for an
+//               approved upsell from November 2026 (in the payment's month, up to the upsell's value, none after her last
+//               day), the whole value's commission before, minus 4% of each refund in its month
+async function commissionAgree(month, today) {
+  const PAY = require('./_lib/payroll'), CM = require('./_lib/commission'), L = require('./_lib/left');
+  const [sales, dues, emps] = await Promise.all([readJSON('data/sales.json', []), readJSON('data/client-dues.json', []), readJSON('data/employees.json', [])]);
+  const cctx = CM.context(sales, dues, emps);
+  const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+  const c4 = (lei) => Math.round((Number(lei) || 0) * 40 / 100 * 10) / 100; // minus 60% costs, 10% of the profit left
+  const mOf = (d) => String(d || '').slice(0, 7);
+  const byId = new Map(sales.filter(Boolean).map((s) => [s.id, s]));
+  const isReq = (s) => s && s.source !== 'incasare' && s.source !== 'manual';
+  const second = (e, m) => {
+    const until = L.leftAt(e);
+    let lei = 0;
+    sales.forEach((u) => {
+      if (!isReq(u) || u.employeeId !== e.id || u.status !== 'approved') return;
+      const cash = u.origin === 'upsell' && u.incasareId && mOf(u.date) >= '2026-11';
+      if (cash) {
+        const due = dues.find((d) => d && d.saleId === u.incasareId);
+        const pay = byId.get(u.incasareId);
+        // what came in and what went back (a refund lowers what was received: later money can earn again, up to the value)
+        const parts = due ? (due.payments || []).filter((p) => Number(p.amount) !== 0).map((p) => ({ date: (byId.get(p.saleId) || {}).date || '', at: p.at || '', lei: Number(p.amount) }))
+          : pay ? [{ date: pay.date, lei: pay.parts ? Number(pay.parts.upsell) : Math.min(Number(pay.upsell) || 0, Number(pay.amount) || 0) }] : [];
+        let sofar = 0;
+        parts.sort((a, b) => (a.date !== b.date ? (a.date < b.date ? -1 : 1) : String(a.at || '') < String(b.at || '') ? -1 : 1)).forEach((p) => {
+          if (p.lei < 0) { sofar = Math.max(0, sofar + p.lei); return; }
+          const c = Math.max(0, Math.min(p.lei, Number(u.amount) - sofar)); sofar += c; if (c > 0 && mOf(p.date) === m && !(until && p.date > until)) lei += c4(c);
+        });
+      } else if (mOf(u.date) === m && !(until && u.date > until)) lei += Number(u.commission) || 0;
+      sales.forEach((r) => {
+        if (!r || r.kind !== 'refund' || mOf(r.date) !== m || (until && r.date > until)) return;
+        (r.from || []).forEach((x) => { if (x.upsellId === u.id && x.lei > 0) lei -= c4(x.lei); });
+        if (!cash) (r.restCut || []).forEach((x) => { if (x.upsellId === u.id && x.lei > 0) lei -= c4(x.lei); });
+      });
+    });
+    return r2(lei);
+  };
+  // every month a line can fall in: the months of all the payments, refunds and requests
+  const allMonths = [...new Set(sales.filter(Boolean).map((s) => mOf(s.date)).concat([month]))].filter((m) => /^\d{4}-\d{2}$/.test(m));
+  const months = () => allMonths;
+  const rows = [];
+  emps.filter((e) => e && e.role === 'cosmetician').forEach((e) => {
+    const pay = PAY.monthPay({ emp: e, month, isCurrent: month === mOf(today), sales, dues, cctx, payouts: [], bank: null, attendance: [], appointments: [] });
+    const cm = PAY.commissionMonth({ emp: e, month, isCurrent: true, sales, dues, cctx });
+    const tags = r2(sales.filter((u) => CM.isUpsellReq(u) && u.employeeId === e.id && u.status === 'approved').reduce((a, u) => a + CM.summaryOf(u, cctx).lei, 0));
+    const lifetime = r2(months(e).reduce((a, m) => a + PAY.commissionMonth({ emp: e, month: m, isCurrent: false, sales, dues, cctx }).commission, 0));
+    const sec = second(e, month);
+    if (!pay.commission && !sec && !tags && !cm.manual) return;
+    rows.push({ salariu: pay.commission, vanzari: cm.commission, goal: r2(cm.commission + cm.manual), goalSalariu: r2(pay.commission + pay.manual), tags, tagsSalariu: lifetime, second: sec,
+      agree: Math.abs(pay.commission - cm.commission) < 0.01 && Math.abs(r2(cm.commission + cm.manual) - r2(pay.commission + pay.manual)) < 0.01 && Math.abs(tags - lifetime) < 0.01 && Math.abs(sec - pay.commission) < 0.01 });
+  });
+  rows.sort((a, b) => b.salariu - a.salariu);
+  const people = rows.map((r, i) => Object.assign({ label: 'C' + (i + 1) }, r));
+  return { month, people, agree: people.every((r) => r.agree) };
 }

@@ -83,6 +83,9 @@ module.exports = async (req, res) => {
           read: { ads: { ok: adsRead, at: adsRead ? ad.at : (entry.adsAuto ? entry.adsAuto.at : ''), saved: !adsRead && !!entry.adsAuto },
             whatsapp: { ok: !wa.error, at: wa.error ? (entry.waAuto ? entry.waAuto.at : '') : wa.at, saved: !!wa.error && !!entry.waAuto, error: wa.error || '' } }, collections, profit: collections - costs.total,
           prev: prev && prev.savedAt ? { month: pm, eurRate: prev.eurRate, lines: prev.lines } : null,
+          // the managers' final bonus of the month (set at month close): paid with the salaries (Plăți), never a cost here,
+          // it is 5% of this very profit (the page shows it as a memo line)
+          bonusFinal: (() => { const ks = Object.keys(ctx.finals || {}).filter((k) => k.endsWith('|' + month) && Number.isFinite(Number(ctx.finals[k] && ctx.finals[k].lei))); return ks.length ? ks.reduce((a, k) => a + Number(ctx.finals[k].lei), 0) : null; })(),
           // the bonus condition of the managers this month so far (every trained cosmetician of her clinics over the
           // daily minimum): on track or not, no names
           bonusOk: (() => { const ms = ctx.employees.filter((e) => e && e.role === 'manager' && e.active !== false); if (!ms.length) return null;

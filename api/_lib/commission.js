@@ -9,6 +9,12 @@
 //   will never come in (that upsell's commission was paid on the whole value).
 //   Commission requests added by hand (origin 'manual', no payment behind them) keep the whole value too.
 //
+// Leaving (Echipa → „A plecat”, _lib/left.js): what she earned up to her last day stays hers (in its months, the last one
+// included); a payment that comes in after it brings her nothing, and a refund made after it takes nothing off her.
+//
+// No payment, no commission: a request whose payment was deleted (or whose upsell was taken off it) brings nothing, never
+// the whole value. Under the cash rule a request counts at most its value (u.amount, kept equal to the package's value).
+//
 // The approval stays one per upsell (Aprobări). Approved: its lines count in their months, later payments included,
 // without asking again. Waiting: its lines show as "în așteptare" in their months. Rejected: nothing.
 //
@@ -25,9 +31,10 @@ const isUpsellReq = (s) => !!s && s.source !== 'incasare' && s.source !== 'manua
 const cashRule = (u) => !!u && u.origin === 'upsell' && !!u.incasareId && monthOf(u.date) >= NEW_FROM;
 const bucharestDay = (iso) => { const t = Date.parse(iso || ''); return Number.isFinite(t) ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date(t)) : ''; };
 
-// what the lines are read from, once per request
-function context(sales, dues) {
-  const byId = new Map(), dueByStart = new Map(), cuts = new Map();
+// what the lines are read from, once per request; employees (optional): their last day, for who left
+function context(sales, dues, employees) {
+  const byId = new Map(), dueByStart = new Map(), cuts = new Map(), until = new Map();
+  (employees || []).forEach((e) => { const d = require('./left').leftAt(e); if (d) until.set(e.id, d); });
   (sales || []).forEach((s) => { if (s && s.id) byId.set(s.id, s); });
   (dues || []).forEach((d) => { if (d && d.saleId) dueByStart.set(d.saleId, d); });
   (sales || []).forEach((r) => {
@@ -35,7 +42,14 @@ function context(sales, dues) {
     (r.from || []).forEach((p) => { if (p.upsellId && p.lei > 0) (cuts.get(p.upsellId) || cuts.set(p.upsellId, []).get(p.upsellId)).push({ r, lei: p.lei, kind: 'refund' }); });
     (r.restCut || []).forEach((p) => { if (p.upsellId && p.lei > 0) (cuts.get(p.upsellId) || cuts.set(p.upsellId, []).get(p.upsellId)).push({ r, lei: p.lei, kind: 'rest' }); });
   });
-  return { byId, dueByStart, cuts };
+  return { byId, dueByStart, cuts, until };
+}
+// the payment's part that went to the upsell (no package rest: it was paid whole now), or null when the payment is gone
+function upsellPaidOf(u, C) {
+  const s = C.byId.get(u.incasareId);
+  if (!s || s.source !== 'incasare' || s.kind === 'refund') return null;
+  if (s.parts) return r2(s.parts.upsell);
+  return r2(Math.min(Number(s.upsell) || 0, Number(s.amount) || 0));
 }
 
 // every line of one commission request, whatever the month
@@ -45,36 +59,58 @@ function linesOf(u, C) {
   const total = r2(u.amount);
   const out = [];
   const cash = cashRule(u);
+  const until = (C.until && C.until.get(u.employeeId)) || '';
   if (cash) {
     const due = C.dueByStart.get(u.incasareId);
-    const pays = due ? (due.payments || []).filter((p) => Number(p.amount) > 0).map((p) => {
-      const s = C.byId.get(p.saleId);
-      return { date: (s && s.date) || bucharestDay(p.at) || u.date, cash: r2(p.amount) };
-    }) : [{ date: u.date, cash: total }];
+    let pays;
+    if (due) {
+      // the money given back counts too (a negative part, its refund's day): what comes in after it can earn again, up to
+      // the value (a 3.000 package, 1.000 paid and given back, then 3.000 paid: 4% of 3.000 in all)
+      pays = (due.payments || []).filter((p) => Number(p.amount) !== 0).map((p) => {
+        const s = C.byId.get(p.saleId);
+        return { date: (s && s.date) || bucharestDay(p.at) || u.date, at: p.at || '', cash: r2(p.amount), back: Number(p.amount) < 0 };
+      });
+    } else {
+      // paid whole at once (no rest, so no package was started): its payment's upsell part; the payment gone: nothing
+      const paid = upsellPaidOf(u, C);
+      const s = C.byId.get(u.incasareId);
+      pays = paid > 0 ? [{ date: (s && s.date) || u.date, cash: paid }] : [];
+    }
     let sofar = 0;
-    pays.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)).forEach((p) => {
+    pays.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : String(a.at || '') < String(b.at || '') ? -1 : String(a.at || '') > String(b.at || '') ? 1 : 0)).forEach((p) => {
+      if (p.back) { sofar = r2(Math.max(0, sofar + p.cash)); return; } // its line is the refund's own (below)
       const c = r2(Math.min(p.cash, Math.max(0, total - sofar))); // never more than the upsell's value
       if (!(c > 0)) return;
       sofar = r2(sofar + c);
+      if (until && p.date > until) return; // came in after her last day: not hers
       out.push(Object.assign({ date: p.date, kind: 'pay', cash: c, lei: commissionOf(c), paidSoFar: sofar, total }, base));
     });
   } else {
-    out.push(Object.assign({ date: u.date, kind: 'whole', cash: total, lei: r2(u.status === 'approved' ? u.commission : u.commission || commissionOf(u.amount)), paidSoFar: total, total }, base));
+    if (!(until && u.date > until)) out.push(Object.assign({ date: u.date, kind: 'whole', cash: total, lei: r2(u.status === 'approved' ? u.commission : u.commission || commissionOf(u.amount)), paidSoFar: total, total }, base));
   }
   (C.cuts.get(u.id) || []).forEach((c) => {
     if (c.kind === 'rest' && cash) return; // a rest never paid brought no commission under the cash rule
+    if (until && c.r.date > until) return; // a refund after she left takes nothing off her
     out.push(Object.assign({ date: c.r.date, kind: c.kind, cash: -c.lei, lei: -commissionOf(c.lei), refundId: c.r.id, total, reason: c.r.reason || '' }, base));
   });
   return out;
 }
 
-// the rest still to come of an upsell under the cash rule (its package's rest): { rest, lei } or null
+// the rest still to come of an upsell under the cash rule (its package's rest, at most what is left of its value before
+// the commission stops): { rest, lei } or null. Nothing comes to someone who left.
 function toComeOf(u, C) {
   if (!cashRule(u) || u.status === 'rejected') return null;
+  if (C.until && C.until.get(u.employeeId)) return null;
   const due = C.dueByStart.get(u.incasareId);
   if (!due) return null;
-  const rest = r2(Math.max(0, Number(due.total) - Number(due.paid)));
+  const counted = r2(linesOf(u, C).filter((l) => l.kind === 'pay' || l.kind === 'refund').reduce((a, l) => a + l.cash, 0)); // net of what went back
+  const rest = r2(Math.min(Math.max(0, Number(due.total) - Number(due.paid)), Math.max(0, r2(u.amount) - counted)));
   return rest > 0 ? { upsellId: u.id, what: String(u.treatment || '').replace(/^Upsell · /, ''), client: u.client || '', rest, lei: commissionOf(rest), paid: r2(due.paid), total: r2(due.total), status: u.status } : null;
+}
+// what a payment of `cash` lei toward the package of this upsell brings her now (the cap of toComeOf): lei
+function nextPayLei(u, C, cash) {
+  const t = toComeOf(u, C);
+  return t ? commissionOf(Math.min(r2(cash), t.rest)) : 0;
 }
 
 // one person's commission in a month (from NEW_FROM; the months before keep payroll.js's own count)
@@ -106,4 +142,4 @@ function summaryOf(u, C) {
   return { rule: cashRule(u) ? 'cash' : 'whole', paid, refunded, total: r2(u.amount), lei: r2(lines.reduce((a, l) => a + l.lei, 0)), rest: t ? t.rest : 0, restLei: t ? t.lei : 0 };
 }
 
-module.exports = { NEW_FROM, cashRule, context, linesOf, toComeOf, monthOfPerson, summaryOf, isUpsellReq };
+module.exports = { NEW_FROM, cashRule, context, linesOf, toComeOf, nextPayLei, monthOfPerson, summaryOf, isUpsellReq, upsellPaidOf };

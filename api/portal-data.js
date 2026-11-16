@@ -61,16 +61,14 @@ function computeGoalCurrent(goal, employeeId, sales, appointments, today, month,
       return appointments.filter(
         (a) => a.cosmeticianId === employeeId && a.date === today && a.status === 'anulata'
       ).length;
-    case 'comision_aprobat_luna':
-      return sales
-        .filter(
-          (s) =>
-            s.source !== 'incasare' &&
-            s.employeeId === employeeId &&
-            s.status === 'approved' &&
-            monthKey(s.date) === month
-        )
-        .reduce((sum, s) => sum + Number(s.commission || 0), 0);
+    case 'comision_aprobat_luna': {
+      // the month's commission as Salariu counts it (_lib/payroll.js commissionMonth: from November 2026, 4% of the money
+      // received, minus the refunds), plus what was added by hand
+      const emp = ctx && ctx.emp;
+      if (!emp) return 0;
+      const c = PAY.commissionMonth({ emp, month, isCurrent: true, sales, dues: ctx.dues, cctx: ctx.cctx });
+      return Math.round((c.commission + c.manual) * 100) / 100;
+    }
     case 'incasari_atribuite_luna':
       return sales
         .filter((s) => s.source === 'incasare' && s.performedBy === employeeId && monthKey(s.date) === month)
@@ -120,7 +118,7 @@ module.exports = async (req, res) => {
       readJSON('data/client-dues.json', []),
     ]);
     // the commission on the money received (_lib/commission.js), read once for every person and month below
-    const cctx = CM.context(sales, duesAll);
+    const cctx = CM.context(sales, duesAll, employeesRaw);
 
     const config = configRaw || defaultConfig();
     const today = todayISO();
@@ -233,7 +231,7 @@ module.exports = async (req, res) => {
       metric: g.metric,
       target: g.target,
       reward: Number(g.reward) || 0,
-      current: computeGoalCurrent(g, me.id, sales, appointments, today, month, { leads, name: me.name }),
+      current: computeGoalCurrent(g, me.id, sales, appointments, today, month, { leads, name: me.name, emp: me, dues: duesAll, cctx }),
     }));
 
     // ---- everything else this answer reads, in one go: they were read one after another (up to eight waits on the store
@@ -251,7 +249,9 @@ module.exports = async (req, res) => {
     // ---- Salariu: what each person takes home (salary + overtime + commission or booking bonus)
     const monthsBack = (n) => { const out = []; let y = Number(month.slice(0, 4)), m = Number(month.slice(5, 7)); for (let i = 0; i < n; i++) { out.push(y + '-' + String(m).padStart(2, '0')); m -= 1; if (!m) { m = 12; y -= 1; } } return out; };
     const payOf = (emp, m) => PAY.monthPay({ emp, month: m, isCurrent: m === month, sales, dues: duesAll, cctx, payouts: tbAll.payouts, bank: m === month ? TB.ledger(emp.id, tbAll) : null, attendance: attendanceAll, appointments, finals: mgrFinals || {} });
-    const salary = isAdmin ? null : { months: monthsBack(6).map((m) => payOf(me, m)), rule: { rate: UPSELL_RATE, cost: COST_SHARE, tiers: PAY.BOOKING_TIERS } };
+    const salary = isAdmin ? null : { months: monthsBack(6).map((m) => payOf(me, m)), rule: { rate: UPSELL_RATE, cost: COST_SHARE, tiers: PAY.BOOKING_TIERS },
+      // a cosmetician's own row of the 1.500 lei a day (net of the refunds, this month up to today): hers only
+      ...(me.role === 'cosmetician' ? { dayTarget: require('./_lib/manager-pay').myDayTarget(me, sales, attendanceAll, month, today) } : {}) };
 
     // Bell reminders for the booking bonus (reception): the step reached, and the next one when
     // it's close (within 3 a day), the tone following the days left in the month. One short line.
@@ -321,7 +321,7 @@ module.exports = async (req, res) => {
     if (isAdmin) {
       payload.admin = {
         // Echipa > Salarii: this month's pay of every active person
-        payroll: employeesRaw.filter((e) => e.id !== 'admin' && e.role !== 'admin').map((e) => Object.assign({ id: e.id, name: e.name, role: e.role, location: e.location, photo: photoOf(e), netSalary: Number(e.netSalary) || 0, active: e.active !== false }, payOf(e, month)))
+        payroll: employeesRaw.filter((e) => e.id !== 'admin' && e.role !== 'admin').map((e) => Object.assign({ id: e.id, name: e.name, role: e.role, location: e.location, photo: photoOf(e), netSalary: PAY.salaryOn(e, today), active: e.active !== false }, payOf(e, month)))
           .filter((r) => r.active || Number(r.total) > 0), // someone who left this month is still paid for it
         // waiting in Aprobări besides the commissions: days over / under 8 hours, leave requests
         // (the same two documents the time bank read above)
@@ -361,7 +361,9 @@ module.exports = async (req, res) => {
           trainedOfficial: e.role === 'cosmetician' ? e.trainedOfficial !== false : undefined,
           username: e.username,
           photo: photoOf(e),
-          netSalary: Number(e.netSalary) || 0,
+          // the salary in force today, and every salary with its day (Echipa: „de la ce dată”, a raise never rewrites the months before)
+          netSalary: PAY.salaryOn(e, today),
+          salaryHistory: PAY.salaryHistoryOf(e),
           payDay: Number(e.payDay) || 15, // the day her salary is paid (the owner's Plăți)
           phone: e.phone || '',
           email: e.email || '',
@@ -371,7 +373,7 @@ module.exports = async (req, res) => {
           // Profil tab below (api/portal-employees.js' update_details). Unset = the defaults.
           annualLeaveDays: e.annualLeaveDays,
           contractedHoursPerDay: e.contractedHoursPerDay,
-          goals: (e.goals || []).map((g) => Object.assign({}, g, { current: computeGoalCurrent(g, e.id, sales, appointments, today, month, { leads, name: e.name }) })),
+          goals: (e.goals || []).map((g) => Object.assign({}, g, { current: computeGoalCurrent(g, e.id, sales, appointments, today, month, { leads, name: e.name, emp: e, dues: duesAll, cctx }) })),
         })),
         config,
       };

@@ -1,5 +1,8 @@
 // "Salariu": what each person takes home in a month.
-//   salary set by the owner (Echipa, net, in hand)
+//   salary set by the owner (Echipa, net, in hand), dated (the owner, 16.11: a raise never rewrites the months before it):
+//   salaryHistory [{ from: 'YYYY-MM-DD', lei }], each from its day on. The month a salary changes in is paid by calendar
+//   days (10 days at the old one, 20 at the new one in a 30-day month). An older record (netSalary, netSalaryFrom
+//   'YYYY-MM') reads as one entry from the first of that month (salaryHistoryOf), so the months already paid stay as they were.
 // + overtime: paid with that month's salary ("Plătite cu salariul"), and for the current month what
 //   is still due (_lib/timebank.js, 40 lei / hour)
 // + commission (cosmeticians): approved upsell commission (_lib/cats.js). Up to October 2026: the whole value's commission,
@@ -56,20 +59,54 @@ function bookingBonus(employeeId, month, attendance, appointments, until) {
   return { days: days.length, total, avg, lei: tier ? tier.lei : 0, next: until ? null : next, tiers: BOOKING_TIERS, perDay: days.map((d) => ({ date: d, count: perDay[d] })), ...(until ? { frozen: until } : {}) };
 }
 
-// One month of pay for one person.
-function monthPay({ emp, month, isCurrent, sales, dues, payouts, bank, attendance, appointments, finals, cctx }) {
-  // the salary counts from the month it was first set (Echipa), not in the months before
-  // someone who left („A plecat”, _lib/left.js): the month of her last day keeps its salary (paid the month after), none in the months after
-  const after = emp.active === false && /^\d{4}-\d{2}-\d{2}$/.test(String(emp.leftAt || '')) && month > emp.leftAt.slice(0, 7);
-  const base = !after && (!emp.netSalaryFrom || month >= emp.netSalaryFrom) ? Math.max(0, Number(emp.netSalary) || 0) : 0;
-  const paidOut = (payouts || []).filter((p) => p.employeeId === emp.id && p.month === month);
-  const paidLei = paidOut.reduce((a, p) => a + (Number(p.lei) || 0), 0);
-  const paidMin = paidOut.reduce((a, p) => a + (Number(p.minutes) || 0), 0);
-  const dueLei = isCurrent && bank ? bank.bankLei : 0;
-  const dueMin = isCurrent && bank ? bank.bank : 0;
+// ------------------------------------------------------------------ the salary, by date
+const isDay = (d) => /^\d{4}-\d{2}-\d{2}$/.test(String(d || ''));
+const daysIn = (m) => new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)).getUTCDate();
+const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+// her salaries with the day each started, oldest first. Older records: the one salary from the first of netSalaryFrom
+// (a record without it: from always, '')
+function salaryHistoryOf(emp) {
+  if (!emp) return [];
+  if (Array.isArray(emp.salaryHistory) && emp.salaryHistory.length) {
+    return emp.salaryHistory.filter((h) => h && (h.from === '' || isDay(h.from)) && Number.isFinite(Number(h.lei)))
+      .map((h) => ({ from: h.from, lei: Math.max(0, Math.round(Number(h.lei))) }))
+      .sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
+  }
+  const lei = Math.max(0, Math.round(Number(emp.netSalary) || 0));
+  if (!lei) return [];
+  return [{ from: /^\d{4}-\d{2}$/.test(String(emp.netSalaryFrom || '')) ? emp.netSalaryFrom + '-01' : '', lei }];
+}
+// the salary in force on a day (0 before the first one)
+function salaryOn(emp, day) {
+  let lei = 0;
+  salaryHistoryOf(emp).forEach((h) => { if (!h.from || h.from <= day) lei = h.lei; });
+  return lei;
+}
+// a month's salary: whole when one salary holds all month, by calendar days when it changes (or starts) in it
+function salaryOfMonth(emp, month) {
+  const n = daysIn(month), first = month + '-01';
+  const hist = salaryHistoryOf(emp);
+  const inside = hist.filter((h) => h.from > first && h.from.slice(0, 7) === month);
+  if (!inside.length) return salaryOn(emp, first);
+  let sum = 0, from = 1, lei = salaryOn(emp, first);
+  inside.forEach((h) => { const d = Number(h.from.slice(8, 10)); sum += lei * (d - from) / n; from = d; lei = h.lei; });
+  sum += lei * (n - from + 1) / n;
+  return Math.round(sum);
+}
+// adds a salary from a day: the entries from that day on are replaced (one change a day), returns the new history
+function withSalary(emp, from, lei) {
+  const hist = salaryHistoryOf(emp).filter((h) => !(h.from && h.from >= from));
+  const prev = hist.length ? hist[hist.length - 1].lei : null;
+  if (prev !== Math.round(lei)) hist.push({ from, lei: Math.max(0, Math.round(lei)) });
+  return hist;
+}
+
+// her commission of a month, the one Salariu counts (and every other place that shows it: Echipa, the goals, Aprobări,
+// the Panou, lead-health): the approved upsell commission and what is waiting, the manual lines apart
+function commissionMonth({ emp, month, isCurrent, sales, dues, cctx }) {
   let commission = 0, waiting = 0, upsells = 0, lines = null, toCome = null;
   if (hasCommission(emp) && month >= CM.NEW_FROM) {
-    const c = CM.monthOfPerson(sales, dues, emp.id, month, isCurrent, cctx);
+    const c = CM.monthOfPerson(sales, dues, emp.id, month, isCurrent, cctx || CM.context(sales, dues, [emp]));
     commission = c.commission; waiting = c.waiting; upsells = c.upsells; lines = c.lines; toCome = c.toCome;
   } else if (hasCommission(emp)) {
     (sales || []).forEach((s) => {
@@ -80,11 +117,26 @@ function monthPay({ emp, month, isCurrent, sales, dues, payouts, bank, attendanc
   }
   let manual = 0;
   (sales || []).forEach((s) => { if (s.source === 'manual' && s.status === 'approved' && s.employeeId === emp.id && String(s.date).slice(0, 7) === month) manual += Number(s.commission) || 0; });
+  return { commission: r2(commission), waiting: r2(waiting), upsells, lines, toCome, manual: r2(manual) };
+}
+
+// One month of pay for one person.
+function monthPay({ emp, month, isCurrent, sales, dues, payouts, bank, attendance, appointments, finals, cctx }) {
+  // the salary of the month by its dates (salaryOfMonth); none in the months before the first one
+  // someone who left („A plecat”, _lib/left.js): the month of her last day keeps its salary (paid the month after), none in the months after
+  const after = emp.active === false && /^\d{4}-\d{2}-\d{2}$/.test(String(emp.leftAt || '')) && month > emp.leftAt.slice(0, 7);
+  const base = !after ? salaryOfMonth(emp, month) : 0;
+  const paidOut = (payouts || []).filter((p) => p.employeeId === emp.id && p.month === month);
+  const paidLei = paidOut.reduce((a, p) => a + (Number(p.lei) || 0), 0);
+  const paidMin = paidOut.reduce((a, p) => a + (Number(p.minutes) || 0), 0);
+  const dueLei = isCurrent && bank ? bank.bankLei : 0;
+  const dueMin = isCurrent && bank ? bank.bank : 0;
+  const cm = commissionMonth({ emp, month, isCurrent, sales, dues, cctx });
+  const { commission, waiting, upsells, lines, toCome, manual } = cm;
   const booking = hasBookingBonus(emp, month) ? bookingBonus(emp.id, month, attendance, appointments, bonusUntil(emp)) : null;
   const bonus = booking ? booking.lei : 0;
   const fin = hasManagerBonus(emp, month) && finals ? finals[emp.id + '|' + month] : null;
   const managerBonus = fin && Number.isFinite(Number(fin.lei)) ? Number(fin.lei) : 0;
-  const r2 = (v) => Math.round(v * 100) / 100;
   return {
     month, base, overtimeLei: r2(paidLei + dueLei), overtimeMinutes: paidMin + dueMin, overtimePaidLei: r2(paidLei), overtimeDueLei: r2(dueLei),
     commission: r2(commission), commissionWaiting: r2(waiting), upsells, bonus, booking, manual: r2(manual),
@@ -94,4 +146,4 @@ function monthPay({ emp, month, isCurrent, sales, dues, payouts, bank, attendanc
   };
 }
 
-module.exports = { BOOKING_TIERS, bonusUntil, bookingBonus, monthPay, hasBookingBonus, hasCommission, hasManagerBonus, bucharestDate };
+module.exports = { BOOKING_TIERS, bonusUntil, bookingBonus, monthPay, commissionMonth, salaryHistoryOf, salaryOn, salaryOfMonth, withSalary, hasBookingBonus, hasCommission, hasManagerBonus, bucharestDate };

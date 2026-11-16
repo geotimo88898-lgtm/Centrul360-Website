@@ -27,6 +27,9 @@ async function find(store, id) { return (await store.readJSON(KEY, [])).find((d)
 // advance, not the session she came for; older payments: the whole sum), `what` she bought
 async function start(store, sale, total, first, what) {
   const list = await store.readJSON(KEY, []);
+  // one package per payment: a payment that already started one never starts a second (its correction resyncs that one)
+  const had = list.find((d) => d.saleId === sale.id);
+  if (had) return view(had);
   const at = new Date().toISOString();
   const d = {
     id: crypto.randomUUID(), clientId: sale.clientId || '', client: sale.client || '', what: what || sale.treatment || '', location: sale.location || '',
@@ -56,9 +59,22 @@ async function pay(store, id, clientId, sale, amount) {
 // a payment corrected in Încasări: its part follows the new amount (never above the package); deleted (amount null):
 // its part goes, and the package it started goes with it when nothing else was paid on it. opts (a payment made of
 // parts): { started: its advance on the package it started, total: that package's value, paid: what it paid on an older one }
+// A refund on the package (_lib/refunds.js) stays: its cut of the value (and of the rest, when it closed the package) is
+// taken off the new value too, and a package a refund closed stays closed.
 async function resync(store, saleId, amount, opts) {
   const list = await store.readJSON(KEY, []);
   let changed = false;
+  let refunds = null; // the refunds' cuts per package, read only when a value is set
+  const cutOf = async (dueId) => {
+    if (!refunds) {
+      refunds = new Map();
+      (await store.readJSON('data/sales.json', [])).forEach((r) => {
+        if (!r || r.kind !== 'refund') return;
+        (r.dues || []).forEach((x) => refunds.set(x.dueId, r2((refunds.get(x.dueId) || 0) + Number(x.cut || 0))));
+      });
+    }
+    return refunds.get(dueId) || 0;
+  };
   for (let i = list.length - 1; i >= 0; i--) {
     const d = list[i];
     const p = (d.payments || []).find((x) => x.saleId === saleId);
@@ -71,7 +87,7 @@ async function resync(store, saleId, amount, opts) {
       const own = d.saleId === saleId;
       // the upsell taken off the payment: the package it started goes (when nothing else was paid on it)
       if (opts && own && opts.dropStarted && d.payments.length === 1) { list.splice(i, 1); continue; }
-      if (opts && own && opts.total > 0) d.total = r2(opts.total);
+      if (opts && own && opts.total > 0) d.total = r2(Math.max(0, opts.total - (await cutOf(d.id))));
       const want = opts ? (own ? opts.started : opts.paid) : amount;
       const others = r2(sum(d) - p.amount);
       p.amount = Math.max(0, Math.min(r2(want), r2(d.total - others)));
@@ -85,12 +101,23 @@ async function resync(store, saleId, amount, opts) {
 
 // Încasări → "Rest de plată din pachete": every package still being paid, newest first; city: one clinic or all ('').
 // Older ones without their clinic take it from the payment that started them.
-async function openAll(store, city) {
-  const [list, sales] = await Promise.all([store.readJSON(KEY, []), store.readJSON('data/sales.json', [])]);
-  const locOf = (d) => d.location || ((sales.find((x) => x.id === d.saleId) || {}).location) || '';
-  return list.filter((d) => rest(d) > 0).map((d) => Object.assign(view(d), { saleId: d.saleId || '', client: d.client || '', clientId: d.clientId || '', location: locOf(d), last: ((d.payments || []).slice(-1)[0] || {}).at || d.createdAt }))
-    .filter((d) => !city || !d.location || (Array.isArray(city) ? city.includes(d.location) : d.location === city))
+// a package's clinic: its own, else the payment's that started it (whatever the spelling: Timișoara / Arad)
+function locOf(d, sales) {
+  const raw = d.location || (((sales || []).find((x) => x && x.id === d.saleId)) || {}).location || '';
+  const C = require('./clinic');
+  return (C.clinicOf && C.clinicOf(raw)) || raw;
+}
+// in one clinic (or several): a package whose clinic is not known shows in each (it is never lost from the list)
+const inCityOf = (loc, city) => !city || !loc || (Array.isArray(city) ? city.includes(loc) : loc === city);
+// every package still being paid with its clinic (Rest de plată, KPI's „rest de încasat”, the same list)
+function openList(list, sales, city) {
+  return (list || []).filter((d) => d && rest(d) > 0).map((d) => Object.assign(view(d), { saleId: d.saleId || '', client: d.client || '', clientId: d.clientId || '', location: locOf(d, sales), last: ((d.payments || []).slice(-1)[0] || {}).at || d.createdAt }))
+    .filter((d) => inCityOf(d.location, city))
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
+async function openAll(store, city) {
+  const [list, sales] = await Promise.all([store.readJSON(KEY, []), store.readJSON('data/sales.json', [])]);
+  return openList(list, sales, city);
+}
 
-module.exports = { KEY, openFor, openAll, find, start, pay, resync, rest };
+module.exports = { KEY, openFor, openAll, openList, locOf, inCityOf, find, start, pay, resync, rest };

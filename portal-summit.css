@@ -907,7 +907,9 @@ html.ui-nou.sx-fine .sx-mcard{ -webkit-backdrop-filter:blur(8px); backdrop-filte
 .sx-last b{ font-weight:500;  }
 
 :where(html.ui-nou:not([data-theme="light"])) .sx-last b{ color:#fff; }
-.sx-last em{ flex:none; font-style:normal; font:600 13px/1 var(--sx-mono); color:var(--sx-ac); }
+.sx-last em{ flex:none; font-style:normal; font:600 13px/1 var(--sx-mono); color:var(--sx-ac); white-space:nowrap; }
+.sx-last em.is-back{ color:var(--bad, #e5484d); }
+.sx-mcard > *{ min-width:0; } /* a long „Ultima: …” ends in „…” inside the card, its sum always shown */
 @media (max-width:699px){
   .sx-s-money .sx-acts{ order:3; }
   .sx-s-money .sx-mcard{ order:4; width:100%; margin-top:4px; }
@@ -1468,6 +1470,12 @@ html.ui-nou .pf-g-add:active, html.ui-nou .pf-g-foot:active{ transform:scale(.97
 html.ui-nou .pf-g-foot{ margin:.3rem 0 0 .4rem; }
 html.ui-nou .pf-g-foot span{ font-size:.7rem; padding:.03rem .38rem; border-radius:999px; background:var(--glass-2); color:var(--muted); }
 html.ui-nou .pf-g-empty{ margin:0 .9rem; font-size:.8rem; color:var(--muted); }
+/* the manager's bonus under the salaries: a memo, not a cost (dashed, quiet, no tick) */
+html.ui-nou .pf-memo{ display:flex; align-items:center; gap:.75rem; margin:.4rem .3rem 0; padding:.6rem .75rem; border:1px dashed var(--line); border-radius:14px; min-width:0; }
+html.ui-nou .pf-memo-main{ display:flex; flex-direction:column; gap:.12rem; flex:1 1 auto; min-width:0; }
+html.ui-nou .pf-memo-main b{ font-size:.86rem; font-weight:620; color:var(--fg); }
+html.ui-nou .pf-memo-main small{ font-size:.74rem; line-height:1.35; color:var(--muted); overflow-wrap:anywhere; }
+html.ui-nou .pf-memo-lei{ flex:none; font-size:.9rem; font-weight:600; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
 /* the rows: a line of the costs (no tick) quieter than a payment; „automat” small before the sum */
 html.ui-nou .pf-row.is-cost .pf-amt{ color:var(--muted); font-weight:600; }
 html.ui-nou .pf-autotag{ margin-right:.4rem; font-size:.58rem; font-weight:680; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); vertical-align:1px; }

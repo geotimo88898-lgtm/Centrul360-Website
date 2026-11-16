@@ -42,12 +42,14 @@
     var month = inc.filter(function (s) { return String(s.date || '').slice(0, 7) === mo; });
     var days = {}; month.forEach(function (s) { days[s.date] = 1; });
     return {
-      total: sum(day), n: day.length, day: day,
+      // the count and the average ticket: payments only (a refund is money back, not an încasare; K.pays, as KPI); the total is net
+      total: sum(day), n: K().pays ? K().pays(day).length : day.length, day: day,
       yday: timed ? sum(yAll.filter(function (s) { return tm(s) <= hm; })) : null,
       month: sum(month), monthDays: Object.keys(days).length,
       ids: day.map(function (s) { return s.id; })
     };
   }
+  function sum0(a) { return (a || []).reduce(function (x, s) { return x + (Number(s.amount) || 0); }, 0); }
   function greeting() { return K() && K().salut ? K().salut() : 'Bună ziua'; } // the hour in Romania (K.salut, portal-kit.js)
   function firstName() { var d = D(); return String((d && d.me && d.me.name) || '').trim().split(/\s+/)[0]; }
 
@@ -122,7 +124,8 @@
       dl.hidden = false; dl.className = 'sx-s-delta ' + (diff >= 0 ? 'up' : 'down');
       dl.textContent = (diff >= 0 ? '↑ ' : '↓ ') + (pc != null ? Math.abs(pc) + '% ' : lei(Math.abs(diff)) + ' ') + 'față de ieri'; dl.title = 'Față de ieri, la aceeași oră';
     } else dl.hidden = true;
-    st.querySelector('[data-sub]').innerHTML = '<b>' + m.n + '</b> ' + (m.n === 1 ? 'încasare' : 'încasări') + ' azi' + (m.n ? ' · bon mediu <b>' + esc(lei(m.total / m.n)) + '</b>' : '');
+    var gross = sum0(K().pays ? K().pays(m.day) : m.day);
+    st.querySelector('[data-sub]').innerHTML = '<b>' + m.n + '</b> ' + (m.n === 1 ? 'încasare' : 'încasări') + ' azi' + (m.n ? ' · bon mediu <b>' + esc(lei(gross / m.n)) + '</b>' : '');
     // under the number: this month (the ads have their own section)
     var hud = st.querySelector('[data-hud]');
     hud.dataset.n = 1;
@@ -133,7 +136,9 @@
     if (last) {
       var at = last.createdAt ? new Date(last.createdAt) : null, ago = at && !isNaN(at) ? Math.max(0, Math.round((Date.now() - at) / 60000)) : null;
       var when = ago == null ? tm(last) : ago < 1 ? 'acum' : ago < 60 ? 'acum ' + ago + ' min' : 'la ' + tm(last);
-      le.innerHTML = '<span>Ultima: <b>' + esc(last.treatment || 'încasare') + '</b>' + (last.location ? ' · ' + esc(last.location) : '') + (when ? ' · ' + esc(when) : '') + '</span><em>+' + esc(lei(last.amount)) + '</em>';
+      // the sign from the amount: a refund is „Rambursare -1.000 lei”, never „+-1.000”
+      var back = Number(last.amount) < 0;
+      le.innerHTML = '<span>Ultima: <b>' + esc(back ? String(last.treatment || '').replace(/^Rambursare · /, '') || 'rambursare' : last.treatment || 'încasare') + '</b>' + (last.location ? ' · ' + esc(last.location) : '') + (when ? ' · ' + esc(when) : '') + '</span><em' + (back ? ' class="is-back"' : '') + '>' + (back ? 'Rambursare -' : '+') + esc(lei(Math.abs(Number(last.amount) || 0))) + '</em>';
       le.hidden = false;
     } else le.hidden = true;
     paintAds();
@@ -286,8 +291,9 @@
     if (seen === null) { seen = new Set(m.ids); return; }
     var fresh = m.ids.filter(function (x) { return !seen.has(x); });
     m.ids.forEach(function (x) { seen.add(x); });
-    if (fresh.length) {
-      var sales = m.day.filter(function (s) { return fresh.indexOf(s.id) >= 0; });
+    // money that came in flies in; a refund (money given back) is never celebrated: the numbers just follow
+    var sales = m.day.filter(function (s) { return fresh.indexOf(s.id) >= 0 && s.kind !== 'refund' && Number(s.amount) > 0; });
+    if (sales.length) {
       // while a pulse travels from her to the number, the number waits for it (each arrival counts on)
       // each arrival: the number counts on, and the burst „+N lei” in the accent (as Summitlane's), with who did it
       var q = sales.slice(), boom = function (sl) { if (window.C360Fx && sl) window.C360Fx.cash(lei(sl.amount), sl.treatment || ''); };

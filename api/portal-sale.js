@@ -7,7 +7,8 @@
 //     commission and makes it count toward the company goal / race bonus. Unchanged
 //     from the first portal build.
 //
-//   source: 'incasare' ("Încasează client" - the shared cash-register replacement)
+//   source: 'incasare' ("Încasează client" - the shared cash-register replacement), dated the day the money came in
+//   (a visit of a month before: today, the visit's day kept as visitDate)
 // - a factual record that money was received, available to any role (mainly the
 //     receptionist). Written with status: 'recorded' immediately, no approval queue,
 //     no commission math, and never attributed as anyone's personal commission claim.
@@ -173,6 +174,8 @@ async function handleComisionAdmin(req, res, session) {
     sales.push(...made);
     await writeJSON('data/sales.json', sales);
     const total = made.reduce((a, x) => a + x.commission, 0);
+    // a commission added to a month whose salaries are closed: the owner hears it (_lib/month-close.js)
+    for (const m of [...new Set(made.map((x) => x.date.slice(0, 7)))]) await require('./_lib/month-close').changed({ readJSON, writeJSON }, m, 'Comision adăugat pentru ' + emp.name.split(' ')[0] + ' pe ' + m);
     try {
       await N.notify({ readJSON, writeJSON }, emp.id, { kind: 'commission', tone: 'good', go: 'comision',
         title: 'COMISION ✅ - +' + N.leiTxt(Math.round(total * 100) / 100),
@@ -235,7 +238,9 @@ async function handleIncasare(req, res, session) {
     if (!performer) { res.status(400).json({ error: 'missing_performer' }); return; }
 
     const today = todayISO();
-    const date = appt.date && appt.date <= today ? appt.date : today;
+    // the day the money came in: the visit's day when it is this month (a payment typed a day late), today when the visit
+    // is in a month before (that month is closed: its salaries and bonus are paid); the visit's day stays as visitDate
+    const date = appt.date && appt.date <= today && appt.date.slice(0, 7) === today.slice(0, 7) ? appt.date : today;
     // someone who left is credited only with what she did up to her last day (_lib/left.js)
     if (!require('./_lib/left').worksOn(performer, date)) { res.status(400).json({ error: 'performer_left' }); return; }
     const booked = Number(appt.amount) || 0;
@@ -271,6 +276,7 @@ async function handleIncasare(req, res, session) {
       clientId: appt.clientId || '',
       client: appt.clientName || '',
       date,
+      ...(appt.date && appt.date !== date ? { visitDate: appt.date } : {}),
       location: appt.location || performer.location || '',
       categories,
       category: categories[0] || '',
@@ -302,12 +308,15 @@ async function handleIncasare(req, res, session) {
     let due = null;
     if (entry.packageTotal) due = parts ? await D.start(store, entry, entry.packageTotal, parts.upsellPaid, upsellWhat || 'Upsell · ' + entry.treatment) : await D.start(store, entry, entry.packageTotal);
     if (owed && entry.toDue > 0) {
+      const CM = require('./_lib/commission');
+      // what this part brings her: 4% of it, never above what is left of the upsell's value (the same cap as „încă X lei”)
+      const u = sales.find((x) => x.source === 'comision' && x.incasareId === owed.saleId && x.status === 'approved');
+      const gain = u && CM.cashRule(u) ? CM.nextPayLei(u, CM.context(sales, await store.readJSON(D.KEY, []), employees), entry.toDue) : 0;
       const p = await D.pay(store, owed.id, appt.clientId, entry, entry.toDue); due = (p && p.due) || due;
       // a part of a package whose upsell is approved: its commission comes with it (_lib/commission.js), she hears it
-      const full = await D.find(store, owed.id);
-      const u = full && sales.find((x) => x.source === 'comision' && x.incasareId === full.saleId && x.status === 'approved');
-      if (p && p.applied > 0 && u && require('./_lib/commission').cashRule(u)) {
-        try { await N.notify(store, u.employeeId, { kind: 'commission', tone: 'good', go: 'comision', title: 'COMISION ✅ - +' + N.leiTxt(commissionOf(p.applied)), text: 'Din restul pachetului: ' + N.leiTxt(p.applied) + ' încasați' + (entry.client ? ', ' + entry.client : '') }); } catch (e) { /* never blocks a payment */ }
+      if (p && p.applied > 0 && gain > 0) {
+        const lei = Math.min(gain, commissionOf(p.applied));
+        try { await N.notify(store, u.employeeId, { kind: 'commission', tone: 'good', go: 'comision', title: 'COMISION ✅ - +' + N.leiTxt(lei), text: 'Din restul pachetului: ' + N.leiTxt(p.applied) + ' încasați' + (entry.client ? ', ' + entry.client : '') }); } catch (e) { /* never blocks a payment */ }
       }
     }
 
@@ -336,7 +345,14 @@ async function handleIncasare(req, res, session) {
       } catch (e) { /* never blocks a payment */ }
     }
 
-    res.status(200).json({ ok: true, entry, upsell: upsellEntry, due });
+    // what the upsell brings her (the toast at the desk): 4% of what was paid now, and of the rest when it comes
+    let commission = null;
+    if (upsellEntry) {
+      const CM = require('./_lib/commission');
+      const sum = CM.summaryOf(upsellEntry, CM.context(sales, await store.readJSON(D.KEY, []), employees));
+      if (sum) commission = { now: sum.lei, later: sum.restLei, rule: sum.rule };
+    }
+    res.status(200).json({ ok: true, entry, upsell: upsellEntry, due, commission });
   } catch (err) {
     console.error('portal-sale (incasare) error:', err.message);
     res.status(500).json({ error: 'sale_failed' });

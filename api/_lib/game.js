@@ -6,7 +6,7 @@
 //   stage      the business's stage on Hormozi's Scaling Roadmap, by its yearly revenue pace
 //   level      XP = lei cashed in / 10 + missions claimed + badges won; levels 1 … 100 inside the stages
 //   treasury   the profit the business has made since the game started (cashed in - salaries - a manager's salary
-//              for the owner - ads - the real costs of the clinics - consumables - the cost of opening a new
+//              for the owner - ads - the real costs of the clinics (Cheltuieli) - consumables - the cost of opening a new
 //              clinic), after a 16% tax, minus the debts to the state the business had (GAME_DEBT_LEI, a fact kept
 //              out of the code): what the garage is bought with
 //   garage     "if you can't buy it twice, don't buy it once" (Hormozi): a car unlocks when the treasury holds twice
@@ -68,16 +68,39 @@ const STAGES = [
   { i: 8, name: 'Specializare', en: 'Specialize', min: 20e6 * USD_LEI, focus: 'Nimeni nu le mai știe pe toate: echipe dedicate pe fiecare sarcină.' },
   { i: 9, name: 'Capitalizare', en: 'Capitalize', min: 50e6 * USD_LEI, focus: 'De unde vine următoarea creștere mare: un pariu mare pe viitor.' },
 ];
-// the real costs of the clinics, as the owner gave them (October 2026), a month; a city with no figure yet (a new one)
-// costs as much as the dearest there is
-const COSTS = {
-  rent: { 'Timișoara': 3250, 'Arad': 1500 }, // the rent, with the utilities
-  accounting: 600,                           // the whole business
-  leasing: 11500, leasingUntil: '2026-12',   // the devices' leasing: the last rate in December 2026
-};
-const rentOf = (c) => (COSTS.rent[c] != null ? COSTS.rent[c] : Math.max(...Object.values(COSTS.rent)));
-const sharedCosts = (m) => COSTS.accounting + (m <= COSTS.leasingUntil ? COSTS.leasing : 0);
-const fixedFor = (m, list) => list.reduce((n, c) => n + rentOf(c), 0) + sharedCosts(m);
+// the real costs of the clinics: the month's Cheltuieli (Costuri lunare and the month's records, the same lines the
+// manager's 5% and the profit there are made of, api/_lib/manager-pay.js costsOf), never a figure in this code. A month
+// the owner hasn't filled takes the nearest one he did (earlier first); none at all: no fixed costs, said so (costsKnown).
+// Built per game (realCostsOf), read through rentOf / sharedCosts / fixedFor below.
+let REAL = null;
+const rentOf = (c, m) => { const x = REAL ? REAL(m) : null; if (!x) return 0; return x.rent[c] != null ? x.rent[c] : x.maxRent; };
+const sharedCosts = (m) => { const x = REAL ? REAL(m) : null; return x ? x.shared : 0; };
+const fixedFor = (m, list) => list.reduce((n, c) => n + rentOf(c, m), 0) + sharedCosts(m);
+function realCostsOf(costsDoc, exp, eurRate) {
+  const MP = require('./manager-pay'), EX = require('./expenses');
+  const months = (costsDoc && costsDoc.months) || {};
+  const filled = Object.keys(months).filter((m) => months[m] && months[m].savedAt).sort();
+  const memo = new Map();
+  return (m) => {
+    if (memo.has(m)) return memo.get(m);
+    const src = filled.includes(m) ? m : filled.filter((x) => x < m).pop() || filled.find((x) => x > m) || null;
+    const entry = MP.cleanEntry(src ? months[src] : null);
+    if (!entry.eurRate && eurRate) entry.eurRate = eurRate;
+    const wa = entry.over.whatsapp != null ? null : entry.waAuto ? entry.waAuto.lei : 0;
+    const c = MP.costsOf(entry, { ads: 0, commissions: 0, overtime: 0, whatsapp: wa }, MP.CLINICS, exp ? EX.recCosts(exp, m) : {});
+    const by = Object.fromEntries(c.rows.map((r) => [r.key, r]));
+    const rent = {};
+    MP.LINES.filter((l) => l.city).forEach((l) => { const v = by[l.key] && by[l.key].lei; if (v != null) rent[l.city] = v; });
+    const rents = Object.values(rent);
+    const SHARED = ['credits', 'laser', 'accounting', 'claude', 'taxes', 'utilities', 'other', 'whatsapp'];
+    const x = { known: !!src, from: src, rent, maxRent: rents.length ? Math.max(...rents) : 0,
+      shared: SHARED.reduce((n, k) => n + (Number(by[k] && by[k].lei) || 0), 0),
+      consumables: Number(by.consumables && by.consumables.lei) || 0,
+      salaries: by.salaries && by.salaries.source === 'typed' ? Number(by.salaries.lei) || 0 : null };
+    memo.set(m, x);
+    return x;
+  };
+}
 // the standard costs, where the portal has no real figure (Romania 2026 estimates, declared once)
 const STD = {
   consumables: 0.08,      // gels, cartridges, disposables: share of what is cashed in (no injectables)
@@ -112,7 +135,7 @@ const GOALS = [
 ].map((g) => Object.assign(g, { clinics: Math.max(1, Math.ceil(g.price / (STD.healthyProfit * (1 - STD.tax) * GARAGE_MONTHS))) }));
 const RULES_TEXT = {
   garage: '„Dacă nu-l poți cumpăra de două ori, nu-l cumpăra nici măcar o dată.” (Alex Hormozi) O mașină se deblochează când seiful are de două ori prețul ei și profitul rețelei (după impozit, media ultimelor 3 luni) o plătește în cel mult ' + GARAGE_MONTHS + ' luni. Clinicile arătate sunt cele de care e nevoie la ' + roLei(STD.healthyProfit) + ' profit pe lună de clinică (o clinică sănătoasă): mai multe clinici, mai mult profit, ele sunt drumul spre mașini. Prețurile sunt cele din România, 2026.',
-  treasury: 'Seiful = încasări - salariile echipei - un salariu de manager pentru tine (' + roLei(STD.ownerSalary) + ' pe lună) - reclame (când Meta nu poate fi citit: estimate din ultima lună cunoscută sau ' + Math.round(STD.adsRatio * 100) + '% din încasări) - costurile reale ale clinicilor (chiria cu utilitățile: ' + Object.keys(COSTS.rent).map((c) => c + ' ' + roLei(COSTS.rent[c])).join(', ') + '; contabilitatea ' + roLei(COSTS.accounting) + '; leasingul aparatelor ' + roLei(COSTS.leasing) + ' pe lună până în ' + monthLabel(COSTS.leasingUntil) + ') - ' + Math.round(STD.consumables * 100) + '% consumabile - deschiderea unei clinici noi (' + roLei(STD.newClinic) + '), apoi impozit ' + Math.round(STD.tax * 100) + '% pe profit și minus datoriile la stat. Doar banii făcuți deja, de când a pornit jocul.',
+  treasury: 'Seiful = încasări - salariile echipei - un salariu de manager pentru tine (' + roLei(STD.ownerSalary) + ' pe lună) - reclame (când Meta nu poate fi citit: estimate din ultima lună cunoscută sau ' + Math.round(STD.adsRatio * 100) + '% din încasări) - costurile reale ale clinicilor, din Cheltuieli (chirii, credite, contabilitate, taxe, utilități, consumabile; o lună necompletată ia costurile celei mai apropiate luni completate) - deschiderea unei clinici noi (' + roLei(STD.newClinic) + '), apoi impozit ' + Math.round(STD.tax * 100) + '% pe profit și minus datoriile la stat. Consumabilele, când nu sunt trecute, sunt ' + Math.round(STD.consumables * 100) + '% din încasări. Doar banii făcuți deja, de când a pornit jocul.',
   stage: 'Etapa vine din ritmul anual al încasărilor (ultimele 90 de zile), pe Scaling Roadmap-ul lui Alex Hormozi: zece etape, de la 0 la 100 de milioane de dolari pe an.',
   expand: 'Un oraș nou are sens când nu mai ai unde crește în clinicile de acum (Hormozi: mai mult și mai bine, abia apoi nou): calendare pline (' + Math.round(EXPAND.occupancy * 100) + '%), fiecare clinică face ' + roLei(STD.healthyProfit) + ' profit pe lună și marja netă e de ' + Math.round(EXPAND.margin * 100) + '% (amândouă ' + EXPAND.months + ' luni la rând), clienta nouă își plătește reclama în primele 30 de zile, seiful (după datorii) are deschiderea (' + roLei(STD.newClinic) + ') plus ' + EXPAND.reserveNew + ' luni de costuri ale clinicii noi și ' + EXPAND.reserveOld + ' luni ale celor de acum, iar fiecare clinică are echipă completă.',
   expand_short: 'Profit de ' + roLei(STD.healthyProfit) + ' pe lună în fiecare clinică și marjă netă de ' + Math.round(EXPAND.margin * 100) + '%, ' + EXPAND.months + ' luni la rând; socotit din salariile reale ale echipei și costurile reale ale clinicilor',
@@ -183,6 +206,7 @@ function mergeDoc(latest, mine) {
 // read for), doc, now, photoOf }
 function build(input) {
   const { M, employees = [], sales = [], dues = [], attendance = [], tbAll = { payouts: [] }, appointments = [], adsDaily = [], adsOk = false, photoOf = () => '' } = input;
+  REAL = realCostsOf(input.costs, input.exp, input.eurRate);
   const now = input.now || Date.now();
   const doc = cleanDoc(input.doc);
   let changed = !input.doc || input.doc.v !== DOC_V;
@@ -239,6 +263,10 @@ function build(input) {
     if (settled) { doc.payMonths[m] = r2(v); changed = true; }
     return v;
   };
+  // the salaries as Cheltuieli counts them: the gross typed for the month (with the state's taxes), plus the commissions,
+  // bonuses and overtime of Salariu; not typed: Salariu's net pay
+  const baseOf = (m) => staffAll.reduce((n, e) => (e.active === false && !workedIn(e, m)) || (e.active === false && /^\d{4}-\d{2}-\d{2}$/.test(String(e.leftAt || '')) && m > e.leftAt.slice(0, 7)) ? n : n + PAY.salaryOfMonth(e, m), 0);
+  const salariesOf = (m, last) => { const pay = payrollMonth(m, last), g = REAL(m).salaries; return g != null && REAL(m).from === m ? g + Math.max(0, pay - baseOf(m)) : pay; };
   const adsFrom = input.adsFrom || firstDay;
   const months = [];
   const net = (v) => (v > 0 ? v * (1 - STD.tax) : v); // the profit after the tax (a loss is not taxed)
@@ -267,7 +295,7 @@ function build(input) {
     // the clinics of that month: those that cashed in (the current month: the clinics there are now)
     const then = Object.keys(byCity).filter((c) => c !== 'Fără oraș' && byCity[c] > 0);
     const clinicsThen = current || !then.length ? cities : then;
-    const payroll = payrollMonth(m, last) * share;
+    const payroll = salariesOf(m, last) * share;
     const fixed = fixedFor(m, clinicsThen) * share;
     const owner = STD.ownerSalary * share;
     let projected = current ? revenue / elapsed * windowDays : revenue;
@@ -275,11 +303,12 @@ function build(input) {
     const prev = months[months.length - 1];
     if (current && elapsed < 5 && prev && prev.revenue > 0) { const w = elapsed / 5; projected = projected * w + prev.revenue / prev.share * share * (1 - w); adsProjected = adsProjected * w + prev.ads / prev.share * share * (1 - w); }
     const rev = current ? projected : revenue, adsM = current ? adsProjected : ads;
-    const consumables = rev * STD.consumables;
+    const realCons = REAL(m).from === m ? REAL(m).consumables : 0; // the month's own consumables, when written
+    const consumables = realCons > 0 ? realCons * (current ? 1 : share) : rev * STD.consumables;
     // what the month has really made so far (the treasury counts this, not the projection)
     const soFarShare = current ? elapsed / windowDays : 1;
     const opened = Object.values(doc.cities).filter((x) => x === m).length * STD.newClinic; // the clinics opened this month
-    const realProfit = revenue - (payroll + fixed + owner) * soFarShare - ads - revenue * STD.consumables - opened;
+    const realProfit = revenue - (payroll + fixed + owner) * soFarShare - ads - (realCons > 0 ? consumables * soFarShare : revenue * STD.consumables) - opened;
     months.push({ month: m, label: monthLabel(m), first, last, share, windowDays, elapsed: r2(elapsed), current, complete: !current,
       revenue: r2(revenue), projected: r2(projected), payroll: r2(payroll), owner: r2(owner), ads: r2(adsM), adsSoFar: r2(ads), adsKnown, adsStd: !adsKnown && adsRatioKnown == null, opened, fixed: r2(fixed), consumables: r2(consumables),
       profit: r2(rev - payroll - owner - adsM - fixed - consumables), realProfit: r2(realProfit), margin: rev > 0 ? r2((rev - payroll - owner - adsM - fixed - consumables) / rev) : null,
@@ -320,7 +349,7 @@ function build(input) {
   };
   // the treasury in k months: today's + each month's profit at the growing pace
   const adsRatio = cur.projected > 0 ? cur.ads / cur.projected : 0;
-  const costBase = (k) => cur.payroll / cur.share + fixedFor(monthAdd(month, k), cities) + STD.ownerSalary; // the leasing ends
+  const costBase = (k) => cur.payroll / cur.share + fixedFor(monthAdd(month, k), cities) + STD.ownerSalary; // the month's own costs, else the last ones filled
   const profitIn = (k) => { const rev = fullMonthRev * Math.pow(1 + growth, k); return rev * (1 - adsRatio - STD.consumables) - costBase(k); };
   const monthsToTreasury = (target) => {
     if (treasury >= target) return 0;
@@ -419,7 +448,7 @@ function build(input) {
     const projectedFull = cur.revenue > 0 ? fullMonthRev * (mRev / cur.revenue) : 0;
     const peoplePay = payrollOf(cur.month, staffAll.filter((e) => cityName(e.location) === c)); // the month's salaries of its people
     const adsShare = cur.revenue > 0 ? (cur.ads / cur.share) * (mRev / cur.revenue) : 0;
-    const profit = projectedFull - peoplePay - adsShare - rentOf(c) - sharedCosts(month) / locations - STD.ownerSalary / locations - projectedFull * STD.consumables;
+    const profit = projectedFull - peoplePay - adsShare - rentOf(c, month) - sharedCosts(month) / locations - STD.ownerSalary / locations - projectedFull * STD.consumables;
     const treat = new Map();
     P.filter((p) => cityName(p.city) === c && inR(p.day, d30, today)).forEach((p) => { const s = rawSale.get(p.id); const t = String((s && s.treatment) || (p.appt && p.appt.treatment) || '').split(/[·,(]/)[0].trim(); if (t) treat.set(t, (treat.get(t) || 0) + p.amount); });
     const top = [...treat.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([name, lei]) => ({ name, lei: r2(lei) }));
@@ -445,7 +474,7 @@ function build(input) {
   const minOcc = cityInfo.length ? Math.min(...cityInfo.map((c) => c.occupancy)) : 0;
   const marginNow = lastMonths.length ? lastMonths.reduce((n, m) => n + (m.margin || 0), 0) / lastMonths.length : (cur.margin || 0);
   const minClinicProfit = cityInfo.length ? Math.min(...cityInfo.map((c) => c.profit)) : 0;
-  const reserveNeed = STD.newClinic + EXPAND.reserveNew * rentOf(EXPANSION.find((c) => !cities.includes(c))) + EXPAND.reserveOld * fixedFor(month, cities);
+  const reserveNeed = STD.newClinic + EXPAND.reserveNew * rentOf(EXPANSION.find((c) => !cities.includes(c)), month) + EXPAND.reserveOld * fixedFor(month, cities);
   const teamOk = cityInfo.length ? cityInfo.filter((c) => c.rec >= 1 && c.cosm >= 2).length / cityInfo.length : 0;
   // the 30-day CAC: what a new client brings in her first 30 days (gross) against what the ads paid to bring her; a
   // client from before the game (an appointment brought from HighLevel or made before the start, an old lead) is not new
@@ -689,11 +718,11 @@ function build(input) {
       treasury, debt: DEBT, season: seasonOut, race, goals, nextGoal: nextGoal ? nextGoal.id : null, team, missions, badges, map, derby, constraint, events,
       money: { today: r2(revDay.get(today) || 0), month: cur.revenue, projected: cur.projected, lifetime: r2(ctx.revLifetime), yesterday: r2(revDay.get(addDay(today, -1)) || 0) },
       engine: { month: cur.month, label: cur.label, partial: cur.share < 1, from: cur.first, revenue: cur.projected, soFar: cur.revenue, payroll: cur.payroll, owner: cur.owner, ads: cur.ads, fixed: cur.fixed, consumables: cur.consumables,
-        profit: cur.profit, margin: cur.margin == null ? null : r2(cur.margin * 100), adsOk, adsEstimated: !cur.adsKnown, adsStd: cur.adsStd, fullMonthProfit: r2(fullMonthProfit), fullMonthNet: r2(net(fullMonthProfit)) },
+        profit: cur.profit, margin: cur.margin == null ? null : r2(cur.margin * 100), costsKnown: REAL(cur.month).known, costsFrom: REAL(cur.month).from || '', adsOk, adsEstimated: !cur.adsKnown, adsStd: cur.adsStd, fullMonthProfit: r2(fullMonthProfit), fullMonthNet: r2(net(fullMonthProfit)) },
       months: months.map((m) => ({ month: m.month, label: m.label, revenue: m.revenue, projected: m.projected, profit: m.profit, realProfit: m.realProfit, opened: m.opened, current: m.current, share: r2(m.share) })),
-      growth: { rate: r2(growth * 100), known: growthKnown }, locations, staff: staff.length, rules: Object.assign({ std: STD, costs: COSTS, garageMonths: GARAGE_MONTHS, profitPace, expand: EXPAND, stars: STARS, tax: STD.tax }, RULES_TEXT),
+      growth: { rate: r2(growth * 100), known: growthKnown }, locations, staff: staff.length, rules: Object.assign({ std: STD, garageMonths: GARAGE_MONTHS, profitPace, expand: EXPAND, stars: STARS, tax: STD.tax }, RULES_TEXT),
     },
   };
 }
 
-module.exports = { KEY, GOALS, STAGES, STD, COSTS, EXPAND, STARS, BADGES, KNOWN_CITIES, EXPANSION, build, cleanDoc, mergeDoc, levelOf, xpFor, cityName, quarterOf };
+module.exports = { KEY, GOALS, STAGES, STD, EXPAND, STARS, BADGES, KNOWN_CITIES, EXPANSION, build, cleanDoc, mergeDoc, levelOf, xpFor, cityName, quarterOf };
