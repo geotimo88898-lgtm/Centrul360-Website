@@ -115,7 +115,9 @@ module.exports = async (req, res) => {
     // ---- the clinic's own work, per clinic (the same numbers as the Manager page)
     const ro = B.roNow(), today = ro.date, ahead = C.addDay(today, 6);
     const waiting = await C.waitingNow(myConvos).catch(() => ({}));
-    const openDues = (dues || []).filter((d) => d && Number(d.total) - Number(d.paid) > 0.005 && !d.closedAt);
+    // the packages still being paid, with their clinic as Rest de plată reads it (a package without its clinic takes the one of
+    // the payment that started it; never known: it shows at each clinic, as in that list), _lib/dues.js
+    const DU = require('./_lib/dues');
     // the calendar's target per clinic: full plus the no-shows of the last 60 days, from every clinic's visits (a share, never money)
     const tg = C.fillTargets(N.appts, N.sales, cities, today, clients);
     const clinic = {};
@@ -123,14 +125,14 @@ module.exports = async (req, res) => {
       const team = C.cosmeticians(employees, mySales, attendance, city, r.since, r.until);
       const counted = team.filter((x) => x.days > 0);
       const pays = (rep._pays || []).filter((p) => p.city === city);
-      const due = openDues.filter((d) => d.location === city);
+      const due = DU.openList(dues, sales, city);
       clinic[city] = {
         team: counted.sort((a, b) => b.perDay - a.perDay).map((x) => ({ id: x.id, name: x.name, days: x.days, daysFrom: x.daysFrom, collected: x.collected, perDay: x.perDay, ok: x.ok, gap: x.gap, ...(x.trainee ? { trainee: true, label: x.label } : {}) })),
         consults: C.consults(myAppts, mySales, city, r.since, r.until),
         show30: C.showRate(myAppts, city, today, mySales, 30, clients),
         reception: C.leadSpeed(myLeads, myConvos, cfg, city, r.since, r.until),
         methods: C.methods(pays),
-        dues: { count: due.length, rest: C.r2(due.reduce((n, d) => n + Math.max(0, Number(d.total) - Number(d.paid)), 0)) },
+        dues: { count: due.length, rest: C.r2(due.reduce((n, d) => n + d.rest, 0)) },
         fill: Object.assign(C.fill(cfg, city, today, ahead, myAppts, tg[city].target), { target: tg[city], days: C.fillDays(cfg, city, today, 7, myAppts, tg[city].target), schedule: !!(cfg.team && T.hasSchedule(cfg.team.doc, city, cfg.team.ids)) }),
         waiting: waiting[city] || 0,
       };

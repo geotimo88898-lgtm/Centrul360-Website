@@ -203,7 +203,8 @@
     var inc = (d.incasari || []).filter(function (s) { return s.date === t; });
     var ids = inc.map(function (s) { return s.id; });
     if (seen === null) { seen = new Set(ids); return; }
-    var fresh = inc.filter(function (s) { return !seen.has(s.id); });
+    // only money that came in: a refund (money given back) is never celebrated
+    var fresh = inc.filter(function (s) { return !seen.has(s.id) && s.kind !== 'refund' && Number(s.amount) > 0; });
     ids.forEach(function (x) { seen.add(x); });
     if (!fresh.length) return;
     var sum = fresh.reduce(function (a, s) { return a + (Number(s.amount) || 0); }, 0);

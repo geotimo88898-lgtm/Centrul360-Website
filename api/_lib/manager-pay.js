@@ -1,7 +1,8 @@
 // The manager's pay (her signed job description, the owner 15.11):
-//   base      the net salary the owner sets in Echipa. The first 30 days after she became manager are the probation;
-//             the salary after it is a second number on her record (netSalaryAfter). Nothing changes by itself: the
-//             owner changes netSalary, and Echipa reminds him once the probation is over.
+//   base      the net salary the owner sets in Echipa, from a day on (payroll.js salaryHistory). The first 30 days after she
+//             became manager are the probation; the salary after it is a second number on her record (netSalaryAfter).
+//             Nothing changes by itself: the owner sets the new salary (from the probation's end, by default), and Echipa
+//             reminds him once the probation is over and it wasn't set.
 //   bonus     5% of the month's profit of the clinics she runs, paid only in a month when every cosmetician of those
 //             clinics (the ones who finished the official training) collects more than 1.500 lei a day worked.
 //             collected = what Încasări credits to her (who did the treatment); days worked = the days she clocked in,
@@ -100,19 +101,31 @@ function collectionsOf(sales, appts, emps, clinics, month, upto) {
   });
 }
 
+// one cosmetician's money a day worked, from a day to a day: what Încasări credits to her minus the refunds of her
+// treatments, over the days she clocked in plus the days she has payments without a clock-in (a refund is not a day)
+function dayRowOf(e, sales, attendance, from, to) {
+  const mine = (sales || []).filter((s) => s && s.source === 'incasare' && s.performedBy === e.id && s.date >= from && s.date <= to);
+  const collected = require('./money').net(mine);
+  const punched = new Set((attendance || []).filter((x) => x && x.employeeId === e.id && x.checkIn && x.date >= from && x.date <= to).map((x) => x.date));
+  mine.filter(require('./money').isPayment).forEach((s) => punched.add(s.date));
+  const days = punched.size;
+  return { id: e.id, name: e.name || '', location: clinicOf(e.location), collected, days, perDay: days ? Math.round(collected / days) : 0, ok: days > 0 && collected / days > MIN_PER_DAY };
+}
+// her own row of the condition (her Salariu and Panou: „Încasat pe zi lucrată · țintă 1.500 lei”), this month up to a day
+function myDayTarget(e, sales, attendance, month, upto) {
+  const from = month + '-01', to = upto && upto < lastDay(month) ? upto : lastDay(month);
+  const r = dayRowOf(e, sales, attendance, from, to);
+  return { min: MIN_PER_DAY, collected: r.collected, days: r.days, perDay: r.perDay, ok: r.ok, location: r.location };
+}
+
 // the condition: every trained cosmetician of her clinics over 1.500 lei a day worked
 function conditionOf(emps, sales, attendance, clinics, month, upto) {
   const from = month + '-01', to = upto && upto < lastDay(month) ? upto : lastDay(month);
   const people = [], training = [];
   // someone who left is out from the month she left (_lib/left.js); her payments still count in the clinic's money
   (emps || []).filter((e) => e && e.role === 'cosmetician' && clinics.includes(clinicOf(e.location)) && !require('./left').outOfMonth(e, month)).forEach((e) => {
-    const mine = (sales || []).filter((s) => s && s.source === 'incasare' && s.performedBy === e.id && s.date >= from && s.date <= to);
-    const collected = require('./money').net(mine); // minus the refunds of her treatments
-    const punched = new Set((attendance || []).filter((x) => x && x.employeeId === e.id && x.checkIn && x.date >= from && x.date <= to).map((x) => x.date));
-    mine.filter(require('./money').isPayment).forEach((s) => punched.add(s.date)); // a day with collections and no clock-in counts as worked (a refund: not)
-    const days = punched.size;
-    if (e.active === false && !days) return; // she left before this month
-    const row = { id: e.id, name: e.name || '', location: clinicOf(e.location), collected, days, perDay: days ? Math.round(collected / days) : 0, ok: days > 0 && collected / days > MIN_PER_DAY };
+    const row = dayRowOf(e, sales, attendance, from, to);
+    if (e.active === false && !row.days) return; // she left before this month
     if (e.trainedOfficial === false) training.push({ id: e.id, name: row.name, location: row.location });
     else people.push(row);
   });
@@ -197,7 +210,7 @@ const probationOf = (emp, day) => {
   if (!since) return null;
   const end = addDay(since, PROBATION_DAYS);
   const after = Number(emp.netSalaryAfter) > 0 ? Number(emp.netSalaryAfter) : null;
-  const base = Number(emp.netSalary) || 0;
+  const base = PAY.salaryOn(emp, day); // the salary in force today (a raise dated later is not yet)
   const over = day >= end;
   // the owner is reminded: the probation is over and the salary is still the probation's (or was never changed since)
   const remind = over && (after ? base < after : !(String(emp.netSalaryChangedAt || '') >= end));
@@ -277,4 +290,4 @@ async function view(readJSON, empId, month, opts) {
   return { ok: true, name: emp.name, managerFrom: from, month: main, history, probation: probationOf(emp, day), rule: { rate: RATE, min: MIN_PER_DAY, probationDays: PROBATION_DAYS } };
 }
 
-module.exports = { eurRateOf, lei0, waOf, withEur, RATE, MIN_PER_DAY, PROBATION_DAYS, COSTS_KEY, FINAL_KEY, LINES, LINE, cleanEntry, loadCosts, loadCtx, collectionsOf, conditionOf, payrollAutos, adsOf, costsOf, monthOf, view, probationOf, managerFrom, amount, isMonth, prevMonth, lastDay, today, clinicOf };
+module.exports = { CLINICS, dayRowOf, myDayTarget, eurRateOf, lei0, waOf, withEur, RATE, MIN_PER_DAY, PROBATION_DAYS, COSTS_KEY, FINAL_KEY, LINES, LINE, cleanEntry, loadCosts, loadCtx, collectionsOf, conditionOf, payrollAutos, adsOf, costsOf, monthOf, view, probationOf, managerFrom, amount, isMonth, prevMonth, lastDay, today, clinicOf };

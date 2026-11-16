@@ -696,7 +696,9 @@
           parts: { session: v.session, crossTo: st.cross ? String(st.crossTo).trim() : '', upsell: st.upsell, upsellValue: v.upsValue, upsellPaid: v.upsPaid, upsellWhat: st.upsell ? String(st.upsWhat).trim() : '', duePaid: v.duePaid } });
         d.close();
         const dueTxt = r.due ? (r.due.rest > 0 ? ' Rest de plată din pachet: ' + K.lei(r.due.rest, 2) + '.' : st.dueId ? ' Pachetul e achitat integral.' : '') : '';
-        K.ui().toast('Încasat ' + K.lei(amt, 2) + ' · ' + a.clientName + (r.upsell ? '. Comision ' + K.lei(r.upsell.commission, 2) + '.' : '') + dueTxt, 'success'); K.emit('sale:recorded');
+        // the upsell's commission as it comes (4% of the money received): now, and what the rest of the package brings later
+        const c = r.commission, commTxt = r.upsell ? (c && c.rule === 'cash' ? '. Comision acum ' + K.lei(c.now, 2) + (c.later > 0 ? ', încă ' + K.lei(c.later, 2) + ' la restul' : '') + '.' : '. Comision ' + K.lei(c ? c.now : r.upsell.commission, 2) + '.') : '';
+        K.ui().toast('Încasat ' + K.lei(amt, 2) + ' · ' + a.clientName + commTxt + dueTxt, 'success'); K.emit('sale:recorded');
         DUES.at = 0; loadDues(true);
         if (!(a.date >= range()[0] && a.date <= range()[1])) { S.period = a.date === K.today() ? 'today' : 'month'; }
         K.reload();
@@ -723,6 +725,11 @@
     const ses0 = s.parts ? s.parts.session : s.upsell ? Math.min(booked0 || 0, amt0 - due0) : amt0 - due0;
     const P0 = s.parts || { session: ses0, upsell: Math.max(0, amt0 - due0 - ses0), due: due0 };
     const upsV0 = s.parts ? Number(s.upsell) || 0 : s.upsell ? Math.max(P0.upsell, s.packageTotal ? Number(s.packageTotal) - ses0 : 0) : 0;
+    // a refund hangs on its sums, its day and its person: only the method, the categories and the note change then
+    const locked = Number(s.refunded) > 0;
+    const lk = locked ? ' disabled' : '';
+    // a month before this one: its salaries and bonus are closed, the correction says so before it is saved
+    const closedTxt = (m) => 'Luna ' + K.monthLabel(m).split(' ')[0].toLowerCase() + ' e deja închisă: schimbarea modifică salariile și bonusul lunii.';
     const d = K.drawer({
       title: K.lei(s.amount, 2), lead: '<span class="k-dicon" style="background:' + m.color + '">' + icon(m.ic) + '</span>', from,
       subtitle: esc(s.client) + ' · ' + esc(K.dateLong(s.date)) + (s.location ? ' · ' + esc(s.location) : ''),
@@ -735,22 +742,24 @@
           '<dt>A făcut tratamentul</dt><dd>' + esc(s.performedByName || '-') + '</dd><dt>Înregistrată de</dt><dd>' + esc(s.employeeName || '-') + (s.createdAt ? ' · ' + esc(K.ago(s.createdAt)) : '') + '</dd>' +
           (Number(s.refunded) > 0 ? '<dt>Rambursat</dt><dd>' + K.lei(s.refunded, 2) + (Number(s.refunded) >= Number(s.amount) - 0.005 ? ', integral' : ', parțial') + '</dd>' : '') + '</dl>' +
         (admin ? '<section class="k-section"><h4>' + icon('pen') + 'Corectează</h4><form class="k-form" data-form>' +
-          K.field('Ședința de azi', '<div class="k-money"><input name="session" type="number" min="0" step="0.01" value="' + esc(P0.session) + '"></div>') +
+          (locked ? '<p class="mo-note full" style="margin:0">' + icon('undo') + '<span>Are o rambursare: sumele, data și cine a lucrat rămân. Se schimbă metoda, categoria și nota.</span></p>' : '') +
+          K.field('Ședința de azi', '<div class="k-money"><input name="session" type="number" min="0" step="0.01" value="' + esc(P0.session) + '"' + lk + '></div>') +
           '<div class="k-field"><span>Total încasat</span><b data-ptotal style="font-size:1.1rem;padding:.55rem 0">' + K.lei(s.amount, 2) + '</b></div>' +
           K.field('Cross-sell: ce a făcut în loc de ' + esc(s.crossSell ? s.crossSell.from : s.treatment), '<input name="crossTo" value="' + esc(s.crossSell ? s.crossSell.to : '') + '" placeholder="gol = a făcut ce era programat" maxlength="120">', 'full') +
-          K.field('Data', '<input name="date" type="date" value="' + esc(s.date) + '">') +
+          K.field('Data', '<input name="date" type="date" value="' + esc(s.date) + '"' + lk + '>') +
           K.field('Metodă', K.seg('method', Object.keys(METHODS).map((k) => [k, METHODS[k].label, METHODS[k].ic]), s.method, 'is-big'), 'full') +
           '<div class="pay-split full" data-split' + (s.method === 'cash_card' ? '' : ' hidden') + '><label class="k-field"><span>Cash</span><input name="cashAmount" type="number" min="0" step="0.01" value="' + esc(s.split ? s.split.cash : '') + '"></label>' +
           '<label class="k-field"><span>Card</span><input name="cardAmount" type="number" min="0" step="0.01" value="' + esc(s.split ? s.split.card : '') + '"></label></div>' +
           K.field('Categorie', K.catPicker(K.catsOf(s)), 'full') +
-          K.field('A făcut tratamentul', '<select name="performedBy"><option value="">-</option>' + K.options(emp.map((e) => [e.id, e.name + ' · ' + e.location]), s.performedBy || '') + '</select>', 'full') +
+          K.field('A făcut tratamentul', '<select name="performedBy"' + lk + '><option value="">-</option>' + K.options(emp.map((e) => [e.id, e.name + ' · ' + e.location]), s.performedBy || '') + '</select>', 'full') +
           (true
-            ? '<label class="pay-check full"><input type="checkbox" name="upsell" value="true"' + (upsV0 ? ' checked' : '') + '><span class="pay-box">' + icon('check') + '</span><span><b>Upsell</b><small>Comisionul se recalculează cât timp nu e aprobat; restul pachetului urmează valoarea și avansul.</small></span></label>' +
+            ? '<label class="pay-check full"><input type="checkbox" name="upsell" value="true"' + (upsV0 ? ' checked' : '') + lk + '><span class="pay-box">' + icon('check') + '</span><span><b>Upsell</b><small>Comisionul se recalculează cât timp nu e aprobat; restul pachetului urmează valoarea și avansul.</small></span></label>' +
               '<div class="pay-grid full" data-pups' + (upsV0 ? '' : ' hidden') + '>' +
                 '<label class="k-field full"><span>Ce a cumpărat</span><input name="upsellWhat" value="' + esc(s.upsellWhat || '') + '" maxlength="120"></label>' +
-                '<label class="k-field"><span>Valoarea totală</span><div class="k-money"><input name="upsellValue" type="number" min="0" step="0.01" value="' + esc(upsV0 || '') + '"></div></label>' +
-                '<label class="k-field"><span>Plătit acum</span><div class="k-money"><input name="upsellPaid" type="number" min="0" step="0.01" value="' + esc(P0.upsell || '') + '"></div></label></div>' +
-              (s.toDue ? '<p class="k-muted full" style="margin:0">Din restul unui pachet: ' + K.lei(s.toDue, 2) + ' (rămâne așa).</p>' : '')
+                '<label class="k-field"><span>Valoarea totală</span><div class="k-money"><input name="upsellValue" type="number" min="0" step="0.01" value="' + esc(upsV0 || '') + '"' + lk + '></div></label>' +
+                '<label class="k-field"><span>Plătit acum</span><div class="k-money"><input name="upsellPaid" type="number" min="0" step="0.01" value="' + esc(P0.upsell || '') + '"' + lk + '></div></label></div>' +
+              (s.toDue ? '<p class="k-muted full" style="margin:0">Din restul unui pachet: ' + K.lei(s.toDue, 2) + ' (rămâne așa).</p>' : '') +
+              K.field('Notă', '<input name="note" value="' + esc(s.note || '') + '" maxlength="300" placeholder="opțional">', 'full')
             : '<label class="pay-check full"><input type="checkbox" name="upsell" value="true"' + (s.upsell ? ' checked' : '') + '><span class="pay-box">' + icon('check') + '</span><span><b>Upsell efectuat</b><small>Toată suma e upsell. Comisionul se recalculează cât timp nu e aprobat.</small></span></label>') +
           '</form></section>'
           : '<div class="mo-note">' + icon('info') + 'Ai văzut o greșeală? Spune ce trebuie corectat și se rezolvă.</div>'),
@@ -767,24 +776,31 @@
           if (e.target.name === 'upsell') el.querySelector('[data-pups]').hidden = !e.target.checked;
         });
         // a payment of parts: the total follows them
-        const ptotal = () => { const v = K.formValues(f); const ups = !!f.querySelector('input[name=upsell]').checked; return Math.round(((Number(v.session) || 0) + (ups ? Number(v.upsellPaid) || 0 : 0) + (Number(s.toDue) || 0)) * 100) / 100; };
+        const ptotal = () => { if (locked) return Number(s.amount) || 0; const v = K.formValues(f); const ups = !!f.querySelector('input[name=upsell]').checked; return Math.round(((Number(v.session) || 0) + (ups ? Number(v.upsellPaid) || 0 : 0) + (Number(s.toDue) || 0)) * 100) / 100; };
         f.addEventListener('input', () => { el.querySelector('[data-ptotal]').textContent = K.lei(ptotal(), 2); });
         f.addEventListener('change', () => { el.querySelector('[data-ptotal]').textContent = K.lei(ptotal(), 2); });
         el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, async () => {
           const v = K.formValues(f);
+          if (locked) Object.assign(v, { date: s.date, performedBy: s.performedBy || '', session: P0.session, upsellValue: upsV0, upsellPaid: P0.upsell });
+          // the money of a month before this one moves: said before it is saved
+          const upsOn = !!f.querySelector('input[name=upsell]').checked;
+          const moved = Math.abs(ptotal() - (Number(s.amount) || 0)) > 0.005 || v.date !== s.date || (v.performedBy || '') !== (s.performedBy || '') || Math.abs((upsOn ? Number(v.upsellValue) || 0 : 0) - upsV0) > 0.005;
+          const pastM = [s.date, v.date].map((x) => String(x || '').slice(0, 7)).filter((x, i, a) => x && x < K.today().slice(0, 7) && a.indexOf(x) === i);
+          if (moved && pastM.length && !(await K.ui().confirm({ title: 'Corectezi încasarea?', message: closedTxt(pastM[0]), confirmText: 'Corectează', from: e.currentTarget }))) return;
           try {
-            const upsell = !!f.querySelector('input[name=upsell]').checked;
+            const upsell = upsOn;
             await K.api('/api/portal-incasari', Object.assign({ action: 'update', id: s.id }, v, true
               ? { amount: ptotal(), cashAmount: Number(v.cashAmount) || 0, cardAmount: Number(v.cardAmount) || 0, categories: String(v.categories || '').split(',').filter(Boolean),
                 parts: { session: Number(v.session) || 0, crossTo: v.crossTo || '', upsell, upsellValue: Number(v.upsellValue) || 0, upsellPaid: Number(v.upsellPaid) || 0, upsellWhat: v.upsellWhat || '' } }
               : { amount: Number(v.amount), cashAmount: Number(v.cashAmount) || 0, cardAmount: Number(v.cardAmount) || 0, categories: String(v.categories || '').split(',').filter(Boolean), upsell, upsellAmount: upsell ? Number(v.amount) || 0 : 0 }));
             d.close(); K.ui().toast('Încasare corectată.', 'success'); K.reload(); DUES.at = 0; loadDues(true);
-          } catch (err) { K.ui().toast(err.code === 'invalid_split' ? 'Cash + card trebuie să dea suma totală.' : err.code === 'invalid_upsell' ? 'Scrie valoarea upsell-ului.' : err.code === 'invalid_amount' ? 'Totalul trebuie să fie mai mare de 0.' : err.code === 'invalid_package' ? 'Plătit acum nu poate fi mai mult decât valoarea upsell-ului.' : K.errText(err), 'error'); }
+          } catch (err) { K.ui().toast(err.code === 'has_refunds' ? 'Are o rambursare: sumele, data și cine a lucrat rămân.' : err.code === 'invalid_split' ? 'Cash + card trebuie să dea suma totală.' : err.code === 'invalid_upsell' ? 'Scrie valoarea upsell-ului.' : err.code === 'invalid_amount' ? 'Totalul trebuie să fie mai mare de 0.' : err.code === 'invalid_package' ? 'Plătit acum nu poate fi mai mult decât valoarea upsell-ului.' : K.errText(err), 'error'); }
         }));
         el.querySelector('[data-del]').addEventListener('click', async () => {
-          if (!(await K.ui().confirm({ title: 'Ștergi încasarea?', message: K.lei(s.amount, 2) + ' · ' + s.client + ' dispare din totaluri, iar programarea redevine neîncasată.', confirmText: 'Șterge', danger: true }))) return;
-          try { await K.api('/api/portal-incasari', { action: 'delete', id: s.id }); d.close(); K.ui().toast('Încasare ștearsă.', 'success'); K.reload(); }
-          catch (err) { K.ui().toast(err.code === 'has_refunds' ? 'Are o rambursare. Anuleaz-o întâi, din rândul ei.' : K.errText(err), 'error'); }
+          const pastDel = String(s.date).slice(0, 7) < K.today().slice(0, 7);
+          if (!(await K.ui().confirm({ title: 'Ștergi încasarea?', message: K.lei(s.amount, 2) + ' · ' + s.client + ' dispare din totaluri, iar programarea redevine neîncasată.' + (s.upsell ? ' Comisionul upsell-ului se șterge și el.' : '') + (pastDel ? ' ' + closedTxt(String(s.date).slice(0, 7)) : ''), confirmText: 'Șterge', danger: true, from: el.querySelector('[data-del]') }))) return;
+          try { await K.api('/api/portal-incasari', { action: 'delete', id: s.id }); d.close(); K.ui().toast('Încasare ștearsă.', 'success'); K.reload(); DUES.at = 0; loadDues(true); }
+          catch (err) { K.ui().toast(err.code === 'has_refunds' ? 'Are o rambursare. Anuleaz-o întâi, din rândul ei.' : err.code === 'has_package_payments' ? 'Pachetul are și alte plăți. Șterge-le întâi pe ele.' : K.errText(err), 'error'); }
         });
       },
     });
@@ -798,8 +814,11 @@
   const monthIn = (d) => 'în ' + MONTHS_RO[Number(String(d).slice(5, 7)) - 1];
   function openRefund(saleId, from, o) {
     const s = (K.data.incasari || []).find((x) => x.id === saleId) || { id: saleId, client: '', treatment: '', date: K.today(), amount: 0 };
-    const st = { scope: o.scope || 'payment', dueId: o.dueId || '', amount: '', close: o.scope === 'package', plan: null, seq: 0, touched: false };
-    const minDay = s.date > '2026-11-01' ? s.date : '2026-11-01';
+    const st = { scope: o.scope || 'payment', dueId: o.dueId || '', amount: '', close: o.scope === 'package', plan: null, seq: 0, touched: false, closeTouched: false, why: '' };
+    // „Închide pachetul” turns on by itself when everything paid on it goes back, or the reason says she isn't coming
+    const GONE = /nu mai (vine|poate|vrea|continu)|renun[țţt]|se mut|plec|anul|nu mai are timp|s-a r[ăa]zg[âa]ndit/i;
+    // the money goes back on a day of this month (a month before is closed: its salaries are paid), never before the payment
+    const m0 = K.today().slice(0, 7) + '-01', minDay = s.date > m0 ? s.date : m0;
     const d = K.drawer({
       title: 'Rambursare', icon: 'undo', width: 520, from, focus: false,
       subtitle: esc(s.client || 'Clientă') + ' · ' + esc(String(s.treatment || '').replace(/^Upsell · /, '')) + (s.date ? ' · ' + esc(K.dateShort(s.date)) : ''),
@@ -822,9 +841,20 @@
         const ask = () => { clearTimeout(t); t = setTimeout(preview, 220); };
         f.addEventListener('input', (e) => { if (e.target.name === 'amount') { st.touched = true; st.amount = e.target.value; ask(); } });
         f.addEventListener('change', (e) => {
-          if (e.target.name === 'rfscope') { st.scope = e.target.value; st.touched = false; st.amount = ''; st.close = st.scope === 'package'; ask(); }
-          if (e.target.name === 'rfclose') { st.close = e.target.checked; ask(); }
+          if (e.target.name === 'rfscope') { st.scope = e.target.value; st.touched = false; st.amount = ''; st.close = st.scope === 'package'; st.why = ''; ask(); }
+          if (e.target.name === 'rfclose') { st.close = e.target.checked; st.closeTouched = true; st.why = ''; ask(); }
         });
+        f.reason.addEventListener('input', () => { if (st.plan) autoClose(st.plan); });
+        // the package closes by itself (until it is set by hand): everything paid goes back, or she isn't coming
+        function autoClose(p) {
+          if (st.closeTouched || !p || !p.pkg) return false;
+          const all = p.pkg.paid > 0 && p.fromPkg >= p.pkg.paid - 0.005, gone = GONE.test(f.reason.value || '');
+          const want = all || gone;
+          st.why = want ? (all ? 'se dă înapoi tot ce a plătit pe el' : 'motivul spune că nu mai vine') : '';
+          if (want !== st.close) { st.close = want; ask(); return true; }
+          if (st.plan) el.querySelector('[data-what]').innerHTML = whatHtml(st.plan);
+          return false;
+        }
         async function preview() {
           const seq = ++st.seq;
           let p;
@@ -845,8 +875,14 @@
           el.querySelector('[data-max]').textContent = p.max != null ? 'cel mult ' + K.lei(p.max, 2) + (st.scope === 'package' ? ', cât s-a plătit pe pachet' : ', cât s-a plătit și nu s-a rambursat încă') : '';
           const cl = el.querySelector('[data-close]');
           const pk = p.pkg || (st.plan && st.plan.pkg);
-          if (pk && pk.rest > 0) { cl.hidden = false; if (!cl.dataset.on) { cl.dataset.on = '1'; cl.innerHTML = K.toggle('rfclose', st.close, 'Închide pachetul') + '<small class="k-muted">Restul de ' + K.lei(pk.rest, 2) + ' nu se mai încasează.</small>'; } cl.querySelector('input').checked = st.close; }
-          else cl.hidden = true;
+          if (pk) {
+            cl.hidden = false;
+            if (!cl.dataset.on) { cl.dataset.on = '1'; cl.innerHTML = K.toggle('rfclose', st.close, 'Închide pachetul') + '<small class="k-muted" data-close-sub></small>'; }
+            cl.querySelector('input').checked = st.close;
+            const left = p.error ? pk.rest : pk.rest + (p.fromPkg || 0);
+            cl.querySelector('[data-close-sub]').textContent = st.close ? 'Nu mai rămâne nimic de încasat din el.' : 'Rămâne de încasat ' + K.lei(left, 2) + ', valoarea pachetului rămâne.';
+          } else cl.hidden = true;
+          if (!p.error && autoClose(p)) return; // the close changed: the preview comes again with it
           el.querySelector('[data-what]').innerHTML = whatHtml(p);
           ok.disabled = !st.plan;
           ok.innerHTML = icon('undo') + (st.plan ? 'Rambursează ' + K.lei(st.plan.lei, 2) : 'Rambursează');
@@ -861,8 +897,9 @@
           if (!p.cuts.length) out.push(li('percent', '', 'Niciun comision nu se schimbă.'));
           if (p.pkg) {
             const paidAfter = Math.max(0, p.pkg.paid - p.fromPkg);
-            out.push(p.close ? li('x', 'bad', 'Pachetul se închide: restul de ' + K.lei(p.restCut, 2) + ' nu se mai încasează. Rămâne plătit ' + K.lei(paidAfter, 2) + '.')
-              : li('receipt', '', 'Pachetul: plătit ' + K.lei(paidAfter, 2) + ' din ' + K.lei(Math.max(0, p.pkg.total - p.fromPkg), 2) + (p.pkg.rest > 0 ? ', restul de ' + K.lei(p.pkg.rest, 2) + ' rămâne de încasat.' : '.')));
+            out.push(p.close ? li('x', 'bad', '<b>Pachetul se închide</b>' + (st.why ? ' (pornit singur: ' + esc(st.why) + ')' : '') + ': ' + (p.restCut > 0 ? 'restul de ' + K.lei(p.restCut, 2) + ' nu se mai încasează. ' : 'nu mai rămâne nimic de încasat. ') + 'Rămâne plătit ' + K.lei(paidAfter, 2) + '.')
+              // not closed: the package keeps its value, what goes back is owed again
+              : li('receipt', '', 'Pachetul rămâne: plătit ' + K.lei(paidAfter, 2) + ' din ' + K.lei(p.pkg.total, 2) + ', rest ' + K.lei(p.pkg.rest + p.fromPkg, 2) + ' de încasat.'));
           }
           out.push(li('undo', '', 'Se poate anula oricând, din rândul rambursării.'));
           return '<h4>Ce se întâmplă</h4><ul class="rf-sum">' + out.join('') + '</ul>';
@@ -877,7 +914,7 @@
             K.ui().toast('Rambursat ' + K.lei(r.lei, 2) + (r.close ? '. Pachetul e închis.' : '.'), 'success');
             K.reload(); DUES.at = 0; loadDues(true);
           } catch (err) {
-            K.ui().toast(err.code === 'over_paid' ? 'E mai mult decât s-a plătit.' : err.code === 'invalid_date' ? 'Data: de la plată (și din noiembrie) până azi.' : err.code === 'missing_reason' ? 'Scrie motivul.' : err.code === 'forbidden' ? 'Plata e la altă clinică.' : K.errText(err), 'error');
+            K.ui().toast(err.code === 'over_paid' ? 'E mai mult decât s-a plătit.' : err.code === 'invalid_date' ? 'Data: din luna asta, de la plată până azi.' : err.code === 'missing_reason' ? 'Scrie motivul.' : err.code === 'forbidden' ? 'Plata e la altă clinică.' : K.errText(err), 'error');
           }
         }));
         preview();
@@ -973,9 +1010,8 @@
   }
 
   // "+ Adaugă comision": an upsell of hers the payment didn't carry (a package she sold, a zone added); it waits for the
-  // owner's approval, the commission shown is what it would bring (upsell - 60% costs, 10% of the profit)
+  // owner's approval, the commission shown is what it would bring (4% of the money, the one rule shown everywhere)
   function openCommNew() {
-    const RULE = K.commissionRule();
     const d = K.drawer({
       title: 'Adaugă comision', icon: 'percent', width: 520, 
       body: '<form class="k-form" data-form>' +
@@ -994,7 +1030,7 @@
         const picker = K.clientPicker(f.clientName, f.clientPhone);
         const est = () => {
           const v = Number(f.amount.value) || 0;
-          el.querySelector('[data-comm-est]').innerHTML = v > 0 ? '<span>Comision: <b>' + K.lei(K.commissionOf(v), 2) + '</b> (' + K.lei(v) + ' - ' + RULE.cost + '% = ' + K.lei(K.profitOf(v), 2) + ', × ' + RULE.rate + '%), după aprobare.</span>' : '';
+          el.querySelector('[data-comm-est]').innerHTML = v > 0 ? '<span>Comision: <b>' + K.lei(K.commissionOf(v), 2) + '</b>, 4% din banii încasați, după aprobare.</span>' : '';
         };
         f.amount.addEventListener('input', est);
         el.querySelector('[data-k-close2]').addEventListener('click', () => d.close());
@@ -1165,9 +1201,12 @@
           '<section class="k-card"><div class="k-card-head"><h3>' + icon('percent') + 'Upsellurile tale</h3><span class="k-sub">' + (pay ? lei2(pay.commission) + ' comision' : '') + '</span></div>' +
             (inMonth.length ? '<div class="k-list">' + inMonth.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).map((s) => {
               const st = SALE_STATUS[s.status] || { label: s.status, tone: '' };
-              const val = s.status === 'approved' ? Number(s.commission || 0) : (s.commission ? Number(s.commission) : K.commissionOf(s.amount));
+              // what it has brought so far (api/_lib/commission.js summaryOf: 4% of the money received, minus the refunds)
+              const cashR = s.cash && s.cash.rule === 'cash';
+              const val = s.cash ? Number(s.cash.lei) || 0 : s.status === 'approved' ? Number(s.commission || 0) : (s.commission ? Number(s.commission) : K.commissionOf(s.amount));
               return '<div class="k-row' + (s.status === 'pending' ? ' is-wait' : '') + '"><div class="k-row-main"><div class="k-row-title">' + esc(s.client || s.treatment) + '</div><div class="k-row-sub">' + esc(K.dateShort(s.date)) + ' · ' + esc(String(s.treatment || '').replace(/^Upsell · /, '')) + '</div>' +
-                '<div class="cb-calc"><span>Upsell <b>' + K.lei(s.amount) + '</b></span><span>- ' + RULE.cost + '%</span><span>= <b>' + K.lei(K.profitOf(s.amount), 2) + '</b></span><span>× ' + RULE.rate + '%</span></div></div>' +
+                '<div class="cb-calc">' + (cashR ? '<span>Încasat <b>' + K.lei(s.cash.paid, 2) + '</b> din ' + K.lei(s.amount) + '</span><span>4% din banii încasați</span>' + (s.cash.rest > 0 ? '<span>încă ' + K.lei(s.cash.restLei, 2) + ' la restul</span>' : '')
+                  : '<span>Upsell <b>' + K.lei(s.amount) + '</b></span><span>4% din valoare</span>') + '</div></div>' +
                 '<div class="k-row-end">' + (s.status === 'pending' && s.origin === 'manual' ? '<button type="button" class="k-btn is-ghost is-sm" data-comm-cancel="' + esc(s.id) + '">Retrage</button>' : '') + (s.status === 'approved' ? '' : '<span class="k-tag is-' + st.tone + '">' + st.label + '</span>') + '<span class="k-amount">+' + K.lei(val, 2) + '</span></div></div>';
             }).join('') + '</div>'
               : K.empty('trend', 'Niciun upsell încă', 'Upsellurile la tratamentele făcute de tine apar aici, cu comisionul lor.', me.role === 'cosmetician' ? '<button type="button" class="k-btn is-accent is-sm" data-comm-new>' + icon('plus') + 'Adaugă comision</button>' : '')) + '</section>') +
@@ -1185,7 +1224,7 @@
       '<button type="button" class="k-btn is-outline" data-go-train>' + icon('book') + 'Manualul de vânzări</button></section>';
 
     // ---- every number this page can show (her pick, K.prefs 'sal.kpis') and its blocks ('sal.blocks')
-    const st = (ic, label, value, sub, cls) => '<div class="k-stat' + (cls ? ' ' + cls : '') + '"><div class="k-stat-top"><span class="k-stat-ic">' + icon(ic) + '</span>' + label + '</div><div class="k-stat-value">' + value + '</div><div class="k-stat-sub">' + sub + '</div></div>';
+    const st = (ic, label, value, sub, cls) => '<div class="k-stat' + (cls ? ' ' + cls : '') + '"><div class="k-stat-top"><span class="k-stat-ic">' + icon(ic) + '</span><span class="k-stat-l">' + label + '</span></div><div class="k-stat-value">' + value + '</div><div class="k-stat-sub">' + sub + '</div></div>';
     const bkk = pay && pay.booking;
     const bestDone = days.map((dd, i) => [dd, daily[i]]).filter((x) => x[1] > 0).sort((a, b) => b[1] - a[1])[0];
     const SAL = {
@@ -1227,7 +1266,9 @@
       history: () => histHtml,
       tips: () => tips,
     };
-    cpanel.querySelector('[data-body]').innerHTML = hero + salBlocks.map((b) => BLOCK[b]()).join('');
+    // her own row of the 1.500 lei a day (this month): right under the pay, the same bar the manager's condition draws
+    const dt = isNow && me.role === 'cosmetician' && D.salary && D.salary.dayTarget ? K.dayTargetHtml(D.salary.dayTarget, me.name) : '';
+    cpanel.querySelector('[data-body]').innerHTML = hero + dt + salBlocks.map((b) => BLOCK[b]()).join('');
 
     const ch = cpanel.querySelector('[data-cbchart]');
     if (ch) K.chart(ch, {
@@ -1264,6 +1305,17 @@
   // the bonus of a month: final (the owner closed it), estimated (the costs are in), or not yet known
   const mgBonus = (m) => (m.final ? { lei: m.final.lei, kind: 'final' } : m.estimate ? { lei: m.estimate.bonus, kind: 'estimat' } : null);
 
+  // a cosmetician's own row of the condition (her Salariu, her Panou): „Încasat pe zi lucrată · țintă 1.500 lei”, net of
+  // the refunds, her row only
+  K.dayTargetHtml = (t, name) => {
+    const top = t.min * 4 / 3, pct = Math.min(100, (t.perDay / top) * 100), need = Math.max(1, t.min - t.perDay);
+    return '<section class="k-card mg-mine"><div class="k-card-head"><h3>' + icon('target') + 'Încasat pe zi lucrată</h3><span class="k-sub">țintă ' + K.lei(t.min) + '</span></div>' +
+      '<div class="mg-person' + (t.days ? (t.ok ? ' is-ok' : ' is-low') : ' is-none') + '">' + K.avatar(name || '', 36) +
+        '<div class="mg-p-main"><div class="mg-p-top"><b>Tu</b><em>' + (t.days ? K.lei(t.perDay) + ' / zi' : 'încă nu') + '</em></div>' +
+          '<div class="mg-bar"><i style="--w:' + pct + '%"></i><s style="left:75%"></s></div>' +
+          '<small>' + (t.days ? K.plural(t.days, 'zi lucrată', 'zile lucrate') + ' · ' + K.lei(t.collected) + ' încasat' + (t.ok ? ', peste țintă' : ' · încă ' + K.lei(need) + ' pe zi') : 'Nicio zi lucrată luna asta.') + '</small></div>' +
+        '<span class="mg-p-ic">' + icon(t.ok ? 'check' : t.days ? 'x' : 'minus') + '</span></div></section>';
+  };
   function mgCondHtml(cond) {
     const top = cond.min * 4 / 3; // the bar's end: 2.000 lei a day, the 1.500 mark at three quarters
     const low = cond.people.filter((p) => p.days && !p.ok);

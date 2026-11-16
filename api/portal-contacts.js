@@ -241,7 +241,7 @@ module.exports = async (req, res) => {
         .sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 60)
         .map((a) => ({ id: a.id, date: a.date, time: a.time, treatment: a.treatment, status: a.status, location: a.location, cosmeticianName: a.cosmeticianName || '', amount: a.amount || 0 }));
       const payments = sales.filter((s) => s.source === 'incasare' && s.clientId === client.id).sort((a, b) => (a.date < b.date ? 1 : -1))
-        .map((s) => ({ id: s.id, date: s.date, amount: s.amount, treatment: s.treatment, method: s.method }));
+        .map((s) => ({ id: s.id, date: s.date, amount: s.amount, treatment: s.treatment, method: s.method, ...(s.kind === 'refund' ? { kind: 'refund' } : {}) })); // a refund: counted apart from the payments
       // what she still owes for a package, and her last visit
       const D = require('./_lib/dues');
       const dues = ((await D.openFor({ readJSON, writeJSON }, [client.id]).catch(() => ({})))[client.id] || []).map((d) => ({ id: d.id, name: d.what || 'pachet', total: d.total, rest: d.rest }));

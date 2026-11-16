@@ -151,15 +151,30 @@ module.exports = async (req, res) => {
         if (!Number.isFinite(n) || n < 0 || n > 60) { res.status(400).json({ error: 'invalid_leave_days' }); return; }
         employee.annualLeaveDays = n;
       }
-      // Salariul net (în mână), lei / month: the base of "Salariu" (_lib/payroll.js)
+      // Salariul net (în mână), lei / month: the base of "Salariu" (_lib/payroll.js), from a day on (netSalaryFromDate,
+      // „de la ce dată”, today when not given): the months before it keep the salary they had (salaryHistory)
       if (netSalary !== undefined && netSalary !== '') {
+        const PAY = require('./_lib/payroll');
         const n = Math.round(Number(netSalary));
         if (!Number.isFinite(n) || n < 0 || n > 100000) { res.status(400).json({ error: 'invalid_salary' }); return; }
-        // the month the salary starts counting from (no salary shown in the months before it)
-        if (n > 0 && !employee.netSalaryFrom) employee.netSalaryFrom = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date()).slice(0, 7);
-        // the day it changed: the manager's probation reminder goes once the salary was changed after the probation
-        if (n !== (Number(employee.netSalary) || 0)) employee.netSalaryChangedAt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
-        employee.netSalary = n;
+        const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+        const from = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.netSalaryFromDate || '')) ? req.body.netSalaryFromDate : today;
+        if (from < '2020-01-01' || from > '2100-01-01') { res.status(400).json({ error: 'invalid_date' }); return; }
+        const was = PAY.salaryHistoryOf(employee);
+        const hist = PAY.withSalary(employee, from, n);
+        if (JSON.stringify(hist) !== JSON.stringify(was)) {
+          employee.salaryHistory = hist;
+          // dated in a month whose salaries are closed: the owner hears it (_lib/month-close.js)
+          for (let m = from.slice(0, 7) < '2026-10' ? '2026-10' : from.slice(0, 7); m < today.slice(0, 7); m = new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 1)).toISOString().slice(0, 7)) {
+            await require('./_lib/month-close').changed({ readJSON, writeJSON }, m, 'Salariu schimbat pentru ' + String(employee.name || '').split(' ')[0] + ' din ' + from);
+          }
+          // the day it changes: the manager's probation reminder goes once the salary was changed for after the probation
+          employee.netSalaryChangedAt = from;
+        } else if (!Array.isArray(employee.salaryHistory)) employee.salaryHistory = was;
+        // the salary in force today, and the month the first one started (older readers)
+        employee.netSalary = PAY.salaryOn(employee, today);
+        const first = (employee.salaryHistory || [])[0];
+        if (first && first.from) employee.netSalaryFrom = first.from.slice(0, 7);
       }
       // the manager: the net salary after the probation (information on her Salariu and the owner's reminder; the pay
       // itself changes only when the owner changes netSalary)
@@ -185,7 +200,7 @@ module.exports = async (req, res) => {
       await writeJSON('data/employees.json', employees);
       res.status(200).json({
         ok: true,
-        employee: { id: employee.id, name: employee.name, location: employee.location, role: employee.role, annualLeaveDays: employee.annualLeaveDays, contractedHoursPerDay: employee.contractedHoursPerDay, netSalary: employee.netSalary || 0 },
+        employee: { id: employee.id, name: employee.name, location: employee.location, role: employee.role, annualLeaveDays: employee.annualLeaveDays, contractedHoursPerDay: employee.contractedHoursPerDay, netSalary: employee.netSalary || 0, salaryHistory: require('./_lib/payroll').salaryHistoryOf(employee) },
       });
       return;
     }
@@ -273,6 +288,8 @@ module.exports = async (req, res) => {
         await writeJSON(TB.ADJ, adjs);
         await notify({ readJSON, writeJSON }, emp.id, { kind: 'time', tone: minutes > 0 ? 'good' : 'info', title: (minutes > 0 ? 'ORE SUPLIMENTARE ➕ - ' : 'ORE SUPLIMENTARE ➖ - ') + hm(Math.abs(minutes)).replace(/^[+]/, ''), text: note || 'Adăugate.', go: 'condica' });
       } else { res.status(400).json({ error: 'invalid_kind' }); return; }
+      // a month whose salaries are closed: the owner hears it (_lib/month-close.js)
+      await require('./_lib/month-close').changed({ readJSON, writeJSON }, date.slice(0, 7), (b.kind === 'commission' ? 'Comision' : 'Ore suplimentare') + ' adăugat de mână pentru ' + String(emp.name || '').split(' ')[0] + ' pe ' + date);
       res.status(200).json({ ok: true, items: await manualList() });
       return;
     }

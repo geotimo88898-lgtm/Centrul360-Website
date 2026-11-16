@@ -321,6 +321,14 @@
     return '<p class="pf-hero-line">' + icon('trophy') + '<span>Bonus (5%) <b>' + (C.bonusOk ? K.lei(bonus) : '0 lei') + '</b>' +
       (C.bonusOk ? ' <em class="is-ok">condiția e îndeplinită până acum</em>' : ' <em class="is-no">condiția nu e îndeplinită încă' + (bonus ? ' (ar fi ' + K.lei(bonus) + ')' : '') + '</em>') + '</span></p>';
   }
+  // the manager's bonus under the salaries: paid with them, but never one of the costs (it is 5% of the profit worked out
+  // from these very costs), so a memo line, with the reason in one line
+  function bonusMemoHtml() {
+    const C = PL.C;
+    if (!C || isFuture() || ((C.bonusOk === null || C.bonusOk === undefined) && C.bonusFinal == null)) return '';
+    const fin = C.bonusFinal != null, lei = fin ? C.bonusFinal : C.bonusOk ? Math.round(Math.max(0, C.profit) * 0.05) : 0;
+    return '<div class="pf-memo"><div class="pf-memo-main"><b>Bonus 5% din profit</b><small>' + (fin ? 'final' : 'estimat până acum') + ' · nu intră în costuri: se calculează din profitul lor</small></div><b class="pf-memo-lei">' + K.lei(lei) + '</b></div>';
+  }
   // the month's costs complete and saved (the manager's bonus waits for it): what is missing, and the two quick fixes
   function monthStateHtml() {
     const C = PL.C, E = C.entry, miss = C.costs.rows.filter((r) => r.lei == null);
@@ -362,6 +370,7 @@
         if (!items.length) foot = '<p class="pf-g-empty">Ce mai plătești tu: o dată sau în fiecare lună.</p>';
         if (PL.P && PL.P.copyable) foot += '<button type="button" class="pf-g-foot" data-pf-copy>' + icon('copy') + 'Copiază din luna trecută <span>' + PL.P.copyable + '</span></button>';
       }
+      if (g.key === 'sal' && f === 'all') foot += bonusMemoHtml();
       return '<section class="pf-group" data-g="' + g.key + '">' + head(g, items.length) + (items.length ? '<ul class="pf-list">' + items.map(rowHtml).join('') + '</ul>' : '') + foot + '</section>';
     }).join('');
     if (html) return html;

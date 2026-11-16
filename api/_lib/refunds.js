@@ -10,8 +10,10 @@
 // paid on it (minus what was already refunded).
 //
 // What it changes:
-//   the package (_lib/dues.js): a negative part {saleId: the refund, amount: -lei} lowers what was paid, and its value goes
-//     down by the same (the rest she owes stays). "Închide pachetul": the rest is cancelled too (nothing left to collect).
+//   the package (_lib/dues.js): a negative part {saleId: the refund, amount: -lei} lowers what was paid; its value stays
+//     (the owner, 16.11: a 3.000 package with its 1.000 advance given back is „plătit 0 din 3.000, rest 3.000”: she still
+//     owes it if she comes). "Închide pachetul": the package ends, its value comes down to what is left paid, nothing more
+//     to collect (the page turns it on by itself when everything paid goes back, or the reason says she isn't coming).
 //   the commission (_lib/commission.js): 4% of the money taken out of an upsell comes off whoever earned it, in the
 //     refund's month; one still waiting for approval simply waits for less.
 // Undoing it (refund_undo) takes all of it back: the row goes, the package gets its part and its value back.
@@ -99,7 +101,8 @@ function plan(sales, dues, b) {
   let left = lei;
   const take = [];
   avail.forEach((p) => { if (left <= 0) return; const t = r2(Math.min(left, p.lei)); left = r2(left - t); take.push({ saleId: p.saleId, key: p.key, dueId: p.dueId || '', upsellId: p.upsellId || '', lei: t }); });
-  const close = !!(b.close && due && D.rest(due) > 0);
+  // closing: the rest never collected (the money given back stays apart, it is the refund itself)
+  const close = !!(b.close && due);
   const restCut = close ? [{ dueId: due.id, upsellId: (upsellOf(sales, due.saleId) || {}).id || '', lei: r2(D.rest(due)) }] : [];
   // the commission that goes, per request (the cash rule: 4% of the money; an older upsell also its rest when closed)
   const CM = require('./commission');
@@ -129,7 +132,8 @@ async function apply(store, sales, p, b, session) {
   const id = crypto.randomUUID();
   const dueCuts = new Map();
   p.take.forEach((t) => { if (t.dueId) dueCuts.set(t.dueId, r2((dueCuts.get(t.dueId) || 0) + t.lei)); });
-  const duesOut = [...dueCuts.entries()].map(([dueId, lei]) => ({ dueId, lei, cut: r2(lei + (p.restCut.find((x) => x.dueId === dueId) || { lei: 0 }).lei) }));
+  // the value comes down only when the package closes: by what goes back and by the rest never collected
+  const duesOut = [...dueCuts.entries()].map(([dueId, lei]) => { const rc = p.restCut.find((x) => x.dueId === dueId); return { dueId, lei, cut: rc ? r2(lei + rc.lei) : 0 }; });
   p.restCut.forEach((x) => { if (!dueCuts.has(x.dueId)) duesOut.push({ dueId: x.dueId, lei: 0, cut: x.lei }); });
   const method = ['card', 'cash', 'transfer'].includes(b.method) ? b.method : sale.method === 'cash_card' ? 'card' : sale.method || 'cash';
   const row = {

@@ -146,8 +146,16 @@
     const ms = D.mySales || [];
     // from November 2026 her month's commission comes from the money received (api/_lib/commission.js, in D.salary)
     const payNow = ((D.salary && D.salary.months) || []).find((m) => m.month === month);
-    const commMonth = payNow && payNow.commissionLines ? payNow.commission : ms.filter((s) => s.status === 'approved' && K.monthOf(s.date) === month).reduce((a, s) => a + Number(s.commission || 0), 0);
-    const commPrev = ms.filter((s) => s.status === 'approved' && K.monthOf(s.date) === prevMonth && s.date <= prevSameDay).reduce((a, s) => a + Number(s.commission || 0), 0);
+    // her commission day by day, as Salariu counts it: the lines of each month (4% of each payment, minus the refunds), the
+    // whole value only in the months before the rule (October 2026 and before)
+    const commDays = (() => {
+      const out = [], withLines = new Set();
+      ((D.salary && D.salary.months) || []).forEach((m) => { if (!m.commissionLines) return; withLines.add(m.month); m.commissionLines.forEach((l) => { if (l.status === 'approved') out.push({ date: l.date, amount: l.lei }); }); });
+      ms.forEach((s) => { if (s.status === 'approved' && s.source !== 'manual' && !withLines.has(K.monthOf(s.date)) && K.monthOf(s.date) < '2026-11') out.push({ date: s.date, amount: Number(s.commission) || 0 }); });
+      return out;
+    })();
+    const commMonth = payNow && payNow.commissionLines ? payNow.commission : commDays.filter((x) => K.monthOf(x.date) === month).reduce((a, x) => a + x.amount, 0);
+    const commPrev = commDays.filter((x) => K.monthOf(x.date) === prevMonth && x.date <= prevSameDay).reduce((a, x) => a + x.amount, 0);
     const pendingMine = ms.filter((s) => s.status === 'pending');
     const pendingEst = payNow && payNow.commissionLines ? payNow.commissionWaiting : pendingMine.reduce((a, s) => a + (s.commission ? Number(s.commission) : K.commissionOf(s.amount)), 0);
     const attributed = inc.filter((s) => s.performedBy === me.id && K.monthOf(s.date) === month).reduce((a, s) => a + Number(s.amount || 0), 0);
@@ -175,8 +183,8 @@
         (callNow.length ? '<button type="button" class="k-btn db-glass" data-go="pipeline" data-then="pipeline:queue">' + icon('zap') + 'Coada de apeluri · ' + callNow.length + '</button>' : '');
     const custom = '<button type="button" class="k-btn db-glass db-custom" data-act="customize" title="Alege cifrele și secțiunile panoului">' + icon('sliders') + 'Personalizează</button>';
 
-    // Chart: clinic revenue for admin/reception; the cosmetician's own approved commission otherwise.
-    const chartSrc = role === 'cosmetician' ? ms.filter((s) => s.status === 'approved').map((s) => ({ date: s.date, amount: s.commission })) : inc;
+    // Chart: clinic revenue for admin/reception; the cosmetician's own commission otherwise, by the day it came (Salariu's lines)
+    const chartSrc = role === 'cosmetician' ? commDays : inc;
     const series30 = dailySeries(chartSrc, 30);
     const prev30 = (() => { const out = []; for (let i = 59; i >= 30; i--) { const d = K.addDays(today, -i); out.push(sumBy(chartSrc, d, d)); } return out; })();
     const stat = (cls, go, then, ic, label, value, fmt, key, sub, extra) =>
@@ -190,7 +198,8 @@
     const payCard = D.isAdmin
       ? '<section class="k-card db-pay"><div class="k-card-head"><h3>' + icon('wallet') + 'Salarii · ' + esc(K.monthLabel(month)) + '</h3></div>' +
         '<b class="db-pay-total" data-count="' + Math.round(tsum('total')) + '" data-fmt="lei" data-key="db-payt">0 lei</b><span class="db-pay-sub">de plată până azi, toată echipa</span>' +
-        '<div class="db-pay-lines"><div><span>Salarii de bază</span><b>' + K.lei(tsum('base')) + '</b></div><div><span>Ore suplimentare</span><b>' + lei2(tsum('overtimeLei')) + '</b></div><div><span>Comision + bonus</span><b>' + lei2(tsum('commission') + tsum('bonus') + tsum('manual')) + '</b></div></div>' +
+        '<div class="db-pay-lines"><div><span>Salarii de bază</span><b>' + K.lei(tsum('base')) + '</b></div><div><span>Ore suplimentare</span><b>' + lei2(tsum('overtimeLei')) + '</b></div><div><span>Comision + bonus</span><b>' + lei2(tsum('commission') + tsum('bonus') + tsum('manual')) + '</b></div>' +
+          (tsum('managerBonus') ? '<div><span>Bonus 5% din profit</span><b>' + lei2(tsum('managerBonus')) + '</b></div>' : '') + '</div>' +
         '<button type="button" class="k-btn is-sm is-outline" data-go="angajati">' + icon('users') + 'Echipa · Salarii</button></section>'
       : myPay ? '<section class="k-card db-pay"><div class="k-card-head"><h3>' + icon('wallet') + 'Salariul meu · ' + esc(K.monthLabel(month)) + '</h3></div>' +
         '<b class="db-pay-total" data-count="' + myPay.total + '" data-fmt="lei" data-key="db-payme">0 lei</b><span class="db-pay-sub">în mână, până azi</span>' +
@@ -280,18 +289,23 @@
     const BLOCK = {
       chart: { label: role === 'cosmetician' ? 'Graficul comisionului' : 'Graficul încasărilor', size: 'wide', ok: true },
       pay: { label: D.isAdmin ? 'Salariile echipei' : 'Salariul meu', size: 'narrow', ok: !!payCard },
+      // a cosmetician's own 1.500 lei a day (net of the refunds), the same bar as the manager's condition (portal-money.js)
+      target: { label: 'Încasat pe zi lucrată', size: 'narrow', ok: role === 'cosmetician' && !!(D.salary && D.salary.dayTarget && K.dayTargetHtml) },
       today: { label: role === 'cosmetician' ? 'Clientele mele azi' : 'Ziua de azi', size: 'wide', ok: true },
       bonus: { label: 'Bonusul de programări', size: 'narrow', ok: !!bonusCard },
       team: { label: 'Echipa în pipeline', size: 'full', ok: !!D.isAdmin },
     };
-    const DEF_BLOCKS = ['chart', 'pay', 'today', 'bonus', 'team'];
+    const DEF_BLOCKS = ['chart', 'pay', 'target', 'today', 'bonus', 'team'];
     const chosenBlocks = (K.prefs.get('dash.blocks', null) || DEF_BLOCKS).filter((b) => BLOCK[b] && BLOCK[b].ok);
+    // her target is new (16.11): a saved order from before it gets it after her pay
+    if (BLOCK.target.ok && !(K.prefs.get('dash.blocks', null) || DEF_BLOCKS).includes('target')) chosenBlocks.splice(Math.max(0, chosenBlocks.indexOf('pay') + 1), 0, 'target');
     customizeCtx = { KPI, mineKpi, DEF: DEF_KPI[role] || [], BLOCK, DEF_BLOCKS: DEF_BLOCKS.filter((b) => BLOCK[b].ok), kpiNow: chosenKpi, blocksNow: chosenBlocks };
     const blockHtml = {
       chart: () => '<section class="k-card db-chart-card"><div class="k-card-head"><h3>' + icon('trend') + (role === 'cosmetician' ? 'Comisionul meu' : 'Încasări') + ' · ultimele 30 de zile</h3>' +
         '<div class="k-legend"><span><i style="background:var(--accent)"></i>Ultimele 30 zile · ' + K.lei(series30.reduce((a, x) => a + x.v, 0)) + '</span><span><i style="background:var(--muted-2)"></i>Cele 30 dinainte</span></div></div>' +
         '<div data-chart data-sig="' + series30.map((x) => Math.round(x.v)).join(',') + '|' + prev30.map((v) => Math.round(v)).join(',') + '"></div></section>',
       pay: () => payCard,
+      target: () => (BLOCK.target.ok ? K.dayTargetHtml(D.salary.dayTarget, me.name) : ''),
       // the owner's Panou (new look) has no KPI row: what comes next today sits here, once (the appointments, who to call)
       today: () => '<section class="k-card db-today"><div class="k-card-head"><h3>' + icon('clock') + (role === 'cosmetician' ? 'Clientele mele azi' : 'Ziua de azi') + '</h3>' +
         (D.isAdmin && document.documentElement.classList.contains('ui-nou') ? '<div class="db-today-meta"><span><b>' + live.length + '</b> ' + (live.length === 1 ? 'programare' : 'programări') + (confirmed ? ' · ' + confirmed + ' confirmate' : '') + '</span>' +
@@ -333,8 +347,9 @@
     if (chartBox && !chartBox.children.length) K.chart(chartBox, {
       labels: series30.map((x) => K.dateShort(x.d)), height: 230, format: K.lei, axis: (v) => (v >= 1000 ? (Math.round(v / 100) / 10).toLocaleString('ro-RO') + 'k' : Math.round(v)),
       series: [
-        { name: 'Perioada anterioară', values: prev30, color: 'var(--muted-2)', kind: 'line', dashed: true },
-        { name: 'Încasări', values: series30.map((x) => x.v), color: 'var(--accent)' },
+        // the chart draws from 0 up: a day a refund took more than came in is drawn at 0 (its sum stays in the tip and the legend)
+        { name: 'Perioada anterioară', values: prev30.map((v) => Math.max(0, v)), color: 'var(--muted-2)', kind: 'line', dashed: true },
+        { name: 'Încasări', values: series30.map((x) => Math.max(0, x.v)), color: 'var(--accent)' },
       ],
       tip: (i) => '<b>' + esc(K.dateLong(series30[i].d)) + '</b><span><i style="background:var(--accent)"></i>' + K.lei(series30[i].v) + '</span><span><i style="background:var(--muted-2)"></i>cu 30 zile înainte: ' + K.lei(prev30[i]) + '</span>',
       onClick: (i) => { K.go('incasari'); setTimeout(() => K.emit('incasari:day', series30[i].d), 250); },

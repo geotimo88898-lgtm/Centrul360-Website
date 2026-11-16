@@ -512,13 +512,13 @@
     // ---------------- Istoric
     function istoricHtml() {
       const ST = { programata: 'Programată', confirmata: 'Confirmată', finalizata: 'Finalizată', reprogramata: 'Reprogramată', anulata: 'Anulată' };
-      const paid = st.pays.reduce((a, p) => a + Number(p.amount || 0), 0);
+      const paid = st.pays.reduce((a, p) => a + Number(p.amount || 0), 0); // net: a refund's row is negative; the count is payments only
       const owed = (st.dues || []).reduce((a, d) => a + Number(d.rest || 0), 0);
       return '<div class="k-grid c2 ct-kpis">' +
         '<div class="k-stat' + (owed > 0 ? ' is-bad' : '') + '"><div class="k-stat-top">' + icon('wallet') + 'Rest de plată</div><div class="k-stat-value">' + K.lei(owed) + '</div>' + (owed > 0 ? '<div class="k-stat-sub">' + esc((st.dues || []).map((d) => d.name + ': ' + K.lei(d.rest)).join(' · ')) + '</div>' : '<div class="k-stat-sub">nu datorează nimic</div>') + '</div>' +
         '<div class="k-stat"><div class="k-stat-top">' + icon('clock') + 'Ultima vizită</div><div class="k-stat-value">' + (st.lastCame ? esc(K.dateShort(st.lastCame)) : '-') + '</div>' + (st.lastCame ? '<div class="k-stat-sub">' + esc(K.relDay(st.lastCame)) + '</div>' : '<div class="k-stat-sub">n-a venit încă</div>') + '</div>' +
         '<div class="k-stat"><div class="k-stat-top">' + icon('calendar') + 'Programări</div><div class="k-stat-value">' + st.appts.length + '</div></div>' +
-        '<div class="k-stat is-good"><div class="k-stat-top">' + icon('wallet') + 'Total plătit</div><div class="k-stat-value">' + K.lei(paid) + '</div><div class="k-stat-sub">' + K.plural(st.pays.length, 'încasare', 'încasări') + '</div></div></div>' +
+        '<div class="k-stat is-good"><div class="k-stat-top">' + icon('wallet') + 'Total plătit</div><div class="k-stat-value">' + K.lei(paid) + '</div><div class="k-stat-sub">' + K.plural(K.pays ? K.pays(st.pays).length : st.pays.length, 'încasare', 'încasări') + '</div></div></div>' +
         (st.appts.length ? '<div class="k-list">' + st.appts.map((a) => '<div class="k-row ct-appt" data-appt="' + esc(a.id) + '" data-appt-date="' + esc(a.date || '') + '" role="button" tabindex="0" title="Deschide programarea"><div class="k-row-main"><div class="k-row-title">' + esc(a.treatment || '-') + '</div><div class="k-row-sub">' + esc(K.dateShort(a.date)) + ' ' + esc(a.time || '') + ' · ' + esc(a.location || '') + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</div></div>' +
           '<div class="k-row-end">' + (a.amount ? '<span class="k-amount">' + K.lei(a.amount) + '</span>' : '') + '<span class="k-tag">' + esc(ST[a.status] || a.status) + '</span></div></div>').join('') + '</div>'
           : K.empty('calendar', 'Nicio programare încă', '')) + ghlHistoryHtml();

@@ -5,9 +5,15 @@
 // A payment is tied to its appointment and, when "Upsell efectuat" was ticked, to a commission
 // request for whoever made the upsell (upsell - 60% costs, 10% of the profit). Both follow:
 //   - update: a request still waiting for approval is kept in step (value, person, date) or
-//     removed when there's no upsell any more; one is created if the correction adds an upsell.
-//     An already approved commission is left as it was.
-//   - delete: the appointment becomes unpaid again and a still-waiting request goes with it.
+//     removed when there's no upsell any more (or the person can't earn commission); one is created if the correction
+//     adds an upsell. An approved one goes when the upsell is taken off, and under the cash rule its value follows the
+//     package's (_lib/commission.js: 4% of what comes in, up to that value).
+//   - delete: the appointment becomes unpaid again and its request goes with it, approved or not (no money, no
+//     commission). A payment that started a package others paid into is not deleted (their parts hang on it).
+//   - a payment with a refund: only its method, categories and note change; its sums, day and person stay (the refund
+//     hangs on them).
+//   - a change of a month before the current one says so (closedMonth: the page warned, Activitate notes it) and, once
+//     that month's salaries are closed, the owner hears it (_lib/month-close.js).
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin, requireRole } = require('./_lib/auth');
@@ -60,6 +66,9 @@ async function handleRefund(req, res) {
     if (!(await mine(sale))) return fail(403, 'forbidden');
     const p = R.plan(sales, dues, b);
     if (p.error) return fail(p.code || 400, p.error, p.max != null ? { max: p.max } : null);
+    // someone who left: a refund after her last day takes nothing off her (_lib/commission.js)
+    const dayOfRefund = isValidDate(b.date) ? b.date : new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+    p.cuts = p.cuts.filter((c) => { const left = require('./_lib/left').leftAt(employees.find((e) => e.id === c.employeeId)); return !(left && dayOfRefund > left); });
     const out = {
       lei: p.lei, max: p.max, whole: p.whole, scope: p.scope, close: p.close, fromPkg: p.fromPkg, fromSession: p.fromSession, pkg: p.pkg,
       restCut: p.restCut.reduce((a, x) => a + x.lei, 0),
@@ -70,10 +79,20 @@ async function handleRefund(req, res) {
 
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
     const date = isValidDate(b.date) ? b.date : today;
-    if (date > today || date < R.FROM || date < sale.date) return fail(400, 'invalid_date');
+    // the money goes back today or on a day of this month (a month before is closed: its salaries are paid)
+    if (date > today || date < R.FROM || date < sale.date || date < today.slice(0, 7) + '-01') return fail(400, 'invalid_date');
     if (!String(b.reason || '').trim()) return fail(400, 'missing_reason');
     const row = await R.apply(store, sales, p, Object.assign({}, b, { date }), session);
     await writeJSON('data/sales.json', sales);
+    // whose commission it cut (approved): she hears it, short, without who made the refund
+    for (const c of p.cuts) {
+      if (c.status !== 'approved' || !(c.lei > 0)) continue;
+      try {
+        await N.notify(store, c.employeeId, { kind: 'commission', tone: 'bad', go: 'comision', tag: 'refund-cut-' + row.id + '-' + c.employeeId,
+          title: 'Comision -' + N.leiTxt(c.lei) + ': rambursare pachet ' + String((p.due && p.due.what) || sale.treatment || '').replace(/^Upsell · /, ''),
+          text: '4% din ' + N.leiTxt(c.cash) + ' dați înapoi' + (row.client ? ', ' + row.client : '') });
+      } catch (e) { /* never blocks the refund */ }
+    }
     // the manager's refund: the owner hears it (bell + phone)
     if (session.role === 'manager') {
       try {
@@ -136,12 +155,20 @@ module.exports = async (req, res) => {
     if (refunded > 0 && action === 'delete') { res.status(409).json({ error: 'has_refunds' }); return; }
     const upsellEntry = sales.find((s) => s.source === 'comision' && s.incasareId === entry.id);
 
+    const MC = require('./_lib/month-close');
+    const monthOf = (d) => String(d || '').slice(0, 7);
+    const D = require('./_lib/dues');
+
     if (action === 'delete') {
+      // a package it started that later payments paid into: those first (their money and commission hang on it)
+      const dues = await readJSON(D.KEY, []);
+      const started = dues.find((d) => d.saleId === entry.id);
+      if (started && (started.payments || []).some((p) => p.saleId !== entry.id && Number(p.amount) > 0)) { res.status(409).json({ error: 'has_package_payments' }); return; }
       const drop = new Set([entry.id]);
-      if (upsellEntry && (upsellEntry.automatic || upsellEntry.status === 'pending')) drop.add(upsellEntry.id);
+      if (upsellEntry) drop.add(upsellEntry.id); // no payment, no commission (approved too)
       await writeJSON('data/sales.json', sales.filter((s) => !drop.has(s.id)));
       // a package paid in parts: this payment's part goes (and the package, when it was its only one)
-      await require('./_lib/dues').resync({ readJSON, writeJSON }, entry.id, null);
+      await D.resync({ readJSON, writeJSON }, entry.id, null);
       if (entry.appointmentId) {
         const appointments = await readJSON('data/appointments.json', []);
         const a = appointments.find((x) => x.id === entry.appointmentId);
@@ -152,7 +179,9 @@ module.exports = async (req, res) => {
           await writeJSON('data/appointments.json', appointments);
         }
       }
-      res.status(200).json({ ok: true });
+      const past = MC.isPast(monthOf(entry.date)) ? MC.monthName(monthOf(entry.date)) : '';
+      await MC.changed({ readJSON, writeJSON }, monthOf(entry.date), 'Încasare ștearsă: ' + entry.amount + ' lei din ' + entry.date);
+      res.status(200).json(Object.assign({ ok: true }, past ? { closedMonth: past } : {}));
       return;
     }
 
@@ -174,7 +203,15 @@ module.exports = async (req, res) => {
       if (!isValidDate(date)) { res.status(400).json({ error: 'invalid_date' }); return; }
       if (!VALID_METHODS.includes(method)) { res.status(400).json({ error: 'invalid_method' }); return; }
       if (!Number.isFinite(amount) || amount <= 0) { res.status(400).json({ error: 'invalid_amount' }); return; }
-      if (refunded > 0 && amount < refunded - 0.005) { res.status(409).json({ error: 'has_refunds' }); return; }
+      // a refund hangs on its sums, its day and its person: only the method, the categories and the note change then
+      if (refunded > 0) {
+        const near = (a, b) => Math.abs((Number(a) || 0) - (Number(b) || 0)) < 0.005;
+        const was = entry.parts || null;
+        const same = near(amount, entry.amount) && date === entry.date && (!performedBy || performedBy === entry.performedBy) &&
+          (!np || (was ? near(np.session, was.session) && near(np.upsellPaid, was.upsell) && near(np.upsellValue, entry.upsell) : near(np.upsellValue, entry.upsell)));
+        if (!same) { res.status(409).json({ error: 'has_refunds' }); return; }
+      }
+      const before = { date: entry.date, amount: Number(entry.amount) || 0, performedBy: entry.performedBy || '', upsell: Number(entry.upsell) || 0 };
       let split = null;
       if (method === 'cash_card') {
         const cash = Math.round(Number(req.body.cashAmount) * 100) / 100;
@@ -200,6 +237,7 @@ module.exports = async (req, res) => {
       if (req.body.treatment) entry.treatment = String(req.body.treatment).slice(0, 200);
       if (req.body.client) entry.client = String(req.body.client).slice(0, 150);
       entry.performedBy = performedBy ? String(performedBy).slice(0, 100) : '';
+      if (req.body.note !== undefined) entry.note = String(req.body.note || '').trim().slice(0, 300);
       let startDue = false;
       if (np) {
         entry.parts = { session: np.session, upsell: np.upsellPaid, due: np.due };
@@ -224,28 +262,40 @@ module.exports = async (req, res) => {
         entry.upsell = value;
       } else if (entry.upsell > amount) entry.upsell = amount;
 
-      // Keep the commission request in step (only while it's still waiting for approval).
+      // Keep the commission request in step: one still waiting follows the payment (value, person, day); an approved one
+      // goes when the upsell is taken off, and under the cash rule its value follows the package's (the commission is 4% of
+      // what comes in up to it). Whoever can't earn commission (not a cosmetician) has no request.
       let next = sales;
+      const employees = await readJSON('data/employees.json', []);
+      const earner = entry.performedBy ? employees.find((e) => e.id === entry.performedBy && e.role === 'cosmetician') : null;
       if (upsellEntry && (upsellEntry.automatic || upsellEntry.status === 'pending')) {
-        if (entry.upsell > 0 && entry.performedBy) {
+        if (entry.upsell > 0 && earner) {
           Object.assign(upsellEntry, { amount: entry.upsell, paidAmount: amount, employeeId: entry.performedBy, date: entry.date, categories, category: categories[0],
             profit: profitOf(entry.upsell), commission: commissionOf(entry.upsell),
             note: 'Upsell ' + entry.upsell + ' lei, minus 60% cheltuieli = ' + profitOf(entry.upsell) + ' lei profit, 10% = ' + commissionOf(entry.upsell) + ' lei' });
         } else next = sales.filter((s) => s.id !== upsellEntry.id);
-      } else if (!upsellEntry && entry.upsell > 0 && entry.performedBy) {
-        const employees = await readJSON('data/employees.json', []);
-        const p = employees.find((e) => e.id === entry.performedBy);
-        if (p && p.role === 'cosmetician') sales.push(portalSale.upsellFor(entry, p.id));
+      } else if (upsellEntry && upsellEntry.status === 'approved') {
+        if (!(entry.upsell > 0)) next = sales.filter((s) => s.id !== upsellEntry.id);
+        else if (require('./_lib/commission').cashRule(upsellEntry) && Math.abs(Number(upsellEntry.amount) - entry.upsell) > 0.005) {
+          Object.assign(upsellEntry, { amount: entry.upsell, paidAmount: amount, profit: profitOf(entry.upsell), commission: commissionOf(entry.upsell) });
+        }
+      } else if (!upsellEntry && entry.upsell > 0 && earner) {
+        sales.push(portalSale.upsellFor(entry, earner.id));
       }
+      // the person changed on a refunded payment is refused above; its refunds keep the payment's person otherwise
 
       await writeJSON('data/sales.json', next);
-      const D = require('./_lib/dues');
       if (np) {
         // its advance on the package it started (whose value may have changed) and its payment on an older one
         await D.resync({ readJSON, writeJSON }, entry.id, amount, { started: np.upsellPaid, total: np.upsellValue > np.upsellPaid ? np.upsellValue : np.upsellPaid, paid: np.due, dropStarted: !np.upsellValue });
         if (startDue) await D.start({ readJSON, writeJSON }, entry, np.upsellValue, np.upsellPaid, entry.upsellWhat || 'Upsell · ' + entry.treatment);
       } else await D.resync({ readJSON, writeJSON }, entry.id, amount); // its part follows the new sum (never above the package)
-      res.status(200).json({ ok: true, entry });
+      // a month before this one: the page warned before saving; Activitate notes it; a closed month: the owner hears it
+      const moneyMoved = before.date !== entry.date || Math.abs(before.amount - amount) > 0.005 || before.performedBy !== entry.performedBy || Math.abs(before.upsell - (Number(entry.upsell) || 0)) > 0.005;
+      const months = [...new Set([monthOf(before.date), monthOf(entry.date)])];
+      const pastM = moneyMoved ? months.filter((m) => MC.isPast(m)) : [];
+      if (moneyMoved) for (const m of months) await MC.changed({ readJSON, writeJSON }, m, 'Încasare corectată: ' + before.amount + ' lei din ' + before.date + (before.date !== entry.date || before.amount !== amount ? ' → ' + amount + ' lei din ' + entry.date : ''));
+      res.status(200).json(Object.assign({ ok: true, entry }, pastM.length ? { closedMonth: pastM.map(MC.monthName).join(', ') } : {}));
       return;
     }
 

@@ -36,6 +36,9 @@
       if (e.key.toLowerCase() === 'r') { e.preventDefault(); decide(first.dataset.sale, 'reject'); }
     });
   }
+  // what an upsell has brought her so far, the number Salariu counts (api/_lib/commission.js summaryOf: from November 2026
+  // 4% of the money received, minus the refunds); a line added by hand: its own sum
+  const commOfSale = (s) => (s && s.cash ? Number(s.cash.lei) || 0 : Number(s && s.commission) || 0);
   function renderApprovals() {
     if (!apanel || !K.data || !K.data.admin) return;
     const pend = K.data.admin.pendingSales.slice().sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -63,7 +66,7 @@
         : '<section class="k-card">' + K.empty('shield', 'Nimic de aprobat', 'Când la o încasare se bifează „Upsell efectuat”, cererea de comision apare aici. Cererile de concediu sunt mai jos.') + '</section>') +
       (decided.length ? '<section class="k-card" style="margin-top:1rem"><div class="k-card-head"><h3>' + icon('clock') + 'Decise recent</h3></div><div class="k-list">' + decided.map((s) =>
         '<div class="k-row">' + K.avatar(s.employeeName, 30) + '<div class="k-row-main"><div class="k-row-title">' + esc(s.treatment) + '</div><div class="k-row-sub">' + esc(s.employeeName) + ' · ' + esc(K.dateShort(s.date)) + ' · ' + K.lei(s.amount) + (s.decisionNote ? ' · „' + esc(s.decisionNote) + '”' : '') + '</div></div>' +
-        '<div class="k-row-end"><span class="k-tag is-' + (s.status === 'approved' ? 'good' : 'bad') + '">' + (s.status === 'approved' ? 'Aprobată · ' + K.lei(s.commission, 2) : 'Respinsă') + '</span></div></div>').join('') + '</div></section>' : '');
+        '<div class="k-row-end"><span class="k-tag is-' + (s.status === 'approved' ? 'good' : 'bad') + '">' + (s.status === 'approved' ? 'Aprobată · ' + K.lei(commOfSale(s), 2) : 'Respinsă') + '</span></div></div>').join('') + '</div></section>' : '');
     K.countAll(apanel);
   }
   async function decide(id, decision) {
@@ -303,10 +306,27 @@
     const pend = sales.filter((s) => s.status === 'pending');
     const recorded = (K.data.incasari || []).filter((s) => s.employeeId === e.id && monthOf(s.date) === month);
     const performed = (K.data.incasari || []).filter((s) => s.performedBy === e.id && monthOf(s.date) === month);
+    // the month's commission as Salariu counts it (Echipa → Salarii, the same row): never the whole value of the upsells
+    const pay = ((A.payroll || []).find((x) => x.id === e.id)) || null;
     return {
-      comm: appr.reduce((a, s) => a + Number(s.commission || 0), 0), approved: appr.length, pending: pend.length,
+      comm: pay ? Number(pay.commission) || 0 : appr.reduce((a, s) => a + commOfSale(s), 0), approved: appr.length, pending: pend.length,
       recorded: recorded.reduce((a, s) => a + Number(s.amount || 0), 0), performed: performed.reduce((a, s) => a + Number(s.amount || 0), 0),
     };
+  }
+  // a new salary's first day, by default: today, or the end of the manager's probation (its post-probation salary) when
+  // that falls in this month or later
+  function salaryFromDefault(e) {
+    const t = K.today();
+    if (e.role === 'manager' && /^\d{4}-\d{2}-\d{2}$/.test(e.roleSince || '')) { const end = K.addDays(e.roleSince, 30); if (end.slice(0, 7) >= t.slice(0, 7)) return end; }
+    return t;
+  }
+  // her salaries with their days, when there is more than one or one starts later (Echipa → the person → Profil)
+  function salaryHistoryHtml(e) {
+    const h = (e.salaryHistory || []).filter((x) => x && x.from);
+    const t = K.today();
+    if (h.length < 2 && !h.some((x) => x.from > t)) return '';
+    return '<div class="k-field full ad-salhist"><span>Istoricul salariului</span><ul>' + h.slice(-4).reverse().map((x) =>
+      '<li><b>' + K.lei(x.lei) + '</b><span>' + (x.from > t ? 'din ' + esc(K.dateLong(x.from)) + ', programat' : 'din ' + esc(K.dateLong(x.from))) + '</span></li>').join('') + '</ul></div>';
   }
   // „a plecat pe 16 nov” (an account turned off before the day was kept: „a plecat”)
   const leftText = (e) => 'a plecat' + (e.leftAt ? ' pe ' + K.dateShort(e.leftAt) : '');
@@ -366,6 +386,10 @@
         '<div data-pane="goals" hidden><div data-goals></div><button type="button" hidden data-addg></button></div>' +
         '<div data-pane="profile"' + (tab === 'profile' ? '' : ' hidden') + '><form class="k-form" data-profile>' +
           K.field('Salariu net (în mână)', '<div class="k-money"><input name="netSalary" type="number" min="0" step="50" inputmode="numeric" value="' + esc(e.netSalary || '') + '" placeholder="0"></div>', 'full', 'Cât primește în mână pe lună. Apare la ' + esc(e.name.split(' ')[0]) + ' în „Salariu”, împreună cu orele suplimentare și ' + (e.role === 'manager' ? 'bonusul.' : e.role === 'receptie' ? 'bonusul de programări.' : 'comisionul.')) +
+          // a new salary counts from a day (the months before keep theirs); shown once the salary is changed
+          '<div class="k-field full ad-salfrom" data-salfrom hidden><span>De la ce dată</span><input name="netSalaryFromDate" type="date" value="' + esc(salaryFromDefault(e)) + '">' +
+            '<small class="k-muted">Lunile dinainte rămân cu salariul vechi. Luna schimbării se plătește pe zile.</small><small class="is-warn" data-salwarn hidden></small></div>' +
+          salaryHistoryHtml(e) +
           // the day her net salary is paid (only the owner sees it: Cheltuieli)
           (e.role === 'admin' ? '' : K.field('Ziua salariului', '<input name="payDay" type="number" min="1" max="31" step="1" inputmode="numeric" value="' + esc(e.payDay || 15) + '">', 'full', 'Ziua din lună în care îi plătești salariul net. Apare doar la tine, în Cheltuieli.')) +
           K.field('Nume', '<input name="name" value="' + esc(e.name) + '" maxlength="100">', 'full') +
@@ -397,7 +421,7 @@
           '<div class="k-stat"><div class="k-stat-top">Aprobate</div><div class="k-stat-value">' + st.approved + '</div></div>' +
           '<div class="k-stat is-warn"><div class="k-stat-top">În așteptare</div><div class="k-stat-value">' + st.pending + '</div></div></div>' +
           (sales.length ? '<div class="k-list">' + sales.map((s) => '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(s.treatment) + '</div><div class="k-row-sub">' + esc(K.dateShort(s.date)) + ' · ' + esc(cat(s.category)) + ' · ' + K.lei(s.amount) + '</div></div>' +
-            '<span class="k-tag is-' + (s.status === 'approved' ? 'good' : s.status === 'pending' ? 'warn' : 'bad') + '">' + (s.status === 'approved' ? K.lei(s.commission, 2) : s.status === 'pending' ? 'În așteptare' : 'Respinsă') + '</span></div>').join('') + '</div>'
+            '<span class="k-tag is-' + (s.status === 'approved' ? 'good' : s.status === 'pending' ? 'warn' : 'bad') + '">' + (s.status === 'approved' ? K.lei(commOfSale(s), 2) : s.status === 'pending' ? 'În așteptare' : 'Respinsă') + '</span></div>').join('') + '</div>'
             : K.empty('receipt', 'Nicio vânzare logată', '')) + '</div>',
       footer: (e.active && e.role !== 'admin' ? '<button type="button" class="k-btn is-outline" data-preview title="Vezi portalul exact cum îl vede ' + esc(e.name.split(' ')[0]) + '">' + icon('eye') + 'Intră în cont</button>' : '') +
         '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Închide</button><button type="button" class="k-btn is-primary" data-save' + (tab === 'profile' ? '' : ' hidden') + '>' + icon('check') + 'Salvează</button>',
@@ -469,6 +493,18 @@
         // the clinics of a manager show while the role picked is Manager
         const prof = el.querySelector('[data-profile]');
         if (prof) prof.addEventListener('change', (ev) => { if (ev.target.name === 'role') { const m = el.querySelector('[data-manages]'); if (m) m.style.display = ev.target.value === 'manager' ? '' : 'none'; } });
+        // the salary changed: „de la ce dată” appears (a day in a month before: that month's pay changes, said under it)
+        const salIn = prof && prof.querySelector('input[name=netSalary]'), salFrom = prof && prof.querySelector('[data-salfrom]');
+        const salChanged = () => !!salIn && String(Math.round(Number(salIn.value) || 0)) !== String(Math.round(Number(e.netSalary) || 0));
+        const salWarn = () => {
+          const w = prof.querySelector('[data-salwarn]'), d = prof.querySelector('input[name=netSalaryFromDate]').value;
+          const past = d && d.slice(0, 7) < K.today().slice(0, 7);
+          w.hidden = !past; if (past) w.textContent = 'Luna ' + K.monthLabel(d.slice(0, 7)).split(' ')[0].toLowerCase() + ' e deja închisă: schimbarea modifică salariile și bonusul lunii.';
+        };
+        if (salIn && salFrom) {
+          salIn.addEventListener('input', () => { const on = salChanged(); if (on && salFrom.hidden) { salFrom.hidden = false; if (K.reveal) K.reveal(salFrom); } else if (!on) salFrom.hidden = true; salWarn(); });
+          prof.querySelector('input[name=netSalaryFromDate]').addEventListener('change', salWarn);
+        }
         el.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
           readGoals();
           const tab = el.querySelector('input[name=emptab]').value;
@@ -478,7 +514,7 @@
               if (!v.name) { K.ui().toast('Numele e obligatoriu.', 'error'); return; }
               const manages = LOCS.map(([c]) => c).filter((c) => v['mg|' + c]);
               if (v.role === 'manager' && !manages.length) { K.ui().toast('Alege cel puțin o clinică pentru manager.', 'error'); return; }
-              await K.api('/api/portal-employees', { action: 'update_details', employeeId: e.id, name: v.name, location: v.location, role: v.role, annualLeaveDays: v.annualLeaveDays, contractedHoursPerDay: v.contractedHoursPerDay, netSalary: v.netSalary, payDay: e.role === 'admin' ? undefined : v.payDay, manages: v.role === 'manager' ? manages : undefined,
+              await K.api('/api/portal-employees', { action: 'update_details', employeeId: e.id, name: v.name, location: v.location, role: v.role, annualLeaveDays: v.annualLeaveDays, contractedHoursPerDay: v.contractedHoursPerDay, netSalary: salChanged() ? v.netSalary : undefined, netSalaryFromDate: salChanged() ? v.netSalaryFromDate : undefined, payDay: e.role === 'admin' ? undefined : v.payDay, manages: v.role === 'manager' ? manages : undefined,
                 netSalaryAfter: e.role === 'manager' && v.role === 'manager' ? v.netSalaryAfter : undefined, trainedOfficial: e.role === 'cosmetician' && v.role === 'cosmetician' ? !!v.trainedOfficial : undefined });
               MGRS.at = 0;
             } else if (tab === 'goals') {

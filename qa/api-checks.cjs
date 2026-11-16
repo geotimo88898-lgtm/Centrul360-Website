@@ -597,7 +597,7 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const dA = dueOf(p1.due.id), restA = dA.total - dA.paid;
     const pr = await api('admin', 'portal-incasari', { action: 'refund', id: p1.entry.id, scope: 'payment', amount: 200, reason: 'o ședință mai puțin', date: TODAY });
     const dA2 = dueOf(p1.due.id);
-    check(22, 'partial refund: -200, 8 lei off, paid 200 lower, the rest unchanged', pr.ok && pr.refund.amount === -200 && sumL(linesFor(MONTH, u1)) === 32 && dA2.paid === dA.paid - 200 && dA2.total - dA2.paid === restA && !pr.whole, { err: pr.error, d: [dA, dA2], l: linesFor(MONTH, u1) });
+    check(22, 'partial refund (not closed): -200, 8 lei off, paid 200 lower, the value kept, so 200 more to collect', pr.ok && pr.refund.amount === -200 && sumL(linesFor(MONTH, u1)) === 32 && dA2.paid === dA.paid - 200 && dA2.total === dA.total && dA2.total - dA2.paid === restA + 200 && !pr.whole, { err: pr.error, d: [dA, dA2], l: linesFor(MONTH, u1) });
     const marked = (await api('admin', 'portal-data', null)).incasari.find((s) => s.id === p1.entry.id);
     check(22, 'the payment marked: refunded 200 (partial)', marked && marked.refunded === 200, marked && marked.refunded);
     const over = await api('admin', 'portal-incasari', { action: 'refund', id: p1.entry.id, scope: 'payment', amount: 301, reason: 'x', date: TODAY });
@@ -816,6 +816,194 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const a1 = await TB.syncAdjust({ id: 'z1', employeeId: 's1', date: '2026-11-16', checkIn: '10:00', checkOut: '19:00' }, store, { schedule: sch });
     const a2 = await TB.syncAdjust({ id: 'z2', employeeId: 's1', date: '2026-11-17', checkIn: '09:00', checkOut: '12:00' }, store, { schedule: sch });
     check(24, 'syncAdjust: the 10-19 day pends nothing; an hour short of a short day pends -60', a1 === null && a2 && a2.minutes === -60 && mem['data/time-adjust.json'].length === 1, { a1, a2 });
+  }
+
+  // 23. the money audit (16.11): every place that pays, shows or closes a month's commission and salary agrees
+  {
+    const PAY = require('../api/_lib/payroll'), CMS = require('../api/_lib/commission'), MC = require('../api/_lib/month-close');
+    ROLE.cosmetician = 'e-c1';
+    const empOf = (id) => rd('data/employees.json', []).find((e) => e.id === id);
+    const pay = (id, m) => PAY.monthPay({ emp: empOf(id), month: m, isCurrent: m === MONTH, sales: rd('data/sales.json', []), dues: rd('data/client-dues.json', []), payouts: [], bank: null, attendance: [], appointments: [] });
+    const linesU = (id, m, uid) => (pay(id, m).commissionLines || []).filter((l) => l.upsellId === uid);
+    const sumL = (ls) => Math.round(ls.reduce((a, l) => a + l.lei, 0) * 100) / 100;
+    const dueBy = (saleId) => rd('data/client-dues.json', []).filter((d) => d.saleId === saleId);
+    const salesNow = () => rd('data/sales.json', []);
+    let nA = 0;
+    const appt = (who, date, extra) => { const id = 'au-' + (++nA); wr('data/appointments.json', rd('data/appointments.json', []).concat([Object.assign({ id, date: date || TODAY, time: '10:00', endTime: '11:00', location: 'Timișoara', cosmeticianId: who, clientName: 'Audit ' + id, clientId: 'cl-' + id, treatment: 'Lipo 640', categories: ['corporale'], amount: 300, status: 'confirmata', createdAt: at(day(-3), '10:00') }, extra || {})])); return id; };
+    const sell = async (who, value, paid, o) => { const id = appt(who, o && o.date); return Object.assign(await api('receptie', 'portal-sale', { source: 'incasare', appointmentId: id, method: 'cash', performedBy: who, parts: { session: (o && o.session) || 0, upsell: true, upsellValue: value, upsellPaid: paid, upsellWhat: 'Pachet audit ' + id } }), { apptId: id }); };
+    const upd = (p, parts, extra) => api('admin', 'portal-incasari', Object.assign({ action: 'update', id: p.entry.id, date: p.entry.date, method: 'cash', performedBy: p.entry.performedBy, categories: ['corporale'], parts }, extra || {}));
+
+    // 1. a payment deleted (or its upsell taken off) after approval: the approved request goes, no commission is left
+    const d1 = await sell('e-c1', 2000, 500);
+    await api('admin', 'portal-approve', { saleId: d1.upsell.id, decision: 'approve' });
+    const c0 = pay('e-c1', MONTH).commission;
+    const del = await api('admin', 'portal-incasari', { action: 'delete', id: d1.entry.id });
+    check(23, '1 delete after approval: the approved request goes, her commission 20 lei lower (never the whole value)', del.ok && !salesNow().some((s) => s.id === d1.upsell.id) && Math.abs(pay('e-c1', MONTH).commission - (c0 - 20)) < 0.01 && !dueBy(d1.entry.id).length, { del: del.error, was: c0, now: pay('e-c1', MONTH).commission });
+    const d2 = await sell('e-c1', 1200, 600);
+    await api('admin', 'portal-approve', { saleId: d2.upsell.id, decision: 'approve' });
+    const un = await upd(d2, { session: 0, upsell: false, upsellValue: 0, upsellPaid: 0 }, { amount: 300, parts: { session: 300, upsell: false } });
+    check(23, '1 the upsell unticked after approval: the request goes too', un.ok && !salesNow().some((s) => s.id === d2.upsell.id) && !linesU('e-c1', MONTH, d2.upsell.id).length, { un: un.error });
+    const ghost = { id: 'gh', source: 'comision', origin: 'upsell', incasareId: 'gone', employeeId: 'e-c1', date: TODAY, amount: 3000, status: 'approved', commission: 120 };
+    check(23, '1 linesOf: a cash-rule request whose payment is gone brings nothing (no whole-value fallback)', CMS.linesOf(ghost, CMS.context([ghost], [])).length === 0);
+    const d3 = await sell('e-c1', 1000, 400);
+    const ap3 = rd('data/appointments.json', []); const id3 = appt('e-c1'); ap3.push(Object.assign(rd('data/appointments.json', []).find((a) => a.id === id3), { clientId: 'cl-' + d3.apptId }));
+    wr('data/appointments.json', ap3.filter((a, i, l) => l.findIndex((x) => x.id === a.id) === i).map((a) => (a.id === id3 ? Object.assign(a, { clientId: 'cl-' + d3.apptId }) : a)));
+    const rest3 = await api('receptie', 'portal-sale', { source: 'incasare', appointmentId: id3, method: 'card', performedBy: 'e-c1', dueId: d3.due.id, parts: { session: 0, upsell: false, duePaid: 300 } });
+    const del3 = await api('admin', 'portal-incasari', { action: 'delete', id: d3.entry.id });
+    check(23, '1 a payment that started a package others paid into: not deleted (409), the package and its payments stay', rest3.ok && del3._status === 409 && del3.error === 'has_package_payments' && dueBy(d3.entry.id).length === 1, { rest3: rest3.error, del3 });
+
+    // 2. a refund, then a correction of the payment: the package keeps the refund's cut and its closure; sums locked
+    const r1 = await sell('e-c2', 2000, 500, { session: 300 });
+    await api('manager', 'portal-incasari', { action: 'refund', id: r1.entry.id, scope: 'payment', amount: 200, reason: 'audit', method: 'card' });
+    const dA = JSON.stringify(dueBy(r1.entry.id).map((d) => [d.total, d.paid, !!d.closedAt]));
+    const mA = await upd(r1, { session: 300, upsell: true, upsellValue: 2000, upsellPaid: 500 }, { method: 'card', note: 'corectat' });
+    check(23, '2 after a refund, a method edit: the package keeps the refund cut (total, paid, rest)', mA.ok && JSON.stringify(dueBy(r1.entry.id).map((d) => [d.total, d.paid, !!d.closedAt])) === dA && salesNow().find((s) => s.id === r1.entry.id).note === 'corectat', { mA: mA.error, was: dA, now: dueBy(r1.entry.id) });
+    const r2 = await sell('e-c2', 2000, 500, { session: 300 });
+    await api('admin', 'portal-incasari', { action: 'refund', id: r2.entry.id, scope: 'package', amount: 100, close: true, reason: 'închis', method: 'card' });
+    const mB = await upd(r2, { session: 300, upsell: true, upsellValue: 2000, upsellPaid: 500 }, { method: 'card' });
+    const dB = dueBy(r2.entry.id)[0];
+    check(23, '2 a package a refund closed stays closed after a method edit (no rest comes back)', mB.ok && dB && Math.max(0, dB.total - dB.paid) === 0 && !!dB.closedAt, { mB: mB.error, dB });
+    const mC = await upd(r2, { session: 350, upsell: true, upsellValue: 2000, upsellPaid: 500 });
+    const mD = await upd(r2, { session: 300, upsell: true, upsellValue: 2400, upsellPaid: 500 });
+    check(23, '2 the sums of a refunded payment cannot change (409 has_refunds)', mC._status === 409 && mC.error === 'has_refunds' && mD._status === 409, { mC, mD });
+
+    // 2b. an advance given back without closing: the package keeps its value („plătit 0 din 3.000, rest 3.000”); paid later in
+    // full, the commission is 4% of the 3.000 that stayed in (the money given back no longer fills the cap)
+    const k1 = await sell('e-c1', 3000, 1000);
+    await api('admin', 'portal-approve', { saleId: k1.upsell.id, decision: 'approve' });
+    const kr = await api('admin', 'portal-incasari', { action: 'refund', id: k1.entry.id, scope: 'payment', amount: 1000, reason: 'audit', method: 'cash' });
+    const kd = dueBy(k1.entry.id)[0];
+    check(23, '8 an advance of 1.000 refunded, not closed: plătit 0 din 3.000, rest 3.000', kr.ok && kd.total === 3000 && kd.paid === 0 && !kd.closedAt, { kr: kr.error, kd });
+    const idk = appt('e-c1'); const apk = rd('data/appointments.json', []); apk.find((a) => a.id === idk).clientId = 'cl-' + k1.apptId; wr('data/appointments.json', apk);
+    const kp = await api('receptie', 'portal-sale', { source: 'incasare', appointmentId: idk, method: 'card', performedBy: 'e-c1', dueId: kd.id, parts: { session: 0, upsell: false, duePaid: 3000 } });
+    check(23, '8 then paid 3.000: her commission on it is 120 (4% of what stayed in), the package closed', kp.ok && sumL(linesU('e-c1', MONTH, k1.upsell.id)) === 120 && !!dueBy(k1.entry.id)[0].closedAt, { kp: kp.error, l: linesU('e-c1', MONTH, k1.upsell.id) });
+    const kc = await sell('e-c1', 1000, 1000);
+    const kcl = await api('admin', 'portal-incasari', { action: 'refund', id: kc.entry.id, scope: 'payment', amount: 1000, close: true, reason: 'nu mai vine', method: 'cash' });
+    check(23, '8 a package paid in full, all of it given back and closed: nothing left to collect', kcl.ok && !dueBy(kc.entry.id).some((d) => d.total - d.paid > 0.005), dueBy(kc.entry.id));
+
+    // 3. back-dated money: a visit of a month before is paid today (the visit's day kept); refunds only this month
+    const prevM = new Date(Date.UTC(+MONTH.slice(0, 4), +MONTH.slice(5, 7) - 2, 15)).toISOString().slice(0, 10);
+    const b1 = await sell('e-c2', 1000, 500, { date: prevM });
+    check(23, '3 a visit from last month paid now: dated today, the visit day kept, the upsell dated today', b1.ok && b1.entry.date === TODAY && b1.entry.visitDate === prevM && b1.upsell.date === TODAY, { err: b1.error, e: b1.entry && [b1.entry.date, b1.entry.visitDate] });
+    const rOld = await api('admin', 'portal-incasari', { action: 'refund', id: b1.entry.id, amount: 10, reason: 'x', date: prevM });
+    check(23, '3 a refund dated last month: refused', rOld._status === 400 && rOld.error === 'invalid_date', rOld);
+    const sO = salesNow(); sO.push({ id: 'old-pay', source: 'incasare', employeeId: 'e-mgr', performedBy: 'e-c2', clientId: 'cl-old', client: 'Veche', date: prevM, location: 'Timișoara', categories: ['corporale'], treatment: 'Lipo 640', amount: 400, upsell: 0, method: 'cash', status: 'recorded', createdAt: prevM + 'T10:00:00Z' }); wr('data/sales.json', sO);
+    const eOld = await api('admin', 'portal-incasari', { action: 'update', id: 'old-pay', date: prevM, method: 'cash', performedBy: 'e-c2', amount: 450, categories: ['corporale'] });
+    await new Promise((r) => setTimeout(r, 150));
+    const actOld = rd('data/activity/' + TODAY + '.json', []).filter((x) => x.path === 'portal-incasari' && x.action === 'update');
+    check(23, '3 a payment of last month corrected: the answer names the closed month, Activitate notes it', eOld.ok && eOld.closedMonth && actOld.some((x) => /închisă/.test(x.detail || '')), { e: eOld.closedMonth, act: actOld.slice(-1) });
+
+    // 4. the salary by date: a raise never rewrites the months before; the month it starts is paid by days
+    const Em = rd('data/employees.json', []); const mg = Em.find((e) => e.id === 'e-mgr'); Object.assign(mg, { netSalary: 3000, netSalaryFrom: '2026-09' }); delete mg.salaryHistory; wr('data/employees.json', Em);
+    check(23, '4 migration: an old record reads as one salary from its first month', JSON.stringify(PAY.salaryHistoryOf(empOf('e-mgr'))) === JSON.stringify([{ from: '2026-09-01', lei: 3000 }]) && pay('e-mgr', '2026-10').base === 3000 && pay('e-mgr', '2026-08').base === 0);
+    const raise = await api('admin', 'portal-employees', { action: 'update_details', employeeId: 'e-mgr', name: mg.name, location: mg.location, role: 'manager', netSalary: 4500, netSalaryFromDate: MONTH + '-16' });
+    const dim = new Date(Date.UTC(+MONTH.slice(0, 4), +MONTH.slice(5, 7), 0)).getUTCDate();
+    const want = Math.round(3000 * 15 / dim + 4500 * (dim - 15) / dim);
+    check(23, '4 a raise from the 16th: October stays 3.000, this month by days, the history kept', raise.ok && pay('e-mgr', '2026-10').base === 3000 && pay('e-mgr', MONTH).base === want && (empOf('e-mgr').salaryHistory || []).length === 2, { raise: raise.error, oct: pay('e-mgr', '2026-10').base, now: pay('e-mgr', MONTH).base, want });
+    const MPc = require('../api/_lib/manager-pay'), EXc = require('../api/_lib/expenses');
+    const nextM = new Date(Date.UTC(+MONTH.slice(0, 4), +MONTH.slice(5, 7), 1)).toISOString().slice(0, 7);
+    const trk = EXc.tracker(await MPc.loadCtx(require('../api/_lib/store').readJSON), nextM);
+    const salRow = trk.rows.find((r) => r.key === 'sal:e-mgr'), taxP = trk.rows.find((r) => r.key === 'taxsal');
+    const taxMe = taxP && taxP.calc && taxP.calc.people.find((x) => x.id === 'e-mgr');
+    check(23, '4 Plăți and the salary taxes use the month\'s salary by days', salRow && salRow.base === want && taxMe && taxMe.gross > 0 && require('../api/_lib/ro-salary-tax').personMonth({ baseNet: want, extraNet: Math.max(0, salRow.lei - want), month: MONTH, grossStored: undefined }).state === taxMe.total, { row: salRow && salRow.base, want, tax: taxMe });
+    const pd = await api('admin', 'portal-data');
+    const pe = pd.admin.employees.find((e) => e.id === 'e-mgr');
+    check(23, '4 Echipa gets the salary in force today and the history', pe && pe.netSalary === (TODAY >= MONTH + '-16' ? 4500 : 3000) && pe.salaryHistory.length === 2, pe && [pe.netSalary, pe.salaryHistory]);
+
+    // 5. the package's value raised after approval: the commission follows (4% of what comes in, up to the new value)
+    const v1 = await sell('e-c1', 1000, 500);
+    await api('admin', 'portal-approve', { saleId: v1.upsell.id, decision: 'approve' });
+    const vu = await upd(v1, { session: 0, upsell: true, upsellValue: 2000, upsellPaid: 500, upsellWhat: 'Pachet mărit' });
+    const tc = (pay('e-c1', MONTH).toCome || []).find((t) => t.upsellId === v1.upsell.id);
+    check(23, '5 raised to 2.000 after approval: the request follows (2.000), still to come 1.500 → 60 lei', vu.ok && salesNow().find((s) => s.id === v1.upsell.id).amount === 2000 && tc && tc.rest === 1500 && tc.lei === 60, { vu: vu.error, tc });
+    const id5 = appt('e-c1'); const ap5 = rd('data/appointments.json', []); ap5.find((a) => a.id === id5).clientId = 'cl-' + v1.apptId; wr('data/appointments.json', ap5);
+    const n0 = rd('data/notifications.json', []).length;
+    const p5 = await api('receptie', 'portal-sale', { source: 'incasare', appointmentId: id5, method: 'card', performedBy: 'e-c1', dueId: v1.due.id, parts: { session: 0, upsell: false, duePaid: 1500 } });
+    const bell5 = rd('data/notifications.json', []).slice(n0).filter((n) => n.employeeId === 'e-c1' && /COMISION ✅/.test(n.title));
+    check(23, '5 the rest paid: 60 lei more (80 in all = 4% of 2.000), the bell says the same 60', p5.ok && sumL(linesU('e-c1', MONTH, v1.upsell.id)) === 80 && bell5.length === 1 && /\+60 lei/.test(bell5[0].title), { err: p5.error, l: linesU('e-c1', MONTH, v1.upsell.id), bell: bell5.map((n) => n.title) });
+
+    // 6. every place reads the same commission as Salariu
+    const E6 = rd('data/employees.json', []); E6.find((e) => e.id === 'e-c1').goals = [{ title: 'Comision', metric: 'comision_aprobat_luna', target: 500, reward: 100 }]; wr('data/employees.json', E6);
+    const pc = await api('cosmetician', 'portal-data');
+    const pa = await api('admin', 'portal-data');
+    const row = pa.admin.payroll.find((x) => x.id === 'e-c1'), mine = pc.salary.months[0];
+    const goal = pc.myGoals.find((g) => g.metric === 'comision_aprobat_luna');
+    const tags = pa.admin.allSales.filter((s) => s.employeeId === 'e-c1' && s.status === 'approved' && s.cash).reduce((a, s) => a + s.cash.lei, 0);
+    check(23, '6 Salariu, Echipa (Salarii, Vânzări), the Panou goal: one commission', row.commission === mine.commission && Math.abs(goal.current - (mine.commission + mine.manual)) < 0.01, { row: row.commission, mine: mine.commission, goal: goal && goal.current });
+    check(23, '6 the tags of Aprobări (what each upsell brought) are its lines, never the whole value', pa.admin.allSales.filter((s) => s.employeeId === 'e-c1' && s.status === 'approved' && s.cash && s.cash.rule === 'cash').every((s) => Math.abs(s.cash.lei - CMS.linesOf(s, CMS.context(salesNow(), rd('data/client-dues.json', []), rd('data/employees.json', []))).reduce((a, l) => a + l.lei, 0)) < 0.01) && tags > 0);
+    const t6 = await sell('e-c1', 2000, 500);
+    check(23, '6 the payment answers with the commission as it comes: 20 now, 60 at the rest (the toast)', t6.commission && t6.commission.now === 20 && t6.commission.later === 60, t6.commission);
+
+    // 7. the manager's final bonus: Cheltuieli shows it apart (a memo), Salarii counts it
+    const fins = rd('data/manager-bonus.json', {}); fins['e-mgr|' + MONTH] = { lei: 777, at: new Date().toISOString(), by: 'e-adm' }; wr('data/manager-bonus.json', fins);
+    const cv = await api('admin', 'portal-salariu', null, 'view=costs&month=' + MONTH);
+    const pr7 = (await api('admin', 'portal-data')).admin.payroll.find((x) => x.id === 'e-mgr');
+    check(23, '7 the final bonus: in the manager\'s pay (Salarii), in Cheltuieli as its own memo (bonusFinal), not in the costs', cv.bonusFinal === 777 && pr7.managerBonus === 777 && !cv.costs.rows.some((r) => r.lei === 777), { cv: cv.bonusFinal, pr: pr7 && pr7.managerBonus });
+    delete fins['e-mgr|' + MONTH]; wr('data/manager-bonus.json', fins);
+
+    // 8. KPI „rest de încasat”: a package without its clinic takes the one of the payment that started it
+    const k8a = await api('admin', 'kpi', null, 'period=month');
+    const dd = rd('data/client-dues.json', []); const nl = dd.find((d) => d.saleId === t6.entry.id); delete nl.location; wr('data/client-dues.json', dd);
+    const k8 = await api('admin', 'kpi', null, 'period=month');
+    const list8 = await api('admin', 'portal-incasari', { action: 'dues' });
+    const tmRest = list8.dues.filter((d) => !d.location || d.location === 'Timișoara').reduce((a, d) => a + d.rest, 0);
+    check(23, '8 KPI rest de încasat: a package without a stored clinic still counts, the same as Rest de plată', k8.clinic['Timișoara'].dues.rest === k8a.clinic['Timișoara'].dues.rest && Math.abs(k8.clinic['Timișoara'].dues.rest - tmRest) < 0.01, { before: k8a.clinic['Timișoara'].dues, after: k8.clinic['Timișoara'].dues, list: tmRest });
+
+    // 9. a waiting upsell moved to someone who can't earn commission: the request goes
+    const w9 = await sell('e-c1', 900, 900);
+    const u9 = await api('admin', 'portal-incasari', { action: 'update', id: w9.entry.id, date: w9.entry.date, method: 'cash', performedBy: 'e-rec', categories: ['corporale'], parts: { session: 0, upsell: true, upsellValue: 900, upsellPaid: 900 } });
+    check(23, '9 a waiting upsell moved to reception: no request (the same rule as at payment)', u9.ok && !salesNow().some((s) => s.source === 'comision' && s.incasareId === w9.entry.id), { u9: u9.error });
+
+    // 10. one package per payment: a correction never starts a second one
+    const s10 = salesNow(); const pk = s10.find((s) => s.id === t6.entry.id); delete pk.packageTotal; wr('data/sales.json', s10);
+    await upd(t6, { session: 0, upsell: true, upsellValue: 2000, upsellPaid: 500 }, { method: 'card' });
+    check(23, '10 a correction of a payment without packageTotal: still one package', dueBy(t6.entry.id).length === 1, dueBy(t6.entry.id).length);
+
+    // a refund that cuts her commission: she hears it, short, without who made it
+    await api('admin', 'portal-approve', { saleId: t6.upsell.id, decision: 'approve' });
+    const nr = rd('data/notifications.json', []).length;
+    const rf = await api('manager', 'portal-incasari', { action: 'refund', id: t6.entry.id, amount: 100, reason: 'audit', method: 'card' });
+    const cut = rd('data/notifications.json', []).slice(nr).filter((n) => n.employeeId === 'e-c1');
+    check(23, 'refund: „Comision -4 lei: rambursare pachet …” to her, no name of who did it', rf.ok && cut.length === 1 && /^Comision -4 lei: rambursare pachet Pachet audit/.test(cut[0].title) && !/Ioana|Proba|Constantinescu/.test(cut[0].title + cut[0].text), cut);
+    await api('manager', 'portal-incasari', { action: 'refund_undo', id: rf.refund && rf.refund.id });
+
+    // leaving: nothing after her last day, what she earned before stays
+    const L1 = await sell('e-c1', 2000, 500);
+    await api('admin', 'portal-approve', { saleId: L1.upsell.id, decision: 'approve' });
+    const EL = rd('data/employees.json', []); const c1 = EL.find((e) => e.id === 'e-c1'); Object.assign(c1, { active: false, leftAt: TODAY }); wr('data/employees.json', EL);
+    const sl = salesNow(); sl.push({ id: 'after-left', source: 'incasare', employeeId: 'e-mgr', performedBy: 'e-c2', clientId: 'cl-' + L1.apptId, client: 'x', date: day(1), location: 'Timișoara', categories: ['corporale'], treatment: 'Lipo 640', amount: 500, upsell: 0, parts: { session: 0, upsell: 0, due: 500 }, dueId: L1.due.id, toDue: 500, method: 'card', status: 'recorded', createdAt: new Date().toISOString() });
+    sl.push({ id: 'after-left-r', source: 'incasare', kind: 'refund', refundOf: L1.entry.id, employeeId: 'e-adm', performedBy: 'e-c1', date: day(1), amount: -100, from: [{ saleId: L1.entry.id, key: 'd:' + L1.due.id, dueId: L1.due.id, upsellId: L1.upsell.id, lei: 100 }], dues: [], restCut: [], location: 'Timișoara', method: 'card', status: 'recorded', createdAt: new Date().toISOString() });
+    wr('data/sales.json', sl);
+    const dl = rd('data/client-dues.json', []); const dL = dl.find((d) => d.id === L1.due.id); dL.payments.push({ saleId: 'after-left', amount: 500, at: new Date().toISOString() }); dL.paid += 500; wr('data/client-dues.json', dl);
+    const lL = CMS.linesOf(salesNow().find((s) => s.id === L1.upsell.id), CMS.context(salesNow(), rd('data/client-dues.json', []), rd('data/employees.json', [])));
+    check(23, 'leaving: her 20 lei up to her last day stay, the payment and the refund after it bring her nothing', lL.length === 1 && lL[0].lei === 20 && lL[0].date === TODAY, lL);
+    const cAll = await api('admin', 'portal-salariu', null, 'view=costs&month=' + MONTH);
+    const rowL = (await api('admin', 'portal-data')).admin.payroll.find((x) => x.id === 'e-c1');
+    check(23, 'leaving: Salarii shows her month with what she earned, nothing to come', rowL && rowL.commission === pay('e-c1', MONTH).commission && !(rowL.toCome || []).length && cAll.ok, rowL && [rowL.commission, rowL.toCome]);
+    Object.assign(c1, { active: true }); delete c1.leftAt; wr('data/employees.json', EL);
+
+    // the game's profit: the real month costs (Cheltuieli), no business figure in the code
+    const G = require('../api/_lib/game');
+    const src = fs.readFileSync(path.join(__dirname, '..', 'api', '_lib', 'game.js'), 'utf8');
+    check(23, 'game: no costs written in the code (rents, accounting, leasing)', G.COSTS === undefined && !/rent:\s*\{|leasing:\s*\d|accounting:\s*\d/.test(src));
+    const costs = { months: { [MONTH]: { savedAt: new Date().toISOString(), eurRate: 5, lines: { credits: 1000, rentTm: 100, rentAr: 50, laser: 0, accounting: 300, salaries: null, claude: 0 }, over: {} } } };
+    const M0 = require('../api/_lib/kpi').model({ offers: [], leads: [], appointments: [], sales: [], clients: [], conversations: [], now: Date.now() });
+    const g1 = G.build({ M: M0, employees: rd('data/employees.json', []), sales: [], dues: [], attendance: [], appointments: [], costs, exp: null, eurRate: 5 });
+    const fx = g1.state.engine.fixed, shareNow = g1.state.months.slice(-1)[0].share;
+    check(23, 'game: the month\'s fixed costs are Cheltuieli\'s lines (rents at the euro, credits, accounting)', Math.abs(fx - (1000 + 500 + 250 + 300) * shareNow) < 1 && g1.state.engine.costsKnown === true, { fx, shareNow });
+
+    // a closed month changed: the admin hears it once a day, with what changed
+    const ex = rd('data/expense-tracker.json', null) || { v: 1, months: {} }; ex.months = ex.months || {};
+    ex.months[MONTH] = Object.assign({}, ex.months[MONTH], { parts: Object.assign({}, (ex.months[MONTH] || {}).parts, { 'sal:e-c2': [{ id: 'x1', date: TODAY, lei: 100 }] }) });
+    wr('data/expense-tracker.json', ex);
+    const prevMonth = prevM.slice(0, 7);
+    check(23, 'month close: last month is closed once its salaries are marked paid', await MC.isClosed(require('../api/_lib/store').readJSON, prevMonth));
+    const nc = rd('data/notifications.json', []).length;
+    await api('admin', 'portal-incasari', { action: 'update', id: 'old-pay', date: prevM, method: 'cash', performedBy: 'e-c2', amount: 470, categories: ['corporale'] });
+    await api('admin', 'portal-incasari', { action: 'update', id: 'old-pay', date: prevM, method: 'cash', performedBy: 'e-c2', amount: 480, categories: ['corporale'] });
+    const closeN = rd('data/notifications.json', []).filter((n) => /S-A SCHIMBAT/.test(n.title || '') && String(n.tag || '').startsWith('close-' + prevMonth));
+    const closeDoc = rd(MC.KEY, {})[prevMonth];
+    check(23, 'month close: several changes, one notice per admin (what changed), all of them kept', nc >= 0 && closeN.length >= 1 && new Set(closeN.map((n) => n.employeeId)).size === closeN.length && /Încasare corectată/.test(closeN[0].text) && closeDoc && closeDoc.items.length >= 2, { n: closeN.map((n) => [n.employeeId, n.title]), doc: closeDoc });
   }
 
   // 25. roles, access, notifications (the owner, 16.11): a cosmetician never sees a colleague's split; the owner hears only

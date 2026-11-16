@@ -177,7 +177,8 @@ console.log('long values seeded', emps.length, sales.length, appts.length, leads
 })();
 
 // 4. the commission on the money received and the refunds (16.11): a package paid half now and half later (approved), one
-// still waiting, a refund of part of a payment and a whole-package refund, so Încasări and Salariu show their lines
+// still waiting, a refund of part of a payment and a whole-package refund, so Încasări and Salariu show their lines. The
+// payments that start a package carry its value (packageTotal), as the real ones do
 (() => {
 const f = (p) => path.join(DATA, p.replace(/\//g, '__'));
 const r = (p, d) => { try { return JSON.parse(fs.readFileSync(f(p), 'utf8')); } catch (e) { return d; } };
@@ -187,15 +188,15 @@ const T = '2026-11-', at = (d, h) => T + d + 'T' + String(h).padStart(2, '0') + 
 const pay = (id, d, amount, o) => Object.assign({ id, source: 'incasare', employeeId: 'e-mgr', performedBy: 'e-c1', clientId: 'cl-pk-' + id, client: 'Clienta Pachet', date: T + d, location: 'Timișoara', categories: ['corporale'], treatment: 'Lipo 640', amount, upsell: 0, method: 'card', status: 'recorded', commission: 0, createdAt: at(d, 10) }, o || {});
 const up = (id, sale, d, amount, status, what) => ({ id, source: 'comision', origin: 'upsell', incasareId: sale, employeeId: 'e-c1', date: T + d, categories: ['corporale'], treatment: 'Upsell · ' + what, amount, status, commission: Math.round(amount * 4) / 100, client: 'Clienta Pachet', createdAt: at(d, 10), decidedAt: status === 'approved' ? at(d, 12) : null });
 // 1.000 package: 500 on the 3rd, 500 on the 10th
-sales.push(pay('pk1', '03', 500, { upsell: 1000, upsellWhat: 'Pachet 10 ședințe Lipo', parts: { session: 0, upsell: 500, due: 0 } }), up('pk1-u', 'pk1', '03', 1000, 'approved', 'Pachet 10 ședințe Lipo'));
+sales.push(pay('pk1', '03', 500, { upsell: 1000, packageTotal: 1000, upsellWhat: 'Pachet 10 ședințe Lipo', parts: { session: 0, upsell: 500, due: 0 } }), up('pk1-u', 'pk1', '03', 1000, 'approved', 'Pachet 10 ședințe Lipo'));
 sales.push(pay('pk1b', '10', 500, { clientId: 'cl-pk-pk1', dueId: 'pkd1', toDue: 500, parts: { session: 0, upsell: 0, due: 500 } }));
 dues.push({ id: 'pkd1', clientId: 'cl-pk-pk1', client: 'Clienta Pachet', what: 'Pachet 10 ședințe Lipo', location: 'Timișoara', total: 1000, paid: 1000, saleId: 'pk1', payments: [{ saleId: 'pk1', amount: 500, at: at('03', 10) }, { saleId: 'pk1b', amount: 500, at: at('10', 10) }], createdAt: at('03', 10), closedAt: at('10', 10) });
-// 2.400 package: 800 paid, the rest to come; part of it refunded (300)
-sales.push(pay('pk2', '11', 800, { upsell: 2400, upsellWhat: 'Pachet RF abdomen', parts: { session: 0, upsell: 800, due: 0 } }), up('pk2-u', 'pk2', '11', 2400, 'approved', 'Pachet RF abdomen'));
-sales.push(pay('pk2-r', '14', -300, { kind: 'refund', refundOf: 'pk2', scope: 'payment', clientId: 'cl-pk-pk2', treatment: 'Rambursare · Pachet RF abdomen', reason: 'o zonă mai puțin', from: [{ saleId: 'pk2', key: 'd:pkd2', dueId: 'pkd2', upsellId: 'pk2-u', lei: 300 }], dues: [{ dueId: 'pkd2', lei: 300, cut: 300 }], restCut: [], whole: false, method: 'cash', createdAt: at('14', 15) }));
-dues.push({ id: 'pkd2', clientId: 'cl-pk-pk2', client: 'Clienta Pachet', what: 'Pachet RF abdomen', location: 'Timișoara', total: 2100, paid: 500, saleId: 'pk2', payments: [{ saleId: 'pk2', amount: 800, at: at('11', 10) }, { saleId: 'pk2-r', amount: -300, at: at('14', 15), refund: true }], createdAt: at('11', 10), closedAt: null });
+// 2.400 package: 800 paid, the rest to come; part of it refunded (300), not closed: the value stays, 1.900 to come
+sales.push(pay('pk2', '11', 800, { upsell: 2400, packageTotal: 2400, upsellWhat: 'Pachet RF abdomen', parts: { session: 0, upsell: 800, due: 0 } }), up('pk2-u', 'pk2', '11', 2400, 'approved', 'Pachet RF abdomen'));
+sales.push(pay('pk2-r', '14', -300, { kind: 'refund', refundOf: 'pk2', scope: 'payment', clientId: 'cl-pk-pk2', treatment: 'Rambursare · Pachet RF abdomen', reason: 'o zonă mai puțin', from: [{ saleId: 'pk2', key: 'd:pkd2', dueId: 'pkd2', upsellId: 'pk2-u', lei: 300 }], dues: [{ dueId: 'pkd2', lei: 300, cut: 0 }], restCut: [], whole: false, method: 'cash', createdAt: at('14', 15) }));
+dues.push({ id: 'pkd2', clientId: 'cl-pk-pk2', client: 'Clienta Pachet', what: 'Pachet RF abdomen', location: 'Timișoara', total: 2400, paid: 500, saleId: 'pk2', payments: [{ saleId: 'pk2', amount: 800, at: at('11', 10) }, { saleId: 'pk2-r', amount: -300, at: at('14', 15), refund: true }], createdAt: at('11', 10), closedAt: null });
 // still waiting for approval: 1.500, 600 paid
-sales.push(pay('pk3', '13', 600, { upsell: 1500, upsellWhat: 'Pachet facial', parts: { session: 0, upsell: 600, due: 0 } }), up('pk3-u', 'pk3', '13', 1500, 'pending', 'Pachet facial'));
+sales.push(pay('pk3', '13', 600, { upsell: 1500, packageTotal: 1500, upsellWhat: 'Pachet facial', parts: { session: 0, upsell: 600, due: 0 } }), up('pk3-u', 'pk3', '13', 1500, 'pending', 'Pachet facial'));
 dues.push({ id: 'pkd3', clientId: 'cl-pk-pk3', client: 'Clienta Pachet', what: 'Pachet facial', location: 'Timișoara', total: 1500, paid: 600, saleId: 'pk3', payments: [{ saleId: 'pk3', amount: 600, at: at('13', 10) }], createdAt: at('13', 10), closedAt: null });
 w('data/sales.json', sales); w('data/client-dues.json', dues);
 console.log('commission and refunds seeded');

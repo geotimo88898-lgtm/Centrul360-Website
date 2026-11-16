@@ -32,7 +32,10 @@ async function compute(now) {
   const photoOf = (e) => (e && e.photo ? photoUrl(Object.assign({ id: e.id }, e.photo)) : '');
   // Meta read for real: no error, and the day by day spend came back (an empty list next to ads that spent is a failed read)
   const adsOk = !!(ads && Array.isArray(ads.daily) && !ads.error && !ads.dailyError && !(ads.daily.length === 0 && (ads.rows || []).some((r) => r.spend > 0)));
-  const out = G.build({ M, employees, sales, dues, attendance, tbAll, appointments, adsDaily: adsOk ? ads.daily : [], adsOk, adsFrom: first, doc, now, photoOf });
+  // the real costs of the months (Cheltuieli: Costuri lunare and the records), the same the manager's 5% is made of
+  const MP = require('./_lib/manager-pay');
+  const [costs, exp, eur] = await Promise.all([MP.loadCosts(readJSON), require('./_lib/expenses').loadDoc(readJSON), require('./_lib/eur-rate').eurToday(readJSON, writeJSON).catch(() => null)]);
+  const out = G.build({ M, employees, sales, dues, attendance, tbAll, appointments, adsDaily: adsOk ? ads.daily : [], adsOk, adsFrom: first, doc, now, photoOf, costs, exp, eurRate: eur && eur.rate });
   out.state.adsState = ads.none ? 'none' : adsOk ? 'ok' : 'error';
   return out;
 }

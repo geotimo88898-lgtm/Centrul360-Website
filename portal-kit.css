@@ -82,6 +82,7 @@ button.k-stat:hover{ transform:translateY(-2px); box-shadow:var(--shadow); }
 .k-stat .k-spark{ position:absolute; right:14px; bottom:12px; width:84px; height:30px; opacity:.95; pointer-events:none; overflow:visible; }
 .k-stat:has(.k-spark) .k-stat-sub{ padding-right:92px; }
 .k-stat-top{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.k-stat-top > .k-stat-l{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } /* a long label ends in „…”, never cut */
 .k-delta{ display:inline-flex; align-items:center; gap:.15rem; font-weight:650; font-size:.72rem; padding:.08rem .38rem; border-radius:999px; }
 .k-delta .k-ic{ width:11px; height:11px; }
 .k-delta.is-up{ color:var(--good); background:var(--good-soft); }

@@ -3549,6 +3549,13 @@ html .cn-sts .cn-st th{ letter-spacing:normal !important; text-transform:none !i
 
 /* Echipa → the manager's clinics */
 .ad-manages-list{ display:flex; flex-wrap:wrap; gap:.4rem 1.2rem; padding-top:.2rem; }
+/* Echipa → the salary: from which day, and its history */
+.ad-salfrom input{ max-width:220px; }
+.ad-salfrom small.is-warn{ color:var(--warn); }
+.ad-salhist ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.3rem; }
+.ad-salhist li{ display:flex; align-items:baseline; gap:.6rem; min-width:0; font-size:.86rem; }
+.ad-salhist li b{ flex:none; font-variant-numeric:tabular-nums; }
+.ad-salhist li span{ min-width:0; color:var(--muted); overflow-wrap:anywhere; }
 
 /* the manager's targets on her Panou (portal-manager.js), right under the day's money */
 html.ui-nou #panel-panou.sx-host > .mg-strip{ order:1; }

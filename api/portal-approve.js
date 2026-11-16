@@ -50,10 +50,12 @@ module.exports = async (req, res) => {
     sale.decisionNote = reason ? String(reason).trim().slice(0, 200) : '';
 
     await writeJSON('data/sales.json', sales);
+    // a commission approved into a month whose salaries are closed: the owner hears it (_lib/month-close.js)
+    if (sale.status === 'approved') await require('./_lib/month-close').changed({ readJSON, writeJSON }, String(sale.date).slice(0, 7), 'Comision aprobat pe ' + sale.date + ': ' + String(sale.treatment || 'upsell').replace(/^Upsell · /, ''));
     // from November 2026 the commission comes with the money (_lib/commission.js): what the payments so far brought
     let now = sale.commission, later = '';
     if (sale.status === 'approved' && CM.cashRule(sale)) {
-      const sum = CM.summaryOf(sale, CM.context(sales, await readJSON('data/client-dues.json', [])));
+      const sum = CM.summaryOf(sale, CM.context(sales, await readJSON('data/client-dues.json', []), await readJSON('data/employees.json', [])));
       now = sum.lei;
       if (sum.rest > 0) later = ' · încă ' + leiTxt(sum.restLei) + ' când plătește restul';
     }
