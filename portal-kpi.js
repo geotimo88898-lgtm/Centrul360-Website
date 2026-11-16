@@ -171,7 +171,7 @@
         [x.fill.pct == null ? null : x.fill.pct >= F, 'Calendar 7 zile', P(x.fill.pct) + ' / ' + F + '%'],
         [x.reception.pct == null ? null : x.reception.pct >= 100, 'Leaduri în 5 min', P(x.reception.pct)],
         [!x.waiting, 'Mesaje', x.waiting ? x.waiting + ' așteaptă' : 'zero'],
-        [x.consults.pct == null ? null : x.consults.pct >= 50, 'Consultație → pachet', P(x.consults.pct) + ' / 50%'],
+        [x.consults.pct == null ? null : x.consults.pct >= 50, 'Consultații cu upsell', P(x.consults.pct) + ' / 50%'],
       ];
       const hit = goals.filter((g) => g[0] === true).length, known = goals.filter((g) => g[0] != null).length;
       return '<div class="kq-col"><div class="kq-col-h">' + tag(c) + '<b>' + hit + '</b><small>din ' + known + ' ținte</small></div>' +
@@ -179,7 +179,7 @@
     });
     return sec('mgr', 'kq-mgr is-full', 'Țintele tale', 'În perioada aleasă; calendarul: următoarele 7 zile. Lei pe zi: încasările fiecărei cosmeticiene împărțite la zilele lucrate.',
       '<div class="kq-cols">' + cols.join('') + '</div>' +
-      '<div class="kq-acts"><button type="button" class="k-btn is-sm is-accent" data-mg="george">' + icon('bell') + 'Anunță-l pe George</button><button type="button" class="k-btn is-sm is-outline" data-mg="close">Închide ziua</button>' +
+      '<div class="kq-acts"><button type="button" class="k-btn is-sm is-accent" data-mg="george">' + icon('bell') + 'Trimite feedback pentru reclame</button><button type="button" class="k-btn is-sm is-outline" data-mg="close">Închide ziua</button>' +
         '<button type="button" class="k-btn is-sm is-outline" data-mg="report">Raport</button><span class="kq-acts-l"><button type="button" class="kq-link" data-go="manager/echipa">Echipa' + (pend ? ' <b class="kq-dot">' + pend + '</b>' : '') + '</button><button type="button" class="kq-link" data-go="manager/casa">Casa</button><button type="button" class="kq-link" data-go="manager/rapoarte">Rapoarte</button></span></div>');
   }
 
@@ -223,7 +223,7 @@
     const cons = cl.filter((c) => d.clinic[c].consults.total);
     const rest = cl.reduce((n, c) => n + d.clinic[c].dues.rest, 0);
     if (!pk.count && !cons.length && !rest) return '';
-    return sec('packages', 'kq-packages', 'Pachete', 'Pachet: o plată cu upsell. Consultație → pachet: consultațiile urmate în 7 zile de o plată cu pachet a aceleiași cliente (nu există o legătură directă). De încasat: ce mai au de plătit acum clientele cu pachete în tranșe.',
+    return sec('packages', 'kq-packages', 'Pachete', 'Pachet: o plată cu upsell. Consultații cu upsell: consultațiile urmate în 7 zile de o plată cu upsell sau pachet a aceleiași cliente, după structura din Traininguri (nu există o legătură directă). De încasat: ce mai au de plătit acum clientele cu pachete în tranșe.',
       hero('packages', pk.count || 0, 'num', p ? dl(pk.count || 0, p.packages) : '', pk.count ? '<span>vândute</span> · medie ' + L(pk.avg) + (p ? dl(pk.avg, p.packageAvg, 'lei') : '') : '<span>vândute</span>') +
       (cons.length ? '<ul class="kq-list">' + cons.map((c, i) => { const cs = d.clinic[c].consults; return '<li style="--i:' + i + '">' + ring(cs.pct) + tag(c) + '<span>consultație → pachet</span><b class="' + bad(cs.pct < 50).trim() + '">' + P(cs.pct) + '</b><small>' + cs.withPackage + ' din ' + cs.total + '</small></li>'; }).join('') + '</ul>' : '') +
       (rest ? '<p class="kq-sub">De încasat din pachete: <b>' + K.lei(rest) + '</b></p>' : ''));

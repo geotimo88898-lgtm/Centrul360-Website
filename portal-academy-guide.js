@@ -118,7 +118,7 @@
         '„Echipa” → „Program echipă”: orele fiecăreia pe săptămână. „Notează concediu”: un concediu stabilit pe loc.',
         '„Casa”: închiderile zilei și plățile cu cardul de pe POS.', '„Rapoarte”: raportul săptămânal trimis și ce i-ai spus lui George.'],
       know: ['Pe cele cu „Decide adminul” (pontajul și concediile tale) le decide George.',
-        '„Anunță-l pe George”: când leadurile sunt mult prea multe sau prea puține față de calendar. Alegi cum sunt și scrii de ce.'],
+        '„Trimite feedback pentru reclame”: când leadurile sunt mult prea multe sau prea puține față de calendar. Alegi cum sunt și scrii de ce.'],
       never: 'Salariile, comisioanele, profitul și reclamele nu sunt la tine. Nu le promiți nimănui și nu le discuți cu echipa.' },
     { id: 'm-calendar', t: 'Calendarul și programul echipei', ic: 'calendar', roles: [M], go: 'programari', goL: 'Deschide Calendarul',
       what: 'Calendarul comun al celor două clinici. Faci, confirmi, muți programările și împarți clientele pe cosmeticiene.',
