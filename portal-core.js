@@ -535,6 +535,7 @@
     // still loading: the page asked for is queued (the latest wins) and shown as soon as the app listens
     if (frame.dataset.started) { creativePost({ type: 'c360:navigate', route: creativeRoute }); return; }
     frame.dataset.started = '1';
+    if (DATA.manager) K.badge('condica', DATA.manager.toFix || 0); // the team's pontaj to fix (Condică → De rezolvat); the owner: none
     msg.classList.remove('hidden', 'is-error');
     msg.innerHTML = '<div class="cr-skel"><i></i><i></i><div>' + '<b></b>'.repeat(6) + '</div></div>';
     const ready = K.pageWait(); // the cover stays until Creative's own app has loaded

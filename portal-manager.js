@@ -223,38 +223,25 @@
     const total = list.reduce((n, e) => n + (worked(e) || 0), 0);
     d.set({
       body: '<div class="k-grid c2" style="margin-bottom:1rem">' + stat('', 'calendar', 'Zile pontate', String(list.filter((e) => e.checkIn).length), esc(K.monthLabel(month))) + stat('', 'clock', 'Ore lucrate', fmt(total), 'zilele cu sosire și plecare') + '</div>' +
+        (own ? '' : '<button type="button" class="k-btn is-sm is-outline mg-addday" data-add-day>' + icon('plus') + 'Adaugă o zi</button>') +
         (list.length ? '<div class="k-list">' + list.map((e) => '<div class="k-row' + (own ? '' : ' is-click') + '"' + (own ? '' : ' data-att="' + esc(e.id) + '"') + '><div class="k-row-main"><div class="k-row-title">' + esc(K.relDay(e.date)) + '</div>' +
-          '<div class="k-row-sub">Sosire ' + esc(e.checkIn || '-') + ' · Plecare ' + esc(e.checkOut || '-') + (worked(e) != null ? ' · ' + fmt(worked(e)) : '') + (e.note ? ' · „' + esc(e.note) + '”' : '') + '</div></div>' +
+          '<div class="k-row-sub">Sosire ' + esc(e.checkIn || '-') + ' · Plecare ' + esc(e.checkOut || '-') + (worked(e) != null ? ' · ' + fmt(worked(e)) : '') + (e.note ? ' · „' + esc(e.note) + '”' : '') + '</div>' +
+          (K.attHistLine ? K.attHistLine(e) : '') + '</div>' +
           (own ? '' : '<div class="k-row-end"><span class="k-icon-btn" aria-hidden="true">' + icon('pen') + '</span></div>') + '</div>').join('') + '</div>'
           : K.empty('clock', 'Niciun pontaj luna asta', '')) +
-        (own ? '<p class="ct-hint">' + icon('info') + 'Pontajul tău îl corectează George.</p>' : ''),
+        (own ? '<p class="ct-hint">' + icon('info') + 'Pentru pontajul tău folosește „Cere corectarea” din Condică.</p>' : ''),
       onMount(el) {
         el.addEventListener('click', (ev) => {
+          const add = ev.target.closest('[data-add-day]');
+          if (add) { K.attFixSheet({ mode: 'add', from: add, employeeId: id, name: r.name, location: r.location, done: () => openEmp(id), back: () => openEmp(id) }); return; }
           const row = ev.target.closest('[data-att]');
           if (!row) return;
           const e = list.find((x) => x.id === row.dataset.att);
-          if (e) editAtt(e, r.name, () => openEmp(id));
+          if (!e) return;
+          K.attFixSheet({ mode: 'fix', from: row, employeeId: id, name: r.name, date: e.date, entry: e, done: () => openEmp(id), back: () => openEmp(id) });
         });
       },
     });
-  }
-  function editAtt(entry, name, back) {
-    const d = K.drawer({
-      title: 'Corectează pontajul', icon: 'pen', width: 460, subtitle: esc(name) + ' · ' + esc(K.dateLong(entry.date)),
-      body: '<form class="k-form" data-form>' + K.field('Sosire', '<input name="checkIn" type="time" value="' + esc(entry.checkIn || '') + '">') +
-        K.field('Plecare', '<input name="checkOut" type="time" value="' + esc(entry.checkOut || '') + '">') + K.field('Notă', '<input name="note" maxlength="300" value="' + esc(entry.note || '') + '">', 'full') + '</form>' +
-        '<p class="ct-hint">' + icon('info') + 'Diferența față de 8 ore se recalculează cât timp ziua nu e decisă.</p>',
-      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
-      onMount(el) {
-        el.querySelector('[data-cancel]').addEventListener('click', () => back());
-        el.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
-          const v = K.formValues(el.querySelector('[data-form]'));
-          try { await K.api('/api/portal-attendance', { action: 'update', id: entry.id, checkIn: v.checkIn || null, checkOut: v.checkOut || null, note: v.note }); K.ui().toast('Pontaj corectat.', 'success'); back(); }
-          catch (err) { K.ui().toast(errText(err), 'error'); }
-        }));
-      },
-    });
-    return d;
   }
   function newLeave() {
     const people = (S.team || []).filter((r) => admin() || r.employeeId !== me().id);

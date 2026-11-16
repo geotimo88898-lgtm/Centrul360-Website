@@ -221,6 +221,7 @@
 
     // ---- every KPI this account may put on its Panou (its own choice, K.prefs 'dash.kpis')
     const lastMonthSum = sumBy(inc, prevMonth + '-01', K.addDays(month + '-01', -1));
+      if (D.isManager && D.manager && D.manager.toFix) summary.push('<a href="#condica" data-go="condica">' + K.plural(D.manager.toFix, 'pontaj de rezolvat', 'pontaje de rezolvat') + '</a>'); // hers only, not the owner's
     const monthAll = inc.filter((s) => K.monthOf(s.date) === month), monthInc = K.pays(monthAll), monthBack = K.refundsOf(monthAll);
     const byCity = (c) => K.net(monthAll.filter((s) => s.location === c));
     const upsMonth = monthInc.filter((s) => Number(s.upsell) > 0);

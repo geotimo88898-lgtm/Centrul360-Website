@@ -58,7 +58,7 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
 
 (async () => {
   await new Promise((r) => setTimeout(r, 300));
-  const C = require('../api/_lib/clinic'), K = require('../api/_lib/kpi'), MP = require('../api/_lib/manager-pay'), T = require('../api/_lib/team-schedule');
+  const C = require('../api/_lib/clinic'), K = require('../api/_lib/kpi'), MP = require('../api/_lib/manager-pay'), T = require('../api/_lib/team-schedule'), TB = require('../api/_lib/timebank');
   const legacyAt = '2026-11-10T08:00:00Z', newAt = new Date(C.CANCEL_FIX + 3600e3).toISOString();
 
   // 1. no-shows: when it was cancelled
@@ -636,6 +636,146 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const cmp = await api('admin', 'lead-health', null, 'commission=1&month=' + MONTH);
     check(22, 'lead-health ?commission=1: old and new rule per cosmetician id, the new one the same as Salariu, no names', cmp.total && cmp.people['e-c1'] && cmp.people['e-c1'].new === pay1(MONTH).commission && !/Proba/.test(JSON.stringify(cmp)), cmp);
     check(22, 'the cash rule only from November', !CMS.cashRule({ origin: 'upsell', incasareId: 'x', date: '2026-10-31' }) && CMS.cashRule({ origin: 'upsell', incasareId: 'x', date: '2026-11-01' }));
+  }
+
+  // 23. pontaj corrections (the owner, 16.11): the manager adds a missing day and corrects her people's pontaj (never her own,
+  // only her clinics), the team asks for a correction, every change keeps its history, the timebank and the 1.500 rule follow
+  {
+    const as = async (id, role, body) => {
+      const r = await fetch('http://127.0.0.1:' + PORT + '/api/portal-attendance', { method: 'POST', headers: { 'content-type': 'application/json', cookie: cookieFor(id, role) }, body: JSON.stringify(body) });
+      return Object.assign(await r.json().catch(() => ({})), { _status: r.status });
+    };
+    const D13 = '2026-11-13', D12 = '2026-11-12', D11 = '2026-11-11';
+    // a late arrival (10:00 for a 09:00 shift) on Dana's 12th
+    const att0 = rd('data/attendance.json', []);
+    const late = att0.find((a) => a.employeeId === 'e-c3' && a.date === D12); if (late) late.checkIn = '10:00';
+    wr('data/attendance.json', att0);
+    const fl0 = await as('e-mgr', 'manager', { action: 'fix_list' });
+    const has = (l, k, emp, d) => (l.rows || []).some((r) => r.kind === k && r.employeeId === emp && r.date === d);
+    check(23, 'De rezolvat: no departure, a working day with no pontaj, a late arrival, a request', fl0.ok && has(fl0, 'no_out', 'e-c3', D13) && has(fl0, 'missing', 'e-c2', D13) && has(fl0, 'late', 'e-c3', D12) && has(fl0, 'request', 'e-c1', D12),
+      (fl0.rows || []).map((r) => r.kind + ' ' + r.employeeId + ' ' + r.date));
+    const mrow = (fl0.rows || []).find((r) => r.kind === 'missing' && r.employeeId === 'e-c2' && r.date === D13) || {};
+    check(23, 'De rezolvat: the missing day comes with her scheduled hours', mrow.from === '09:00' && mrow.to === '17:00', mrow);
+    check(23, 'De rezolvat: never the manager herself, never a weekend off', !(fl0.rows || []).some((r) => r.employeeId === 'e-mgr') && !(fl0.rows || []).some((r) => r.kind === 'missing' && [0, 6].includes(new Date(r.date + 'T12:00:00Z').getUTCDay())));
+    check(23, 'De rezolvat: closed to reception and cosmeticians', (await as('e-rec', 'receptie', { action: 'fix_list' }))._status === 403 && (await as('e-c1', 'cosmetician', { action: 'fix_list' }))._status === 403);
+
+    // days worked (the 1.500 rule, the manager's bonus) before and after
+    const daysOf = () => {
+      const E = rd('data/employees.json', []), S = rd('data/sales.json', []), A = rd('data/attendance.json', []);
+      const c = C.cosmeticians(E, S, A, 'Timișoara', MONTH + '-01', TODAY).find((x) => x.id === 'e-c2');
+      const m = MP.conditionOf(E, S, A, ['Timișoara', 'Arad'], MONTH, TODAY).people.find((x) => x.id === 'e-c2');
+      return { clinic: c && c.days, pay: m && m.days };
+    };
+    const st0 = await api('admin', 'portal-manager', { action: 'stats' });
+    const statDays = (st) => ((st.cities && st.cities['Timișoara'] && st.cities['Timișoara'].team) || []).find((x) => x.id === 'e-c2') || {};
+    const before = daysOf(), sd0 = statDays(st0).days;
+
+    const cr = await as('e-mgr', 'manager', { action: 'create', employeeId: 'e-c2', date: D13, checkIn: '09:00', checkOut: '17:30', reason: 'a uitat să ponteze' });
+    const ent = cr.entry || {};
+    check(23, 'create: a day with no pontaj, by the manager', cr.ok && ent.checkIn === '09:00' && ent.checkOut === '17:30' && ent.location === 'Timișoara', cr);
+    check(23, 'create: history (who, when, why, after)', ent.history && ent.history.length === 1 && ent.history[0].by === 'e-mgr' && ent.history[0].kind === 'create' && ent.history[0].reason === 'a uitat să ponteze' && ent.history[0].after.checkOut === '17:30' && !!ent.history[0].at && !!ent.history[0].byName, ent.history);
+    const adjC = rd('data/time-adjust.json', []).find((a) => a.attendanceId === ent.id);
+    check(23, 'create: the timebank synced (+30 min waiting)', adjC && adjC.status === 'pending' && adjC.minutes === 30, adjC);
+    const after = daysOf(), sd1 = statDays(await api('admin', 'portal-manager', { action: 'stats' })).days;
+    check(23, 'create: one more day worked in the 1.500 rule and the manager\'s bonus condition, the same in both', after.clinic === before.clinic + 1 && after.pay === before.pay + 1 && after.clinic === after.pay && sd1 === sd0 + 1, { before, after, sd0, sd1 });
+    const dup = await as('e-mgr', 'manager', { action: 'create', employeeId: 'e-c2', date: D13, checkIn: '09:00', checkOut: '17:00', reason: 'x' });
+    check(23, 'create: a second pontaj for the same day refused', dup._status === 409 && dup.error === 'duplicate_day', dup);
+    const fut = await as('e-mgr', 'manager', { action: 'create', employeeId: 'e-c2', date: day(1), checkIn: '09:00', checkOut: '17:00', reason: 'x' });
+    check(23, 'create: a day in the future refused', fut._status === 400 && fut.error === 'future_date', fut);
+    const own = await as('e-mgr', 'manager', { action: 'create', employeeId: 'e-mgr', date: '2026-11-06', checkIn: '09:00', checkOut: '17:00', reason: 'x' });
+    const ownUp = await as('e-mgr', 'manager', { action: 'update', id: (rd('data/attendance.json', []).find((a) => a.employeeId === 'e-mgr') || {}).id, checkIn: '08:00', reason: 'x' });
+    check(23, 'the manager\'s own pontaj: refused (create and update)', own._status === 403 && own.error === 'own_request' && ownUp._status === 403, [own, ownUp]);
+    const noReason = await as('e-mgr', 'manager', { action: 'create', employeeId: 'e-c2', date: '2026-11-06', checkIn: '09:00', checkOut: '17:00' });
+    check(23, 'create: the reason is required', noReason._status === 400 && noReason.error === 'missing_reason', noReason);
+    const sat = await as('e-mgr', 'manager', { action: 'create', employeeId: 'e-c2', date: '2026-11-14', checkIn: '10:00', checkOut: '14:00', reason: 'a venit sâmbătă' });
+    check(23, 'create: a day off in her schedule asks first, then goes in with the confirmation', sat._status === 409 && sat.error === 'needs_confirm' && sat.why === 'off' &&
+      (await as('e-mgr', 'manager', { action: 'create', employeeId: 'e-c2', date: '2026-11-14', checkIn: '10:00', checkOut: '14:00', reason: 'a venit sâmbătă', confirm: true })).ok, sat);
+    // a leave on her calendar asks too
+    const L0 = rd('data/leave-requests.json', []); L0.push({ id: 'lv-fx', employeeId: 'e-c3', type: 'odihna', startDate: '2026-11-10', endDate: '2026-11-10', workDays: 1, status: 'approved', requestedAt: at('2026-11-01', '10:00') }); wr('data/leave-requests.json', L0);
+    const A0 = rd('data/attendance.json', []); wr('data/attendance.json', A0.filter((a) => !(a.employeeId === 'e-c3' && a.date === '2026-11-10')));
+    const onLeave = await as('e-mgr', 'manager', { action: 'create', employeeId: 'e-c3', date: '2026-11-10', checkIn: '09:00', checkOut: '17:00', reason: 'x' });
+    check(23, 'create: a day of approved leave asks first', onLeave._status === 409 && onLeave.why === 'leave' && !has(await as('e-mgr', 'manager', { action: 'fix_list' }), 'missing', 'e-c3', '2026-11-10'), onLeave);
+    const E0 = rd('data/employees.json', []); E0.find((e) => e.id === 'e-mgr').manages = ['Arad']; wr('data/employees.json', E0);
+    const other = await as('e-mgr', 'manager', { action: 'create', employeeId: 'e-c1', date: '2026-11-06', checkIn: '09:00', checkOut: '17:00', reason: 'x' });
+    const otherReq = await as('e-mgr', 'manager', { action: 'fix_decide', id: 'rq1', decision: 'approve' });
+    E0.find((e) => e.id === 'e-mgr').manages = ['Timișoara', 'Arad']; wr('data/employees.json', E0);
+    check(23, 'another clinic\'s people: refused (create, decide)', other._status === 403 && otherReq._status === 403, [other, otherReq]);
+
+    // update keeps before → after; the Activitate line says it
+    const no13 = rd('data/attendance.json', []).find((a) => a.employeeId === 'e-c3' && a.date === D13);
+    const up = await as('e-mgr', 'manager', { action: 'update', id: no13.id, checkOut: '17:15', reason: 'a uitat plecarea' });
+    const h = (up.entry && up.entry.history || []).slice(-1)[0] || {};
+    check(23, 'update: history before → after, who and why', up.ok && h.kind === 'update' && h.before && h.before.checkOut === null && h.after.checkOut === '17:15' && h.by === 'e-mgr' && h.reason === 'a uitat plecarea', h);
+    const acts = rd('data/activity/' + TODAY + '.json', []).filter((l) => l.path === 'portal-attendance');
+    check(23, 'Activitate: whose pontaj, the day, before → after', acts.some((l) => l.action === 'update' && /Dana/.test(l.subject) && /13\.11/.test(l.detail) && /plecare - → 17:15/.test(l.detail)) && acts.some((l) => l.action === 'create' && /Elena/.test(l.subject)),
+      acts.map((l) => l.action + ': ' + l.subject + ' | ' + l.detail));
+
+    // a request → approved (applied, history, she is told); another → refused (nothing applied, she is told)
+    const N = () => rd('data/notifications.json', []);
+    const n0 = N().length;
+    const rq = await as('e-c2', 'cosmetician', { action: 'fix_request', date: D12, checkIn: '08:30', note: 'am uitat să pontez' });
+    const toMgr = N().slice(n0).filter((n) => /CORECTARE PONTAJ/.test(n.title));
+    check(23, 'request: sent, to the manager only (not the owner)', rq.ok && toMgr.some((n) => n.employeeId === 'e-mgr') && !toMgr.some((n) => n.employeeId === 'e-adm' || n.employeeId === 'admin'), toMgr.map((n) => n.employeeId));
+    check(23, 'request: in De rezolvat', has(await as('e-mgr', 'manager', { action: 'fix_list' }), 'request', 'e-c2', D12));
+    check(23, 'request: a day in the future refused', (await as('e-c2', 'cosmetician', { action: 'fix_request', date: day(1), checkIn: '09:00' })).error === 'future_date');
+    const ap = await as('e-mgr', 'manager', { action: 'fix_decide', id: rq.request.id, decision: 'approve' });
+    const e12 = rd('data/attendance.json', []).find((a) => a.employeeId === 'e-c2' && a.date === D12) || {};
+    const lastH = (e12.history || []).slice(-1)[0] || {};
+    check(23, 'approve: the times applied, the history kept, the request closed', ap.ok && e12.checkIn === '08:30' && lastH.kind === 'request' && lastH.by === 'e-mgr' && /Cerută de/.test(lastH.reason) &&
+      rd('data/attendance-requests.json', []).find((r) => r.id === rq.request.id).status === 'approved', { e12, ap });
+    const adj12 = rd('data/time-adjust.json', []).find((a) => a.attendanceId === e12.id);
+    check(23, 'approve: the timebank synced', adj12 && adj12.status === 'pending' && adj12.checkIn === '08:30' && adj12.minutes === TB.workedMinutes('08:30', e12.checkOut) - 480, adj12);
+    check(23, 'approve: she is told', N().some((n) => n.employeeId === 'e-c2' && /PONTAJ ✅ - 12\.11 corectat/.test(n.title)));
+    const rq2 = await as('e-c3', 'cosmetician', { action: 'fix_request', date: D11, checkOut: '18:00', note: 'am plecat mai târziu' });
+    const e11 = JSON.stringify(rd('data/attendance.json', []).find((a) => a.employeeId === 'e-c3' && a.date === D11));
+    const rj = await as('e-mgr', 'manager', { action: 'fix_decide', id: rq2.request.id, decision: 'reject', note: 'ai plecat la 17' });
+    check(23, 'refuse: nothing applied, the note kept, she is told', rj.ok && e11 === JSON.stringify(rd('data/attendance.json', []).find((a) => a.employeeId === 'e-c3' && a.date === D11)) &&
+      rj.request.status === 'rejected' && rj.request.decisionNote === 'ai plecat la 17' && N().some((n) => n.employeeId === 'e-c3' && n.tone === 'bad' && /respinsă/.test(n.title) && /17/.test(n.text)), rj);
+    check(23, 'decided once', (await as('e-mgr', 'manager', { action: 'fix_decide', id: rq2.request.id, decision: 'approve' }))._status === 409);
+
+    // the manager's own request: to the owner, decided by the owner
+    const n1 = N().length;
+    const mq = await as('e-mgr', 'manager', { action: 'fix_request', date: D12, checkOut: '17:30', note: 'am rămas la închidere' });
+    const toOwner = N().slice(n1);
+    check(23, 'the manager\'s own request: to the owner, not to herself', mq.ok && toOwner.some((n) => n.employeeId === 'e-adm') && !toOwner.some((n) => n.employeeId === 'e-mgr'), toOwner.map((n) => n.employeeId));
+    const selfDecide = await as('e-mgr', 'manager', { action: 'fix_decide', id: mq.request.id, decision: 'approve' });
+    const adminList = await api('admin', 'portal-attendance', { action: 'fix_list' });
+    const ownerOk = await api('admin', 'portal-attendance', { action: 'fix_decide', id: mq.request.id, decision: 'approve' });
+    check(23, 'her own: not by her, on the owner\'s list, approved by the owner', selfDecide._status === 403 && has(adminList, 'request', 'e-mgr', D12) && ownerOk.ok &&
+      (rd('data/attendance.json', []).find((a) => a.employeeId === 'e-mgr' && a.date === D12) || {}).checkOut === '17:30', { selfDecide, ownerOk });
+
+    // the owner gets no alerts for the list: no badge count, nothing in his bell from the team's requests
+    const pdM = await api('manager', 'portal-data'), pdA = await api('admin', 'portal-data');
+    const ownerBell = N().filter((n) => (n.employeeId === 'e-adm' || n.employeeId === 'admin') && /PONTAJ/.test(n.title));
+    check(23, 'the owner: no De rezolvat count, only the manager\'s own request in his bell', pdM.manager && pdM.manager.toFix > 0 && !pdA.manager && ownerBell.length === toOwner.filter((n) => /PONTAJ/.test(n.title)).length, { mgr: pdM.manager, owner: !!pdA.manager, bell: ownerBell.length });
+    const fl1 = await as('e-mgr', 'manager', { action: 'fix_list' });
+    check(23, 'De rezolvat after the fixes: the added day, the departure and the requests are gone', !has(fl1, 'missing', 'e-c2', D13) && !has(fl1, 'no_out', 'e-c3', D13) && !has(fl1, 'request', 'e-c2', D12) && !has(fl1, 'request', 'e-c3', D11), (fl1.rows || []).map((r) => r.kind + ' ' + r.employeeId + ' ' + r.date));
+    const ds = await as('e-mgr', 'manager', { action: 'fix_dismiss', key: 'e-c3|' + D12 + '|late' });
+    check(23, '„E corect”: the late arrival leaves the list', ds.ok && !has(await as('e-mgr', 'manager', { action: 'fix_list' }), 'late', 'e-c3', D12));
+    check(23, 'pdM.toFix counts the list', (await api('manager', 'portal-data')).manager.toFix === ((await as('e-mgr', 'manager', { action: 'fix_list' })).rows || []).length);
+  }
+
+  // 24. the hours expected of a day come from Program echipă from 16.11 (a 10-19 shift is no overtime, a short day is no
+  // shortfall, a scheduled Saturday is a working day); no schedule, or before 16.11: the old 8 hours Monday to Friday
+  {
+    const sch = { weekly: { s1: { location: 'Timișoara', days: { 1: { on: true, from: '10:00', to: '19:00' }, 2: { on: true, from: '09:00', to: '13:00' }, 6: { on: true, from: '09:00', to: '15:00' } } } }, dates: {}, breaks: {} };
+    const dd = (id, date, a, b) => TB.dayDiff({ employeeId: id, date, checkIn: a, checkOut: b }, {}, [], sch);
+    const mon = dd('s1', '2026-11-16', '10:00', '19:00'), tue = dd('s1', '2026-11-17', '09:00', '13:00'), satD = dd('s1', '2026-11-21', '09:00', '15:00');
+    check(24, 'a 10-19 shift worked: no difference', mon.expected === 540 && mon.diff === 0, mon);
+    check(24, 'a short day (09-13) worked: no shortfall', tue.expected === 240 && tue.diff === 0, tue);
+    check(24, 'a scheduled Saturday: a working day, not all overtime', satD.expected === 360 && satD.diff === 0 && !satD.weekend, satD);
+    const wed = dd('s1', '2026-11-18', '09:00', '12:00');
+    check(24, 'a day off in her schedule: all of it extra', wed.expected === 0 && wed.diff === 180, wed);
+    const none = dd('s2', '2026-11-16', '09:00', '17:00'), noneSat = dd('s2', '2026-11-21', '09:00', '12:00');
+    check(24, 'no schedule: 8 hours Monday to Friday, Saturday all extra', none.expected === 480 && none.diff === 0 && noneSat.expected === 0 && noneSat.weekend, { none, noneSat });
+    const old = dd('s1', '2026-11-09', '10:00', '19:00');
+    check(24, 'before 16.11: the old rule (+60)', old.expected === 480 && old.diff === 60, old);
+    // through syncAdjust (the clock-out, a correction): the 10-19 day makes nothing pending
+    const mem = { 'data/time-adjust.json': [], 'data/employees.json': [{ id: 's1', role: 'cosmetician' }], 'data/leave-requests.json': [] };
+    const store = { readJSON: async (k, d) => (k in mem ? JSON.parse(JSON.stringify(mem[k])) : d), writeJSON: async (k, v) => { mem[k] = v; } };
+    const a1 = await TB.syncAdjust({ id: 'z1', employeeId: 's1', date: '2026-11-16', checkIn: '10:00', checkOut: '19:00' }, store, { schedule: sch });
+    const a2 = await TB.syncAdjust({ id: 'z2', employeeId: 's1', date: '2026-11-17', checkIn: '09:00', checkOut: '12:00' }, store, { schedule: sch });
+    check(24, 'syncAdjust: the 10-19 day pends nothing; an hour short of a short day pends -60', a1 === null && a2 && a2.minutes === -60 && mem['data/time-adjust.json'].length === 1, { a1, a2 });
   }
 
   // the independent second reading agrees with production on the harness's data
