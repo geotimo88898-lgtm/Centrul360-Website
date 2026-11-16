@@ -95,8 +95,8 @@
 
   // ------------------------------------------------------------------ the period bar: one slim line (the owner, 16.11: „cu o tentă foarte clean”)
   // the four used most in a segmented control, „Altă perioadă” opens the rest (and the interval), the range small beside it
-  const MAIN = [['today', 'Azi'], ['7d', '7 zile'], ['month', 'Luna asta'], ['lastmonth', 'Luna trecută']];
-  const MORE = [['yesterday', 'Ieri'], ['week', 'Săptămâna asta'], ['lastweek', 'Săptămâna trecută'], ['30d', 'Ultimele 30 de zile'], ['90d', 'Ultimele 90 de zile'], ['year', 'Anul acesta']];
+  const MAIN = [['today', 'Azi'], ['7d', '7 zile'], ['30d', '30 zile'], ['month', 'Luna asta'], ['lastmonth', 'Luna trecută']];
+  const MORE = [['yesterday', 'Ieri'], ['week', 'Săptămâna asta'], ['lastweek', 'Săptămâna trecută'], ['90d', 'Ultimele 90 de zile'], ['year', 'Anul acesta']];
   const SHORT = { yesterday: 'Ieri', week: 'Săpt. asta', lastweek: 'Săpt. trecută', '30d': '30 zile', '90d': '90 zile', year: 'Anul acesta' };
   const span = (r) => { if (!r) return ''; const a = K.dateShort(r.since), b = K.dateShort(r.until); if (r.since === r.until) return a; return r.since.slice(0, 7) === r.until.slice(0, 7) ? a.split(' ')[0] + '-' + b : a + '-' + b; };
   function barHtml() {

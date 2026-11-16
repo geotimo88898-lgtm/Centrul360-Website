@@ -110,7 +110,7 @@ html.ui-nou.sx-boot::after{ content:""; position:fixed; inset:0; z-index:9998; b
 /* the Panou is a story, each thing once: the money of today (the block), what comes next today (the appointments, who to call),
    the ads (only with numbers), the trend and the pay, then the team. A grid with a lot of air; the small KPI row is gone (its numbers
    are in the block or in „Ziua de azi”). */
-html.ui-nou #panel-panou.sx-host{ --sx-rg:clamp(64px,8vw,112px); width:100%; min-width:0; display:grid !important; grid-template-columns:minmax(0,1fr) minmax(280px,360px); column-gap:clamp(32px,4vw,64px) !important; row-gap:var(--sx-rg) !important; align-items:start; }
+html.ui-nou #panel-panou.sx-host{ --sx-rg:clamp(14px,1.6vw,22px); /* 16.11: the owner found the old 64-112px gaps far too big */ width:100%; min-width:0; display:grid !important; grid-template-columns:minmax(0,1fr) minmax(280px,360px); column-gap:clamp(32px,4vw,64px) !important; row-gap:var(--sx-rg) !important; align-items:start; }
 html.ui-nou #panel-panou.sx-host:not(.active){ display:none !important; }
 html.ui-nou #panel-panou.sx-host > *, html.ui-nou #panel-panou.sx-host > .db-root > *, html.ui-nou #panel-panou.sx-host .db-blocks > *{ grid-column:1 / -1; min-width:0; }
 html.ui-nou #panel-panou.sx-host > .db-root, html.ui-nou #panel-panou.sx-host .db-blocks{ display:contents; }
