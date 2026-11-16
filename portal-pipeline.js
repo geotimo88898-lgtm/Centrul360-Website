@@ -399,6 +399,8 @@
   }
   // a notification „CANDIDAT NOU” (#pipeline/angajari): straight to the candidates
   if (window.K) window.K.on('pipeline:sub', (sub) => { if (sub === 'angajari' && canHire()) { S.mode = 'angajari'; if (root) setMode('angajari'); } });
+  // an account made from a candidate (Echipa's form): her card shows it
+  if (window.K) window.K.on('candidates:changed', () => { if (root && S.mode === 'angajari') loadCandidates(); });
   async function loadCandidates() {
     try { hireList = (await K.api('/api/portal-candidates')).candidates || []; renderHire(); }
     catch (e) { root.querySelector('[data-hire]').innerHTML = '<div class="pl-empty-board">' + ic('alert') + '<b>Nu am putut încărca candidații.</b></div>'; }
@@ -442,6 +444,9 @@
           ((c.answers || []).length ? '<div class="hire-ans">' + c.answers.map((x) => '<span><em>' + esc(short(x.q)) + '</em> ' + esc(x.a) + '</span>').join('') + '</div>' : '') +
           (last ? '<div class="hire-note">' + ic('note') + '<span>' + esc(last.text) + '<small>' + esc((last.by ? last.by + ' · ' : '') + agoShort(last.at)) + ((c.notes || []).length > 1 ? ' · ' + c.notes.length + ' note' : '') + '</small></span></div>' : '') +
           '<div class="pl-tags">' + (c.cv ? '<button type="button" class="pl-tag is-accent hire-cv" data-preview="' + esc(c.cv.url) + '" data-pv-kind="' + esc(c.cv.kind) + '" data-pv-name="' + esc(c.cv.name) + '">📄 Vezi CV-ul</button>' : c.cvFile ? '<span class="pl-tag is-accent">📄 CV trimis</span>' : c.replied ? '<span class="pl-tag is-mute">A răspuns pe WhatsApp</span>' : '') + '</div>' +
+          // hired: her account is made from here, prefilled (the owner, 16.11: one place for the hiring)
+          (cur === 'angajat' && ownerHires() ? (c.employeeId ? '<div class="hire-acc is-done">' + ic('check') + '<span>Contul e creat</span></div>'
+            : '<button type="button" class="pl-btn is-primary is-sm hire-acc" data-hire-acc="' + esc(c.id) + '">' + ic('userPlus') + 'Creează contul</button>') : '') +
           '<div class="hire-row">' + (locked ? '<span class="hire-lock">' + ic('check') + 'Angajată</span>' : '<select data-hire-st="' + esc(c.id) + '" aria-label="Etapa">' + options(cur) + '</select>') +
             '<button type="button" class="pl-qbtn" title="Adaugă o notă" data-hire-note="' + esc(c.id) + '">' + ic('pen') + '</button>' +
             '<a href="tel:' + esc(String(c.phone || '').replace(/[^\d+]/g, '')) + '" class="pl-qbtn" title="Sună">' + ic('phone') + '</a>' +
@@ -701,6 +706,12 @@
     const t = e.target;
     const hn = t.closest('[data-hire-note]');
     if (hn) { candidateNotes(hn.dataset.hireNote); return; }
+    const ha = t.closest('[data-hire-acc]');
+    if (ha) {
+      const c = (hireList || []).find((x) => x.id === ha.dataset.hireAcc);
+      if (c) K.emit('team:new', { name: c.name || '', location: c.location ? cityName(c.location) : '', role: /recep/i.test(c.job || '') ? 'receptie' : /manager/i.test(c.job || '') ? 'manager' : 'cosmetician', candidateId: c.id, from: ha });
+      return;
+    }
     if (t.closest('[data-hire]')) return; // the candidates' board has its own controls (portal-whatsapp opens the chats)
     const fc = t.closest('[data-fclear]');
     if (fc) { if (fc.dataset.fclear === '*') Object.keys(S.f).forEach((k) => { S.f[k] = ''; }); else S.f[fc.dataset.fclear] = ''; return renderAll(); }
@@ -943,7 +954,12 @@
   function stageBarHtml(l, flow) {
     const at = flow.findIndex((x) => x.id === l.stage);
     const cur = flow[at] || stageById(l.stage) || { name: '', color: '#888' };
-    const next = at >= 0 ? flow[at + 1] : null;
+    // the next step of the way, never a side column („Anulat”, „Mesaj nelivrat”: a lead waits there, it doesn't go there
+    // next); from a side column, the step it waits for (Anulat: the booked one again)
+    const side = (s) => !!s && (s.id === 'anulat' || s.id === 'undelivered' || /^anulat|undeliver|nelivrat/i.test(String(s.name || '')));
+    let next = null;
+    if (cur.id === 'anulat' || /^anulat/i.test(String(cur.name || ''))) next = flow.find((s) => s.kind === 'booked') || null;
+    else if (at >= 0) next = flow.slice(at + 1).find((s) => !side(s)) || null;
     return '<div class="pl-stage" data-stagebar>' +
       '<div class="pl-stage-bars" role="group" aria-label="Etape">' + flow.map((s, i) => '<button type="button" class="pl-sbar' + (i === at ? ' is-on' : '') + (i < at ? ' is-past' : '') + '" data-move="' + s.id + '" style="--c:' + s.color + ';--i:' + i + '" title="' + esc(s.name) + '" aria-label="Mută în ' + esc(s.name) + '"></button>').join('') + '</div>' +
       '<div class="pl-stage-row">' +
@@ -1012,19 +1028,31 @@
     const a = document.activeElement;
     return !!(a && drawerRoot.contains(a) && typingTarget(a));
   }
+  // the phone's Back closes the lead's sheet (one step in the history while it is open, 16.11), and she is back on the
+  // board where she was, on the card she opened
+  let plPushed = false;
+  const onPhone = () => !!(window.matchMedia && window.matchMedia('(max-width:720px)').matches);
+  window.addEventListener('popstate', () => { if (plPushed) { plPushed = false; closeDrawer(true); } });
   function openDrawerShell() {
     ensureDrawer();
     if (!drawerRoot.classList.contains('is-open')) {
       document.documentElement.classList.add('c360-noscroll');
       requestAnimationFrame(() => drawerRoot.classList.add('is-open'));
+      if (!plPushed && onPhone()) { try { history.pushState({ pld: 1 }, '', location.href); plPushed = true; } catch (e) { /* no history */ } }
     }
   }
-  function closeDrawer() {
+  function closeDrawer(fromBack) {
     if (!S.drawer) return;
+    const was = S.drawer.id;
     S.drawer = null;
     drawerRoot.classList.remove('is-open');
     document.documentElement.classList.remove('c360-noscroll');
     boardEl && boardEl.querySelectorAll('.pl-card.is-current').forEach((c) => c.classList.remove('is-current'));
+    // closed by its X: its step goes too (a moment later: when something else took the step meanwhile, it stays theirs)
+    if (plPushed && fromBack !== true) { plPushed = false; setTimeout(() => { if (history.state && history.state.pld) { try { history.back(); } catch (e) { /* none */ } } }, 0); }
+    // back on the card it came from
+    const card = was && boardEl && boardEl.querySelector('.pl-card[data-id="' + was + '"]');
+    if (card && card.scrollIntoView) { try { card.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) { /* old browser */ } }
   }
   function openLead(id, opts) {
     if (!leadById(id)) return false;
@@ -1236,12 +1264,17 @@
       booking_change: ['calendar', esc(String(a.text || '').replace(/\d{4}-\d{2}-\d{2}(?: \d{1,2}:\d{2})?/, (m) => apptWhen(m)))],
       edit: ['pen', 'Detalii modificate: ' + esc(String(a.text || '').split(', ').map((k) => FIELD_LABELS[k] || k).join(', '))],
       returned: ['repeat', esc(a.text)],
+      // she came, paid, got money back (Calendar, Încasări): the lead follows the visit and the money (16.11)
+      visit: ['check', 'A venit · ' + esc(String(a.text || '').replace(/^\d{4}-\d{2}-\d{2}(?: \d{1,2}:\d{2})?/, (m) => apptWhen(m)))],
+      payment: ['coins', 'Încasare · ' + fmtLei(a.amount || 0)],
+      refund: ['repeat', 'Rambursare · ' + fmtLei(a.amount || 0)],
     };
     const [icon, title] = map[a.type] || ['note', esc(a.type)];
     let detail = '';
     if (a.type === 'note' || a.type === 'contact') detail = a.text ? esc(a.text) : '';
     if (a.type === 'followup') detail = esc(String(a.text || '').replace(/\d{4}-\d{2}-\d{2}T[\d:.]+Z/, (m) => when(m)));
-    const tone = a.type === 'contact' ? ' is-' + ((OUTCOMES[a.outcome] || {}).tone || 'info') : a.type === 'booking' ? ' is-good' : '';
+    if (a.type === 'payment' || a.type === 'refund') detail = a.text ? esc(a.text) : '';
+    const tone = a.type === 'contact' ? ' is-' + ((OUTCOMES[a.outcome] || {}).tone || 'info') : a.type === 'booking' || a.type === 'visit' || a.type === 'payment' ? ' is-good' : a.type === 'refund' ? ' is-bad' : '';
     return '<li class="pl-tl' + tone + '"><span class="pl-tl-ic">' + ic(icon) + '</span><div><div class="pl-tl-title">' + title + '</div>' +
       (detail ? '<div class="pl-tl-text">' + detail + '</div>' : '') +
       '<div class="pl-tl-meta" title="' + esc(fullDate(a.at)) + '">' + (a.author ? esc(a.author) + ' · ' : '') + agoLong(a.at) + '</div></div></li>';
@@ -1423,8 +1456,9 @@
       try {
         const j = await api('log_contact', payload);
         replaceLead(j.lead); renderAll();
-        // just a note: the stage stays as it is (the receptionist moves it herself)
-        ui().toast('Contact salvat' + (followUpAt ? ' · revii ' + whenLow(followUpAt) : ''), 'success');
+        // she answered: a lead still at the start moved to „Contactat” on the server (j.moved); the bar shows it
+        if (j.moved && S.drawer && S.drawer.id === l.id) { syncStepper(j.lead.stage); flashCard(l.id); }
+        ui().toast((j.moved ? 'Contact salvat · ' + j.moved : 'Contact salvat') + (followUpAt ? ' · revii ' + whenLow(followUpAt) : ''), 'success');
         if (S.drawer && S.drawer.queue) { stepDrawer(1); return; }
         S.drawer.section = '';
         renderDrawer();

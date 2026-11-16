@@ -62,7 +62,10 @@ function findByPhone(clients, normalizedPhone) {
 // (names get corrected/retyped slightly over time). A phone that fails to normalize
 // to anything plausible still allows creating the client, store what was given
 // rather than blocking the cash-register flow over a bad digit.
-async function upsertClient({ name, phone }, { readJSON, writeJSON }) {
+// location (optional, 16.11): the clinic of a booking or a lead; a client without one takes it (her sheet says her city),
+// one that has it keeps it
+async function upsertClient({ name, phone, location }, { readJSON, writeJSON }) {
+  const loc = ['Timișoara', 'Arad'].includes(location) ? location : '';
   const clients = await readJSON('data/clients.json', []);
   const normalizedPhone = normalizePhone(phone);
   const today = todayISO();
@@ -73,6 +76,7 @@ async function upsertClient({ name, phone }, { readJSON, writeJSON }) {
     // her name stays unless the new one says at least as much ("Ana" typed in a hurry doesn't replace "Ana-Maria Popescu")
     if (cleanName && (!existing.name || cleanName.length >= existing.name.length)) existing.name = cleanName;
     existing.lastVisit = today;
+    if (loc && !existing.location) existing.location = loc;
     await writeJSON('data/clients.json', clients);
     return existing;
   }
@@ -83,6 +87,7 @@ async function upsertClient({ name, phone }, { readJSON, writeJSON }) {
     phone: normalizedPhone || String(phone || '').trim().slice(0, 30),
     createdAt: today,
     lastVisit: today,
+    ...(loc ? { location: loc } : {}),
   };
   clients.push(client);
   await writeJSON('data/clients.json', clients);

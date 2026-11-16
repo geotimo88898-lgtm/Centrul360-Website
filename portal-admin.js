@@ -247,7 +247,6 @@
     if (TEAM.tab === 'salarii') renderPayroll();
     if (TEAM.tab === 'condica' && K.mountCondica) K.mountCondica(epanel.querySelector('[data-cond]'));
     if (TEAM.tab === 'manual') loadManual();
-    if (TEAM.tab === 'candidati') loadCandidates();
   }
   // ---- the managers' pay at a glance (probation, this month's bonus), for the cards and Salarii (api/portal-salariu.js)
   const MGRS = { list: null, at: 0, busy: false };
@@ -260,29 +259,15 @@
   }
   const mgrOf = (id) => (MGRS.list || []).find((m) => m.id === id) || null;
   const mgrBonusText = (m) => (!m ? '-' : m.final ? K.lei(m.final.lei) : m.estimate ? '~' + K.lei(m.estimate.bonus) : '-');
-  // ---- Candidați: who applied through a job ad's form (api/portal-candidates.js)
-  const CAND_ST = [['nou', 'Aplicat'], ['cv', 'CV primit'], ['sunat', 'Sunat'], ['interviu', 'Interviu'], ['recomandat', 'Recomandat'], ['angajat', 'Angajat'], ['respins', 'Respins']];
-  async function loadCandidates(list) {
-    const box = epanel.querySelector('[data-cand]');
-    if (!list) { box.innerHTML = K.skeleton ? K.skeleton(3) : ''; try { list = (await K.api('/api/portal-candidates')).candidates || []; } catch (e) { box.innerHTML = K.empty('alert', 'Nu am putut încărca candidații', K.errText(e)); return; } }
-    box.innerHTML = list.length ? '<div class="cand-list">' + list.map((c) => '<article class="k-card cand">' +
-      '<div class="cand-top"><div><b>' + esc(c.name) + '</b><small>' + esc([c.job, c.location, K.ago(c.at)].filter(Boolean).join(' · ')) + '</small></div>' +
-        '<select data-cand-st="' + esc(c.id) + '">' + CAND_ST.map(([v, l]) => '<option value="' + v + '"' + ((c.status || 'nou') === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></div>' +
-      (c.answers && c.answers.length ? '<ul class="cand-ans">' + c.answers.map((x) => '<li><span>' + esc(x.q) + '</span><b>' + esc(x.a) + '</b></li>').join('') + '</ul>' : '') +
-      // who moved her last (the manager does the calls and the interviews, 15.11) and the notes written on her
-      (c.statusBy ? '<p class="cand-by">' + esc(CAND_ST.reduce((l, [v, t]) => (v === (c.status || 'nou') ? t : l), '')) + ' · ' + esc(c.statusBy) + (c.statusAt ? ', ' + esc(K.ago(c.statusAt)) : '') + '</p>' : '') +
-      ((c.notes || []).length ? '<ul class="cand-notes">' + c.notes.slice(-3).map((n) => '<li><b>' + esc(n.by || '') + '</b> ' + esc(n.text) + '</li>').join('') + '</ul>' : '') +
-      '<div class="cand-acts"><a class="k-btn is-sm is-outline" href="' + K.tel(c.phone) + '">' + icon('phone') + esc(c.phone) + '</a>' +
-        '<a class="k-btn is-sm is-ghost" href="https://wa.me/' + esc(K.intlPhone ? K.intlPhone(c.phone) : String(c.phone).replace(/\D/g, '')) + '" target="_blank" rel="noopener">WhatsApp</a></div>' +
-      '</article>').join('') + '</div>' : K.empty('userPlus', 'Niciun candidat încă', 'Cei care aplică la reclamele de angajare apar aici.');
-  }
+  // (the candidates: Pipeline → Angajări, the one place of the hiring, with „Creează contul” on a hired one, 16.11)
+  K.on('team:new', (pre) => { if (K.data && K.data.isAdmin) openNewEmployee(pre); });
   function mountTeam(p) {
     epanel = p;
     epanel.classList.add('k-panel', 'ad');
     epanel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Timișoara și Arad</div><h2>Echipa</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-accent" data-new>' + icon('userPlus') + 'Angajat nou</button></div></div>' +
-      '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['salarii', 'Salarii', 'wallet'], ['manual', 'Ajustări', 'sliders'], ['condica', 'Condică', 'clock'], ['candidati', 'Candidați', 'userPlus']], TEAM.tab, 'is-big') + '</div>' +
-      '<div data-pane="people"><div data-body></div></div><div data-pane="salarii" hidden><div data-pay></div></div><div data-pane="manual" hidden><div data-man></div></div><div data-pane="condica" hidden><div data-cond></div></div><div data-pane="candidati" hidden><div data-cand></div></div>';
+      '<div class="ad-teamtabs">' + K.seg('teamtab', [['people', 'Oameni', 'users'], ['salarii', 'Salarii', 'wallet'], ['manual', 'Ajustări', 'sliders'], ['condica', 'Condică', 'clock']], TEAM.tab, 'is-big') + '</div>' +
+      '<div data-pane="people"><div data-body></div></div><div data-pane="salarii" hidden><div data-pay></div></div><div data-pane="manual" hidden><div data-man></div></div><div data-pane="condica" hidden><div data-cond></div></div>';
     epanel.addEventListener('click', (e) => {
       if (e.target.closest('[data-new]')) return openNewEmployee();
       const c = e.target.closest('[data-emp]');
@@ -298,8 +283,6 @@
     });
     epanel.addEventListener('change', async (e) => {
       if (e.target.name === 'teamtab') { TEAM.tab = e.target.value; showTeamTab(); }
-      const cs = e.target.closest('[data-cand-st]');
-      if (cs) { try { loadCandidates((await K.api('/api/portal-candidates', { id: cs.dataset.candSt, status: cs.value })).candidates); } catch (err) { K.ui().toast(K.errText(err), 'error'); } }
     });
   }
   function empStats(e) {
@@ -532,14 +515,19 @@
     });
   }
 
-  function openNewEmployee() {
+  // pre (Pipeline → Angajări → „Creează contul”, 16.11): { name, role, location, candidateId, from } of the hired candidate
+  function openNewEmployee(pre) {
+    pre = pre && typeof pre === 'object' && !pre.target ? pre : {};
     const gen = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; const r = crypto.getRandomValues(new Uint32Array(10)); for (let i = 0; i < 10; i++) s += a[r[i] % a.length]; return s; };
+    const role0 = ROLES.slice(0, 3).some(([v]) => v === pre.role) ? pre.role : 'receptie';
+    const loc0 = LOCS.some(([v]) => v === pre.location) ? pre.location : 'Timișoara';
     const d = K.drawer({
-      title: 'Angajat nou', icon: 'userPlus', 
+      title: 'Angajat nou', icon: 'userPlus', from: pre.from,
+      subtitle: pre.candidateId ? 'Din candidații angajați' : '',
       body: '<form class="k-form" data-form>' +
-        K.field('Nume complet', '<input name="name" required maxlength="100" placeholder="ex: Giovanna Marin" autofocus>', 'full') +
-        K.field('Rol', K.seg('role', ROLES.slice(0, 3), 'receptie', 'is-big'), 'full', 'Recepția face programările și are Sarcini. Cosmeticiana vede calendarul, contactele (fișe, poze), încasările și comisionul ei. Rolul Manager vede ambele clinici: cifrele, echipa și casa.') +
-        K.field('Locație', K.seg('location', LOCS, 'Timișoara', 'is-big'), 'full') +
+        K.field('Nume complet', '<input name="name" required maxlength="100" placeholder="ex: Giovanna Marin" value="' + esc(pre.name || '') + '" autofocus>', 'full') +
+        K.field('Rol', K.seg('role', ROLES.slice(0, 3), role0, 'is-big'), 'full', 'Recepția face programările și are Sarcini. Cosmeticiana vede calendarul, contactele (fișe, poze), încasările și comisionul ei. Rolul Manager vede ambele clinici: cifrele, echipa și casa.') +
+        K.field('Locație', K.seg('location', LOCS, loc0, 'is-big'), 'full') +
         K.field('Username', '<input name="username" required maxlength="60" autocomplete="off">') +
         K.field('Parolă temporară', '<div class="ad-pass"><input name="password" required minlength="6" autocomplete="off" value="' + gen() + '"><button type="button" class="k-icon-btn" data-gen title="Generează alta">' + icon('refresh') + '</button></div>') +
         '</form>',
@@ -548,14 +536,16 @@
         const f = el.querySelector('[data-form]');
         f.name.addEventListener('input', () => { if (!f.username.dataset.touched) f.username.value = K.norm(f.name.value).trim().split(/\s+/)[0] || ''; });
         f.username.addEventListener('input', () => { f.username.dataset.touched = '1'; });
+        if (pre.name) f.username.value = K.norm(pre.name).trim().split(/\s+/)[0] || '';
         el.querySelector('[data-gen]').addEventListener('click', () => { f.password.value = gen(); });
         el.querySelector('[data-cancel]').addEventListener('click', () => d.close());
         el.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
           const v = K.formValues(f);
           if (!v.name || !v.username || (v.password || '').length < 6) { K.ui().toast('Completează numele, username-ul și o parolă de minim 6 caractere.', 'error'); return; }
           try {
-            await K.api('/api/portal-employees', Object.assign({ action: 'create' }, v));
+            await K.api('/api/portal-employees', Object.assign({ action: 'create' }, v, pre.candidateId ? { candidateId: pre.candidateId } : {}));
             d.close();
+            if (pre.candidateId) K.emit('candidates:changed');
             // the password is shown once more, here: after this nothing shows it again
             await K.ui().confirm({ title: 'Cont creat pentru ' + v.name, message: 'Username: ' + String(v.username).trim().toLowerCase() + '\nParolă: ' + v.password + '\n\nSpune-i-le acum. Parola nu se mai vede după; și-o schimbă singură din Contul meu.', confirmText: 'Am notat' });
             K.reload();
@@ -768,7 +758,9 @@
       if (o) quickSave(o, { [sw.name]: sw.checked });
   // #angajati/salarii (Nuki, the guide, a link): that tab of Echipa
   K.on('angajati:sub', (t) => {
-    if (!['people', 'salarii', 'manual', 'condica', 'candidati'].includes(t)) return;
+    // the candidates have one place, Pipeline → Angajări (16.11): an old link to „Candidați” goes there
+    if (t === 'candidati') { K.go('pipeline/angajari'); return; }
+    if (!['people', 'salarii', 'manual', 'condica'].includes(t)) return;
     TEAM.tab = t;
     if (!epanel) return;
     const seg = epanel.querySelector('[data-k-seg="teamtab"]');

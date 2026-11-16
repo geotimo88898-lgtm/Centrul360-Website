@@ -1,5 +1,5 @@
 // /api/portal-candidates, the candidates who applied through a job ad's form (api/_lib/fb-leads.js keeps them in
-// data/candidates.json, apart from the clients): Pipeline → Angajări (and Echipa → Candidați).
+// data/candidates.json, apart from the clients): Pipeline → Angajări, the one place of the hiring (16.11).
 //   GET                              the list, newest first, each with what she did on WhatsApp (replied, sent a file)
 //   POST { id, status }              nou | cv | sunat | interviu | recomandat | angajat | respins
 //   POST { id, note }                a note on the candidate (who wrote it and when)
@@ -36,7 +36,7 @@ async function withChat(list) {
 // what the manager gets of a candidate: who she is, what she answered, where she is in the hiring, the notes. Not the
 // ad / form ids, not the welcome message's internals.
 const forManager = (c) => ({ id: c.id, at: c.at, name: c.name, phone: c.phone, email: c.email || '', location: c.location || '', job: c.job || '', answers: c.answers || [],
-  status: c.status, statusAt: c.statusAt || '', statusBy: c.statusBy || '', notes: c.notes || [], replied: c.replied, cvFile: c.cvFile, cv: c.cv });
+  status: c.status, statusAt: c.statusAt || '', statusBy: c.statusBy || '', notes: c.notes || [], replied: c.replied, cvFile: c.cvFile, cv: c.cv, employeeId: c.employeeId || '' });
 
 module.exports = async (req, res) => {
   const session = await R.requireManage(req, res); // the owner and the manager

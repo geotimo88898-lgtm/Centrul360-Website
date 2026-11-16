@@ -72,6 +72,14 @@
       return;
     }
     if (e.target.closest('[data-act="customize"]')) return customizeDash();
+    const ci = e.target.closest('[data-clock-in]');
+    if (ci) {
+      K.busy(ci, async () => {
+        try { const r = await K.api('/api/portal-attendance', { action: 'clock_in' }); K.ui().toast('Sosire pontată' + (r && r.entry && r.entry.checkIn ? ' la ' + r.entry.checkIn : '') + '.', 'success'); K.reload(); }
+        catch (err) { K.ui().toast(K.errText(err), 'error'); }
+      });
+      return;
+    }
     const umEl = e.target.closest('[data-unmarked]');
     if (umEl) { e.preventDefault(); openUnmarked(umEl); return; }
     const a = e.target.closest('[data-go]');
@@ -236,6 +244,9 @@
         '<button type="button" class="k-btn db-glass" data-go="pipeline" data-then="pipeline:new">' + icon('userPlus') + 'Lead</button>' +
         (callNow.length ? '<button type="button" class="k-btn db-glass" data-go="pipeline" data-then="pipeline:queue">' + icon('zap') + 'Coada de apeluri · ' + callNow.length + '</button>' : '');
     const custom = '<button type="button" class="k-btn db-glass db-custom" data-act="customize" title="Alege cifrele și secțiunile panoului">' + icon('sliders') + 'Personalizează</button>';
+    // not clocked in yet on a day she works (16.11): one tap, first in the row (the same pontaj as Condică)
+    const ck = D.myClock;
+    const clockIn = ck && ck.works && !ck.checkIn && !D.impersonating ? '<button type="button" class="k-btn is-good db-clock-in" data-clock-in>' + icon('checkCircle') + 'Pontează sosirea</button>' : '';
 
     // Chart: clinic revenue for admin/reception; the cosmetician's own commission otherwise, by the day it came (Salariu's lines)
     const chartSrc = role === 'cosmetician' ? commDays : inc;
@@ -380,7 +391,7 @@
           '<div class="db-date">' + icon(dayIcon()) + '<span>' + esc(K.dateLong(today)) + '</span><span class="k-live">în timp real</span></div>' +
           '<h2>' + greeting() + ', ' + esc(first) + '</h2>' +
           '<p class="db-summary">Ai ' + summary.join(', ').replace(/, ([^,]*)$/, ' și $1') + '.</p>' +
-          '<div class="db-actions">' + actions + custom + '</div>' +
+          '<div class="db-actions">' + clockIn + actions + custom + '</div>' +
         '</div>' +
         '<div class="db-clock" aria-label="Ora"><div class="db-time" data-time></div>' +'<div class="db-secs"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" class="db-secs-track"/><circle cx="24" cy="24" r="20" class="db-secs-arc" pathLength="60" data-arc/></svg><b data-sec>--</b></div></div>' +
       '</section>' });

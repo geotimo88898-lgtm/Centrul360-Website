@@ -232,7 +232,7 @@ module.exports = async (req, res) => {
     // ---------------------------------------------------------------- get
     if (action === 'get') {
       if (lead) {
-        res.status(200).json({ ok: true, contact: leadRow(lead), detail: emptyDetail(), appointments: [], payments: [], forms: formsOf([lead]) });
+        res.status(200).json({ ok: true, contact: leadRow(lead), detail: emptyDetail(), appointments: [], payments: [], forms: formsOf([lead]), leadId: lead.id });
         return;
       }
       const [detail, appointments, sales] = await Promise.all([readDetail(client.id), readJSON('data/appointments.json', []), readJSON('data/sales.json', [])]);
@@ -248,7 +248,9 @@ module.exports = async (req, res) => {
       const lastCame = appts.filter((a) => a.status === 'finalizata').map((a) => a.date).sort().pop() || '';
       // what she answered in the Facebook forms (kept on her leads, matched by phone)
       const leads = phone ? (await readJSON('data/leads.json', [])).filter((l) => normalizePhone(l.phone) === phone) : [];
-      res.status(200).json({ ok: true, contact: contactRow(client), detail, appointments: appts, payments, forms: formsOf(leads), dues, lastCame });
+      // her lead (the newest with her phone): „Vezi leadul” in her sheet
+      const newest = leads.slice().sort((x, y) => String(y.updatedAt || y.createdAt).localeCompare(String(x.updatedAt || x.createdAt)))[0];
+      res.status(200).json({ ok: true, contact: contactRow(client), detail, appointments: appts, payments, forms: formsOf(leads), dues, lastCame, leadId: newest ? newest.id : '' });
       return;
     }
 
@@ -304,6 +306,35 @@ module.exports = async (req, res) => {
       const text = String(body.text || '').trim().slice(0, 2000);
       if (!text) return fail(400, 'missing_text');
       detail.notes.unshift({ id: uid(), text, author, authorId: session.employeeId, at: nowISO() });
+      return save();
+    }
+    // „Salvează la clientă” from the offer calculator (16.11, the audit): the program and the four offers as data, not only
+    // as a note: on her sheet (the last 10), on her record (the newest, for the payment drawer) and on the booking it was
+    // made for, so „Încasează” offers them ready. The note with the same text stays, as before.
+    //   { id, offer: { city, lines: [{ name, zone, sessions, unit, sub }], total, half, pages: [{ page, title, off, pay, parts }],
+    //     duration, result }, text, appointmentId? }
+    if (action === 'offer_save') {
+      const o = body.offer && typeof body.offer === 'object' ? body.offer : null;
+      const num = (v) => { const n = Math.round(Number(v) * 100) / 100; return Number.isFinite(n) && n >= 0 && n < 1e6 ? n : 0; };
+      const str = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+      const lines = o && Array.isArray(o.lines) ? o.lines.slice(0, 20).map((l) => ({ name: str(l.name, 80), zone: str(l.zone, 60), sessions: num(l.sessions), unit: num(l.unit), sub: num(l.sub) })).filter((l) => l.name && l.sessions > 0) : [];
+      if (!lines.length) return fail(400, 'invalid_offer');
+      const pages = Array.isArray(o.pages) ? o.pages.slice(0, 4).map((x) => ({ page: num(x.page), title: str(x.title, 80), off: num(x.off), pay: num(x.pay), parts: Math.min(12, Math.round(num(x.parts))) })).filter((x) => x.pay > 0) : [];
+      const offer = { id: uid(), at: nowISO(), by: author, byId: session.employeeId, city: str(o.city, 20), lines, total: num(o.total), half: num(o.half), pages, duration: str(o.duration, 60), result: str(o.result, 300) };
+      const apptId = str(body.appointmentId, 60);
+      if (apptId) {
+        const appts = await readJSON('data/appointments.json', []);
+        const a = appts.find((x) => x && x.id === apptId);
+        if (!a || (a.clientId !== client.id && normalizePhone(a.clientPhone) !== normalizePhone(client.phone))) return fail(404, 'appointment_not_found');
+        // a cosmetician: only on her own booking
+        if (session.role === 'cosmetician' && a.cosmeticianId !== session.employeeId) return fail(403, 'forbidden');
+        a.offer = offer; offer.appointmentId = a.id;
+        await writeJSON('data/appointments.json', appts);
+      }
+      detail.offers = [offer].concat(detail.offers || []).slice(0, 10);
+      const text = str(body.text, 2000);
+      if (text) detail.notes.unshift({ id: uid(), text, author, authorId: session.employeeId, at: nowISO() });
+      client.lastOffer = { id: offer.id, at: offer.at, total: offer.total, pages: offer.pages, what: lines.map((l) => l.name + (l.zone ? ', ' + l.zone : '')).join(' + ').slice(0, 120) };
       return save();
     }
     if (action === 'note_delete') {

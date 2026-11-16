@@ -1285,6 +1285,88 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     check('lh', 'lead-health ?time=1: counts per clinic, no names', lht.cities && lht.cities.Arad && typeof lht.cities.Arad.unmarked.all === 'number' && !/Proba/.test(JSON.stringify(lht)), lht);
   }
 
+  // J. the journeys carry through (16.11, the audit): the lead follows the visit, the payment and a refund; „A răspuns”
+  // moves her to Contactat; a package's rest is paid with no visit; the calculator's offer is kept as data and offered at
+  // the payment; her sheet has her rest, last visit and lead; the Panou knows she hasn't clocked in; a hired candidate
+  // gets her account from the Pipeline; the manager's row says her clinics
+  {
+    ROLE.cosmetician = 'e-c1';
+    const leadOf = (id) => rd('data/leads.json', []).find((l) => l.id === id);
+    const nl = await api('manager', 'portal-leads', { action: 'create', name: 'Drum Complet', phone: '0766100200', source: 'telefon', location: 'Timișoara', interest: 'Lipo 640' });
+    const L1 = nl.lead && nl.lead.id;
+    const lc0 = await api('manager', 'portal-leads', { action: 'log_contact', leadId: L1, channel: 'call', outcome: 'nu_raspunde' });
+    const lc1 = await api('manager', 'portal-leads', { action: 'log_contact', leadId: L1, channel: 'call', outcome: 'raspuns' });
+    check('J', '„Nu răspunde” keeps her in Lead nou; „A răspuns” moves her to Contactat', lc0.ok && lc0.lead.stage === 'lead_nou' && lc1.ok && lc1.lead.stage === 'contactat' && lc1.moved === 'Contactat', { s0: lc0.lead && lc0.lead.stage, s1: lc1.lead && lc1.lead.stage, m: lc1.moved });
+    const bk = await api('manager', 'portal-appointments', { action: 'create', leadId: L1, date: TODAY, time: '08:00', endTime: '08:30', location: 'Timișoara', cosmeticianId: 'e-c1', clientName: 'Drum Complet', clientPhone: '0766100200', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'confirmata', force: true });
+    const A1 = bk.appointment && bk.appointment.id;
+    check('J', 'booked from her lead: Programare stabilită', bk.ok && leadOf(L1).stage === 'programare_stabilita' && leadOf(L1).appointmentId === A1, { err: bk.error, st: leadOf(L1) && leadOf(L1).stage });
+    const mk = await api('cosmetician', 'portal-appointments', { action: 'mark', id: A1, mark: 'came' });
+    const l1 = leadOf(L1);
+    check('J', '„Finalizată”: Venit la programare, „A venit” in her history, no booking left on her card', mk.ok && l1.stage === 'venit_la_programare' && l1.activities.some((x) => x.type === 'visit' && x.apptId === A1) && !l1.appointmentId, { err: mk.error, st: l1.stage, ap: l1.appointmentId });
+    // a second visit, paid: the won column, the payment in her history
+    const bk2 = await api('manager', 'portal-appointments', { action: 'create', leadId: L1, date: TODAY, time: '08:30', endTime: '09:00', location: 'Timișoara', cosmeticianId: 'e-c1', clientName: 'Drum Complet', clientPhone: '0766100200', treatment: 'Lipo 640', categories: ['corporale'], amount: 300, status: 'confirmata', force: true });
+    const A2 = bk2.appointment && bk2.appointment.id;
+    const py = await api('manager', 'portal-sale', { source: 'incasare', appointmentId: A2, method: 'card', performedBy: 'e-c1', parts: { session: 300, upsell: true, upsellValue: 1200, upsellPaid: 200, upsellWhat: 'Pachet drum' } });
+    const l2 = leadOf(L1);
+    check('J', 'paid: Client fidel, „Încasare 500” in her history', py.ok && l2.stage === 'client_fidel' && l2.activities.some((x) => x.type === 'payment' && x.amount === 500 && x.saleId === py.entry.id), { err: py.error, st: l2.stage, acts: l2.activities.slice(-3) });
+    const visits = l2.activities.filter((x) => x.type === 'visit').length;
+    check('J', 'each visit once in her history', visits === 2, visits);
+    // her sheet: the rest of the package, her last visit, her lead
+    const cg = await api('manager', 'portal-contacts', { action: 'get', id: py.entry.clientId });
+    check('J', 'her sheet: rest 1.000, last visit today, „Vezi leadul”, her city', cg.ok && (cg.dues || []).reduce((x, d) => x + d.rest, 0) === 1000 && cg.lastCame === TODAY && cg.leadId === L1 && cg.contact.location === 'Timișoara', { dues: cg.dues, last: cg.lastCame, lead: cg.leadId, loc: cg.contact && cg.contact.location });
+    // the rest, with no visit
+    const dueId = py.due && py.due.id;
+    const over = await api('manager', 'portal-sale', { source: 'incasare', dueId, amount: 1500, method: 'cash' });
+    const rp = await api('manager', 'portal-sale', { source: 'incasare', dueId, amount: 400, method: 'transfer' });
+    const rpRow = rd('data/sales.json', []).find((x) => x.id === (rp.entry && rp.entry.id));
+    check('J', 'rest with no visit: 400 paid, 600 left, nobody\'s day (no performer), more than the rest refused', over._status === 400 && over.error === 'over_rest' && rp.ok && rp.due && rp.due.rest === 600 && rpRow && rpRow.restOnly && rpRow.performedBy === '' && !rpRow.appointmentId && rpRow.toDue === 400, { over: over.error, err: rp.error, due: rp.due });
+    const rp2 = await api('manager', 'portal-sale', { source: 'incasare', dueId, amount: 400, method: 'transfer' });
+    check('J', '… the same sum again at once: 409 already_paid', rp2._status === 409, rp2);
+    const l3 = leadOf(L1);
+    check('J', '… in her lead\'s history too, still Client fidel', l3.stage === 'client_fidel' && l3.activities.some((x) => x.type === 'payment' && x.saleId === rp.entry.id), l3.activities.slice(-2));
+    // a cosmetician of the other clinic can't take it
+    ROLE.cosmetician = 'e-c3';
+    const rpX = await api('cosmetician', 'portal-sale', { source: 'incasare', dueId, amount: 100, method: 'cash' });
+    ROLE.cosmetician = 'e-c1';
+    check('J', '… not from the other clinic (403)', rpX._status === 403, rpX);
+    // a refund: in her lead's history
+    const rf = await api('admin', 'portal-incasari', { action: 'refund', id: py.entry.id, scope: 'payment', amount: 100, close: false, method: 'cash', date: TODAY, reason: 'probă' });
+    check('J', 'a refund: „Rambursare 100” in her lead\'s history', rf.ok && leadOf(L1).activities.some((x) => x.type === 'refund' && x.amount === 100), { err: rf.error, acts: leadOf(L1).activities.slice(-2) });
+    // the calculator's offer: on her sheet, her record and the booking; the payment drawer gets it
+    const A3 = (await api('manager', 'portal-appointments', { action: 'create', date: TODAY, time: '09:00', endTime: '09:30', location: 'Timișoara', cosmeticianId: 'e-c1', clientName: 'Drum Complet', clientPhone: '0766100200', treatment: 'Consultație', categories: ['corporale'], amount: 0, status: 'confirmata', force: true })).appointment.id;
+    const offer = { city: 'tm', total: 3000, half: 1500, lines: [{ name: 'LipoSonix', zone: 'abdomen', sessions: 6, unit: 500, sub: 3000 }], pages: [{ page: 2, title: 'Pachet complet, plată integrală', off: 50, pay: 1500, parts: 0 }, { page: 3, title: 'Pachet complet, 4 tranșe', off: 30, pay: 2100, parts: 4 }] };
+    const os = await api('cosmetician', 'portal-contacts', { action: 'offer_save', id: py.entry.clientId, offer, text: 'Program recomandat', appointmentId: A3 });
+    const apx = rd('data/appointments.json', []).find((a) => a.id === A3), clx = rd('data/clients.json', []).find((c) => c.id === py.entry.clientId);
+    check('J', 'offer saved as data: sheet, client, booking (her own)', os.ok && (os.detail.offers || [])[0] && os.detail.offers[0].pages.length === 2 && apx.offer && apx.offer.total === 3000 && clx.lastOffer && clx.lastOffer.pages[1].pay === 2100 && os.detail.notes.some((n) => n.text === 'Program recomandat'), { err: os.error });
+    ROLE.cosmetician = 'e-c2';
+    const osX = await api('cosmetician', 'portal-contacts', { action: 'offer_save', id: py.entry.clientId, offer, appointmentId: A3 });
+    ROLE.cosmetician = 'e-c1';
+    check('J', '… not on another cosmetician\'s booking (403)', osX._status === 403, osX);
+    const up = await api('manager', 'portal-appointments', { action: 'unpaid' });
+    check('J', 'Încasează gets her offer for that booking', up.ok && up.offers && up.offers[A3] && up.offers[A3].pages.length === 2 && /LipoSonix, abdomen/.test(up.offers[A3].what), up.offers && up.offers[A3]);
+    // Panou: not clocked in yet, then clocked in
+    const pdA = await api('receptie', 'portal-data', null);
+    const ci = await api('receptie', 'portal-attendance', { action: 'clock_in' });
+    const pdB = await api('receptie', 'portal-data', null);
+    const pdO = await api('admin', 'portal-data', null);
+    check('J', 'myClock: no arrival, then the arrival; the owner has none', pdA.myClock && !pdA.myClock.checkIn && ci.ok && pdB.myClock && pdB.myClock.checkIn === ci.entry.checkIn && pdO.myClock == null, { a: pdA.myClock, b: pdB.myClock });
+    // a hired candidate: her account from the Pipeline, linked
+    const ne = await api('admin', 'portal-employees', { action: 'create', name: 'Candidată Doi', location: 'Arad', role: 'receptie', username: 'cand2proba', password: 'parola-proba', candidateId: 'cd2' });
+    const cd2 = rd('data/candidates.json', []).find((c) => c.id === 'cd2');
+    const cl = await api('admin', 'portal-candidates', null);
+    check('J', '„Creează contul”: the account, the candidate hired and linked', ne.ok && cd2.employeeId === ne.employee.id && cd2.status === 'angajat' && (cl.candidates || []).find((c) => c.id === 'cd2').employeeId === ne.employee.id, { err: ne.error, cd2 });
+    // the manager's row: her clinics
+    const ba = await api('manager', 'portal-attendance', { action: 'balance_all' });
+    const mrow = (ba.employees || []).find((e) => e.employeeId === 'e-mgr');
+    check('J', 'the team list: the manager with her clinics', mrow && Array.isArray(mrow.manages) && mrow.manages.join(' și ') === 'Timișoara și Arad', mrow);
+    // a cancelled booking: back out of Programare stabilită (Anulat, the owner's column of 9.11)
+    const nl2 = await api('manager', 'portal-leads', { action: 'create', name: 'Anulată Proba', phone: '0766100300', source: 'telefon', location: 'Timișoara', interest: 'Lipo 640' });
+    const bk3 = await api('manager', 'portal-appointments', { action: 'create', leadId: nl2.lead.id, date: day(2), time: '09:30', endTime: '10:00', location: 'Timișoara', cosmeticianId: 'e-c1', clientName: 'Anulată Proba', clientPhone: '0766100300', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'programata', force: true });
+    const del = await api('manager', 'portal-appointments', { action: 'delete', id: bk3.appointment.id });
+    const l4 = leadOf(nl2.lead.id);
+    check('J', 'a deleted booking: out of Programare stabilită, the booking gone from her card', del.ok && l4.stage !== 'programare_stabilita' && !l4.appointmentId, { st: l4.stage });
+  }
+
   // the independent second reading agrees with production on the harness's data
   {
     const lh = await api('admin', 'lead-health', null, 'verify=1');

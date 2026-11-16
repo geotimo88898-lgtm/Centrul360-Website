@@ -326,6 +326,8 @@ async function handleIncasare(req, res, session) {
     Object.assign(appt, { status: 'finalizata', paidSaleId: entry.id, paidAt: entry.createdAt, updatedAt: entry.createdAt });
     await writeJSON('data/appointments.json', appointments);
     if (before !== 'finalizata') { try { await workflows.emit('appointment_status', { appointment: appt, status: 'finalizata' }); } catch (e) { /* never blocks a payment */ } }
+    // her lead follows (16.11): the visit and the payment in its history, the lead in the won column („Client fidel”)
+    await require('./portal-leads').visitLead({ appt, came: before !== 'finalizata', paid: { amount, treatment: entry.treatment, saleId: entry.id }, author: whoOf(employees, session) });
     // paid: "Venit" and "Client" (with what she paid) for her Facebook lead (Conversions API); never blocks a payment
     await capi.soon(() => capi.crmSync({ appointment: appt }));
     // every payment the desk records rings for the owner; the card part may have rung already from the POS
@@ -355,6 +357,79 @@ async function handleIncasare(req, res, session) {
     res.status(200).json({ ok: true, entry, upsell: upsellEntry, due, commission });
   } catch (err) {
     console.error('portal-sale (incasare) error:', err.message);
+    res.status(500).json({ error: 'sale_failed' });
+  }
+}
+
+const whoOf = (employees, session) => (session.employeeId === 'admin' ? 'Admin' : ((employees.find((e) => e.id === session.employeeId) || {}).name || 'Încasări'));
+
+// „Încasează restul” (16.11, the audit): a payment on what she still owes for a package, with no visit that day (she
+// pays at the desk, by transfer, between sessions). Nobody's treatment: it counts for no one's day (performedBy empty),
+// only for the package and its upsell's commission (4% of each payment, _lib/commission.js), the same as a part paid
+// at a visit. { source: 'incasare', dueId, amount, method, cashAmount?, cardAmount? }
+async function handleRest(req, res, session) {
+  const b = req.body || {};
+  const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+  const method = b.method;
+  if (!VALID_METHODS.includes(method)) { res.status(400).json({ error: 'invalid_method' }); return; }
+  const amount = r2(b.amount);
+  if (!Number.isFinite(amount) || amount <= 0) { res.status(400).json({ error: 'invalid_amount' }); return; }
+  let split = null;
+  if (method === 'cash_card') {
+    const cash = r2(b.cashAmount), card = r2(b.cardAmount);
+    if (!(cash > 0) || !(card > 0) || Math.abs(cash + card - amount) > 0.01) { res.status(400).json({ error: 'invalid_split' }); return; }
+    split = { cash, card };
+  }
+  try {
+    const D = require('./_lib/dues');
+    const store = { readJSON, writeJSON };
+    const [sales, employees] = await Promise.all([readJSON('data/sales.json', []), readJSON('data/employees.json', [])]);
+    const owed = await D.find(store, String(b.dueId || ''));
+    if (!owed || !(D.rest(owed) > 0)) { res.status(400).json({ error: 'invalid_due' }); return; }
+    if (amount > D.rest(owed) + 0.01) { res.status(400).json({ error: 'over_rest', rest: D.rest(owed) }); return; }
+    const location = D.locOf(owed, sales);
+    if (!inCity(await cityOf(session, readJSON, employees), location)) { res.status(403).json({ error: 'forbidden' }); return; }
+    // the same sum on the same package a moment ago: the first try went through
+    if (sales.some((x) => x.source === 'incasare' && x.restOnly && x.dueId === owed.id && Math.abs(Number(x.amount) - amount) < 0.01 && Date.now() - Date.parse(x.createdAt || 0) < 10 * 60e3)) { res.status(409).json({ error: 'already_paid' }); return; }
+    const first = sales.find((x) => x.id === owed.saleId) || {};
+    const categories = categoriesOf(first).length ? categoriesOf(first) : normalizeCategories(require('./_lib/booking').catOf({ title: owed.what || '' }));
+    const entry = {
+      id: crypto.randomUUID(), source: 'incasare', restOnly: true,
+      employeeId: session.employeeId, performedBy: '', appointmentId: '',
+      clientId: owed.clientId || '', client: owed.client || first.client || '',
+      date: todayISO(), location, categories, category: categories[0] || '',
+      treatment: String(owed.what || first.treatment || 'Pachet').replace(/^Upsell · /, '').slice(0, 200),
+      amount, bookedAmount: 0, upsell: 0, parts: { session: 0, upsell: 0, due: amount },
+      dueId: owed.id, toDue: amount, method, split, status: 'recorded', commission: 0, note: '',
+      createdAt: new Date().toISOString(), decidedAt: null,
+    };
+    sales.push(entry);
+    await writeJSON('data/sales.json', sales);
+    const CM = require('./_lib/commission');
+    const u = sales.find((x) => x.source === 'comision' && x.incasareId === owed.saleId && x.status === 'approved');
+    const gain = u && CM.cashRule(u) ? CM.nextPayLei(u, CM.context(sales, await store.readJSON(D.KEY, []), employees), amount) : 0;
+    const p = await D.pay(store, owed.id, owed.clientId, entry, amount);
+    if (p && p.applied > 0 && gain > 0) {
+      const lei = Math.min(gain, commissionOf(p.applied));
+      try { await N.notify(store, u.employeeId, { kind: 'commission', tone: 'good', go: 'comision', title: 'COMISION ✅ - +' + N.leiTxt(lei), text: 'Din restul pachetului: ' + N.leiTxt(p.applied) + ' încasați' + (entry.client ? ', ' + entry.client : '') }); } catch (e) { /* never blocks a payment */ }
+    }
+    // her lead's history (by her phone, from her sheet)
+    const client = owed.clientId ? (await readJSON('data/clients.json', [])).find((c) => c && c.id === owed.clientId) : null;
+    if (client && client.phone) await require('./portal-leads').visitLead({ appt: { clientPhone: client.phone, clientId: client.id }, paid: { amount, treatment: entry.treatment + ' · din rest', saleId: entry.id }, author: whoOf(employees, session) });
+    if (!N.isOwner(session)) {
+      try {
+        const cardIn = method === 'card' ? amount : split ? split.card : 0;
+        const pos = cardIn > 0 ? await N.claim(store, N.payRef('pos', cardIn), true) : null;
+        await N.notifyMany(store, await N.adminIds(store), {
+          kind: 'money', tone: 'good', go: 'incasari', tag: pos ? pos.tag : 'pay-' + entry.id, quiet: !!pos, ref: cardIn > 0 ? N.payRef('desk', cardIn) : '',
+          title: 'ÎNCASARE' + N.cityTag(entry.location) + ' 💵 - ' + N.leiTxt(amount) + ' ' + METHOD_WORD[method],
+          text: 'Din restul pachetului' + (entry.client ? ' · ' + entry.client : ''),
+        });
+      } catch (e) { /* never blocks a payment */ }
+    }
+    res.status(200).json({ ok: true, entry, due: (p && p.due) || null });
+  } catch (err) {
+    console.error('portal-sale (rest) error:', err.message);
     res.status(500).json({ error: 'sale_failed' });
   }
 }
@@ -418,7 +493,9 @@ const handler = async (req, res) => {
 
   const { source } = req.body || {};
 
-  if (source === 'incasare') {
+  if (source === 'incasare' && !(req.body || {}).appointmentId && (req.body || {}).dueId) {
+    await handleRest(req, res, session);
+  } else if (source === 'incasare') {
     // Whoever is at the desk takes the payment (in Arad that can be the cosmetician herself).
     await handleIncasare(req, res, session);
   } else if (source === 'comision_cancel') {

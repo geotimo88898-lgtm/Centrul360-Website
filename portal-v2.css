@@ -166,6 +166,18 @@ div.pay-appt{ cursor:default; }
 .ct-more{ margin:1rem auto 0; display:flex; }
 .ct-count{ text-align:center; color:var(--muted-2); font-size:.8rem; margin:.8rem 0 0; }
 .ct-quick{ display:flex; gap:.5rem; flex-wrap:wrap; }
+/* her sheet, under the buttons (16.11): the rest of a package to take, her lead in the Pipeline */
+.ct-nexts{ display:flex; flex-direction:column; gap:.45rem; margin-top:.7rem; }
+.ct-next{ display:flex; align-items:center; gap:.7rem; width:100%; min-width:0; padding:.65rem .8rem; border-radius:14px; border:1px solid var(--line); background:var(--glass); color:var(--fg); font:inherit; text-align:left; cursor:pointer; transition:background .15s ease, border-color .15s ease; }
+.ct-next > span{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.ct-next b{ font-size:.92rem; font-variant-numeric:tabular-nums; }
+.ct-next small{ font-size:.78rem; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ct-next .k-ic{ flex:none; width:18px; height:18px; }
+.ct-next > .k-ic:last-child{ color:var(--muted); }
+.ct-next:hover{ border-color:var(--accent); }
+.ct-next.is-warn{ border-color:color-mix(in srgb, var(--warn) 45%, transparent); background:var(--warn-soft); }
+.ct-next.is-warn > .k-ic:first-child{ color:var(--warn); }
+.ct-pays{ margin-top:1rem; }
 /* the Facebook form she filled: question → answer */
 .ct-form{ margin-top:1rem; padding:.85rem .95rem; border-radius:14px; background:var(--glass); border:1px solid var(--line); }
 .ct-form-head{ display:flex; align-items:center; gap:.5rem; margin-bottom:.6rem; }
@@ -794,6 +806,14 @@ html.c360-reduce *, html.c360-reduce *::before, html.c360-reduce *::after{ anima
 .pay-grid[hidden], .pay-part [hidden]{ display:none !important; }
 @media (max-width:560px){ .pay-grid{ grid-template-columns:1fr; } }
 .pay-part .k-field, .pay-part .k-money, .pay-part input{ min-width:0; max-width:100%; box-sizing:border-box; }
+/* „Încasează restul” (16.11): the rest on top, then how much and how */
+.pay-rest{ display:flex; flex-direction:column; gap:1rem; }
+/* the offer made with the calculator (16.11): its options, a tap fills the upsell */
+.pay-offers{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.5rem; }
+.pay-offers button{ display:flex; flex-direction:column; align-items:flex-start; gap:.15rem; min-width:0; padding:.6rem .75rem; border-radius:12px; border:1.5px solid var(--line); background:var(--paper-2); color:var(--fg); font:inherit; text-align:left; cursor:pointer; transition:border-color .15s ease, background .15s ease; }
+.pay-offers button b{ font-size:1rem; font-variant-numeric:tabular-nums; }
+.pay-offers button small{ font-size:.76rem; color:var(--muted); overflow-wrap:anywhere; }
+.pay-offers button.is-on{ border-color:var(--accent); background:var(--accent-soft); }
 
 /* Încasări → Alte date (the owner, 8.11, iPad): the two dates side by side without overlapping (Safari's date field has
    its own width; here it takes the width it is given), and only when „Alte date” is picked */

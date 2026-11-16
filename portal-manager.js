@@ -179,7 +179,7 @@
       const now = r.todayCheckIn ? (r.todayCheckOut ? 'plecat la ' + r.todayCheckOut : 'prezent de la ' + r.todayCheckIn) : 'nepontat azi';
       return '<button type="button" class="k-row is-click mg-prow" data-emp="' + esc(r.employeeId) + '">' + K.avatar(r.name, 36) +
         '<div class="k-row-main"><div class="k-row-title">' + esc(r.name) + '</div>' +
-          '<div class="k-row-sub">' + esc(K.roleLabel(r.role)) + ' · ' + esc(r.role === 'manager' ? 'ambele clinici' : r.location || '') + '</div>' +
+          '<div class="k-row-sub">' + esc(K.roleLabel(r.role)) + ' · ' + esc(whereOf(r)) + '</div>' +
           '<div class="mg-prow-kv"><span class="' + (r.todayCheckIn ? 'is-good' : '') + '">' + esc(now) + '</span>' +
             (r.debt ? '<span class="is-warn">de recuperat ' + fmt(r.debt) + '</span>' : '') + (r.bank ? '<span>suplimentare ' + fmt(r.bank) + '</span>' : '') +
             '<span>concediu rămas ' + K.plural(r.daysLeft, 'zi', 'zile') + '</span>' + (r.pending ? '<span class="is-warn">' + r.pending + ' la aprobare</span>' : '') + '</div></div>' +
@@ -213,11 +213,17 @@
       K.ui().toast(ok ? 'Concediu aprobat, calendarul e blocat.' : 'Cerere respinsă.', ok ? 'success' : 'info'); K.reload(); body();
     } catch (e) { K.ui().toast(e.code === 'employee_left' ? 'A plecat din echipă, cererea nu se mai aprobă.' : errText(e), 'error'); }
   }
+  // where someone works: a manager, her clinics („Timișoara și Arad”, 16.11), anyone else her clinic
+  function whereOf(r) {
+    if (!r || r.role !== 'manager') return (r && r.location) || '';
+    const m = Array.isArray(r.manages) && r.manages.length ? r.manages : r.employeeId === me().id && Array.isArray(me().manages) && me().manages.length ? me().manages : ['Timișoara', 'Arad'];
+    return m.join(' și ');
+  }
   // one person's month: her days, with the correction of a mistaken entry (never one's own)
   async function openEmp(id) {
     const r = (S.team || []).find((x) => x.employeeId === id) || { name: nameOf(id) };
     const month = K.thisMonth();
-    const d = K.drawer({ title: r.name, lead: K.avatar(r.name, 42), width: 520, subtitle: K.roleTag(r.role) + esc(r.location || ''), body: skel(200) });
+    const d = K.drawer({ title: r.name, lead: K.avatar(r.name, 42), width: 520, subtitle: K.roleTag(r.role) + esc(whereOf(r)), body: skel(200) });
     let list = [];
     try { list = (await K.api('/api/portal-attendance', { action: 'list', employeeId: id, year: Number(month.slice(0, 4)), month: Number(month.slice(5, 7)) })).entries || []; }
     catch (e) { d.set({ body: K.empty('alert', 'Nu am putut încărca pontajul', '') }); return; }

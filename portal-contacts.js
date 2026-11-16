@@ -83,11 +83,9 @@
     if (f) { S.filter = f.dataset.filter; S.limit = 60; return load(); }
     const o = t.closest('[data-open]');
     if (o) {
-      // the front desk lands in her conversation (Mesaje), her sheet one tap away from its header; a cosmetician, or a
-      // contact with no phone, opens the sheet
-      // the row opens her sheet (what she owes, when she came, her files); Mesaje is one tap away in the sheet's header
-      return openContact(o.dataset.open);      if (c && K.frontDesk && K.frontDesk() && K.chat && String(c.phone || '').replace(/\D/g, '').length >= 9) return K.chat(c.phone, { name: c.name || '', city: c.location || '', none: () => { K.go('contacte'); openContact(c.id); } });
-      return openContact(o.dataset.open);
+      // the row opens her sheet (what she owes, when she came, her files), growing from the row; Mesaje is one tap away
+      // in the sheet's header (16.11: it used to open Mesaje)
+      return openContact(o.dataset.open, null, o);
     }
     const a = t.closest('[data-act]');
     if (!a) return;
@@ -333,10 +331,10 @@
   // =====================================================================================
   // ONE CONTACT
   // =====================================================================================
-  function openContact(id, tab) {
+  function openContact(id, tab, from) {
     const st = { id, tab: tab || 'fise', c: null, detail: null, appts: [], pays: [], busy: '' };
     const d = K.drawer({
-      title: 'Contact', icon: 'user', width: 820, focus: false,
+      title: 'Contact', icon: 'user', width: 820, focus: false, from,
       body: '<div class="k-skel" style="height:320px"></div>',
       onClose() { if (S.dirty) { S.dirty = false; if (panel && K.isActive('contacte')) load(); } },
     });
@@ -356,7 +354,7 @@
     (async () => {
       try {
         const j = await api('get', { id });
-        Object.assign(st, { c: j.contact, detail: j.detail, appts: j.appointments || [], pays: j.payments || [], forms: j.forms || [], dues: j.dues || [], lastCame: j.lastCame || '' });
+        Object.assign(st, { c: j.contact, detail: j.detail, appts: j.appointments || [], pays: j.payments || [], forms: j.forms || [], dues: j.dues || [], lastCame: j.lastCame || '', leadId: j.leadId || '' });
         paintAll();
       } catch (e) { d.set({ body: K.empty('alert', 'Nu am putut deschide contactul', errText(e)) }); }
     })();
@@ -367,13 +365,18 @@
         title: c.name || '(fără nume)', lead: K.avatar(c.name || '?', 46), icon: '',
         subtitle: (c.isClient ? '<span class="k-tag is-accent">Clientă</span>' : '<span class="k-tag is-info">Lead</span>') + esc(c.phone || '') + (c.location ? ' · ' + esc(c.location) : '') + (c.source ? ' · ' + esc(SOURCES[c.source] || c.source) : ''),
         body: '<div class="ct-quick">' + (c.phone ? '<a class="k-btn is-outline" href="' + K.tel(c.phone) + '">' + icon('phone') + 'Sună</a><a class="k-btn is-outline" href="#mesaje" data-chat="' + esc(c.phone) + '" data-chat-name="' + esc(c.name || '') + '" data-chat-city="' + esc(c.location || '') + '">' + icon('chat') + 'Mesaje</a>' : '') +
+            // what the desk does next with her, from her sheet (16.11): book her, take the rest of a package, her lead
+            (desk() && c.phone ? '<button type="button" class="k-btn is-outline" data-book>' + icon('calendar') + 'Programează</button>' : '') +
             '<button type="button" class="k-btn is-outline" data-edit>' + icon('pen') + 'Editează</button></div>' +
+          nextHtml() +
           formsHtml() +
           '<div class="ct-tabs">' + K.seg('cttab', [['fise', 'Fișe & mențiuni', 'file'], ['poze', 'Poze înainte / după', 'image'], ['istoric', 'Istoric', 'clock']], st.tab, 'is-big') + '</div>' +
           '<div class="ct-pane" data-pane></div>',
         onMount(el) {
           el.querySelector('input[name=cttab]').addEventListener('change', (e) => { st.tab = e.target.value; paintPane(); });
           el.querySelector('[data-edit]').addEventListener('click', () => editContact(st, () => paintAll()));
+          const bk = el.querySelector('[data-book]');
+          if (bk) bk.addEventListener('click', () => { const x = st.c; d.close(); K.emit('calendar:new', { clientName: x.name || '', clientPhone: x.phone || '', location: x.location || '', leadId: st.leadId || '' }); });
           const body = el.querySelector('.k-dbody'); // the drawer shell is shared by every drawer: listen on its body only
           body.addEventListener('change', onFile);
           body.addEventListener('change', (e) => {
@@ -383,10 +386,32 @@
             paintPane();
           });
           body.addEventListener('click', onPaneClick);
+          body.addEventListener('click', (e) => {
+            const r = e.target.closest('[data-rest]');
+            if (r) {
+              const x = (st.dues || []).find((y) => y.id === r.dataset.rest);
+              if (x) K.payRest({ id: x.id, client: st.c.name, what: x.name, rest: x.rest, total: x.total, paid: Math.max(0, x.total - x.rest) }, { from: r, done: () => openContact(st.id, 'istoric') });
+              return;
+            }
+            if (e.target.closest('[data-lead-open]')) {
+              const lid = st.leadId; d.close(); K.go('pipeline');
+              // the Pipeline loads its leads first: the sheet opens as soon as she is there
+              const until = Date.now() + 5000;
+              (function tryOpen() { const P = window.C360Pipeline; if ((P && P.openLead(lid)) || Date.now() > until) return; setTimeout(tryOpen, 150); })();
+            }
+          });
           body.addEventListener('focusout', onBlur);
           paintPane();
         },
       });
+    }
+    const desk = () => !!(K.frontDesk && K.frontDesk() && !(K.data && K.data.impersonating));
+    // under her buttons: the rest she owes (a tap takes it, no visit needed) and her lead in the Pipeline
+    function nextHtml() {
+      const owed = (st.dues || []).filter((x) => Number(x.rest) > 0);
+      const rest = desk() && K.payRest ? owed.map((x) => '<button type="button" class="ct-next is-warn" data-rest="' + esc(x.id) + '">' + icon('wallet') + '<span><b>Încasează restul · ' + K.lei(x.rest) + '</b><small>' + esc(x.name || 'Pachet') + '</small></span>' + icon('arrow') + '</button>').join('') : '';
+      const lead = st.leadId && desk() ? '<button type="button" class="ct-next" data-lead-open>' + icon('users') + '<span><b>Vezi leadul</b><small>în Pipeline, cu istoricul ei</small></span>' + icon('arrow') + '</button>' : '';
+      return rest || lead ? '<div class="ct-nexts">' + rest + lead + '</div>' : '';
     }
     // what she answered in the Facebook form (the questions that sort the leads), right under her buttons
     function formsHtml() {
@@ -521,7 +546,19 @@
         '<div class="k-stat is-good"><div class="k-stat-top">' + icon('wallet') + 'Total plătit</div><div class="k-stat-value">' + K.lei(paid) + '</div><div class="k-stat-sub">' + K.plural(K.pays ? K.pays(st.pays).length : st.pays.length, 'încasare', 'încasări') + '</div></div></div>' +
         (st.appts.length ? '<div class="k-list">' + st.appts.map((a) => '<div class="k-row ct-appt" data-appt="' + esc(a.id) + '" data-appt-date="' + esc(a.date || '') + '" role="button" tabindex="0" title="Deschide programarea"><div class="k-row-main"><div class="k-row-title">' + esc(a.treatment || '-') + '</div><div class="k-row-sub">' + esc(K.dateShort(a.date)) + ' ' + esc(a.time || '') + ' · ' + esc(a.location || '') + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</div></div>' +
           '<div class="k-row-end">' + (a.amount ? '<span class="k-amount">' + K.lei(a.amount) + '</span>' : '') + '<span class="k-tag">' + esc(ST[a.status] || a.status) + '</span></div></div>').join('') + '</div>'
-          : K.empty('calendar', 'Nicio programare încă', '')) + ghlHistoryHtml();
+          : K.empty('calendar', 'Nicio programare încă', '')) + paysHtml() + ghlHistoryHtml();
+    }
+    // her payments and refunds (Încasări), newest first (16.11)
+    function paysHtml() {
+      const list = (st.pays || []).slice().sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : 0));
+      if (!list.length) return '';
+      const MT = { card: 'card', cash: 'cash', transfer: 'transfer', cash_card: 'cash + card' };
+      return '<section class="ct-sec ct-pays"><h4>' + icon('wallet') + 'Încasări și rambursări <span class="k-muted">' + list.length + '</span></h4><div class="k-list">' + list.map((p) => {
+        const back = p.kind === 'refund';
+        return '<div class="k-row"><span class="k-icon-chip' + (back ? ' is-bad' : ' is-good') + '">' + icon(back ? 'undo' : 'wallet') + '</span><div class="k-row-main"><div class="k-row-title">' + esc(String(p.treatment || (back ? 'Rambursare' : 'Încasare')).replace(/^Rambursare · /, '')) + '</div>' +
+          '<div class="k-row-sub">' + esc(K.dateShort(p.date)) + (MT[p.method] ? ' · ' + MT[p.method] : '') + '</div></div>' +
+          '<div class="k-row-end">' + (back ? '<span class="k-tag is-bad">rambursare</span>' : '') + '<span class="k-amount' + (back ? ' is-neg' : '') + '">' + K.lei(p.amount, p.amount % 1 ? 2 : 0) + '</span></div></div>';
+      }).join('') + '</div></section>';
     }
     // what she wrote with the clinic in HighLevel (WhatsApp, SMS, email, Facebook …), newest first
     const CH = { whatsapp: 'WhatsApp', sms: 'SMS', email: 'Email', facebook: 'Facebook', instagram: 'Instagram', call: 'Apel', chat: 'Chat', comment: 'Comentariu intern', form: 'Formular', google: 'Google', tiktok: 'TikTok', other: 'Mesaj' };

@@ -103,6 +103,13 @@ async function handleRefund(req, res) {
         });
       } catch (e) { /* never blocks the refund */ }
     }
+    // her lead's history says it too (Pipeline → Istoric), by her phone
+    try {
+      const cl = row.clientId ? (await readJSON('data/clients.json', [])).find((c) => c && c.id === row.clientId) : null;
+      const ap = !cl && sale.appointmentId ? (await readJSON('data/appointments.json', [])).find((a) => a && a.id === sale.appointmentId) : null;
+      const phone = (cl && cl.phone) || (ap && ap.clientPhone) || '';
+      if (phone) await require('./portal-leads').refundLead({ phone, amount: p.lei, treatment: String(row.treatment || '').replace(/^Rambursare · /, '') + (row.reason ? ' · ' + row.reason : ''), author: empName(session.employeeId) || 'Încasări' });
+    } catch (e) { /* never blocks the refund */ }
     res.status(200).json(Object.assign({ ok: true, refund: row }, out));
   } catch (err) {
     console.error('portal-incasari refund error:', err.message);

@@ -253,6 +253,100 @@ async function unbookLead(appt, why, author) {
   }
 }
 
+// The side columns (made by themselves): „Anulat” after the booked one, „Mesaj nelivrat” after the first. They are where a
+// lead waits, never the next step of the way (the drawer's „Următoarea” skips them, portal-pipeline.js)
+const isSide = (s) => !!s && (s.id === ANULAT.id || s.id === UNDELIVERED.id || /^anulat|undeliver|nelivrat/i.test(String(s.name || '')));
+// „Venit la programare” (or the stage in its place: the first working column after the booked one that is not a side one)
+function cameStage(stages) {
+  const b = stages.findIndex((x) => x.kind === 'booked');
+  return stages.find((x) => x.id === 'venit_la_programare') || stages.find((x) => x.kind === 'open' && /^venit/i.test(String(x.name || '').trim())) ||
+    stages.find((x, i) => i > b && b >= 0 && x.kind === 'open' && !isSide(x)) || null;
+}
+// „Contactat” (or the first working column after the entry one that is not a side one)
+function reachedStage(stages) {
+  const nou = leadNouStage(stages), n = stages.indexOf(nou), b = stages.findIndex((x) => x.kind === 'booked');
+  return stages.find((x) => x.id === 'contactat') || stages.find((x) => x.kind === 'open' && /^contactat/i.test(String(x.name || '').trim())) ||
+    stages.find((x, i) => i > n && (b < 0 || i < b) && x.kind === 'open' && !isSide(x)) || null;
+}
+const atText = (a) => String((a && a.date) || '').slice(0, 10) + (a && a.time ? ' ' + String(a.time).slice(0, 5) : '');
+// the lead of a visit or a payment: the one linked to the booking, else the newest with her phone (a client already won
+// included: her history gets the visit and the money too)
+function leadFor(leads, stages, o) {
+  if (o.leadId) { const l = leads.find((x) => x.id === o.leadId); if (l) return l; }
+  if (o.appointmentId) { const l = leads.find((x) => x.appointmentId === o.appointmentId); if (l) return l; }
+  const key = normPhone(o.phone);
+  if (key.length < 6) return null;
+  const mine = leads.filter((l) => normPhone(l.phone) === key).sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)));
+  return mine.find((l) => stageKind(stages, l.stage) !== 'won') || mine[0] || null;
+}
+function moveTo(lead, stages, target, author, why) {
+  if (!target || lead.stage === target.id) return false;
+  addActivity(lead, { type: 'stage', author, text: (stages.find((x) => x.id === lead.stage) || { name: lead.stage }).name + ' → ' + target.name + (why ? ' · ' + why : '') });
+  lead.stage = target.id;
+  lead.stageChangedAt = nowISO();
+  lead.lostReason = '';
+  return true;
+}
+
+// She came (the visit is „Finalizată”) or paid (16.11, the audit: „fiecare acțiune duce mai departe”): her lead's history
+// says so, and the lead follows: a visit takes her to „Venit la programare”, a payment to the won column („Client fidel”),
+// from any column before it (lost and cancelled included: she came). A won lead stays won. The booking shown on her card
+// is the next one still on, or none. o: { appt, paid: { amount, treatment, saleId } , author }. Never throws.
+async function visitLead(o) {
+  try {
+    const a = o.appt || {};
+    const stages = await loadStages();
+    const leads = (await readJSON(LEADS_KEY, [])).map(normalizeLead);
+    const lead = leadFor(leads, stages, { leadId: a.leadId, appointmentId: a.id, phone: a.clientPhone || (o.paid && o.paid.phone) });
+    if (!lead) return null;
+    const author = o.author || 'Calendar';
+    const came = !!(a.id && o.came);
+    if (came && !(lead.activities || []).some((x) => x.type === 'visit' && x.apptId === a.id)) {
+      addActivity(lead, { type: 'visit', apptId: a.id, text: atText(a) + (a.treatment ? ' · ' + clip(a.treatment, 120) : ''), author });
+    }
+    if (o.paid && Number(o.paid.amount) > 0) {
+      addActivity(lead, { type: 'payment', saleId: clip(o.paid.saleId, 60), amount: Math.round(Number(o.paid.amount) * 100) / 100, text: clip(o.paid.treatment || a.treatment, 160), author });
+    }
+    const kind = stageKind(stages, lead.stage);
+    const won = stages.find((x) => x.kind === 'won');
+    const order = (id) => stages.findIndex((x) => x.id === id);
+    if (o.paid && Number(o.paid.amount) > 0 && won && kind !== 'won') {
+      moveTo(lead, stages, won, author, 'a plătit');
+      lead.followUpAt = ''; lead.nextAction = '';
+      if (a.clientId && !lead.clientId) lead.clientId = a.clientId;
+    } else if (came && kind !== 'won') {
+      const to = cameStage(stages);
+      if (to && (kind === 'lost' || isSide(stages.find((x) => x.id === lead.stage)) || order(lead.stage) < order(to.id))) moveTo(lead, stages, to, author, 'a venit');
+    }
+    // the visit is over: her card shows the next booking still on, or none
+    if (a.id && lead.appointmentId === a.id && (came || o.paid)) {
+      const live = await otherBooking(a);
+      lead.appointmentId = live ? live.id : '';
+      lead.appointmentAt = live ? atText(live) : '';
+    }
+    await writeJSON(LEADS_KEY, leads);
+    return lead;
+  } catch (err) {
+    console.error('visitLead error:', err.message);
+    return null;
+  }
+}
+// money given back to her: a line in her lead's history (the column stays). o: { phone, amount, treatment, author }
+async function refundLead(o) {
+  try {
+    const stages = await loadStages();
+    const leads = (await readJSON(LEADS_KEY, [])).map(normalizeLead);
+    const lead = leadFor(leads, stages, { phone: o.phone });
+    if (!lead) return null;
+    addActivity(lead, { type: 'refund', amount: Math.round(Math.abs(Number(o.amount) || 0) * 100) / 100, text: clip(o.treatment, 160), author: o.author || 'Încasări' });
+    await writeJSON(LEADS_KEY, leads);
+    return lead;
+  } catch (err) {
+    console.error('refundLead error:', err.message);
+    return null;
+  }
+}
+
 // A WhatsApp message that didn't reach a new lead (no WhatsApp on the number, a wrong number, Meta refused it): the
 // lead goes to "Undelivered" (made the first time, right after the first stage), so the desk calls her instead.
 // Only leads not yet booked move (a booked client's failed reminder doesn't take her out of her stage). Never throws.
@@ -580,7 +674,7 @@ module.exports = async (req, res) => {
       // upsertClient() every money/booking flow uses, keyed by phone, so a lead and an
       // existing client with the same number collapse onto one record.
       if (target.kind === 'won') {
-        const client = await upsertClient({ name: lead.name, phone: lead.phone }, { readJSON, writeJSON });
+        const client = await upsertClient({ name: lead.name, phone: lead.phone, location: lead.location }, { readJSON, writeJSON });
         lead.clientId = client.id;
       }
       await writeJSON(LEADS_KEY, leads);
@@ -608,9 +702,20 @@ module.exports = async (req, res) => {
       lead.contactCount = (lead.contactCount || 0) + 1;
       if (body.followUpAt !== undefined) lead.followUpAt = followUpAt;
       if (body.nextAction !== undefined) lead.nextAction = clip(body.nextAction, 160);
-      // only a note on the lead: the stage is moved by the receptionist, never by the outcome
       addActivity(lead, { type: 'contact', channel, outcome: body.outcome, text: clip(body.text, 1000), author });
-      await save();
+      // she answered (16.11, the audit): a lead still in the entry columns (Lead nou, Mesaj nelivrat) goes to „Contactat”,
+      // as the desk used to drag her; one already further stays where she is
+      const reached = ['raspuns', 'interesat', 'revine'].includes(body.outcome) ? reachedStage(stages) : null;
+      let movedTo = null;
+      if (reached && stageKind(stages, lead.stage) === 'open' && stages.findIndex((x) => x.id === lead.stage) < stages.findIndex((x) => x.id === reached.id)) {
+        if (moveTo(lead, stages, reached, author, 'a răspuns')) movedTo = reached;
+      }
+      if (movedTo) {
+        await writeJSON(LEADS_KEY, leads);
+        await workflows.emit('stage_changed', { lead, stage: movedTo.id }); // as a move by hand would
+        const fresh = (await readJSON(LEADS_KEY, [])).map(normalizeLead).find((l) => l.id === lead.id) || lead;
+        res.status(200).json({ ok: true, lead: withComputedFields(fresh, stages), moved: movedTo.name });
+      } else await save();
       // she answered: "Contactat" for a Facebook lead
       if (['raspuns', 'interesat', 'revine', 'programat', 'refuz'].includes(body.outcome)) await capi.soon(() => capi.crmSync({ leadIds: [lead.id] }));
       return;
@@ -661,3 +766,5 @@ module.exports.loadStages = loadStages;
 module.exports.bookLead = bookLead;
 module.exports.unbookLead = unbookLead;
 module.exports.markUndelivered = markUndelivered;
+module.exports.visitLead = visitLead;
+module.exports.refundLead = refundLead;

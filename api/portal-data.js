@@ -90,6 +90,16 @@ function computeGoalCurrent(goal, employeeId, sales, appointments, today, month,
 }
 
 // her break today ({ from, to, on, moved }) or null: no shift, a short one
+// her pontaj today (Panou: „Pontează sosirea” while she hasn't, 16.11): arrived / left, and whether she works today
+// (her schedule says so, or no schedule is set; never on a day of leave)
+async function myClockToday(id, today, attendance, appointments) {
+  const T = require('./_lib/team-schedule');
+  const row = (attendance || []).find((x) => x && x.employeeId === id && x.date === today) || {};
+  const day = T.dayOf(await T.load(), id, today);
+  const works = !T.onLeave(appointments, id, today) && (!day || !!day.on);
+  return { checkIn: row.checkIn || '', checkOut: row.checkOut || '', works, from: (day && day.on && day.from) || '' };
+}
+
 async function myBreakToday(id, today, appointments) {
   const T = require('./_lib/team-schedule');
   const [doc, cosm] = await Promise.all([T.load(), T.people()]);
@@ -307,6 +317,7 @@ module.exports = async (req, res) => {
         // a cosmetician's own break today (Panou: „Pauza ta: 14:30-15:00”), from her shift (_lib/team-schedule.js)
         myBreak: me.role === 'cosmetician' ? await myBreakToday(me.id, today, appointments).catch(() => null) : null,
       },
+      myClock: isAdmin || session.viewer ? null : await myClockToday(me.id, today, attendanceAll, appointments).catch(() => null),
       myGoals,
       // Traininguri: every manual for everyone (the goal: everyone sells). The team sees the sheets and cases the
       // owner checked, without the answers; the owner sees everything and everyone's progress.

@@ -508,7 +508,10 @@
       },
     };
     current = handle;
-    if (!pushed && window.matchMedia && window.matchMedia('(max-width:720px)').matches) { try { history.pushState({ kd: 1 }, '', location.href); pushed = true; } catch (e) { /* no history */ } }
+    if (!pushed && window.matchMedia && window.matchMedia('(max-width:720px)').matches) {
+      // the Pipeline's lead sheet closing for this one (Programează): its step becomes this drawer's
+      try { if (history.state && history.state.pld) history.replaceState({ kd: 1 }, '', location.href); else history.pushState({ kd: 1 }, '', location.href); pushed = true; } catch (e) { /* no history */ }
+    }
     handle.set({});
     aside.classList.remove('is-swap'); void aside.offsetWidth; aside.classList.add('is-swap');
     document.documentElement.classList.add('c360-noscroll');

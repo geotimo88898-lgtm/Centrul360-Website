@@ -111,6 +111,8 @@
     if (row) openPayment(row.dataset.pay, row);
     const due = e.target.closest('[data-due-refund]');
     if (due) openRefund(due.dataset.dueSale, due.closest('.k-row') || due, { scope: 'package', dueId: due.dataset.dueRefund });
+    const dp = e.target.closest('[data-due-pay]');
+    if (dp) { const dd = (DUES.list || []).find((x) => x.id === dp.dataset.duePay); if (dd) openRestPay(dd, { from: dp.closest('.k-row') || dp }); }
   }
 
   const inLoc = (s) => S.loc === 'all' || s.location === S.loc;
@@ -259,10 +261,11 @@
     if (!list.length) return '<p class="k-muted" style="margin:0">Nicio clientă nu mai are de plătit dintr-un pachet.</p>';
     const tot = list.reduce((a, d) => a + Number(d.rest || 0), 0);
     const can = K.canManage() && !(K.data && K.data.impersonating); // Rambursare on a package (the owner, the manager)
+    const desk = K.frontDesk && K.frontDesk() && !(K.data && K.data.impersonating); // „Încasează” the rest, with no visit (16.11)
     return '<div class="mo-total">' + K.plural(list.length, 'pachet', 'pachete') + ' · de încasat <b>' + K.lei(tot, 2) + '</b></div><div class="k-list">' + list.map((dd) =>
       '<div class="k-row"><span class="k-icon-chip is-warn">' + icon('wallet') + '</span><div class="k-row-main"><div class="k-row-title">' + esc(dd.client || '-') + '</div>' +
         '<div class="k-row-sub">' + esc(dd.what || 'Pachet') + ' · plătit ' + K.lei(dd.paid, 2) + ' din ' + K.lei(dd.total, 2) + (dd.location && S.loc === 'all' ? ' · ' + esc(dd.location) : '') + ' · din ' + esc(K.dateShort(String(dd.createdAt).slice(0, 10))) + '</div></div>' +
-        '<div class="k-row-end">' + (can && dd.saleId ? '<button type="button" class="k-btn is-ghost is-sm" data-due-refund="' + esc(dd.id) + '" data-due-sale="' + esc(dd.saleId) + '">' + icon('undo') + 'Rambursare</button>' : '') + '<span class="k-tag is-warn">rest</span><span class="k-amount">' + K.lei(dd.rest, 2) + '</span></div></div>').join('') + '</div>';
+        '<div class="k-row-end">' + (desk ? '<button type="button" class="k-btn is-outline is-sm" data-due-pay="' + esc(dd.id) + '">' + icon('wallet') + 'Încasează</button>' : '') + (can && dd.saleId ? '<button type="button" class="k-btn is-ghost is-sm" data-due-refund="' + esc(dd.id) + '" data-due-sale="' + esc(dd.saleId) + '">' + icon('undo') + 'Rambursare</button>' : '') + '<span class="k-tag is-warn">rest</span><span class="k-amount">' + K.lei(dd.rest, 2) + '</span></div></div>').join('') + '</div>';
   }
 
   // ---------------- myPOS (owner only): the card payments on the POS next to the card payments recorded here
@@ -443,6 +446,78 @@
       '<div class="k-row-end"><span class="k-tag is-bad">rambursare</span><span class="k-tag">' + (METHODS[s.method] || METHODS.card).label + '</span><span class="k-amount is-neg">' + K.lei(s.amount, 2) + '</span></div></div>';
   }
 
+  // ---------------- „Încasează restul”: a payment on a package's rest, with no visit (16.11, the audit: the rest could be paid
+  // only inside a visit's payment of the last 30 days). From Încasări → Rest de plată din pachete and from her sheet
+  // (Contacte). due: { id, client, what, rest, paid, total }; o: { from, done(r) }
+  function openRestPay(due, o) {
+    o = o || {};
+    const rest = Math.round(Number(due.rest || 0) * 100) / 100;
+    const st = { method: 'card', amount: String(rest), cash: '', card: '' };
+    const num = (v) => Math.round((Number(String(v).replace(',', '.')) || 0) * 100) / 100;
+    const money = (attr, val) => '<div class="k-money"><input ' + attr + ' type="number" inputmode="decimal" min="0" step="1" value="' + esc(val == null ? '' : val) + '" placeholder="0"></div>';
+    const d = K.drawer({
+      title: 'Încasează restul', icon: 'wallet', width: 520, focus: false, from: o.from,
+      subtitle: esc(due.client || '') + (due.what ? ' · ' + esc(due.what) : ''),
+      body: '<div class="pay-rest" data-rp></div>',
+      footer: '<button type="button" class="k-btn" data-cancel>Renunță</button><span class="k-grow"></span><button type="button" class="k-btn is-accent is-lg" data-save disabled>' + icon('check') + '<span data-save-label>Încasează</span></button>',
+      onMount(el) {
+        el.querySelector('[data-cancel]').addEventListener('click', () => d.close());
+        const body = el.querySelector('.k-dbody');
+        body.addEventListener('click', (e) => { const m = e.target.closest('[data-m]'); if (m) { keep(); st.method = m.dataset.m; paint(); } });
+        body.addEventListener('input', (e) => {
+          keep();
+          const amt = num(st.amount);
+          if (e.target.matches('[data-cash]') && amt) { el.querySelector('[data-card]').value = Math.max(0, num(amt - num(e.target.value))) || ''; keep(); }
+          if (e.target.matches('[data-card]') && amt) { el.querySelector('[data-cash]').value = Math.max(0, num(amt - num(e.target.value))) || ''; keep(); }
+          check();
+        });
+        el.querySelector('[data-save]').addEventListener('click', (e) => K.busy(e.currentTarget, save));
+      },
+    });
+    const box = () => d.el.querySelector('[data-rp]');
+    function keep() { [['[data-rp-amt]', 'amount'], ['[data-cash]', 'cash'], ['[data-card]', 'card']].forEach(([sel, k]) => { const x = d.el.querySelector(sel); if (x) st[k] = x.value; }); }
+    function paint() {
+      box().innerHTML = '<div class="pay-sum"><span>Rest de plată</span><b>' + K.lei(rest, 2) + '</b>' + (due.total ? '<small>plătit ' + K.lei(due.paid || 0, 2) + ' din ' + K.lei(due.total, 2) + '</small>' : '') + '</div>' +
+        '<section class="pay-step"><h4><i>1</i>Cât plătește acum?</h4><label class="k-field"><span>Din rest</span>' + money('data-rp-amt', st.amount) + '</label></section>' +
+        '<section class="pay-step"><h4><i>2</i>Cum a plătit?</h4><div class="pay-methods">' + Object.keys(METHODS).map((k) =>
+          '<button type="button" data-m="' + k + '" class="' + (st.method === k ? 'is-on' : '') + '"><span>' + icon(METHODS[k].ic) + '</span>' + METHODS[k].label + '</button>').join('') + '</div>' +
+          (st.method === 'cash_card' ? '<div class="pay-split"><label class="k-field"><span>Din care cash</span>' + money('data-cash', st.cash) + '</label><label class="k-field"><span>Din care card</span>' + money('data-card', st.card) + '</label></div>' : '') +
+          '<div class="pay-note" data-rp-note></div></section>';
+      check();
+    }
+    function ok() {
+      const amt = num(st.amount);
+      if (!(amt > 0) || amt > rest + 0.01) return false;
+      if (st.method === 'cash_card' && (!(num(st.cash) > 0) || !(num(st.card) > 0) || Math.abs(num(st.cash) + num(st.card) - amt) > 0.01)) return false;
+      return true;
+    }
+    function check() {
+      const amt = num(st.amount), n = d.el.querySelector('[data-rp-note]');
+      if (n) n.innerHTML = amt > rest + 0.01 ? '<span class="pay-warn">' + icon('alert') + 'Mai are doar ' + K.lei(rest, 2) + '.</span>'
+        : amt > 0 ? '<span>' + (amt >= rest - 0.005 ? 'Pachetul se achită integral.' : 'Rămân ' + K.lei(rest - amt, 2) + '.') + '</span>' : '';
+      const b = d.el.querySelector('[data-save]');
+      b.disabled = !ok();
+      d.el.querySelector('[data-save-label]').textContent = amt > 0 ? 'Încasează ' + K.lei(amt, 2) : 'Încasează';
+    }
+    async function save() {
+      keep();
+      if (!ok()) return;
+      const amt = num(st.amount);
+      try {
+        const r = await K.api('/api/portal-sale', { source: 'incasare', dueId: due.id, amount: amt, method: st.method, cashAmount: num(st.cash), cardAmount: num(st.card) });
+        d.close();
+        K.ui().toast('Încasat ' + K.lei(amt, 2) + ' · ' + (due.client || 'clienta') + '. ' + (r.due && r.due.rest > 0 ? 'Rest: ' + K.lei(r.due.rest, 2) + '.' : 'Pachetul e achitat integral.'), 'success');
+        K.emit('sale:recorded'); DUES.at = 0; loadDues(true); K.reload(); K.emit('remote');
+        if (o.done) o.done(r);
+      } catch (err) {
+        const msg = { over_rest: 'Mai are doar ' + K.lei((err.data && err.data.rest) || rest, 2) + '.', invalid_due: 'Pachetul s-a schimbat sau e achitat. Redeschide.', already_paid: 'Suma asta e deja încasată.', invalid_split: 'Cash + card trebuie să dea suma.', invalid_amount: 'Scrie cât plătește.' }[err.code];
+        K.ui().toast(msg || K.errText(err), 'error');
+      }
+    }
+    paint();
+  }
+  K.payRest = openRestPay;
+
   // ---------------- new payment: appointment → method → who did it
   async function openNew(pre) {
     pre = pre || {};
@@ -471,6 +546,7 @@
       const j = await K.api('/api/portal-appointments', { action: 'unpaid' });
       st.list = j.appointments || [];
       st.dues = j.dues || {}; // what her clients still owe for packages paid in parts
+      st.offers = j.offers || {}; // the offer made with the calculator for that booking (or her newest), its 4 options
     } catch (e) { root().innerHTML = K.empty('alert', 'Nu am putut încărca programările', 'Verifică conexiunea și reîncearcă.'); return; }
     const appt = () => st.list.find((a) => a.id === st.apptId);
     function whoOk() { return cosmeticians(st.city).some((x) => x.id === st.who); }
@@ -482,6 +558,12 @@
       return '<div class="pay-appt is-on"><span class="pay-time"><b>' + esc(a.time || '-') + '</b><small>' + esc(K.relDay(a.date) === K.dateLong(a.date) ? K.dateShort(a.date) : K.relDay(a.date)) + '</small></span>' +
         '<span class="pay-main"><b>' + esc(a.clientName || '-') + '</b><small>' + esc(a.treatment || '') + ' · ' + esc(a.location) + (a.cosmeticianName ? ' · ' + esc(a.cosmeticianName) : '') + '</small></span>' +
         '<span class="pay-amt">' + (a.amount ? K.lei(a.amount) : '<em>fără sumă</em>') + '</span></div>';
+    }
+    function offerPick(a) {
+      const of = st.offers && st.offers[a.id];
+      if (!of || !(of.pages || []).length) return '';
+      return '<div class="pay-part pay-offer"><div class="pay-part-h"><b>Oferta din calculator</b><small>' + esc(of.what || 'Programul ei') + ' · ' + esc(K.dateShort(String(of.at || '').slice(0, 10))) + '</small></div>' +
+        '<div class="pay-offers">' + of.pages.map((p, i) => '<button type="button" data-offer-pick="' + i + '" class="' + (st.offerPick === i ? 'is-on' : '') + '"><b>' + K.lei(p.pay) + '</b><small>' + esc(p.title || ('Oferta ' + (i + 1))) + (p.parts && !/tranș/i.test(p.title || '') ? ' · ' + p.parts + ' tranșe' : '') + '</small></button>').join('') + '</div></div>';
     }
     function optText(x) { return [x.time || 'fără oră', x.clientName || '-', x.treatment || '', x.cosmeticianName || '', x.amount ? K.lei(x.amount) : 'fără sumă'].filter(Boolean).join(' · '); }
     function step1Html(a) {
@@ -533,6 +615,8 @@
             '<datalist id="pay-treats">' + treats.map((t) => '<option value="' + esc(t) + '">').join('') + '</datalist>' +
             '<label class="k-field"><span data-session-label>' + (st.cross ? 'Prețul procedurii făcute' : 'Cât a plătit pentru ședință') + '</span>' + money('data-session', st.session) + '</label>' +
           '</div>' +
+          // the offer made with the calculator (16.11): a tap on the option she took fills the upsell
+          offerPick(a) +
           // the upsell: its whole value, what she paid of it now
           '<div class="pay-part pay-ups' + (st.upsell ? ' is-on' : '') + '">' +
             '<label class="pay-check"><input type="checkbox" data-upsell' + (st.upsell ? ' checked' : '') + '><span class="pay-box">' + icon('check') + '</span>' +
@@ -619,6 +703,17 @@
       if (m) { keepInputs(); st.method = m.dataset.m; return paint(); }
       const w = e.target.closest('[data-who]');
       if (w) { st.who = w.dataset.who; d.el.querySelectorAll('[data-who]').forEach((x) => x.classList.toggle('is-on', x === w)); note(); updateSave(); }
+      // an option of her calculator offer: the upsell is that program, at that price; paid now: all of it, or the first part
+      const op = e.target.closest('[data-offer-pick]');
+      if (op) {
+        keepInputs();
+        const of = st.offers[st.apptId], p = of && of.pages[Number(op.dataset.offerPick)];
+        if (!p) return;
+        st.offerPick = Number(op.dataset.offerPick);
+        st.upsell = true; st.upsWhat = String((of.what || 'Program') + ' · ' + (p.title || '')).slice(0, 120);
+        st.upsValue = String(p.pay); st.upsPaid = String(p.parts ? Math.round(p.pay / p.parts * 100) / 100 : p.pay);
+        return paint();
+      }
 
     }
     // A different city or day empties the choice unless the chosen appointment still matches.
@@ -665,7 +760,7 @@
         return;
       }
       if (t.matches('[data-appt-select]')) {
-        st.apptId = t.value; st.cash = ''; st.card = ''; st.upsell = false; st.dueId = '';
+        st.apptId = t.value; st.cash = ''; st.card = ''; st.upsell = false; st.dueId = ''; st.offerPick = null;
         st.session = null; st.cross = false; st.crossTo = ''; st.upsWhat = ''; st.upsValue = ''; st.upsPaid = ''; st.duePaid = '';
         st.who = (appt() && appt().cosmeticianId) || '';
         return paint();

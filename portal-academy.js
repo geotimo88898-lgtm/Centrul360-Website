@@ -1185,6 +1185,9 @@
     const tiles = (D().prices || []).filter((p) => p.group === s.grp && priceOk(p));
     const picked = new Set(s.lines.map((l) => l.price));
     return '<div class="tr-calc tr-c2" data-calc>' +
+      // made for a client from her booking („Fă oferta”, the cosmetician's appointment sheet, 16.11)
+      (s.client && s.client.id ? '<div class="tr-c2-for">' + icon('user') + '<span>Oferta pentru <b>' + esc(s.client.name || 'clientă') + '</b>' + (s.client.when ? ' · ' + esc(s.client.when) : '') + '</span>' +
+        '<button type="button" class="k-icon-btn" data-calc-unfor aria-label="Altă clientă">' + icon('x') + '</button></div>' : '') +
       '<div class="tr-c2-top">' + (isMgr() ? '<div class="k-seg tr-c2-cities" role="tablist" aria-label="Prețurile clinicii">' + [['tm', 'Timișoara'], ['ar', 'Arad']].map(([v, l]) => '<button type="button" role="tab" aria-selected="' + (city === v) + '" class="' + (city === v ? 'is-on' : '') + '" data-ccity="' + v + '">' + l + '</button>').join('') + '</div>'
         : '<span class="tr-c2-city">' + icon('pin') + (city === 'ar' ? 'Prețuri Arad' : city === 'tm' ? 'Prețuri Timișoara' : 'Prețuri Timișoara și Arad') + '</span>') + '<span class="k-grow"></span>' +
         (isAdmin() ? '<button type="button" class="k-btn is-ghost is-sm" data-prices>' + icon('tag') + 'Prețuri și reguli</button>' : '') +
@@ -1274,9 +1277,27 @@
       .concat(['Total la preț de listă: ' + lei(o.total)], o.pages.map((p) => 'Pagina ' + p.page + ', ' + p.title.toLowerCase() + ' (-' + dec(p.off) + '%): ' + lei(p.pay) + (p.parts ? ', adică ' + lei(p.pay / p.parts) + ' pe tranșă' : '')),
         s.duration ? ['Durata estimată: ' + s.duration] : [], s.result ? ['Rezultat estimat: ' + s.result] : []).join('\n');
   }
+  // the offer as data (16.11): her sheet keeps it, the booking it was made for too, and „Încasează” offers its options
+  function offerData() {
+    const s = calcState(), o = offer(s.lines, s.low), r2 = (n) => Math.round(Number(n) * 100) / 100;
+    return { city: calcCity(), total: r2(o.total), half: r2(o.half), duration: s.duration || '', result: s.result || '',
+      lines: o.rows.map((r) => ({ name: r.p.name, zone: r.l.zone || '', sessions: r.s, unit: r.unit, sub: r.sub })),
+      pages: o.pages.map((p) => ({ page: p.page, title: p.title, off: p.off, pay: r2(p.pay), parts: p.parts })) };
+  }
+  async function saveOffer(id, appointmentId) {
+    return K.api('/api/portal-contacts', { action: 'offer_save', id, offer: offerData(), text: calcText(), appointmentId: appointmentId || '' });
+  }
   function saveToClient() {
     const s = calcState();
     if (!offer(s.lines, s.low).rows.length) { K.ui().toast('Alege întâi procedurile.', 'error'); return; }
+    // made from her booking: straight to her sheet and that booking
+    if (s.client && s.client.id) {
+      const btn = panel && panel.querySelector('[data-calc-client]');
+      return K.busy(btn, async () => {
+        try { await saveOffer(s.client.id, s.client.apptId); K.ui().toast('Salvat la ' + (s.client.name || 'clientă') + '.', 'success'); }
+        catch (err) { K.ui().toast(err.code === 'appointment_not_found' ? 'Programarea nu mai există. Salvat doar în fișa ei.' : K.errText(err), 'error'); if (err.code === 'appointment_not_found') { try { await saveOffer(s.client.id, ''); } catch (e) { /* the toast said it */ } } }
+      });
+    }
     let picker;
     const d = K.drawer({
       title: 'Salvează la clientă', icon: 'user', width: 520, subtitle: 'Programul și ofertele apar ca notă în fișa ei, la Contacte.',
@@ -1294,13 +1315,23 @@
               if (!name.value.trim() || !phone.value.trim()) { K.ui().toast('Alege clienta din listă sau scrie numele și telefonul.', 'error'); return; }
               id = (await K.api('/api/portal-contacts', { action: 'create', name: name.value.trim(), phone: phone.value.trim() })).id;
             }
-            await K.api('/api/portal-contacts', { action: 'note_add', id, text: calcText() });
+            await saveOffer(id, '');
             d.close(); K.ui().toast('Salvat în fișa clientei.', 'success');
           } catch (err) { K.ui().toast(K.errText(err), 'error'); }
         }));
       },
     });
   }
+  // „Fă oferta” (the cosmetician's appointment sheet, 16.11): the calculator opens for that client and that booking
+  K.on('calc:for', (x) => {
+    if (!x || !x.id) return;
+    const st = calcState();
+    st.client = { id: x.id, name: x.name || '', apptId: x.apptId || '', when: x.when || '' };
+    if (x.city === 'Arad' || x.city === 'Timișoara') st.city = x.city === 'Arad' ? 'ar' : 'tm';
+    keepCalc();
+    if (PANELS.calc) PANELS.calc.querySelector('[data-view]').innerHTML = '';
+    K.go('calculator');
+  });
   // the owner: list prices (as on centrul360.com) and the offer rules of the guide
   function editPrices() {
     let list = JSON.parse(JSON.stringify(D().prices || []));
@@ -1630,6 +1661,7 @@
     const ce2 = t.closest('[data-cb-edit],[data-cb-new]'); if (ce2) return editCombo(ce2.dataset.cbEdit ? (D().combos || []).find((x) => x.id === ce2.dataset.cbEdit) : null);
     if (t.closest('[data-calc-copy]')) return K.copy(calcText());
     if (t.closest('[data-calc-client]')) return saveToClient();
+    if (t.closest('[data-calc-unfor]')) { const st = calcState(); delete st.client; keepCalc(); return recalc(); }
     if (t.closest('[data-prices]')) return editPrices();
     const cf = t.closest('[data-conf]');
     if (cf) {
@@ -1965,6 +1997,9 @@
 /* the offer calculator, step by step */
 .tr-c2{ gap:1.1rem; }
 .tr-c2-top{ display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+.tr-c2-for{ display:flex; align-items:center; gap:.55rem; padding:.55rem .55rem .55rem .85rem; margin-bottom:.75rem; border-radius:14px; background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, transparent); font-size:.9rem; min-width:0; }
+.tr-c2-for > span{ flex:1; min-width:0; overflow-wrap:anywhere; }
+.tr-c2-for .k-ic{ flex:none; width:18px; height:18px; color:var(--accent); }
 .tr-c2-city{ display:inline-flex; align-items:center; gap:.35rem; padding:.35rem .75rem; border-radius:999px; background:var(--glass); font-size:.82rem; font-weight:600; }
 .tr-c2-city .k-ic{ width:14px; height:14px; color:#7c8cff; }
 .tr-c2-step{ padding:1.3rem; border-radius:26px; border:1px solid var(--line); background:linear-gradient(180deg, color-mix(in srgb, var(--fg) 4%, transparent), transparent), var(--paper); animation:trSheet .5s cubic-bezier(.16,1,.3,1) both; }

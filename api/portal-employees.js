@@ -96,6 +96,19 @@ module.exports = async (req, res) => {
       };
       employees.push(employee);
       await writeJSON('data/employees.json', employees);
+      // made from a hired candidate (Pipeline → Angajări → „Creează contul”, 16.11): the candidate keeps the link, so her
+      // card says the account exists and the button is not offered twice
+      if (req.body && req.body.candidateId) {
+        try {
+          const list = await readJSON('data/candidates.json', []);
+          const c = list.find((x) => x && x.id === String(req.body.candidateId));
+          if (c) {
+            c.employeeId = employee.id;
+            if (c.status !== 'angajat') Object.assign(c, { status: 'angajat', statusAt: new Date().toISOString(), statusBy: 'Admin' });
+            await writeJSON('data/candidates.json', list);
+          }
+        } catch (err) { console.error('candidate link:', err.message); }
+      }
       if (role === 'receptie' || role === 'cosmetician') {
         const P = require('./_lib/academy-progress');
         await P.update(employee.id, (p) => { p.path = { role, start: P.todayRo() }; }).catch((err) => console.error('academy path:', err.message));

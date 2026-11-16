@@ -77,6 +77,7 @@
   const ALIASES = { incasare: ['incasari', 'incasari:new'], resurse: ['traininguri'], setari: ['integrari'], formulare: ['integrari', 'integrari:forms'], calendar: ['programari'], echipa: ['angajati'], sarcini: ['automatizari'], contacts: ['contacte'] };
 
   let DATA = null, first = true;
+  let navQuiet = false; // a load or a Back: the address changes without a step of its own in the history
   let rev = null, pendingRemote = false; // live-sync revision (see "live sync" below)
   const app = document.getElementById('app');
 
@@ -162,7 +163,8 @@
       document.getElementById('loadingScreen').classList.add('hidden');
       app.classList.remove('hidden');
       if (K.applyPrefs) K.applyPrefs(DATA.me.prefs);
-      route(location.hash.slice(1) || (DATA.me.prefs && DATA.me.prefs.startPage) || 'panou', true);
+      navQuiet = true; // the first page replaces the address, it is not a step of its own
+      try { route(location.hash.slice(1) || (DATA.me.prefs && DATA.me.prefs.startPage) || 'panou', true); } finally { navQuiet = false; }
     }
   }
   // ------------------------------------------------------------------ domains
@@ -449,6 +451,7 @@
       b.dataset.tab === tab && (!b.dataset.route || b.dataset.route === creativeRoute || (b.dataset.routes || '').split(' ').includes(creativeRoute))));
   }
   function activate(tab, sub) {
+    const yWas = Math.round(window.scrollY); // where she was on the page she leaves (Back brings her there)
     if (!allowed(tab)) tab = 'panou';
     K.pageNav(); // a slow page gets the turning mark (a fast one, nothing)
     if (tab === 'creative') creativeRoute = /^\/[a-z-]*$/.test(sub || '') ? sub : (sub === undefined ? creativeRoute : '/');
@@ -460,7 +463,18 @@
     main.classList.toggle('ad-full', tab === 'reclame');
     main.classList.toggle('k-wide', tab !== 'creative' && tab !== 'pipeline' && tab !== 'reclame');
     const hash = tab === 'creative' ? creativeHash(creativeRoute) : tab;
-    if (location.hash.slice(1) !== hash) history.replaceState(null, '', location.pathname + location.search + '#' + hash);
+    if (location.hash.slice(1) !== hash) {
+      // a step in the phone's history (16.11: Back went out of the app): Back comes back here, where she was on the page.
+      // A drawer or the menu open on top hand their own step over (it closes with the move); a load or a Back itself
+      // only rewrites the address.
+      const url = location.pathname + location.search + '#' + hash;
+      const st = history.state || {};
+      try {
+        if (navQuiet || !location.hash) history.replaceState(st.sec ? st : { sec: 1 }, '', url);
+        else if (st.kd || st.pld || st.mnav) history.replaceState({ sec: 1 }, '', url);
+        else { history.replaceState(Object.assign({}, st, { sec: 1, y: yWas }), ''); history.pushState({ sec: 1 }, '', url); }
+      } catch (e) { /* no history */ }
+    }
     window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
     if (tab === 'pipeline' && window.C360Pipeline) window.C360Pipeline.open();
     else if (tab === 'creative') loadCreative();
@@ -479,10 +493,16 @@
     const b = e.target.closest('button[data-tab]');
     if (b) activate(b.dataset.tab, b.dataset.route);
   });
+  // Back / Forward between sections: the section of that step, back at the place on the page where she left it
+
   window.addEventListener('hashchange', () => {
     const h = location.hash.slice(1);
     const here = document.querySelector('#panel-creative.active') ? creativeHash(creativeRoute) : (document.querySelector('main > .panel.active') || {}).id;
-    if (h && h !== here && 'panel-' + h !== here) route(h);
+    if (!h || h === here || 'panel-' + h === here) return;
+    navQuiet = true;
+    try { route(h); } finally { navQuiet = false; }
+    const y = history.state && history.state.y;
+    if (y > 0) [60, 300].forEach((ms) => setTimeout(() => { if (location.hash.slice(1) === h && window.scrollY < 4) window.scrollTo(0, y); }, ms));
   });
 
   // ------------------------------------------------------------------ places (Nuki's „Du-mă acolo”, the guide's buttons)

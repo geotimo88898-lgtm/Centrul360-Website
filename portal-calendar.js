@@ -816,7 +816,25 @@
         wireForm(el, f);
         if (pre.clientName) { f.clientName.value = pre.clientName; f.clientPhone.value = pre.clientPhone || ''; }
         // the treatment she asked for (her lead's offer): its chip fills the price and the categories, as a tap would
-        if (pre.treatment) { const chip = Array.from(f.querySelectorAll('[data-offer]')).find((b) => { const o = (K.data.offers || []).find((x) => x.id === b.dataset.offer); return o && o.title === pre.treatment; }); if (chip) chip.click(); }
+        // (16.11) her interest as the desk or the form wrote it („LipoSonix 2 zone…”, „lipo”, „Epilare laser”): the offer whose
+        // name it matches; none: the categories it names, so the category is never left to guess
+        if (pre.treatment) {
+          const want = K.norm(pre.treatment).trim();
+          const chips = Array.from(f.querySelectorAll('[data-offer]')).map((b) => ({ b, o: (K.data.offers || []).find((x) => x.id === b.dataset.offer) })).filter((x) => x.o);
+          const first = (t) => K.norm(t).trim().split(/[\s+·,-]+/)[0] || '';
+          const hit = chips.find((x) => x.o.title === pre.treatment) || chips.find((x) => K.norm(x.o.title).trim() === want) ||
+            chips.find((x) => want && (K.norm(x.o.title).includes(want) || want.includes(K.norm(x.o.title).trim()))) ||
+            chips.find((x) => first(want).length >= 4 && first(x.o.title) === first(want));
+          if (hit) hit.b.click();
+          else {
+            const cats = offerCats({ title: pre.treatment });
+            const pick = f.querySelector('[data-catpick]');
+            if (pick && !formCats(K.formValues(f)).length) {
+              pick.querySelectorAll('[data-cat]').forEach((x) => { const on = cats.includes(x.dataset.cat); x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', on); });
+              pick.querySelector('input[name=categories]').value = cats.join(',');
+            }
+          }
+        }
         if (pre.amount && !Number(f.amount.value)) f.amount.value = pre.amount;
         el.querySelector('[data-k-close2]').addEventListener('click', () => d.close());
         el.querySelector('[data-to-block]').addEventListener('click', () => { const v = K.formValues(f); d.close(); setTimeout(() => openBlock({ date: v.date, time: v.time, endTime: v.endTime, location: v.location, cosmeticianId: v.cosmeticianId }), 230); });
@@ -953,19 +971,46 @@
     if (!box.isConnected) return;
     const c = j.contact || {}, appts = j.appointments || [], pays = j.payments || [];
     const notes = ((j.detail && j.detail.notes) || []).slice(0, 2);
-    const done = appts.filter((x) => x.status === 'finalizata');
-    const last = done.map((x) => x.date).filter((x) => x < K.today()).sort().pop();
+    // her visits before this one (an earlier one today counts too)
+    const done = appts.filter((x) => x.status === 'finalizata' && x.id !== a.id);
+    const last = done.map((x) => x.date).filter((x) => x <= K.today()).sort().pop();
     const paid = pays.reduce((s, p) => s + Number(p.amount || 0), 0);
     const photos = c.photosCount || 0;
+    // what she still owes for a package (16.11): seen before the visit, paid from the same sheet („Încasează restul”)
+    const dues = j.dues || [], owed = dues.reduce((x, d) => x + Number(d.rest || 0), 0);
     box.innerHTML = '<h4>' + icon('user') + 'Clienta</h4>' +
       '<div class="cal-client-top">' + (a.clientPhone ? '<a href="#mesaje" class="cal-client-who" data-chat="' + esc(a.clientPhone) + '" data-chat-name="' + esc(a.clientName || '') + '" data-chat-city="' + esc(a.location || '') + '" title="Deschide conversația">' : '<div>') + '<b>' + esc(c.name || a.clientName) + '</b><span>' + esc([c.phone, c.email].filter(Boolean).join(' · ')) + '</span>' + (a.clientPhone ? '</a>' : '</div>') +
         ((c.tags || []).length ? '<div class="cal-client-tags">' + c.tags.slice(0, 4).map((t) => '<span class="k-tag">' + esc(t) + '</span>').join('') + '</div>' : '') + '</div>' +
       '<div class="cal-client-stats"><span><b>' + appts.length + '</b>' + (appts.length === 1 ? 'programare' : 'programări') + '</span>' +
         '<span><b>' + (last ? esc(K.dateShort(last)) : '-') + '</b>ultima vizită</span>' +
         '<span><b>' + K.lei(paid) + '</b>plătit</span>' + (photos ? '<span><b>' + photos + '</b>' + (photos === 1 ? 'poză' : 'poze') + '</span>' : '') + '</div>' +
+      (owed > 0 ? '<button type="button" class="cal-rest" data-rest-pay title="' + esc(dues.map((d) => d.name + ': ' + K.lei(d.rest)).join(' · ')) + '">' + icon('wallet') + '<span>Rest <b>' + K.lei(owed) + '</b></span>' + (K.payRest && dues.length === 1 ? '<em>Încasează</em>' : '') + '</button>' : '') +
       (notes.length ? '<div class="cal-client-notes">' + notes.map((n) => '<p>' + esc(String(n.text || '').slice(0, 160)) + (String(n.text || '').length > 160 ? '…' : '') + '<small>' + esc(n.author || '') + (n.at ? ' · ' + esc(K.ago(n.at)) : '') + '</small></p>').join('') + '</div>' : '') +
       '<button type="button" class="k-btn is-outline cal-client-open" data-open-client>' + icon('user') + 'Deschide fișa clientei' + icon('arrow') + '</button>';
     box.querySelector('[data-open-client]').addEventListener('click', () => K.emit('contacts:open', { id: a.clientId, tab: 'fise' }));
+    const rp = box.querySelector('[data-rest-pay]');
+    if (rp) rp.addEventListener('click', () => {
+      // one package: its rest is paid right here; several: her sheet, where each has its line
+      if (K.payRest && dues.length === 1) K.payRest({ id: dues[0].id, client: c.name || a.clientName, what: dues[0].name, rest: dues[0].rest, total: dues[0].total, paid: Math.max(0, dues[0].total - dues[0].rest) }, { from: rp });
+      else K.emit('contacts:open', { id: a.clientId, tab: 'istoric' });
+    });
+  }
+  // her client, in short, for the cosmetician (16.11): when she last came, what she did, what is left of a package. The
+  // amounts she may see (the rest of a package, as in Încasări); no totals of what the client paid.
+  async function clientBrief(box, a) {
+    let j;
+    try { j = await K.api('/api/portal-contacts', { action: 'get', id: a.clientId }); } catch (e) { if (box.isConnected) box.remove(); return; }
+    if (!box.isConnected) return;
+    const appts = (j.appointments || []).filter((x) => x.id !== a.id);
+    const done = appts.filter((x) => x.status === 'finalizata' && x.date <= K.today());
+    const last = done.map((x) => x.date).sort().pop() || '';
+    const treats = [...new Set(done.slice().sort((x, y) => (x.date < y.date ? 1 : -1)).map((x) => String(x.treatment || '').trim()).filter(Boolean))].slice(0, 3);
+    const owed = (j.dues || []).reduce((x, d) => x + Number(d.rest || 0), 0);
+    box.innerHTML = '<h4>' + icon('user') + 'Clienta</h4>' +
+      '<div class="cal-client-stats"><span><b>' + (last ? esc(K.dateShort(last)) : '-') + '</b>' + (last ? 'ultima vizită' : 'prima vizită') + '</span>' +
+        '<span><b>' + done.length + '</b>' + (done.length === 1 ? 'vizită' : 'vizite') + '</span>' +
+        (owed > 0 ? '<span class="is-warn"><b>' + K.lei(owed) + '</b>rest din pachet</span>' : '') + '</div>' +
+      (treats.length ? '<div class="cal-client-treats">' + treats.map((t) => '<span class="k-tag">' + esc(t) + '</span>').join('') + '</div>' : '');
   }
   // ------------------------------------------------------------------ online booking (the site, /programare)
   // When the clinics take bookings from the site: the hours per weekday, how many clients at once, the days closed.
@@ -1227,6 +1272,7 @@
   // her own visit of today or a passed day, still open (16.11): „Finalizată” (when there is no money to take: a package
   // session, a booking of 0 lei; one with a sum closes when it is paid) or „Nu a venit”. Only the status changes.
   const canMark = (a) => !!(K.data && K.data.me && a.cosmeticianId === K.data.me.id) && a.date <= K.today() && ['programata', 'confirmata', 'reprogramata'].includes(a.status) && !a.paidSaleId && !a.block;
+  const mineAppt = (a) => !!(K.data && K.data.me && a && a.cosmeticianId === K.data.me.id);
   function markHtml(a) {
     if (!canMark(a)) return '';
     const byHand = pickFor(a).includes('finalizata');
@@ -1312,9 +1358,17 @@
           '<dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Ora</dt><dd>' + esc(span(a) || '-') + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd>' +
           '<dt>Cosmeticiană</dt><dd>' + esc(a.cosmeticianName || 'neasignat') + '</dd></dl>' +
           markHtml(a) +
+          (a.clientId ? '<section class="k-section cal-client" data-client-brief><h4>' + icon('user') + 'Clienta</h4><div class="k-skel" style="height:56px"></div></section>' : '') +
           '<div class="mo-note">' + icon('info') + 'Programările le face și le modifică recepția.</div>' +
-          (a.clientId ? '<button type="button" class="k-btn is-outline" data-contact>' + icon('user') + 'Fișa clientei și pozele</button>' : ''),
-        onMount(el) { wireMark(el, a); const c = el.querySelector('[data-contact]'); if (c) c.addEventListener('click', () => { K.go('contacte'); setTimeout(() => (a.clientPhone ? K.emit('contacts:open-phone', a.clientPhone) : K.emit('contacts:open', a.clientId)), 250); }); }, // by her phone: an old link from HighLevel may point at a sheet that no longer exists
+          (a.clientId ? '<div class="cal-cos-acts">' + (mineAppt(a) ? '<button type="button" class="k-btn is-accent" data-offer-calc>' + icon('percent') + 'Fă oferta</button>' : '') +
+            '<button type="button" class="k-btn is-outline" data-contact>' + icon('user') + 'Fișa clientei și pozele</button></div>' : ''),
+        onMount(el) {
+          wireMark(el, a);
+          const br = el.querySelector('[data-client-brief]'); if (br) clientBrief(br, a);
+          const c = el.querySelector('[data-contact]'); if (c) c.addEventListener('click', () => { K.go('contacte'); setTimeout(() => (a.clientPhone ? K.emit('contacts:open-phone', a.clientPhone) : K.emit('contacts:open', a.clientId)), 250); }); // by her phone: an old link from HighLevel may point at a sheet that no longer exists
+          // „Fă oferta”: the calculator for this client and this booking; „Salvează la clientă” keeps it on both (16.11)
+          const of = el.querySelector('[data-offer-calc]'); if (of) of.addEventListener('click', () => { K.closeDrawer(); K.emit('calc:for', { id: a.clientId, name: a.clientName || '', apptId: a.id, city: a.location, when: K.relDay(a.date) + (a.time ? ' ' + a.time : '') }); });
+        },
       });
       return;
     }

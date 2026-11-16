@@ -71,7 +71,7 @@ function cleanTime(time) {
 // (no clientId, the autocomplete found nothing, or the user kept typing after a
 // selection) upserts into the directory keyed by phone, exactly like the "Încasează
 // client" flow in portal-sale.js. Returns null if neither resolves to anything usable.
-async function resolveClient({ clientId, clientName, clientPhone }) {
+async function resolveClient({ clientId, clientName, clientPhone, location }) {
   if (clientId) {
     const clients = await readJSON('data/clients.json', []);
     const found = clients.find((c) => c.id === clientId);
@@ -82,7 +82,7 @@ async function resolveClient({ clientId, clientName, clientPhone }) {
   const cleanName = String(clientName || '').trim().slice(0, 150);
   const cleanPhone = String(clientPhone || '').trim().slice(0, 30);
   if (!cleanName || !cleanPhone) return null;
-  return upsertClient({ name: cleanName, phone: cleanPhone }, { readJSON, writeJSON });
+  return upsertClient({ name: cleanName, phone: cleanPhone, location }, { readJSON, writeJSON });
 }
 
 // who did it, for the lead's history
@@ -244,7 +244,17 @@ module.exports = async (req, res) => {
         .sort((a, b) => (a.date !== b.date ? (a.date < b.date ? 1 : -1) : (a.time || '').localeCompare(b.time || '')));
       // what these clients still owe for a package paid in parts (shown at the payment, Încasări)
       const dues = await require('./_lib/dues').openFor({ readJSON, writeJSON }, list.map((a) => a.clientId));
-      res.status(200).json({ ok: true, appointments: list, dues });
+      // the offer made with the calculator (portal-contacts.js offer_save): the booking's own, else her newest of the last
+      // 60 days; „Încasează” offers its four options ready (16.11)
+      const since = new Date(Date.now() - 60 * 864e5).toISOString();
+      const clients = list.some((a) => !a.offer && a.clientId) ? await readJSON('data/clients.json', []) : [];
+      const lastOf = new Map(clients.filter((c) => c && c.lastOffer && c.lastOffer.at >= since).map((c) => [c.id, c.lastOffer]));
+      const offers = {};
+      list.forEach((a) => {
+        const o = a.offer ? { id: a.offer.id, at: a.offer.at, total: a.offer.total, pages: a.offer.pages || [], what: (a.offer.lines || []).map((l) => l.name + (l.zone ? ', ' + l.zone : '')).join(' + ').slice(0, 120) } : lastOf.get(a.clientId);
+        if (o) offers[a.id] = o;
+      });
+      res.status(200).json({ ok: true, appointments: list, dues, offers });
       return;
     }
 
@@ -321,6 +331,7 @@ module.exports = async (req, res) => {
       Object.assign(a, { updatedAt: now, statusBy: by, markedAt: now });
       await writeJSON('data/appointments.json', appointments);
       if (a.status === 'anulata') await require('./portal-leads').unbookLead(a, 'Nu a venit', by);
+      else await require('./portal-leads').visitLead({ appt: a, came: true, author: by }); // she came: her lead follows
       if (before !== a.status) await workflows.emit('appointment_status', { appointment: a, status: a.status });
       res.status(200).json({ ok: true, appointment: a });
       if (a.status === 'finalizata') await capi.soon(() => capi.crmSync({ appointment: a }));
@@ -510,6 +521,8 @@ module.exports = async (req, res) => {
       if (appointment.date === roDay() || before.date === roDay()) await T.tellLost({ readJSON, writeJSON }, snap, appointments);
       // cancelled: her lead no longer shows it
       if (before.status !== appointment.status && appointment.status === 'anulata') await require('./portal-leads').unbookLead(appointment, 'Programare anulată', await whoName(session));
+      // done („Finalizată”): her lead goes to „Venit la programare”, its history says she came
+      if (before.status !== appointment.status && appointment.status === 'finalizata') await require('./portal-leads').visitLead({ appt: appointment, came: true, author: await whoName(session) });
       // Automations: the status first (marking it "Reprogramată" stops the old reminders), then the move, which starts the
       // booking messages again for the new date (confirmation, location, reminders).
       if (before.status !== appointment.status) await workflows.emit('appointment_status', { appointment, status: appointment.status });

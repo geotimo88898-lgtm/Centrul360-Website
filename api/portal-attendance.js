@@ -326,7 +326,7 @@ module.exports = async (req, res) => {
         const balance = await computeBalance(emp.id, entries);
         const todayEntry = entries.find((e) => e.employeeId === emp.id && e.date === today) || null;
         const tb = TB.ledger(emp.id, tbAll);
-        list.push({ employeeId: emp.id, name: emp.name, location: emp.location, role: emp.role, ...balance, todayCheckIn: todayEntry ? todayEntry.checkIn : null, todayCheckOut: todayEntry ? todayEntry.checkOut : null,
+        list.push({ employeeId: emp.id, name: emp.name, location: emp.location, role: emp.role, ...(emp.role === 'manager' ? { manages: require('./_lib/roles').managesOf(emp) } : {}), ...balance, todayCheckIn: todayEntry ? todayEntry.checkIn : null, todayCheckOut: todayEntry ? todayEntry.checkOut : null,
           debt: tb.debt, bank: tb.bank, ...(isMgr ? {} : { bankLei: tb.bankLei }), pending: tbAll.adjustments.filter((a) => a.employeeId === emp.id && a.status === 'pending').length });
       }
       res.status(200).json({ ok: true, employees: list });
