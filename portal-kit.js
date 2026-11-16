@@ -49,7 +49,7 @@
     network: 'Nu am putut contacta serverul. Verifică conexiunea.', timeout: 'Serverul nu a răspuns la timp. Încearcă din nou.', missing_fields: 'Completează câmpurile obligatorii.',
     invalid_category: 'Alege categoria.', invalid_amount: 'Suma nu e validă.', invalid_date: 'Data nu e validă.', invalid_method: 'Alege metoda de plată.',
     invalid_client: 'Completează numele și telefonul clientului.', invalid_location: 'Alege locația.', invalid_status: 'Statusul nu e valid.',
-    missing_treatment: 'Completează tratamentul.', invalid_cosmetician: 'Cosmeticiana aleasă nu mai există.', username_taken: 'Acest username există deja.',
+    missing_treatment: 'Completează tratamentul.', invalid_cosmetician: 'Cosmeticiana aleasă nu mai există.', cosmetician_left: 'Cosmeticiana aleasă a plecat. Alege pe altcineva.', performer_left: 'Cosmeticiana aleasă a plecat. Alege cine a făcut tratamentul.', invalid_left_day: 'Alege o zi de azi sau din urmă.', username_taken: 'Acest username există deja.',
     invalid_role: 'Rolul nu e valid.', employee_not_found: 'Angajatul nu mai există.', already_decided: 'Vânzarea a fost deja decisă.',
     forbidden: 'Doar adminul poate face asta.', too_many_goals: 'Maxim 2 obiective per angajat.', invalid_goal: 'Un obiectiv nu e complet.',
     preview_only: 'Ești în previzualizarea contului, aici doar te uiți. Revino la Admin ca să faci modificări.',

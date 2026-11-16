@@ -30,7 +30,7 @@
   // "Blochează timp": a leave-like row (status concediu) with block: true, hours and a reason
   const BLOCKED = { label: 'Blocat', plural: 'blocate', tone: 'mute', ic: 'ban' };
   const stOf = (a) => (a.block ? BLOCKED : STATUS[a.status] || STATUS.programata);
-  const S = { view: 'day', date: K.today(), loc: 'all', emp: '', only: 'all', appts: [], range: '', loading: false };
+  const S = { view: 'day', date: K.today(), loc: 'all', emp: '', only: 'all', appts: [], range: '', loading: false, orphans: [] };
   const phone = () => !!(window.matchMedia && window.matchMedia('(max-width:720px)').matches);
   const PHONE_VIEW = 'c360_cal_phone_view';
   const keepPhoneView = () => { if (phone()) try { localStorage.setItem(PHONE_VIEW, S.view); } catch (e) { /* private mode */ } };
@@ -46,6 +46,12 @@
   // "10:00-11:30" (or just "10:00" when the end isn't set).
   const span = (a) => (a.time ? a.time + (toMin(a.endTime) > toMin(a.time) ? ' - ' + a.endTime : '') : '');
   const empName = (id) => { const e = (K.data && K.data.activeEmployees || []).find((x) => x.id === id); return e ? e.name : ''; };
+  // the people who left („A plecat” in Echipa): their appointments after the last day wait for someone else (LEFT: the
+  // filter value that shows them; S.orphans: those appointments, from the server)
+  const LEFT = '__left';
+  const leftOf = (id) => ((K.data && K.data.leftEmployees) || []).find((x) => x.id === id) || null;
+  const isOrphan = (a) => S.orphans.some((x) => x.id === a.id);
+  const empMatch = (a) => !S.emp || (S.emp === LEFT ? isOrphan(a) : a.cosmeticianId === S.emp);
   // Only cosmeticians do treatments; the list follows the chosen location (Timișoara / Arad).
   const cosmeticians = (loc) => ((K.data && K.data.activeEmployees) || []).filter((e) => e.role === 'cosmetician' && (!loc || loc === 'all' || e.location === loc));
 
@@ -72,6 +78,7 @@
         K.seg('calonly', [['all', 'Toate'], ['confirmata', 'Doar confirmate']], S.only) +
         K.seg('calview', [['day', 'Zi'], ['week', 'Săptămână']], S.view) + '</div>' +
       '</div>' +
+      '<button type="button" class="cal-left" data-left data-act="orphans" hidden></button>' +
       '<div class="cal-mbox" data-mbox hidden></div>' +
       '<div class="cal-summary" data-summary></div>' +
       '<div class="cal-team" data-team hidden></div>' +
@@ -84,7 +91,7 @@
       if (e.target.name === 'calloc') {
         S.loc = e.target.value;
         // the cosmetician filter only offers people from the chosen city
-        if (S.emp && !cosmeticians(S.loc).some((c) => c.id === S.emp)) S.emp = '';
+        if (S.emp && S.emp !== LEFT && !cosmeticians(S.loc).some((c) => c.id === S.emp)) S.emp = '';
         const sel = panel.querySelector('[data-emp]'); sel.innerHTML = empFilterOptions(); sel.value = S.emp;
         render();
       }
@@ -98,7 +105,8 @@
 
   function empFilterOptions() {
     const me = K.data && K.data.me;
-    return '<option value="">Toate cosmeticienele</option>' + K.options(cosmeticians(S.loc).map((e) => [e.id, me && me.id === e.id ? 'Doar ale mele' : e.name]), S.emp);
+    return '<option value="">Toate cosmeticienele</option>' + K.options(cosmeticians(S.loc).map((e) => [e.id, me && me.id === e.id ? 'Doar ale mele' : e.name])
+      .concat(S.orphans.length || S.emp === LEFT ? [[LEFT, 'Rămase fără cosmeticiană']] : []), S.emp);
   }
 
   function onKey(e) {
@@ -127,6 +135,7 @@
       if (a === 'block') return openBlock({});
       if (a === 'online') return openOnline();
       if (a === 'team') return openTeam();
+      if (a === 'orphans') return openOrphans();
       if (a === 'today') { S.date = K.today(); return load(); }
       if (a === 'prev') return shift(-1);
       if (a === 'next') return shift(1);
@@ -165,6 +174,7 @@
       if (S.range !== from + '|' + to) return; // a newer navigation won
       S.appts = j.appointments || [];
       render(keepScroll);
+      loadOrphans();
       // who works these days (Programul echipei): the strip on top of the day, after the grid is drawn
       teamRange(from, to).then(renderTeam).catch(() => {});
     } catch (e) {
@@ -189,7 +199,7 @@
     if (!gridEl) return;
     const mbox = panel.querySelector('[data-mbox]');
     mbox.hidden = !phone() || S.view === 'week'; // a phone's week: the 7 days' grid, like Google's
-    const visible = S.appts.filter((a) => (S.loc === 'all' || a.location === S.loc) && (!S.emp || a.cosmeticianId === S.emp) &&
+    const visible = S.appts.filter((a) => (S.loc === 'all' || a.location === S.loc) && empMatch(a) &&
       (S.only === 'all' || a.status === S.only || a.status === 'finalizata'));
     if (phone() && S.view === 'day') mbox.innerHTML = monthHtml();
     const prevScroll = gridEl.parentElement.scrollTop;
@@ -238,7 +248,7 @@
   function monthHtml() {
     const m = S.date.slice(0, 7), first = K.parse(m + '-01'), lead = (first.getDay() + 6) % 7, days = K.daysIn(m), today = K.today();
     const count = {};
-    S.appts.forEach((x) => { if (x.status !== 'anulata' && x.status !== 'concediu' && (S.loc === 'all' || x.location === S.loc) && (!S.emp || x.cosmeticianId === S.emp)) count[x.date] = (count[x.date] || 0) + 1; });
+    S.appts.forEach((x) => { if (x.status !== 'anulata' && x.status !== 'concediu' && (S.loc === 'all' || x.location === S.loc) && empMatch(x)) count[x.date] = (count[x.date] || 0) + 1; });
     const cells = [];
     for (let i = 0; i < lead; i++) cells.push('<span></span>');
     for (let d = 1; d <= days; d++) {
@@ -448,7 +458,7 @@
     const on = when && teamAt(when.date, loc, when.time);
     const pairs = on ? list.filter((e) => on.has(e.id)).map((e) => [e.id, e.name]).concat(list.filter((e) => !on.has(e.id)).map((e) => [e.id, e.name + ' (nu lucrează)'])) : list.map((e) => [e.id, e.name]);
     // an appointment already assigned to someone not in the list (moved city, other role) keeps her
-    if (sel && !list.some((e) => e.id === sel)) pairs.push([sel, empName(sel) || 'Cosmeticiana aleasă']);
+    if (sel && !list.some((e) => e.id === sel)) pairs.push([sel, empName(sel) || (leftOf(sel) ? leftOf(sel).name + ' (a plecat)' : 'Cosmeticiana aleasă')]);
     return '<option value="">- alege cosmeticiana</option>' + K.options(pairs, sel);
   }
   // Quick fill from the active offers (treatment + price + category) for the chosen city.
@@ -1033,6 +1043,56 @@
           try { await K.api('/api/portal-appointments', { action: 'delete', id: a.id }); d.close(); K.ui().toast('Programare ștearsă.', 'success'); load(true); }
           catch (err) { K.ui().toast(K.errText(err), 'error'); }
         });
+      },
+    });
+  }
+
+  // ------------------------------------------------------------------ the appointments of someone who left
+  // After „A plecat” (Echipa): her appointments after the last day stay in the Calendar; a line on top says how many wait
+  // for someone else, until each has another cosmetician (or is cancelled). Nothing is deleted.
+  async function loadOrphans() {
+    if (!canEdit()) return;
+    try {
+      const j = await K.api('/api/portal-appointments', { action: 'orphans' });
+      S.orphans = j.appointments || [];
+    } catch (e) { return; }
+    if (!S.orphans.length && S.emp === LEFT) { S.emp = ''; render(true); }
+    const sel = panel.querySelector('[data-emp]');
+    if (sel && !K.drawerOpen) { sel.innerHTML = empFilterOptions(); sel.value = S.emp; }
+    renderOrphans();
+  }
+  function renderOrphans() {
+    const el = panel && panel.querySelector('[data-left]');
+    if (!el) return;
+    const list = S.orphans;
+    el.hidden = !list.length;
+    if (!list.length) { el.innerHTML = ''; return; }
+    const who = [...new Set(list.map((a) => (leftOf(a.cosmeticianId) || {}).name || a.cosmeticianName || '').filter(Boolean).map((n) => n.split(' ')[0]))];
+    el.innerHTML = icon('users') + '<span><b>' + K.plural(list.length, 'programare', 'programări') + '</b> ' + (list.length === 1 ? 'rămasă' : 'rămase') + ' fără cosmeticiană' +
+      (who.length ? ' (' + esc(who.join(', ')) + ' a plecat)' : '') + '. <u>Dă-le altcuiva</u></span>' + icon('right');
+  }
+  function openOrphans() {
+    const list = S.orphans;
+    if (!list.length) return;
+    const d = K.drawer({
+      title: 'Rămase fără cosmeticiană', icon: 'users', width: 520,
+      subtitle: K.plural(list.length, 'programare', 'programări') + ' de după ultima zi a cui a plecat',
+      body: '<div class="k-list">' + list.map((a) => {
+        const p = leftOf(a.cosmeticianId);
+        return '<button type="button" class="k-row cal-left-row" data-go="' + esc(a.id) + '" data-date="' + esc(a.date) + '"><div class="k-row-main"><div class="k-row-title">' + esc(a.clientName || a.ghlTitle || 'Programare') + '</div>' +
+          '<div class="k-row-sub">' + esc(K.relDay(a.date)) + (a.time ? ' · ' + esc(span(a)) : '') + ' · ' + esc(a.location || '') + (a.treatment ? ' · ' + esc(a.treatment) : '') + '</div></div>' +
+          '<span class="k-tag is-warn">' + esc(((p && p.name) || a.cosmeticianName || '').split(' ')[0] || 'a plecat') + '</span></button>';
+      }).join('') + '</div>',
+      footer: '<button type="button" class="k-btn is-outline" data-show>' + icon('calendar') + 'Arată-le în Calendar</button><span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Închide</button>',
+      onMount(el) {
+        el.querySelector('[data-cancel]').addEventListener('click', () => d.close());
+        el.querySelector('[data-show]').addEventListener('click', () => {
+          d.close();
+          S.emp = LEFT;
+          const sel = panel.querySelector('[data-emp]'); if (sel) { sel.innerHTML = empFilterOptions(); sel.value = LEFT; }
+          S.date = list[0].date; setView('week');
+        });
+        el.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { d.close(); K.openAppointment(b.dataset.go, b.dataset.date); }));
       },
     });
   }

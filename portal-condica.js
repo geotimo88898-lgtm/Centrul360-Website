@@ -28,7 +28,8 @@
   let panel;
 
   function isAdmin() { return !!(K.data && K.data.isAdmin); }
-  function employees() { return isAdmin() ? (K.data.admin.employees || []).filter((e) => e.id !== 'admin' && e.role !== 'admin') : []; }
+  // who left („A plecat”) stays, at the end, for her past days
+  function employees() { return isAdmin() ? (K.data.admin.employees || []).filter((e) => e.id !== 'admin' && e.role !== 'admin').sort((a, b) => (a.active === false ? 1 : 0) - (b.active === false ? 1 : 0)) : []; }
   function empName(id) {
     if (id === 'admin') return 'Admin';
     const e = employees().find((x) => x.id === id);
@@ -168,7 +169,7 @@
 
   function filterToolbar() {
     return '<div class="cd-filters k-toolbar">' +
-      '<select data-f="emp"><option value="">Toată echipa</option>' + employees().map((e) => '<option value="' + esc(e.id) + '"' + (C.empFilter === e.id ? ' selected' : '') + '>' + esc(e.name) + '</option>').join('') + '</select>' +
+      '<select data-f="emp"><option value="">Toată echipa</option>' + employees().map((e) => '<option value="' + esc(e.id) + '"' + (C.empFilter === e.id ? ' selected' : '') + '>' + esc(e.name + (e.active === false ? ' (a plecat)' : '')) + '</option>').join('') + '</select>' +
       '<select data-f="month">' + Array.from({ length: 12 }, (_, i) => i + 1).map((m) => '<option value="' + m + '"' + (C.month === m ? ' selected' : '') + '>' + K.monthLabel(C.year + '-' + String(m).padStart(2, '0')).split(' ')[0] + '</option>').join('') + '</select>' +
       '<select data-f="year">' + [C.year - 1, C.year, C.year + 1].map((y) => '<option value="' + y + '"' + (C.year === y ? ' selected' : '') + '>' + y + '</option>').join('') + '</select>' +
       '</div>';
@@ -348,7 +349,7 @@
   }
 
   function adminNewLeaveDrawer() {
-    const opts = employees().map((e) => '<option value="' + esc(e.id) + '"' + (C.empFilter === e.id ? ' selected' : '') + '>' + esc(e.name) + '</option>').join('');
+    const opts = employees().map((e) => '<option value="' + esc(e.id) + '"' + (C.empFilter === e.id ? ' selected' : '') + '>' + esc(e.name + (e.active === false ? ' (a plecat)' : '')) + '</option>').join('');
     const d = K.drawer({
       title: 'Notează concediu pentru un angajat', icon: 'calendar', width: 520,
       

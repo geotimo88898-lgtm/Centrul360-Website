@@ -101,7 +101,8 @@ function collectionsOf(sales, appts, emps, clinics, month, upto) {
 function conditionOf(emps, sales, attendance, clinics, month, upto) {
   const from = month + '-01', to = upto && upto < lastDay(month) ? upto : lastDay(month);
   const people = [], training = [];
-  (emps || []).filter((e) => e && e.role === 'cosmetician' && clinics.includes(clinicOf(e.location))).forEach((e) => {
+  // someone who left is out from the month she left (_lib/left.js); her payments still count in the clinic's money
+  (emps || []).filter((e) => e && e.role === 'cosmetician' && clinics.includes(clinicOf(e.location)) && !require('./left').outOfMonth(e, month)).forEach((e) => {
     const mine = (sales || []).filter((s) => s && s.source === 'incasare' && s.performedBy === e.id && s.date >= from && s.date <= to);
     const collected = r2(mine.reduce((a, s) => a + (Number(s.amount) || 0), 0));
     const punched = new Set((attendance || []).filter((x) => x && x.employeeId === e.id && x.checkIn && x.date >= from && x.date <= to).map((x) => x.date));

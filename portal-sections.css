@@ -2508,6 +2508,14 @@ html.mx-pv-open{ overflow:hidden; }
 /* Calendar → Program echipă (portal-calendar.js openTeam) and who works, on top of the day */
 .cal-team{ display:flex; flex-wrap:wrap; align-items:center; gap:.35rem .7rem; margin:-.45rem 0 .8rem; font-size:.78rem; color:var(--muted); }
 .cal-team[hidden]{ display:none; }
+/* the appointments of someone who left, waiting for another cosmetician (portal-calendar.js renderOrphans) */
+.cal-left{ display:flex; align-items:center; gap:.6rem; width:100%; margin:0 0 .8rem; padding:.6rem .75rem; border:0; border-radius:12px; background:var(--warn-soft); color:var(--fg); font:inherit; font-size:.84rem; line-height:1.35; text-align:left; cursor:pointer; }
+.cal-left[hidden]{ display:none; }
+.cal-left > svg{ flex:none; width:17px; height:17px; color:var(--warn); }
+.cal-left > span{ flex:1; min-width:0; }
+.cal-left u{ text-underline-offset:2px; font-weight:600; }
+.cal-left-row{ width:100%; text-align:left; border:0; background:transparent; color:inherit; font:inherit; cursor:pointer; }
+.cal-left-row .k-row-main{ flex:1; min-width:0; }
 .cal-team-k{ display:inline-flex; align-items:center; gap:.3rem; font-weight:600; }
 .cal-team-k .k-ic{ width:13px; height:13px; opacity:.7; }
 .cal-team-c{ display:inline-flex; flex-wrap:wrap; align-items:center; gap:.3rem; }

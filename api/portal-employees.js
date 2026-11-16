@@ -1,6 +1,6 @@
 // POST /api/portal-employees, admin-only employee management (Setări → Angajați).
 // One endpoint, actions via body.action: 'create' | 'update_details' |
-// 'reset_password' | 'set_active' | 'set_goals' | 'manual_list' | 'manual_add' | 'manual_delete' (Ajustări). Passwords are hashed server-side
+// 'reset_password' | 'set_active' (with leftAt: „A plecat”, _lib/left.js) | 'set_goals' | 'manual_list' | 'manual_add' | 'manual_delete' (Ajustări). Passwords are hashed server-side
 // (scrypt, see _lib/auth.js) before ever touching storage.
 
 const crypto = require('crypto');
@@ -230,10 +230,20 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: 'cannot_deactivate_self' });
         return;
       }
+      // „A plecat” (16.11): her last working day, today unless another is picked (never ahead: the account goes off now).
+      // Sent again for someone already gone: only the day changes. Reactivated: the day goes.
+      const L = require('./_lib/left');
+      if (!active) {
+        const day = req.body.leftAt == null || req.body.leftAt === '' ? L.today() : String(req.body.leftAt);
+        if (!L.isDay(day) || day > L.today() || day < '2020-01-01') { res.status(400).json({ error: 'invalid_left_day' }); return; }
+        employee.leftAt = day;
+      } else delete employee.leftAt;
       employee.active = active;
       require('./_lib/auth').forgetRoster(); // her sessions end now (the other instances within a minute)
       await writeJSON('data/employees.json', employees);
-      res.status(200).json({ ok: true });
+      // her appointments after that day, to give to someone else (Calendar → „Rămase fără cosmeticiană”)
+      const ahead = active ? [] : L.orphans(await readJSON('data/appointments.json', []), [employee]);
+      res.status(200).json({ ok: true, leftAt: employee.leftAt || '', orphans: ahead.length });
       return;
     }
 

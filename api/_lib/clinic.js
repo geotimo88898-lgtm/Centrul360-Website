@@ -4,6 +4,7 @@
 // the show-up rate, the collections by method. Never profit, costs, salaries or ad spend.
 const T = require('./team-schedule');
 const B = require('./booking');
+const L = require('./left');
 
 const CITIES = ['Timișoara', 'Arad'];
 const TARGET_PER_DAY = 1500;       // lei collected per day worked, every cosmetician (the owner's monthly target)
@@ -55,8 +56,9 @@ function fill(cfg, city, from, to, appts) {
 // money: collections attributed to who did the treatment (Încasări → „Cine a făcut tratamentul”); days worked: the days
 // she clocked in (Condică), or, when she never clocks in, the days she has collections (said so)
 // appts (optional): also her consultations and how many ended with a package (the same 7-day rule), for the monthly 1:1
+// someone who left (_lib/left.js): out from the month she left; a period before it still shows her, when she worked in it
 function cosmeticians(emps, sales, attendance, city, from, to, appts) {
-  return emps.filter((e) => e.role === 'cosmetician' && e.active !== false && e.location === city).map((e) => {
+  return emps.filter((e) => e.role === 'cosmetician' && e.location === city && !L.outOfMonth(e, from)).map((e) => {
     const mine = sales.filter((s) => s.source === 'incasare' && s.performedBy === e.id && s.date >= from && s.date <= to);
     const collected = r2(mine.reduce((a, s) => a + (Number(s.amount) || 0), 0));
     const punched = new Set(attendance.filter((x) => x.employeeId === e.id && x.checkIn && x.date >= from && x.date <= to).map((x) => x.date));
@@ -68,8 +70,8 @@ function cosmeticians(emps, sales, attendance, city, from, to, appts) {
     const perDay = days ? Math.round(collected / days) : 0;
     return { id: e.id, name: e.name || '', days, punched: punched.size, payOnly, daysFrom: punched.size ? (payOnly ? 'mixt' : 'pontaj') : byPay.size ? 'incasari' : '',
       collected, perDay, ok: days > 0 && perDay >= TARGET_PER_DAY, gap: days ? Math.max(0, TARGET_PER_DAY - perDay) : TARGET_PER_DAY,
-      ...(appts ? { consults: consultsWhere(appts, sales, from, to, (a) => a.cosmeticianId === e.id) } : {}) };
-  });
+      ...(appts ? { consults: consultsWhere(appts, sales, from, to, (a) => a.cosmeticianId === e.id) } : {}), ...(e.active === false ? { left: true } : {}) };
+  }).filter((x) => !x.left || x.days > 0);
 }
 
 // consultations that took place (not cancelled; today's only once finished, a later one today hasn't happened yet) and those followed, within 7 days, by a payment with a

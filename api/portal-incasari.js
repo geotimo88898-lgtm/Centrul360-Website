@@ -104,6 +104,11 @@ module.exports = async (req, res) => {
       if (!categories.length) { res.status(400).json({ error: 'invalid_category' }); return; }
 
       if (!np && entry.packageTotal && amount > entry.packageTotal) { res.status(400).json({ error: 'invalid_package' }); return; } // more than the package: the rest would vanish
+      // another person who did it: someone who left only for a day she still worked (_lib/left.js)
+      if (performedBy && performedBy !== entry.performedBy) {
+        const p = (await readJSON('data/employees.json', [])).find((e) => e.id === performedBy);
+        if (p && !require('./_lib/left').worksOn(p, date)) { res.status(400).json({ error: 'performer_left' }); return; }
+      }
       entry.date = date;
       entry.method = method;
       entry.split = split;

@@ -55,7 +55,9 @@ function bookingBonus(employeeId, month, attendance, appointments, until) {
 // One month of pay for one person.
 function monthPay({ emp, month, isCurrent, sales, payouts, bank, attendance, appointments, finals }) {
   // the salary counts from the month it was first set (Echipa), not in the months before
-  const base = !emp.netSalaryFrom || month >= emp.netSalaryFrom ? Math.max(0, Number(emp.netSalary) || 0) : 0;
+  // someone who left („A plecat”, _lib/left.js): the month of her last day keeps its salary (paid the month after), none in the months after
+  const after = emp.active === false && /^\d{4}-\d{2}-\d{2}$/.test(String(emp.leftAt || '')) && month > emp.leftAt.slice(0, 7);
+  const base = !after && (!emp.netSalaryFrom || month >= emp.netSalaryFrom) ? Math.max(0, Number(emp.netSalary) || 0) : 0;
   const paidOut = (payouts || []).filter((p) => p.employeeId === emp.id && p.month === month);
   const paidLei = paidOut.reduce((a, p) => a + (Number(p.lei) || 0), 0);
   const paidMin = paidOut.reduce((a, p) => a + (Number(p.minutes) || 0), 0);

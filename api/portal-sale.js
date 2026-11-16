@@ -236,6 +236,8 @@ async function handleIncasare(req, res, session) {
 
     const today = todayISO();
     const date = appt.date && appt.date <= today ? appt.date : today;
+    // someone who left is credited only with what she did up to her last day (_lib/left.js)
+    if (!require('./_lib/left').worksOn(performer, date)) { res.status(400).json({ error: 'performer_left' }); return; }
     const booked = Number(appt.amount) || 0;
     // a cross-sell: she came for one treatment and did another; the payment carries what she did
     if (cross) Object.assign(cross, { from: String(appt.treatment || '').slice(0, 200), fromAmount: booked, amount: parts.session });

@@ -66,6 +66,10 @@ async function notifyMany(store, employeeIds, n) {
   let ids = [...new Set(employeeIds)].filter((id) => wants(id, n));
   let recent = null;
   if (!ids.length) return 0;
+  // someone who left (account off, _lib/left.js) gets nothing, in the bell or on her phone
+  try { const off = new Set((await store.readJSON('data/employees.json', [])).filter((e) => e && e.active === false).map((e) => e.id)); ids = ids.filter((id) => !off.has(id)); }
+  catch (e) { /* the list as given */ }
+  if (!ids.length) return 0;
   const title = cut(dedash(String(n.title || '')), 80), text = cut(dedash(String(n.text || '')), 160);
   try {
     const list = await store.readJSON(KEY, []);

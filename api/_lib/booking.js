@@ -84,9 +84,12 @@ function clean(input) {
 // clients it takes at an hour are the cosmeticians working then (api/_lib/team-schedule.js), not the day's „at”.
 async function settings(opts) {
   if (!(opts && opts.team)) return clean(await readJSON(KEY, null));
-  const [raw, doc, people] = await Promise.all([readJSON(KEY, null), T.load(), T.people()]);
+  const [raw, doc, people, emps] = await Promise.all([readJSON(KEY, null), T.load(), T.people(), readJSON('data/employees.json', [])]);
   const out = clean(raw);
-  Object.defineProperty(out, 'team', { value: { doc, ids: new Set(people.map((p) => p.id)), people }, enumerable: false });
+  // the cities a cosmetician left („A plecat”, _lib/left.js): without a schedule there, no more clients at once than the
+  // cosmeticians still there
+  const leftIn = new Set((Array.isArray(emps) ? emps : []).filter((e) => e && e.role === 'cosmetician' && e.active === false && e.leftAt).map((e) => e.location));
+  Object.defineProperty(out, 'team', { value: { doc, ids: new Set(people.map((p) => p.id)), people, leftIn }, enumerable: false });
   return out;
 }
 
@@ -158,7 +161,11 @@ function busy(appts, city, date, skipId) {
 // weekly schedule, the cosmeticians working at that minute (their leave already counted). edges: the minutes it changes.
 function capOf(cfg, city, date, d, b, appts) {
   const t = cfg.team;
-  if (!t || !T.hasSchedule(t.doc, city, t.ids)) { const n = d.at - b.cut; return { team: false, at: () => n, edges: [], max: n }; }
+  if (!t || !T.hasSchedule(t.doc, city, t.ids)) {
+    const here = t && t.leftIn && t.leftIn.has(city) ? t.people.filter((p) => p.location === city).length : 0;
+    const n = (here ? Math.min(d.at, here) : d.at) - b.cut;
+    return { team: false, at: () => n, edges: [], max: n };
+  }
   const shifts = T.whoWorks(t.doc, date, city, { appts, ids: t.ids }).map((w) => [toMin(w.from), toMin(w.to)]);
   return { team: true, at: (p) => shifts.filter((x) => x[0] <= p && x[1] > p).length, edges: [].concat(...shifts), max: shifts.length };
 }

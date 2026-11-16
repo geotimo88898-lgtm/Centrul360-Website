@@ -34,6 +34,7 @@ const workflows = require('./_lib/workflows');
 const { bonusPush } = require('./_lib/bonus');
 const { cityOf, inCity } = require('./_lib/city');
 const N = require('./_lib/notify');
+const L = require('./_lib/left'); // someone who left: no new bookings on her, her later ones listed for someone else
 const capi = require('./_lib/meta-capi'); // Conversions API: a Facebook lead's CRM steps back to Meta
 
 // Matches the location strings used everywhere else in the portal (Setări → Angajați's
@@ -83,7 +84,9 @@ async function whoName(session) {
   return e ? e.name : 'Calendar';
 }
 
-async function validateAndBuildFields(body, employees) {
+// current: the appointment being changed (an update): her cosmetician may stay on it after she left; a new one or another
+// one is put only on someone who works that day (_lib/left.js)
+async function validateAndBuildFields(body, employees, current) {
   const { date, time, endTime, treatment, location, cosmeticianId, status } = body || {};
   // One or more of: epilare-laser, faciale, corporale (older single `category` keys still accepted).
   const categories = normalizeCategories(body && body.categories && body.categories.length ? body.categories : body && body.category);
@@ -104,6 +107,8 @@ async function validateAndBuildFields(body, employees) {
   if (cleanCosmeticianId) {
     const cosmetician = employees.find((e) => e.id === cleanCosmeticianId);
     if (!cosmetician) return { error: 'invalid_cosmetician' };
+    const kept = current && current.cosmeticianId === cleanCosmeticianId && current.date === date;
+    if (!kept && !L.worksOn(cosmetician, date)) return { error: 'cosmetician_left' };
     cosmeticianName = cosmetician.name;
   }
 
@@ -209,6 +214,18 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // the appointments of someone who left, still to come after her last day (_lib/left.js): the desk gives them to someone
+    // else (Calendar → „Rămase fără cosmeticiană”); nothing is deleted
+    if (action === 'orphans') {
+      if (!['admin', 'receptie', 'manager'].includes(session.role)) { res.status(403).json({ error: 'forbidden' }); return; }
+      const emps = await readJSON('data/employees.json', []);
+      const byId = new Map(emps.map((e) => [e.id, e]));
+      const list = L.orphans(appointments, emps).filter((a) => inCity(city, a.location))
+        .map((a) => Object.assign({}, a, { leftAt: (byId.get(a.cosmeticianId) || {}).leftAt || '' }));
+      res.status(200).json({ ok: true, appointments: list });
+      return;
+    }
+
     // Everything below changes the calendar: front desk (receptie) + admin only, a
     // cosmetician sees the calendar read-only.
     if (!['admin', 'receptie', 'manager'].includes(session.role)) {
@@ -286,6 +303,7 @@ module.exports = async (req, res) => {
       if (cid) {
         const emp = (await readJSON('data/employees.json', [])).find((e) => e.id === cid);
         if (!emp) { res.status(400).json({ error: 'invalid_cosmetician' }); return; }
+        if (!L.worksOn(emp, b.date)) { res.status(400).json({ error: 'cosmetician_left' }); return; }
         cosmeticianName = emp.name;
       }
       const label = String(b.label || '').trim().slice(0, 80) || 'Timp blocat';
@@ -318,7 +336,7 @@ module.exports = async (req, res) => {
         return;
       }
       const employees = await readJSON('data/employees.json', []);
-      const result = await validateAndBuildFields(req.body, employees);
+      const result = await validateAndBuildFields(req.body, employees, appointment);
       if (result.error) {
         res.status(400).json({ error: result.error });
         return;

@@ -269,6 +269,9 @@ module.exports = async (req, res) => {
       costShare: COST_SHARE,
       mySales,
       incasari,
+      // the people who left (name and last day): the Calendar still names them on their appointments, to give to someone else
+      leftEmployees: isAdmin || me.role === 'receptie' || me.role === 'manager' ? employeesRaw.filter((e) => e && e.active === false && e.id !== 'admin' && (!manages || inCity(manages, e.location)))
+        .map((e) => ({ id: e.id, name: e.name, location: e.location, role: e.role, leftAt: e.leftAt || '' })) : [],
       activeEmployees: activeEmployees.filter((e) => !manages || e.role === 'admin' || e.id === me.id || inCity(manages, e.location)).map((e) => ({ id: e.id, name: e.name, location: e.location, role: e.role, photo: photoOf(e) })),
       appointmentsToday: {
         list: todaysAppointments,
@@ -342,6 +345,7 @@ module.exports = async (req, res) => {
           phone: e.phone || '',
           email: e.email || '',
           active: e.active !== false,
+          leftAt: e.active === false ? e.leftAt || '' : '', // her last working day („A plecat”); '' while she is with us (or turned off before 16.11)
           // Optional, feeds the Condică leave-balance / hours-owed numbers, edited in the
           // Profil tab below (api/portal-employees.js' update_details). Unset = the defaults.
           annualLeaveDays: e.annualLeaveDays,

@@ -300,6 +300,8 @@
       recorded: recorded.reduce((a, s) => a + Number(s.amount || 0), 0), performed: performed.reduce((a, s) => a + Number(s.amount || 0), 0),
     };
   }
+  // „a plecat pe 16 nov” (an account turned off before the day was kept: „a plecat”)
+  const leftText = (e) => 'a plecat' + (e.leftAt ? ' pe ' + K.dateShort(e.leftAt) : '');
   function renderTeam() {
     if (!epanel || !K.data || !K.data.admin) return;
     const emps = K.data.admin.employees.filter((e) => e.id !== 'admin');
@@ -315,7 +317,7 @@
         ? [['Salariu', e.netSalary ? K.lei(e.netSalary) : '-'], ['Bonus', K.lei(pay.bonus || 0)], ['Media/zi', pay.booking ? K.num(pay.booking.avg) : '-']]
         : [['Salariu', e.netSalary ? K.lei(e.netSalary) : '-'], ['Comision', K.lei(st.comm)], ['Tratamente', K.lei(st.performed)]];
       return '<button type="button" class="ad-emp' + (e.active ? '' : ' is-off') + '" data-emp="' + esc(e.id) + '"><div class="ad-emp-top">' + K.avatar(e.name, 46) +
-        '<div><b>' + esc(e.name) + '</b><span>' + K.roleTag(e.role) + esc(e.role === 'manager' ? (e.manages && e.manages.length ? e.manages : ['Timișoara', 'Arad']).join(' și ') : e.location) + (e.active ? '' : ' · dezactivat') + '</span></div></div>' +
+        '<div><b>' + esc(e.name) + '</b><span>' + K.roleTag(e.role) + esc(e.role === 'manager' ? (e.manages && e.manages.length ? e.manages : ['Timișoara', 'Arad']).join(' și ') : e.location) + (e.active ? '' : ' · ' + leftText(e)) + '</span></div></div>' +
         '<dl class="ad-emp-kv" title="Luna curentă">' + kv.map(([k, v]) => '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>').join('') + '</dl>' +
         (e.netSalary ? '' : '<div class="ad-emp-empty">' + icon('wallet') + 'Salariul nu e setat, apasă ca să-l pui</div>') +
         // the manager's probation is over and her salary is still the probation's: a reminder for the owner
@@ -324,7 +326,9 @@
     };
     epanel.querySelector('[data-body]').innerHTML =
       (active.length ? '<div class="ad-emps k-stagger">' + active.map(card).join('') + '</div>' : '<section class="k-card">' + K.empty('users', 'Niciun angajat încă', 'Adaugă primul om din echipă, primește username și parolă pentru portal.', '<button type="button" class="k-btn is-primary" data-new>' + icon('userPlus') + 'Angajat nou</button>') + '</section>') +
-      (inactive.length ? '<details class="ad-inactive"><summary>' + K.plural(inactive.length, 'cont dezactivat', 'conturi dezactivate') + '</summary><div class="ad-emps">' + inactive.map(card).join('') + '</div></details>' : '');
+      // who left („A plecat”): out of the list, under a closed group, the newest first (her history stays on her card)
+      (inactive.length ? '<details class="ad-inactive"><summary>Au plecat <b>' + inactive.length + '</b></summary><div class="ad-emps">' +
+        inactive.slice().sort((a, b) => String(b.leftAt || '').localeCompare(String(a.leftAt || ''))).map(card).join('') + '</div></details>' : '');
   }
 
   function goalRowHtml(g, i, role) {
@@ -348,7 +352,7 @@
     const sales = K.data.admin.allSales.filter((s) => s.employeeId === e.id).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 25);
     const d = K.drawer({
       title: e.name, lead: K.avatar(e.name, 44), width: 600,
-      subtitle: K.roleTag(e.role) + esc(e.location) + ' · @' + esc(e.username) + (e.active ? '' : ' · <b>dezactivat</b>'),
+      subtitle: K.roleTag(e.role) + esc(e.location) + ' · @' + esc(e.username) + (e.active ? '' : ' · <b>' + esc(leftText(e)) + '</b>'),
       body:
         '<div class="ad-tabs">' + K.seg('emptab', [['profile', 'Profil & salariu', 'user'], ['condica', 'Condică', 'clock'], ['sales', 'Vânzări', 'receipt']], tab, 'is-big') + '</div>' +
         '<div data-pane="goals" hidden><div data-goals></div><button type="button" hidden data-addg></button></div>' +
@@ -371,8 +375,12 @@
           K.field('Zile de concediu pe an', '<input name="annualLeaveDays" type="number" min="0" max="60" value="' + esc(e.annualLeaveDays != null ? e.annualLeaveDays : 21) + '">', '', 'Minimul legal e 20; implicit 21.') +
           K.field('Ore contractate / zi', '<input name="contractedHoursPerDay" type="number" min="1" max="16" step="0.5" value="' + esc(e.contractedHoursPerDay != null ? e.contractedHoursPerDay : 8) + '">') + '</form>' +
           '<div class="ad-access"><button type="button" class="k-btn is-outline" data-pass>' + icon('key') + 'Resetează parola</button>' +
-          (e.role === 'admin' || (K.data.me && e.id === K.data.me.id) ? '' : '<button type="button" class="k-btn ' + (e.active ? 'is-danger' : 'is-good') + '" data-toggle>' + icon('power') + (e.active ? 'Dezactivează contul' : 'Reactivează contul') + '</button>') + '</div>' +
-          (e.role === 'admin' || (K.data.me && e.id === K.data.me.id) ? '' : '<p class="k-muted">Dezactivarea blochează logarea, dar păstrează istoricul și comisioanele.</p>') + '</div>' +
+          (e.role === 'admin' || (K.data.me && e.id === K.data.me.id) ? '' : e.active
+            ? '<button type="button" class="k-btn is-danger" data-left>' + icon('power') + 'A plecat</button>'
+            : '<button type="button" class="k-btn is-outline" data-left>' + icon('calendar') + 'Schimbă ultima zi</button><button type="button" class="k-btn is-good" data-toggle>' + icon('power') + 'Reactivează contul</button>') + '</div>' +
+          (e.role === 'admin' || (K.data.me && e.id === K.data.me.id) ? '' : '<p class="k-muted">' + (e.active
+            ? 'Contul se oprește. Încasările și istoricul ei rămân.'
+            : (e.leftAt ? 'Ultima zi: ' + esc(K.dateLong(e.leftAt)) + '. ' : '') + 'Încasările, istoricul și actele ei rămân.') + '</p>') + '</div>' +
         '<div data-pane="condica"' + (tab === 'condica' ? '' : ' hidden') + '><div data-balance><div class="k-skel" style="height:90px"></div></div></div>' +
         '<div data-pane="sales"' + (tab === 'sales' ? '' : ' hidden') + '>' +
           (e.role === 'admin' ? '' : '<div class="ad-bar" style="margin-bottom:.8rem"><button type="button" class="k-btn is-accent" data-add-ups>' + icon('plus') + 'Adaugă upsell</button><span class="k-muted">Unul sau mai multe, intră direct aprobate.</span></div>') +
@@ -430,10 +438,24 @@
           try { await K.api('/api/portal-employees', { action: 'reset_password', employeeId: e.id, newPassword: pw }); K.ui().toast('Parola a fost resetată.', 'success'); }
           catch (err) { K.ui().toast(K.errText(err), 'error'); }
         });
+        // „A plecat”: her last working day (today unless another is picked); the account goes off, nothing she did is lost
+        const lf = el.querySelector('[data-left]');
+        if (lf) lf.addEventListener('click', async () => {
+          const first = e.name.split(' ')[0];
+          const day = await K.ui().prompt({ title: e.active ? first + ' a plecat?' : 'Ultima zi a lui ' + first, type: 'date', value: e.leftAt || K.today(), label: 'Ultima zi de lucru',
+            message: e.active ? 'Contul se oprește acum. Încasările ei rămân în totaluri, iar din luna asta nu mai intră în ținte și în bonus. Programările de după rămân în Calendar, pentru altă cosmeticiană.' : '',
+            confirmText: e.active ? 'A plecat' : 'Salvează', danger: e.active });
+          if (day == null) return;
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day > K.today()) { K.ui().toast('Alege o zi de azi sau din urmă.', 'error'); return; }
+          try {
+            const j = await K.api('/api/portal-employees', { action: 'set_active', employeeId: e.id, active: false, leftAt: day });
+            d.close(); K.reload();
+            K.ui().toast(j && j.orphans ? first + ' are ' + K.plural(j.orphans, 'programare', 'programări') + ' după ' + K.dateShort(day) + '. Le găsești în Calendar, ca să le dai altcuiva.' : e.active ? 'Gata, ' + first + ' e la „Au plecat”.' : 'Ziua e schimbată.', j && j.orphans ? 'info' : 'success');
+          } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+        });
         const tg = el.querySelector('[data-toggle]');
         if (tg) tg.addEventListener('click', async () => {
-          if (e.active && !(await K.ui().confirm({ title: 'Dezactivezi contul lui ' + e.name + '?', message: 'Nu se mai poate loga. Istoricul și comisioanele rămân.', confirmText: 'Dezactivează', danger: true }))) return;
-          try { await K.api('/api/portal-employees', { action: 'set_active', employeeId: e.id, active: !e.active }); d.close(); K.ui().toast(e.active ? 'Cont dezactivat.' : 'Cont reactivat.', 'success'); K.reload(); }
+          try { await K.api('/api/portal-employees', { action: 'set_active', employeeId: e.id, active: true }); d.close(); K.ui().toast('Cont reactivat.', 'success'); K.reload(); }
           catch (err) { K.ui().toast(K.errText(err), 'error'); }
         });
         // the clinics of a manager show while the role picked is Manager
@@ -518,7 +540,7 @@
           : r.hasBonus
           ? '<div><dt>Bonus programări</dt><dd>' + K.lei(r.bonus) + '</dd><small>' + (r.booking && r.booking.days ? 'media ' + K.num(r.booking.avg) + '/zi' : 'fără zile pontate') + '</small></div>'
           : '<div><dt>Comision</dt><dd>' + K.lei(r.commission, r.commission % 1 ? 2 : 0) + '</dd><small>' + (r.commissionWaiting ? K.lei(r.commissionWaiting, 2) + ' în așteptare' : K.plural(r.upsells, 'upsell', 'upsell-uri')) + '</small></div>';
-        return '<article class="pr-row"><button type="button" class="pr-who" data-emp="' + esc(r.id) + '">' + K.avatar(r.name, 40) + '<span><b>' + esc(r.name) + '</b><small>' + esc(K.roleLabel(r.role)) + ' · ' + esc(r.location || '') + (r.active === false ? ' · cont dezactivat' : '') + '</small></span></button>' +
+        return '<article class="pr-row"><button type="button" class="pr-who" data-emp="' + esc(r.id) + '">' + K.avatar(r.name, 40) + '<span><b>' + esc(r.name) + '</b><small>' + esc(K.roleLabel(r.role)) + ' · ' + esc(r.location || '') + (r.active === false ? ' · a plecat' : '') + '</small></span></button>' +
           '<dl class="pr-kv"><div><dt>Salariu net</dt><dd>' + (r.base ? K.lei(r.base) : '<em>nesetat</em>') + '</dd></div>' +
           '<div><dt>Ore suplimentare</dt><dd>' + K.lei(r.overtimeLei, r.overtimeLei % 1 ? 2 : 0) + '</dd><small>' + (r.overtimeMinutes ? hm(r.overtimeMinutes) + (r.overtimeDueLei ? ', de plătit' : ', plătite') : '-') + '</small></div>' + extra +
           (r.manual ? '<div><dt>Comision manual</dt><dd>' + (r.manual > 0 ? '+' : '') + K.lei(r.manual, r.manual % 1 ? 2 : 0) + '</dd><small>din Ajustări</small></div>' : '') +
