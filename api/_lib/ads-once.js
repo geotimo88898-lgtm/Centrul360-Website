@@ -12,6 +12,12 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 16.11 evening, the owner in his main session (Arad's calendar at 33-57% for the next 2 days: „da, ce putem face să
+  // fie full la AR”): the 40+ cover back on at 50 lei a day, the cheapest leads in Arad (13 on 13.11 for 85 lei)
+  { id: 'ar-rf40-on-2026-11-16', why: 'Arad RF gușă copertă 40+ pornită din nou la 50 lei/zi, pentru calendar, cerut de voi pe 16.11', actions: [
+    { campaignId: '120251788054780103', name: 'AR RF GUSA · copertă 40+', daily: 50, why: 'cele mai ieftine leaduri din Arad, calendarul la 33-57%' },
+    { campaignId: '120251788054780103', name: 'AR RF GUSA · copertă 40+', status: 'ACTIVE', why: 'cele mai ieftine leaduri din Arad, calendarul la 33-57%' },
+  ] },
   // 16.11, the owner in his main session (few leads in Arad, only RF gușă 50+ running: „pornește restart”): Arad's
   // Restart „Căutăm 10 doamne din Arad.” back on at 50 lei a day (ROAS 3,3, 5 clients since 16.10)
   { id: 'ar-restart-on-2026-11-16', why: 'Restart Arad pornit din nou la 50 lei/zi, cerut de voi pe 16.11', actions: [
