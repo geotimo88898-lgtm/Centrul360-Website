@@ -12,6 +12,14 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 18.11 night, the owner in his main session („e puțin ciudat că la Arad se cheltuie mai mult ca la Timișoara...
+  // rezolvă totul să aibă sens”): Arad has about half Timișoara's hours, so its spend follows what books. Kept: RF copertă 3,
+  // RF 40+, Restart invitație (7 bookings from 18 leads since 16.11); off: RF 50+ (1 booking from 7 leads, 28 lei a lead
+  // on 17.11) and Restart local (no booking from 4 leads). Arad goes from 250 to 150 lei a day.
+  { id: 'ar-trim-2026-11-18', why: 'Arad: rămân doar reclamele care aduc programări (150 lei/zi), cerut de voi pe 18.11', actions: [
+    { campaignId: '120251788054230103', name: 'AR RF GUSA · copertă 50+', status: 'PAUSED', why: '1 programare din 7 leaduri de la 16.11' },
+    { campaignId: '120251389243100103', name: 'AR RESTART · local', status: 'PAUSED', why: 'nicio programare din 4 leaduri de la 16.11' },
+  ] },
   // 16.11 evening, the owner in his main session (Arad's calendar at 33-57% for the next 2 days: „da, ce putem face să
   // fie full la AR”): the 40+ cover back on at 50 lei a day, the cheapest leads in Arad (13 on 13.11 for 85 lei)
   { id: 'ar-rf40-on-2026-11-16', why: 'Arad RF gușă copertă 40+ pornită din nou la 50 lei/zi, pentru calendar, cerut de voi pe 16.11', actions: [
