@@ -243,6 +243,13 @@
 .cal-block.is-narrow b{ font-size:.66rem; line-height:1.2; width:100%; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .cal-block.is-narrow{ container-type:inline-size; }
 @container (max-width:30px){ .cal-block.is-narrow .cal-b-t{ display:none; } }
+/* the week on a computer: the whole booking (hour, name, procedure) whenever the block has room; only a block squeezed
+   by several bookings at the same hour (a tablet) drops to her name, the rest in the tooltip (the owner, 17.11) */
+.cal-block.is-wk{ container-type:inline-size; }
+@container (max-width:46px){
+  .cal-block.is-wk .cal-b-time, .cal-block.is-wk .cal-b-tr, .cal-block.is-wk .cal-b-sub{ display:none; }
+  .cal-block.is-wk b{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; overflow-wrap:normal; word-break:normal; }
+}
 /* in the split week nothing breaks inside a word: one line each, cut with … (the full text is on hover and in the booking) */
 .cal-grid.is-split .cal-block{ padding:.3rem .4rem; }
 .cal-grid.is-split .cal-b-time{ white-space:nowrap; overflow:hidden; font-size:.62rem; }

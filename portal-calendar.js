@@ -422,7 +422,7 @@
     const a = it.a, st = stOf(a);
     const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(30, (Math.min(it.e, END * 60) - it.s) * PPM - 3);
     const base = it.base || 0, w = (it.span || 100) / it.lanes;
-    const narrow = it.lanes > 1 && (it.span || S.view === 'week'); // a half day, or a week day, shared by several bookings: the hour and her first name, the rest in the tooltip
+    const narrow = it.span && it.lanes > 1; // a half day shared by several bookings: one clean line, the rest in the tooltip
     // as many lines for the name as the block's height holds, so a long title shows whole; a short appointment (half
     // an hour) has the hour in front of the name, in smaller letters, on up to two lines
     const short = it.e - it.s < 30; // under half an hour: one line
@@ -430,7 +430,7 @@
     const tiny = phone() && S.view === 'week'; // a phone's week: 7 narrow columns, only the name
     const tr = trLine(a);
     const lines = tiny ? Math.max(1, Math.floor((h - 4) / 23)) : short ? 1 : Math.max(1, Math.min(2, Math.floor((h - 44) / 34)));
-    return '<button type="button" class="cal-block is-' + a.status + (a.block ? ' is-block' : '') + (tiny ? ' is-tiny' : narrow ? ' is-narrow' : short ? ' is-short' : '') + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (base + it.lane * w) + '% + ' + (narrow ? 2 : 3) + 'px);width:calc(' + w + '% - ' + (narrow ? 4 : 6) + 'px);--lines:' + lines + '"' +
+    return '<button type="button" class="cal-block is-' + a.status + (a.block ? ' is-block' : '') + (tiny ? ' is-tiny' : narrow ? ' is-narrow' : short ? ' is-short' : '') + (!tiny && S.view === 'week' ? ' is-wk' : '') + '" data-id="' + esc(a.id) + '" style="top:' + top + 'px;height:' + h + 'px;left:calc(' + (base + it.lane * w) + '% + ' + (narrow ? 2 : 3) + 'px);width:calc(' + w + '% - ' + (narrow ? 4 : 6) + 'px);--lines:' + lines + '"' +
       ' title="' + esc(span(a) + ' · ' + nameOf(a) + ' · ' + tr + ' · ' + st.label + (a.location ? ' · ' + a.location : '')) + '">' +
       (narrow ? '<span class="cal-b-t">' + esc(a.time || '') + '</span><b>' + esc(nameOf(a).split(/\s+/)[0]) + '</b>' : tiny ? '<b>' + esc(nameOf(a).split(/[\s-]+/)[0]) + '</b>' + (tr ? '<span class="cal-b-tr">' + esc(tr) + '</span>' : '') : short
         ? '<b><span class="cal-b-t">' + esc(a.time || '') + '</span>' + esc(nameOf(a)) + (tr ? ' · ' + esc(tr) : '') + '</b>'
