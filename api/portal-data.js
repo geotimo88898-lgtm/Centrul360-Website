@@ -227,10 +227,15 @@ module.exports = async (req, res) => {
     // aggregate counts and the logged-in employee's own counts (by assigned
     // cosmetician) for the Panou widget. The full Calendar (day/week views, all dates)
     // is fetched directly from api/portal-appointments.js by portal.html, not here.
-    const todaysAppointments = appointments
+    let todaysAppointments = appointments
       .filter((a) => a.date === today && a.status !== 'concediu' && (inCity(city, clinicOf(a.location) || a.location) || (me.role === 'cosmetician' && a.cosmeticianId === me.id))) // leave and blocked time aren't visits; a cosmetician's own in the other clinic too (16.11)
       .slice()
       .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    // a package session: „Ședința 3 din 6” on her list (api/_lib/package-next.js)
+    if (todaysAppointments.some((a) => a.package)) {
+      try { const pkgOf = require('./_lib/package-next').sessionOf(sales, appointments); todaysAppointments.forEach((a, i) => { const p = a.package && pkgOf(a); if (p) todaysAppointments[i] = Object.assign({}, a, { pkg: p }); }); }
+      catch (err) { console.error('portal-data pkg:', err.message); }
+    }
     const countsToday = emptyStatusCounts();
     const myCountsToday = emptyStatusCounts();
     todaysAppointments.forEach((a) => {
@@ -397,6 +402,10 @@ module.exports = async (req, res) => {
         config,
       };
     }
+
+    // Regulament intern (api/portal-regulament.js): the version in force not confirmed yet by her (a dot on its menu entry)
+    try { const RG = require('./portal-regulament'); payload.regulament = { must: RG.pending(await RG.load(), me.id, me.role) }; }
+    catch (err) { console.error('portal-data regulament:', err.message); }
 
     // the manager: what waits for her decision (the team's days over / under 8 hours, the leave requests; never her own)
     if (me.role === 'manager') {

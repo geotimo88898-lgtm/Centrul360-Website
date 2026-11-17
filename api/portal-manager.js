@@ -17,6 +17,7 @@
 //   { action: 'report_draft', week }   the week's numbers (week = its Monday)
 //   { action: 'report_send', week, notes, problems }  saved with the numbers of that moment; the admins are told
 //   { action: 'reports_list' }
+//   { action: 'rules', period: 'azi' | '7z' }  Reguli: the regulation kept or not, per clinic (api/_lib/rules.js)
 // Data: data/manager-feedback.json, data/day-closes.json, data/manager-reports.json (newest last, the last 400 kept).
 
 const MONEY = require('./_lib/money');
@@ -211,6 +212,14 @@ module.exports = async (req, res) => {
   };
   try {
     if (b.action === 'stats') { res.status(200).json(await stats(b.month, mine)); return; }
+    // „Reguli”: whether the internal regulation is kept, read only, per clinic, today or the last 7 days (api/_lib/rules.js);
+    // the manager sees her clinics' people, never herself
+    if (b.action === 'rules') {
+      const team = await require('./_lib/roles').teamOf(session, readJSON);
+      const r = await require('./_lib/rules').compute({ clinics: [].concat(mine), team, period: b.period === 'azi' ? 'azi' : '7z' });
+      res.status(200).json(Object.assign({ ok: true }, r));
+      return;
+    }
 
     if (b.action === 'context') {
       if (!cityOk(b.city)) return fail(400, 'invalid_city');

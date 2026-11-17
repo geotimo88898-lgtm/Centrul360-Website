@@ -564,6 +564,7 @@
   async function badges() {
     if (!DATA) return;
     K.badge('mesaje', DATA.waUnread || 0); // conversations with unread client messages
+    K.badge('regulament', DATA.regulament && DATA.regulament.must ? 1 : 0); // Regulament intern: the version in force, not confirmed yet
     if (DATA.isAdmin && DATA.admin) K.badge('aprobari', DATA.admin.pendingSales.length + (DATA.admin.pendingTime || 0) + (DATA.admin.pendingLeave || 0), 'hot');
     // the team's days and leave to decide: on Panou, where „De făcut” lists them (her Manager button is hidden from the menu)
     if (DATA.manager) K.badge('panou', (DATA.manager.pendingTime || 0) + (DATA.manager.pendingLeave || 0), 'hot');

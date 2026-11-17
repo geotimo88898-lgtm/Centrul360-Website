@@ -276,6 +276,11 @@ module.exports = async (req, res) => {
         const phoneById = new Map(clients.map((c) => [c.id, c.phone || '']));
         matching.forEach((a) => { if (!a.clientPhone && a.clientId) a.clientPhone = phoneById.get(a.clientId) || ''; });
       }
+      // a package session: „Ședința 3 din 6” on its card and sheet (api/_lib/package-next.js)
+      if (matching.some((a) => a.package)) {
+        try { const pkgOf = require('./_lib/package-next').sessionOf(await readJSON('data/sales.json', []), appointments); matching.forEach((a, i) => { const p = a.package && pkgOf(a); if (p) matching[i] = Object.assign({}, a, { pkg: p }); }); }
+        catch (err) { console.error('appointments pkg:', err.message); }
+      }
       res.status(200).json({ ok: true, appointments: matching, breaks: await breaksIn(appointments, from, to, city, me).catch(() => []) });
       return;
     }
@@ -339,7 +344,8 @@ module.exports = async (req, res) => {
     }
 
     // Everything below changes the calendar: front desk (receptie) + admin only, a
-    // cosmetician sees the calendar read-only.
+    // cosmetician sees the calendar read-only. Regulament intern (from 18.11): only reception makes, moves or cancels a
+    // booking (and moves a break); a cosmetician marks her own visits („mark” above), never books or moves anything.
     if (!['admin', 'receptie', 'manager'].includes(session.role)) {
       res.status(403).json({ error: 'forbidden' });
       return;
@@ -496,6 +502,8 @@ module.exports = async (req, res) => {
       if (appointment.status === 'anulata' && before.status !== 'anulata') appointment.cancelledAt = appointment.updatedAt;
       else if (appointment.status !== 'anulata') delete appointment.cancelledAt;
       const moved = before.date !== appointment.date || before.time !== appointment.time;
+      // who moved it, last (Manager → Reguli counts the bookings moved by someone outside the desk)
+      if (moved) { appointment.movedBy = session.employeeId; appointment.movedAt = appointment.updatedAt; }
       // moved off a day that had passed without her (not finished, not paid, nobody paid for her that day): that day stays
       // a no-show (missedOn, _lib/clinic.js visitStats, _lib/followups.js missedItems); moving it used to erase it (16.11)
       if (before.date !== appointment.date && before.date < roDay() && !['anulata', 'finalizata', 'concediu'].includes(before.status) && !before.paidSaleId) {

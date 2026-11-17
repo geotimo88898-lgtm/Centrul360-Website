@@ -45,6 +45,10 @@ const hm = (m) => Math.round(Number(m) || 0);
 const VALID_LOCATIONS = ['Timișoara', 'Arad'];
 
 const nowISO = () => new Date().toISOString();
+// a planned leave is asked at least 60 days ahead (Regulament intern, 18.11); the first day it can start without a special reason
+const AHEAD_TYPES = ['odihna', 'fara_plata'];
+const AHEAD_DAYS = 60;
+const earliest = () => new Date(Date.parse(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date()) + 'T12:00:00Z') + AHEAD_DAYS * 864e5).toISOString().slice(0, 10);
 const isValidDate = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || '') && Number.isFinite(new Date(d + 'T00:00:00').getTime());
 const pad2 = (n) => String(n).padStart(2, '0');
 const isoDate = (d) => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
@@ -144,6 +148,12 @@ module.exports = async (req, res) => {
       if (REASON_REQUIRED.includes(type) && !reason) return fail(400, 'missing_reason');
       if (requests.some((r) => r.employeeId === session.employeeId && r.status !== 'rejected' && r.status !== 'cancelled' && r.startDate <= endDate && r.endDate >= startDate)) return fail(409, 'overlapping_request');
       if (type !== 'suplimentare' && !workDaysBetween(startDate, endDate)) return fail(400, 'no_work_days');
+      // Regulament intern (18.11): a leave (odihnă, fără plată) is asked at least 2 months ahead; sooner only as a special
+      // situation, with its reason written („Situație specială”). It reaches the decision marked „sub 2 luni”. Medical
+      // leave, hours off and the owner's own requests are not held to it (nor a leave noted for someone, admin_create).
+      const short = AHEAD_TYPES.includes(type) && session.role !== 'admin' && startDate < earliest();
+      if (short && !body.special) return fail(400, 'too_soon');
+      if (short && reason.length < 5) return fail(400, 'missing_special_reason');
 
       // "Altul" + "cu recuperare": how many hours she misses and when she'll make them up
       let recovery = null;
@@ -172,6 +182,7 @@ module.exports = async (req, res) => {
         reason,
         ...(recovery ? { recovery } : {}),
         ...(type === 'suplimentare' ? { minutes } : {}),
+        ...(short ? { short: true } : {}), // „sub 2 luni”: a special situation, its reason in `reason`
         status: 'pending',
         requestedAt: nowISO(),
         decidedAt: '', decidedBy: '', rejectionNote: '', pdfBlobPath: '',
@@ -186,7 +197,7 @@ module.exports = async (req, res) => {
         const mgrs = who && who.role !== 'admin' ? emps.filter((e) => e && e.active !== false && e.role === 'manager' && e.id !== who.id && R.managesOf(e).includes(who.location)).map((e) => e.id) : [];
         const d = (x) => x.slice(8, 10) + '.' + x.slice(5, 7);
         if (mgrs.length) await notifyMany({ readJSON, writeJSON }, mgrs, { kind: 'leave', tone: 'info', go: 'manager/echipa', tag: 'leave-' + request.id,
-          title: 'CERERE DE CONCEDIU 🗓 - ' + (who.name || ''), text: (LEAVE_LABELS[type] || 'Concediu') + ' · ' + (startDate === endDate ? d(startDate) : d(startDate) + '-' + d(endDate)) });
+          title: 'CERERE DE CONCEDIU 🗓 - ' + (who.name || ''), text: (LEAVE_LABELS[type] || 'Concediu') + ' · ' + (startDate === endDate ? d(startDate) : d(startDate) + '-' + d(endDate)) + (short ? ' · sub 2 luni' : '') });
       } catch (err) { console.error('leave notify:', err.message); }
       res.status(200).json({ ok: true, request });
       return;
@@ -201,7 +212,7 @@ module.exports = async (req, res) => {
         if (a.status === 'pending') return a.requestedAt < b.requestedAt ? -1 : 1;
         return (b.decidedAt || '') < (a.decidedAt || '') ? -1 : 1;
       });
-      res.status(200).json({ ok: true, requests: list });
+      res.status(200).json({ ok: true, requests: list, earliest: earliest() }); // earliest: the first day a planned leave can start (60 days)
       return;
     }
 

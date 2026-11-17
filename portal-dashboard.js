@@ -108,7 +108,7 @@
     if (!list.length) return;
     const cos = K.data && K.data.me && K.data.me.role === 'cosmetician';
     const row = (a) => '<div class="k-row tc-row" data-um="' + esc(a.id) + '"><div class="k-row-main"><div class="k-row-title">' + esc(a.clientName || 'Programare') + '</div>' +
-      '<div class="k-row-sub">' + esc([a.time ? a.time + (a.endTime ? ' - ' + a.endTime : '') : '', a.treatment, a.package ? 'din pachet' : '', cos ? '' : String(a.cosmeticianName || '').split(' ')[0], cos ? '' : a.location].filter(Boolean).join(' · ')) + '</div>' +
+      '<div class="k-row-sub">' + esc([a.time ? a.time + (a.endTime ? ' - ' + a.endTime : '') : '', a.treatment, a.package ? (a.pkg && a.pkg.n ? 'Ședința ' + a.pkg.n + ' din ' + a.pkg.of : 'din pachet') : '', cos ? '' : String(a.cosmeticianName || '').split(' ')[0], cos ? '' : a.location].filter(Boolean).join(' · ')) + '</div>' +
       '<div class="tc-moves">' + (a.byHand ? '<button type="button" class="k-btn is-good is-sm" data-um-mark="came">' + icon('check') + 'Finalizată</button>'
         : cos ? '<span>A venit: se finalizează la încasare</span>' : '<button type="button" class="k-btn is-outline is-sm" data-um-pay>' + icon('wallet') + 'Încasează</button>') +
       '<button type="button" class="k-btn is-outline is-sm" data-um-mark="noshow">' + icon('ban') + 'Nu a venit</button></div></div></div>';

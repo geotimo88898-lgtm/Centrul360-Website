@@ -737,6 +737,8 @@ module.exports = async (req, res) => {
     // (so the calendar, the WhatsApp-confirmation task and the client directory all run through
     // their normal path). Records it on the lead and moves it into the 'booked' stage.
     if (action === 'link_appointment') {
+      // a booking is reception's (Regulament intern, 18.11): a cosmetician never books, so never links one either
+      if (session.role === 'cosmetician') return fail(403, 'forbidden');
       // the booking itself already moved it (api/portal-appointments.js): then this changes nothing
       applyBooking(lead, stages, { id: body.appointmentId, date: body.date, time: body.time, treatment: body.treatment }, author);
       await save();

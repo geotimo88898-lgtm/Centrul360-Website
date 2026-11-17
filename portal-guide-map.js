@@ -58,11 +58,13 @@
     'condica.derezolvat': P('Condică → De rezolvat', [M], { tab: 'condica', sub: 'derezolvat' }, '.cd-fix'),
     acte: P('Acte și autorizații', BOSS, { tab: 'acte' }),
     ofertele: P('Oferte', STAFF, { tab: 'ofertele' }),
+    regulament: P('Regulament intern', ALL, { tab: 'regulament' }),
     manager: P('Manager', BOSS, { tab: 'manager' }),
     'manager.cifre': P('Manager → Cifre', BOSS, { tab: 'manager', sub: 'cifre' }),
     'manager.echipa': P('Manager → Echipa', BOSS, { tab: 'manager', sub: 'echipa' }),
     'manager.casa': P('Manager → Casa', BOSS, { tab: 'manager', sub: 'casa' }),
     'manager.rapoarte': P('Manager → Rapoarte', BOSS, { tab: 'manager', sub: 'rapoarte' }),
+    'manager.reguli': P('Manager → Reguli', BOSS, { tab: 'manager', sub: 'reguli' }),
     'manager.inchide': P('Închide ziua', BOSS, { tab: 'manager', call: 'closeDay' }),
     // the owner's own pages
     aprobari: P('Aprobări', [A], { tab: 'aprobari' }),
@@ -389,20 +391,38 @@
     { q: 'ce am de făcut azi?', by: {
       receptie: ['„Sarcini”: lista ta de azi și „De sunat azi”.', 'automatizari'], manager: ['„Sarcini”: lista ta de azi și „De sunat azi”.', 'automatizari'],
       cosmetician: ['Panoul: „Clientele mele azi”.', 'panou'], admin: ['Panou → „Azi”.', 'panou.azi'] } },
+    { q: 'unde e regulamentul? / regulamentul intern', by: {
+      receptie: ['Meniu → „Regulament intern”: îl citești în portal sau apeși „Descarcă”. La o versiune nouă confirmi o singură dată, la final, cu „Am citit regulamentul”.', 'regulament'], cosmetician: ['Meniu → „Regulament intern”: îl citești în portal sau apeși „Descarcă”. La o versiune nouă confirmi o singură dată, la final, cu „Am citit regulamentul”.', 'regulament'],
+      manager: ['„Regulament intern”: textul în vigoare, cine a confirmat și cine nu încă. O versiune nouă (PDF): „Versiune nouă”, iar cele de dinainte rămân, cu data lor. Confirmarea ta: la final, „Am citit regulamentul”.', 'regulament'], admin: ['„Regulament intern”: textul în vigoare, cine a confirmat și cine nu încă. O versiune nouă (PDF): „Versiune nouă”, iar cele de dinainte rămân, cu data lor.', 'regulament'] } },
+    { q: 'pot să programez eu? / pot muta sau anula o programare?', by: {
+      cosmetician: ['Nu. Programările le face, le mută și le anulează doar recepția, iar clientei nu-i propui tu ore. Tu marchezi ședințele tale „Finalizată” sau „Nu a venit”, scrii notițe, pui pozele și fișa și faci oferta.', 'programari'],
+      receptie: ['Doar recepția programează, mută și anulează programările: Calendar → „Programare” sau o oră liberă.', 'programari.new'], manager: ['Doar recepția programează, mută și anulează programările: Calendar → „Programare” sau o oră liberă.', 'programari.new'], admin: ['Doar recepția programează, mută și anulează programările: Calendar → „Programare” sau o oră liberă.', 'programari.new'] } },
+    { q: 'ce fac dacă s-a decalat programul? / am întârziere cu clientele', by: {
+      cosmetician: ['Faci doar consultația, cu fișa completată în cabină și scanată în aceeași zi. Procedura o programează recepția în altă zi.', 'programari'],
+      receptie: ['Dacă programul s-a decalat, cosmeticiana face doar consultația, iar procedura o programezi în altă zi: Calendar → „Programare”.', 'programari.new'], manager: ['Dacă programul s-a decalat, cosmeticiana face doar consultația, iar procedura o programezi în altă zi: Calendar → „Programare”.', 'programari.new'], admin: ['Dacă programul s-a decalat, cosmeticiana face doar consultația, iar procedura o programezi în altă zi: Calendar → „Programare”.', 'programari.new'] } },
+    { q: 'cu cât timp înainte cer concediul?', by: {
+      receptie: ['Cu cel puțin 2 luni înainte, din Condică → „Cerere nouă”: formularul îți arată „Cel mai devreme”. Mai devreme doar ca „Situație specială”, cu motivul scris. Concediul medical nu intră aici.', 'condica.noua'], cosmetician: ['Cu cel puțin 2 luni înainte, din Condică → „Cerere nouă”: formularul îți arată „Cel mai devreme”. Mai devreme doar ca „Situație specială”, cu motivul scris. Concediul medical nu intră aici.', 'condica.noua'], manager: ['Cu cel puțin 2 luni înainte, din Condică → „Cerere nouă”: formularul îți arată „Cel mai devreme”. Mai devreme doar ca „Situație specială”, cu motivul scris. Concediul medical nu intră aici. Cererile echipei sub 2 luni vin marcate „sub 2 luni”, cu motivul.', 'condica.noua'],
+      admin: ['Concediul de odihnă se cere cu cel puțin 2 luni înainte. Cererile mai târzii vin marcate „sub 2 luni”, cu motivul, în „Aprobări”.', 'aprobari'] } },
+    { q: 'unde văd orele de recuperat?', by: {
+      receptie: ['Condică → „Orele mele”: cât ai de recuperat și ce ai lucrat în plus. Le recuperezi în intervalele stabilite pentru tine.', 'condica.ore'],
+      cosmetician: ['Condică → „Orele mele”: cât ai de recuperat și ce ai lucrat în plus. Le recuperezi în intervalele stabilite pentru tine.', 'condica.ore'],
+      manager: ['Manager → „Reguli”: întârzierile față de Program echipă, turele fără pontaj, vizitele nemarcate, fișele și pozele lipsă, concediile sub 2 luni și orele de recuperat, azi sau pe 7 zile. Apeși pe un rând și ajungi unde se rezolvă.', 'manager.reguli'], admin: ['Manager → „Reguli”: întârzierile față de Program echipă, turele fără pontaj, vizitele nemarcate, fișele și pozele lipsă, concediile sub 2 luni și orele de recuperat, azi sau pe 7 zile. Apeși pe un rând și ajungi unde se rezolvă.', 'manager.reguli'] } },
+    { q: 'se respectă regulamentul? / întârzieri, vizite nemarcate, fișe lipsă', by: {
+      manager: ['Manager → „Reguli”: întârzierile față de Program echipă, turele fără pontaj, vizitele nemarcate, fișele și pozele lipsă, concediile sub 2 luni și orele de recuperat, azi sau pe 7 zile. Apeși pe un rând și ajungi unde se rezolvă.', 'manager.reguli'], admin: ['Manager → „Reguli”: întârzierile față de Program echipă, turele fără pontaj, vizitele nemarcate, fișele și pozele lipsă, concediile sub 2 luni și orele de recuperat, azi sau pe 7 zile. Apeși pe un rând și ajungi unde se rezolvă.', 'manager.reguli'] } },
     { q: 'vreau concediu', by: {
-      receptie: ['Condică → „Cererile mele” → „Cerere nouă”, apoi „Trimite cererea”.', 'condica.noua'],
-      cosmetician: ['Condică → „Cererile mele” → „Cerere nouă”, apoi „Trimite cererea”.', 'condica.noua'],
-      manager: ['Condică → „Cererile mele” → „Cerere nouă”, apoi „Trimite cererea”.', 'condica.noua'],
+      receptie: ['Condică → „Cererile mele” → „Cerere nouă”, apoi „Trimite cererea”. Concediul se cere cu cel puțin 2 luni înainte.', 'condica.noua'],
+      cosmetician: ['Condică → „Cererile mele” → „Cerere nouă”, apoi „Trimite cererea”. Concediul se cere cu cel puțin 2 luni înainte.', 'condica.noua'],
+      manager: ['Condică → „Cererile mele” → „Cerere nouă”, apoi „Trimite cererea”. Concediul se cere cu cel puțin 2 luni înainte.', 'condica.noua'],
       admin: ['Concediile echipei: „Aprobări” → „Cereri de concediu”.', 'aprobari'] } },
     { q: 'cum pontez?', by: {
       receptie: ['Panou sau Condică: „Pontează sosirea” când vii, „Pontează plecarea” când pleci.', 'condica'],
       cosmetician: ['Panou sau Condică: „Pontează sosirea” când vii, „Pontează plecarea” când pleci.', 'condica'],
       manager: ['Panou sau Condică: „Pontează sosirea” și „Pontează plecarea”.', 'condica'],
       admin: ['Pontajul tuturor: „Echipa” → „Condică”.', 'angajati.condica'] } },
-    { q: 'am uitat să pontez / mi-a ieșit greșit pontajul', by: {
-      receptie: ['Condică: „Cere corectarea”, alegi ziua, pui orele reale și scrii de ce. Se aprobă din Condică.', 'condica'],
-      cosmetician: ['Condică: „Cere corectarea”, alegi ziua, pui orele reale și scrii de ce. Se aprobă din Condică.', 'condica'],
-      manager: ['Pentru pontajul tău: Condică → „Cere corectarea”, cu orele reale și motivul.', 'condica'],
+    { q: 'am uitat să pontez / am uitat să mă pontez / mi-a ieșit greșit pontajul', by: {
+      receptie: ['În aceeași zi: Condică → „Cere corectarea”, alegi ziua, pui orele reale și scrii de ce. Se aprobă din Condică.', 'condica'],
+      cosmetician: ['În aceeași zi: Condică → „Cere corectarea”, alegi ziua, pui orele reale și scrii de ce. Se aprobă din Condică.', 'condica'],
+      manager: ['Pentru pontajul tău, în aceeași zi: Condică → „Cere corectarea”, cu orele reale și motivul.', 'condica'],
       admin: ['„Echipa” → „Condică”: „De rezolvat”, apoi „Corectează”.', 'angajati.condica'] } },
     { q: 'corectez pontajul colegelor / o zi fără pontaj / cererile de corectare', by: {
       manager: ['Condică → „De rezolvat”: apeși pe rând și „Corectează” (la o cerere „Vezi”). O zi lipsă: „Adaugă ziua”. Motivul e obligatoriu și rămâne în istoric.', 'condica.derezolvat'],

@@ -42,7 +42,10 @@ module.exports = async (req, res) => {
       const apptById = new Map(appointments.map((a) => [a.id, a]));
       let autoClosed = 0;
       const leadById = new Map(leads.map((l) => [l.id, l]));
+      const PN = require('./_lib/package-next');
       allTasks.forEach((t) => {
+        // „Programează ședința următoare” (_lib/package-next.js): done once she has a visit booked ahead
+        if (t.type === 'pachet') { if (PN.closes(t, appointments, today)) { t.status = 'done'; t.doneAt = new Date().toISOString(); t.doneBy = 'system'; autoClosed++; } return; }
         // A lead's "call / write" task is done once someone has reached that lead.
         if (t.status === 'pending' && t.workflowId && t.relatedLeadId && !t.relatedAppointmentId) {
           const l = leadById.get(t.relatedLeadId);

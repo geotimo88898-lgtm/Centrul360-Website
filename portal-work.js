@@ -17,6 +17,8 @@
     // From Admin → Automatizări: the message text comes already written by the flow.
     whatsapp: { label: 'WhatsApp', ic: 'chat', tone: 'good', msg: 'flow' },
     sarcina: { label: 'De făcut', ic: 'listCheck', tone: 'accent', msg: '' },
+    // a package session done, nothing booked after it (api/_lib/package-next.js)
+    pachet: { label: 'Ședința următoare', ic: 'gift', tone: 'accent', msg: '' },
   };
   const T = { tasks: [], done: [], filter: '', calls: [] };
   let tpanel;
@@ -111,7 +113,7 @@
   }
   function taskHtml(t) {
     const ty = TYPES[t.type] || { label: t.type, ic: 'bell', tone: '' };
-    if (ty.msg === 'flow' || t.type === 'sarcina') return flowTaskHtml(t, ty);
+    if (ty.msg === 'flow' || t.type === 'sarcina' || t.type === 'pachet') return flowTaskHtml(t, ty);
     const a = t.appointment;
     const phone = a && a.clientPhone;
     return '<article class="wk-task" data-task="' + esc(t.id) + '"><span class="k-icon-chip is-' + ty.tone + '">' + icon(ty.ic) + '</span>' +
@@ -132,7 +134,7 @@
     const phone = t.phone || (a && a.clientPhone) || '';
     const msg = t.message || '';
     return '<article class="wk-task" data-task="' + esc(t.id) + '"><span class="k-icon-chip is-' + ty.tone + '">' + icon(ty.ic) + '</span>' +
-      '<div class="wk-task-main"><div class="wk-task-top"><b>' + esc(t.clientName || (a && a.clientName) || ty.label) + '</b><span class="k-tag is-' + ty.tone + '">' + icon('zap') + esc(t.title || ty.label) + '</span>' +
+      '<div class="wk-task-main"><div class="wk-task-top"><b>' + esc(t.clientName || (a && a.clientName) || ty.label) + '</b><span class="k-tag is-' + ty.tone + '">' + icon(t.type === 'pachet' ? ty.ic : 'zap') + esc(t.type === 'pachet' ? ty.label : t.title || ty.label) + '</span>' +
         (t.location ? '<span class="k-tag">' + icon('pin') + esc(t.location) + '</span>' : '') +
         (!phone && msg ? '<span class="k-tag is-warn">' + icon('alert') + 'fără telefon</span>' : '') + '</div>' +
       '<div class="wk-task-sub">' + (a ? esc(K.relDay(a.date) + ' · ' + (a.time || 'fără oră') + ' · ' + (a.treatment || '')) : msg ? '' : esc(t.text)) + '</div>' +
@@ -140,6 +142,8 @@
       '<div class="wk-task-actions">' +
         (phone && msg ? '<a class="k-btn is-sm wk-wa" href="#mesaje" data-sent="' + esc(t.id) + '" data-chat="' + esc(phone) + '" data-chat-text="' + esc(msg) + '">' + icon('chat') + 'WhatsApp</a>' : '') +
         (phone ? '<a class="k-icon-btn" href="' + K.tel(phone) + '" title="Sună">' + icon('phone') + '</a>' : '') +
+        // the next session: the booking form opens with her already filled in
+        (t.type === 'pachet' ? '<button type="button" class="k-btn is-sm is-outline" data-book-next="' + esc(t.id) + '">' + icon('calendar') + 'Programează</button>' : '') +
         (t.relatedLeadId ? '<button type="button" class="k-icon-btn" data-lead="' + esc(t.relatedLeadId) + '" title="Deschide leadul">' + icon('user') + '</button>' : '') +
         (a ? '<button type="button" class="k-icon-btn" data-open="' + esc(a.id) + '" data-date="' + esc(a.date) + '" title="Deschide programarea">' + icon('calendar') + '</button>' : '') +
         '<button type="button" class="k-btn is-sm is-primary wk-done" data-done="' + esc(t.id) + '">' + icon('check') + 'Gata</button>' +
@@ -180,6 +184,8 @@
     }
     const done = t.closest('[data-done]');
     if (done) return complete(done.dataset.done, done.closest('.wk-task'));
+    const nx = t.closest('[data-book-next]');
+    if (nx) { const k = T.tasks.find((x) => x.id === nx.dataset.bookNext); if (k) { K.go('programari'); setTimeout(() => K.emit('calendar:new', { clientName: k.clientName, clientPhone: k.phone, location: k.location, package: true }), 250); } return; }
     const lead = t.closest('[data-lead]');
     if (lead) { K.go('pipeline'); setTimeout(() => window.C360Pipeline && window.C360Pipeline.openLead(lead.dataset.lead), 350); return; }
     const open = t.closest('[data-open]');

@@ -84,5 +84,27 @@
     e.preventDefault();
     view(a.href, a.getAttribute('data-pdf-title') || a.getAttribute('title') || (a.textContent || '').trim() || 'Document');
   }, true);
-  window.C360Pdf = { view, close };
+  // inline, in a page of its own (Regulament intern): the pages drawn into `host`, as wide as it is (at most 900 px). The
+  // pages come one after the other; a new call for the same host stops the one before. Resolves with the page count.
+  async function render(url, host) {
+    const token = {}; host.__pv = token;
+    const lib = await loadLib();
+    const doc = await lib.getDocument({ url, withCredentials: true }).promise;
+    if (host.__pv !== token) return 0;
+    host.innerHTML = '';
+    const ratio = Math.min(2, window.devicePixelRatio || 1);
+    const width = Math.min(host.clientWidth || 600, 900);
+    for (let n = 1; n <= doc.numPages; n++) {
+      if (host.__pv !== token || !host.isConnected) return n - 1;
+      const page = await doc.getPage(n);
+      const base = page.getViewport({ scale: 1 });
+      const vp = page.getViewport({ scale: (width / base.width) * ratio });
+      const c = document.createElement('canvas');
+      c.width = vp.width; c.height = vp.height; c.style.width = '100%'; c.setAttribute('aria-label', 'Pagina ' + n);
+      host.appendChild(c);
+      await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    }
+    return doc.numPages;
+  }
+  window.C360Pdf = { view, close, render };
 })();

@@ -3775,3 +3775,74 @@ html.ui-nou #panel-panou.sx-host > .mg-strip{ order:1; }
 .db-tl-item.is-brk .db-tl-dot{ border-color:var(--warn); }
 .db-tl-item.is-brk .db-tl-card{ background:color-mix(in srgb, var(--warn) 10%, var(--paper-2)); border-color:color-mix(in srgb, var(--warn) 25%, transparent); }
 .db-tl-item.is-brk .db-tl-top b{ color:color-mix(in srgb, var(--warn) 70%, var(--fg)); }
+
+/* ---------------------------------------------------------------- Regulament intern (portal-regulament.js, 17.11) */
+.rg .rg-meta{ display:flex; align-items:center; gap:.5rem; max-width:900px; margin:0 auto .8rem; color:var(--muted); font-size:.86rem; }
+.rg .rg-meta svg{ width:16px; height:16px; flex:none; }
+.rg-pages{ display:flex; flex-direction:column; align-items:center; gap:.9rem; max-width:900px; margin:0 auto; min-height:240px; }
+.rg-pages canvas{ display:block; width:100%; max-width:900px; height:auto; background:#fff; border-radius:10px; box-shadow:0 0 0 1px var(--line), 0 18px 40px -28px rgba(16,24,40,.45); }
+.rg-wait{ margin:auto; padding:3rem 1rem; color:var(--muted); font-size:.9rem; text-align:center; line-height:1.7; }
+.rg-ack{ max-width:900px; margin:1.4rem auto 0; padding:1.3rem 1.2rem; border-radius:20px; background:var(--paper); box-shadow:inset 0 0 0 1px var(--line); display:flex; flex-direction:column; align-items:center; gap:.85rem; text-align:center; }
+.rg-ack p{ margin:0; color:var(--muted); font-size:.9rem; line-height:1.5; }
+.rg-ack .k-btn{ width:100%; max-width:360px; justify-content:center; }
+.rg-done{ max-width:900px; margin:1.2rem auto 0; display:flex; align-items:center; justify-content:center; gap:.5rem; color:var(--muted); font-size:.88rem; text-align:center; }
+.rg-done svg{ width:18px; height:18px; color:var(--good); flex:none; }
+.rg-who{ max-width:900px; margin:0 auto 1.1rem; }
+.rg-who-h{ display:flex; align-items:center; gap:1rem; }
+.rg-who-h .lg-ring{ width:76px; height:76px; }
+.rg-who-h .lg-ring b{ font-size:1.25rem; }
+.rg-who-h h3{ font-size:1.02rem; margin:0 0 .2rem; }
+.rg-who-h p{ margin:0; color:var(--muted); font-size:.86rem; }
+.rg-h{ margin:1rem 0 .4rem; font-size:.74rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); font-weight:650; }
+.rg-people, .rg-vers{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:.1rem .9rem; }
+.rg-people li{ display:flex; align-items:center; gap:.65rem; padding:.55rem 0; border-top:1px solid var(--line); min-width:0; }
+.rg-people li > span:not(.k-avatar){ flex:1; min-width:0; display:flex; flex-direction:column; }
+.rg-people b{ font-size:.88rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rg-people small{ color:var(--muted); font-size:.76rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rg-people em{ flex:none; font-style:normal; font-size:.76rem; color:var(--muted); text-align:right; max-width:45%; }
+.rg-people.is-no em{ color:var(--warn); }
+.rg-more{ margin-top:.8rem; }
+.rg-more summary{ display:flex; align-items:center; gap:.35rem; cursor:pointer; list-style:none; font-size:.86rem; font-weight:600; color:var(--muted); padding:.35rem 0; }
+.rg-more summary::-webkit-details-marker{ display:none; }
+.rg-more summary svg{ width:16px; height:16px; transition:transform .25s var(--ease, ease); }
+.rg-more[open] summary svg{ transform:rotate(180deg); }
+.rg-vers li a{ display:flex; align-items:center; gap:.6rem; padding:.6rem 0; border-top:1px solid var(--line); color:inherit; text-decoration:none; min-width:0; }
+.rg-vers li a > span{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.rg-vers li a small{ color:var(--muted); font-size:.76rem; }
+.rg-vers svg{ width:17px; height:17px; flex:none; color:var(--muted); }
+
+/* ---------------------------------------------------------------- Manager → Reguli (portal-manager.js, 17.11) */
+.rl-top{ display:flex; align-items:center; flex-wrap:wrap; gap:.6rem 1rem; margin:0 0 1rem; }
+.rl-span{ display:flex; align-items:center; gap:.4rem; margin:0; color:var(--muted); font-size:.84rem; min-width:0; }
+.rl-span svg{ width:15px; height:15px; flex:none; }
+.rl-reg{ color:var(--accent); text-decoration:none; font-weight:600; }
+.rl-card{ margin-bottom:1rem; }
+.rl-g{ margin-top:.9rem; }
+.rl-g h4{ display:flex; align-items:center; gap:.5rem; margin:0 0 .3rem; font-size:.9rem; font-weight:650; }
+.rl-g h4 svg{ width:17px; height:17px; flex:none; color:var(--muted); }
+.rl-g h4 span{ flex:1; min-width:0; }
+.rl-g h4 b{ flex:none; min-width:1.6rem; height:1.6rem; padding:0 .45rem; border-radius:999px; display:grid; place-items:center; font-size:.78rem; background:var(--warn-soft); color:var(--warn); font-variant-numeric:tabular-nums; }
+.rl-hint{ margin:0 0 .3rem 1.6rem; color:var(--muted); font-size:.76rem; }
+.rl-list{ display:flex; flex-direction:column; }
+.rl-item{ display:flex; align-items:center; gap:.6rem; width:100%; padding:.6rem .2rem .6rem 1.6rem; border:0; border-top:1px solid var(--line); background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; min-width:0; transition:background .15s; }
+.rl-item:hover{ background:var(--glass); }
+.rl-item > svg{ width:16px; height:16px; flex:none; color:var(--muted); }
+.rl-main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.rl-main b{ font-size:.88rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rl-main small{ color:var(--muted); font-size:.78rem; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.rl-item em{ flex:none; font-style:normal; font-size:.78rem; font-weight:650; color:var(--muted); font-variant-numeric:tabular-nums; }
+.rl-more{ margin:.3rem 0 0 1.6rem; color:var(--muted); font-size:.78rem; }
+.rl-ok{ display:flex; align-items:flex-start; gap:.5rem; margin:1rem 0 0; color:var(--muted); font-size:.82rem; line-height:1.5; }
+.rl-ok svg{ width:16px; height:16px; flex:none; margin-top:.15rem; color:var(--good); }
+.rl-ok.is-soft{ margin-top:.5rem; }
+.rl-ok.is-soft svg{ color:var(--muted); }
+
+/* the leave form: the earliest day, the special situation (portal-condica.js) */
+.lv-ahead{ display:flex; align-items:center; gap:.45rem; margin:-.2rem 0 0; color:var(--muted); font-size:.84rem; }
+.lv-ahead[hidden], .lv-special[hidden]{ display:none; }
+.lv-ahead svg{ width:15px; height:15px; flex:none; }
+.lv-ahead b{ color:var(--fg); font-weight:600; }
+
+/* a cosmetician: one quiet line where the booking controls would be (Regulament intern, 18.11) */
+.cal-quiet{ display:flex; align-items:center; gap:.45rem; margin:.2rem 0 .7rem; color:var(--muted); font-size:.82rem; }
+.cal-quiet svg{ width:15px; height:15px; flex:none; }

@@ -399,6 +399,8 @@ function dueFor(wf, p, now) {
 // Called from the API routes right after the change was saved. Never throws, an automation
 // problem must not fail the booking or the lead that triggered it.
 async function emit(event, payload) {
+  // a package session done and nothing booked after it: reception gets „Programează ședința următoare” (_lib/package-next.js)
+  if (event === 'appointment_status' && payload && payload.status === 'finalizata' && payload.appointment) await require('./package-next').done(payload.appointment);
   try {
     const p = payload || {};
     const doc = await loadDoc();

@@ -97,6 +97,8 @@
         '<select name="calonly" data-only aria-label="Arată">' + K.options(ONLY, S.only) + '</select>' +
         K.seg('calview', [['day', 'Zi'], ['week', 'Săptămână']], S.view) + '</div>' +
       '</div>' +
+      // a cosmetician (Regulament intern, 18.11): no booking controls, one quiet line under the bar instead
+      (canEdit() ? '' : '<p class="cal-quiet">' + icon('info') + 'Programările le face recepția.</p>') +
       '<button type="button" class="cal-left" data-left data-act="orphans" hidden></button>' +
       '<div class="cal-mbox" data-mbox hidden></div>' +
       '<div class="cal-summary" data-summary></div>' +
@@ -417,7 +419,9 @@
   }
   // the treatment and its price together, on every booking (the owner, 5.11: see the procedure and the sum without opening it)
   const trLine = (a) => (a.block ? treatOf(a) : [treatOf(a), Number(a.amount) > 0 ? K.lei(a.amount) : ''].filter(Boolean).join(' · '));
-  const subOf = (a) => [a.online ? '🌐 online' : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ');
+  // „Ședința 3 din 6”: a package session, counted by the server (api/_lib/package-next.js sessionOf)
+  const pkgOf = (a) => (a && a.pkg && a.pkg.n ? 'Ședința ' + a.pkg.n + ' din ' + a.pkg.of : '');
+  const subOf = (a) => [pkgOf(a), a.online ? '🌐 online' : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ');
   function blockHtml(it) {
     const a = it.a, st = stOf(a);
     const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(30, (Math.min(it.e, END * 60) - it.s) * PPM - 3);
@@ -1662,7 +1666,7 @@
       K.drawer({
         title: a.clientName || 'Programare', lead: K.avatar(a.clientName, 42),
         subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + (a.online ? '<span class="k-tag is-info" title="Clienta s-a programat singură pe site">' + icon('globe') + 'Online</span> ' : '') + esc(K.relDay(a.date)) + ' · ' + esc(span(a) || 'fără oră') + ' · ' + esc(a.location),
-        body: '<dl class="k-kv cal-kv"><dt>Tratament</dt><dd>' + esc(a.treatment || '-') + '</dd><dt>Categorie</dt><dd>' + esc(K.catLabel(a) || '-') + '</dd>' + (a.amount ? '<dt>Sumă</dt><dd>' + K.lei(a.amount) + '</dd>' : '') +
+        body: '<dl class="k-kv cal-kv"><dt>Tratament</dt><dd>' + esc(a.treatment || '-') + '</dd>' + (pkgOf(a) ? '<dt>Pachet</dt><dd>' + esc(pkgOf(a)) + '</dd>' : '') + '<dt>Categorie</dt><dd>' + esc(K.catLabel(a) || '-') + '</dd>' + (a.amount ? '<dt>Sumă</dt><dd>' + K.lei(a.amount) + '</dd>' : '') +
           '<dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Ora</dt><dd>' + esc(span(a) || '-') + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd>' +
           '<dt>Cosmeticiană</dt><dd>' + esc(a.cosmeticianName || 'neasignat') + '</dd></dl>' +
           markHtml(a) +
@@ -1692,7 +1696,7 @@
           '<a class="k-btn is-outline cal-wa" href="#mesaje" data-chat="' + esc(a.clientPhone) + '" data-chat-name="' + esc(a.clientName || '') + '" data-chat-city="' + esc(a.location || '') + '">' + icon('chat') + 'Mesaje</a></div>' : '') +
         (a.clientId ? '<section class="k-section cal-client" data-client><h4>' + icon('user') + 'Clienta</h4><div class="k-skel" style="height:72px"></div></section>' : '') +
         '<section class="k-section"><h4>' + icon('pen') + 'Detalii</h4>' + formHtml(a, false) + '</section>' +
-        '<div class="k-muted">' + esc(a.clientPhone || 'Fără telefon salvat') + (a.cosmeticianName ? ' · cu ' + esc(a.cosmeticianName) : '') + '</div>',
+        '<div class="k-muted">' + esc(a.clientPhone || 'Fără telefon salvat') + (a.cosmeticianName ? ' · cu ' + esc(a.cosmeticianName) : '') + (pkgOf(a) ? ' · ' + esc(pkgOf(a)) : '') + '</div>',
       footer: '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Șterge</button><span class="k-grow"></span>' +
         (a.paidSaleId ? '' : '<button type="button" class="k-btn is-outline" data-pay>' + icon('wallet') + 'Încasează</button>') + '<button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
       onMount(el) {
@@ -1941,6 +1945,17 @@
   // #programari/pauza (Nuki, the guide): today's breaks, in the day view, with a short glow; #programari/echipa: Program echipă
   K.on('programari:sub', async (sub) => {
     if (sub === 'echipa') { if (K.canManage && K.canManage()) setTimeout(() => openTeam(), 120); return; } // (inside the module since 17.11: outside it openTeam, panel and S were not defined)
+    // #programari/zi/<YYYY-MM-DD>[/<id>] (Manager → Reguli): that day, in the day view, the booking glowing when named
+    const zi = /^zi\/(\d{4}-\d{2}-\d{2})(?:\/([\w-]+))?$/.exec(String(sub || ''));
+    if (zi) {
+      const until = Date.now() + 4000;
+      while (!panel && Date.now() < until) await new Promise((r) => setTimeout(r, 80));
+      if (!panel) return;
+      S.date = zi[1];
+      await setView('day');
+      if (zi[2] && K.glow) setTimeout(() => K.glow('[data-id="' + zi[2] + '"]', { max: 1 }), 400);
+      return;
+    }
     if (sub !== 'pauza') return;
     const until = Date.now() + 4000;
     while (!panel && Date.now() < until) await new Promise((r) => setTimeout(r, 80));

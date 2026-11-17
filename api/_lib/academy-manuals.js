@@ -287,7 +287,8 @@ Consultația e locul unde se face vânzarea. Discuția urmează mereu aceiași p
 5. Repetă cu cuvintele ei. „Deci te deranjează burtica de după a doua sarcină și vrei să te simți bine în rochie la nunta din august. Am înțeles bine?”
 6. Arată-i drumul: programul recomandat, pe pagina 1.
 7. Spune prețul și oferta (vezi capitolul despre preț) și taci.
-8. Programezi toate ședințele pe loc, în Calendar, înainte să plece.
+8. Fișa clientei o completezi aici, în cabină, și o scanezi în portal în aceeași zi. Pozele „înainte” le pui tot în portal.
+9. Programările le face recepția: toate ședințele, înainte să plece. Tu nu programezi și nu propui ore.
 ! Masajul facial cadou e doar pentru clientele venite din formularul de pe site. Clientele din reclame îl primesc ca pas din Restart.
 ## Ce spui la început
 > Mă bucur că ai venit! Înainte să-ți spun ceva despre tratamente, vreau să te ascult pe tine. Ce te-a făcut să ne scrii?
@@ -350,16 +351,16 @@ Apoi răspunzi exact la ce spune.
 ## „Am mai încercat și n-a mers”
 > Ce ai încercat? [Ascultă.] Diferența la noi e [aparatul, protocolul, numărul de ședințe]. Și îți spun sincer de la început ce să aștepți.
 `) },
-    { id: 'v-inchidere', title: 'Închiderea și programarea pe loc', summary: 'Nicio clientă nu pleacă fără ședințele în Calendar.',
+    { id: 'v-inchidere', title: 'Închiderea și ședințele rezervate pe loc', summary: 'Nicio clientă nu pleacă fără ședințele în Calendar. Le programează recepția.',
       body: L(`
 O consultație fără programare e o consultație pierdută. Nu lăsa clienta să plece cu „te sun eu”.
-1. Propune două variante de zi pentru prima ședință, nu întreba dacă vrea.
-2. Programezi toate ședințele pe loc, în Calendar, cât e lângă tine.
-3. Completezi oferta acceptată și o semnați amândouă (Consultația → Înainte de semnare).
+1. Nu o întrebi dacă vrea: îi spui ce urmează, rezervarea ședințelor.
+2. Completezi oferta acceptată și o semnați amândouă (Consultația → Înainte de semnare).
+3. Ședințele le programează recepția, toate, înainte să plece. Tu nu programezi și nu propui zile sau ore: recepția vede tot calendarul.
 4. Confirmarea pleacă singură pe WhatsApp. Spune-i să răspundă la ea.
+! Dacă programul s-a decalat, faci doar consultația. Procedura o programează recepția în altă zi.
 ## Ce spui
-> Hai să-ți rezervăm prima ședință. Îți vine mai bine marți la 17 sau joi la 10?
-> Perfect, te-am trecut joi la 10 și am pus și celelalte ședințe. Îți vine acum confirmarea pe WhatsApp.
+> Hai să-ți rezervăm ședințele. Colegele de la recepție îți găsesc acum orele care ți se potrivesc.
 ## Dacă tot nu se hotărăște
 > Te înțeleg. Programul îl ai pe hârtie, cu tot ce ți-am explicat. Te sun eu mâine să vedem ce ai hotărât.
 Pune imediat follow-up în Pipeline, ca să nu se piardă.

@@ -64,7 +64,7 @@
         '<button type="button" class="k-btn is-outline" data-act="close">' + icon('cash') + 'Închide ziua</button>' +
         (admin() ? '' : '<button type="button" class="k-btn is-outline" data-act="report">' + icon('listCheck') + 'Raport săptămânal</button>') +
       '</div></div>' +
-      '<div class="mg-hbar">' + K.seg('mgtab', [['cifre', 'Cifre', 'trend'], ['echipa', 'Echipa', 'users'], ['casa', 'Casa', 'wallet'], ['rapoarte', 'Rapoarte', 'file']], S.tab, 'mg-tabs') +
+      '<div class="mg-hbar">' + K.seg('mgtab', [['cifre', 'Cifre', 'trend'], ['echipa', 'Echipa', 'users'], ['reguli', 'Reguli', 'shield'], ['casa', 'Casa', 'wallet'], ['rapoarte', 'Rapoarte', 'file']], S.tab, 'mg-tabs') +
       (CL().length > 1 ? K.seg('mgcity', [['all', CL().length === 2 ? 'Ambele' : 'Toate']].concat(CL().map((c) => [c, c])), S.city, 'mg-city') : '') + '</div>';
   }
   function paint() {
@@ -79,6 +79,7 @@
     if (!el) return;
     if (S.tab === 'cifre') return cifre(el);
     if (S.tab === 'echipa') return echipa(el);
+    if (S.tab === 'reguli') return reguli(el);
     if (S.tab === 'casa') return casa(el);
     return rapoarte(el);
   }
@@ -138,6 +139,57 @@
       '<h4 class="mg-h">' + icon('wallet') + 'Încasat pe zi lucrată · țintă ' + K.lei(t.perDay) + '</h4><div class="k-list">' + rows + '</div></section>';
   }
 
+  // ------------------------------------------------------------------ Reguli (Regulament intern, 18.11)
+  // Read only, from what the portal already has (api/_lib/rules.js): per clinic, today or the last 7 days; each line opens
+  // the place where it is fixed. Calm: what is in order is one quiet line, the rest a count with a short list.
+  async function reguli(el) {
+    el.innerHTML = skel(320);
+    try { S.rules = await K.api('/api/portal-manager', { action: 'rules', period: S.rlPer || '7z' }); }
+    catch (e) { return fail(el, 'regulile'); }
+    if (S.tab === 'reguli' && el.isConnected) el.innerHTML = reguliHtml();
+  }
+  const dayHm = (d, t) => K.dateShort(d) + (t ? ' ' + t : '');
+  function reguliHtml() {
+    const r = S.rules;
+    if (!r) return skel(320);
+    const per = S.rlPer || '7z';
+    const head = '<div class="rl-top">' + K.seg('rlper', [['azi', 'Azi'], ['7z', '7 zile']], per) +
+      '<p class="rl-span">' + icon('calendar') + (r.from === r.to ? esc(K.dateLong(r.to)) : esc(K.dateShort(r.from)) + ' - ' + esc(K.dateShort(r.to))) + ' · <a href="#regulament" class="rl-reg">Regulamentul</a></p></div>';
+    return head + cities().filter((c) => r.cities[c]).map((c) => rulesCard(c, r.cities[c])).join('');
+  }
+  function rulesCard(city, b) {
+    const MAX = 6;
+    const item = (attrs, main, sub, end) => '<button type="button" class="rl-item" ' + attrs + '><span class="rl-main"><b>' + main + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span>' + (end ? '<em>' + end + '</em>' : '') + icon('right') + '</button>';
+    const group = (ic, label, list, row, hint) => {
+      if (!list.length) return { ok: label };
+      const more = list.length > MAX ? '<p class="rl-more">și încă ' + (list.length - MAX) + '</p>' : '';
+      return { html: '<section class="rl-g"><h4>' + icon(ic) + '<span>' + esc(label) + '</span><b>' + list.length + '</b></h4>' + (hint ? '<p class="rl-hint">' + esc(hint) + '</p>' : '') + '<div class="rl-list">' + list.slice(0, MAX).map(row).join('') + more + '</div></section>' };
+    };
+    const pont = 'data-go="condica/derezolvat"';
+    const vis = (a) => item('data-go="programari/zi/' + esc(a.date) + '/' + esc(a.id) + '"', esc(a.clientName || 'Clientă'), esc([dayHm(a.date, a.time), a.treatment, a.cosmeticianName ? 'cu ' + a.cosmeticianName : ''].filter(Boolean).join(' · ')));
+    const file = (tab) => (a) => item(a.clientId ? 'data-rl-contact="' + esc(a.clientId) + '" data-tab="' + tab + '"' : 'data-go="contacte"', esc(a.clientName || 'Clientă'), esc([dayHm(a.date, a.time), a.treatment, a.cosmeticianName ? 'cu ' + a.cosmeticianName : ''].filter(Boolean).join(' · ')));
+    const LV = { odihna: 'Odihnă', fara_plata: 'Fără plată' };
+    const sch = b.schedule || { missing: [] };
+    const groups = [
+      group('clock', 'Întârzieri la sosire', b.late, (x) => item(pont, esc(x.name), esc(dayHm(x.date) + ' · sosire ' + x.checkIn + ', programul de la ' + x.from), '+' + x.minutes + ' min'), 'Peste 5 minute după ora din Program echipă.'),
+      group('alert', 'Ture fără pontaj la sosire', b.noIn, (x) => item(pont, esc(x.name), esc(dayHm(x.date) + ' · programul ' + x.from + '-' + x.to))),
+      group('clock', 'Fără pontaj la plecare', b.noOut, (x) => item(pont, esc(x.name), esc(dayHm(x.date) + ' · sosire ' + x.checkIn))),
+      group('checkCircle', 'Vizite trecute nemarcate', b.unmarked, vis, 'Nici „Finalizată”, nici „Nu a venit”, nici plătite.'),
+      group('file', 'Fără fișa scanată în ziua consultației', b.sheets, file('fise'), 'Consultații și prime vizite.'),
+      group('image', 'Prima ședință fără poze înainte', b.photos, file('poze')),
+      group('calendar', 'Programări făcute sau mutate de cosmeticiene', b.desk, (a) => item('data-go="programari/zi/' + esc(a.date) + '/' + esc(a.id) + '"', esc(a.clientName || 'Clientă'), esc(dayHm(a.date, a.time) + ' · ' + a.how + ' de ' + a.by))),
+      group('calendar', 'Concedii cerute cu mai puțin de 2 luni', b.leave, (x) => item('data-go="manager/echipa"', esc(x.name), esc((LV[x.type] || 'Concediu') + ' · ' + K.dateShort(x.startDate) + (x.endDate !== x.startDate ? ' - ' + K.dateShort(x.endDate) : '') + (x.reason ? ' · „' + x.reason + '”' : '')), x.status === 'pending' ? 'de decis' : x.status === 'approved' ? 'aprobat' : 'respins')),
+      group('undo', 'Ore de recuperat', b.recover, (x) => item('data-go="manager/echipa"', esc(x.name), x.planned >= x.minutes ? 'recuperarea e planificată' : x.planned ? 'planificat ' + fmt(x.planned) + ', mai rămân ' + fmt(x.minutes - x.planned) : 'recuperarea nu e planificată încă', fmt(x.minutes))),
+      sch.due ? group('users', 'Programul săptămânii viitoare', sch.missing, (x) => item('data-go="programari/echipa"', esc(x.name), 'fără ore din ' + esc(K.dateShort(sch.monday)) + ' în Program echipă'), 'Se publică până joi.') : { ok: '' },
+    ];
+    const open = groups.filter((g) => g.html), ok = groups.filter((g) => g.ok).map((g) => g.ok);
+    const n = b.late.length + b.noIn.length + b.noOut.length + b.unmarked.length + b.sheets.length + b.photos.length + b.desk.length + b.leave.length + (sch.due ? sch.missing.length : 0);
+    return '<section class="k-card rl-card"><div class="k-card-head"><h3>' + icon('pin') + esc(city) + '</h3>' + (n ? '<span class="k-tag is-warn">' + K.plural(n, 'de văzut', 'de văzut') + '</span>' : '<span class="k-tag is-good">' + icon('check') + 'Totul în regulă</span>') + '</div>' +
+      open.map((g) => g.html).join('') +
+      (ok.length ? '<p class="rl-ok">' + icon('checkCircle') + '<span><b>În regulă:</b> ' + esc(ok.join(' · ')) + '</span></p>' : '') +
+      (!sch.due ? '<p class="rl-ok is-soft">' + icon('calendar') + '<span>Programul săptămânii viitoare se verifică de miercuri.</span></p>' : '') + '</section>';
+  }
+
   // ------------------------------------------------------------------ Echipa
   async function echipa(el) {
     el.innerHTML = skel(260);
@@ -167,7 +219,7 @@
       (mine(a.employeeId) ? '<div class="ad-actions"><span class="k-tag">Cererea ta</span></div>'
         : '<div class="ad-actions"><button type="button" class="k-btn is-danger is-sm" data-adj-no="' + esc(a.id) + '">' + icon('x') + 'Respinge</button><button type="button" class="k-btn is-good is-sm" data-adj-ok="' + esc(a.id) + '">' + icon('check') + 'Aprobă</button></div>') + '</article>';
     const leaveCard = (r) => '<article class="ad-card mg-dec" data-lv="' + esc(r.id) + '">' + K.avatar(nameOf(r.employeeId), 40) +
-      '<div class="ad-main"><div class="ad-top"><b>' + esc(nameOf(r.employeeId)) + '</b><span class="k-tag">' + esc(LEAVE[r.type] || r.type) + '</span></div>' +
+      '<div class="ad-main"><div class="ad-top"><b>' + esc(nameOf(r.employeeId)) + '</b><span class="k-tag">' + esc(LEAVE[r.type] || r.type) + '</span>' + (r.short ? '<span class="k-tag is-warn">sub 2 luni</span>' : '') + '</div>' +
       '<div class="ad-what">' + esc(dShort(r.startDate)) + (r.endDate !== r.startDate ? ' - ' + esc(dShort(r.endDate)) : '') + ' · ' + K.plural(r.workDays, 'zi', 'zile') +
         (r.type === 'suplimentare' ? ' · ' + fmt(r.minutes) + ' din suplimentare' : r.recovery ? ' · cu recuperare ' + fmt(r.recovery.minutes) : '') + '</div>' +
       (r.reason ? '<div class="ad-sub">„' + esc(r.reason) + '”</div>' : '') + '</div>' +
@@ -534,6 +586,8 @@
       if (w === 'schedule' && K.openTeamSchedule) return K.openTeamSchedule(a);
       if (w === 'leave-new') return newLeave();
     }
+    const ct = e.target.closest('[data-rl-contact]');
+    if (ct) return K.emit('contacts:open', { id: ct.dataset.rlContact, tab: ct.dataset.tab || 'fise' });
     const go = e.target.closest('[data-go]');
     if (go) return K.go(go.dataset.go);
     const t = (sel, fn) => { const x = e.target.closest(sel); if (x) { fn(x); return true; } return false; };
@@ -559,6 +613,7 @@
     if (e.target.name === 'mgtab') { S.tab = e.target.value; body(); }
     else if (e.target.name === 'mgcity') { S.city = e.target.value; if (S.tab === 'cifre') { const el = panel.querySelector('[data-body]'); el.innerHTML = cifreHtml(); } else body(); }
     else if (e.target.name === 'poscity') { S.posCity = e.target.value; body(); }
+    else if (e.target.name === 'rlper') { S.rlPer = e.target.value; body(); }
   }
 
   // ------------------------------------------------------------------ on her Panou (the owner, 15.11): under the day's money,
@@ -602,7 +657,7 @@
   // the manager's three actions, also from her KPI page (Panou → KPI, „Țintele tale”; 16.11 her Manager tab is gone from the menu)
   window.C360Manager = { george, close: closeDay, report };
   // opened from Panou on a tab (K.go('manager/casa'), the manager's signals): that tab
-  K.on('manager:sub', (t) => { if (!['cifre', 'echipa', 'casa', 'rapoarte'].includes(t)) return; S.tab = t; if (panel && K.isActive('manager')) paint(); });
+  K.on('manager:sub', (t) => { if (!['cifre', 'echipa', 'reguli', 'casa', 'rapoarte'].includes(t)) return; S.tab = t; if (panel && K.isActive('manager')) paint(); });
   // a save somewhere: the numbers read again, at most once a minute (they read a lot)
   let lastRemote = 0;
   K.on('remote', () => {

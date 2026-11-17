@@ -58,6 +58,8 @@
     globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
     store: '<path d="m3 9 1-5h16l1 5M4 9v11h16V9M9 20v-6h6v6"/>',
   };
+  // a cosmetician: no booking controls (Regulament intern, 18.11: only reception books)
+  const cosm = () => !!(window.K && window.K.data && !window.K.data.isAdmin && window.K.data.me && window.K.data.me.role === 'cosmetician');
   const ic = (name, cls) => '<svg class="pl-ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[name] || '') + '</svg>';
 
   // ------------------------------------------------------------------ vocab
@@ -1199,9 +1201,10 @@
         '<div class="pl-contact">' +
           '<a class="pl-big-action" href="' + telLink(l) + '" data-dial="call">' + ic('phone') + '<span><b>Sună</b><small>' + esc(l.phone) + '</small></span></a>' +
           '<a class="pl-big-action is-wa" href="#mesaje" data-dial="whatsapp" data-chat="' + esc(l.phone) + '" data-chat-name="' + esc(l.name || '') + '" data-chat-city="' + esc(l.location || '') + '" data-chat-interest="' + esc(l.interest || '') + '">' + ic('chat') + '<span><b>WhatsApp</b><small>conversația din Mesaje</small></span></a>' +
-          '<button type="button" class="pl-big-action is-book" data-book>' + ic('calPlus') + '<span><b>' + (l.appointmentId ? 'Altă programare' : 'Programează') + '</b><small>direct în calendar</small></span></button>' +
-        '</div>' +
-        (l.appointmentId && l.kind !== 'won' ? '<div class="pl-appt"><span>' + ic('calendar') + '<b>Programare</b> ' + esc(apptWhen(l.appointmentAt)) + '</span><button type="button" class="pl-btn is-ghost is-sm" data-open-appt>' + ic('pen') + 'Modifică</button></div>' : '') +
+          // a booking is reception's (Regulament intern, 18.11): a cosmetician has no booking button, one quiet line instead
+          (cosm() ? '' : '<button type="button" class="pl-big-action is-book" data-book>' + ic('calPlus') + '<span><b>' + (l.appointmentId ? 'Altă programare' : 'Programează') + '</b><small>direct în calendar</small></span></button>') +
+        '</div>' + (cosm() ? '<p class="pl-quiet">Programările le face recepția.</p>' : '') +
+        (l.appointmentId && l.kind !== 'won' ? '<div class="pl-appt"><span>' + ic('calendar') + '<b>Programare</b> ' + esc(apptWhen(l.appointmentAt)) + '</span>' + (cosm() ? '' : '<button type="button" class="pl-btn is-ghost is-sm" data-open-appt>' + ic('pen') + 'Modifică</button>') + '</div>' : '') +
 
         tabsBar(l) +
         '<div class="pl-pane"' + pane(l, 'contact') + '>' +
@@ -1496,6 +1499,7 @@
   // "Programează": the Calendar's own form (cosmetician, end, price, a package, a note, the checks for a blocked time and
   // for a second booking that day); the booking links and moves her lead on the server (api/portal-appointments.js)
   function bookInCalendar(l) {
+    if (cosm()) return;
     closeDrawer();
     window.K.emit('calendar:new', { clientName: l.name, clientPhone: l.phone, location: l.location, treatment: l.interest || '', amount: l.value || '', leadId: l.id });
   }

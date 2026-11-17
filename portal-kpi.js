@@ -220,7 +220,7 @@
     return sec('mgr', 'kq-mgr is-full', 'Țintele lunii', 'În perioada aleasă; calendarul: următoarele 7 zile, ținta lui = 100% + cele care nu au venit în ultimele 60 de zile. ' + noShows(d) + '. Lei pe zi: încasările fiecărei cosmeticiene împărțite la zilele lucrate.',
       '<div class="kq-cols">' + cols.join('') + '</div>' +
       '<div class="kq-acts"><button type="button" class="k-btn is-sm is-accent" data-mg="george">' + icon('bell') + 'Trimite feedback pentru reclame</button><button type="button" class="k-btn is-sm is-outline" data-mg="close">Închide ziua</button>' +
-        '<button type="button" class="k-btn is-sm is-outline" data-mg="report">Raport săptămânal</button><span class="kq-acts-l"><button type="button" class="kq-link" data-go="manager/echipa">Echipa' + (pend ? ' <b class="kq-dot">' + pend + '</b>' : '') + '</button><button type="button" class="kq-link" data-go="manager/casa">Casa</button><button type="button" class="kq-link" data-go="manager/rapoarte">Rapoarte</button></span></div>');
+        '<button type="button" class="k-btn is-sm is-outline" data-mg="report">Raport săptămânal</button><span class="kq-acts-l"><button type="button" class="kq-link" data-go="manager/echipa">Echipa' + (pend ? ' <b class="kq-dot">' + pend + '</b>' : '') + '</button><button type="button" class="kq-link" data-go="manager/casa">Casa</button><button type="button" class="kq-link" data-go="manager/rapoarte">Rapoarte</button><button type="button" class="kq-link" data-go="manager/reguli">Reguli</button></span></div>');
   }
 
   // per clinic: the leads, what one cost, and how far they went (only the steps that have someone)

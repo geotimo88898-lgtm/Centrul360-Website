@@ -29,6 +29,8 @@
     duplicate_day: 'Are deja pontaj în ziua asta. Corectează-l din listă.', missing_reason: 'Scrie de ce corectezi.', missing_times: 'Pune sosirea și plecarea.',
     own_request: 'Pentru pontajul tău folosește „Cere corectarea”.', too_old: 'Se pot corecta doar zilele din ultima lună.', after_left: 'Nu mai lucra aici în ziua aceea.',
     already_decided: 'A fost deja decisă.', invalid_date: 'Alege ziua.',
+    too_soon: 'Concediul se cere cu cel puțin 2 luni înainte. Mai devreme, bifează „Situație specială” și scrie motivul.',
+    missing_special_reason: 'Scrie motivul situației speciale.',
   };
   const errText = (e) => ERR[e && e.code] || K.errText(e);
 
@@ -79,6 +81,7 @@
       C.requests = att.requests || [];
       C.attendance = att.entries || [];
       C.leave = lv.requests || [];
+      C.earliest = lv.earliest || K.addDays(K.today(), 60);
       C.balance = bal;
       C.overview = ov ? ov.employees || [] : null;
       C.tb = tb;
@@ -296,7 +299,7 @@
   function leaveRow(r, showEmployee) {
     const extra = r.type === 'suplimentare' ? ' · ' + fmt(r.minutes) + ' din orele suplimentare'
       : r.recovery ? ' · cu recuperare ' + fmt(r.recovery.minutes) : '';
-    return '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + (showEmployee ? esc(empName(r.employeeId)) + ' · ' : '') + esc(TYPE_LABELS[r.type] || r.type) + '</div>' +
+    return '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + (showEmployee ? esc(empName(r.employeeId)) + ' · ' : '') + esc(TYPE_LABELS[r.type] || r.type) + (r.short ? ' <span class="k-tag is-warn">sub 2 luni</span>' : '') + '</div>' +
       '<div class="k-row-sub">' + esc(K.dateShort(r.startDate)) + (r.endDate !== r.startDate ? ' - ' + esc(K.dateShort(r.endDate)) : '') + ' · ' + K.plural(r.workDays, 'zi', 'zile') + extra +
       (r.reason ? ' · „' + esc(r.reason) + '”' : '') + (r.status === 'rejected' && r.rejectionNote ? ' · motiv refuz: „' + esc(r.rejectionNote) + '”' : '') + '</div></div>' +
       '<div class="k-row-end"><span class="k-tag is-' + STATUS_TONE[r.status] + '">' + STATUS_LABEL[r.status] + '</span>' +
@@ -339,6 +342,10 @@
         K.field('Tip concediu', '<div class="lv-types">' + K.seg('type', types, preset || 'odihna', 'is-big') + '</div>', 'full') +
         K.field('Data început', '<input name="startDate" type="date" required value="' + esc(K.today()) + '">') +
         K.field('Data sfârșit', '<input name="endDate" type="date" required value="' + esc(K.today()) + '">') +
+        // Regulament intern (18.11): odihnă and fără plată at least 2 months ahead; sooner only as a special situation
+        '<p class="full lv-ahead" data-ahead hidden>' + icon('calendar') + '<span>Cel mai devreme: <b>' + esc(K.dateLong(C.earliest)) + '</b></span></p>' +
+        '<div class="full lv-special" data-special hidden><label class="pay-check"><input type="checkbox" data-special-on><span class="pay-box">' + icon('check') + '</span>' +
+          '<span><b>Situație specială</b><small>Concediul se cere cu cel puțin 2 luni înainte. Mai devreme, doar cu motivul scris mai jos.</small></span></label></div>' +
         // Altul → cu recuperare
         '<div class="full lv-rec" data-rec hidden><label class="pay-check"><input type="checkbox" data-rec-on><span class="pay-box">' + icon('check') + '</span>' +
           '<span><b>Cu recuperare</b><small>Lipsești acum și recuperezi orele în alte zile, cum vrei tu.</small></span></label>' +
@@ -363,6 +370,11 @@
           el.querySelector('[data-rec]').hidden = t !== 'alta';
           el.querySelector('[data-rec-body]').hidden = !(t === 'alta' && on);
           el.querySelector('[data-sup]').hidden = t !== 'suplimentare';
+          const ahead = t === 'odihna' || t === 'fara_plata';
+          el.querySelector('[data-ahead]').hidden = !ahead;
+          const special = ahead && f.startDate.value && f.startDate.value < C.earliest;
+          el.querySelector('[data-special]').hidden = !special;
+          f.reason.placeholder = special ? 'Motivul situației speciale (obligatoriu)' : 'Opțional la odihnă / fără plată / ore libere, obligatoriu la medical / altul';
           if (!totalTouched) { const v = f.startDate.value, w = f.endDate.value; if (v && w && w >= v) el.querySelector('[data-rec-total]').value = Math.max(1, weekdays(v, w)) * 8; }
           planSum();
         };
@@ -387,7 +399,10 @@
           if (!v.startDate || !v.endDate) { K.ui().toast('Completează perioada.', 'error'); return; }
           if (v.endDate < v.startDate) { K.ui().toast('Data de sfârșit e înainte de data de început.', 'error'); return; }
           if ((v.type === 'medical' || v.type === 'alta') && !v.reason.trim()) { K.ui().toast('Completează motivul pentru acest tip de concediu.', 'error'); return; }
-          const body = { action: 'create', type: v.type, startDate: v.startDate, endDate: v.endDate, reason: v.reason };
+          const soon = (v.type === 'odihna' || v.type === 'fara_plata') && v.startDate < C.earliest;
+          if (soon && !el.querySelector('[data-special-on]').checked) { K.ui().toast(ERR.too_soon, 'error'); return; }
+          if (soon && v.reason.trim().length < 5) { K.ui().toast(ERR.missing_special_reason, 'error'); f.reason.focus(); return; }
+          const body = { action: 'create', type: v.type, startDate: v.startDate, endDate: v.endDate, reason: v.reason, special: soon };
           if (v.type === 'alta' && el.querySelector('[data-rec-on]').checked) {
             const total = toMinutes(el.querySelector('[data-rec-total]').value), plan = planList().filter((x) => x.date || x.minutes);
             if (!(total > 0)) { K.ui().toast(ERR.invalid_recovery, 'error'); return; }

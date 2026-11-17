@@ -176,8 +176,8 @@ const QUIZ = {
   ],
   'v-consultatie': [
     Q('Ce faci imediat după primire?', ['Spui prețul', 'Întrebi ce vrea și ce o deranjează', 'Îi arăți aparatele'], 1, 'Întâi asculți. Prețul vine abia după ce știe planul.'),
-    Q('Cum închizi consultația?', ['„Vrei să te programez?”', 'Propui o dată: „Când îți vine mai bine?”', 'Îi dai un pliant și aștepți să te sune'], 1, 'Nu întrebi dacă vrea, întrebi când îi vine mai bine.'),
-    Q('Când o programezi?', ['Pe loc, în Calendar, înainte să plece', 'A doua zi, când o suni', 'Când îți scrie ea'], 0, 'O consultație fără programare e o consultație pierdută.'),
+    Q('Cum închizi consultația?', ['„Vrei să te programez?”', 'Îi spui ce urmează: rezervarea ședințelor la recepție', 'Îi dai un pliant și aștepți să te sune'], 1, 'Nu întrebi dacă vrea. Ședințele i le rezervă recepția, înainte să plece.'),
+    Q('Cine o programează și când?', ['Recepția, pe loc, înainte să plece', 'Tu, a doua zi, când o suni', 'Ea, când îți scrie'], 0, 'Programările le face doar recepția. O consultație fără programare e o consultație pierdută.'),
   ],
   'v-intrebari': [
     Q('De ce pui întrebări în loc să explici?', ['Ca să treacă timpul', 'Clienta se convinge singură când își aude propriile răspunsuri', 'Ca să afli cât câștigă'], 1, 'Tu pui întrebările bune și asculți.'),
@@ -195,9 +195,9 @@ const QUIZ = {
     Q('Banii chiar sunt problema. Ce faci?', ['Îi faci o reducere', 'Treci la oferta următoare: 4 tranșe, apoi jumătate de pachet', 'O lași să revină luna viitoare'], 1, 'Ofertele sunt cele 4 din Consultația, în ordine. Nu inventezi reduceri.'),
   ],
   'v-inchidere': [
-    Q('Clienta zice „te sun eu”. Ce faci?', ['O lași să plece', 'Propui două zile concrete', 'Îi trimiți oferta pe e-mail'], 1, 'Nu lași clienta să plece cu „te sun eu”.'),
+    Q('Clienta zice „te sun eu”. Ce faci?', ['O lași să plece', 'Îi spui că recepția îi rezervă acum ședințele', 'Îi trimiți oferta pe e-mail'], 1, 'Nu lași clienta să plece cu „te sun eu”.'),
     Q('Dacă tot nu se hotărăște?', ['O ștergi din listă', 'Îi lași programul pe hârtie, o suni a doua zi și pui follow-up în Pipeline', 'Îi spui că oferta expiră în 10 minute'], 1, 'Follow-up-ul pus pe loc, ca să nu se piardă.'),
-    Q('Câte ședințe programezi la consultație?', ['Doar prima', 'Toate, pe loc', 'Niciuna, le face recepția'], 1, 'Toate ședințele se programează pe loc, respectând intervalele.'),
+    Q('Câte ședințe se programează la consultație?', ['Doar prima', 'Toate, pe loc, la recepție', 'Niciuna'], 1, 'Toate ședințele se programează pe loc, de recepție, respectând intervalele.'),
   ],
   'v-pachete': [
     Q('Ce e o recomandare în plus bună?', ['Să vinzi cât mai mult', 'Ce o ajută să ajungă mai repede la rezultatul ei', 'Toate tratamentele pe care le avem'], 1, 'Recomanzi doar ce are legătură cu ce vrea ea.'),
@@ -607,8 +607,8 @@ const CASES = [
   K({ id: 'caz-arad-ems', title: '36 de ani, din Arad, a văzut EMS în reclamă', group: 'corp', city: 'ar',
     profile: ['Locuiește în Arad.', 'Vrea tonifiere pe abdomen și fese.'], wants: 'Vrea EMS.',
     ask: ['În ce oraș vrei să vii?', 'Poți ajunge și în Timișoara?'],
-    options: [O('Îi spui că EMS e doar în Timișoara. Dacă poate ajunge acolo, o programezi la Timișoara. Dacă nu, îi propui ce avem în Arad pentru ce își dorește.', true, 'Orașul se verifică mereu.'),
-      O('O programezi la EMS în Arad', false, 'În Arad nu avem EMS.'),
+    options: [O('Îi spui că EMS e doar în Timișoara. Dacă poate ajunge acolo, recepția o programează la Timișoara. Dacă nu, îi propui ce avem în Arad pentru ce își dorește.', true, 'Orașul se verifică mereu.'),
+      O('Îi spui că face EMS în Arad', false, 'În Arad nu avem EMS.'),
       O('Îi spui că nu avem nimic pentru ea', false, 'Avem alte tratamente în Arad.')],
     present: ['EMS îl avem doar în Timișoara. Dacă poți ajunge acolo, îți găsesc acum un loc. Dacă nu, îți arăt ce avem aici în Arad pentru ce vrei tu.'],
     watch: ['EMS, împachetarea la cald și epilarea laser sunt doar în Timișoara.'] }),

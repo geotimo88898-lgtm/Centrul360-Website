@@ -1075,7 +1075,7 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
 
     // texts the team reads: no title and no name saying whom to go to (CLAUDE.md, 16.11)
     const lit = (f) => src(f).split('\n').filter((l) => !/^\s*\/\//.test(l)).map((l) => l.replace(/\/\/ .*$/, '')).join('\n');
-    const team = ['portal-manager.js', 'portal-money.js', 'portal-pipeline.js', 'portal-legal.js', 'portal-kit.js', 'portal-calendar.js', 'api/portal-legal.js', 'api/portal-employees.js', 'api/portal-sale.js'];
+    const team = ['portal-manager.js', 'portal-money.js', 'portal-pipeline.js', 'portal-legal.js', 'portal-kit.js', 'portal-calendar.js', 'api/portal-legal.js', 'api/portal-employees.js', 'api/portal-sale.js', 'portal-regulament.js', 'api/portal-regulament.js', 'api/_lib/rules.js', 'api/_lib/package-next.js'];
     const hits = team.filter((f) => /['"][^'"\n]*(George|[Aa]dminul|de admin\b|[Mm]anagerul)[^'"\n]*['"]/.test(lit(f)));
     check(25, 'no „George”, „adminul”, „de admin” in the team\'s texts', hits.length === 0, hits);
     check(25, 'Cheltuieli, not „Costuri lunare”', !/Costuri lunare/.test(lit('api/portal-plati.js') + lit('api/_lib/activity.js')));
@@ -1431,6 +1431,161 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const del = await api('manager', 'portal-appointments', { action: 'delete', id: bk3.appointment.id });
     const l4 = leadOf(nl2.lead.id);
     check('J', 'a deleted booking: out of Programare stabilită, the booking gone from her card', del.ok && l4.stage !== 'programare_stabilita' && !l4.appointmentId, { st: l4.stage });
+  }
+
+  // REGULAMENT INTERN (17.11, in force from 18.11): only reception books, leave 2 months ahead, the acknowledgement per
+  // version, Manager → Reguli, a package's next session for reception
+  {
+    ROLE.cosmetician = 'e-c1';
+    process.env.RULES_SINCE = day(-30); // the harness's made-up days count (production: from 18.11)
+    const A = () => rd('data/appointments.json', []);
+    const row = (id) => A().find((a) => a.id === id) || null;
+    const NK = () => rd('data/notifications.json', []);
+    const TK = () => rd('data/automation-tasks.json', []);
+    const wdAhead = (n) => { let d = day(n); while ([0, 6].includes(new Date(d + 'T12:00:00Z').getUTCDay())) d = day(n += 1); return d; };
+    const ap0 = A();
+    ap0.push({ id: 'rg-own', date: TODAY, time: '08:00', endTime: '08:30', location: 'Timișoara', cosmeticianId: 'e-c1', cosmeticianName: 'Maria Proba', clientName: 'Proprie Proba', clientId: 'cl-rg-own', clientPhone: '0755100100', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'confirmata', createdAt: at(day(-3), '10:00') });
+    wr('data/appointments.json', ap0);
+    const base = row('rg-own');
+    const asCos = (body) => api('cosmetician', 'portal-appointments', body);
+    const full = Object.assign({}, base, { clientPhone: '0755100100' });
+    const tries = [
+      ['create', await asCos(Object.assign({}, full, { action: 'create', id: undefined, date: day(4), time: '10:00', force: true }))],
+      ['move', await asCos(Object.assign({}, full, { action: 'update', time: '09:00' }))],
+      ['reschedule (reprogramată)', await asCos(Object.assign({}, full, { action: 'update', status: 'reprogramata' }))],
+      ['cancel', await asCos(Object.assign({}, full, { action: 'update', status: 'anulata' }))],
+      ['delete', await asCos({ action: 'delete', id: 'rg-own' })],
+      ['block time', await asCos({ action: 'block', date: day(4), location: 'Timișoara', time: '10:00', endTime: '11:00', label: 'Proba' })],
+      ['reassign', await asCos({ action: 'reassign', id: 'rg-own', cosmeticianId: 'e-c2' })],
+      ['break move', await api('cosmetician', 'portal-schedule', { action: 'break_set', date: TODAY, employeeId: 'e-c1', from: '13:00' })],
+      ['break off', await api('cosmetician', 'portal-schedule', { action: 'break_off', date: TODAY, employeeId: 'e-c1' })],
+      ['lead link', await api('cosmetician', 'portal-leads', { action: 'link_appointment', leadId: (rd('data/leads.json', [])[0] || {}).id, appointmentId: 'rg-own', date: TODAY, time: '08:00', treatment: 'Lipo 640' })],
+    ];
+    const open = tries.filter(([, r]) => r._status !== 403).map(([n, r]) => n + ':' + r._status);
+    check('RG', 'a cosmetician: 403 on every booking path (create, move, reprogramată, cancel, delete, block, reassign, break, lead)', !open.length, open);
+    check('RG', '… and the booking is as it was', row('rg-own') && row('rg-own').time === '08:00' && row('rg-own').status === 'confirmata', row('rg-own'));
+    const mk = await asCos({ action: 'mark', id: 'rg-own', mark: 'came' });
+    check('RG', 'she still marks her own visit „Finalizată”', mk.ok && row('rg-own').status === 'finalizata', mk);
+    const rc = await api('receptie', 'portal-appointments', Object.assign({}, full, { action: 'create', id: undefined, clientName: 'Recepție Proba', clientId: undefined, clientPhone: '0755100101', date: day(4), time: '12:00', status: 'programata', force: true }));
+    check('RG', 'reception books as before', rc.ok && rc.appointment && rc.appointment.createdBy === 'e-rec', rc);
+
+    // leave: 2 months ahead, sooner only as a special situation with its reason; medical and the owner's notes exempt
+    ROLE.cosmetician = 'e-c2';
+    const lv = (b) => api('cosmetician', 'portal-leave', Object.assign({ action: 'create' }, b));
+    const l1 = await lv({ type: 'odihna', startDate: wdAhead(20), endDate: day(26) });
+    const l2 = await lv({ type: 'odihna', startDate: wdAhead(20), endDate: day(26), special: true, reason: '' });
+    const l3 = await lv({ type: 'odihna', startDate: wdAhead(20), endDate: day(26), special: true, reason: 'Nunta surorii, aflată acum' });
+    const l4 = await lv({ type: 'odihna', startDate: wdAhead(80), endDate: day(86) });
+    const l5 = await lv({ type: 'medical', startDate: wdAhead(40), endDate: day(42), reason: 'Operație programată' });
+    const l6 = await api('admin', 'portal-leave', { action: 'admin_create', employeeId: 'e-c3', type: 'odihna', startDate: wdAhead(50), endDate: day(54), reason: '' });
+    const ll = await api('cosmetician', 'portal-leave', { action: 'list' });
+    check('RG', 'leave under 60 days: refused without „Situație specială” (too_soon)', l1._status === 400 && l1.error === 'too_soon', l1);
+    check('RG', '… and without its reason (missing_special_reason)', l2._status === 400 && l2.error === 'missing_special_reason', l2);
+    check('RG', '… with both: sent, marked „sub 2 luni”', l3.ok && l3.request.short === true && /Nunta/.test(l3.request.reason), l3);
+    check('RG', '60+ days ahead: no flag needed, not marked', l4.ok && !l4.request.short, l4);
+    check('RG', 'medical leave and a leave noted by the owner: exempt', l5.ok && !l5.request.short && l6.ok, { l5, l6 });
+    check('RG', 'the form gets „Cel mai devreme” (60 days)', ll.earliest === day(60), ll.earliest);
+    const ml = await api('manager', 'portal-leave', { action: 'list' });
+    check('RG', 'the manager sees it marked, with the reason', (ml.requests || []).some((r) => r.id === l3.request.id && r.short && r.reason), null);
+    ROLE.cosmetician = 'e-c1';
+
+    // the regulation: upload by the owner and the manager only, one acknowledgement per version
+    const pdf = 'data:application/pdf;base64,' + Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF').toString('base64');
+    const g0 = await api('cosmetician', 'portal-regulament', { action: 'get' });
+    const upC = await api('cosmetician', 'portal-regulament', { action: 'upload', name: 'Regulament', dataUrl: pdf });
+    const upBad = await api('manager', 'portal-regulament', { action: 'upload', name: 'Regulament', dataUrl: 'data:application/pdf;base64,' + Buffer.from('nu e pdf').toString('base64') });
+    const up1 = await api('manager', 'portal-regulament', { action: 'upload', name: 'Regulament intern', dataUrl: pdf });
+    check('RG', 'nothing uploaded: nothing to confirm; a cosmetician can\'t upload; only a real PDF', g0.ok && !g0.current && !g0.me.must && upC._status === 403 && upBad._status === 400, { g0, upC: upC._status, upBad: upBad._status });
+    check('RG', 'the manager uploads version 1; the team hears it', up1.ok && up1.current && up1.current.n === 1 && NK().some((n) => n.employeeId === 'e-c1' && n.tag === 'regulament-1'), up1.current);
+    const pdA = await api('cosmetician', 'portal-data', null);
+    const f1 = await fetch('http://127.0.0.1:' + PORT + up1.current.url, { headers: { cookie: cookieFor('e-c1', 'cosmetician') } });
+    check('RG', 'she has it to confirm (menu dot) and can open the PDF', pdA.regulament && pdA.regulament.must === true && f1.status === 200, { reg: pdA.regulament, file: f1.status });
+    const a1 = await api('cosmetician', 'portal-regulament', { action: 'ack' });
+    const a1b = await api('cosmetician', 'portal-regulament', { action: 'ack' });
+    const pdB = await api('cosmetician', 'portal-data', null);
+    check('RG', '„Am citit regulamentul”: saved once, with the time', a1.ok && a1.me.at && !a1.me.must && a1b.me.at === a1.me.at && pdB.regulament.must === false, { a1: a1.me, a1b: a1b.me });
+    const mg1 = await api('manager', 'portal-regulament', { action: 'get' });
+    const p1 = (mg1.people || []).find((p) => p.id === 'e-c1'), p2 = (mg1.people || []).find((p) => p.id === 'e-c2');
+    check('RG', 'the manager sees who confirmed and who not yet', p1 && p1.at === a1.me.at && p2 && !p2.at, { p1, p2 });
+    const up2 = await api('admin', 'portal-regulament', { action: 'upload', name: 'Regulament intern', dataUrl: pdf });
+    const g2 = await api('cosmetician', 'portal-regulament', { action: 'get' });
+    const mg2 = await api('admin', 'portal-regulament', { action: 'get' });
+    const q1 = (mg2.people || []).find((p) => p.id === 'e-c1');
+    check('RG', 'a new version: she confirms again; her version 1 stays on record', up2.current.n === 2 && g2.me.must && q1 && !q1.at && q1.last && q1.last.n === 1 && (mg2.versions || []).length === 2, { g2: g2.me, q1 });
+    const ad = await api('admin', 'portal-regulament', { action: 'ack' });
+    check('RG', 'the owner\'s own login has nothing to confirm', ad._status === 400 && !mg2.me.must, ad);
+
+    // Reguli: late clock-in vs Program echipă, no clock-in, no clock-out, unmarked, missing sheet / photos, made by a cosmetician
+    const em = rd('data/employees.json', []);
+    em.push(Object.assign({}, em.find((e) => e.id === 'e-c1'), { id: 'e-c6', name: 'Reguli Proba', username: 'c6', location: 'Timișoara' }));
+    wr('data/employees.json', em);
+    const ts = rd('data/team-schedule.json', { weekly: {}, dates: {} });
+    ts.weekly['e-c6'] = { location: 'Timișoara', days: Object.fromEntries(['1', '2', '3', '4', '5', '6', '7'].map((k) => [k, { on: true, from: '09:00', to: '17:00' }])) };
+    wr('data/team-schedule.json', ts);
+    const att = rd('data/attendance.json', []);
+    att.push({ id: 'rg-a1', employeeId: 'e-c6', date: day(-1), checkIn: '09:12', checkOut: null, location: 'Timișoara' });
+    att.push({ id: 'rg-a3', employeeId: 'e-c6', date: day(-3), checkIn: '09:03', checkOut: '17:00', location: 'Timișoara' });
+    wr('data/attendance.json', att);
+    const ap = A();
+    const v = (o) => Object.assign({ location: 'Timișoara', cosmeticianId: 'e-c6', cosmeticianName: 'Reguli Proba', time: '10:00', endTime: '11:00', categories: ['corporale'], amount: 0, createdAt: at(day(-10), '10:00') }, o);
+    ap.push(v({ id: 'rg-nm', date: day(-2), clientName: 'Nemarcată Proba', clientId: 'cl-rg-nm', clientPhone: '0755200201', treatment: 'Lipo 640', status: 'programata' }));
+    ap.push(v({ id: 'rg-fs1', date: day(-1), clientName: 'Fără fișă Proba', clientId: 'cl-rg-fs1', clientPhone: '0755200202', treatment: 'Consultație gratuită', status: 'finalizata' }));
+    ap.push(v({ id: 'rg-fs2', date: day(-1), time: '12:00', endTime: '12:30', clientName: 'Cu fișă Proba', clientId: 'cl-rg-fs2', clientPhone: '0755200203', treatment: 'Consultație gratuită', status: 'finalizata' }));
+    ap.push(v({ id: 'rg-ph', date: day(-1), time: '14:00', endTime: '15:00', clientName: 'Fără poze Proba', clientId: 'cl-rg-ph', clientPhone: '0755200204', treatment: 'Lipo 640', status: 'finalizata' }));
+    ap.push(v({ id: 'rg-desk', date: day(2), clientName: 'Programată de cosmeticiană', clientId: 'cl-rg-dk', clientPhone: '0755200205', treatment: 'Lipo 640', status: 'programata', createdBy: 'e-c6', createdAt: new Date().toISOString() }));
+    wr('data/appointments.json', ap);
+    wr('data/contacts/cl-rg-fs2.json', { notes: [], files: [{ id: 'f1', kind: 'fisa', name: 'Fișă', path: 'contacts/cl-rg-fs2/x.jpg', at: at(day(-1), '12:20') }], sessions: [], consent: null, published: [] });
+    const rl = await api('manager', 'portal-manager', { action: 'rules', period: '7z' });
+    const tm = rl.cities && rl.cities['Timișoara'];
+    const has = (list, f) => (list || []).some(f);
+    check('RG', 'Reguli: a late arrival (12 min after her 09:00 in Program echipă)', tm && has(tm.late, (x) => x.employeeId === 'e-c6' && x.date === day(-1) && x.minutes === 12) && !has(tm.late, (x) => x.employeeId === 'e-c6' && x.date === day(-3)), tm && tm.late);
+    check('RG', 'Reguli: a shift with no clock-in, a day with no clock-out', has(tm.noIn, (x) => x.employeeId === 'e-c6' && x.date === day(-2)) && has(tm.noOut, (x) => x.employeeId === 'e-c6' && x.date === day(-1)), { noIn: tm.noIn, noOut: tm.noOut });
+    check('RG', 'Reguli: a past visit not marked', has(tm.unmarked, (x) => x.id === 'rg-nm'), tm.unmarked);
+    check('RG', 'Reguli: a consultation done without the sheet scanned that day (the one with it: not listed)', has(tm.sheets, (x) => x.id === 'rg-fs1') && !has(tm.sheets, (x) => x.id === 'rg-fs2'), tm.sheets);
+    check('RG', 'Reguli: a first session without before photos', has(tm.photos, (x) => x.id === 'rg-ph'), tm.photos);
+    check('RG', 'Reguli: a booking made by a cosmetician', has(tm.desk, (x) => x.id === 'rg-desk' && x.how === 'creată'), tm.desk);
+    check('RG', 'Reguli: the leave under 2 months is there', has(tm.leave, (x) => x.id === l3.request.id), tm.leave);
+    const rlm = await api('manager', 'portal-manager', { action: 'rules', period: 'azi' });
+    check('RG', 'Reguli „Azi”: yesterday\'s items not in it; the manager herself never listed', rlm.ok && !has(rlm.cities['Timișoara'].late, (x) => x.date === day(-1)) && !Object.values(rl.cities).some((c) => has(c.late, (x) => x.employeeId === 'e-mgr') || has(c.noIn, (x) => x.employeeId === 'e-mgr')), null);
+    const rlc = await api('cosmetician', 'portal-manager', { action: 'rules' });
+    check('RG', 'Reguli: not for a cosmetician (403)', rlc._status === 403, rlc._status);
+    // next week's hours: Wednesday morning the manager hears it once
+    const RU = require('../api/_lib/rules');
+    let wed = TODAY; while (new Date(wed + 'T12:00:00Z').getUTCDay() !== 3) wed = C.addDay(wed, 1);
+    const sp0 = await RU.schedulePush({ now: { date: C.addDay(wed, -1), time: '10:00' } });
+    const sp1 = await RU.schedulePush({ now: { date: wed, time: '10:00' } });
+    const sp2 = await RU.schedulePush({ now: { date: wed, time: '11:00' } });
+    check('RG', 'next week missing in Program echipă: Wednesday 10:00 the manager hears it, once; not on Tuesday', sp0.skipped === 'not_now' && sp1.told >= 1 && sp2.skipped === 'done' && NK().some((n) => n.employeeId === 'e-mgr' && /^program-/.test(n.tag || '')), { sp0, sp1, sp2 });
+
+    // a package's next session: one task for reception, not when something is booked ahead
+    const sales = rd('data/sales.json', []);
+    sales.push({ id: 'rg-sl1', source: 'incasare', date: day(-12), createdAt: at(day(-12), '10:00'), clientId: 'cl-rg-pk', clientPhone: '0755300301', client: 'Pachet Proba', location: 'Timișoara', amount: 300, packageTotal: 1800, upsell: 1800, upsellWhat: '6 ședințe LipoSonix', treatment: 'Lipo 640', performedBy: 'e-c1', employeeId: 'e-rec' });
+    sales.push({ id: 'rg-sl2', source: 'incasare', date: day(-12), createdAt: at(day(-12), '11:00'), clientId: 'cl-rg-pk2', clientPhone: '0755300302', client: 'Pachet Doi', location: 'Timișoara', amount: 300, packageTotal: 1800, upsell: 1800, upsellWhat: '6 ședințe LipoSonix', treatment: 'Lipo 640', performedBy: 'e-c1', employeeId: 'e-rec' });
+    wr('data/sales.json', sales);
+    const ap2 = A();
+    const pk = (o) => Object.assign({ location: 'Timișoara', cosmeticianId: 'e-c1', cosmeticianName: 'Maria Proba', time: '09:00', endTime: '10:00', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, package: true, createdAt: at(day(-12), '10:00') }, o);
+    ap2.push(pk({ id: 'rg-pk1', date: day(-5), clientName: 'Pachet Proba', clientId: 'cl-rg-pk', clientPhone: '0755300301', status: 'finalizata' }));
+    ap2.push(pk({ id: 'rg-pk2', date: TODAY, time: '07:00', endTime: '07:30', clientName: 'Pachet Proba', clientId: 'cl-rg-pk', clientPhone: '0755300301', status: 'confirmata' }));
+    ap2.push(pk({ id: 'rg-pk3', date: TODAY, time: '07:30', endTime: '08:00', clientName: 'Pachet Doi', clientId: 'cl-rg-pk2', clientPhone: '0755300302', status: 'confirmata' }));
+    ap2.push(pk({ id: 'rg-pk4', date: day(6), clientName: 'Pachet Doi', clientId: 'cl-rg-pk2', clientPhone: '0755300302', status: 'programata' }));
+    wr('data/appointments.json', ap2);
+    const lst = await api('receptie', 'portal-appointments', { action: 'list', from: day(-6), to: TODAY });
+    const lp = (lst.appointments || []).find((a) => a.id === 'rg-pk2');
+    check('RG', '„Ședința 2 din 6” on the booking (from the package bought)', lp && lp.pkg && lp.pkg.n === 2 && lp.pkg.of === 6, lp && lp.pkg);
+    const m2 = await api('cosmetician', 'portal-appointments', { action: 'mark', id: 'rg-pk2', mark: 'came' });
+    const t1 = TK().filter((t) => t.type === 'pachet' && t.packNext && t.packNext.clientId === 'cl-rg-pk');
+    check('RG', 'a package session done, nothing ahead: reception gets „Programează ședința următoare”', m2.ok && t1.length === 1 && /Pachet Proba/.test(t1[0].title) && /Ședința 2 din 6/.test(t1[0].text) && t1[0].location === 'Timișoara', t1);
+    await require('../api/_lib/package-next').done(row('rg-pk2'));
+    check('RG', '… created once', TK().filter((t) => t.type === 'pachet' && t.packNext && t.packNext.clientId === 'cl-rg-pk').length === 1, null);
+    check('RG', '… reception hears it (bell)', NK().some((n) => n.employeeId === 'e-rec' && n.tag === 'pk-next-rg-pk2'), null);
+    const m3 = await api('receptie', 'portal-appointments', { action: 'mark', id: 'rg-pk3', mark: 'came' });
+    check('RG', 'no task when the client already has a booking ahead', m3.ok && !TK().some((t) => t.type === 'pachet' && t.packNext && t.packNext.clientId === 'cl-rg-pk2'), m3);
+    const tl = await api('receptie', 'portal-automation-tasks', null);
+    check('RG', 'the task is in Sarcini', (tl.tasks || []).some((t) => t.id === t1[0].id), null);
+    await api('receptie', 'portal-appointments', { action: 'create', clientName: 'Pachet Proba', clientId: 'cl-rg-pk', clientPhone: '0755300301', date: day(7), time: '10:00', endTime: '11:00', location: 'Timișoara', cosmeticianId: 'e-c1', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, package: true, status: 'programata', force: true });
+    await api('receptie', 'portal-automation-tasks', null);
+    check('RG', 'booked again: the task closes by itself', (TK().find((t) => t.id === t1[0].id) || {}).status === 'done', TK().find((t) => t.id === t1[0].id));
+    delete process.env.RULES_SINCE;
   }
 
   // the independent second reading agrees with production on the harness's data

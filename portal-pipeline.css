@@ -547,3 +547,7 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
 .hire-lock .pl-ic{ width:14px; height:14px; }
 :root[data-theme="dark"] .hire-lock{ color:#6ee7b7; }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .hire-lock{ color:#6ee7b7; } }
+
+/* a cosmetician: no „Programează” (Regulament intern, 18.11), the two contact buttons share the row */
+.pl-contact:not(:has(> .is-book)){ grid-template-columns:repeat(2,minmax(0,1fr)); }
+.pl-quiet{ margin:.5rem 0 0; color:var(--muted, #8a8f98); font-size:.8rem; }

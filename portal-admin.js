@@ -133,7 +133,7 @@
   }
   function leaveCardHtml(r) {
     return '<article class="ad-card" data-leave-req="' + esc(r.id) + '">' + K.avatar(empNameFor(r.employeeId), 44) +
-      '<div class="ad-main"><div class="ad-top"><b>' + esc(empNameFor(r.employeeId)) + '</b><span class="k-tag">' + esc(LEAVE_TYPE_LABELS[r.type] || r.type) + '</span><span class="k-muted">' + esc(K.dateLong(r.startDate)) + '</span></div>' +
+      '<div class="ad-main"><div class="ad-top"><b>' + esc(empNameFor(r.employeeId)) + '</b><span class="k-tag">' + esc(LEAVE_TYPE_LABELS[r.type] || r.type) + '</span>' + (r.short ? '<span class="k-tag is-warn">sub 2 luni</span>' : '') + '<span class="k-muted">' + esc(K.dateLong(r.startDate)) + '</span></div>' +
       '<div class="ad-what">' + esc(K.dateShort(r.startDate)) + ' - ' + esc(K.dateShort(r.endDate)) + ' · ' + K.plural(r.workDays, 'zi', 'zile') + '</div>' +
       (r.reason ? '<div class="ad-sub">„' + esc(r.reason) + '”</div>' : '') +
       (r.type === 'suplimentare' ? '<div class="ad-plan"><b>' + icon('trend') + 'Folosește ' + fmtMin(r.minutes) + ' din orele suplimentare</b><span>Nu mai are de recuperat.</span></div>' : '') +
