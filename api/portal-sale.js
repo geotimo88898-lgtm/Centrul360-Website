@@ -493,10 +493,16 @@ const handler = async (req, res) => {
 
   const { source } = req.body || {};
 
+  // only the desk takes payments: reception, the manager, the admin (the internal regulation, 18.11), never a cosmetician
+  if (source === 'incasare' && session.role === 'cosmetician') {
+    res.status(403).json({ error: 'desk_only' });
+    return;
+  }
+
   if (source === 'incasare' && !(req.body || {}).appointmentId && (req.body || {}).dueId) {
     await handleRest(req, res, session);
   } else if (source === 'incasare') {
-    // Whoever is at the desk takes the payment (in Arad that can be the cosmetician herself).
+    // Whoever is at the desk takes the payment: reception, the manager or the admin.
     await handleIncasare(req, res, session);
   } else if (source === 'comision_cancel') {
     await handleComisionCancel(req, res, session);

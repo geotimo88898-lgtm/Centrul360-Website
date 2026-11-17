@@ -1395,6 +1395,9 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const rpX = await api('cosmetician', 'portal-sale', { source: 'incasare', dueId, amount: 100, method: 'cash' });
     ROLE.cosmetician = 'e-c1';
     check('J', '… not from the other clinic (403)', rpX._status === 403, rpX);
+    // the regulation (18.11): only the desk takes payments, never a cosmetician, even of the same clinic
+    const rpC = await api('cosmetician', 'portal-sale', { source: 'incasare', dueId, amount: 100, method: 'cash' });
+    check('J', '… and never by a cosmetician, even of the same clinic (403 desk_only)', rpC._status === 403 && rpC.error === 'desk_only', rpC);
     // a refund: in her lead's history
     const rf = await api('admin', 'portal-incasari', { action: 'refund', id: py.entry.id, scope: 'payment', amount: 100, close: false, method: 'cash', date: TODAY, reason: 'probă' });
     check('J', 'a refund: „Rambursare 100” in her lead\'s history', rf.ok && leadOf(L1).activities.some((x) => x.type === 'refund' && x.amount === 100), { err: rf.error, acts: leadOf(L1).activities.slice(-2) });

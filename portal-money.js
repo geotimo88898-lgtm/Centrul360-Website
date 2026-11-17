@@ -68,7 +68,7 @@
       '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Încasări</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="customize">' + icon('sliders') + 'Personalizează</button><button type="button" class="k-btn is-outline" data-act="csv">' + icon('download') + 'Export</button>' +
       '<button type="button" class="k-btn is-outline" data-act="print">' + icon('printer') + 'Printează</button>' +
-      '<button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Încasare<kbd>N</kbd></button></div></div>' +
+      (K.frontDesk && K.frontDesk() ? '<button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Încasare<kbd>N</kbd></button>' : '') + '</div></div>' +
       '<div class="mo-filters k-card">' +
         (locked ? '' : '<div class="mo-filter"><span>Oraș</span>' + K.seg('moloc', [['all', 'Ambele'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], S.loc) + '</div>') +
         '<div class="mo-filter"><span>Perioadă</span><div class="k-chips" data-periods>' + PERIODS.map(([k, l]) => '<button type="button" class="k-chip' + (S.period === k ? ' is-on' : '') + '" data-period="' + k + '">' + l + '</button>').join('') + '</div></div>' +
@@ -85,13 +85,13 @@
     document.addEventListener('keydown', (e) => {
       if (!K.isActive('incasari') || K.drawerOpen || K.typing(document.activeElement) || e.ctrlKey || e.metaKey || e.altKey) return;
       if (document.querySelector('.c360-dialog-root, .c360-palette-root')) return;
-      if (e.key.toLowerCase() === 'n') { e.preventDefault(); openNew({}); }
+      if (e.key.toLowerCase() === 'n' && K.frontDesk && K.frontDesk()) { e.preventDefault(); openNew({}); }
     });
   }
   function onClick(e) {
     const a = e.target.closest('[data-act]');
     if (a) {
-      if (a.dataset.act === 'new') return openNew({});
+      if (a.dataset.act === 'new') return K.frontDesk && K.frontDesk() ? openNew({}) : null;
       if (a.dataset.act === 'csv') return exportCsv();
       if (a.dataset.act === 'customize') return customizeInc();
       if (a.dataset.act === 'print') return printList();
@@ -415,8 +415,8 @@
     const rows = filtered().slice().sort((a, b) => (a.date !== b.date ? (a.date < b.date ? 1 : -1) : (a.createdAt < b.createdAt ? 1 : -1)));
     if (!rows.length) {
       el.innerHTML = K.empty('receipt', S.q || S.day || S.method ? 'Nimic pentru filtrul ales' : 'Nicio încasare în perioada aleasă',
-        S.q || S.day || S.method ? 'Schimbă filtrul sau caută altceva.' : 'Încasarea pornește dintr-o programare: „Încasează” în Calendar sau butonul de mai jos.',
-        '<button type="button" class="k-btn is-primary" data-act="new">' + icon('plus') + 'Încasare nouă</button>');
+        S.q || S.day || S.method ? 'Schimbă filtrul sau caută altceva.' : '' + (K.frontDesk && K.frontDesk() ? 'Încasarea pornește dintr-o programare: „Încasează” în Calendar sau butonul de mai jos.' : 'Încasările le face recepția.'),
+        K.frontDesk && K.frontDesk() ? '<button type="button" class="k-btn is-primary" data-act="new">' + icon('plus') + 'Încasare nouă</button>' : '');
       return;
     }
     const days = [];
@@ -1067,7 +1067,7 @@
   }
 
   K.section('incasari', { mount: mountIncasari, show() { K.prefs.load().then(render); }, data() { if (panel && K.isActive('incasari')) render(); } });
-  K.on('incasari:new', (pre) => openNew(pre || {}));
+  K.on('incasari:new', (pre) => { if (K.frontDesk && K.frontDesk()) openNew(pre || {}); else K.ui().toast('Încasările le face recepția.', 'info'); });
   K.on('incasari:day', (d) => {
     if (!d || !panel) return;
     S.period = 'custom'; S.from = d.slice(0, 8) + '01'; S.to = K.today(); S.day = d;
