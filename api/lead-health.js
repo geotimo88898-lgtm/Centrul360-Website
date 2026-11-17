@@ -168,6 +168,34 @@ module.exports = async (req, res) => {
     res.status(200).json({ today, cities: out });
     return;
   }
+  // ?demand=90: when the clients of each clinic come, read only (the owner, 17.11: the cosmeticians' hours by the clients'
+  // availability). Per weekday (1 Monday .. 7 Sunday) and start hour: came, missed, cancelled, still ahead, online (picked
+  // by the client herself on the site), the booked minutes per hour; and the team's week as it is set, by index, no names.
+  if (req.query && req.query.demand) {
+    const C = require('./_lib/clinic'), T = require('./_lib/team-schedule'), B = require('./_lib/booking');
+    const [appts, sales, emps, doc] = await Promise.all([readJSON('data/appointments.json', []), readJSON('data/sales.json', []), readJSON('data/employees.json', []), T.load()]);
+    const today = B.roNow().date, n = Math.max(7, Math.min(180, Number(req.query.demand) || 90)), from = C.addDay(today, -n), to = C.addDay(today, 21), paid = C.paidDays(sales);
+    const out = {};
+    C.CITIES.forEach((city) => {
+      const grid = {}, mins = {}, weeks = {};
+      for (let d = from; d < today; d = C.addDay(d, 1)) { const w = T.isoDow(d); weeks[w] = (weeks[w] || 0) + 1; }
+      appts.filter((a) => a && C.clinicOf(a.location) === city && !a.block && a.time && a.date >= from && a.date <= to && a.status !== 'concediu' && !/^\s*test\b/i.test(a.clientName || '')).forEach((a) => {
+        const w = T.isoDow(a.date), s = C.toMin(a.time); if (s == null) return;
+        const h = Math.floor(s / 60), k = w + '|' + h, g = grid[k] || (grid[k] = { came: 0, missed: 0, cancelled: 0, ahead: 0, online: 0 });
+        const came = C.cameBy(a, paid);
+        if (a.status === 'anulata') g.cancelled++; else if (a.date >= today) g.ahead++; else if (came) g.came++; else g.missed++;
+        if (a.online) g.online++;
+        if (a.status !== 'anulata') { let e = C.toMin(a.endTime); if (e == null || e <= s) e = s + 60; for (let m = s; m < e; m += 30) { const kk = w + '|' + Math.floor(m / 60); mins[kk] = (mins[kk] || 0) + 30; } }
+      });
+      const team = emps.filter((e) => e && e.role === 'cosmetician' && e.active !== false && C.clinicOf(e.location) === city).map((e, i) => {
+        const wk = doc.weekly && doc.weekly[e.id];
+        return { who: 'c' + (i + 1), days: wk && wk.days ? Object.keys(wk.days).sort().map((d) => d + ':' + (wk.days[d] && wk.days[d].on ? wk.days[d].from + '-' + wk.days[d].to : 'liber')).join(' ') : 'nesetat' };
+      });
+      out[city] = { weeks, grid, mins, team };
+    });
+    res.status(200).json({ today, from, to, cities: out });
+    return;
+  }
   // ?time=1: the Calendar's time problems as they are now (16.11), counts per clinic only, never a name or a phone. Read only.
   //   orphans    bookings to come left without a cosmetician, by why (a plecat, concediu, timp blocat, zi liberă, în alt oraș)
   //   offDay     bookings to come on a cosmetician who doesn't work that day in Program echipă (not marked by a change)
