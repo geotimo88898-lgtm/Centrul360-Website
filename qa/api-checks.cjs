@@ -1187,7 +1187,7 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     check('T6', 'who works there that day (the pickers): her in Arad', ((s6.works[D6] || {}).Arad || []).some((w) => w.employeeId === 'e-c1'));
 
     // 7. the blocked time: the fill and the free hours take it off as the site does
-    const D7 = wd(34);
+    const D7 = [34, 36, 37].map(wd).find((d) => d !== D6); // (wd(33) and wd(34) are the same Monday when day 33 is a Sunday)
     wr('data/appointments.json', A().filter((a) => a.date !== D7));
     const cfg7 = await Bk.settings({ team: true });
     const cap0 = C.capMin(cfg7, 'Arad', D7, A());
@@ -1283,6 +1283,72 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     check('site', 'a site booking moved by the desk: its auto-cancel ends („moved”)', (rd('data/site-confirm.json', {})[sid] || {}).done === 'moved', rd('data/site-confirm.json', {})[sid]);
     const lht = await api('admin', 'lead-health', null, 'time=1');
     check('lh', 'lead-health ?time=1: counts per clinic, no names', lht.cities && lht.cities.Arad && typeof lht.cities.Arad.unmarked.all === 'number' && !/Proba/.test(JSON.stringify(lht)), lht);
+  }
+
+  // WEEK (17.11): Program echipă → „Pe săptămâni”: the real week of each one, written as date entries only where it differs
+  // from her week; back to the week clears them; the rotation; who may; the checks
+  {
+    ROLE.cosmetician = 'e-c1';
+    const A = () => rd('data/appointments.json', []);
+    const row = (id) => A().find((a) => a.id === id) || null;
+    const book = (o) => api('receptie', 'portal-appointments', Object.assign({ action: 'create', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'programata', force: true, clientPhone: '07' + String(Math.floor(Math.random() * 1e8)).padStart(8, '0') }, o));
+    const tsKeep = rd('data/team-schedule.json', {});
+    const S = () => rd('data/team-schedule.json', { dates: {} });
+    const plus = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+    let M = day(70); while (new Date(M + 'T12:00:00Z').getUTCDay() !== 1) M = plus(M, 1);
+    const wk = (d0, f, t, sat) => Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map((i) => [plus(d0, i), i < 5 ? { on: true, from: f, to: t } : i === 5 && sat ? { on: true, from: '10:00', to: '14:00' } : { on: false }]));
+    const entry = (d, id) => ((S().dates || {})[d] || {})[id];
+    // 1. only the days that differ
+    const w1 = await api('admin', 'portal-schedule', { action: 'save_weeks', monday: M, people: { 'e-c1': Object.assign(wk(M, '09:00', '17:00'), { [M]: { on: true, from: '12:00', to: '20:00' } }), 'e-c2': wk(M, '09:00', '17:00') } });
+    const only1 = [0, 1, 2, 3, 4, 5, 6].map((i) => plus(M, i)).filter((d) => entry(d, 'e-c1') || entry(d, 'e-c2'));
+    check('W1', 'save week: a date entry only for the day that differs (her Monday 12-20)', w1.ok && w1.changes === 1 && only1.length === 1 && only1[0] === M && entry(M, 'e-c1').from === '12:00' && entry(M, 'e-c1').to === '20:00' && entry(M, 'e-c1').on === true, { err: w1.error, ch: w1.changes, only1, e: entry(M, 'e-c1') });
+    // 2. back to the template: the entries go (one from „Excepții” too)
+    await api('admin', 'portal-schedule', { action: 'save_date', date: plus(M, 2), employeeId: 'e-c1', entry: { on: false } });
+    const w2 = await api('admin', 'portal-schedule', { action: 'save_weeks', monday: M, people: { 'e-c1': wk(M, '09:00', '17:00') } });
+    check('W2', 'set back to her week: no entry left that week', w2.ok && w2.changes === 2 && !entry(M, 'e-c1') && !entry(plus(M, 2), 'e-c1'), { err: w2.error, ch: w2.changes, a: entry(M, 'e-c1'), b: entry(plus(M, 2), 'e-c1') });
+    // 3. who may: the manager for her clinics only, never herself; reception and a cosmetician never
+    const E3 = rd('data/employees.json', []); E3.find((e) => e.id === 'e-mgr').manages = ['Timișoara']; wr('data/employees.json', E3);
+    const m3a = await api('manager', 'portal-schedule', { action: 'save_weeks', monday: M, people: { 'e-c3': { [M]: { on: true, from: '12:00', to: '20:00' } } } });
+    const m3b = await api('manager', 'portal-schedule', { action: 'save_weeks', monday: M, people: { 'e-c1': { [M]: { on: true, from: '09:00', to: '17:00', location: 'Arad' } } } });
+    const m3c = await api('manager', 'portal-schedule', { action: 'save_weeks', monday: M, people: { 'e-mgr': { [M]: { on: true, from: '09:00', to: '17:00' } } } });
+    const m3d = await api('manager', 'portal-schedule', { action: 'save_weeks', monday: M, people: { 'e-c1': { [plus(M, 1)]: { on: true, from: '12:00', to: '20:00' } } } });
+    E3.find((e) => e.id === 'e-mgr').manages = ['Timișoara', 'Arad']; wr('data/employees.json', E3);
+    check('W3', 'manager of Timișoara: Arad\'s people 403, a day in Arad 403, herself 403; her own people ok', m3a._status === 403 && m3b._status === 403 && m3c._status === 403 && m3d.ok && entry(plus(M, 1), 'e-c1') && entry(plus(M, 1), 'e-c1').from === '12:00', { a: m3a._status, b: m3b._status, c: m3c._status, d: m3d.error });
+    const r3 = await api('receptie', 'portal-schedule', { action: 'save_weeks', monday: M, people: { 'e-c1': { [M]: { on: false } } } });
+    const c3 = await api('cosmetician', 'portal-schedule', { action: 'save_weeks', monday: M, people: { 'e-c1': { [M]: { on: false } } } });
+    const p3 = await api('receptie', 'portal-schedule', { action: 'preview_weeks', monday: M, people: { 'e-c1': { [M]: { on: false } } } });
+    check('W3', 'reception and a cosmetician: 403 (save and preview), nothing written', r3._status === 403 && c3._status === 403 && p3._status === 403 && !entry(M, 'e-c1'), { r: r3._status, c: c3._status, p: p3._status });
+    // 4. the checks: half hours only, from before to, a Monday, not the past, a real city
+    const bad = async (people, monday) => (await api('admin', 'portal-schedule', { action: 'save_weeks', monday: monday || M, people })).error;
+    const e4 = [await bad({ 'e-c1': { [M]: { on: true, from: '09:15', to: '17:00' } } }), await bad({ 'e-c1': { [M]: { on: true, from: '17:00', to: '09:00' } } }),
+      await bad({ 'e-c1': { [M]: { on: true, from: '09:00', to: '17:00' } } }, plus(M, 1)), await bad({ 'e-c1': { [plus(M, 7)]: { on: false } } }),
+      await bad({ 'e-c1': { [M]: { on: true, from: '09:00', to: '17:00', location: 'Cluj' } } }), await bad({ 'e-xx': { [M]: { on: false } } })];
+    let PM = TODAY; while (new Date(PM + 'T12:00:00Z').getUTCDay() !== 1) PM = plus(PM, -1);
+    const past = new Date(TODAY + 'T12:00:00Z').getUTCDay() === 1 ? 'invalid_date' : await bad({ 'e-c1': { [PM]: { on: false } } }, PM);
+    check('W4', 'checks: 09:15, 17-9, not a Monday, a day of another week, Cluj, someone unknown, a past day', e4.join() === 'invalid_time,invalid_range,invalid_date,invalid_date,invalid_location,invalid_cosmetician' && past === 'invalid_date', { e4, past });
+    // 5. the rotation: A (12-20 and a Saturday) and B (her week), alternating; the preview writes nothing and counts the same
+    wr('data/team-schedule.json', Object.assign(S(), { dates: Object.fromEntries(Object.entries(S().dates || {}).filter(([d]) => d < M)) }));
+    const A5 = wk(M, '12:00', '20:00', true);
+    const pv = await api('admin', 'portal-schedule', { action: 'preview_weeks', monday: M, people: { 'e-c1': A5 }, repeat: { weeks: 4, mode: 'alternate' } });
+    const none = !Object.keys(S().dates || {}).some((d) => d >= M);
+    const r5 = await api('admin', 'portal-schedule', { action: 'save_weeks', monday: M, people: { 'e-c1': A5 }, repeat: { weeks: 4, mode: 'alternate' } });
+    const got5 = Object.keys(S().dates || {}).filter((d) => d >= M && entry(d, 'e-c1')).sort();
+    const want5 = [0, 14, 28].flatMap((o) => [0, 1, 2, 3, 4, 5].map((i) => plus(M, o + i)));
+    check('W5', 'preview: 18 days in 3 weeks, nothing written', pv.ok && pv.changes === 18 && pv.weeks.length === 3 && none, { err: pv.error, ch: pv.changes, w: pv.weeks, none });
+    check('W5', 'alternate 4 weeks: A this week, +2, +4; B (her week) +1, +3, no entries there', r5.ok && r5.changes === 18 && got5.join() === want5.join() && entry(plus(M, 33), 'e-c1').from === '10:00', { err: r5.error, got5 });
+    const s5 = await api('admin', 'portal-schedule', { action: 'save_weeks', monday: plus(M, 7), people: { 'e-c2': wk(plus(M, 7), '12:00', '20:00') }, repeat: { weeks: 2, mode: 'same' } });
+    const got5b = [7, 14, 21].map((o) => !!entry(plus(M, o), 'e-c2') && entry(plus(M, o), 'e-c2').from === '12:00');
+    check('W5', '„la fel” 2 weeks: the same week three times, nothing after', s5.ok && got5b.every(Boolean) && !entry(plus(M, 28), 'e-c2') && s5.weeks.length === 3, { err: s5.error, got5b, w: s5.weeks });
+    // 6. a booking the new hours leave out: counted by the preview; a day off marks it as today's save_date does
+    const D6w = plus(M, 3);
+    const b6 = await book({ date: D6w, time: '10:00', endTime: '11:00', location: 'Timișoara', cosmeticianId: 'e-c2', clientName: 'Saptamana Proba' });
+    const pv6 = await api('admin', 'portal-schedule', { action: 'preview_weeks', monday: M, people: { 'e-c2': { [D6w]: { on: true, from: '12:00', to: '20:00' } } } });
+    const sv6 = await api('admin', 'portal-schedule', { action: 'save_weeks', monday: M, people: { 'e-c2': { [D6w]: { on: false } } } });
+    check('W6', 'her client at 10:00: preview counts it outside 12-20; a day off leaves it to be given away', pv6.outside === 1 && sv6.ok && (sv6.affected || []).some((a) => a.id === b6.appointment.id) && !!row(b6.appointment.id).offShift, { o: pv6.outside, err: sv6.error, aff: (sv6.affected || []).length });
+    const g6 = await api('manager', 'portal-schedule', { action: 'get', from: M, to: plus(M, 6) });
+    check('W6', 'get for the week: clinic hours and leave for the hints', g6.open && g6.open['Timișoara'] && g6.open['Timișoara']['1'].from && g6.leave && typeof g6.leave === 'object', { open: g6.open, leave: g6.leave });
+    wr('data/team-schedule.json', tsKeep);
+    wr('data/appointments.json', A().filter((a) => a.id !== b6.appointment.id));
   }
 
   // J. the journeys carry through (16.11, the audit): the lead follows the visit, the payment and a refund; „A răspuns”

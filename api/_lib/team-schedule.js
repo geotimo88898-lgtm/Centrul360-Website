@@ -322,5 +322,103 @@ function cleanWeek(days) {
   return { days: out };
 }
 
+// ------------------------------------------------------------------ week by week (the owner, 17.11: „să poți edita programul
+// efectiv pe săptămâni exacte”). The Timișoara team rotates (one week 9-17, the next 12-20), so the manager sets each real
+// week. A week is still stored as date entries, so everything that reads dayOf() follows it; only the days that differ from
+// her week (the template) get one, and a day set back to the template loses its entry (no clutter).
+const addDays = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+const isMonday = (d) => isDate(d) && isoDow(d) === '1';
+// her template's day ({ on, from, to, location }), or null when she has no week
+function tplDay(doc, id, date) {
+  const w = doc.weekly && doc.weekly[id];
+  if (!w || !w.days) return null;
+  const d = w.days[isoDow(date)] || {};
+  return { on: !!d.on, from: d.from || '', to: d.to || '', location: w.location || '' };
+}
+// what really applies that day (leave not counted): { on, from, to, location }
+function realDay(doc, id, date) {
+  const d = dayOf(doc, id, date);
+  const w = doc.weekly && doc.weekly[id];
+  return d ? { on: !!d.on, from: d.from || '', to: d.to || '', location: d.location || '' } : { on: false, from: '', to: '', location: (w && w.location) || '' };
+}
+// two days the same for the clinic: both off, or the same hours in the same city
+const sameDay = (a, b) => (!a.on && !b.on) || (!!a.on && !!b.on && a.from === b.from && a.to === b.to && (a.location || '') === (b.location || ''));
+// a day as sent: on at :00 / :30, from before to; a city when given. '' when good, else the error code
+function badDay(x) {
+  if (!x || typeof x !== 'object') return 'invalid_day';
+  if (x.location != null && x.location !== '' && !CITIES.includes(x.location)) return 'invalid_location';
+  if (!x.on) return '';
+  if (!isTime(x.from) || !isTime(x.to) || toMin(x.from) % 30 || toMin(x.to) % 30) return 'invalid_time';
+  if (toMin(x.to) <= toMin(x.from)) return 'invalid_range';
+  return '';
+}
+// her day at a date, in the doc (inside update()): a date entry only when it differs from her week
+function setDay(doc, id, date, x) {
+  const tpl = tplDay(doc, id, date);
+  const had = doc.dates[date] && doc.dates[date][id];
+  const location = (x.location && CITIES.includes(x.location) ? x.location : '') || (had && had.location) || (tpl && tpl.location) || '';
+  const want = { on: !!x.on, from: x.on ? x.from : '', to: x.on ? x.to : '', location };
+  if (tpl ? sameDay(want, tpl) : !want.on) {
+    if (had) { delete doc.dates[date][id]; if (!Object.keys(doc.dates[date]).length) delete doc.dates[date]; }
+    return;
+  }
+  const entry = want.on ? { on: true, from: want.from, to: want.to } : { on: false, from: (had && had.from) || '09:00', to: (had && had.to) || '17:00' };
+  if (location && (!tpl || location !== tpl.location)) entry.location = location;
+  doc.dates[date] = doc.dates[date] || {};
+  doc.dates[date][id] = entry;
+}
+// what a save of the week sets: [{ id, date, day }]. people: { <id>: { <date>: { on, from, to, location? } } } for the week of
+// `monday` (the days left out stay as they are). repeat { weeks: 1..12, mode: 'same' | 'alternate' }: the next weeks get this
+// week (its days left out: as they really are), or, alternating, the next week and this one in turn (the next one as it is
+// saved: week +1 is B, +2 is A, +3 is B…). Never a day before `today`.
+function weekWrites(doc, monday, people, repeat, today) {
+  const out = [];
+  Object.keys(people).forEach((id) => Object.keys(people[id]).forEach((date) => out.push({ id, date, day: people[id][date] })));
+  if (repeat && repeat.weeks) {
+    Object.keys(people).forEach((id) => {
+      const A = DAYS.map((k, i) => { const d = addDays(monday, i); return people[id][d] || realDay(doc, id, d); });
+      const B = DAYS.map((k, i) => realDay(doc, id, addDays(monday, 7 + i)));
+      for (let w = 1; w <= repeat.weeks; w++) {
+        const src = repeat.mode === 'alternate' && w % 2 ? B : A;
+        src.forEach((day, i) => { const date = addDays(monday, 7 * w + i); if (!today || date >= today) out.push({ id, date, day }); });
+      }
+    });
+  }
+  return out;
+}
+// the writes applied to the doc: [{ id, date, before, after, had }] for the days that really change (had: a date entry was there)
+function applyWeek(doc, writes) {
+  const out = [];
+  writes.forEach((w) => {
+    const before = realDay(doc, w.id, w.date), had = !!(doc.dates[w.date] && doc.dates[w.date][w.id]);
+    setDay(doc, w.id, w.date, w.day);
+    const after = realDay(doc, w.id, w.date);
+    if (!sameDay(before, after)) out.push({ id: w.id, date: w.date, before, after, had });
+  });
+  return out;
+}
+// the changes per week, for the confirmation: [{ monday, days, had (days that had their own hours already) }]
+function weeksOf(changes, monday) {
+  const by = new Map();
+  changes.forEach((c) => {
+    const k = Math.floor((Date.parse(c.date + 'T12:00:00Z') - Date.parse(monday + 'T12:00:00Z')) / (7 * 864e5));
+    const m = addDays(monday, 7 * k);
+    const x = by.get(m) || { monday: m, days: 0, had: 0 };
+    x.days++; if (c.had) x.had++;
+    by.set(m, x);
+  });
+  return [...by.values()].sort((a, b) => a.monday.localeCompare(b.monday));
+}
+// her open bookings on the changed days that the new hours leave out (another city, a day off, outside her hours) and that
+// were inside before: they stay in the Calendar, marked as today (offShift, the orphan list)
+function outsideOf(appts, changes, today) {
+  const inside = (d, a) => { if (!d.on) return false; if (d.location && a.location && d.location !== a.location) return false;
+    const s = toMin(a.time); if (s == null) return true; return s >= toMin(d.from) && aEnd(a) <= toMin(d.to); };
+  const key = new Map(changes.map((c) => [c.id + '|' + c.date, c]));
+  return (appts || []).filter((a) => { const c = a && key.get(a.cosmeticianId + '|' + a.date);
+    return c && a.date >= (today || '') && isVisit(a) && !a.paidSaleId && a.status !== 'finalizata' && !inside(c.after, a) && inside(c.before, a); });
+}
+
 module.exports = { tellLost, KEY, CITIES, DAYS, load, update, people, staff, norm, dayOf, workingAt, whoWorks, hasSchedule, onLeave, cleanDay, cleanWeek, isDate, isTime, isoDow, toMin,
-  BREAK_MIN, BREAK_SHIFT_MIN, BREAK_SINCE, midBreak, plannedBreak, dayBreaks, breakOf, breakSlots, breakNear, breakCheck, setBreak, tellBreak, hm };
+  BREAK_MIN, BREAK_SHIFT_MIN, BREAK_SINCE, midBreak, plannedBreak, dayBreaks, breakOf, breakSlots, breakNear, breakCheck, setBreak, tellBreak, hm,
+  addDays, isMonday, tplDay, realDay, sameDay, badDay, setDay, weekWrites, applyWeek, weeksOf, outsideOf };

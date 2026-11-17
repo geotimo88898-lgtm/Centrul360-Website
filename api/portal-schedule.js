@@ -58,9 +58,24 @@ async function answer(res, from, to, session, extra) {
   const cities = {};
   T.CITIES.filter((c) => !mine || mine.includes(c)).forEach((c) => { cities[c] = T.hasSchedule(doc, c, ids); });
   const works = {};
+  // for the owner and the manager (Pe săptămâni, 17.11): who is on leave each day of the range ({ <date>: [ids] }) and the
+  // clinics' opening hours ({ <city>: { '1'..'7': { on, from, to } } }, the site's settings), for the hints
+  const boss = canManage(session) && span(from, to) <= 62;
+  const extraOut = {};
+  const inRange = span(from, to) <= 62 ? [].concat((await readJSON('data/appointments.json', [])) || []).filter((a) => a && a.date >= from && a.date <= to) : [];
+  if (boss) {
+    const leave = {};
+    inRange.forEach((a) => { if (shown.has(a.cosmeticianId) && T.onLeave([a], a.cosmeticianId, a.date)) { leave[a.date] = leave[a.date] || []; if (!leave[a.date].includes(a.cosmeticianId)) leave[a.date].push(a.cosmeticianId); } });
+    const bk = await require('./_lib/booking').settings().catch(() => null);
+    const open = {};
+    T.CITIES.filter((c) => !mine || mine.includes(c)).forEach((c) => {
+      const days = (bk && bk.cities && bk.cities[c] && bk.cities[c].days) || {};
+      open[c] = {};
+      T.DAYS.forEach((k) => { const d = days[Number(k) % 7] || {}; open[c][k] = { on: !!d.on, from: d.from || '09:00', to: d.to || '20:00' }; });
+    });
+    Object.assign(extraOut, { leave, open });
+  }
   if (span(from, to) <= 62 && (cities['Timișoara'] || cities.Arad || Object.keys(dates).length)) {
-    const appts = await readJSON('data/appointments.json', []);
-    const inRange = (Array.isArray(appts) ? appts : []).filter((a) => a && a.date >= from && a.date <= to);
     const name = (id) => (cosm.find((p) => p.id === id) || {}).name || '';
     for (let d = from; d <= to; d = addDay(d, 1)) {
       const day = {};
@@ -69,7 +84,7 @@ async function answer(res, from, to, session, extra) {
       works[d] = day;
     }
   }
-  res.status(200).json(Object.assign({ ok: true, weekly, dates, people, cities, works, from, to }, extra || {}));
+  res.status(200).json(Object.assign({ ok: true, weekly, dates, people, cities, works, from, to }, extraOut, extra || {}));
 }
 
 // her bookings on the days a change takes her off (or to the other city): marked offShift, the desk told; a day she works
@@ -97,6 +112,76 @@ async function afterChange(before, after, employeeId, days, session) {
     return TC.rows(off, appts, emps, after);
   }
   return [];
+}
+
+// ------------------------------------------------------------------ week by week (the owner, 17.11): „Pe săptămâni”
+// { action: 'preview_weeks' | 'save_weeks', monday, people: { <id>: { <date of that week>: { on, from, to, location? } } },
+//   repeat?: { weeks: 1..12, mode: 'same' | 'alternate' } }   admin or manager (a manager: her clinics' people, never herself)
+// The days of that week are written as date entries only where they differ from her week; a day set back to it loses its
+// entry. preview_weeks changes nothing and answers what save_weeks would do: { changes (days that change), weeks: [{ monday,
+// days, had }], outside (her bookings the new hours leave out) }. save_weeks writes everything at once (one update()), marks
+// the bookings left without her as save_date does (afterChange: offShift, the desk told) and answers as get, plus those.
+async function saveWeeks(req, res, session, b) {
+  const fail = (code, error) => res.status(code).json({ error });
+  if (!canManage(session)) return fail(403, 'forbidden');
+  const monday = String(b.monday || '');
+  if (!T.isMonday(monday)) return fail(400, 'invalid_date');
+  const today = roToday();
+  const raw = b.people && typeof b.people === 'object' && !Array.isArray(b.people) ? b.people : null;
+  if (!raw || !Object.keys(raw).length || Object.keys(raw).length > 40) return fail(400, 'missing_fields');
+  let repeat = null;
+  if (b.repeat) {
+    const n = Number(b.repeat.weeks), mode = String(b.repeat.mode || 'same');
+    if (!Number.isInteger(n) || n < 1 || n > 12 || !['same', 'alternate'].includes(mode)) return fail(400, 'invalid_repeat');
+    repeat = { weeks: n, mode };
+  }
+  const staff = await T.staff();
+  const mine = session.role === 'manager' ? [].concat(await require('./_lib/city').cityOf(session, readJSON)) : null;
+  const week = new Set(T.DAYS.map((k, i) => T.addDays(monday, i)));
+  const people = {};
+  for (const id of Object.keys(raw)) {
+    const emp = staff.find((p) => p.id === id);
+    if (!emp) return fail(400, 'invalid_cosmetician');
+    if (mine && (emp.id === session.employeeId || !mine.includes(emp.location))) return fail(403, 'forbidden');
+    const days = raw[id] && typeof raw[id] === 'object' ? raw[id] : {};
+    people[id] = {};
+    for (const date of Object.keys(days)) {
+      if (!week.has(date) || date < today) return fail(400, 'invalid_date');
+      const x = days[date], bad = T.badDay(x);
+      if (bad) return fail(400, bad);
+      if (mine && x.location && !mine.includes(x.location)) return fail(403, 'forbidden');
+      people[id][date] = { on: !!x.on, from: x.on ? x.from : '', to: x.on ? x.to : '', location: x.location || '' };
+    }
+  }
+  const appts = await readJSON('data/appointments.json', []);
+  if (b.action === 'preview_weeks') {
+    const doc = T.norm(JSON.parse(JSON.stringify(await T.load())));
+    const changes = T.applyWeek(doc, T.weekWrites(doc, monday, people, repeat, today));
+    res.status(200).json({ ok: true, changes: changes.length, weeks: T.weeksOf(changes, monday), outside: T.outsideOf(appts, changes, today).length });
+    return;
+  }
+  const before = await T.load();
+  let changes = [];
+  const doc = await T.update((d) => {
+    changes = T.applyWeek(d, T.weekWrites(d, monday, people, repeat, today));
+    Object.keys(d.dates).forEach((x) => { if (x < addDay(today, -90)) delete d.dates[x]; }); // the long past go, as save_date
+  });
+  // the bookings of each one the change leaves without her (only a cosmetician takes clients)
+  const byId = new Map();
+  changes.forEach((c) => byId.set(c.id, (byId.get(c.id) || []).concat(c.date)));
+  let affected = [];
+  for (const [id, days] of byId) {
+    const emp = staff.find((p) => p.id === id);
+    if (emp && emp.role === 'cosmetician') affected = affected.concat(await afterChange(before, doc, id, days, session).catch((e) => { console.error('schedule affected:', e.message); return []; }));
+  }
+  const names = [...byId.keys()].map((id) => String((staff.find((p) => p.id === id) || {}).name || '').split(' ')[0]).filter(Boolean);
+  const weeks = T.weeksOf(changes, monday);
+  const short = (d) => Number(d.slice(8)) + '.' + Number(d.slice(5, 7));
+  const log = { subject: names.join(', ') || 'echipă', detail: [weeks.length > 1 ? weeks.length + ' săptămâni de la ' + short(monday) : 'săptămâna ' + short(monday) + '-' + short(T.addDays(monday, 6)),
+    changes.length === 1 ? 'o zi' : changes.length + ' zile', repeat ? (repeat.mode === 'alternate' ? 'alternat' : 'repetat') + ' ' + repeat.weeks : ''].filter(Boolean).join(' · ') };
+  const from = T.isDate(b.from) ? b.from : today;
+  const to = T.isDate(b.to) && b.to >= from && span(from, b.to) <= 400 ? b.to : addDay(from, 180);
+  return answer(res, from, to, session, { affected, changes: changes.length, weeks, outside: T.outsideOf(appts, changes, today).length, log });
 }
 
 module.exports = async (req, res) => {
@@ -166,6 +251,7 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, break: brk });
       return;
     }
+    if (b.action === 'save_weeks' || b.action === 'preview_weeks') return saveWeeks(req, res, session, b);
     if (b.action !== 'save_week' && b.action !== 'save_date') return fail(400, 'invalid_action');
     if (!canManage(session)) return fail(403, 'forbidden');
 

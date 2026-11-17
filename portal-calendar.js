@@ -154,7 +154,7 @@
       if (a === 'new') return openNew({});
       if (a === 'block') return openBlock({});
       if (a === 'online') return openOnline();
-      if (a === 'team') return openTeam();
+      if (a === 'team') return openTeam(act);
       if (a === 'orphans') return openOrphans();
       if (a === 'today') { S.date = K.today(); return load(); }
       if (a === 'prev') return shift(-1);
@@ -1123,16 +1123,299 @@
     }).join('');
   }
 
+  // ------------------------------------------------------------------ Program echipă → „Pe săptămâni” (the owner, 17.11: „să
+  // poți edita programul efectiv pe săptămâni exacte”). The Timișoara team rotates week by week (one 9-17, the other 12-20),
+  // so the manager sets each real week: per cosmetician of the city, the 7 days of that week as they really apply (her own
+  // hours that day, else her week), on/off and the hours on the half hour; a leave day reads „Concediu”, a passed day can't
+  // change. „Salvează săptămâna” sends the days that changed (api/portal-schedule.js save_weeks: a date entry only where a
+  // day differs from her week, none where it is set back). „Copiază săptămâna trecută” fills the form; „Repetă” saves this
+  // week and the next ones (la fel, or alternating with the next week). Hints, never blocks: nobody at work while the clinic
+  // is open (weekdays), fewer than 2 free days in a row; her bookings the new hours leave out are counted before saving.
+  const TW_DN = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
+  const TW_DAY = ['luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă', 'duminică'];
+  const TW_TIMES = (() => { const out = []; for (let m = 7 * 60; m <= 22 * 60; m += 30) out.push(toHM(m)); return out; })();
+  const hm1 = (t) => String(t || '').replace(/^0(\d)/, '$1');
+  const weekName = (m) => { const e = K.addDays(m, 6); return (m.slice(5, 7) === e.slice(5, 7) ? String(Number(m.slice(8))) : K.dateShort(m)) + '-' + K.dateShort(e); };
+  function weekRel(m) {
+    const n = Math.round((K.parse(m) - K.parse(K.mondayOf(K.today()))) / (7 * 864e5));
+    return n === 0 ? 'săptămâna asta' : n === 1 ? 'săptămâna viitoare' : n === -1 ? 'săptămâna trecută' : n > 0 ? 'peste ' + n + ' săptămâni' : 'acum ' + -n + ' săptămâni';
+  }
+  function teamWeek(host, opts) {
+    const W = { monday: K.mondayOf(K.today()), city: '', data: null, form: {}, init: {}, gen: 0, rep: { mode: 'same', n: 4 } };
+    const dates = (m) => [0, 1, 2, 3, 4, 5, 6].map((i) => K.addDays(m, i));
+    const people = () => ((W.data && W.data.people) || []).filter((p) => !p.role || p.role === 'cosmetician');
+    const cityOf = (p) => (W.data.weekly[p.id] && W.data.weekly[p.id].location) || p.location || LOCS[0];
+    const cities = () => { const c = Object.keys((W.data && W.data.cities) || {}); return c.length ? c : LOCS.slice(); };
+    const inCity = () => people().filter((p) => cityOf(p) === W.city).sort((a, b) => a.name.localeCompare(b.name, 'ro'));
+    const dow = (d) => String(((K.parse(d).getDay() + 6) % 7) + 1);
+    // her template's day and the day that really applies (from the loaded range)
+    const tpl = (id, d) => { const w = W.data.weekly[id]; if (!w || !w.days) return null; const x = w.days[dow(d)] || {}; return { on: !!x.on, from: x.from || '', to: x.to || '', location: w.location || '' }; };
+    const real = (id, d) => {
+      const x = (W.data.dates[d] || {})[id], t = tpl(id, d), p = people().find((q) => q.id === id) || {};
+      if (x) return { on: !!x.on, from: x.from || '', to: x.to || '', location: x.location || (t && t.location) || p.location || '' };
+      return t || { on: false, from: '', to: '', location: p.location || '' };
+    };
+    const same = (a, b) => (!a.on && !b.on) || (!!a.on && !!b.on && a.from === b.from && a.to === b.to && (a.location || '') === (b.location || ''));
+    const onLeave = (id, d) => ((W.data.leave || {})[d] || []).includes(id);
+    const locked = (id, d) => d < K.today() || onLeave(id, d);
+    const day = (id, d) => (W.form[id] && W.form[id][d]) || real(id, d);
+    const differs = (id, d) => { const t = tpl(id, d); return t ? !same(day(id, d), t) : !!day(id, d).on; };
+    const dirtyList = () => {
+      const out = [];
+      Object.keys(W.form).forEach((id) => Object.keys(W.form[id]).forEach((d) => { if (!same(W.form[id][d], W.init[id][d])) out.push([id, d]); }));
+      return out;
+    };
+    function resetForm() {
+      W.form = {}; W.init = {};
+      people().forEach((p) => { W.form[p.id] = {}; W.init[p.id] = {}; dates(W.monday).forEach((d) => { const r = real(p.id, d); W.form[p.id][d] = Object.assign({}, r); W.init[p.id][d] = Object.assign({}, r); }); });
+    }
+    async function load(dir) {
+      const gen = ++W.gen;
+      const j = await K.api('/api/portal-schedule', { action: 'get', from: K.addDays(W.monday, -7), to: K.addDays(W.monday, 13) });
+      if (gen !== W.gen) return;
+      W.data = j;
+      if (!W.city || !cities().includes(W.city)) {
+        const pref = S.loc !== 'all' && cities().includes(S.loc) ? S.loc : '';
+        W.city = pref || cities().find((c) => people().some((p) => cityOf(p) === c)) || cities()[0];
+      }
+      resetForm();
+      render(dir);
+    }
+
+    // ---------------------------------------------------------------- the hints
+    function hints() {
+      const out = [], gapsBy = new Map(); // the same hours on several days: one line („Nimeni 17:00-20:00 marți, miercuri”)
+      const week = dates(W.monday), today = K.today();
+      // nobody at work while the clinic is open, Monday to Friday (the site's hours of that city)
+      if (W.data.cities && W.data.cities[W.city]) {
+        week.slice(0, 5).forEach((d, i) => {
+          if (d < today) return;
+          const o = ((W.data.open || {})[W.city] || {})[String(i + 1)];
+          if (!o || !o.on) return;
+          const spans = people().filter((p) => !onLeave(p.id, d)).map((p) => {
+            const x = W.form[p.id] && W.form[p.id][d] ? W.form[p.id][d] : real(p.id, d);
+            return x.on && (x.location || cityOf(p)) === W.city ? [toMin(x.from), toMin(x.to)] : null;
+          }).filter(Boolean).sort((a, b) => a[0] - b[0]);
+          const gaps = []; let at = toMin(o.from);
+          const end = toMin(o.to);
+          spans.forEach(([s, e]) => { if (s > at && at < end) gaps.push([at, Math.min(s, end)]); at = Math.max(at, e); });
+          if (at < end) gaps.push([at, end]);
+          if (!gaps.length) return;
+          const whole = gaps.length === 1 && gaps[0][0] === toMin(o.from) && gaps[0][1] === end;
+          const k = whole ? '' : gaps.map(([s, e]) => hm1(toHM(s)) + '-' + hm1(toHM(e))).join(' și ');
+          gapsBy.set(k, (gapsBy.get(k) || []).concat(TW_DAY[i]));
+        });
+      }
+      gapsBy.forEach((days, k) => out.push({ tone: 'warn', text: 'Nimeni ' + (k ? k + ' ' : 'toată ziua ') + days.join(', ').replace(/, ([^,]+)$/, ' și $1') }));
+      // two free days in a row (the weekly rest): Sunday before to Monday after, a pair with at least one day of this week
+      inCity().forEach((p) => {
+        const span = [K.addDays(W.monday, -1)].concat(week, [K.addDays(W.monday, 7)]);
+        const free = span.map((d) => onLeave(p.id, d) || !day(p.id, d).on);
+        if (!week.some((d) => day(p.id, d).on)) return;
+        if (!free.some((f, i) => f && free[i + 1] && (i + 1 >= 1 && i <= 7))) out.push({ tone: 'info', text: firstName(p.name) + ': nu are 2 zile libere la rând' });
+      });
+      return out;
+    }
+    const hintsHtml = () => hints().map((h) => '<li class="is-' + h.tone + '">' + icon(h.tone === 'warn' ? 'alert' : 'info') + '<span>' + esc(h.text) + '</span></li>').join('');
+
+    // ---------------------------------------------------------------- drawing
+    const timeSel = (v, what) => '<select data-tw-' + what + ' aria-label="' + (what === 'f' ? 'De la' : 'Până la') + '">' + K.options(TW_TIMES.concat(v && !TW_TIMES.includes(v) ? [v] : []).sort().map((t) => [t, hm1(t)]), v) + '</select>';
+    function rowHtml(p, d, i) {
+      const x = day(p.id, d), lock = locked(p.id, d), leave = onLeave(p.id, d), diff = !leave && differs(p.id, d);
+      const elsewhere = x.on && x.location && x.location !== cityOf(p);
+      const head = '<span class="tw-dn"><b>' + TW_DN[i] + '</b><small>' + Number(d.slice(8)) + '</small></span>';
+      const mark = '<i class="tw-mark' + (diff ? ' is-on' : '') + '" title="Doar săptămâna asta"></i>';
+      const cls = 'tw-day' + (x.on && !leave ? '' : ' is-off') + (lock ? ' is-lock' : '') + (d === K.today() ? ' is-today' : '');
+      if (leave) return '<div class="' + cls + '" data-d="' + d + '">' + head + '<span class="tw-leave">' + icon('sun') + 'Concediu</span>' + mark + '</div>';
+      if (lock) return '<div class="' + cls + '" data-d="' + d + '">' + head + '<span class="tw-ro">' + (x.on ? esc(hm1(x.from) + '-' + hm1(x.to)) : 'Liberă') + (elsewhere ? ' <em>' + esc(x.location) + '</em>' : '') + '</span>' + mark + '</div>';
+      return '<div class="' + cls + '" data-d="' + d + '">' + head + K.toggle('tw-on', x.on, '') +
+        '<span class="tw-set">' + timeSel(x.on ? x.from : '09:00', 'f') + '<i>-</i>' + timeSel(x.on ? x.to : '17:00', 't') + (elsewhere ? '<em>' + esc(x.location) + '</em>' : '') + '</span>' +
+        '<span class="tw-free">Liberă</span>' + mark + '</div>';
+    }
+    const sumOf = (p) => {
+      let n = 0, min = 0;
+      dates(W.monday).forEach((d) => { const x = day(p.id, d); if (x.on && !onLeave(p.id, d)) { n++; min += (toMin(x.to) || 0) - (toMin(x.from) || 0); } });
+      return n ? K.plural(n, 'zi', 'zile') + ' · ' + (Math.round(min / 6) / 10).toString().replace('.', ',') + ' h' : 'liberă toată săptămâna';
+    };
+    const empHtml = (p) => '<section class="tw-emp" data-tw-emp="' + esc(p.id) + '"><header class="tw-eh">' + K.avatar(p.name, 30) + '<b>' + esc(p.name) + '</b><span class="tw-sum">' + esc(sumOf(p)) + '</span></header>' +
+      '<div class="tw-days">' + dates(W.monday).map((d, i) => rowHtml(p, d, i)).join('') + '</div></section>';
+    function render(dir) {
+      const now = K.mondayOf(K.today()), past = K.addDays(W.monday, 6) < K.today();
+      const list = inCity();
+      const multi = cities().length > 1;
+      host.innerHTML =
+        '<div class="tw-bar"><div class="tw-nav"><button type="button" class="k-icon-btn" data-tw-go="-1" aria-label="Săptămâna dinainte">' + icon('left') + '</button>' +
+          '<div class="tw-when"><b>Săptămâna ' + esc(weekName(W.monday)) + '</b><small>' + esc(weekRel(W.monday)) + '</small></div>' +
+          '<button type="button" class="k-icon-btn" data-tw-go="1" aria-label="Săptămâna următoare">' + icon('right') + '</button></div>' +
+          (multi || W.monday !== now ? '<div class="tw-bar2">' + (multi ? K.seg('twcity', cities().map((c) => [c, c]), W.city, 'tw-city') : '<span></span>') +
+            (W.monday !== now ? '<button type="button" class="k-btn is-ghost is-sm" data-tw-now>' + icon('calendar') + 'Săptămâna asta</button>' : '') + '</div>' : '') + '</div>' +
+        '<div class="tw-slide' + (dir ? ' is-in-' + (dir > 0 ? 'r' : 'l') : '') + '">' +
+          (list.length ? '<div class="tw-tools"><button type="button" class="k-btn is-outline is-sm" data-tw-copy' + (past ? ' disabled' : '') + '>' + icon('copy') + 'Copiază săptămâna trecută</button>' +
+            '<button type="button" class="k-btn is-outline is-sm" data-tw-rep' + (past ? ' disabled' : '') + '>' + icon('refresh') + 'Repetă</button></div>' +
+            '<div class="tw-rep" data-tw-panel hidden></div>' +
+            '<ul class="tw-hints" data-tw-hints>' + hintsHtml() + '</ul>' +
+            '<p class="tw-legend"><i class="tw-mark is-on"></i>diferit de programul de bază, doar în săptămâna asta</p>' +
+            list.map(empHtml).join('') : K.empty('users', 'Nicio cosmeticiană în ' + W.city, 'Orașul fiecăreia se alege în „Programul de bază”.')) +
+        '</div>';
+      host.querySelector('[data-tw-hints]') && (host.querySelector('[data-tw-hints]').hidden = !hints().length);
+      paintFoot();
+    }
+    function paintFoot() {
+      const n = dirtyList().length;
+      opts.foot(n ? (n === 1 ? 'O zi schimbată' : n + ' zile schimbate') : 'Nicio schimbare', n > 0);
+    }
+    // a row and the parts that follow it (the sum, the mark, the hints, the footer) after a change
+    function refreshAfter(id, d) {
+      const box = host.querySelector('[data-tw-emp="' + id + '"]');
+      if (box) {
+        const p = people().find((q) => q.id === id);
+        const r = box.querySelector('[data-d="' + d + '"]');
+        if (r) {
+          const x = day(id, d);
+          r.classList.toggle('is-off', !x.on);
+          const m = r.querySelector('.tw-mark'); if (m) m.classList.toggle('is-on', differs(id, d));
+        }
+        box.querySelector('.tw-sum').textContent = sumOf(p);
+      }
+      const h = host.querySelector('[data-tw-hints]');
+      if (h) { h.innerHTML = hintsHtml(); h.hidden = !h.children.length; }
+      paintFoot();
+    }
+
+    // ---------------------------------------------------------------- what is sent
+    const sendDay = (x) => (x.on ? { on: true, from: x.from, to: x.to, location: x.location || '' } : { on: false });
+    function payload(all) {
+      const out = {};
+      if (all) inCity().forEach((p) => { dates(W.monday).forEach((d) => { if (!locked(p.id, d)) (out[p.id] = out[p.id] || {})[d] = sendDay(day(p.id, d)); }); if (!out[p.id]) out[p.id] = {}; });
+      else dirtyList().forEach(([id, d]) => { (out[id] = out[id] || {})[d] = sendDay(W.form[id][d]); });
+      return out;
+    }
+    const bad = () => { for (const [id, d] of dirtyList()) { const x = W.form[id][d]; if (x.on && toMin(x.to) <= toMin(x.from)) return firstName((people().find((p) => p.id === id) || {}).name) + ', ' + TW_DAY[(K.parse(d).getDay() + 6) % 7] + ': ora de final e înainte de început.'; } return ''; };
+    const outsideText = (n) => (n === 1 ? 'O programare iese din noul program. Rămâne în Calendar, o poți muta după.' : n + ' programări ies din noul program. Rămân în Calendar, le poți muta după.');
+    async function send(btn, repeat) {
+      const people = payload(!!repeat);
+      if (!Object.keys(people).length) return;
+      const body = { monday: W.monday, people, repeat: repeat || undefined };
+      const pv = await K.api('/api/portal-schedule', Object.assign({ action: 'preview_weeks' }, body));
+      if (repeat) {
+        if (!pv.changes) { K.ui().toast('Săptămânile au deja programul ăsta.', 'info'); return false; }
+        const had = (pv.weeks || []).filter((w) => w.had && w.monday !== W.monday).length;
+        const msg = 'Se ' + (pv.changes === 1 ? 'schimbă o zi' : 'schimbă ' + pv.changes + ' zile') + ' în ' + K.plural((pv.weeks || []).length, 'săptămână', 'săptămâni') + '.' +
+          (had ? ' ' + (had === 1 ? 'O săptămână avea' : had + ' săptămâni aveau') + ' deja ore puse doar pentru ' + (had === 1 ? 'ea' : 'ele') + ', se înlocuiesc.' : '') + (pv.outside ? ' ' + outsideText(pv.outside) : '');
+        if (!(await K.ui().confirm({ title: 'Repeți programul?', message: msg, confirmText: 'Repetă', from: btn }))) return false;
+      } else if (pv.outside && !(await K.ui().confirm({ title: 'Salvezi săptămâna?', message: outsideText(pv.outside), confirmText: 'Salvează', from: btn }))) return false;
+      const r = await K.api('/api/portal-schedule', Object.assign({ action: 'save_weeks', from: K.addDays(W.monday, -7), to: K.addDays(W.monday, 13) }, body));
+      W.data = Object.assign({}, W.data, r);
+      resetForm();
+      render(0);
+      opts.saved(r);
+      const wk = (r.weeks || []).length;
+      K.ui().toast(wk > 1 ? 'Salvat: ' + K.plural(wk, 'săptămână', 'săptămâni') + ' de la ' + weekName(W.monday) + '.' : 'Salvat: săptămâna ' + weekName(W.monday) + '.', 'success');
+      const list = r.affected || [];
+      if (list.length) {
+        host.querySelector('.tw-slide').insertAdjacentHTML('afterbegin', '<button type="button" class="cal-left tc-note" data-tc-note>' + icon('users') + '<span><b>' +
+          (list.length === 1 ? 'O programare rămâne' : list.length + ' programări rămân') + '</b> fără cosmeticiană. <u>Mută-le</u></span>' + icon('right') + '</button>');
+        host.querySelector('[data-tc-note]').addEventListener('click', (e) => K.affectedSheet(list, { from: e.currentTarget, why: 'programul s-a schimbat' }));
+      }
+      return true;
+    }
+
+    // ---------------------------------------------------------------- „Repetă”: opens out of its button, under it
+    function repHtml() {
+      const n = W.rep.n, alt = W.rep.mode === 'alternate', B = K.addDays(W.monday, 7);
+      return '<div class="tw-rep-h"><b>Repetă în săptămânile următoare</b><small>' + esc(W.city) + '</small></div>' +
+        K.seg('twmode', [['same', 'La fel'], ['alternate', 'Alternează']], W.rep.mode, 'tw-mode') +
+        '<p class="tw-rep-x">' + (alt ? 'Săptămâna asta și cea de după (' + esc(weekName(B)) + ') se repetă pe rând, cum sunt acum.' : 'Fiecare săptămână primește programul de acum.') + '</p>' +
+        '<div class="tw-rep-n"><span>Câte săptămâni</span><span class="tw-step"><button type="button" class="k-icon-btn" data-tw-n="-1" aria-label="Mai puține"' + (n <= 1 ? ' disabled' : '') + '>' + icon('minus') + '</button><b>' + n + '</b>' +
+          '<button type="button" class="k-icon-btn" data-tw-n="1" aria-label="Mai multe"' + (n >= 12 ? ' disabled' : '') + '>' + icon('plus') + '</button></span></div>' +
+        '<div class="tw-rep-w">' + Array.from({ length: n }, (x, k) => { const m = K.addDays(W.monday, 7 * (k + 1)); return '<span class="tw-wk">' + esc(weekName(m)) + (alt ? '<i>' + (k % 2 ? 'A' : 'B') + '</i>' : '') + '</span>'; }).join('') + '</div>' +
+        '<div class="tw-rep-a"><button type="button" class="k-btn is-ghost is-sm" data-tw-rep-x>Renunță</button><button type="button" class="k-btn is-primary is-sm" data-tw-rep-go>' + icon('refresh') + 'Repetă</button></div>';
+    }
+    function toggleRep(open) {
+      const p = host.querySelector('[data-tw-panel]');
+      if (!p) return;
+      if (open) { p.innerHTML = repHtml(); p.hidden = false; requestAnimationFrame(() => p.classList.add('is-open')); }
+      else { p.classList.remove('is-open'); setTimeout(() => { if (!p.classList.contains('is-open')) p.hidden = true; }, 180); }
+    }
+
+    // ---------------------------------------------------------------- the events
+    host.addEventListener('change', (e) => {
+      const t = e.target;
+      if (t.name === 'twcity') { W.city = t.value; render(0); return; }
+      if (t.name === 'twmode') { W.rep.mode = t.value; const p = host.querySelector('[data-tw-panel]'); if (p) p.innerHTML = repHtml(); return; }
+      const r = t.closest('.tw-day'), box = t.closest('[data-tw-emp]');
+      if (!r || !box) return;
+      const id = box.dataset.twEmp, d = r.dataset.d;
+      const x = Object.assign({}, day(id, d));
+      if (t.name === 'tw-on') {
+        x.on = t.checked;
+        if (x.on) { x.from = r.querySelector('[data-tw-f]').value; x.to = r.querySelector('[data-tw-t]').value; if (!x.location) x.location = cityOf(people().find((p) => p.id === id) || {}); }
+      } else if (t.hasAttribute('data-tw-f')) x.from = t.value;
+      else if (t.hasAttribute('data-tw-t')) x.to = t.value;
+      else return;
+      if (x.on && !x.from) x.from = '09:00';
+      W.form[id][d] = x;
+      refreshAfter(id, d);
+    });
+    host.addEventListener('click', async (e) => {
+      const go = e.target.closest('[data-tw-go]');
+      if (go || e.target.closest('[data-tw-now]')) {
+        if (dirtyList().length && !(await K.ui().confirm({ title: 'Renunți la schimbări?', message: 'Săptămâna ' + weekName(W.monday) + ' are schimbări nesalvate.', confirmText: 'Renunță la ele', danger: true }))) return;
+        const to = go ? K.addDays(W.monday, 7 * Number(go.dataset.twGo)) : K.mondayOf(K.today());
+        const dir = to > W.monday ? 1 : -1;
+        const sl = host.querySelector('.tw-slide');
+        if (sl) sl.classList.add('is-out-' + (dir > 0 ? 'l' : 'r'));
+        W.monday = to;
+        try { await Promise.all([load(dir), new Promise((r) => setTimeout(r, 140))]); } catch (err) { if (sl) sl.classList.remove('is-out-l', 'is-out-r'); K.ui().toast(K.errText(err), 'error'); }
+        return;
+      }
+      if (e.target.closest('[data-tw-copy]')) {
+        const prev = K.addDays(W.monday, -7);
+        let n = 0;
+        inCity().forEach((p) => dates(W.monday).forEach((d, i) => {
+          if (locked(p.id, d)) return;
+          const src = real(p.id, K.addDays(prev, i));
+          const x = src.on ? { on: true, from: src.from, to: src.to, location: src.location } : Object.assign({}, day(p.id, d), { on: false });
+          if (!same(x, day(p.id, d))) n++;
+          W.form[p.id][d] = x;
+        }));
+        render(0);
+        K.ui().toast(n ? 'Am copiat săptămâna ' + weekName(prev) + '. „Salvează săptămâna” ca s-o păstrezi.' : 'Săptămâna e deja la fel ca ' + weekName(prev) + '.', n ? 'success' : 'info');
+        return;
+      }
+      if (e.target.closest('[data-tw-rep]')) { const p = host.querySelector('[data-tw-panel]'); toggleRep(p && p.hidden); return; }
+      if (e.target.closest('[data-tw-rep-x]')) { toggleRep(false); return; }
+      const nb = e.target.closest('[data-tw-n]');
+      if (nb) { W.rep.n = Math.max(1, Math.min(12, W.rep.n + Number(nb.dataset.twN))); host.querySelector('[data-tw-panel]').innerHTML = repHtml(); return; }
+      const rg = e.target.closest('[data-tw-rep-go]');
+      if (rg) {
+        const why = bad(); if (why) { K.ui().toast(why, 'error'); return; }
+        K.busy(rg, async () => { await send(rg, { weeks: W.rep.n, mode: W.rep.mode }); }).catch((err) => K.ui().toast(K.errText(err), 'error'));
+      }
+    });
+    return {
+      load,
+      dirty: () => dirtyList().length > 0,
+      save(btn) {
+        const why = bad(); if (why) { K.ui().toast(why, 'error'); return Promise.resolve(); }
+        return K.busy(btn, () => send(btn, null)).catch((err) => K.ui().toast(K.errText(err), 'error'));
+      },
+    };
+  }
+
   const WD_TEAM = [['1', 'Luni'], ['2', 'Marți'], ['3', 'Miercuri'], ['4', 'Joi'], ['5', 'Vineri'], ['6', 'Sâmbătă'], ['7', 'Duminică']];
-  async function openTeam() {
+  async function openTeam(fromEl) {
     const from = K.today(), to = K.addDays(from, 180);
     let d;
     try { d = await K.api('/api/portal-schedule', { action: 'get', from, to }); } catch (err) { K.ui().toast(K.errText(err), 'error'); return; }
     const times = (v) => { const out = []; for (let m = 7 * 60; m <= 22 * 60; m += 30) out.push(K.pad(Math.floor(m / 60)) + ':' + K.pad(m % 60)); if (v && !out.includes(v)) out.push(v); return out.sort().map((t) => [t, t]); };
     const cityOf = (p) => (d.weekly[p.id] && d.weekly[p.id].location) || p.location || LOCS[0];
     const excText = (x) => (x.on ? hShort(x.from) + '-' + hShort(x.to) + (x.location ? ' · ' + x.location : '') : 'liberă');
-    const excChips = (id) => Object.keys(d.dates).sort().filter((dt) => d.dates[dt][id]).map((dt) =>
-      '<span class="onl-chip" data-exc-date="' + dt + '">' + esc(K.dateShort(dt) + ': ' + excText(d.dates[dt][id])) + '<button type="button" aria-label="Scoate" data-exc-rm>' + icon('x') + '</button></span>').join('');
+    // (a rotation set week by week makes many: the first 6, then a tap to „Pe săptămâni”)
+    const excChips = (id) => { const all = Object.keys(d.dates).sort().filter((dt) => d.dates[dt][id]);
+      return all.slice(0, 6).map((dt) =>
+      '<span class="onl-chip" data-exc-date="' + dt + '">' + esc(K.dateShort(dt) + ': ' + excText(d.dates[dt][id])) + '<button type="button" aria-label="Scoate" data-exc-rm>' + icon('x') + '</button></span>').join('') +
+      (all.length > 6 ? '<button type="button" class="onl-chip tm-more" data-tm-weeks>+' + (all.length - 6) + ' în Pe săptămâni</button>' : ''); };
     const card = (p) => {
       const w = d.weekly[p.id], days = (w && w.days) || {};
       return '<section class="onl-city tm-emp" data-emp="' + esc(p.id) + '"><div class="onl-city-h"><b>' + icon('user') + esc(p.name) + '</b>' + (p.role && p.role !== 'cosmetician' ? K.roleTag(p.role) : '') +
@@ -1165,11 +1448,36 @@
         (list.length === 1 ? 'O programare rămâne' : list.length + ' programări rămân') + '</b> fără cosmeticiană. <u>Mută-le</u></span>' + icon('right') + '</button>');
       box.querySelector('[data-tc-note]').addEventListener('click', (e) => K.affectedSheet(list, { from: e.currentTarget, why: 'programul ' + firstName(name) + ' s-a schimbat' }));
     };
-    const post = async (payload) => { const r = await K.api('/api/portal-schedule', Object.assign({ from, to }, payload)); d = r; changed(); return r; };
+    const post = async (payload) => { const r = await K.api('/api/portal-schedule', Object.assign({ from, to }, payload)); d = r; weekStale = true; changed(); return r; };
+    // two views (17.11): „Pe săptămâni” (the real weeks, first) and „Programul de bază” (her week and the exceptions, as before)
+    let wk = null, baseStale = false, weekStale = false;
+    const views = (el, v) => {
+      const panes = { week: el.querySelector('[data-pane="week"]'), base: el.querySelector('[data-pane="base"]') };
+      const show = panes[v], hide = panes[v === 'week' ? 'base' : 'week'];
+      if (!show.hidden) return;
+      hide.hidden = true; show.hidden = false;
+      show.classList.remove('is-in-l', 'is-in-r'); void show.offsetWidth; show.classList.add(v === 'week' ? 'is-in-l' : 'is-in-r'); // carried sideways, the way the switch points
+      el.classList.toggle('tm-on-base', v === 'base');
+      const sg = el.querySelector('[data-k-seg="tmv"]');
+      if (sg) { sg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === v)); sg.querySelector('input').value = v; }
+      if (v === 'base' && baseStale) { baseStale = false; K.api('/api/portal-schedule', { action: 'get', from, to }).then((r) => { d = r; panes.base.innerHTML = body(); }).catch(() => {}); }
+      if (v === 'week' && weekStale && wk && !wk.dirty()) { weekStale = false; wk.load(0).catch(() => {}); }
+    };
     K.drawer({
-      title: 'Program echipă', icon: 'users', width: 560,
-      body: body(),
+      title: 'Program echipă', icon: 'users', width: 600, from: fromEl || null,
+      body: K.seg('tmv', [['week', 'Pe săptămâni', 'calendar'], ['base', 'Programul de bază', 'refresh']], 'week', 'tm-views') +
+        '<div class="tm-pane" data-pane="week"><div class="k-skel" style="height:56px"></div><div class="k-skel" style="height:320px"></div></div>' +
+        '<div class="tm-pane" data-pane="base" hidden>' + body() + '</div>',
+      footer: '<span class="tw-state" data-tw-state>Nicio schimbare</span><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-tw-save disabled>' + icon('check') + 'Salvează săptămâna</button>',
       onMount(el) {
+        wk = teamWeek(el.querySelector('[data-pane="week"]'), {
+          foot(text, on) { const st = el.querySelector('[data-tw-state]'), b = el.querySelector('[data-tw-save]'); if (st) { st.textContent = text; st.classList.toggle('is-on', on); } if (b) b.disabled = !on; },
+          saved() { baseStale = true; changed(); },
+        });
+        wk.load(0).catch((err) => { const p = el.querySelector('[data-pane="week"]'); if (p) p.innerHTML = K.empty('alert', 'Nu am putut încărca săptămâna', esc(K.errText(err))); });
+        el.querySelector('[data-tw-save]').addEventListener('click', (e) => wk.save(e.currentTarget));
+        el.addEventListener('change', (e) => { if (e.target.name === 'tmv') views(el, e.target.value); });
+        el.addEventListener('click', (e) => { if (e.target.closest('[data-tm-weeks]')) views(el, 'week'); });
         el.addEventListener('change', (e) => {
           const row = e.target.closest('.onl-day');
           if (row && e.target.name && e.target.name.startsWith('on|')) row.classList.toggle('is-off', !e.target.checked);
@@ -1267,7 +1575,7 @@
   }
 
   // the Manager page opens the same drawer (the owner and the manager set the team's hours)
-  K.openTeamSchedule = () => openTeam();
+  K.openTeamSchedule = (el) => openTeam(el);
 
   // her own visit of today or a passed day, still open (16.11): „Finalizată” (when there is no money to take: a package
   // session, a booking of 0 lei; one with a sum closes when it is paid) or „Nu a venit”. Only the status changes.
@@ -1630,10 +1938,9 @@
     await setView('day');
     if (o.id) openAppt(o.id);
   });
-})();
   // #programari/pauza (Nuki, the guide): today's breaks, in the day view, with a short glow; #programari/echipa: Program echipă
   K.on('programari:sub', async (sub) => {
-    if (sub === 'echipa') { if (K.canManage && K.canManage()) setTimeout(() => openTeam(), 120); return; }
+    if (sub === 'echipa') { if (K.canManage && K.canManage()) setTimeout(() => openTeam(), 120); return; } // (inside the module since 17.11: outside it openTeam, panel and S were not defined)
     if (sub !== 'pauza') return;
     const until = Date.now() + 4000;
     while (!panel && Date.now() < until) await new Promise((r) => setTimeout(r, 80));
@@ -1642,3 +1949,4 @@
     await setView('day');
     if (K.glow) K.glow('.cal-team-brk, .cal-brk', { max: 8 }); // (the day's line „La lucru” and the blocks in the columns)
   });
+})();

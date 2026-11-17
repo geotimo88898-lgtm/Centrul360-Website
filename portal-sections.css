@@ -2580,7 +2580,7 @@ html.mx-pv-open{ overflow:hidden; }
 .cal-team .k-tag{ font-variant-numeric:tabular-nums; }
 .tm-city{ display:flex; align-items:center; gap:.4rem; margin:.2rem 0 -.4rem; font-size:.78rem; font-weight:650; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
 .tm-city .k-ic{ width:14px; height:14px; opacity:.7; }
-.tm-emp .onl-city-h{ align-items:center; }
+.tm-emp .onl-city-h{ align-items:center; flex-wrap:wrap; }
 .tm-emp .onl-city-h b{ margin-right:auto; white-space:nowrap; }
 .tm-emp .onl-city-h .c360-select, .tm-add .c360-select{ width:auto; flex:none; }
 .tm-emp .onl-city-h select{ height:32px; padding:0 .45rem; border-radius:10px; border:1px solid var(--line); background:var(--paper); color:var(--fg); font:inherit; font-size:.82rem; }
@@ -2590,6 +2590,102 @@ html.mx-pv-open{ overflow:hidden; }
 .tm-hours{ display:inline-flex; align-items:center; gap:.3rem; }
 .tm-hours[hidden]{ display:none; }
 .tm-hours i{ font-style:normal; color:var(--muted-2); }
+/* Program echipă → „Pe săptămâni” (17.11, portal-calendar.js teamWeek): the real week, per cosmetician */
+.tm-views{ display:flex; width:100%; }
+.tm-views button{ flex:1 1 0; justify-content:center; min-height:36px; white-space:nowrap; min-width:0; }
+@media (max-width:400px){ .tm-views button .k-ic{ display:none; } }
+.tm-pane{ display:flex; flex-direction:column; gap:.85rem; min-width:0; }
+.tm-pane[hidden]{ display:none; }
+.tm-pane.is-in-r{ animation:tw-in-r .32s var(--ease) both; }
+.tm-pane.is-in-l{ animation:tw-in-l .32s var(--ease) both; }
+.k-drawer.tm-on-base .k-dfoot{ display:none; }
+.tm-more{ border:0; color:var(--accent); font:inherit; font-size:.78rem; font-weight:600; padding:.2rem .65rem; cursor:pointer; }
+.tw-bar{ position:sticky; top:-1.15rem; z-index:3; display:flex; flex-direction:column; gap:.55rem; margin:-.35rem -1.25rem 0; padding:.55rem 1.25rem .65rem;
+  background:var(--paper); border-bottom:1px solid var(--line); }
+.tw-nav{ display:flex; align-items:center; gap:.4rem; }
+.tw-nav .k-icon-btn{ flex:none; width:40px; height:40px; border-radius:12px; background:var(--glass); color:var(--fg); }
+.tw-nav .k-icon-btn .k-ic{ width:18px; height:18px; }
+.tw-when{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; text-align:center; line-height:1.2; }
+.tw-when b{ font-size:1.02rem; font-weight:650; letter-spacing:-.01em; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.tw-when small{ font-size:.74rem; color:var(--muted); margin-top:.1rem; }
+.tw-bar2{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.5rem; }
+.tw-bar2 .k-btn{ margin-left:auto; }
+.tw-city button{ min-height:32px; }
+.tw-slide{ display:flex; flex-direction:column; gap:.85rem; min-width:0; transition:opacity .14s var(--ease-in), transform .14s var(--ease-in); }
+.tw-slide.is-out-l{ opacity:0; transform:translateX(-18px); }
+.tw-slide.is-out-r{ opacity:0; transform:translateX(18px); }
+.tw-slide.is-in-r{ animation:tw-in-r .3s var(--ease) both; }
+.tw-slide.is-in-l{ animation:tw-in-l .3s var(--ease) both; }
+@keyframes tw-in-r{ from{ opacity:0; transform:translateX(18px); } to{ opacity:1; transform:none; } }
+@keyframes tw-in-l{ from{ opacity:0; transform:translateX(-18px); } to{ opacity:1; transform:none; } }
+.tw-slide > .tc-note{ margin:0; }
+.tw-tools{ display:flex; flex-wrap:wrap; gap:.5rem; }
+.tw-tools .k-btn{ flex:1 1 auto; justify-content:center; }
+/* „Repetă”: grows out of its button */
+.tw-rep{ display:flex; flex-direction:column; gap:.7rem; padding:.9rem 1rem; border-radius:14px; background:var(--glass); border:1px solid var(--line);
+  transform-origin:top right; opacity:0; transform:translateY(-6px) scale(.98); transition:opacity .18s var(--ease), transform .26s var(--ease); }
+.tw-rep[hidden]{ display:none; }
+.tw-rep.is-open{ opacity:1; transform:none; }
+.tw-rep-h{ display:flex; align-items:baseline; justify-content:space-between; gap:.5rem; }
+.tw-rep-h b{ font-size:.9rem; }
+.tw-rep-h small{ font-size:.74rem; color:var(--muted); }
+.tw-mode{ display:flex; width:100%; }
+.tw-mode button{ flex:1 1 0; justify-content:center; }
+.tw-rep-x{ margin:0; font-size:.8rem; color:var(--muted); line-height:1.4; }
+.tw-rep-n{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; font-size:.86rem; }
+.tw-step{ display:inline-flex; align-items:center; gap:.2rem; padding:2px; border-radius:12px; background:var(--paper); border:1px solid var(--line); }
+.tw-step b{ min-width:2ch; text-align:center; font-variant-numeric:tabular-nums; }
+.tw-step .k-icon-btn{ width:34px; height:34px; }
+.tw-step .k-icon-btn:disabled{ opacity:.3; cursor:default; }
+.tw-rep-w{ display:flex; flex-wrap:wrap; gap:.3rem; }
+.tw-wk{ display:inline-flex; align-items:center; gap:.3rem; padding:.18rem .55rem; border-radius:999px; background:var(--paper); border:1px solid var(--line); font-size:.74rem; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.tw-wk i{ font-style:normal; font-weight:700; font-size:.66rem; color:var(--accent); }
+.tw-rep-a{ display:flex; justify-content:flex-end; gap:.5rem; }
+/* the hints: never a block */
+.tw-hints{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.3rem; }
+.tw-hints[hidden]{ display:none; }
+.tw-hints li{ display:flex; align-items:flex-start; gap:.5rem; padding:.45rem .7rem; border-radius:10px; font-size:.8rem; line-height:1.35; background:var(--info-soft); }
+.tw-hints li.is-warn{ background:var(--warn-soft); }
+.tw-hints li .k-ic{ flex:none; width:15px; height:15px; margin-top:.1rem; color:var(--info); }
+.tw-hints li.is-warn .k-ic{ color:var(--warn); }
+.tw-hints li span{ min-width:0; overflow-wrap:anywhere; }
+.tw-legend{ display:flex; align-items:center; gap:.45rem; margin:-.25rem 0 0; font-size:.74rem; color:var(--muted); }
+/* one cosmetician: her 7 days */
+.tw-emp{ border:1px solid var(--line); border-radius:16px; background:var(--paper); min-width:0; }
+.tw-eh{ display:flex; align-items:center; gap:.6rem; padding:.7rem .9rem; border-bottom:1px solid var(--line); border-radius:16px 16px 0 0; background:var(--glass); min-width:0; }
+.tw-eh b{ flex:1; min-width:0; font-size:.92rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tw-sum{ flex:none; font-size:.76rem; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.tw-day{ display:flex; align-items:center; gap:.7rem; min-height:50px; padding:.35rem .9rem; min-width:0; }
+.tw-day + .tw-day{ border-top:1px solid var(--line); }
+.tw-dn{ flex:none; width:2.1rem; display:flex; flex-direction:column; align-items:center; line-height:1.1; }
+.tw-dn b{ font-size:.84rem; font-weight:650; }
+.tw-dn small{ font-size:.7rem; color:var(--muted); font-variant-numeric:tabular-nums; }
+.tw-day.is-today .tw-dn b, .tw-day.is-today .tw-dn small{ color:var(--accent); }
+.tw-day .k-switch{ flex:none; }
+.tw-set{ flex:1; min-width:0; display:flex; align-items:center; gap:.35rem; animation:k-swap .22s var(--ease) both; }
+.tw-set > i{ font-style:normal; color:var(--muted-2); }
+.tw-set em, .tw-ro em{ font-style:normal; font-size:.72rem; color:var(--info); white-space:nowrap; }
+.tw-set select{ height:34px; padding:0 .5rem; border-radius:10px; border:1px solid var(--line); background:var(--surface-3, var(--paper)); color:var(--fg); font:inherit; font-size:.86rem; font-variant-numeric:tabular-nums; min-width:0; }
+.tw-set .c360-select{ width:auto; flex:none; }
+.tw-set .c360-select-btn{ height:34px; padding:0 .5rem 0 .65rem; gap:.3rem; font-size:.86rem; font-variant-numeric:tabular-nums; border-radius:10px; min-width:76px; }
+.tw-set .c360-select-list{ min-width:100%; max-height:260px; }
+.tw-free{ flex:1; min-width:0; font-size:.84rem; color:var(--muted); }
+.tw-day.is-off .tw-set, .tw-day:not(.is-off) .tw-free{ display:none; }
+.tw-ro{ flex:1; min-width:0; font-size:.86rem; font-variant-numeric:tabular-nums; color:var(--muted); }
+.tw-day.is-lock:not(:has(.tw-leave)){ opacity:.6; }
+.tw-leave{ flex:1; min-width:0; display:inline-flex; align-items:center; gap:.35rem; font-size:.82rem; font-weight:600; color:var(--info); }
+.tw-leave .k-ic{ width:14px; height:14px; }
+.tw-mark{ flex:none; width:7px; height:7px; border-radius:50%; background:transparent; transition:background .2s ease, transform .3s var(--spring); transform:scale(.4); }
+.tw-mark.is-on{ background:var(--accent); transform:none; }
+.tw-state{ font-size:.8rem; color:var(--muted); }
+.tw-state.is-on{ color:var(--fg); font-weight:600; }
+@media (pointer:coarse){ .tw-set select{ font-size:16px; height:38px; } }
+@media (max-width:520px){
+  .tw-day{ gap:.55rem; padding:.35rem .75rem; }
+  .tw-eh{ padding:.65rem .75rem; }
+  .k-dfoot .tw-state{ flex:1 1 auto; }
+  .k-dfoot [data-tw-save]{ flex:0 0 auto; }
+}
 
 /* Phones (7.11): Calendar's "Online" sits on its own line above the day instead of on top of the date;
    Automatizări: a flow's name keeps its line (it was squeezed to one letter by the numbers next to it). */

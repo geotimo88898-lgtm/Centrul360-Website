@@ -228,6 +228,7 @@
         'Ca să confirmi: apeși pe programare și alegi „Confirmată”. Ca s-o muți: o tragi pe altă oră. Pe telefon ții apăsat puțin, apoi tragi.',
         'Dacă se anulează: „Anulată”, apoi o suni și îi propui altă zi. „Șterge” e doar pentru greșeli.',
         '„Program echipă”: orele fiecărei cosmeticiene și ale recepției, pe săptămână. Doar orele cosmeticienelor fac locuri pentru cliente.',
+        '„Pe săptămâni”: alegi săptămâna cu săgețile și orașul, apoi orele fiecărei cosmeticiene în zilele ei, și „Salvează săptămâna”. „Copiază săptămâna trecută” și „Repetă” (la fel sau „Alternează”, până la 12 săptămâni) fac rotația dintr-o atingere. „Programul de bază” rămâne săptămâna obișnuită.',
         '„Blochează timp” pentru ore în care nu se lucrează.'],
       know: ['Clienta primește singură confirmarea, apoi cu o zi înainte, la 9:00, un mesaj cu „Da, ajung” și „Nu ajung”.',
         'Pauza de 30 de minute a fiecărei cosmeticiene se pune singură, după „Program echipă”.'] },
@@ -360,6 +361,10 @@
       admin: ['„Rest de plată din pachete”, în Încasări.', 'incasari.dues'], manager: ['„Rest de plată din pachete”, în Încasări.', 'incasari.dues'],
       receptie: ['„Rest de plată din pachete”, în Încasări. Când plătește, faci o încasare la programarea ei.', 'incasari.dues'],
       cosmetician: ['„Rest de plată din pachete”, în Încasări.', 'incasari.dues'] } },
+    { q: 'programul pe o săptămână anume / tura de dimineață și de după-amiază / rotația fetelor', by: {
+      admin: ['Calendar → „Program echipă” → „Pe săptămâni”: alegi săptămâna, schimbi orele, „Salvează săptămâna”. Pentru rotație: „Repetă” → „Alternează”.', 'programari.echipa'],
+      manager: ['Calendar → „Program echipă” → „Pe săptămâni”: alegi săptămâna, schimbi orele, „Salvează săptămâna”. Pentru rotație: „Repetă” → „Alternează”.', 'programari.echipa'],
+      receptie: ['Orele fiecărei cosmeticiene se văd în Calendar, pe zi.', 'programari'], cosmetician: ['Programul tău se vede în Calendar.', 'programari'] } },
     { q: 'programul fetelor / orele echipei pe săptămână', by: {
       admin: ['Calendar → „Program echipă”.', 'programari.echipa'], manager: ['Calendar → „Program echipă”.', 'programari.echipa'],
       receptie: ['Orele fiecărei cosmeticiene se văd în Calendar, pe zi.', 'programari'], cosmetician: ['Programul tău se vede în Calendar.', 'programari'] } },

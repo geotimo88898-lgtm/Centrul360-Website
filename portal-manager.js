@@ -531,7 +531,7 @@
       if (w === 'close') return closeDay();
       if (w === 'report') return report();
       if (w === 'retry') return body();
-      if (w === 'schedule' && K.openTeamSchedule) return K.openTeamSchedule();
+      if (w === 'schedule' && K.openTeamSchedule) return K.openTeamSchedule(a);
       if (w === 'leave-new') return newLeave();
     }
     const go = e.target.closest('[data-go]');
