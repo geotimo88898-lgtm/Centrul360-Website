@@ -12,6 +12,14 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 18.11, the owner in his main session (Arad's dark covers bring leads that don't come: „reclamele sunt problema...
+  // dacă astea nu merg, facem altele diferite”): three new Arad ads published from Timișoara's winners (Restart „Căutăm 8
+  // doamne”, RF gușă „Stai întinsă” and „Căutăm 8 doamne”), the old dark ones off. Arad stays at 150 lei a day.
+  { id: 'ar-dark-off-2026-11-18', why: 'Arad: reclamele dark înlocuite cu 3 noi după câștigătoarele din Timișoara, cerut de voi pe 18.11', actions: [
+    { campaignId: '120251788054780103', name: 'AR RF GUSA · copertă 40+', status: 'PAUSED', why: 'vin puține din cele programate (6 din 16)' },
+    { campaignId: '120251962578980103', name: 'AR RESTART · invitație 10 doamne', status: 'PAUSED', why: 'înlocuită de Restart „Căutăm 8 doamne” (port TM)' },
+    { campaignId: '120251962566280103', name: 'AR RF GUSA · copertă 3', status: 'PAUSED', why: 'înlocuită de reclamele noi RF gușă (port TM)' },
+  ] },
   // 18.11 night, the owner in his main session („e puțin ciudat că la Arad se cheltuie mai mult ca la Timișoara...
   // rezolvă totul să aibă sens”): Arad has about half Timișoara's hours, so its spend follows what books. Kept: RF copertă 3,
   // RF 40+, Restart invitație (7 bookings from 18 leads since 16.11); off: RF 50+ (1 booking from 7 leads, 28 lei a lead
