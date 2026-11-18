@@ -135,6 +135,18 @@ module.exports = async (req, res) => {
       return;
     }
     if (req.method === 'GET' && req.query && req.query.action === 'results') { res.status(200).json(await results(req.query.since)); return; }
+    // read only: why an ad doesn't deliver (Meta's issues_info, review), and the ad account's state (status, why disabled)
+    if (req.method === 'GET' && req.query && req.query.action === 'diag') {
+      const AM = require('./ads-manager');
+      const { conn, problem } = await AM.connection();
+      if (problem) { res.status(200).json({ ok: false, reason: problem }); return; }
+      const acc = await ads.call('GET', '/' + conn.adAccountId, conn.userToken, { fields: 'account_status,disable_reason,spend_cap,amount_spent,funding_source_details' });
+      const id = /^\d+$/.test(String(req.query.id || '')) ? String(req.query.id) : '';
+      const camp = id ? await ads.delivery(conn, id) : null;
+      const fs = acc.ok && acc.j.funding_source_details ? { type: acc.j.funding_source_details.type, display: String(acc.j.funding_source_details.display_string || '').replace(/\d{4,}/g, '…') } : null;
+      res.status(200).json({ ok: true, account: acc.ok ? { status: acc.j.account_status, disableReason: acc.j.disable_reason, spendCap: acc.j.spend_cap, spent: acc.j.amount_spent, funding: fs } : { error: acc.j }, campaign: camp });
+      return;
+    }
     if (req.method === 'GET' && req.query && req.query.action === 'daily') { res.status(200).json(await daily(req.query.since)); return; }
     if (req.method === 'GET') { res.status(200).json(await options()); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
