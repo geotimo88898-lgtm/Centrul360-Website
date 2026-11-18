@@ -33,6 +33,31 @@ function pending(doc, employeeId, role) {
   return !((doc.acks[cur.id] || {})[employeeId]);
 }
 
+// a new version (the owner from the portal, or Claude for the owner through api/lead-health ?regulament): the PDF stored
+// privately, the version listed, the team told once
+async function upload(session, b) {
+  const m = /^data:application\/pdf;base64,([A-Za-z0-9+/=]+)$/.exec(String((b && b.dataUrl) || ''));
+  if (!m) return { error: 'invalid_file', message: 'Se poate încărca doar un PDF.' };
+  const buf = Buffer.from(m[1], 'base64');
+  if (!buf.length || buf.length > MAX_BYTES) return { error: 'file_too_big', message: 'Fișierul trece de 20 MB.' };
+  if (buf.slice(0, 5).toString('latin1') !== '%PDF-') return { error: 'invalid_file', message: 'Se poate încărca doar un PDF.' };
+  const path = 'regulament/' + crypto.randomUUID() + '.pdf';
+  await writeBinary(path, buf, 'application/pdf');
+  const by = await require('./_lib/activity').whoName(session.employeeId);
+  const fresh = await load();
+  const n = fresh.versions.reduce((x, v) => Math.max(x, v.n || 0), 0) + 1;
+  fresh.versions.push({ id: crypto.randomUUID(), n, name: clip(b.name, 120) || 'Regulament intern', path, size: buf.length, at: nowISO(), by, byId: session.employeeId });
+  await writeJSON(KEY, fresh);
+  // the team hears it once (the bell and the phone): a new text to read and confirm
+  try {
+    const N = require('./_lib/notify');
+    const ids = (await readJSON('data/employees.json', [])).filter((e) => e && e.active !== false && SIGNS.includes(e.role) && e.id !== session.employeeId).map((e) => e.id);
+    if (ids.length) await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'info', tone: 'info', go: 'regulament', tag: 'regulament-' + n,
+      title: n === 1 ? 'REGULAMENT INTERN 📄' : 'REGULAMENT INTERN, VERSIUNE NOUĂ 📄', text: 'Citește-l în portal și confirmă la final.' });
+  } catch (err) { console.error('regulament notify:', err.message); }
+  return { ok: true, n, size: buf.length };
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
@@ -81,26 +106,9 @@ module.exports = async (req, res) => {
 
     if (b.action === 'upload') {
       if (!boss) return fail(403, 'forbidden');
-      const m = /^data:application\/pdf;base64,([A-Za-z0-9+/=]+)$/.exec(String(b.dataUrl || ''));
-      if (!m) return fail(400, 'invalid_file', 'Se poate încărca doar un PDF.');
-      const buf = Buffer.from(m[1], 'base64');
-      if (!buf.length || buf.length > MAX_BYTES) return fail(400, 'file_too_big', 'Fișierul trece de 20 MB.');
-      if (buf.slice(0, 5).toString('latin1') !== '%PDF-') return fail(400, 'invalid_file', 'Se poate încărca doar un PDF.');
-      const path = 'regulament/' + crypto.randomUUID() + '.pdf';
-      await writeBinary(path, buf, 'application/pdf');
-      const by = await require('./_lib/activity').whoName(session.employeeId);
-      const fresh = await load();
-      const n = fresh.versions.reduce((x, v) => Math.max(x, v.n || 0), 0) + 1;
-      fresh.versions.push({ id: crypto.randomUUID(), n, name: clip(b.name, 120) || 'Regulament intern', path, size: buf.length, at: nowISO(), by, byId: session.employeeId });
-      await writeJSON(KEY, fresh);
-      Object.assign(doc, fresh);
-      // the team hears it once (the bell and the phone): a new text to read and confirm
-      try {
-        const N = require('./_lib/notify');
-        const ids = (await readJSON('data/employees.json', [])).filter((e) => e && e.active !== false && SIGNS.includes(e.role) && e.id !== session.employeeId).map((e) => e.id);
-        if (ids.length) await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'info', tone: 'info', go: 'regulament', tag: 'regulament-' + n,
-          title: n === 1 ? 'REGULAMENT INTERN 📄' : 'REGULAMENT INTERN, VERSIUNE NOUĂ 📄', text: 'Citește-l în portal și confirmă la final.' });
-      } catch (err) { console.error('regulament notify:', err.message); }
+      const r = await upload(session, b);
+      if (r.error) return fail(400, r.error, r.message);
+      Object.assign(doc, await load());
       return answer();
     }
     return fail(400, 'invalid_action');
@@ -112,3 +120,4 @@ module.exports = async (req, res) => {
 module.exports.pending = pending;
 module.exports.load = load;
 module.exports.KEY = KEY;
+module.exports.upload = upload;

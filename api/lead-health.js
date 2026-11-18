@@ -33,6 +33,13 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const session = getSession(req);
   if (!fromCreative(req) && !(session && session.role === 'admin')) { res.status(401).json({ error: 'unauthorized' }); return; }
+  // POST ?regulament=1 { name, dataUrl }: a new version of the internal regulation, uploaded for the owner when he asks
+  // (18.11); the same path as Meniu → Regulament intern → Versiune nouă (api/portal-regulament.js)
+  if (req.method === 'POST' && req.query && req.query.regulament) {
+    const r = await require('./portal-regulament').upload({ role: 'admin', employeeId: 'admin' }, req.body || {});
+    res.status(r.error ? 400 : 200).json(r);
+    return;
+  }
   // POST ?costs=1 { month: 'YYYY-MM', lines: { credits, rentTm (€), rentAr (€), laser, accounting, salaries, claude } }:
   // the fixed costs of a month in Echipa → Costuri lunare, when the owner asks Claude to type them (16.11). Only the
   // fixed lines; the variable ones and anything already there stay as they are. The sums travel in the request, never
