@@ -135,6 +135,17 @@ module.exports = async (req, res) => {
       return;
     }
     if (req.method === 'GET' && req.query && req.query.action === 'results') { res.status(200).json(await results(req.query.since)); return; }
+    // Claude asks George something about the ads (the owner, 19.11: „îmi trimiți o notificare prin aplicație, prin contul
+    // George, ADS ACTION NEEDED și un mesaj”): his bell and his phone, opening Reclame
+    if (req.method === 'POST' && req.body && req.body.action === 'notify') {
+      const N = require('./_lib/notify'), { readJSON, writeJSON } = require('./_lib/store');
+      const ids = await N.ownerIds({ readJSON });
+      const text = String(req.body.text || '').trim();
+      if (!text) { res.status(400).json({ error: 'text' }); return; }
+      const n = await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'alert', tone: 'warn', title: 'ADS ACTION NEEDED', text, go: 'reclame', ownerPush: true, tag: 'ads-claude-' + Date.now() });
+      res.status(200).json({ ok: true, sent: n });
+      return;
+    }
     // read only: why an ad doesn't deliver (Meta's issues_info, review), and the ad account's state (status, why disabled)
     if (req.method === 'GET' && req.query && req.query.action === 'diag') {
       const AM = require('./ads-manager');

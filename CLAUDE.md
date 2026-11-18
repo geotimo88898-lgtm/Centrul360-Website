@@ -18,3 +18,5 @@
 ## Reclamele Meta (regula proprietarului, 8.11)
 - Ai acces și control deplin la reclamele Meta ale Centrul360, prin admin, doar pe pagina Centrul360 și pe campaniile ei: în contul „centru pls” (act_4502494523405059), campaniile care nu încep cu ARANCA sau BRAZI (ale celorlalte afaceri din același cont; Summitlane are contul lui).
 - Când proprietarul spune că vrea o reclamă, alegeți împreună creativele, apoi o publici singur, fără alte aprobări.
+- **Regula lui George (19.11): Claude se ocupă integral de reclamele Centrul360.** Monitorizează zilnic (cost pe lead pe termen scurt, programări, cliente); tot timpul rulează doar reclame câștigătoare; calendarul fiecărei clinici se umple la ținta lui (100% + neprezentarea, cu programul cosmeticienelor, `api/lead-health?fill=`); oprește singur ce aduce leaduri scumpe, pornește și publică singur ce e câștigător sau reciclat, iar când nu mai are ce recicla face creative noi câștigătoare. Fără spații libere în calendar. Schimbările de campanii merg prin joburi în `api/_lib/ads-once.js`; o întrebare pentru George merge ca notificare „ADS ACTION NEEDED” (`/api/ads-publish` POST `{action:'notify', text}`).
+
