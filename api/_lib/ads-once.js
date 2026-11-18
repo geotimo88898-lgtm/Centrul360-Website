@@ -12,6 +12,24 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 18.11 evening: Meta paused every running campaign („Reclamele au fost puse în pauză din cauza unui cont compromis”,
+  // issue 4134001) after the owner's Facebook security check; „O poți reactiva pentru a relua livrarea”: off and on again.
+  // TM HIFU copertă 50+ stays off (24 lei without a lead today, 52 lei for one lead yesterday).
+  { id: 'reactivate-compromised-2026-11-18', why: 'reclamele repornite după pauza Meta „cont compromis” din 18.11', actions: [
+    { campaignId: '120251401215320103', name: 'TM HIFU G · sezon', status: 'PAUSED', why: 'reactivare după „cont compromis”: oprită o clipă' },
+    { campaignId: '120251401215320103', name: 'TM HIFU G · sezon', status: 'ACTIVE', why: 'reactivată după „cont compromis”' },
+    { campaignId: '120251418278340103', name: 'TM RESTART · fără ace', status: 'PAUSED', why: 'reactivare după „cont compromis”: oprită o clipă' },
+    { campaignId: '120251418278340103', name: 'TM RESTART · fără ace', status: 'ACTIVE', why: 'reactivată după „cont compromis”' },
+    { campaignId: '120251585544900103', name: 'TM VIDEO · HIFU gușă · iPad', status: 'PAUSED', why: 'reactivare după „cont compromis”: oprită o clipă' },
+    { campaignId: '120251585544900103', name: 'TM VIDEO · HIFU gușă · iPad', status: 'ACTIVE', why: 'reactivată după „cont compromis”' },
+    { campaignId: '120251992594590103', name: 'AR RESTART · căutăm 8 doamne (port TM)', status: 'PAUSED', why: 'reactivare după „cont compromis”: oprită o clipă' },
+    { campaignId: '120251992594590103', name: 'AR RESTART · căutăm 8 doamne (port TM)', status: 'ACTIVE', why: 'reactivată după „cont compromis”' },
+    { campaignId: '120251992596850103', name: 'AR RF GUSA · stai întinsă (port TM)', status: 'PAUSED', why: 'reactivare după „cont compromis”: oprită o clipă' },
+    { campaignId: '120251992596850103', name: 'AR RF GUSA · stai întinsă (port TM)', status: 'ACTIVE', why: 'reactivată după „cont compromis”' },
+    { campaignId: '120251992601670103', name: 'AR RF GUSA · căutăm 8 doamne (port TM)', status: 'PAUSED', why: 'reactivare după „cont compromis”: oprită o clipă' },
+    { campaignId: '120251992601670103', name: 'AR RF GUSA · căutăm 8 doamne (port TM)', status: 'ACTIVE', why: 'reactivată după „cont compromis”' },
+    { campaignId: '120251796512940103', name: 'TM HIFU G · copertă 50+', status: 'PAUSED', why: 'lead la 52 lei ieri, niciunul azi la 24 lei' },
+  ] },
   // 18.11, the owner in his main session (Arad's dark covers bring leads that don't come: „reclamele sunt problema...
   // dacă astea nu merg, facem altele diferite”): three new Arad ads published from Timișoara's winners (Restart „Căutăm 8
   // doamne”, RF gușă „Stai întinsă” and „Căutăm 8 doamne”), the old dark ones off. Arad stays at 150 lei a day.
