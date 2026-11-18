@@ -139,7 +139,7 @@ module.exports = async (req, res) => {
     // George, ADS ACTION NEEDED și un mesaj”): his bell and his phone, opening Reclame
     if (req.method === 'POST' && req.body && req.body.action === 'notify') {
       const N = require('./_lib/notify'), { readJSON, writeJSON } = require('./_lib/store');
-      const ids = await N.ownerIds({ readJSON });
+      const ids = ['admin'].concat(await N.ownerIds({ readJSON })); // his own account and the shared admin login, wherever his phone is signed in
       const text = String(req.body.text || '').trim();
       if (!text) { res.status(400).json({ error: 'text' }); return; }
       const n = await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'alert', tone: 'warn', title: 'ADS ACTION NEEDED', text, go: 'reclame', ownerPush: true, tag: 'ads-claude-' + Date.now() });
