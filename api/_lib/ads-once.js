@@ -12,6 +12,13 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 18.11 evening, the owner in his main session („da”): Timișoara's Restart local back on at 50 lei a day, for Thursday
+  // and Friday's calendar (75-77% against 125%); ROAS 4,1, 5 clients, a lead at 8 lei when it last ran
+  { id: 'tm-restart-local-on-2026-11-18', why: 'TM Restart local pornit la 50 lei/zi pentru calendarul de joi și vineri, cerut de voi pe 18.11', actions: [
+    { campaignId: '120251400568370103', name: 'TM RESTART · local', daily: 50, why: 'calendarul TM joi-vineri la 75-77%' },
+    { campaignId: '120251400568370103', name: 'TM RESTART · local', status: 'PAUSED', why: 'oprită o clipă (repornire curată)' },
+    { campaignId: '120251400568370103', name: 'TM RESTART · local', status: 'ACTIVE', why: 'calendarul TM joi-vineri la 75-77%' },
+  ] },
   // 18.11 evening: Meta paused every running campaign („Reclamele au fost puse în pauză din cauza unui cont compromis”,
   // issue 4134001) after the owner's Facebook security check; „O poți reactiva pentru a relua livrarea”: off and on again.
   // TM HIFU copertă 50+ stays off (24 lei without a lead today, 52 lei for one lead yesterday).
