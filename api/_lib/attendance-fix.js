@@ -57,6 +57,7 @@ const leaveOn = (leaveRequests, employeeId, date) => (leaveRequests || []).some(
 function dayCheck(ctx, employeeId, date) {
   if (leaveOn(ctx.leaveRequests, employeeId, date) || TS.onLeave(ctx.appts, employeeId, date)) return 'leave';
   const d = TS.dayOf(ctx.schedule, employeeId, date);
+  if (TS.extraOf(ctx.schedule, employeeId, date).length) return ''; // her overtime that day (Ore suplimentare, 18.11)
   if (d && !d.on) return 'off';
   if (!d && TB.isWeekend(date)) return 'weekend';
   return '';

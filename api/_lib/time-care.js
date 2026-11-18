@@ -39,7 +39,8 @@ function freeFor(a, appts, emps, doc) {
   const all = new Set((emps || []).filter((x) => x && x.role === 'cosmetician' && L.worksOn(x, a.date)).map((x) => x.id));
   const sched = doc && T.hasSchedule(doc, a.location, all);
   const pool = sched
-    ? T.whoWorks(doc, a.date, a.location, { appts: day, ids }).filter((w) => s == null || (toMin(w.from) <= s && (e || s) <= toMin(w.to))).map((w) => cosm.find((x) => x.id === w.employeeId)).filter(Boolean)
+    // her shift, or her overtime that day (the desk books it, 18.11), covering the whole booking
+    ? cosm.filter((x) => T.deskCovers(doc, x.id, a.date, a.location, s, e, { appts: day, ids }))
     : cosm.filter((x) => x.location === a.location && !T.onLeave(day, x.id, a.date));
   const busy = (id) => day.filter((x) => x.cosmeticianId === id && x.status !== 'anulata' && (isVisit(x) || x.block)).filter((x) => {
     const xs = toMin(x.time);

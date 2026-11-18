@@ -173,6 +173,9 @@
     }
     const bo = e.target.closest('[data-brk-open]');
     if (bo) return openBreak(brkOf(bo.dataset.brkOpen), bo);
+    const xo = e.target.closest('[data-xtra]');
+    if (xo) { const [date, id, xid] = xo.dataset.xtra.split('|'); return openExtra({ date, employeeId: id, row: ((TEAM.extra[date] || {})[id] || []).find((x) => x.id === xid) || null, from: xo }); }
+    if (e.target.closest('[data-xadd]')) return openExtra({ date: S.date, employeeId: S.emp, row: null, from: e.target.closest('[data-xadd]') });
     const row = e.target.closest('[data-open]');
     if (row) return openAppt(row.dataset.open);
     const gap = e.target.closest('[data-gap]');
@@ -203,7 +206,7 @@
       render(keepScroll);
       loadOrphans();
       // who works these days (Programul echipei): the strip on top of the day, after the grid is drawn
-      teamRange(from, to).then(renderTeam).catch(() => {});
+      teamRange(from, to).then(() => { renderTeam(); paintBands(); }).catch(() => {});
     } catch (e) {
       gridEl.innerHTML = K.empty('alert', 'Nu am putut încărca calendarul', 'Verifică conexiunea și reîncearcă.', '<button type="button" class="k-btn is-primary" data-act="today">Reîncearcă</button>');
     }
@@ -355,6 +358,7 @@
           (untimed.length ? '<div class="cal-untimed">' + untimed.map((a) => '<button type="button" class="cal-chip is-' + a.status + '" data-id="' + esc(a.id) + '">' + esc(nameOf(a)) + '</button>').join('') + '</div>' : '') +
           (split ? cityLayout(timed) : layout(timed)).map((it) => (it.a.brk ? brkHtml(it) : blockHtml(it))).join('') + '</div>';
       }).join('');
+    paintBands();
     placeNow();
     if (keepScroll) gridEl.parentElement.scrollTop = prevScroll;
     else {
@@ -484,6 +488,7 @@
   let drag = null;
   function onPointerDown(e) {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
+    if (e.target.closest('[data-xtra]')) return; // the overtime's label: its sheet (onClick)
     const col = e.target.closest('.cal-col');
     if (!col) return;
     // a break: a tap opens its sheet; on a computer the owner and the manager drag it within her shift (30-minute steps)
@@ -893,6 +898,17 @@
     if (v.cosmeticianId) {
       const leave = rows.find((x) => x.status === 'concediu' && !x.block && x.date === v.date && x.cosmeticianId === v.cosmeticianId);
       if (leave) out.push((leave.cosmeticianName || 'Cosmeticiana') + ' e în concediu în ziua asta');
+      // outside her hours that day (Program echipă, her overtime counted, 18.11): said, the desk decides
+      else if (s != null) {
+        await teamDate(v.date).catch(() => {});
+        const h = spansOf(v.date, v.cosmeticianId);
+        if ((h.plan || h.list.length) && !h.leave && !covered(h.list.filter((y) => !y.loc || y.loc === v.location), s, e)) {
+          const here = h.list.filter((y) => !y.loc || y.loc === v.location);
+          const why = !h.list.length ? 'e liberă în ziua asta' : !here.length ? 'lucrează ' + (IN_CITY[h.list[0].loc] || 'în alt oraș').toLowerCase() + ' în ziua asta'
+            : 'programul ei: ' + here.map((y) => hmShort(y.s) + '-' + hmShort(y.e) + (y.extra ? ' suplimentar' : '')).join(', ');
+          out.push(firstName(empName(v.cosmeticianId) || 'Cosmeticiana') + ' nu lucrează la ora asta (' + why + ')');
+        }
+      }
       // two clients of hers at the same hour are allowed without a word (the owner, 19.10: it is useful)
     }
     return out.join('. ');
@@ -1085,7 +1101,7 @@
   // ------------------------------------------------------------------ Program echipă (the owner, 9.11: „unde trec programul fetelor”)
   // Who works when (api/portal-schedule.js): kept per day for a minute, read by the strip on top of the day and by the
   // booking form; the admin sets it in the drawer (a week per cosmetician, plus the days that differ).
-  const TEAM = { days: {}, cities: {}, at: {} };
+  const TEAM = { days: {}, cities: {}, at: {}, plan: {}, extra: {} };
   const TEAM_TTL = 60e3;
   async function teamRange(from, to, force) {
     const fresh = (d) => TEAM.at[d] && Date.now() - TEAM.at[d] < TEAM_TTL;
@@ -1095,14 +1111,108 @@
     const j = await K.api('/api/portal-schedule', { action: 'get', from, to });
     TEAM.cities = j.cities || {};
     const now = Date.now();
-    for (let d = from; d <= to; d = K.addDays(d, 1)) { TEAM.days[d] = (j.works || {})[d] || {}; TEAM.at[d] = now; }
+    for (let d = from; d <= to; d = K.addDays(d, 1)) { TEAM.days[d] = (j.works || {})[d] || {}; TEAM.plan[d] = (j.plan || {})[d] || {}; TEAM.extra[d] = (j.extra || {})[d] || {}; TEAM.at[d] = now; }
   }
   const teamDate = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || '') ? teamRange(d, d) : Promise.resolve());
-  // the ids working in a city at a date and hour (a Set), or null when that city has no schedule (then: as before)
+  // the ids working in a city at a date and hour (a Set), or null when that city has no schedule (then: as before); her
+  // overtime counts (the desk books it, 18.11)
   function teamAt(date, loc, time) {
     if (!TEAM.cities[loc] || !TEAM.days[date]) return null;
     const t = toMin(time);
-    return new Set((TEAM.days[date][loc] || []).filter((w) => t == null || (toMin(w.from) <= t && t < toMin(w.to))).map((w) => w.employeeId));
+    const on = new Set((TEAM.days[date][loc] || []).filter((w) => t == null || (toMin(w.from) <= t && t < toMin(w.to))).map((w) => w.employeeId));
+    xtraIn(date, loc).forEach((x) => { if (t == null || (x.s <= t && t < x.e)) on.add(x.id); });
+    return on;
+  }
+
+  // ------------------------------------------------------------------ her hours on the grid (the owner, 18.11: „când apăs pe o
+  // cosmeticiană să-i văd programările ei, să apară greyed out timpul în care nu lucrează”)
+  // From Program echipă (api/portal-schedule.js get: plan, her day that really applies with leave; extra, her overtime).
+  // One cosmetician picked: everything outside her hours that day is a calm grey (before, after, a day off „Liberă”, leave
+  // „Concediu”, a day in the other clinic „În Arad”); her overtime a soft violet („Ore suplimentare”). Everyone: a city's
+  // column is grey where nobody of it works, the overtime violet where only it holds the clinic, a violet edge beside others.
+  // Never in the way: a tap on grey still books (the form says „nu lucrează la ora asta”).
+  const G0 = START * 60, G1 = END * 60;
+  const IN_CITY = { 'Timișoara': 'În Timișoara', Arad: 'În Arad' };
+  // her day: { plan, leave, list: [{ s, e, loc, extra, x }] } (minutes, by start)
+  function spansOf(date, id) {
+    const p = (TEAM.plan[date] || {})[id] || null;
+    if (p && p.leave) return { plan: p, leave: true, list: [] };
+    const list = [];
+    if (p && p.on && toMin(p.from) != null && toMin(p.to) > toMin(p.from)) list.push({ s: toMin(p.from), e: toMin(p.to), loc: p.location || '', extra: false });
+    ((TEAM.extra[date] || {})[id] || []).forEach((x) => { if (toMin(x.to) > toMin(x.from)) list.push({ s: toMin(x.from), e: toMin(x.to), loc: x.location || (p && p.location) || '', extra: true, x }); });
+    return { plan: p, leave: false, list: list.sort((a, b) => a.s - b.s) };
+  }
+  // the overtime of a city that day: [{ id, s, e, x }]
+  const xtraIn = (date, loc) => Object.keys(TEAM.extra[date] || {}).reduce((out, id) => out.concat(spansOf(date, id).list.filter((y) => y.extra && (!loc || y.loc === loc)).map((y) => Object.assign({ id }, y))), []);
+  // the parts of [a, b] the spans leave out
+  function holes(spans, a, b) {
+    const v = spans.map((x) => [Math.max(a, x.s), Math.min(b, x.e)]).filter((x) => x[1] > x[0]).sort((x, y) => x[0] - y[0]);
+    const out = []; let at = a;
+    v.forEach(([s, e]) => { if (s > at) out.push([at, s]); at = Math.max(at, e); });
+    if (at < b) out.push([at, b]);
+    return out;
+  }
+  // she is there from s to e (her shift and overtime together)
+  const covered = (spans, s, e) => !holes(spans, s, e).length;
+  const hmShort = (m) => hShort(toHM(m));
+  const pos = (s, e, base, w) => 'top:' + ((s - G0) * PPM) + 'px;height:' + ((e - s) * PPM) + 'px;left:' + base + '%;width:' + w + '%';
+  const offDiv = (s, e, base, w, label, whole) => '<div class="cal-off' + (whole ? ' is-whole' : '') + '" style="' + pos(s, e, base, w) + '" aria-hidden="true">' + (label && e - s >= 60 ? '<span>' + esc(label) + '</span>' : '') + '</div>';
+  function xtraDiv(date, id, y, base, w, who, edge) {
+    const key = date + '|' + id + '|' + (y.x && y.x.id);
+    const t = hmShort(y.s) + '-' + hmShort(y.e);
+    const tip = 'Ore suplimentare ' + t + (who ? ' · ' + who : '') + (y.x && y.x.note ? ' · ' + y.x.note : '');
+    if (edge) return '<div class="cal-xtra is-edge" style="top:' + ((y.s - G0) * PPM) + 'px;height:' + ((y.e - y.s) * PPM) + 'px;left:calc(' + (base + w) + '% - 7px);width:4px" title="' + esc(tip) + '"></div>';
+    const lab = '<b>Ore suplimentare' + (who ? ' · ' + esc(who) : '') + '</b><span>' + esc(t) + '</span>';
+    return '<div class="cal-xtra" style="' + pos(y.s, y.e, base, w) + '" title="' + esc(tip) + '">' +
+      (canManage() ? '<button type="button" class="cal-xtra-l" data-xtra="' + esc(key) + '" aria-label="' + esc(tip) + '">' + lab + '</button>' : '<span class="cal-xtra-l">' + lab + '</span>') + '</div>';
+  }
+  const canManage = () => !!(K.canManage && K.canManage());
+  const isCosm = (id) => ((K.data && K.data.activeEmployees) || []).some((e) => e.id === id && e.role === 'cosmetician');
+  function bandsHtml(date, loc, split) {
+    if (!TEAM.at[date]) return '';
+    const areas = split ? [[LOCS[0], 0, 50], [LOCS[1], 50, 50]] : [[loc, 0, 100]];
+    const one = S.emp && S.emp !== LEFT ? S.emp : '';
+    let out = '';
+    areas.forEach(([l, base, w]) => {
+      if (one) {
+        const h = spansOf(date, one);
+        if (!h.plan && !h.list.length) return; // nothing set for her: as before
+        const here = h.list.filter((y) => !l || !y.loc || y.loc === l);
+        const label = h.leave ? 'Concediu' : !here.length && h.list.length ? IN_CITY[h.list[0].loc] || 'În alt oraș' : !here.length ? 'Liberă' : 'Nu lucrează';
+        // a narrow column (the week's halves, a phone's week): the word only on a whole day
+        const roomy = !split && !(phone() && S.view === 'week');
+        holes(here, G0, G1).forEach(([s, e]) => { out += offDiv(s, e, base, w, here.length && !roomy ? '' : label, !here.length); });
+        here.filter((y) => y.extra).forEach((y) => { out += xtraDiv(date, one, y, base, w, '', false); });
+        return;
+      }
+      if (!l || !TEAM.cities[l]) return; // a city with no schedule: as before
+      const ids = Object.keys(TEAM.plan[date] || {}).concat(Object.keys(TEAM.extra[date] || {})).filter((id, i, a) => a.indexOf(id) === i && isCosm(id));
+      const normal = [], extra = [];
+      ids.forEach((id) => spansOf(date, id).list.filter((y) => y.loc === l).forEach((y) => (y.extra ? extra.push(Object.assign({ id }, y)) : normal.push(y))));
+      const all = normal.concat(extra);
+      holes(all, G0, G1).forEach(([s, e]) => { out += offDiv(s, e, base, w, all.length ? '' : 'Nimeni la lucru', !all.length); });
+      extra.forEach((y) => {
+        const who = firstName(empName(y.id));
+        holes(normal, y.s, y.e).forEach(([s, e]) => { out += xtraDiv(date, y.id, Object.assign({}, y, { s, e }), base, w, split ? '' : who, false); });
+        // beside colleagues at work: a violet edge only (the clinic is not closed then)
+        normal.map((n) => [Math.max(n.s, y.s), Math.min(n.e, y.e)]).filter((x) => x[1] > x[0])
+          .forEach(([s, e]) => { out += xtraDiv(date, y.id, Object.assign({}, y, { s, e }), base, w, who, true); });
+      });
+    });
+    return out;
+  }
+  // the grey and the violet in the columns drawn (after the grid, and again once Program echipă has come)
+  function paintBands() {
+    if (!gridEl || gridEl.classList.contains('is-list')) return;
+    const split = gridEl.classList.contains('is-split');
+    // the labels stay in sight under the sticky day heads while the day scrolls
+    const head = gridEl.querySelector('.cal-colhead');
+    if (head) gridEl.style.setProperty('--cal-stick', ((parseFloat(getComputedStyle(head).top) || 0) + head.offsetHeight) + 'px');
+    gridEl.querySelectorAll('.cal-col').forEach((col) => {
+      col.querySelectorAll('.cal-off, .cal-xtra').forEach((x) => x.remove());
+      const html = bandsHtml(col.dataset.date, col.dataset.loc || '', split);
+      if (html) col.insertAdjacentHTML('afterbegin', html);
+    });
   }
   // „9-17”, „12:30-20”
   const hShort = (t) => String(t || '').replace(/^0(\d)/, '$1').replace(/:00$/, '');
@@ -1111,9 +1221,17 @@
     if (!el) return;
     const locs = S.loc === 'all' ? LOCS : [S.loc];
     const day = TEAM.days[S.date];
-    const shown = S.view === 'day' && day ? locs.filter((l) => TEAM.cities[l] || (day[l] || []).length) : [];
+    const shown = S.view === 'day' && day ? locs.filter((l) => TEAM.cities[l] || (day[l] || []).length || xtraIn(S.date, l).length) : [];
     el.hidden = !shown.length;
     if (!shown.length) { el.innerHTML = ''; return; }
+    // her overtime, in violet next to the hours (a tap opens it for the owner and the manager); one cosmetician picked: add one
+    const one = S.emp && S.emp !== LEFT && isCosm(S.emp) ? S.emp : '';
+    const xt = (l) => xtraIn(S.date, l).filter((y) => !one || y.id === one).map((y) => {
+      const t = esc(firstName(empName(y.id)) + ' +' + hShort(toHM(y.s)) + '-' + hShort(toHM(y.e)));
+      return canManage() ? '<button type="button" class="k-tag is-purple cal-team-x" data-xtra="' + esc(S.date + '|' + y.id + '|' + y.x.id) + '" title="Ore suplimentare">' + t + '</button>'
+        : '<span class="k-tag is-purple" title="Ore suplimentare">' + t + '</span>';
+    }).join('');
+    const add = one && canManage() && S.date >= K.today() && !spansOf(S.date, one).leave ? '<button type="button" class="cal-team-add" data-xadd>' + icon('plus') + 'Ore suplimentare</button>' : '';
     el.innerHTML = '<span class="cal-team-k">' + icon('users') + 'La lucru</span>' + shown.map((l) => {
       const list = day[l] || [];
       return '<span class="cal-team-c">' + (shown.length > 1 || S.loc === 'all' ? '<b>' + esc(l) + '</b>' : '') +
@@ -1123,8 +1241,8 @@
           return '<span class="cal-team-p"><span class="k-tag">' + esc(String(w.name || empName(w.employeeId) || '').split(' ')[0]) + ' ' + esc(hShort(w.from) + '-' + hShort(w.to)) + '</span>' +
             (b ? '<button type="button" class="cal-team-brk' + (b.on ? '' : ' is-off') + '" data-brk-open="' + esc(brkKey(b)) + '">' + (b.on ? 'pauză ' + esc(b.from) : 'fără pauză') + '</button>' : '') + '</span>';
         }).join('')
-          : '<span class="k-tag is-mute">nimeni</span>') + '</span>';
-    }).join('');
+          : xtraIn(S.date, l).length ? '' : '<span class="k-tag is-mute">nimeni</span>') + xt(l) + '</span>';
+    }).join('') + add;
   }
 
   // ------------------------------------------------------------------ Program echipă → „Pe săptămâni” (the owner, 17.11: „să
@@ -1224,6 +1342,12 @@
 
     // ---------------------------------------------------------------- drawing
     const timeSel = (v, what) => '<select data-tw-' + what + ' aria-label="' + (what === 'f' ? 'De la' : 'Până la') + '">' + K.options(TW_TIMES.concat(v && !TW_TIMES.includes(v) ? [v] : []).sort().map((t) => [t, hm1(t)]), v) + '</select>';
+    // her overtime that day (the owner, 18.11): violet chips under the day, a tap opens them; „+” adds one (not on a passed
+    // day or a leave day). Saved at once, apart from „Salvează săptămâna”.
+    const xOf = (id, d) => (((W.data && W.data.extra) || {})[d] || {})[id] || [];
+    const xChips = (id, d, ro) => { const l = xOf(id, d); return l.length ? '<div class="tw-xl">' + l.map((x) => (ro ? '<span class="tw-xchip">' : '<button type="button" class="tw-xchip" data-tw-x="' + esc(x.id) + '" title="Ore suplimentare' + (x.note ? ': ' + esc(x.note) : '') + '">') +
+      icon('clock') + '<b>' + esc(hm1(x.from) + '-' + hm1(x.to)) + '</b><small>ore suplimentare' + (x.location && x.location !== W.city ? ', ' + esc(x.location) : '') + '</small>' + (ro ? '</span>' : '</button>')).join('') + '</div>' : ''; };
+    const xAdd = '<button type="button" class="k-icon-btn tw-xadd" data-tw-xadd aria-label="Ore suplimentare" title="Ore suplimentare">' + icon('plus') + '</button>';
     function rowHtml(p, d, i) {
       const x = day(p.id, d), lock = locked(p.id, d), leave = onLeave(p.id, d), diff = !leave && differs(p.id, d);
       const elsewhere = x.on && x.location && x.location !== cityOf(p);
@@ -1231,10 +1355,32 @@
       const mark = '<i class="tw-mark' + (diff ? ' is-on' : '') + '" title="Doar săptămâna asta"></i>';
       const cls = 'tw-day' + (x.on && !leave ? '' : ' is-off') + (lock ? ' is-lock' : '') + (d === K.today() ? ' is-today' : '');
       if (leave) return '<div class="' + cls + '" data-d="' + d + '">' + head + '<span class="tw-leave">' + icon('sun') + 'Concediu</span>' + mark + '</div>';
-      if (lock) return '<div class="' + cls + '" data-d="' + d + '">' + head + '<span class="tw-ro">' + (x.on ? esc(hm1(x.from) + '-' + hm1(x.to)) : 'Liberă') + (elsewhere ? ' <em>' + esc(x.location) + '</em>' : '') + '</span>' + mark + '</div>';
+      if (lock) return '<div class="' + cls + '" data-d="' + d + '">' + head + '<span class="tw-ro">' + (x.on ? esc(hm1(x.from) + '-' + hm1(x.to)) : 'Liberă') + (elsewhere ? ' <em>' + esc(x.location) + '</em>' : '') + '</span>' + mark + xChips(p.id, d, true) + '</div>';
       return '<div class="' + cls + '" data-d="' + d + '">' + head + K.toggle('tw-on', x.on, '') +
         '<span class="tw-set">' + timeSel(x.on ? x.from : '09:00', 'f') + '<i>-</i>' + timeSel(x.on ? x.to : '17:00', 't') + (elsewhere ? '<em>' + esc(x.location) + '</em>' : '') + '</span>' +
-        '<span class="tw-free">Liberă</span>' + mark + '</div>';
+        '<span class="tw-free">Liberă</span>' + mark + xAdd + xChips(p.id, d, false) + '</div>';
+    }
+    // the inline editor, opened out of its „+” or its chip, under the day
+    function xOpen(r, id, d, row) {
+      host.querySelectorAll('[data-tw-xp]').forEach((x) => x.remove());
+      const p = people().find((q) => q.id === id) || {};
+      const sd = real(id, d);
+      const v = row ? Object.assign({}, row) : Object.assign(xStart(sd), { location: (sd.on && sd.location) || cityOf(p), note: '' });
+      r.insertAdjacentHTML('beforeend', '<div class="tw-xp" data-tw-xp data-x="' + esc(row ? row.id : '') + '"><div class="tw-xp-h"><b>' + icon('clock') + (row ? 'Ore suplimentare' : 'Ore suplimentare noi') + '</b><small>' + esc(firstName(p.name) + ' · ' + dayWord(d) + (xDayText(sd, W.city) ? ' · ' + xDayText(sd, W.city) : '')) + '</small></div>' +
+        xFields(v, cities()) + '<div class="tw-xp-a">' + (row ? '<button type="button" class="k-btn is-ghost is-sm" data-tw-xdel>' + icon('trash') + 'Șterge</button>' : '') + '<span class="k-grow"></span>' +
+        '<button type="button" class="k-btn is-ghost is-sm" data-tw-xx>Renunță</button><button type="button" class="k-btn is-primary is-sm" data-tw-xok>' + icon('check') + 'Salvează</button></div></div>');
+      const el = r.querySelector('[data-tw-xp]');
+      requestAnimationFrame(() => el.classList.add('is-open'));
+    }
+    async function xDone(r, ok) {
+      const range = { rangeFrom: K.addDays(W.monday, -7), rangeTo: K.addDays(W.monday, 13) };
+      const res = await ok(range);
+      if (!res) return;
+      W.data = Object.assign({}, W.data, res);
+      const box = r.closest('[data-tw-emp]'), p = people().find((q) => q.id === box.dataset.twEmp), d = r.dataset.d;
+      const i = dates(W.monday).indexOf(d);
+      r.outerHTML = rowHtml(p, d, i);
+      opts.saved(res);
     }
     const sumOf = (p) => {
       let n = 0, min = 0;
@@ -1348,7 +1494,7 @@
       if (t.name === 'twcity') { W.city = t.value; render(0); return; }
       if (t.name === 'twmode') { W.rep.mode = t.value; const p = host.querySelector('[data-tw-panel]'); if (p) p.innerHTML = repHtml(); return; }
       const r = t.closest('.tw-day'), box = t.closest('[data-tw-emp]');
-      if (!r || !box) return;
+      if (!r || !box || t.closest('[data-tw-xp]')) return;
       const id = box.dataset.twEmp, d = r.dataset.d;
       const x = Object.assign({}, day(id, d));
       if (t.name === 'tw-on') {
@@ -1386,6 +1532,34 @@
         render(0);
         K.ui().toast(n ? 'Am copiat săptămâna ' + weekName(prev) + '. „Salvează săptămâna” ca s-o păstrezi.' : 'Săptămâna e deja la fel ca ' + weekName(prev) + '.', n ? 'success' : 'info');
         return;
+      }
+      const xr = e.target.closest('.tw-day'), xb = e.target.closest('[data-tw-emp]');
+      if (xr && xb) {
+        const id = xb.dataset.twEmp, d = xr.dataset.d, p = people().find((q) => q.id === id) || {};
+        const chip = e.target.closest('[data-tw-x]');
+        if (e.target.closest('[data-tw-xadd]') || chip) { xOpen(xr, id, d, chip ? xOf(id, d).find((x) => x.id === chip.dataset.twX) || null : null); return; }
+        const pane = e.target.closest('[data-tw-xp]');
+        if (pane && e.target.closest('[data-tw-xx]')) { pane.classList.remove('is-open'); setTimeout(() => pane.remove(), 160); return; }
+        const okb = pane && e.target.closest('[data-tw-xok]');
+        if (okb) {
+          const row = pane.dataset.x ? xOf(id, d).find((x) => x.id === pane.dataset.x) || null : null;
+          const v = xRead(pane);
+          K.busy(okb, () => xDone(xr, (range) => xSend({ date: d, employeeId: id, name: p.name, row }, v, range).then((res) => { K.ui().toast(xToast(p.name, d, v), 'success'); return res; })))
+            .catch((err) => K.ui().toast(xErr(err), 'error'));
+          return;
+        }
+        const delb = pane && e.target.closest('[data-tw-xdel]');
+        if (delb) {
+          const row = xOf(id, d).find((x) => x.id === pane.dataset.x);
+          if (!row) return;
+          K.ui().confirm({ title: 'Ștergi orele suplimentare?', message: firstName(p.name) + ', ' + dayWord(d) + ', ' + hm1(row.from) + '-' + hm1(row.to) + '. Primește notificare.', confirmText: 'Șterge', danger: true, from: delb }).then((yes) => {
+            if (!yes) return;
+            K.busy(delb, () => xDone(xr, (range) => xDrop({ date: d, employeeId: id, name: p.name, row }, range).then((res) => { K.ui().toast('Orele suplimentare au fost scoase.', 'success'); return res; })))
+              .catch((err) => K.ui().toast(xErr(err), 'error'));
+          });
+          return;
+        }
+        if (pane) return;
       }
       if (e.target.closest('[data-tw-rep]')) { const p = host.querySelector('[data-tw-panel]'); toggleRep(p && p.hidden); return; }
       if (e.target.closest('[data-tw-rep-x]')) { toggleRep(false); return; }
@@ -1520,6 +1694,75 @@
             const date = rm.closest('[data-exc-date]').dataset.excDate;
             K.busy(rm, async () => { await post({ action: 'save_date', employeeId: id, name: p.name, date, entry: null }); repaint(); }).catch(err);
           }
+        });
+      },
+    });
+  }
+
+  // ------------------------------------------------------------------ overtime („Ore suplimentare”, the owner 18.11)
+  // Hours a cosmetician works on top of her shift on one day (after it, before it, or on a day off), on :00 / :30, with a
+  // note. Set by the owner and the manager (as the hours): in Program echipă → „Pe săptămâni” (the „+” of each day) and from
+  // the Calendar (her violet hours, or „Ore suplimentare” on top of her day). Reception books her there like in her
+  // shift; the site never offers them. Her phone hears it. Server: api/portal-schedule.js extra_set / extra_del.
+  const X_ERR = { over_shift: 'Se suprapune cu programul ei din ziua asta.', over_extra: 'Se suprapune cu alte ore suplimentare ale ei.', on_leave: 'E în concediu în ziua asta.',
+    invalid_time: 'Doar la ore fixe sau la jumătate.', invalid_range: 'Ora de final e înainte de început.', invalid_date: 'Ziua a trecut.', not_found: 'Orele au fost deja scoase.' };
+  const xErr = (err) => X_ERR[err && err.code] || K.errText(err);
+  const X_TIMES = (() => { const out = []; for (let m = 6 * 60; m <= 23 * 60; m += 30) out.push(toHM(m)); return out; })();
+  const dayWord = (d) => { const p = K.parse(d); return ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă'][p.getDay()] + ' ' + p.getDate() + '.' + (p.getMonth() + 1); };
+  // what a new one starts from: right after her shift (2 hours), or 10-14 on a day off
+  function xStart(day) {
+    if (day && day.on && toMin(day.to) != null) { const s = Math.min(toMin(day.to), 21 * 60); return { from: toHM(s), to: toHM(Math.min(s + 120, 23 * 60)) }; }
+    return { from: '10:00', to: '14:00' };
+  }
+  // her day in words: „programul ei 9-17”, „liberă”, „în Arad”
+  const xDayText = (day, city) => (!day ? '' : !day.on ? 'liberă în ziua asta' : 'programul ei ' + hShort(day.from) + '-' + hShort(day.to) + (day.location && city && day.location !== city ? ', în ' + day.location : ''));
+  // the fields (Pe săptămâni inline, the Calendar's sheet): from, to, the city when it can differ, a note
+  function xFields(v, cities) {
+    const sel = (name, val, lab) => '<select name="' + name + '" aria-label="' + lab + '">' + K.options(X_TIMES.concat(X_TIMES.includes(val) ? [] : [val]).sort().map((t) => [t, hm1(t)]), val) + '</select>';
+    return '<div class="xt-row"><span class="xt-time">' + sel('xf', v.from, 'De la') + '<i>-</i>' + sel('xt', v.to, 'Până la') + '</span>' +
+      (cities.length > 1 ? '<select name="xl" class="xt-loc" aria-label="Orașul">' + K.options(cities.map((c) => [c, c]), v.location || cities[0]) + '</select>' : '<input type="hidden" name="xl" value="' + esc(v.location || cities[0] || '') + '">') + '</div>' +
+      '<input name="xn" class="xt-note" maxlength="140" placeholder="Notă (opțional)" value="' + esc(v.note || '') + '" aria-label="Notă">';
+  }
+  const xRead = (box) => { const g = (n) => (box.querySelector('[name="' + n + '"]') || {}).value || ''; return { from: g('xf'), to: g('xt'), location: g('xl'), note: g('xn').trim() }; };
+  // saved: the server's answer (as get, for the range asked); err thrown with its words
+  async function xSend(o, v, range) {
+    if (toMin(v.to) <= toMin(v.from)) { const e = new Error(X_ERR.invalid_range); e.code = 'invalid_range'; throw e; }
+    const r = await K.api('/api/portal-schedule', Object.assign({ action: 'extra_set', date: o.date, employeeId: o.employeeId, name: o.name || '', id: o.row ? o.row.id : '' }, v, range || {}));
+    Object.keys(TEAM.at).forEach((k) => delete TEAM.at[k]);
+    return r;
+  }
+  async function xDrop(o, range) {
+    const r = await K.api('/api/portal-schedule', Object.assign({ action: 'extra_del', date: o.date, employeeId: o.employeeId, name: o.name || '', id: o.row.id }, range || {}));
+    Object.keys(TEAM.at).forEach((k) => delete TEAM.at[k]);
+    return r;
+  }
+  const xToast = (name, date, v) => firstName(name) + ': ore suplimentare ' + dayWord(date) + ', ' + hShort(v.from) + '-' + hShort(v.to) + '.';
+  // the Calendar's sheet: grows out of her violet hours (or the „Ore suplimentare” button of her day)
+  function openExtra(o) {
+    if (!canManage() || !o.employeeId) return;
+    const name = empName(o.employeeId) || '';
+    const day = (TEAM.plan[o.date] || {})[o.employeeId] || null;
+    const cities = K.data && K.data.city ? [K.data.city] : LOCS;
+    const v = o.row ? Object.assign({}, o.row) : Object.assign(xStart(day), { location: (day && day.on && day.location) || ((K.data.activeEmployees || []).find((e) => e.id === o.employeeId) || {}).location || cities[0], note: '' });
+    const past = o.date < K.today();
+    const d = K.drawer({
+      from: o.from || null, width: 440, title: 'Ore suplimentare', icon: 'clock',
+      subtitle: esc(firstName(name) + ' · ' + dayWord(o.date)),
+      body: '<div class="xt-sheet"><p class="xt-day">' + icon('calendar') + '<span>' + esc(xDayText(day, v.location) || 'Fără program în ziua asta') + '</span></p>' +
+        (past ? '<p class="k-muted">Ziua a trecut.</p>' : '<form class="xt-form" data-xt>' + xFields(v, cities) + '</form>') + '</div>',
+      footer: past ? '<span class="k-grow"></span><button type="button" class="k-btn" data-k-close2>Gata</button>'
+        : (o.row ? '<button type="button" class="k-btn is-ghost is-sm" data-xt-del>' + icon('trash') + 'Șterge</button>' : '') + '<span class="k-grow"></span><button type="button" class="k-btn" data-k-close2>Renunță</button><button type="button" class="k-btn is-primary" data-xt-save>' + icon('check') + 'Salvează</button>',
+      onMount(el) {
+        el.querySelector('[data-k-close2]').addEventListener('click', () => d.close());
+        const save = el.querySelector('[data-xt-save]'), del = el.querySelector('[data-xt-del]');
+        if (save) save.addEventListener('click', () => K.busy(save, async () => {
+          const val = xRead(el.querySelector('[data-xt]'));
+          try { await xSend(Object.assign({ name }, o), val); } catch (err) { K.ui().toast(xErr(err), 'error'); return; }
+          d.close(); K.ui().toast(xToast(name, o.date, val), 'success'); load(true);
+        }));
+        if (del) del.addEventListener('click', async () => {
+          if (!(await K.ui().confirm({ title: 'Ștergi orele suplimentare?', message: firstName(name) + ', ' + dayWord(o.date) + ', ' + hShort(o.row.from) + '-' + hShort(o.row.to) + '. Primește notificare.', confirmText: 'Șterge', danger: true, from: del }))) return;
+          K.busy(del, async () => { try { await xDrop(Object.assign({ name }, o)); } catch (err) { K.ui().toast(xErr(err), 'error'); return; } d.close(); K.ui().toast('Orele suplimentare au fost scoase.', 'success'); load(true); });
         });
       },
     });

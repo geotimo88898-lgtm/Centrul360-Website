@@ -73,6 +73,7 @@ const VERBS = {
   'portal-appointments:create': 'a programat', 'portal-appointments:update': 'a modificat programarea', 'portal-appointments:delete': 'a șters programarea',
   'portal-schedule:save_week': 'a modificat programul pentru', 'portal-schedule:save_weeks': 'a modificat programul pe săptămâni pentru', 'portal-schedule:save_date': 'a modificat programul dintr-o zi pentru',
   'portal-schedule:break_set': 'a mutat pauza pentru', 'portal-schedule:break_off': 'a scos pauza de azi pentru', 'portal-schedule:break_reset': 'a pus pauza la mijlocul programului pentru',
+  'portal-schedule:extra_set': 'a pus ore suplimentare pentru', 'portal-schedule:extra_del': 'a scos orele suplimentare pentru',
   'portal-leads:create': 'a adăugat leadul', 'portal-leads:update_details': 'a modificat leadul', 'portal-leads:move_stage': 'a mutat leadul',
   'portal-leads:add_note': 'a notat la', 'portal-leads:log_contact': 'a contactat', 'portal-leads:set_followup': 'a setat follow-up la',
   'portal-leads:link_appointment': 'a programat leadul', 'portal-leads:delete': 'a șters leadul', 'portal-leads:stages_save': 'a modificat etapele din Pipeline',
@@ -209,7 +210,7 @@ function describe(route, action, body, before, after, out) {
   else if (/update|session_update|update_details/.test(action || '')) detail = diff(before, after);
   if (!detail && before && after) detail = diff(before, after);
   // the pontaj's own words (api/portal-attendance.js answers with them): whose, which day, before → after, why
-  if ((route === 'portal-attendance' || (route === 'portal-schedule' && action === 'save_weeks')) && out && out.log) { subject = out.log.subject || subject; detail = out.log.detail || detail; }
+  if ((route === 'portal-attendance' || (route === 'portal-schedule' && ['save_weeks', 'extra_set', 'extra_del'].includes(action))) && out && out.log) { subject = out.log.subject || subject; detail = out.log.detail || detail; }
   // a payment changed in a month before this one (its salaries are closed): said first, so it is seen
   if (route === 'portal-incasari' && out && out.closedMonth) detail = ['luna ' + out.closedMonth + ' închisă', detail].filter(Boolean).join(' · ');
   // a booking that moved her break (Calendar, the booking form): said on the same line

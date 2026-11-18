@@ -4,6 +4,8 @@
 //     dates:  { 'YYYY-MM-DD': { <employeeId>: { on, from, to, location } } },
 //     breaks: { 'YYYY-MM-DD': { <employeeId>: { from } | { off: true }, plus by, byName, at } } }  (the break moved or left out
 //             for that one day, see „The break” below)
+//     extra:  { 'YYYY-MM-DD': { <employeeId>: [{ id, from, to, location, note, by, byName, at }] } }  (overtime, „Ore
+//             suplimentare”, apart from her hours: see „Overtime” below)
 // A date entry replaces that employee's weekly day (a day off, other hours, the other city). An approved leave (an
 // appointment with status 'concediu', or a block for her with no hour) means she is off that day, whatever the schedule.
 // Read by the Calendar (who works, the booking form) and by the site's free hours (api/_lib/booking.js): once a city
@@ -21,13 +23,14 @@ const isDate = (d) => /^\d{4}-\d{2}-\d{2}$/.test(String(d || '')) && !isNaN(Date
 // 1 = Monday … 7 = Sunday
 const isoDow = (date) => { const d = new Date(date + 'T12:00:00Z').getUTCDay(); return String(d === 0 ? 7 : d); };
 
-const empty = () => ({ weekly: {}, dates: {}, breaks: {} });
+const empty = () => ({ weekly: {}, dates: {}, breaks: {}, extra: {} });
 function norm(d) {
   const out = empty();
   if (d && typeof d === 'object') {
     if (d.weekly && typeof d.weekly === 'object') out.weekly = d.weekly;
     if (d.dates && typeof d.dates === 'object') out.dates = d.dates;
     if (d.breaks && typeof d.breaks === 'object') out.breaks = d.breaks;
+    if (d.extra && typeof d.extra === 'object') out.extra = d.extra;
   }
   return out;
 }
@@ -419,6 +422,116 @@ function outsideOf(appts, changes, today) {
     return c && a.date >= (today || '') && isVisit(a) && !a.paidSaleId && a.status !== 'finalizata' && !inside(c.after, a) && inside(c.before, a); });
 }
 
-module.exports = { tellLost, KEY, CITIES, DAYS, load, update, people, staff, norm, dayOf, workingAt, whoWorks, hasSchedule, onLeave, cleanDay, cleanWeek, isDate, isTime, isoDow, toMin,
+// ------------------------------------------------------------------ overtime (the owner, 18.11: „cu orele suplimentare să aibă o
+// opțiune în care să adauge orele suplimentare, iar alea să aibă alt background”)
+// doc.extra[date][id] = [{ id, from, to, location, note, by, byName, at }]: hours she works on top of her shift that day (after
+// it, before it, or on a day off), on :00 / :30, never over her shift or another overtime of hers. Kept apart from her hours:
+//   - workingAt / whoWorks / dayBreaks never see it: the site's free hours (_lib/booking.js), the calendar's fill, the break
+//     and the free hours for calls stay on her shift. Only reception books her overtime (decided 18.11: not offered online).
+//   - the desk does (deskAt, deskSpans): the Calendar and the booking form take a booking there without „nu lucrează”, the
+//     colleagues who can take a booking (time-care.js freeFor) count it.
+//   - the timebank (_lib/timebank.js) never expects it: her expected day stays her shift, so the time she works in it is a
+//     positive difference (overtime, approved in Aprobări like any other), shown with the overtime planned that day.
+//   - Manager → Reguli (_lib/rules.js): a planned overtime with no pontaj over it is listed; the late rule stays on her shift.
+// A leave that day (concediu, a whole-day block) wins: no overtime counts then.
+const EXTRA_NOTE = 140;
+// her overtime that day, valid and by start ([] when none or on leave). opts: { appts (for leave) }
+function extraOf(doc, employeeId, date, opts) {
+  const list = doc && doc.extra && doc.extra[date] && doc.extra[date][employeeId];
+  if (!Array.isArray(list) || !list.length) return [];
+  if (opts && opts.appts && onLeave(opts.appts, employeeId, date)) return [];
+  return list.filter((x) => x && toMin(x.from) != null && toMin(x.to) > toMin(x.from)).sort((a, b) => toMin(a.from) - toMin(b.from));
+}
+// where she is for the desk that day: her shift and her overtime, [{ from, to (minutes), location, extra }] by start
+function deskSpans(doc, employeeId, date, opts) {
+  const out = [];
+  const w = workingAt(doc, employeeId, date, null, opts);
+  if (w) out.push({ from: toMin(w.from), to: toMin(w.to), location: w.location || '', extra: false });
+  const o = opts || {};
+  const gone = o.until && o.until.has(employeeId) ? !(date <= o.until.get(employeeId)) : o.ids ? !has(o.ids, employeeId) : false;
+  if (!gone) extraOf(doc, employeeId, date, o).forEach((x) => out.push({ from: toMin(x.from), to: toMin(x.to), location: x.location || (w && w.location) || '', extra: true, id: x.id, note: x.note || '' }));
+  return out.sort((a, b) => a.from - b.from);
+}
+// she is there for the desk from s to e (minutes; e: s + 1 when left out) in that city: her shift and her overtime together
+// (a shift to 17:00 and an overtime 17:00-19:00 hold a booking 16:30-17:30)
+function deskCovers(doc, employeeId, date, location, s, e, opts) {
+  if (s == null) return deskSpans(doc, employeeId, date, opts).some((x) => !location || !x.location || x.location === location);
+  const end = e != null && e > s ? e : s + 1;
+  let at = s;
+  for (const x of deskSpans(doc, employeeId, date, opts).filter((y) => !location || !y.location || y.location === location)) {
+    if (x.from <= at && x.to > at) at = x.to;
+    if (at >= end) return true;
+  }
+  return false;
+}
+// her shift or her overtime at that minute: { from, to, location, extra } ('HH:MM'), or null
+function deskAt(doc, employeeId, date, time, opts) {
+  const w = workingAt(doc, employeeId, date, time, opts);
+  if (w) return Object.assign({ extra: false }, w);
+  const t = toMin(time);
+  if (t == null) return null;
+  const x = deskSpans(doc, employeeId, date, opts).find((y) => y.extra && y.from <= t && y.to > t);
+  return x ? { from: hm(x.from), to: hm(x.to), location: x.location, extra: true } : null;
+}
+// an overtime as sent ({ from, to, location?, note? }), checked against her day: '' when it can be saved, else why
+// ('invalid_time': not :00 / :30, 'invalid_range', 'invalid_location', 'over_shift': inside her hours that day,
+// 'over_extra': over another overtime of hers). skipId: the one being changed.
+function extraCheck(doc, employeeId, date, x, skipId) {
+  if (!x || typeof x !== 'object') return 'invalid_time';
+  if (x.location != null && x.location !== '' && !CITIES.includes(x.location)) return 'invalid_location';
+  const s = toMin(x.from), e = toMin(x.to);
+  if (!isTime(x.from) || !isTime(x.to) || s % 30 || e % 30) return 'invalid_time';
+  if (e <= s) return 'invalid_range';
+  const w = workingAt(doc, employeeId, date, null, {});
+  if (w && toMin(w.from) < e && toMin(w.to) > s) return 'over_shift';
+  if (extraOf(doc, employeeId, date).some((y) => y.id !== skipId && toMin(y.from) < e && toMin(y.to) > s)) return 'over_extra';
+  return '';
+}
+// write one (inside update()): row { id?, from, to, location, note }; a new one gets an id. Returns the row saved.
+function setExtra(doc, employeeId, date, row, who) {
+  doc.extra = doc.extra || {};
+  const day = doc.extra[date] || {};
+  const list = Array.isArray(day[employeeId]) ? day[employeeId].slice() : [];
+  const at = new Date().toISOString();
+  const i = row.id ? list.findIndex((y) => y && y.id === row.id) : -1;
+  const saved = Object.assign(i > -1 ? list[i] : { id: 'x' + require('crypto').randomUUID().slice(0, 8) }, {
+    from: row.from, to: row.to, location: row.location || '', note: String(row.note || '').trim().slice(0, EXTRA_NOTE),
+    by: (who && who.id) || '', byName: (who && who.name) || '', at,
+  });
+  if (i > -1) list[i] = saved; else list.push(saved);
+  day[employeeId] = list.sort((a, b) => toMin(a.from) - toMin(b.from));
+  doc.extra[date] = day;
+  // the days long past go (the file stays small)
+  const old = new Date(Date.now() - 400 * 864e5).toISOString().slice(0, 10);
+  Object.keys(doc.extra).forEach((d) => { if (d < old) delete doc.extra[d]; });
+  return saved;
+}
+// take one out (inside update()); the removed row or null
+function dropExtra(doc, employeeId, date, id) {
+  const day = doc.extra && doc.extra[date];
+  const list = day && Array.isArray(day[employeeId]) ? day[employeeId] : [];
+  const i = list.findIndex((y) => y && y.id === id);
+  if (i < 0) return null;
+  const [gone] = list.splice(i, 1);
+  if (!list.length) delete day[employeeId];
+  if (!Object.keys(day).length) delete doc.extra[date];
+  return gone;
+}
+// her overtime minutes that day (leave counted)
+const extraMinutes = (doc, employeeId, date, opts) => extraOf(doc, employeeId, date, opts).reduce((n, x) => n + toMin(x.to) - toMin(x.from), 0);
+// her phone hears it (the owner, 18.11): „ORE SUPLIMENTARE - joi 20.11, 18:00-20:00”; never blocks the change.
+// what: 'set' (added or changed) | 'drop' (taken out)
+const RO_DOW = ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă'];
+async function tellExtra(store, employeeId, date, row, what, byId) {
+  try {
+    if (!row || employeeId === byId) return;
+    const dd = new Date(date + 'T12:00:00Z');
+    const when = RO_DOW[dd.getUTCDay()] + ' ' + dd.getUTCDate() + '.' + (dd.getUTCMonth() + 1);
+    await require('./notify').notifyMany(store, [employeeId], { kind: 'alert', tone: what === 'drop' ? 'info' : 'good', go: 'programari', tag: 'extra-' + date + '-' + row.id + '-' + what + '-' + row.from + row.to,
+      title: what === 'drop' ? 'ORE SUPLIMENTARE ANULATE' : 'ORE SUPLIMENTARE', text: when + ', ' + row.from + '-' + row.to + (row.location ? ', ' + row.location : '') + (what !== 'drop' && row.note ? '. ' + row.note : '') });
+  } catch (e) { /* a notification never blocks the change */ }
+}
+
+module.exports = { EXTRA_NOTE, extraOf, deskSpans, deskCovers, deskAt, extraCheck, setExtra, dropExtra, extraMinutes, tellExtra, tellLost, KEY, CITIES, DAYS, load, update, people, staff, norm, dayOf, workingAt, whoWorks, hasSchedule, onLeave, cleanDay, cleanWeek, isDate, isTime, isoDow, toMin,
   BREAK_MIN, BREAK_SHIFT_MIN, BREAK_SINCE, midBreak, plannedBreak, dayBreaks, breakOf, breakSlots, breakNear, breakCheck, setBreak, tellBreak, hm,
   addDays, isMonday, tplDay, realDay, sameDay, badDay, setDay, weekWrites, applyWeek, weeksOf, outsideOf };

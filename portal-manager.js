@@ -172,7 +172,7 @@
     const sch = b.schedule || { missing: [] };
     const groups = [
       group('clock', 'Întârzieri la sosire', b.late, (x) => item(pont, esc(x.name), esc(dayHm(x.date) + ' · sosire ' + x.checkIn + ', programul de la ' + x.from), '+' + x.minutes + ' min'), 'Peste 5 minute după ora din Program echipă.'),
-      group('alert', 'Ture fără pontaj la sosire', b.noIn, (x) => item(pont, esc(x.name), esc(dayHm(x.date) + ' · programul ' + x.from + '-' + x.to))),
+      group('alert', 'Ture fără pontaj la sosire', b.noIn, (x) => item(pont, esc(x.name), esc(dayHm(x.date) + (x.extra ? ' · ore suplimentare ' : ' · programul ') + x.from + '-' + x.to))),
       group('clock', 'Fără pontaj la plecare', b.noOut, (x) => item(pont, esc(x.name), esc(dayHm(x.date) + ' · sosire ' + x.checkIn))),
       group('checkCircle', 'Vizite trecute nemarcate', b.unmarked, vis, 'Nici „Finalizată”, nici „Nu a venit”, nici plătite.'),
       group('file', 'Fără fișa scanată în ziua consultației', b.sheets, file('fise'), 'Consultații și prime vizite.'),
@@ -213,7 +213,7 @@
     const own = (x) => (mine(x.employeeId) ? 1 : 0);
     // hers last: the owner decides them
     const timeCard = (a) => '<article class="ad-card mg-dec" data-adj="' + esc(a.id) + '">' + K.avatar(a.employeeName, 40) +
-      '<div class="ad-main"><div class="ad-top"><b>' + esc(a.employeeName) + '</b>' + (a.location ? '<span class="k-tag">' + icon('pin') + esc(a.location) + '</span>' : '') + '<span class="k-muted">' + esc(K.dateLong(a.date)) + '</span>' + (a.weekend ? '<span class="k-tag is-accent">weekend</span>' : '') + '</div>' +
+      '<div class="ad-main"><div class="ad-top"><b>' + esc(a.employeeName) + '</b>' + (a.location ? '<span class="k-tag">' + icon('pin') + esc(a.location) + '</span>' : '') + '<span class="k-muted">' + esc(K.dateLong(a.date)) + '</span>' + (a.weekend ? '<span class="k-tag is-accent">weekend</span>' : '') + (a.extraSpans && a.extraSpans.length ? '<span class="k-tag is-purple">ore suplimentare ' + esc(a.extraSpans.join(', ')) + '</span>' : '') + '</div>' +
       '<div class="ad-what">Sosire ' + esc(a.checkIn || '-') + ' · Plecare ' + esc(a.checkOut || '-') + ' · ' + fmt(a.worked) + ' lucrate</div></div>' +
       '<div class="mg-dec-amt ' + (a.minutes > 0 ? 'is-up' : 'is-down') + '"><b>' + fmtS(a.minutes) + '</b><small>' + (a.weekend ? 'suplimentar' : a.minutes > 0 ? 'peste program' : 'sub program') + '</small></div>' +
       (mine(a.employeeId) ? '<div class="ad-actions"><span class="k-tag">Cererea ta</span></div>'

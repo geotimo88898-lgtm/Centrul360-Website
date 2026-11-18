@@ -113,8 +113,9 @@
         ? ['Apasă „Programare” sau pe o oră liberă. Completezi „Client”, „Telefon”, ora, „Locație”, „Tratament” și „Cosmeticiană”, apoi apeși „Programează”.',
           'Ca să confirmi: apasă pe programare și alege „Confirmată”. Cele albastre sunt încă neconfirmate.',
           'Ca s-o muți: o tragi pe altă oră. Pe telefon ții apăsat puțin, apoi tragi.',
-          'Dacă se anulează, alegi „Anulată”. „Șterge” e doar pentru greșeli.', '„Blochează timp” pentru ore în care nu se lucrează.']
-        : ['Alege-te din lista cosmeticienelor ca să vezi doar clientele tale.', '„Zi” sau „Săptămână”, iar cu săgețile schimbi ziua.',
+          'Dacă se anulează, alegi „Anulată”. „Șterge” e doar pentru greșeli.', '„Blochează timp” pentru ore în care nu se lucrează.',
+          'Alege o cosmeticiană din listă: orele în care nu lucrează sunt gri („Liberă”, „Concediu”, „În Arad”). Orele ei suplimentare sunt violet și se programează ca orice oră a ei.']
+        : ['Alege-te din lista cosmeticienelor ca să vezi doar clientele tale.', 'Gri sunt orele în care nu lucrezi. Violet sunt orele tale suplimentare.', '„Zi” sau „Săptămână”, iar cu săgețile schimbi ziua.',
           'Apasă pe o programare: vezi tratamentul, ora și observațiile.', 'Din programare apasă „Fișa clientei și pozele”.']),
       know: (r) => (r === R
         ? ['Clienta primește singură confirmarea, apoi cu o zi înainte, la 9:00, un mesaj cu „Da, ajung” și „Nu ajung”, apoi cu 2 ore înainte un mesaj cu parcarea.',
@@ -231,9 +232,12 @@
         'Dacă se anulează: „Anulată”, apoi o suni și îi propui altă zi. „Șterge” e doar pentru greșeli.',
         '„Program echipă”: orele fiecărei cosmeticiene și ale recepției, pe săptămână. Doar orele cosmeticienelor fac locuri pentru cliente.',
         '„Pe săptămâni”: alegi săptămâna cu săgețile și orașul, apoi orele fiecărei cosmeticiene în zilele ei, și „Salvează săptămâna”. „Copiază săptămâna trecută” și „Repetă” (la fel sau „Alternează”, până la 12 săptămâni) fac rotația dintr-o atingere. „Programul de bază” rămâne săptămâna obișnuită.',
-        '„Blochează timp” pentru ore în care nu se lucrează.'],
+        '„Blochează timp” pentru ore în care nu se lucrează.',
+        'Ore suplimentare: în „Pe săptămâni”, „+” de lângă zi, alegi orele (fix sau la jumătate), o notă dacă vrei, apoi „Salvează”. Din Calendar: alegi cosmeticiana, apoi „Ore suplimentare” sus, lângă orele ei.'],
       know: ['Clienta primește singură confirmarea, apoi cu o zi înainte, la 9:00, un mesaj cu „Da, ajung” și „Nu ajung”.',
-        'Pauza de 30 de minute a fiecărei cosmeticiene se pune singură, după „Program echipă”.'] },
+        'Pauza de 30 de minute a fiecărei cosmeticiene se pune singură, după „Program echipă”.',
+        'Când alegi o cosmeticiană în Calendar, orele în care nu lucrează sunt gri. Orele suplimentare sunt violet: recepția le programează, pe site nu apar, iar ea primește notificare.',
+        'La pontaj, orele suplimentare nu schimbă programul ei: ce lucrează în ele iese peste program și merge la aprobare, cu orele cerute alături.'] },
     { id: 'm-clienti', t: 'Leaduri și mesaje', ic: 'trend', roles: [M], place: 'pipeline.coada', goL: 'Deschide Coada de apeluri',
       what: 'Leadurile și conversațiile clinicilor tale. Tu te asiguri că nimeni nu așteaptă.',
       do: ['„Pipeline” → „Coada de apeluri”: se deschide primul lead de sunat. „Sună”, apoi alegi cum a mers și „Salvează contactul”.',
@@ -327,6 +331,11 @@
   // q: how it is asked; by role: [answer, place id or ''] (no place: no button); a role missing: not in that account
   const NOT_MINE = 'Nu e în contul tău.';
   const FAQ = [
+    { q: 'cum pun ore suplimentare? / cum văd când lucrează o cosmeticiană?', by: {
+      admin: ['În Program echipă → „Pe săptămâni”, „+” de lângă zi: alegi orele și „Salvează”. În Calendar apar violet; gri sunt orele în care nu lucrează.', 'programari.echipa'],
+      manager: ['În Program echipă → „Pe săptămâni”, „+” de lângă zi: alegi orele și „Salvează”. În Calendar apar violet; gri sunt orele în care nu lucrează.', 'programari.echipa'],
+      receptie: ['Alege cosmeticiana din lista din Calendar: gri sunt orele în care nu lucrează, violet orele ei suplimentare, în care o poți programa. Orele suplimentare le pune cine face programul.', 'programari'],
+      cosmetician: ['În Calendar, gri sunt orele în care nu lucrezi, violet orele tale suplimentare. Când primești ore suplimentare, primești notificare.', 'programari'] } },
     { q: 'unde mut pauza? / clienta vrea exact la ora pauzei', by: {
       admin: ['În Calendar apeși pe pauza cosmeticienei: „Mută pauza” pe altă jumătate de oră, „Fără pauză azi” sau „Înapoi la mijloc”.', 'programari.pauza'],
       manager: ['În Calendar apeși pe pauza cosmeticienei: „Mută pauza” pe altă jumătate de oră, „Fără pauză azi” sau „Înapoi la mijloc”.', 'programari.pauza'],

@@ -1591,6 +1591,89 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     delete process.env.RULES_SINCE;
   }
 
+  // XT (18.11): overtime („Ore suplimentare”): who may, the checks, apart from her hours (the site never offers it, the desk
+  // does), her phone hears it, the timebank never expects it, Reguli lists one not worked
+  {
+    ROLE.cosmetician = 'e-c3';
+    const plus = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+    let D = day(4); while ([0, 6].includes(new Date(D + 'T12:00:00Z').getUTCDay())) D = plus(D, 1);
+    let D2 = plus(D, 1); while ([0, 6].includes(new Date(D2 + 'T12:00:00Z').getUTCDay())) D2 = plus(D2, 1);
+    const S = () => T.norm(rd('data/team-schedule.json', {}));
+    const xs = (d, id) => ((S().extra[d] || {})[id] || []);
+    const set = (role, o) => api(role, 'portal-schedule', Object.assign({ action: 'extra_set', employeeId: 'e-c3', date: D }, o));
+    const Bk = require('../api/_lib/booking'), TC = require('../api/_lib/time-care');
+    const A = () => rd('data/appointments.json', []);
+    const slots = async () => (Bk.freeOn(await Bk.settings({ team: true }), 'Arad', D, 30, A()) || []).join();
+    const emps0 = rd('data/employees.json', []);
+    const ask = { id: 'xt-ask', date: D, time: '17:30', endTime: '18:30', location: 'Arad', cosmeticianId: 'e-nobody', status: 'programata' };
+    const free0 = TC.freeFor(ask, A(), emps0, S()).map((x) => x.id);
+    const site0 = await slots();
+    // 1. who may: a cosmetician, reception: 403; a manager of the other clinic: 403; nothing written
+    const E = rd('data/employees.json', []); E.find((e) => e.id === 'e-mgr').manages = ['Timișoara']; wr('data/employees.json', E);
+    const c1 = await set('cosmetician', { from: '17:00', to: '19:00' });
+    const r1 = await set('receptie', { from: '17:00', to: '19:00' });
+    const m1 = await set('manager', { from: '17:00', to: '19:00' });
+    E.find((e) => e.id === 'e-mgr').manages = ['Timișoara', 'Arad']; wr('data/employees.json', E);
+    check('XT', 'who may: cosmetician, reception, a manager of the other clinic: 403, nothing written', c1._status === 403 && r1._status === 403 && m1._status === 403 && !xs(D, 'e-c3').length, { c: c1._status, r: r1._status, m: m1._status });
+    // 2. the checks: half hours, from before to, not over her shift, not a past day, not a leave day
+    const bad = async (o, date) => { const r = await set('admin', Object.assign({ date: date || D }, o)); return r.error; };
+    const ap = A(); ap.push({ id: 'xt-leave', date: D2, location: 'Arad', cosmeticianId: 'e-c3', status: 'concediu', clientName: 'Concediu', createdAt: new Date().toISOString() }); wr('data/appointments.json', ap);
+    const e2 = [await bad({ from: '17:15', to: '19:00' }), await bad({ from: '19:00', to: '17:00' }), await bad({ from: '16:00', to: '18:00' }), await bad({ from: '18:00', to: '20:00' }, day(-1)), await bad({ from: '17:00', to: '19:00' }, D2), await bad({ from: '17:00', to: '19:00', location: 'Cluj' })];
+    wr('data/appointments.json', A().filter((a) => a.id !== 'xt-leave'));
+    check('XT', 'checks: 17:15, 19-17, over her 9-17, a past day, a leave day, Cluj', e2.join() === 'invalid_time,invalid_range,over_shift,invalid_date,on_leave,invalid_location' && !xs(D, 'e-c3').length, e2);
+    // 3. the manager adds one (17-19, right after her shift): stored apart, her phone hears it, get carries it
+    const NK = () => rd('data/notifications.json', []);
+    const n0 = NK().filter((n) => n.employeeId === 'e-c3' && /ORE SUPLIMENTARE/.test(n.title)).length;
+    const a3 = await set('manager', { from: '17:00', to: '19:00', note: 'Clientă de seară' });
+    const x3 = xs(D, 'e-c3');
+    check('XT', 'added: doc.extra[date][id], her shift untouched', a3.ok && a3.saved && x3.length === 1 && x3[0].from === '17:00' && x3[0].to === '19:00' && x3[0].location === 'Arad' && x3[0].note === 'Clientă de seară' && !((S().dates[D] || {})['e-c3']), { err: a3.error, x3 });
+    const n3 = NK().filter((n) => n.employeeId === 'e-c3' && /ORE SUPLIMENTARE/.test(n.title));
+    check('XT', 'her phone: „ORE SUPLIMENTARE”, the day and the hours', n3.length === n0 + 1 && /^(luni|marți|miercuri|joi|vineri) \d+\.\d+, 17:00-19:00/.test(n3[n3.length - 1].text), n3.slice(-1));
+    const g3 = await api('admin', 'portal-schedule', { action: 'get', from: D, to: D });
+    check('XT', 'get: extra and plan (her day 9-17) for the Calendar', g3.extra && g3.extra[D] && g3.extra[D]['e-c3'] && g3.extra[D]['e-c3'][0].from === '17:00' && g3.plan && g3.plan[D] && g3.plan[D]['e-c3'].on && g3.plan[D]['e-c3'].to === '17:00', { x: g3.extra, p: g3.plan && g3.plan[D] });
+    const over = await set('admin', { from: '18:00', to: '20:00' });
+    check('XT', 'a second one over the first: over_extra', over.error === 'over_extra', over);
+    // 4. the desk works it, the site doesn't
+    const doc4 = S();
+    check('XT', 'workingAt (her shift) no at 18:00; deskAt yes (extra); her shift and the overtime hold 16:30-17:30', !T.workingAt(doc4, 'e-c3', D, '18:00', {}) && (T.deskAt(doc4, 'e-c3', D, '18:00', {}) || {}).extra === true && T.deskCovers(doc4, 'e-c3', D, 'Arad', 16 * 60 + 30, 17 * 60 + 30, {}) && !T.deskCovers(doc4, 'e-c3', D, 'Arad', 18 * 60 + 30, 19 * 60 + 30, {}), null);
+    check('XT', 'whoWorks (the site, the fill, the break) unchanged: 9-17', JSON.stringify(T.whoWorks(doc4, D, 'Arad', {}).filter((w) => w.employeeId === 'e-c3')) === JSON.stringify([{ employeeId: 'e-c3', from: '09:00', to: '17:00' }]), T.whoWorks(doc4, D, 'Arad', {}));
+    const site4 = await slots();
+    check('XT', 'the site\'s free hours: the same as without the overtime (never offered online)', site4 === site0 && !site4.split(',').some((t) => t >= '17:00'), { site0, site4 });
+    const free4 = TC.freeFor(ask, A(), emps0, S()).map((x) => x.id);
+    check('XT', 'who can take a booking at 17:30: she can now (her overtime), not before', !free0.includes('e-c3') && free4.includes('e-c3'), { free0, free4 });
+    const bk = await api('receptie', 'portal-appointments', { action: 'create', clientName: 'Seară Proba', clientPhone: '0755909090', date: D, time: '17:30', endTime: '18:30', location: 'Arad', cosmeticianId: 'e-c3', treatment: 'Lipo 640', categories: ['corporale'], amount: 0, status: 'programata', force: true });
+    check('XT', 'reception books her in it', bk.ok && bk.appointment && bk.appointment.time === '17:30', bk.error);
+    // 5. changed (18-20): the same id, she hears it; then the timebank
+    const a5 = await set('admin', { id: x3[0].id, from: '18:00', to: '20:00', note: '' });
+    const x5 = xs(D, 'e-c3');
+    check('XT', 'changed: the same one, 18:00-20:00, she hears it', a5.ok && x5.length === 1 && x5[0].id === x3[0].id && x5[0].from === '18:00' && NK().filter((n) => n.employeeId === 'e-c3' && /ORE SUPLIMENTARE/.test(n.title) && /18:00-20:00/.test(n.text)).length === 1, { err: a5.error, x5 });
+    const emp3 = rd('data/employees.json', []).find((e) => e.id === 'e-c3');
+    const dd = TB.dayDiff({ employeeId: 'e-c3', date: D, checkIn: '09:00', checkOut: '20:00' }, emp3, [], S());
+    check('XT', 'timebank: expected stays her shift (8h), the 3h after it are overtime, 2h of them planned and worked', TB.shiftMinutes(S(), 'e-c3', D) === 480 && dd.expected === 480 && dd.diff === 180 && dd.extra && dd.extra.planned === 120 && dd.extra.worked === 120, dd);
+    const store = require('../api/_lib/store');
+    const adj = await TB.syncAdjust({ id: 'xt-att', employeeId: 'e-c3', date: D, checkIn: '09:00', checkOut: '20:00' }, store);
+    check('XT', 'the day in Aprobări: +3h, with the overtime planned (18:00-20:00)', adj && adj.minutes === 180 && adj.extraPlanned === 120 && (adj.extraSpans || []).join() === '18:00-20:00', adj);
+    wr(TB.ADJ, rd(TB.ADJ, []).filter((a) => a.attendanceId !== 'xt-att'));
+    // 6. deleted: gone, she hears it; a cosmetician can't
+    const dc = await api('cosmetician', 'portal-schedule', { action: 'extra_del', employeeId: 'e-c3', date: D, id: x3[0].id });
+    const d6 = await api('admin', 'portal-schedule', { action: 'extra_del', employeeId: 'e-c3', date: D, id: x3[0].id });
+    check('XT', 'deleted by the owner (a cosmetician: 403): gone, she hears it', dc._status === 403 && d6.ok && !xs(D, 'e-c3').length && !S().extra[D] && NK().some((n) => n.employeeId === 'e-c3' && /ANULATE/.test(n.title)), { dc: dc._status, d6: d6.error });
+    // 7. Reguli: a planned overtime of a passed day her pontaj doesn't reach is listed (extra), never as late
+    process.env.RULES_SINCE = day(-30);
+    const P = day(-1);
+    const ts7 = rd('data/team-schedule.json', {}); ts7.extra = Object.assign({}, ts7.extra, { [P]: { 'e-c3': [{ id: 'xt-r', from: '18:00', to: '20:00', location: 'Arad' }] } }); wr('data/team-schedule.json', ts7);
+    const att7 = rd('data/attendance.json', []).filter((a) => !(a.employeeId === 'e-c3' && a.date === P));
+    wr('data/attendance.json', att7.concat({ id: 'xt-a7', employeeId: 'e-c3', date: P, checkIn: '09:00', checkOut: '17:00', location: 'Arad' }));
+    const r7 = await api('manager', 'portal-manager', { action: 'rules', period: '7z' });
+    const ar = (r7.cities && r7.cities.Arad) || {};
+    check('XT', 'Reguli: her overtime 18-20 with a departure at 17:00 is listed (extra), not as late', (ar.noIn || []).some((x) => x.employeeId === 'e-c3' && x.date === P && x.extra && x.from === '18:00') && !(ar.late || []).some((x) => x.employeeId === 'e-c3' && x.from === '18:00'), { noIn: ar.noIn, late: ar.late });
+    wr('data/attendance.json', att7.concat({ id: 'xt-a7', employeeId: 'e-c3', date: P, checkIn: '09:00', checkOut: '20:00', location: 'Arad' }));
+    const r7b = await api('manager', 'portal-manager', { action: 'rules', period: '7z' });
+    check('XT', 'Reguli: worked to 20:00, not listed', !((r7b.cities && r7b.cities.Arad && r7b.cities.Arad.noIn) || []).some((x) => x.extra && x.date === P), r7b.cities && r7b.cities.Arad && r7b.cities.Arad.noIn);
+    const ts7b = rd('data/team-schedule.json', {}); delete ts7b.extra[P]; wr('data/team-schedule.json', ts7b);
+    delete process.env.RULES_SINCE;
+  }
+
   // the independent second reading agrees with production on the harness's data
   {
     const lh = await api('admin', 'lead-health', null, 'verify=1');

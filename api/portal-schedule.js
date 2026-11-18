@@ -11,6 +11,13 @@
 //     shift, not over a client of hers); at the middle again: back to automatic
 //   { action: 'break_off', date, employeeId }          admin or manager: no break that day
 //   { action: 'break_reset', date, employeeId }        admin or manager: back to the middle of her shift
+//   { action: 'extra_set', date, employeeId, from, to, location?, note?, id? }   admin or manager (who sets the hours): her
+//     overtime that day („Ore suplimentare”, the owner 18.11), new or changed (id); :00 / :30, from before to, never over her
+//     shift or another overtime of hers, not on a past day or a leave day. Her phone hears it. Answers as get (for rangeFrom..
+//     rangeTo), plus `saved`.
+//   { action: 'extra_del', date, employeeId, id }      admin or manager: takes one out (her phone hears that too)
+// get also carries extra ({ <date>: { <id>: [{ id, from, to, location, note, byName, at }] } }) and, for ranges up to 62
+// days, plan ({ <date>: { <id>: { on, from, to, location, leave } } }: her hours that really apply, for the Calendar's grey)
 // people: the cosmeticians and, for the owner and the manager, the desk too (role on each); only the cosmeticians are places
 // for clients (cities, works, the site's free hours).
 // Who sees what (16.11): a cosmetician and a manager of one clinic get only their clinics (people, weekly, dates, works,
@@ -75,6 +82,28 @@ async function answer(res, from, to, session, extra) {
     });
     Object.assign(extraOut, { leave, open });
   }
+  // her overtime (all of the range) and, for the Calendar, the day that really applies to each one (the grey outside it)
+  const ot = {};
+  Object.keys(doc.extra || {}).filter((d) => d >= from && d <= to).sort().forEach((d) => {
+    const row = {};
+    Object.keys(doc.extra[d] || {}).filter((id) => shown.has(id)).forEach((id) => { const l = T.extraOf(doc, id, d); if (l.length) row[id] = l.map((x) => ({ id: x.id, from: x.from, to: x.to, location: x.location || '', note: x.note || '', byName: x.byName || '', at: x.at || '' })); });
+    if (Object.keys(row).length) ot[d] = row;
+  });
+  const plan = {};
+  if (span(from, to) <= 62) {
+    for (let d = from; d <= to; d = addDay(d, 1)) {
+      const row = {};
+      shown.forEach((id) => {
+        const x = T.dayOf(doc, id, d);
+        if (!x) return;
+        const r = { on: !!x.on, from: x.from || '', to: x.to || '', location: x.location || '' };
+        if (T.onLeave(inRange, id, d)) r.leave = true;
+        row[id] = r;
+      });
+      if (Object.keys(row).length) plan[d] = row;
+    }
+  }
+  Object.assign(extraOut, { extra: ot, plan });
   if (span(from, to) <= 62 && (cities['Timișoara'] || cities.Arad || Object.keys(dates).length)) {
     const name = (id) => (cosm.find((p) => p.id === id) || {}).name || '';
     for (let d = from; d <= to; d = addDay(d, 1)) {
@@ -184,6 +213,54 @@ async function saveWeeks(req, res, session, b) {
   return answer(res, from, to, session, { affected, changes: changes.length, weeks, outside: T.outsideOf(appts, changes, today).length, log });
 }
 
+// ------------------------------------------------------------------ overtime (the owner, 18.11: „Ore suplimentare”)
+// extra_set / extra_del, the same people and clinics as save_date (a manager: her clinics' people, never herself)
+async function saveExtra(req, res, session, b) {
+  const fail = (code, error) => res.status(code).json({ error });
+  if (!canManage(session)) return fail(403, 'forbidden');
+  const date = String(b.date || ''), today = roToday();
+  if (!T.isDate(date) || date < today) return fail(400, 'invalid_date');
+  const emp = (await T.staff()).find((p) => p.id === String(b.employeeId || ''));
+  if (!emp) return fail(400, 'invalid_cosmetician');
+  const doc0 = await T.load();
+  const real = T.realDay(doc0, emp.id, date);
+  const location = String(b.location || '') || (real.on && real.location) || emp.location || '';
+  if (session.role === 'manager') {
+    const mine = [].concat(await require('./_lib/city').cityOf(session, readJSON));
+    if (emp.id === session.employeeId || !mine.includes(emp.location) || (location && !mine.includes(location))) return fail(403, 'forbidden');
+  }
+  const who = { id: session.employeeId || 'admin', name: await whoIs(session) };
+  const st = { readJSON, writeJSON: require('./_lib/store').writeJSON };
+  // the range answered (as get): rangeFrom / rangeTo, since from / to are the overtime's hours
+  const rangeFrom = T.isDate(b.rangeFrom) ? b.rangeFrom : today;
+  const rangeTo = T.isDate(b.rangeTo) && b.rangeTo >= rangeFrom && span(rangeFrom, b.rangeTo) <= 400 ? b.rangeTo : addDay(rangeFrom, 180);
+  if (b.action === 'extra_del') {
+    const id = String(b.id || '');
+    if (!T.extraOf(doc0, emp.id, date).some((x) => x.id === id)) return fail(404, 'not_found');
+    let gone = null;
+    await T.update((d) => { gone = T.dropExtra(d, emp.id, date, id); });
+    if (gone) await T.tellExtra(st, emp.id, date, gone, 'drop', session.employeeId);
+    const log = { subject: String(emp.name || '').split(' ')[0], detail: Number(date.slice(8)) + '.' + Number(date.slice(5, 7)) + (gone ? ' · ' + gone.from + '-' + gone.to : '') };
+    return answer(res, rangeFrom, rangeTo, session, { removed: gone, log });
+  }
+  const id = b.id ? String(b.id) : '';
+  if (id && !T.extraOf(doc0, emp.id, date).some((x) => x.id === id)) return fail(404, 'not_found');
+  const x = { from: String(b.from || ''), to: String(b.to || ''), location, note: String(b.note || '') };
+  const why = T.extraCheck(doc0, emp.id, date, x, id);
+  if (why) return fail(why === 'over_shift' || why === 'over_extra' ? 409 : 400, why);
+  // her leave that day wins: no overtime then
+  if (T.onLeave(await readJSON('data/appointments.json', []), emp.id, date)) return fail(409, 'on_leave');
+  let saved = null, why2 = '';
+  await T.update((d) => {
+    why2 = T.extraCheck(d, emp.id, date, x, id); // again, on what is there now
+    if (!why2) saved = T.setExtra(d, emp.id, date, Object.assign({ id }, x), who);
+  });
+  if (why2) return fail(409, why2);
+  await T.tellExtra(st, emp.id, date, saved, 'set', session.employeeId);
+  const log = { subject: String(emp.name || '').split(' ')[0], detail: Number(date.slice(8)) + '.' + Number(date.slice(5, 7)) + ' · ' + saved.from + '-' + saved.to + (id ? ' · schimbate' : '') };
+  return answer(res, rangeFrom, rangeTo, session, { saved, log });
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
@@ -252,6 +329,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (b.action === 'save_weeks' || b.action === 'preview_weeks') return saveWeeks(req, res, session, b);
+    if (b.action === 'extra_set' || b.action === 'extra_del') return saveExtra(req, res, session, b);
     if (b.action !== 'save_week' && b.action !== 'save_date') return fail(400, 'invalid_action');
     if (!canManage(session)) return fail(403, 'forbidden');
 

@@ -168,7 +168,7 @@
       const up = a.minutes > 0;
       const h = Math.floor(Math.abs(a.minutes) / 60), mi = Math.abs(a.minutes) % 60;
       return '<article class="ad-card ad-time" data-time-card="' + esc(a.id) + '">' + K.avatar(a.employeeName, 44) +
-        '<div class="ad-main"><div class="ad-top"><b>' + esc(a.employeeName) + '</b>' + (a.location ? '<span class="k-tag">' + icon('pin') + esc(a.location) + '</span>' : '') + '<span class="k-muted">' + esc(K.dateLong(a.date)) + '</span>' + (a.weekend ? '<span class="k-tag is-accent">weekend</span>' : '') + '</div>' +
+        '<div class="ad-main"><div class="ad-top"><b>' + esc(a.employeeName) + '</b>' + (a.location ? '<span class="k-tag">' + icon('pin') + esc(a.location) + '</span>' : '') + '<span class="k-muted">' + esc(K.dateLong(a.date)) + '</span>' + (a.weekend ? '<span class="k-tag is-accent">weekend</span>' : '') + (a.extraSpans && a.extraSpans.length ? '<span class="k-tag is-purple">ore suplimentare ' + esc(a.extraSpans.join(', ')) + '</span>' : '') + '</div>' +
           '<div class="ad-what">Sosire ' + esc(a.checkIn || '-') + ' · Plecare ' + esc(a.checkOut || '-') + ' · ' + fmtMin(a.worked) + ' lucrate' + (a.weekend ? '' : ' (program ' + fmtMin(a.expected) + ')') + '</div>' +
           '<div class="ad-sub ad-effect" data-effect>' + icon('info') + '<span>La aprobare: ' + effectText(bal, a.minutes) + '.</span></div></div>' +
         '<div class="ad-money ' + (up ? 'is-up' : 'is-down') + '"><span class="ad-label">' + (a.weekend ? 'suplimentar' : up ? 'peste program' : 'sub program') + '</span><b>' + fmtMin(a.minutes, true) + '</b>' +

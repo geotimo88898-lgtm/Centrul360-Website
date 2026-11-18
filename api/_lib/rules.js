@@ -4,7 +4,8 @@
 // the owner (everyone). Read by api/portal-manager.js ({ action: 'rules' }) and the clock (schedulePush, Wednesday and
 // Thursday morning). No names in the logs.
 //   pontaj    late    an arrival more than 5 minutes after the start of her hours (Calendar → Program echipă)
-//             noIn    a shift of the schedule with no arrival (today: once it has started more than 15 minutes ago)
+//             noIn    a shift of the schedule with no arrival (today: once it has started more than 15 minutes ago); also a
+//                     planned overtime her pontaj doesn't reach (extra: true)
 //             noOut   a past day with an arrival and no departure
 //   visits    unmarked  a visit of a past day neither „Finalizată”, „Nu a venit” nor paid
 //             sheets    a consultation or a first visit she came to, with no client sheet (fișa) scanned that day
@@ -67,6 +68,24 @@ async function compute({ clinics, team, period, since, now, light }) {
       const late = toMin(x.checkIn) - toMin(s.from);
       if (late > LATE) b.late.push(Object.assign({ checkIn: x.checkIn, minutes: late }, row));
       if (!x.checkOut && (d < today || nowMin - toMin(s.to) > 30)) b.noOut.push(Object.assign({ checkIn: x.checkIn }, row));
+    });
+  });
+
+  // her overtime (Program echipă → Ore suplimentare, 18.11): a planned overtime her pontaj doesn't reach (no arrival that
+  // day, an arrival after it ended, a departure before it began) is listed with the shifts with no arrival (extra: true);
+  // the late rule stays on her shift, an overtime is never „late”
+  people.forEach((e) => {
+    days.forEach((d) => {
+      if (FIX.dayCheck(ctx, e.id, d) === 'leave') return;
+      TS.extraOf(ctx.schedule, e.id, d, { appts: ctx.appts }).forEach((x) => {
+        const s = toMin(x.from), en = toMin(x.to);
+        if (d === today && nowMin - s <= 15) return; // not begun yet (15 minutes)
+        const b = box(x.location || e.location); if (!b) return;
+        const a = (ctx.attendance || []).find((y) => y && y.employeeId === e.id && y.date === d);
+        const ci = a ? toMin(a.checkIn) : null, co = a ? toMin(a.checkOut) : null;
+        if (ci != null && ci < en && (co == null || co > s)) return;
+        b.noIn.push({ employeeId: e.id, name: e.name || '', date: d, from: x.from, to: x.to, extra: true });
+      });
     });
   });
 

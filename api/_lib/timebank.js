@@ -77,6 +77,24 @@ function shiftMinutes(schedule, employeeId, date) {
   return w ? toMin(w.to) - toMin(w.from) : 0;
 }
 
+// Her overtime planned that day in Program echipă („Ore suplimentare”, the owner 18.11): never expected (her expected day
+// stays her shift), so the time she works in it comes out as a positive difference (overtime, approved as any other). The
+// minutes planned ride on the adjustment (extraPlanned) and the part of her pontaj inside them (extraWorked), so Aprobări
+// sees that the hours were asked for.
+function extraPlanned(schedule, entry) {
+  if (!schedule || !schedule.extra) return null;
+  const list = require('./team-schedule').extraOf(schedule, entry.employeeId, entry.date);
+  if (!list.length) return null;
+  const a = toMin(entry.checkIn), b = toMin(entry.checkOut);
+  let planned = 0, worked = 0;
+  list.forEach((x) => {
+    const s = toMin(x.from), e = toMin(x.to);
+    planned += e - s;
+    if (a != null && b != null) worked += Math.max(0, Math.min(e, b) - Math.max(s, a));
+  });
+  return { planned, worked, spans: list.map((x) => x.from + '-' + x.to) };
+}
+
 // The difference of one complete day from what was expected.
 function dayDiff(entry, emp, leaveRequests, schedule) {
   const worked = workedMinutes(entry.checkIn, entry.checkOut);
@@ -85,7 +103,10 @@ function dayDiff(entry, emp, leaveRequests, schedule) {
   if (shift != null) {
     const expected = Math.max(0, shift - plannedOffMinutes(entry.employeeId, entry.date, leaveRequests, shift));
     // a weekend day off in her schedule is still said „weekend” (all of it extra); a scheduled Saturday is a working day
-    return { worked, expected, diff: worked - expected, weekend: isWeekend(entry.date) && !shift, scheduled: true };
+    const out = { worked, expected, diff: worked - expected, weekend: isWeekend(entry.date) && !shift, scheduled: true };
+    const x = extraPlanned(schedule, entry);
+    if (x) out.extra = x;
+    return out;
   }
   const weekend = isWeekend(entry.date);
   const base = baseOf(emp);
@@ -115,6 +136,7 @@ async function syncAdjust(entry, store, ctx) {
     employeeId: entry.employeeId, date: entry.date, checkIn: entry.checkIn, checkOut: entry.checkOut, location: entry.location || '',
     worked: d.worked, expected: d.expected, minutes: d.diff, weekend: d.weekend, status: 'pending', updatedAt: new Date().toISOString(),
   });
+  if (d.extra) Object.assign(row, { extraPlanned: d.extra.planned, extraWorked: d.extra.worked, extraSpans: d.extra.spans }); else { delete row.extraPlanned; delete row.extraWorked; delete row.extraSpans; }
   if (!existing) adjs.push(row);
   await writeJSON(ADJ, adjs);
   return row;
@@ -161,5 +183,5 @@ async function loadAll(readJSON) {
 
 module.exports = {
   BASE_MINUTES, TOLERANCE, OVERTIME_LEI_PER_HOUR, ADJ, PAYOUTS, CORR,
-  bucharestNow, isWeekend, workedMinutes, weekdaysBetween, dayDiff, shiftMinutes, SCHED_SINCE, syncAdjust, ledger, preview, loadAll,
+  bucharestNow, isWeekend, workedMinutes, weekdaysBetween, dayDiff, extraPlanned, shiftMinutes, SCHED_SINCE, syncAdjust, ledger, preview, loadAll,
 };
