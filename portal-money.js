@@ -1220,18 +1220,20 @@
       'Contează și avansul. În plus: <b>+50 lei</b> dacă pachetul e plătit integral pe loc, <b>+50 lei</b> la a 3-a vânzare din zi și la fiecare după ea, <b>+100 lei</b> când o clientă care a mai cumpărat un pachet cumpără altul. Sub 1.500 rămâne comisionul obișnuit.</p>' +
       (live ? '<p class="pk-now">Azi: <b>' + mine.length + '</b> ' + (mine.length === 1 ? 'pachet' : 'pachete') + (lei ? ' · <b>+' + lei2s(lei) + '</b> bonus' : '') + '</p>' : '') + '</div>';
   }
-  // Premiul echipei (_lib/payroll.js TEAM): this week's money of both clinics against the two steps, and the weeks won
+  // Premiul echipei (_lib/payroll.js TEAM): this week's packages of the whole team against the two steps, and the weeks won
   function teamHtml(pay) {
     const T = pay && pay.team;
     if (!T || !T.weeks.length) return '';
     const [hi, lo] = T.tiers;
     const now = T.weeks.find((w) => !w.done);
     const won = T.weeks.filter((w) => w.done && w.lei);
-    const pct = now ? Math.min(100, Math.round((now.net / hi.min) * 100)) : 0;
+    const pk = (n) => K.plural(n, 'pachet', 'pachete');
+    const pct = now ? Math.min(100, Math.round((now.packages / hi.min) * 100)) : 0;
     return '<section class="k-card cb-sec pk-team"><div class="k-card-head"><h3>' + icon('users') + 'Premiul echipei</h3><span class="k-sub">' + (T.lei ? '+' + lei2s(T.lei) + ' luna asta' : '') + '</span></div>' +
-      '<p>Când clinicile încasează împreună într-o săptămână <b>' + lei2s(lo.min) + '</b>, fiecare primește <b>' + lei2s(lo.lei) + '</b>. La <b>' + lei2s(hi.min) + '</b>, fiecare primește <b>' + lei2s(hi.lei) + '</b>.</p>' +
+      '<p>Când echipa vinde într-o săptămână (luni-duminică) <b>' + pk(lo.min) + '</b>, fiecare primește <b>' + lei2s(lo.lei) + '</b>. La <b>' + pk(hi.min) + '</b>, fiecare primește <b>' + lei2s(hi.lei) + '</b>. ' +
+      'Se numără pachetele de ' + lei2s(T.min) + ' sau mai mult, din ambele clinici, cu avansul încasat. Primește oricine a lucrat în săptămâna aceea, și recepția.</p>' +
       (now ? '<div class="pk-bar"><i style="width:' + pct + '%"></i><em style="left:' + Math.round((lo.min / hi.min) * 100) + '%"></em></div>' +
-        '<p class="pk-now">Săptămâna asta: <b>' + lei2s(now.net) + '</b>' + (now.tier ? ' · premiu de ' + lei2s(now.tier) + ' atins' : now.net < lo.min ? ' · încă ' + lei2s(lo.min - now.net) + ' până la ' + lei2s(lo.lei) : ' · încă ' + lei2s(hi.min - now.net) + ' până la ' + lei2s(hi.lei)) + '</p>' : '') +
+        '<p class="pk-now">Săptămâna asta: <b>' + pk(now.packages) + '</b>' + (now.packages >= hi.min ? ' · premiul de ' + lei2s(hi.lei) + ' e atins' : now.packages >= lo.min ? ' · ' + lei2s(lo.lei) + ' atins, încă ' + (hi.min - now.packages) + ' până la ' + lei2s(hi.lei) : ' · încă ' + (lo.min - now.packages) + ' până la ' + lei2s(lo.lei)) + '</p>' : '') +
       (won.length ? '<p class="pk-won">' + won.map((w) => esc(K.dateShort(w.from)) + ' - ' + esc(K.dateShort(w.to)) + ': +' + lei2s(w.lei)).join(' · ') + '</p>' : '') + '</section>';
   }
   function commLinesHtml(lines, toCome, o) {
