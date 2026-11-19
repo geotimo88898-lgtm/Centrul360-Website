@@ -1215,7 +1215,7 @@
     const n = (pay.commissionLines || []).filter((l) => l.kind === 'pay' && l.date === today && l.cash >= 1500).length;
     const live = today >= P.from;
     return '<div class="pk-box"><b>Bonus pachete · ' + (P.until ? esc(K.dateShort(P.from)) + ' - ' + esc(K.dateShort(P.until)) : 'de la ' + esc(K.dateShort(P.from))) + '</b>' +
-      '<p>La fiecare plată de pachet: 1.500-2.499 lei = <b>100 lei</b>, 2.500-2.999 lei = <b>200 lei</b>, 3.000+ lei = <b>350 lei</b>. ' +
+      '<p>La fiecare plată de pachet: 1.500-1.999 lei = <b>100 lei</b>, 2.000-2.499 lei = <b>150 lei</b>, 2.500-2.999 lei = <b>200 lei</b>, 3.000+ lei = <b>350 lei</b>. ' +
       'Se dă în ziua în care încasezi minim <b>' + P.min + '</b> ' + (P.min === 1 ? 'plată' : 'plăți') + ' de 1.500+. Sub 1.500 rămâne comisionul obișnuit.</p>' +
       (live ? '<p class="pk-now">Azi: <b>' + n + '</b> din ' + P.min + (n >= P.min ? ' · bonusul e activ' : '') + '</p>' : '') + '</div>';
   }
