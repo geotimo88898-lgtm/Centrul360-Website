@@ -120,6 +120,30 @@ function commissionMonth({ emp, month, isCurrent, sales, dues, cctx }) {
   return { commission: r2(commission), waiting: r2(waiting), upsells, lines, toCome, manual: r2(manual) };
 }
 
+// Premiul echipei (George, 20.11): from the week of 23.11, every week (Monday to Sunday) in which the clinics together
+// take in 50.000 lei (net of refunds, Încasări, both clinics) brings 150 lei to each cosmetician and receptionist who
+// clocked in at least one day of it; 75.000 lei brings 300 lei. A week counts in the month of its Sunday, once it is over;
+// the week in progress shows how far it is (Salariu), outside the total.
+const TEAM = { from: '2026-11-23', tiers: [{ min: 75000, lei: 300 }, { min: 50000, lei: 150 }] };
+const hasTeamPrize = (emp) => !!emp && (emp.role === 'cosmetician' || emp.role === 'receptie');
+const addDays = (d, n) => { const t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+function teamPrize(emp, month, sales, attendance, today) {
+  if (!hasTeamPrize(emp) || month < TEAM.from.slice(0, 7)) return null;
+  const M = require('./money');
+  const weeks = [];
+  for (let from = TEAM.from; ; from = addDays(from, 7)) {
+    const to = addDays(from, 6);
+    if (to.slice(0, 7) < month) continue;
+    if (to.slice(0, 7) > month || from > today) break;
+    const net = M.net(sales, (x) => x.date >= from && x.date <= to);
+    const tier = TEAM.tiers.find((t) => net >= t.min) || null;
+    const worked = (attendance || []).some((a) => a.employeeId === emp.id && a.checkIn && a.date >= from && a.date <= to);
+    const done = to < today;
+    weeks.push({ from, to, net, done, worked, lei: done && worked && tier ? tier.lei : 0, tier: tier ? tier.lei : 0 });
+  }
+  return { tiers: TEAM.tiers, weeks, lei: weeks.reduce((a, w) => a + w.lei, 0) };
+}
+
 // One month of pay for one person.
 function monthPay({ emp, month, isCurrent, sales, dues, payouts, bank, attendance, appointments, finals, cctx }) {
   // the salary of the month by its dates (salaryOfMonth); none in the months before the first one
@@ -137,14 +161,16 @@ function monthPay({ emp, month, isCurrent, sales, dues, payouts, bank, attendanc
   const bonus = booking ? booking.lei : 0;
   const fin = hasManagerBonus(emp, month) && finals ? finals[emp.id + '|' + month] : null;
   const managerBonus = fin && Number.isFinite(Number(fin.lei)) ? Number(fin.lei) : 0;
+  const team = teamPrize(emp, month, sales, attendance, bucharestDate(new Date().toISOString()));
+  const teamLei = team ? team.lei : 0;
   return {
     month, base, overtimeLei: r2(paidLei + dueLei), overtimeMinutes: paidMin + dueMin, overtimePaidLei: r2(paidLei), overtimeDueLei: r2(dueLei),
     commission: r2(commission), commissionWaiting: r2(waiting), upsells, bonus, booking, manual: r2(manual),
     ...(lines ? { commissionLines: lines, toCome: toCome || [] } : {}),
     ...(lines && month >= CM.PACK.from.slice(0, 7) && (!CM.PACK.until || month <= CM.PACK.until.slice(0, 7)) ? { pack: { from: CM.PACK.from, until: CM.PACK.until, tiers: CM.PACK.tiers, min: CM.packMinOf(emp) } } : {}),
-    total: r2(base + paidLei + dueLei + commission + bonus + manual + managerBonus), hasCommission: hasCommission(emp), hasBonus: hasBookingBonus(emp, month),
+    total: r2(base + paidLei + dueLei + commission + bonus + manual + managerBonus + teamLei), ...(team ? { team } : {}), hasCommission: hasCommission(emp), hasBonus: hasBookingBonus(emp, month),
     ...(hasManagerBonus(emp, month) ? { hasManagerBonus: true, managerBonus: r2(managerBonus), managerFinal: !!fin } : {}),
   };
 }
 
-module.exports = { BOOKING_TIERS, bonusUntil, bookingBonus, monthPay, commissionMonth, salaryHistoryOf, salaryOn, salaryOfMonth, withSalary, hasBookingBonus, hasCommission, hasManagerBonus, bucharestDate };
+module.exports = { TEAM, teamPrize, BOOKING_TIERS, bonusUntil, bookingBonus, monthPay, commissionMonth, salaryHistoryOf, salaryOn, salaryOfMonth, withSalary, hasBookingBonus, hasCommission, hasManagerBonus, bucharestDate };
