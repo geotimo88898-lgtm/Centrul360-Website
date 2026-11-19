@@ -12,6 +12,13 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 19.11 midday (Claude, George's rule of 19.11): TM video iPad's lead went to 46 lei (18.11) and 20 lei today, off
+  // (a new LipoSonix „Stai întinsă” v2 takes its place, published at 50 lei); Arad's RF „Căutăm 8 doamne” books (6 leads,
+  // 2 bookings, ~7 lei a lead), to 75 lei for Friday's 77%
+  { id: 'midday-2026-11-19', why: 'TM video iPad oprit (lead scump), AR RF „Căutăm 8 doamne” la 75 lei (programează)', actions: [
+    { campaignId: '120251585544900103', name: 'TM VIDEO · HIFU gușă · iPad', status: 'PAUSED', why: 'lead 46 lei pe 18.11' },
+    { campaignId: '120251992601670103', name: 'AR RF GUSA · căutăm 8 doamne (port TM)', daily: 75, why: '6 leaduri, 2 programări, ~7 lei/lead' },
+  ] },
   // 19.11 morning (Claude, George's rule of 19.11: the calendar full at its target): Timișoara at 75-77% today and
   // tomorrow against 126%, ~15 hours missing; no paused winner left with cheap leads to recycle, so the two cheapest
   // running ones get more: HIFU sezon (a lead at ~8 lei, 3 clients this week) and Restart fără ace (~10 lei, 8 bookings)
