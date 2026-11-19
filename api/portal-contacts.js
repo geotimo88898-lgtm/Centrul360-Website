@@ -347,7 +347,21 @@ module.exports = async (req, res) => {
     if (action === 'file_add') {
       const stored = await storeFile(client.id, body.dataUrl);
       if (!stored) return fail(400, 'invalid_file');
-      detail.files.unshift(Object.assign({ id: uid(), name: String(body.name || 'Fișă').slice(0, 120), kind: body.kind === 'document' ? 'document' : 'fisa', at: nowISO(), author, authorId: session.employeeId }, stored));
+      const kind = body.kind === 'document' ? 'document' : body.kind === 'program' ? 'program' : 'fisa';
+      const file = Object.assign({ id: uid(), name: String(body.name || 'Fișă').slice(0, 120), kind, at: nowISO(), author, authorId: session.employeeId }, stored);
+      // the photo of the paper „Program recomandat și ofertă” she presented (the owner, 20.11: +5 lei, api/_lib/payroll.js
+      // planBonus): it goes on her booking of today with this client, the proof the bonus counts
+      if (kind === 'program') {
+        const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+        const appts = await readJSON('data/appointments.json', []);
+        const a = appts.find((x) => x && x.date === day && x.cosmeticianId === session.employeeId && x.status !== 'anulata' &&
+          (x.clientId === client.id || (client.phone && normalizePhone(x.clientPhone) === normalizePhone(client.phone))));
+        if (a) {
+          if (!a.program) { a.program = { fileId: file.id, at: file.at, byId: session.employeeId }; await writeJSON('data/appointments.json', appts); }
+          file.appointmentId = a.id;
+        }
+      }
+      detail.files.unshift(file);
       return save();
     }
     if (action === 'file_delete') {
@@ -356,6 +370,16 @@ module.exports = async (req, res) => {
       if (!canRemove(f)) return fail(403, 'forbidden');
       detail.files = detail.files.filter((x) => x.id !== f.id);
       await removeBinary(f.path);
+      if (f.kind === 'program' && f.appointmentId) {
+        const appts = await readJSON('data/appointments.json', []);
+        const a = appts.find((x) => x && x.id === f.appointmentId);
+        if (a && a.program && a.program.fileId === f.id) {
+          // another photo of the same program, still there, keeps it
+          const other = detail.files.find((x) => x.kind === 'program' && x.appointmentId === a.id);
+          if (other) a.program = { fileId: other.id, at: other.at, byId: other.authorId }; else delete a.program;
+          await writeJSON('data/appointments.json', appts);
+        }
+      }
       return save();
     }
     if (action === 'session_add') {

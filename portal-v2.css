@@ -263,6 +263,7 @@ div.pay-appt{ cursor:default; }
 .ct-big{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.3rem; min-height:110px; padding:1rem; border-radius:18px; border:1.5px dashed var(--line-on-dark); background:var(--paper-2); cursor:pointer; text-align:center; transition:all .15s ease; }
 .ct-big svg{ width:28px; height:28px; color:var(--accent); } .ct-big b{ font-size:.98rem; } .ct-big small{ color:var(--muted); font-size:.8rem; }
 .ct-big.is-accent{ border-style:solid; border-color:var(--accent); background:var(--accent-soft); }
+.ct-big.is-good{ grid-column:1 / -1; border-style:solid; border-color:var(--good, #2e9d5b); background:color-mix(in srgb, var(--good, #2e9d5b) 10%, transparent); }
 .ct-big:hover{ transform:translateY(-1px); } .ct-big:active{ transform:scale(.98); }
 .ct-uploading{ display:flex; align-items:center; gap:.6rem; color:var(--muted); font-size:.88rem; }
 .ct-hint{ display:flex; align-items:flex-start; gap:.45rem; margin:0; color:var(--muted); font-size:.86rem; } .ct-hint svg{ width:16px; height:16px; flex:none; margin-top:.1rem; }

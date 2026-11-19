@@ -1228,7 +1228,7 @@
         '<li>Contează fiecare plată pentru pachet, și avansul. 1.500 lei avans dintr-un pachet de 3.000 = +100 lei azi, restul de 1.500 = încă +100 când vine.</li>' +
         '<li>De la a 3-a vânzare de 1.500+ din aceeași zi, fiecare mai aduce +50 lei.</li>' +
         '<li>+100 lei când o clientă care a mai cumpărat un pachet cumpără altul.</li>' +
-        '<li>+' + planRate + ' lei la fiecare program recomandat prezentat clientei și încărcat în portal: Calculatorul de ofertă, apoi „Salvează la clientă”, pe programarea ei. Clienta trebuie să fi venit. Unul pe clientă pe zi.</li>' +
+        '<li>+' + planRate + ' lei la fiecare program recomandat prezentat clientei: fotografiezi foile „Program recomandat și ofertă” în fișa ei (Contacte → clienta → Fișe → „Program recomandat”), în ziua programării. Ședința trebuie să se încheie. Unul pe clientă pe zi.</li>' +
         '<li>Sub 1.500 lei: 4% din plată, ca până acum. Bonusul nu e niciodată mai mic decât 4%.</li>' +
       '</ul></details></div>' + calcHtml(P, planRate);
   }

@@ -157,15 +157,15 @@ function teamPrize(emp, month, sales, dues, attendance, today, cctx) {
   return { tiers: TEAM.tiers, min: TEAM.min, weeks, lei: weeks.reduce((a, w) => a + w.lei, 0) };
 }
 
-// Planul prezentat (George, 20.11): +5 lei for every plan she made and saved for a client in the portal (Calculatorul de
-// ofertă → „Salvează la clientă” on her own booking), from 23.11, on a visit that took place (finalizată); one a client a
-// day. In the month of the visit.
+// Programul recomandat prezentat (George, 20.11): +5 lei for every paper „Program recomandat și ofertă” she presented and
+// photographed into the client's sheet (Contacte → Fișe → „Program recomandat”, api/portal-contacts.js puts it on her
+// booking of that day), from 23.11, on a visit that took place (finalizată); one a client a day. In the month of the visit.
 const PLAN = { from: '2026-11-23', lei: 5 };
 function planBonus(emp, month, appointments) {
   if (!hasCommission(emp) || month < PLAN.from.slice(0, 7)) return null;
   const seen = new Set(), days = [];
   (appointments || []).forEach((a) => {
-    if (!a || a.cosmeticianId !== emp.id || a.status !== 'finalizata' || !a.offer || a.offer.byId !== emp.id) return;
+    if (!a || a.cosmeticianId !== emp.id || a.status !== 'finalizata' || !a.program || a.program.byId !== emp.id) return;
     const d = String(a.date || '');
     if (d < PLAN.from || d.slice(0, 7) !== month) return;
     const k = d + '|' + (a.clientId || a.clientPhone || a.id);

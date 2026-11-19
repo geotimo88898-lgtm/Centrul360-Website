@@ -437,6 +437,7 @@
         '<div class="ct-upload">' +
           '<label class="ct-big is-accent"><input type="file" accept="image/*" capture="environment" data-up="scan" hidden>' + icon('image') + '<b>Scanează fișa</b><small>Deschide camera și fotografiază fișa</small></label>' +
           '<label class="ct-big"><input type="file" accept="image/*,application/pdf" multiple data-up="file" hidden>' + icon('download') + '<b>Încarcă fișier</b><small>Poză din galerie sau PDF</small></label>' +
+          (K.data && K.data.me && K.data.me.role === 'cosmetician' ? '<label class="ct-big is-good"><input type="file" accept="image/*" capture="environment" multiple data-up="program" hidden>' + icon('file') + '<b>Program recomandat</b><small>Fotografiază foile prezentate · +5 lei</small></label>' : '') +
         '</div>' +
         (st.busy === 'file' ? '<div class="ct-uploading"><span class="k-spin"></span>Se încarcă…</div>' : '') +
         (det.files.length ? '<div class="ct-files">' + det.files.map((f) => '<div class="ct-file">' +
@@ -614,11 +615,16 @@
           try {
             st.busy = 'file'; paintPane();
             const dataUrl = await prepare(f);
-            const name = inp.dataset.up === 'scan' ? 'Fișă scanată ' + K.dateShort(K.today()) : (f.name || 'Fișier').replace(/\.[^.]+$/, '');
-            if (await act('file_add', { dataUrl, name, kind: inp.dataset.up === 'scan' ? 'fisa' : 'document' }, 'file')) n++;
+            const up = inp.dataset.up;
+            const name = up === 'scan' ? 'Fișă scanată ' + K.dateShort(K.today()) : up === 'program' ? 'Program recomandat ' + K.dateShort(K.today()) : (f.name || 'Fișier').replace(/\.[^.]+$/, '');
+            if (await act('file_add', { dataUrl, name, kind: up === 'scan' ? 'fisa' : up === 'program' ? 'program' : 'document' }, 'file')) n++;
           } catch (err) { st.busy = ''; paintPane(); K.ui().toast(errText(err), 'error'); }
         }
-        if (n) K.ui().toast(n === 1 ? 'Fișa a fost salvată.' : n + ' fișiere salvate.', 'success');
+        if (n && inp.dataset.up === 'program') {
+          // the bonus counts only on her booking of today with this client
+          const linked = (st.detail.files || []).some((x) => x.kind === 'program' && x.appointmentId && String(x.at).slice(0, 10) === new Date().toISOString().slice(0, 10));
+          K.ui().toast(linked ? 'Programul a fost salvat. +5 lei când se încheie ședința.' : 'Programul a fost salvat, dar nu ai azi o programare cu ea, deci nu intră la bonus.', linked ? 'success' : 'info');
+        } else if (n) K.ui().toast(n === 1 ? 'Fișa a fost salvată.' : n + ' fișiere salvate.', 'success');
       }
     }
     async function onPaneClick(e) {
