@@ -131,6 +131,7 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
 .prt-epi[data-g="f"] [data-m], .prt-epi[data-g="m"] [data-f]{ display:none; }
 .prt-epi[data-g="f"] .prt-f0, .prt-epi[data-g="m"] .prt-m0{ display:none; }
 .prt-epo .prt-z{ grid-template-columns:minmax(0,1fr) auto; }
+.prt-fbn{ flex-basis:100%; font-size:13px; color:var(--mute); }
 .prt-epo .prt-bk{ grid-column:1 / -1; padding:0; }
 .prt-fn{ display:grid; gap:12px; margin-top:24px; }
 .prt-fn p{ display:flex; gap:12px; align-items:flex-start; font-size:15px; color:var(--mute); line-height:1.55; }
@@ -311,6 +312,11 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
       <div class="prt-z"><span>Față complet</span><small>20 min</small><b data-f>200 lei</b><b data-m>240 lei</b></div>
       <div class="prt-z prt-f0"><span>Contur barbă / gât</span><small>5 min</small><b data-f>-</b><b data-m>160 lei</b></div>
     </div>
+    <div class="card prt-list prt-epi prt-fb rv">
+      <div class="prt-it"><div class="prt-nm"><b>Full Body</b><p>Toate zonele de corp, fără față: axile, inghinal total, brațe total, picior lung.</p></div>
+        <div class="prt-tr"><div><span>1 ședință</span><b>920 lei</b></div><div class="prt-of"><span>Pachet 6 ședințe<em class="prt-pct">-10%</em></span><b><s>5520 lei</s>4968 lei</b><small class="prt-fbn">Doar la plata integrală</small></div>
+          <button type="button" class="prt-bk" data-book data-book-service="custom" data-book-label="Epilare Full Body" data-book-city="Timișoara">Programează-te<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div></div>
+    </div>
     <div class="card prt-list prt-epi prt-epo prt-off rv">
       <div class="prt-cap">Oferte active · o ședință</div>
       <div data-prt-epo></div>
@@ -400,7 +406,8 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
   }
 
   // live: the offers of Admin
-  var EPI = { 'epilare-full-body': 'axile · inghinal total · brațe total · picior lung' };
+  // Full Body has its own fixed prices above (the owner, 19.11); its Admin offer, kept for the ads, is never listed here
+  var EPI = {}, OWN = { 'epilare-full-body': 1 };
   fetch('/api/offers-public').then(function (r) { if (!r.ok) throw new Error('offers'); return r.json(); }).then(function (d) {
     var byKey = {}; ((d && d.offers) || []).forEach(function (o) { if (o && o.key) byKey[o.key] = o; });
     $$('[data-prt-offer]').forEach(function (row) {
@@ -411,7 +418,7 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
       row.classList.remove('prt-off');
       if (it) $$('.prt-flag', it).forEach(function (f) { f.classList.remove('prt-off'); });
     });
-    var epi = ((d && d.offers) || []).filter(function (o) { return o && o.category === 'epilare'; });
+    var epi = ((d && d.offers) || []).filter(function (o) { return o && o.category === 'epilare' && !OWN[o.key]; });
     var box = document.querySelector('[data-prt-epo]');
     if (box && epi.length) {
       box.innerHTML = epi.map(function (o) {

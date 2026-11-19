@@ -179,6 +179,9 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
 /* the zones: two columns on a wide screen */
 @media (min-width:921px){ .ep-zones{ display:grid; grid-template-columns:1fr 1fr; column-gap:64px; } .ep-zones > div:nth-last-child(2){ border-bottom:0; } }
 
+/* Full Body (the owner, 19.11): its two fixed prices, one session and the 6 session package, in the offers' card */
+.ep-fb-t{ font-size:15px; line-height:1.5; color:rgba(255,255,255,.66); text-wrap:pretty; }
+
 /* the written guarantee */
 .ep-gar{ display:grid; grid-template-columns:auto minmax(0,1fr); gap:28px 40px; align-items:start; margin-top:24px; padding:clamp(28px,4vw,48px); }
 .ep-gar .fl{ display:block; animation:float 6s var(--e2) infinite alternate; }
@@ -312,8 +315,18 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
 </div></section>
 
 <section class="s" id="oferta" style="padding-top:0"><div class="wrap">
-  <div class="head rv"><span class="eye bf">Ofertele de Black Friday</span><h2>Prețul de azi, <em>pentru epilare.</em></h2><p class="lead">Seria completă (de obicei 6 ședințe) ți-o calculăm gratuit la consultație, pe zonele tale. Epilarea laser se face doar în clinica din Timișoara.</p></div>
-  <div class="offers" data-offers="epilare" data-match="epilare" data-city="timisoara"></div>
+  <div class="head rv"><span class="eye">Prețuri</span><h2>Tot corpul <em>sau doar zonele tale.</em></h2><p class="lead">Seria completă (de obicei 6 ședințe) ți-o calculăm gratuit la consultație, pe zonele tale. Epilarea laser se face doar în clinica din Timișoara.</p></div>
+  <div class="offers ep-fb">
+    <div class="slip rv"><span class="k"><b>Full Body</b> · o ședință</span><h3>Epilare laser Full Body</h3><p class="ep-fb-t">Toate zonele de corp, fără față: axile, inghinal total, brațe total, picior lung.</p>
+      <div class="pr"><b data-count="920" data-suffix=" lei">920 lei</b></div>
+      <span class="where">Timișoara</span>
+      <button type="button" class="btn book gold" data-book data-book-service="custom" data-book-label="Epilare Full Body" data-book-city="Timișoara">Programează-te<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+    <div class="slip rv"><span class="pct">-10%</span><span class="k"><b>Pachet</b> · 6 ședințe</span><h3>Epilare laser Full Body</h3><p class="ep-fb-t">6 ședințe Full Body, toate zonele de corp, fără față.</p>
+      <div class="pr"><b data-count="4968" data-suffix=" lei">4.968 lei</b><s>5.520 lei</s></div>
+      <span class="save">Doar la plata integrală</span>
+      <span class="where">Timișoara</span>
+      <button type="button" class="btn book gold" data-book data-book-service="custom" data-book-label="Epilare Full Body · pachet 6 ședințe" data-book-city="Timișoara">Programează-te<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+  </div>
   <div class="card list ep-zones rv">
     <div><span><span class="t">Axile</span></span><b>de la 120 lei <small>/ ședință</small></b></div>
     <div><span><span class="t">Linie bikini</span></span><b>de la 120 lei <small>/ ședință</small></b></div>
