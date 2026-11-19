@@ -313,6 +313,28 @@ div.pay-appt{ cursor:default; }
 .ct-session header input{ height:36px; border-radius:10px; border:1px solid var(--line); background:var(--surface-3); color:var(--fg); padding:0 .6rem; font:inherit; font-size:.85rem; }
 .ct-session header input[data-streat]{ flex:1 1 180px; min-width:0; }
 .ct-slots{ display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+/* the photos of a session: a gallery per half, one picked in each, then „Generează” (20.11) */
+.ct-gals{ display:grid; grid-template-columns:1fr 1fr; gap:.6rem; min-width:0; }
+.ct-gal{ min-width:0; display:grid; gap:.4rem; align-content:start; }
+.ct-gal-head{ display:flex; align-items:baseline; justify-content:space-between; gap:.4rem; min-width:0; }
+.ct-gal-head b{ font-size:.82rem; letter-spacing:.06em; }
+.ct-gal-head small{ color:var(--muted); font-size:.72rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.ct-gal-grid{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.35rem; }
+.ct-gal-ph{ position:relative; aspect-ratio:3/4; border-radius:12px; overflow:hidden; background:var(--glass); outline:2px solid transparent; outline-offset:-2px; }
+.ct-gal-ph > button:first-child{ all:unset; display:block; width:100%; height:100%; cursor:pointer; }
+.ct-gal-ph > button:first-child:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
+.ct-gal-ph img{ width:100%; height:100%; object-fit:cover; display:block; }
+.ct-gal-ph.is-on{ outline-color:var(--accent); }
+.ct-gal-check{ position:absolute; left:5px; top:5px; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; background:var(--accent); color:#fff; pointer-events:none; }
+.ct-gal-check svg{ width:14px; height:14px; }
+.ct-gal-rm{ position:absolute; right:4px; bottom:4px; width:28px; height:28px; border-radius:8px; border:0; display:grid; place-items:center; background:rgba(10,10,14,.65); color:#fff; cursor:pointer; }
+.ct-gal-rm svg{ width:14px; height:14px; }
+.ct-gal-add{ aspect-ratio:3/4; border-radius:12px; border:2px dashed var(--line-on-dark); background:var(--paper-2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.25rem; cursor:pointer; text-align:center; padding:.3rem; }
+.ct-gal-add svg{ width:22px; height:22px; color:var(--accent); }
+.ct-gal-add small{ color:var(--muted); font-size:.7rem; }
+.ct-gal-add.is-busy{ cursor:default; }
+.ct-gen{ width:100%; justify-content:center; margin-top:.6rem; }
+.ct-total-on{ width:100%; justify-content:center; margin-bottom:.8rem; }
 .ct-slot{ position:relative; aspect-ratio:3/4; border-radius:16px; overflow:hidden; background:var(--glass); }
 .ct-slot img{ width:100%; height:100%; object-fit:cover; display:block; cursor:zoom-in; }
 .ct-slot.is-empty{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.35rem; border:2px dashed var(--line-on-dark); background:var(--paper-2); cursor:pointer; text-align:center; padding:.6rem; transition:all .15s ease; }
