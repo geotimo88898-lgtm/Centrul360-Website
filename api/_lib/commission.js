@@ -29,10 +29,10 @@ const NEW_FROM = '2026-11';
 // Bonusul pe pachete (George, 19.11; for good from 20.11, „aș vrea să rămână mereu”), from 23.11: each payment received for an upsell of 1.500 lei or more brings a fixed
 // bonus instead of the 4%: 1.500-1.999 = 100 lei, 2.000-2.499 = 150 lei (George, 20.11), 2.500-2.999 = 200 lei, 3.000+ = 350 lei. It counts the money that came
 // in, payment by payment (an advance of 1.500 on a 3.000 package is a 1.500 payment, 100 lei; the other 1.500 paid later
-// is another 1.500 payment, 100 lei that day). It applies only on a day she took at least 2 such payments (1 for someone
-// working under 6 hours a day, Echipa „Ore contractate / zi”); otherwise, and for every payment under 1.500, the normal 4%.
+// is another 1.500 payment, 100 lei that day). From the first such payment of the day (George, 20.11: the minimum of 2 a day
+// is gone, perDay 1, so the first sale is already a win); every payment under 1.500 keeps the normal 4%.
 // A refund of an upsell that brought a bonus takes back the same share of what it brought (its lei per lei paid).
-const PACK = { from: '2026-11-23', until: '', tiers: [{ min: 3000, lei: 350 }, { min: 2500, lei: 200 }, { min: 2000, lei: 150 }, { min: 1500, lei: 100 }], perDay: 2, shortDay: 1, shortHours: 6 };
+const PACK = { from: '2026-11-23', until: '', tiers: [{ min: 3000, lei: 350 }, { min: 2500, lei: 200 }, { min: 2000, lei: 150 }, { min: 1500, lei: 100 }], perDay: 1, shortDay: 1, shortHours: 6 };
 const packTier = (cash, date) => (date >= PACK.from && (!PACK.until || date <= PACK.until) ? PACK.tiers.find((t) => cash >= t.min) || null : null);
 const packMinOf = (emp) => { const h = Number(emp && emp.contractedHoursPerDay); return h > 0 && h < PACK.shortHours ? PACK.shortDay : PACK.perDay; };
 const r2 = M.r2;
