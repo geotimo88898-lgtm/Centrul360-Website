@@ -84,7 +84,7 @@ function linesOf(u, C) {
   out.forEach((l) => {
     if (l.kind !== 'pay') return;
     const t = packTier(l.cash, l.date);
-    if (t && (days.get(u.employeeId + '|' + l.date) || 0) >= min) { l.lei = t.lei; l.pack = t.min; }
+    if (t && (days.get(u.employeeId + '|' + l.date) || 0) >= min) { l.lei = Math.max(t.lei, l.lei); l.pack = t.min; } // never under the 4% (a payment of 8.750+)
     paid += l.cash; lei += l.lei;
   });
   if (out.some((l) => l.pack) && paid > 0) out.forEach((l) => { if (l.kind === 'refund') l.lei = r2(Math.max(-lei, l.cash * lei / paid)); });
