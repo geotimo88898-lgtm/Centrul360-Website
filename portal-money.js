@@ -1233,7 +1233,7 @@
     const pct = now ? Math.min(100, Math.round((now.packages / hi.min) * 100)) : 0;
     return '<section class="k-card cb-sec pk-team"><div class="k-card-head"><h3>' + icon('users') + 'Premiul echipei</h3><span class="k-sub">' + (T.lei ? '+' + lei2s(T.lei) + ' luna asta' : '') + '</span></div>' +
       '<p>Când echipa vinde într-o săptămână (luni-duminică) <b>' + pk(lo.min) + '</b>, fiecare primește <b>' + lei2s(lo.lei) + '</b>. La <b>' + pk(hi.min) + '</b>, fiecare primește <b>' + lei2s(hi.lei) + '</b>. ' +
-      'Se numără pachetele de ' + lei2s(T.min) + ' sau mai mult, din ambele clinici, cu avansul încasat. Primește oricine a lucrat în săptămâna aceea, și recepția.</p>' +
+      'Se numără pachetele de ' + lei2s(T.min) + ' sau mai mult, din ambele clinici, în săptămâna în care sunt plătite integral. Primește oricine a lucrat în săptămâna aceea, și recepția.</p>' +
       (now ? '<div class="pk-bar"><i style="width:' + pct + '%"></i><em style="left:' + Math.round((lo.min / hi.min) * 100) + '%"></em></div>' +
         '<p class="pk-now">Săptămâna asta: <b>' + pk(now.packages) + '</b>' + (now.packages >= hi.min ? ' · premiul de ' + lei2s(hi.lei) + ' e atins' : now.packages >= lo.min ? ' · ' + lei2s(lo.lei) + ' atins, încă ' + (hi.min - now.packages) + ' până la ' + lei2s(hi.lei) : ' · încă ' + (lo.min - now.packages) + ' până la ' + lei2s(lo.lei)) + '</p>' : '') +
       (won.length ? '<p class="pk-won">' + won.map((w) => esc(K.dateShort(w.from)) + ' - ' + esc(K.dateShort(w.to)) + ': +' + lei2s(w.lei)).join(' · ') + '</p>' : '') + '</section>';

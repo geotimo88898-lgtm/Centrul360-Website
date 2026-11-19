@@ -122,8 +122,8 @@ function commissionMonth({ emp, month, isCurrent, sales, dues, cctx }) {
 
 // Premiul echipei (George, 20.11): from the week of 23.11, every week (Monday to Sunday) in which the team sells 15
 // packages brings 150 lei to each cosmetician and receptionist who clocked in at least one day of it; 25 packages bring
-// 300 lei. A package: an upsell of 1.500 lei or more (its value), sold that week (its day), with money in and not all of it
-// given back; both clinics together. Counted in packages, never in lei (the team never sees the clinic's money). A week
+// 300 lei. A package: an upsell of 1.500 lei or more (its value), counted the week it was paid in full (George, 20.11:
+// „nu se pune pachet până clienta nu achită full”) and not given back; both clinics together. Counted in packages, never in lei (the team never sees the clinic's money). A week
 // counts in the month of its Sunday, once it is over; the week in progress shows how far it is (Salariu), outside the total.
 const TEAM = { from: '2026-11-23', min: 1500, tiers: [{ min: 25, lei: 300 }, { min: 15, lei: 150 }] };
 const hasTeamPrize = (emp) => !!emp && (emp.role === 'cosmetician' || emp.role === 'receptie');
@@ -131,9 +131,12 @@ const addDays = (d, n) => { const t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t
 function teamPackages(sales, C, from, to) {
   let n = 0;
   (sales || []).forEach((u) => {
-    if (!CM.isUpsellReq(u) || u.status === 'rejected' || !(Number(u.amount) >= TEAM.min) || !(u.date >= from && u.date <= to)) return;
+    if (!CM.isUpsellReq(u) || u.status === 'rejected' || !(Number(u.amount) >= TEAM.min)) return;
+    // the day it was paid in full (its payment that reached the value), and still not given back
+    const full = CM.linesOf(u, C).find((l) => (l.kind === 'pay' || l.kind === 'whole') && l.paidSoFar >= l.total);
+    if (!full || !(full.date >= from && full.date <= to)) return;
     const sum = CM.summaryOf(u, C);
-    if (sum && sum.paid - sum.refunded > 0) n += 1;
+    if (sum && sum.paid - sum.refunded >= sum.total) n += 1;
   });
   return n;
 }
