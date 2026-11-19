@@ -12,6 +12,18 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // Friday 20.11, the owner („până atunci o putem ține mai lowkey… ca să avem capital pentru consumabile”): the real push
+  // starts Saturday morning, so the weekend books Monday and the week. Friday only the winners, smaller, still learning:
+  // laser „căutăm 15 doamne” (7 leads for 34 lei) stays, the rest down
+  { id: 'friday-lowkey-2026-11-20', why: 'vineri mai puțin, push-ul începe sâmbătă dimineață', actions: [
+    { campaignId: '120251401215320103', name: 'TM HIFU G · sezon', daily: 120, why: 'vineri lowkey' },
+    { campaignId: '120252019962330103', name: 'TM LASER · stai întinsă', daily: 40, why: 'vineri lowkey, 0 leaduri încă' },
+    { campaignId: '120252019966140103', name: 'TM LASER · fără ras pentru totdeauna', daily: 40, why: 'vineri lowkey, 0 leaduri încă' },
+    { campaignId: '120252019815200103', name: 'TM HIFU G · sezon v2', daily: 30, why: 'vineri lowkey' },
+    { campaignId: '120252019824130103', name: 'TM HIFU G · căutăm 10 doamne', daily: 40, why: 'vineri lowkey' },
+    { campaignId: '120252019828940103', name: 'TM HIFU G · stai întinsă', daily: 30, why: 'vineri lowkey' },
+    { campaignId: '120251992601670103', name: 'AR RF GUSA · căutăm 8 doamne (port TM)', daily: 80, why: 'vineri lowkey' },
+  ] },
   // 19.11 22:47, the routine: AR RF „stai întinsă” (T2) at ~30 lei a lead over two days (T3 „căutăm 8 doamne” at ~7) off,
   // its money to T3 (+50%); the new TM laser „căutăm 15 doamne” (E1) brought 5 leads for 20 lei in its first hours: +50%
   { id: 'night-2026-11-19', why: 'lead scump la AR RF stai întinsă; banii pe ce aduce leaduri ieftine', actions: [
