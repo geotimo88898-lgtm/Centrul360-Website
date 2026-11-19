@@ -12,6 +12,11 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 19.11 afternoon, the owner („avem nevoie de lead overflow, principal HIFU gușă la Timișoara, foarte tare”): the
+  // clinic's best ad, HIFU sezon (ROAS 11, a lead at ~8 lei), to 150 lei a day; 3 new HIFU gușă ads published next to it
+  { id: 'tm-hifu-overflow-2026-11-19', why: 'HIFU gușă Timișoara: lead overflow, cerut de voi pe 19.11', actions: [
+    { campaignId: '120251401215320103', name: 'TM HIFU G · sezon', daily: 150, why: 'cea mai bună reclamă (ROAS 11, lead ~8 lei), overflow cerut' },
+  ] },
   // 19.11 midday (Claude, George's rule of 19.11): TM video iPad's lead went to 46 lei (18.11) and 20 lei today, off
   // (a new LipoSonix „Stai întinsă” v2 takes its place, published at 50 lei); Arad's RF „Căutăm 8 doamne” books (6 leads,
   // 2 bookings, ~7 lei a lead), to 75 lei for Friday's 77%
