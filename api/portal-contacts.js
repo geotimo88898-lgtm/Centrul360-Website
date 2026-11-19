@@ -397,8 +397,9 @@ module.exports = async (req, res) => {
     }
     if (action === 'session_delete') {
       if (!sess) return fail(404, 'not_found');
-      if (session.role !== 'admin' && (sess.before || sess.after)) return fail(403, 'forbidden');
-      await Promise.all([sess.before, sess.after].filter(Boolean).map((p) => removeBinary(p.path)));
+      if (session.role !== 'admin' && (sess.before || sess.after || (sess.photos || []).length)) return fail(403, 'forbidden');
+      const paths = new Set([sess.before, sess.after].concat(sess.photos || []).filter(Boolean).map((p) => p.path));
+      await Promise.all([...paths].map((p) => removeBinary(p)));
       detail.sessions = detail.sessions.filter((s) => s.id !== sess.id);
       return save();
     }
@@ -416,8 +417,49 @@ module.exports = async (req, res) => {
       const slot = body.slot === 'after' ? 'after' : 'before';
       if (!sess[slot]) return fail(404, 'not_found');
       if (!canRemove(sess[slot])) return fail(403, 'forbidden');
-      await removeBinary(sess[slot].path);
+      // a photo still in the session's gallery keeps its file (only the before / after choice goes)
+      if (!(sess.photos || []).some((x) => x.path === sess[slot].path)) await removeBinary(sess[slot].path);
       sess[slot] = null;
+      return save();
+    }
+    // Pozele unei ședințe (the owner, 20.11): several photos at once in each half (ÎNAINTE / DUPĂ), and the before / after
+    // picture only when someone picks the two photos and presses „Generează” (pair_set), never by itself.
+    //   photos_add  { sessionId, slot, dataUrl }   one photo into the gallery of that half
+    //   photo_remove { sessionId, photoId }         out of the gallery (and out of the before / after if it was in it)
+    //   pair_set    { sessionId, beforeId, afterId } the two photos of the before / after picture
+    if (action === 'photos_add') {
+      if (!sess) return fail(404, 'not_found');
+      const slot = body.slot === 'after' ? 'after' : 'before';
+      sess.photos = sess.photos || [];
+      if (sess.photos.length >= 40) return fail(400, 'too_many_photos');
+      const stored = await storeFile(client.id, body.dataUrl);
+      if (!stored || stored.mime === 'application/pdf') return fail(400, 'invalid_file');
+      sess.photos.push(Object.assign({ id: uid(), slot, at: nowISO(), author, authorId: session.employeeId }, stored));
+      return save();
+    }
+    if (action === 'photo_remove') {
+      if (!sess) return fail(404, 'not_found');
+      const ph = (sess.photos || []).find((x) => x.id === body.photoId);
+      if (!ph) return fail(404, 'not_found');
+      if (!canRemove(ph)) return fail(403, 'forbidden');
+      sess.photos = sess.photos.filter((x) => x.id !== ph.id);
+      ['before', 'after'].forEach((k) => { if (sess[k] && sess[k].path === ph.path) sess[k] = null; });
+      await removeBinary(ph.path);
+      return save();
+    }
+    if (action === 'pair_set') {
+      if (!sess) return fail(404, 'not_found');
+      const pick = (id, k) => {
+        if (id === 'cur-' + k && sess[k]) return sess[k];
+        const x = (sess.photos || []).find((y) => y.id === id);
+        return x ? { path: x.path, mime: x.mime, size: x.size, at: x.at, author: x.author, authorId: x.authorId, url: x.url } : null;
+      };
+      const b = pick(body.beforeId, 'before'), a = pick(body.afterId, 'after');
+      if (!b || !a) return fail(400, 'pick_both');
+      // a new photo starts unaligned; the same one keeps its frame
+      const keep = (cur, x) => (cur && cur.path === x.path ? cur : Object.assign({}, x, { frame: undefined }));
+      sess.before = JSON.parse(JSON.stringify(keep(sess.before, b)));
+      sess.after = JSON.parse(JSON.stringify(keep(sess.after, a)));
       return save();
     }
     if (action === 'consent') {
