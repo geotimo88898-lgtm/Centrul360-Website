@@ -25,6 +25,16 @@ const { commissionOf } = require('./cats');
 const M = require('./money');
 
 const NEW_FROM = '2026-11';
+
+// Bonusul pe pachete (George, 19.11), 23.11-6.12: each payment received for an upsell of 1.500 lei or more brings a fixed
+// bonus instead of the 4%: 1.500-2.499 = 100 lei, 2.500-2.999 = 200 lei, 3.000+ = 350 lei. It counts the money that came
+// in, payment by payment (an advance of 1.500 on a 3.000 package is a 1.500 payment, 100 lei; the other 1.500 paid later
+// is another 1.500 payment, 100 lei that day). It applies only on a day she took at least 2 such payments (1 for someone
+// working under 6 hours a day, Echipa „Ore contractate / zi”); otherwise, and for every payment under 1.500, the normal 4%.
+// A refund of an upsell that brought a bonus takes back the same share of what it brought (its lei per lei paid).
+const PACK = { from: '2026-11-23', until: '2026-12-06', tiers: [{ min: 3000, lei: 350 }, { min: 2500, lei: 200 }, { min: 1500, lei: 100 }], perDay: 2, shortDay: 1, shortHours: 6 };
+const packTier = (cash, date) => (date >= PACK.from && date <= PACK.until ? PACK.tiers.find((t) => cash >= t.min) || null : null);
+const packMinOf = (emp) => { const h = Number(emp && emp.contractedHoursPerDay); return h > 0 && h < PACK.shortHours ? PACK.shortDay : PACK.perDay; };
 const r2 = M.r2;
 const monthOf = (d) => String(d || '').slice(0, 7);
 const isUpsellReq = (s) => !!s && s.source !== 'incasare' && s.source !== 'manual';
@@ -42,7 +52,20 @@ function context(sales, dues, employees) {
     (r.from || []).forEach((p) => { if (p.upsellId && p.lei > 0) (cuts.get(p.upsellId) || cuts.set(p.upsellId, []).get(p.upsellId)).push({ r, lei: p.lei, kind: 'refund' }); });
     (r.restCut || []).forEach((p) => { if (p.upsellId && p.lei > 0) (cuts.get(p.upsellId) || cuts.set(p.upsellId, []).get(p.upsellId)).push({ r, lei: p.lei, kind: 'rest' }); });
   });
-  return { byId, dueByStart, cuts, until };
+  const emps = new Map();
+  (employees || []).forEach((e) => { if (e && e.id) emps.set(e.id, e); });
+  return { byId, dueByStart, cuts, until, sales: sales || [], emps };
+}
+// how many payments of 1.500+ each person took on each day of the bonus (key 'employeeId|date'), once per context
+function packDays(C) {
+  if (C.packDays) return C.packDays;
+  const m = new Map();
+  C.packDays = m;
+  (C.sales || []).forEach((u) => {
+    if (!isUpsellReq(u) || u.status === 'rejected') return;
+    rawLinesOf(u, C).forEach((l) => { if (l.kind === 'pay' && packTier(l.cash, l.date)) { const k = u.employeeId + '|' + l.date; m.set(k, (m.get(k) || 0) + 1); } });
+  });
+  return m;
 }
 // the payment's part that went to the upsell (no package rest: it was paid whole now), or null when the payment is gone
 function upsellPaidOf(u, C) {
@@ -52,8 +75,24 @@ function upsellPaidOf(u, C) {
   return r2(Math.min(Number(s.upsell) || 0, Number(s.amount) || 0));
 }
 
-// every line of one commission request, whatever the month
+// every line of one commission request, whatever the month, with the package bonus where it applies
 function linesOf(u, C) {
+  const out = rawLinesOf(u, C);
+  if (!out.some((l) => l.kind === 'pay' && packTier(l.cash, l.date))) return out;
+  const days = packDays(C), min = packMinOf(C.emps && C.emps.get(u.employeeId));
+  let paid = 0, lei = 0;
+  out.forEach((l) => {
+    if (l.kind !== 'pay') return;
+    const t = packTier(l.cash, l.date);
+    if (t && (days.get(u.employeeId + '|' + l.date) || 0) >= min) { l.lei = t.lei; l.pack = t.min; }
+    paid += l.cash; lei += l.lei;
+  });
+  if (out.some((l) => l.pack) && paid > 0) out.forEach((l) => { if (l.kind === 'refund') l.lei = r2(Math.max(-lei, l.cash * lei / paid)); });
+  return out;
+}
+
+// the lines at the normal 4%, before the package bonus
+function rawLinesOf(u, C) {
   if (!isUpsellReq(u) || u.status === 'rejected') return [];
   const base = { upsellId: u.id, status: u.status, what: String(u.treatment || '').replace(/^Upsell · /, ''), client: u.client || '' };
   const total = r2(u.amount);
@@ -142,4 +181,4 @@ function summaryOf(u, C) {
   return { rule: cashRule(u) ? 'cash' : 'whole', paid, refunded, total: r2(u.amount), lei: r2(lines.reduce((a, l) => a + l.lei, 0)), rest: t ? t.rest : 0, restLei: t ? t.lei : 0 };
 }
 
-module.exports = { NEW_FROM, cashRule, context, linesOf, toComeOf, nextPayLei, monthOfPerson, summaryOf, isUpsellReq, upsellPaidOf };
+module.exports = { NEW_FROM, PACK, packTier, packMinOf, packDays, cashRule, context, linesOf, toComeOf, nextPayLei, monthOfPerson, summaryOf, isUpsellReq, upsellPaidOf };

@@ -1207,6 +1207,18 @@
   // the commission's lines (from November 2026, api/_lib/commission.js): one per payment received for an upsell, the
   // refunds that took some back, and what is still to come from the packages' rests. Salariu (hers) and Echipa → Salarii.
   const lei2s = (v) => K.lei(v, Math.round(v * 100) % 100 ? 2 : 0);
+  // Bonusul pe pachete (_lib/commission.js PACK): the rule in plain words and how many 1.500+ payments she has today
+  function packHtml(pay) {
+    const P = pay && pay.pack;
+    const today = K.today();
+    if (!P || today > P.until) return '';
+    const n = (pay.commissionLines || []).filter((l) => l.kind === 'pay' && l.date === today && l.cash >= 1500).length;
+    const live = today >= P.from;
+    return '<div class="pk-box"><b>Bonus pachete · ' + esc(K.dateShort(P.from)) + ' - ' + esc(K.dateShort(P.until)) + '</b>' +
+      '<p>La fiecare plată de pachet: 1.500-2.499 lei = <b>100 lei</b>, 2.500-2.999 lei = <b>200 lei</b>, 3.000+ lei = <b>350 lei</b>. ' +
+      'Se dă în ziua în care încasezi minim <b>' + P.min + '</b> ' + (P.min === 1 ? 'plată' : 'plăți') + ' de 1.500+. Sub 1.500 rămâne comisionul obișnuit.</p>' +
+      (live ? '<p class="pk-now">Azi: <b>' + n + '</b> din ' + P.min + (n >= P.min ? ' · bonusul e activ' : '') + '</p>' : '') + '</div>';
+  }
   function commLinesHtml(lines, toCome, o) {
     o = o || {};
     const what = (l) => (/^pachet/i.test(l.what || '') ? '' : 'pachet ') + esc(l.what || 'upsell') + (l.client && !o.noClient ? ', ' + esc(l.client) : '');
@@ -1215,7 +1227,7 @@
     const waitTxt = (l) => (l.status === 'pending' ? ' · în așteptare' : '');
     const out = (lines || []).map((l) => {
       const day = esc(K.dateShort(l.date));
-      if (l.kind === 'pay') return row('is-pay' + wait(l), 'Comision din ' + lei2s(l.cash) + ' încasați', what(l) + ', ' + lei2s(l.paidSoFar) + ' din ' + lei2s(l.total) + ' · ' + day + waitTxt(l), '+' + lei2s(l.lei));
+      if (l.kind === 'pay') return row('is-pay' + wait(l), (l.pack ? 'Bonus pachet din ' : 'Comision din ') + lei2s(l.cash) + ' încasați', what(l) + ', ' + lei2s(l.paidSoFar) + ' din ' + lei2s(l.total) + ' · ' + day + waitTxt(l), '+' + lei2s(l.lei));
       if (l.kind === 'whole') return row('is-pay' + wait(l), 'Upsell ' + lei2s(l.cash), what(l) + ' · comision pe toată valoarea · ' + day + waitTxt(l), '+' + lei2s(l.lei),
         o.cancel && l.status === 'pending' && o.cancel(l.upsellId) ? '<button type="button" class="k-btn is-ghost is-sm" data-comm-cancel="' + esc(l.upsellId) + '">Retrage</button>' : '');
       if (l.kind === 'refund') return row('is-cut' + wait(l), 'Rambursare ' + lei2s(-l.cash), what(l) + (l.reason ? ' · ' + esc(l.reason) : '') + ' · ' + day + waitTxt(l), '−' + lei2s(-l.lei));
@@ -1291,6 +1303,7 @@
               '<div class="k-row-end">' + (s.upsell ? '<span class="k-tag is-good">upsell</span>' : '') + '<span class="k-amount">' + K.lei(s.amount) + '</span></div></div>').join('') + '</div>'
               : K.empty('sparkles', 'Niciun tratament încasat', 'Tratamentele la care ești trecută la încasare apar aici.')) + '</section>' +
           (pay && pay.commissionLines ? '<section class="k-card"><div class="k-card-head"><h3>' + icon('percent') + 'Comisionul tău</h3><span class="k-sub">' + lei2(pay.commission) + (pay.commissionWaiting ? ' · ' + lei2(pay.commissionWaiting) + ' în așteptare' : '') + '</span></div>' +
+            packHtml(pay) +
             (commLinesHtml(pay.commissionLines, pay.toCome, { cancel: (id) => { const x = sales.find((y) => y.id === id); return x && x.origin === 'manual'; } }) ||
               K.empty('trend', 'Niciun comision luna asta', 'Comisionul vine din banii încasați pentru upsellurile tale: 4% din fiecare plată.', me.role === 'cosmetician' ? '<button type="button" class="k-btn is-accent is-sm" data-comm-new>' + icon('plus') + 'Adaugă comision</button>' : '')) + '</section>' :
           '<section class="k-card"><div class="k-card-head"><h3>' + icon('percent') + 'Upsellurile tale</h3><span class="k-sub">' + (pay ? lei2(pay.commission) + ' comision' : '') + '</span></div>' +

@@ -58,6 +58,11 @@
 .rf-sum li.is-bad > svg{ color:var(--bad); } .rf-sum li.is-warn > svg{ color:var(--warn); }
 .rf-err{ display:flex; gap:.5rem; align-items:flex-start; margin:0; color:var(--bad); font-size:.86rem; }
 .rf-err svg{ flex:none; width:16px; height:16px; margin-top:.1rem; }
+/* Salariu: Bonus pachete (the rule and today's count) */
+.pk-box{ margin:0 0 .75rem; padding:.75rem .9rem; border:1px solid var(--line); border-radius:12px; background:color-mix(in srgb, var(--good, #2e9d5b) 8%, transparent); font-size:.86rem; min-width:0; overflow-wrap:anywhere; }
+.pk-box b{ font-weight:700; }
+.pk-box p{ margin:.35rem 0 0; }
+.pk-box .pk-now{ font-size:.92rem; }
 /* Salariu: the commission's lines (one per payment received, the refunds, what is still to come) */
 .cl-lines{ list-style:none; margin:0; padding:0; }
 .cl-lines li{ display:flex; align-items:baseline; gap:.75rem; padding:.62rem 0; border-bottom:1px solid var(--line); min-width:0; }

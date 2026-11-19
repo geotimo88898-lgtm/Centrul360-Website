@@ -13,6 +13,9 @@
 //     40 lei / hour (the owner marks them paid), or used as hours off through a request
 //     ("Ore libere"), which needs no making up.
 // Missing time is taken from the bank first, what the bank can't cover goes to the debt.
+// Weekend overtime is kept apart (George, 19.11): from 14.11 on, the overtime of a Saturday or Sunday never covers missing
+// time or the debt (leaving 2 hours early on a Monday doesn't eat the Saturday she worked); it waits in the bank to be paid
+// or taken as hours off. Missing time takes only from the overtime of normal days, the rest goes to the debt.
 //
 // The owner can also set the hours to make up by hand (Condică → a person → De recuperat → Modifică):
 // from that moment the debt is the number she wrote, and everything decided after counts from there.
@@ -24,6 +27,7 @@
 const BASE_MINUTES = 480;
 const TOLERANCE = 15;
 const OVERTIME_LEI_PER_HOUR = 40;
+const WEEKEND_KEPT_FROM = '2026-11-14';
 const ADJ = 'data/time-adjust.json';
 const PAYOUTS = 'data/time-payouts.json';
 const CORR = 'data/time-corrections.json';
@@ -151,28 +155,32 @@ function ledger(employeeId, { adjustments, leaveRequests, payouts, corrections }
     if (r.type === 'suplimentare') events.push({ at: r.decidedAt || r.requestedAt, kind: 'use', minutes: Number(r.minutes) || 0, ref: r.id });
   });
   (adjustments || []).forEach((a) => {
-    if (a.employeeId === employeeId && a.status === 'approved') events.push({ at: a.decidedAt, kind: 'adjust', minutes: Number(a.approvedMinutes) || 0, ref: a.id });
+    if (a.employeeId === employeeId && a.status === 'approved') events.push({ at: a.decidedAt, kind: 'adjust', minutes: Number(a.approvedMinutes) || 0, ref: a.id, kept: String(a.date || '') >= WEEKEND_KEPT_FROM && isWeekend(a.date) });
   });
   (payouts || []).forEach((p) => { if (p.employeeId === employeeId) events.push({ at: p.at, kind: 'paid', minutes: p.minutes, ref: p.id }); });
   (corrections || []).forEach((c) => { if (c.employeeId === employeeId) events.push({ at: c.at, kind: 'setDebt', minutes: Math.max(0, Number(c.minutes) || 0), ref: c.id }); });
   events.sort((x, y) => String(x.at).localeCompare(String(y.at)));
-  let debt = 0, bank = 0, recovered = 0, paid = 0, used = 0;
+  let debt = 0, bank = 0, kept = 0, recovered = 0, paid = 0, used = 0; // kept: the weekend part of the bank (never cut)
   const effects = {};
+  // paying or using hours takes the normal days' overtime first, then the weekend's
+  const spend = (m) => { const take = Math.min(bank, m); const fromNormal = Math.min(bank - kept, take); kept -= take - fromNormal; bank -= take; return take; };
   events.forEach((e) => {
     if (e.kind === 'debt') debt += e.minutes;
     else if (e.kind === 'setDebt') debt = e.minutes;
-    else if (e.kind === 'use') { const take = Math.min(bank, e.minutes); bank -= take; used += take; }
-    else if (e.kind === 'paid') { const take = Math.min(bank, e.minutes); bank -= take; paid += take; }
+    else if (e.kind === 'use') used += spend(e.minutes);
+    else if (e.kind === 'paid') paid += spend(e.minutes);
+    else if (e.minutes > 0 && e.kept) { bank += e.minutes; kept += e.minutes; effects[e.ref] = { covered: 0, toBank: e.minutes, kept: true }; }
     else if (e.minutes > 0) { const cover = Math.min(debt, e.minutes); debt -= cover; recovered += cover; bank += e.minutes - cover; effects[e.ref] = { covered: cover, toBank: e.minutes - cover }; }
-    else if (e.minutes < 0) { const miss = -e.minutes; const take = Math.min(bank, miss); bank -= take; debt += miss - take; effects[e.ref] = { fromBank: take, toDebt: miss - take }; }
+    else if (e.minutes < 0) { const miss = -e.minutes; const take = Math.min(bank - kept, miss); bank -= take; debt += miss - take; effects[e.ref] = { fromBank: take, toDebt: miss - take }; }
   });
-  return { debt, bank, recovered, paid, used, bankLei: Math.round((bank / 60) * OVERTIME_LEI_PER_HOUR * 100) / 100, effects };
+  return { debt, bank, kept, recovered, paid, used, bankLei: Math.round((bank / 60) * OVERTIME_LEI_PER_HOUR * 100) / 100, effects };
 }
 
 // What approving a difference would do right now (shown in Aprobări before deciding).
-function preview(bal, minutes) {
+function preview(bal, minutes, date) {
+  if (minutes > 0 && date && String(date) >= WEEKEND_KEPT_FROM && isWeekend(date)) return { covered: 0, toBank: minutes, kept: true };
   if (minutes > 0) { const cover = Math.min(bal.debt, minutes); return { covered: cover, toBank: minutes - cover }; }
-  const miss = -minutes, take = Math.min(bal.bank, miss);
+  const miss = -minutes, take = Math.min(bal.bank - (bal.kept || 0), miss);
   return { fromBank: take, toDebt: miss - take };
 }
 

@@ -141,6 +141,7 @@ function monthPay({ emp, month, isCurrent, sales, dues, payouts, bank, attendanc
     month, base, overtimeLei: r2(paidLei + dueLei), overtimeMinutes: paidMin + dueMin, overtimePaidLei: r2(paidLei), overtimeDueLei: r2(dueLei),
     commission: r2(commission), commissionWaiting: r2(waiting), upsells, bonus, booking, manual: r2(manual),
     ...(lines ? { commissionLines: lines, toCome: toCome || [] } : {}),
+    ...(lines && month >= CM.PACK.from.slice(0, 7) && month <= CM.PACK.until.slice(0, 7) ? { pack: { from: CM.PACK.from, until: CM.PACK.until, tiers: CM.PACK.tiers, min: CM.packMinOf(emp) } } : {}),
     total: r2(base + paidLei + dueLei + commission + bonus + manual + managerBonus), hasCommission: hasCommission(emp), hasBonus: hasBookingBonus(emp, month),
     ...(hasManagerBonus(emp, month) ? { hasManagerBonus: true, managerBonus: r2(managerBonus), managerFinal: !!fin } : {}),
   };
