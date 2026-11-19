@@ -1213,15 +1213,66 @@
     const today = K.today();
     if (!P || (P.until && today > P.until)) return '';
     const mine = (pay.commissionLines || []).filter((l) => l.kind === 'pay' && l.date === today && l.pack);
-    const lei = mine.reduce((a, l) => a + l.lei, 0);
-    const live = today >= P.from;
+    const planRate = (pay.plan && pay.plan.rate) || 5;
     const planToday = pay.plan ? pay.plan.plans.filter((x) => x.date === today).length : 0;
-    return '<div class="pk-box"><b>Bonus pachete · de la ' + esc(K.dateShort(P.from)) + '</b>' +
-      '<p>La fiecare plată de pachet: 1.500-1.999 lei = <b>100 lei</b>, 2.000-2.499 lei = <b>150 lei</b>, 2.500-2.999 lei = <b>200 lei</b>, 3.000+ lei = <b>350 lei</b>. ' +
-      'Contează și avansul. În plus: <b>+50 lei</b> la a 3-a vânzare din zi și la fiecare după ea, <b>+100 lei</b> când o clientă care a mai cumpărat un pachet cumpără altul. Sub 1.500 rămâne comisionul obișnuit.</p>' +
-      '<p><b>+' + lei2s((pay.plan && pay.plan.rate) || 5) + '</b> la fiecare plan prezentat și salvat în portal („Salvează la clientă”), la o clientă venită.' + (pay.plan && pay.plan.count ? ' Luna asta: <b>' + K.plural(pay.plan.count, 'plan', 'planuri') + ' = +' + lei2s(pay.plan.lei) + '</b>.' : '') + '</p>' +
-      (live ? '<p class="pk-now">Azi: <b>' + mine.length + '</b> ' + (mine.length === 1 ? 'pachet' : 'pachete') + (lei ? ' · <b>+' + lei2s(lei) + '</b> bonus' : '') + (planToday ? ' · ' + K.plural(planToday, 'plan', 'planuri') + ' <b>+' + lei2s(planToday * pay.plan.rate) + '</b>' : '') + '</p>' : '') + '</div>';
+    // everything she earned today (the packages, the 4% under 1.500 and the plans), as her Panou shows it
+    const lei = (pay.commissionLines || []).filter((l) => l.kind === 'pay' && l.date === today).reduce((a, l) => a + l.lei, 0) + planToday * planRate;
+    const live = today >= P.from;
+    const tiers = P.tiers.slice().sort((x, y) => x.min - y.min);
+    return '<div class="pk-box">' +
+      '<div class="pk-head"><b>' + icon('trophy') + 'Bonus pe fiecare pachet</b><span>' + (live ? '' : 'de la ' + esc(K.dateShort(P.from))) + '</span></div>' +
+      '<div class="pk-ladder">' + tiers.map((t) => '<div><small>plată de</small><b>' + lei2s(t.min).replace(' lei', '') + '+</b><em>+' + t.lei + '</em><small>lei</small></div>').join('') + '</div>' +
+      '<div class="pk-plus"><span><b>+50</b> a 3-a vânzare din zi</span><span><b>+100</b> clientă care revine</span><span><b>+' + planRate + '</b> plan salvat</span></div>' +
+      (live ? '<div class="pk-today"><span>Azi</span><span>' + K.plural(mine.length, 'pachet', 'pachete') + ' · ' + K.plural(planToday, 'plan', 'planuri') + '</span><strong>+' + lei2s(lei) + '</strong></div>' : '') +
+      '<details class="pk-more"><summary>Cum se calculează</summary><ul>' +
+        '<li>Contează fiecare plată pentru pachet, și avansul. 1.500 lei avans dintr-un pachet de 3.000 = +100 lei azi, restul de 1.500 = încă +100 când vine.</li>' +
+        '<li>De la a 3-a vânzare de 1.500+ din aceeași zi, fiecare mai aduce +50 lei.</li>' +
+        '<li>+100 lei când o clientă care a mai cumpărat un pachet cumpără altul.</li>' +
+        '<li>+' + planRate + ' lei la fiecare plan făcut și salvat în portal („Salvează la clientă”), la o clientă venită. Unul pe clientă pe zi.</li>' +
+        '<li>Sub 1.500 lei: 4% din plată, ca până acum. Bonusul nu e niciodată mai mic decât 4%.</li>' +
+      '</ul></details></div>' + calcHtml(P, planRate);
   }
+  // „Calculator: cât câștig?”: packages a day, their value, plans a day, days a month, the team's prize: what it brings
+  function calcHtml(P, planRate) {
+    const tiers = P.tiers.slice().sort((x, y) => x.min - y.min);
+    const step = (k, v, label) => '<div class="pkc-row"><span>' + label + '</span><div class="pkc-step"><button type="button" data-pkc-step="' + k + '" data-d="-1" aria-label="mai puțin">−</button><b data-pkc="' + k + '">' + v + '</b><button type="button" data-pkc-step="' + k + '" data-d="1" aria-label="mai mult">+</button></div></div>';
+    const chips = (k, list, on) => '<div class="pkc-chips">' + list.map((x) => '<button type="button" data-pkc-val="' + k + '" data-v="' + x[0] + '"' + (x[0] === on ? ' class="is-on"' : '') + '>' + x[1] + '</button>').join('') + '</div>';
+    return '<section class="pk-calc" data-pkcalc data-tiers="' + esc(JSON.stringify(tiers)) + '" data-plan="' + planRate + '" data-n="2" data-v="2500" data-p="6" data-d="20" data-t="0">' +
+      '<h4>' + icon('sliders') + 'Calculator: cât câștig?</h4>' +
+      step('n', 2, 'Pachete pe zi') +
+      '<div class="pkc-row is-col"><span>Cât plătește o clientă</span>' + chips('v', tiers.map((t) => [t.min, lei2s(t.min).replace(' lei', '')]), 2500) + '</div>' +
+      step('p', 6, 'Planuri pe zi') +
+      step('d', 20, 'Zile pe lună') +
+      '<div class="pkc-row is-col"><span>Premiul echipei pe săptămână</span>' + chips('t', [[0, 'fără'], [150, '150 lei'], [300, '300 lei']], 0) + '</div>' +
+      '<div class="pkc-out" data-pkc-out></div></section>';
+  }
+  function calcRun(box) {
+    const tiers = JSON.parse(box.dataset.tiers || '[]');
+    const n = +box.dataset.n, v = +box.dataset.v, p = +box.dataset.p, d = +box.dataset.d, t = +box.dataset.t, rate = +box.dataset.plan || 5;
+    const tier = tiers.slice().reverse().find((x) => v >= x.min);
+    const one = Math.max(tier ? tier.lei : 0, Math.round(v * 0.04));
+    const day = n * one + Math.max(0, n - 2) * 50 + p * rate;
+    const month = day * d + t * 4;
+    box.querySelector('[data-pkc-out]').innerHTML =
+      '<div><span>Pe zi</span><b>' + lei2s(day) + '</b></div><div class="is-big"><span>Pe lună, peste salariu</span><b>' + lei2s(month) + '</b></div>' +
+      '<small>' + n + ' × ' + lei2s(one) + (n > 2 ? ' + ' + (n - 2) + ' × 50' : '') + ' + ' + p + ' planuri × ' + rate + ' lei, ' + d + ' zile' + (t ? ' + echipa ' + lei2s(t) + ' × 4 săptămâni' : '') + '</small>';
+  }
+  document.addEventListener('click', (e) => {
+    const st = e.target.closest('[data-pkc-step]'), vl = e.target.closest('[data-pkc-val]');
+    const box = (st || vl) && (st || vl).closest('[data-pkcalc]');
+    if (!box) return;
+    const LIM = { n: [0, 15], p: [0, 30], d: [1, 26] };
+    if (st) {
+      const k = st.dataset.pkcStep, [lo, hi] = LIM[k];
+      const v = Math.min(hi, Math.max(lo, +box.dataset[k] + +st.dataset.d));
+      box.dataset[k] = v; box.querySelector('[data-pkc="' + k + '"]').textContent = v;
+    } else {
+      box.dataset[vl.dataset.pkcVal] = vl.dataset.v;
+      vl.parentElement.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b === vl));
+    }
+    calcRun(box);
+  });
+  const calcFill = (root) => (root || document).querySelectorAll('[data-pkcalc]').forEach(calcRun);
   // Premiul echipei (_lib/payroll.js TEAM): this week's packages of the whole team against the two steps, and the weeks won
   function teamHtml(pay) {
     const T = pay && pay.team;
@@ -1229,14 +1280,20 @@
     const [hi, lo] = T.tiers;
     const now = T.weeks.find((w) => !w.done);
     const won = T.weeks.filter((w) => w.done && w.lei);
-    const pk = (n) => K.plural(n, 'pachet', 'pachete');
-    const pct = now ? Math.min(100, Math.round((now.packages / hi.min) * 100)) : 0;
-    return '<section class="k-card cb-sec pk-team"><div class="k-card-head"><h3>' + icon('users') + 'Premiul echipei</h3><span class="k-sub">' + (T.lei ? '+' + lei2s(T.lei) + ' luna asta' : '') + '</span></div>' +
-      '<p>Când echipa vinde într-o săptămână (luni-duminică) <b>' + pk(lo.min) + '</b>, fiecare primește <b>' + lei2s(lo.lei) + '</b>. La <b>' + pk(hi.min) + '</b>, fiecare primește <b>' + lei2s(hi.lei) + '</b>. ' +
-      'Se numără pachetele de ' + lei2s(T.min) + ' sau mai mult, din ambele clinici, în săptămâna în care clienta a plătit din ele cel puțin ' + lei2s(T.min) + '. Primește oricine a lucrat în săptămâna aceea, și recepția.</p>' +
-      (now ? '<div class="pk-bar"><i style="width:' + pct + '%"></i><em style="left:' + Math.round((lo.min / hi.min) * 100) + '%"></em></div>' +
-        '<p class="pk-now">Săptămâna asta: <b>' + pk(now.packages) + '</b>' + (now.packages >= hi.min ? ' · premiul de ' + lei2s(hi.lei) + ' e atins' : now.packages >= lo.min ? ' · ' + lei2s(lo.lei) + ' atins, încă ' + (hi.min - now.packages) + ' până la ' + lei2s(hi.lei) : ' · încă ' + (lo.min - now.packages) + ' până la ' + lei2s(lo.lei)) + '</p>' : '') +
-      (won.length ? '<p class="pk-won">' + won.map((w) => esc(K.dateShort(w.from)) + ' - ' + esc(K.dateShort(w.to)) + ': +' + lei2s(w.lei)).join(' · ') + '</p>' : '') + '</section>';
+    const n = now ? now.packages : 0;
+    const pct = Math.min(100, Math.round((n / hi.min) * 100)), loAt = Math.round((lo.min / hi.min) * 100);
+    const next = n >= hi.min ? 'Premiul de ' + lei2s(hi.lei) + ' e atins!' : n >= lo.min ? lei2s(lo.lei) + ' atins · încă ' + (hi.min - n) + ' până la ' + lei2s(hi.lei) : 'Încă ' + (lo.min - n) + ' până la ' + lei2s(lo.lei) + ' de fiecare';
+    return '<section class="k-card cb-sec pk-team"><div class="k-card-head"><h3>' + icon('users') + 'Premiul echipei</h3><span class="k-sub">' + (T.lei ? '+' + lei2s(T.lei) + ' luna asta' : 'săptămâna asta') + '</span></div>' +
+      (now ? '<div class="pkt-count"><b>' + n + '</b><span>pachete vândute de echipă</span></div>' +
+        '<div class="pk-bar"><i style="width:' + pct + '%"></i><em style="left:' + loAt + '%"></em></div>' +
+        '<div class="pkt-marks"><span style="left:' + loAt + '%">' + lo.min + ' = ' + lei2s(lo.lei) + '</span><span style="left:100%">' + hi.min + ' = ' + lei2s(hi.lei) + '</span></div>' +
+        '<p class="pk-now">' + next + '</p>' : '') +
+      (won.length ? '<p class="pk-won">' + won.map((w) => esc(K.dateShort(w.from)) + ' - ' + esc(K.dateShort(w.to)) + ': +' + lei2s(w.lei)).join(' · ') + '</p>' : '') +
+      '<details class="pk-more"><summary>Cum se numără</summary><ul>' +
+        '<li>Pachetele de ' + lei2s(T.min) + ' sau mai mult, vândute de oricine din echipă, în ambele clinici, de luni până duminică.</li>' +
+        '<li>Un pachet se numără când clienta a plătit din el cel puțin ' + lei2s(T.min) + '. Un avans mai mic îl numără mai târziu.</li>' +
+        '<li>Premiul îl primește fiecare cosmeticiană și recepționeră care a lucrat în săptămâna aceea.</li>' +
+      '</ul></details></section>';
   }
   function commLinesHtml(lines, toCome, o) {
     o = o || {};
@@ -1260,6 +1317,7 @@
   }
   K.commLinesHtml = commLinesHtml;
   K.teamHtml = teamHtml;
+  K.calcFill = calcFill;
 
   function renderComision() {
     if (!cpanel || !K.data) return;
@@ -1398,6 +1456,7 @@
     // her own row of the 1.500 lei a day (this month): right under the pay, the same bar the manager's condition draws
     const dt = isNow && me.role === 'cosmetician' && D.salary && D.salary.dayTarget ? K.dayTargetHtml(D.salary.dayTarget, me.name) : '';
     cpanel.querySelector('[data-body]').innerHTML = hero + (isNow ? teamHtml(pay) : '') + dt + salBlocks.map((b) => BLOCK[b]()).join('');
+    calcFill(cpanel);
 
     const ch = cpanel.querySelector('[data-cbchart]');
     if (ch) K.chart(ch, {

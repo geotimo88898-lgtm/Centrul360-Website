@@ -58,11 +58,58 @@
 .rf-sum li.is-bad > svg{ color:var(--bad); } .rf-sum li.is-warn > svg{ color:var(--warn); }
 .rf-err{ display:flex; gap:.5rem; align-items:flex-start; margin:0; color:var(--bad); font-size:.86rem; }
 .rf-err svg{ flex:none; width:16px; height:16px; margin-top:.1rem; }
-/* Salariu: Bonus pachete (the rule and today's count) */
-.pk-box{ margin:0 0 .75rem; padding:.75rem .9rem; border:1px solid var(--line); border-radius:12px; background:color-mix(in srgb, var(--good, #2e9d5b) 8%, transparent); font-size:.86rem; min-width:0; overflow-wrap:anywhere; }
-.pk-box b{ font-weight:700; }
-.pk-box p{ margin:.35rem 0 0; }
-.pk-box .pk-now{ font-size:.92rem; }
+/* Salariu: Bonus pachete (the steps, the extras, today), the calculator and the team's prize */
+.pk-box{ margin:0 0 .9rem; padding:.9rem; border:1px solid var(--line); border-radius:14px; background:color-mix(in srgb, var(--good, #2e9d5b) 7%, transparent); min-width:0; }
+.pk-head{ display:flex; justify-content:space-between; align-items:center; gap:.5rem; }
+.pk-head b{ display:flex; align-items:center; gap:.4rem; font-size:.95rem; }
+.pk-head b svg{ width:16px; height:16px; color:var(--good, #2e9d5b); }
+.pk-head span{ color:var(--muted); font-size:.8rem; }
+.pk-ladder{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:.4rem; margin-top:.7rem; }
+.pk-ladder div{ display:flex; flex-direction:column; align-items:center; padding:.5rem .2rem; border-radius:10px; background:var(--card, rgba(255,255,255,.04)); border:1px solid var(--line); text-align:center; min-width:0; }
+.pk-ladder small{ color:var(--muted); font-size:.68rem; }
+.pk-ladder b{ font-size:clamp(.78rem, 3.4vw, .95rem); font-variant-numeric:tabular-nums; }
+.pk-ladder em{ font-style:normal; font-weight:800; font-size:clamp(1rem, 5vw, 1.3rem); line-height:1.1; margin-top:.15rem; color:var(--good, #2e9d5b); white-space:nowrap; }
+.pk-ladder div:last-child{ border-color:var(--good, #2e9d5b); }
+.pk-plus{ display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.6rem; }
+.pk-plus span{ padding:.25rem .55rem; border-radius:99px; border:1px solid var(--line); font-size:.78rem; color:var(--muted); }
+.pk-plus b{ color:var(--good, #2e9d5b); }
+.pk-today{ display:flex; align-items:center; gap:.6rem; margin-top:.75rem; padding-top:.7rem; border-top:1px solid var(--line); font-size:.86rem; min-width:0; }
+.pk-today span:first-child{ font-weight:700; }
+.pk-today span:nth-child(2){ flex:1; min-width:0; color:var(--muted); }
+.pk-today strong{ font-size:1.2rem; color:var(--good, #2e9d5b); white-space:nowrap; }
+.pk-more{ margin-top:.6rem; font-size:.82rem; }
+.pk-more summary{ cursor:pointer; color:var(--muted); }
+.pk-more ul{ margin:.4rem 0 0; padding-left:1.1rem; display:grid; gap:.3rem; overflow-wrap:anywhere; }
+.pk-calc{ margin:0 0 .9rem; padding:.9rem; border:1px solid var(--line); border-radius:14px; min-width:0; }
+.pk-calc h4{ display:flex; align-items:center; gap:.4rem; margin:0 0 .5rem; font-size:.95rem; }
+.pk-calc h4 svg{ width:16px; height:16px; }
+.pkc-row{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; padding:.45rem 0; font-size:.86rem; min-width:0; }
+.pkc-row > span{ min-width:0; }
+.pkc-row.is-col{ flex-direction:column; align-items:stretch; }
+.pkc-step{ display:flex; align-items:center; gap:.2rem; flex:none; }
+.pkc-step button{ width:34px; height:34px; border-radius:10px; border:1px solid var(--line); background:transparent; color:inherit; font-size:1.1rem; cursor:pointer; }
+.pkc-step b{ min-width:2.2rem; text-align:center; font-size:1.05rem; font-variant-numeric:tabular-nums; }
+.pkc-chips{ display:flex; flex-wrap:wrap; gap:.35rem; }
+.pkc-chips button{ padding:.35rem .7rem; border-radius:99px; border:1px solid var(--line); background:transparent; color:inherit; font-size:.82rem; cursor:pointer; }
+.pkc-chips button.is-on{ background:var(--good, #2e9d5b); border-color:var(--good, #2e9d5b); color:#fff; font-weight:700; }
+.pkc-out{ display:grid; grid-template-columns:1fr 1.4fr; gap:.5rem; margin-top:.6rem; }
+.pkc-out div{ padding:.6rem .7rem; border-radius:12px; border:1px solid var(--line); min-width:0; }
+.pkc-out div.is-big{ border-color:var(--good, #2e9d5b); background:color-mix(in srgb, var(--good, #2e9d5b) 10%, transparent); }
+.pkc-out span{ display:block; color:var(--muted); font-size:.75rem; }
+.pkc-out b{ display:block; font-size:1.1rem; white-space:nowrap; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.pkc-out .is-big b{ font-size:1.35rem; color:var(--good, #2e9d5b); }
+.pkc-out small{ grid-column:1 / -1; color:var(--muted); font-size:.74rem; overflow-wrap:anywhere; }
+.pkt-count{ display:flex; align-items:baseline; gap:.5rem; margin-top:.3rem; }
+.pkt-count b{ font-size:2rem; line-height:1; font-variant-numeric:tabular-nums; }
+.pkt-count span{ color:var(--muted); font-size:.85rem; }
+.pk-bar{ position:relative; height:12px; margin:.7rem 0 .2rem; border-radius:99px; background:var(--line); overflow:hidden; }
+.pk-bar i{ position:absolute; inset:0 auto 0 0; border-radius:99px; background:var(--good, #2e9d5b); }
+.pk-bar em{ position:absolute; top:0; bottom:0; width:2px; background:var(--muted); }
+.pkt-marks{ position:relative; height:1.1rem; font-size:.72rem; color:var(--muted); }
+.pkt-marks span{ position:absolute; top:0; transform:translateX(-50%); white-space:nowrap; }
+.pkt-marks span:last-child{ transform:translateX(-100%); }
+.pk-team .pk-now{ margin:.5rem 0 0; font-weight:600; font-size:.9rem; }
+.pk-team .pk-won{ margin:.3rem 0 0; color:var(--muted); font-size:.8rem; }
 .db-earn{ display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-top:.4rem; }
 .db-earn div{ min-width:0; padding:.7rem .8rem; border:1px solid var(--line); border-radius:12px; }
 .db-earn span{ display:block; color:var(--muted); font-size:.8rem; }
@@ -72,11 +119,6 @@
 .db-team-prize{ margin-top:.9rem; }
 .db-earn-next span{ min-width:0; }
 .db-earn-next svg{ flex:none; width:16px; height:16px; margin-top:.15rem; color:var(--good, #2e9d5b); }
-.pk-team p{ margin:.4rem 0 0; font-size:.88rem; overflow-wrap:anywhere; }
-.pk-bar{ position:relative; height:10px; margin:.7rem 0 .2rem; border-radius:99px; background:var(--line); overflow:hidden; }
-.pk-bar i{ position:absolute; inset:0 auto 0 0; border-radius:99px; background:var(--good, #2e9d5b); }
-.pk-bar em{ position:absolute; top:0; bottom:0; width:2px; background:var(--muted); }
-.pk-team .pk-won{ color:var(--muted); font-size:.8rem; }
 /* Salariu: the commission's lines (one per payment received, the refunds, what is still to come) */
 .cl-lines{ list-style:none; margin:0; padding:0; }
 .cl-lines li{ display:flex; align-items:baseline; gap:.75rem; padding:.62rem 0; border-bottom:1px solid var(--line); min-width:0; }
