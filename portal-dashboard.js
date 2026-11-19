@@ -391,7 +391,7 @@
         const P = payNow && payNow.pack;
         const third = packsToday >= 2;
         return '<section class="k-card db-earn-card"><div class="k-card-head"><h3>' + icon('trophy') + 'Câștigul tău</h3><a class="k-btn is-sm is-outline" href="#comision" data-go="comision">Salariu' + icon('arrow') + '</a></div>' +
-          '<div class="db-earn"><div><span>Azi</span><b>' + K.lei(earnToday) + '</b><small>' + K.plural(packsToday, 'pachet', 'pachete') + ' · ' + K.plural(plansToday, 'plan', 'planuri') + '</small></div>' +
+          '<div class="db-earn"><div><span>Azi</span><b>' + K.lei(earnToday) + '</b><small>' + K.plural(packsToday, 'pachet', 'pachete') + ' · ' + K.plural(plansToday, 'program', 'programe') + '</small></div>' +
           '<div><span>Luna asta</span><b>' + K.lei(commMonth + ((payNow && payNow.plan && payNow.plan.lei) || 0)) + '</b><small>comision și bonusuri</small></div></div>' +
           (P && today >= P.from ? '<p class="db-earn-next">' + icon('zap') + '<span>Următorul pachet îți aduce <b>100-350 lei</b>' + (third ? ' <b>+50</b>, fiind a ' + (packsToday + 1) + '-a vânzare de azi' : packsToday === 1 ? '. De la a 3-a vânzare din zi, încă +50 la fiecare' : '') + '.</span></p>' : P ? '<p class="db-earn-next">' + icon('zap') + '<span>De la ' + esc(K.dateShort(P.from)) + ': 100-350 lei la fiecare pachet de 1.500+ lei.</span></p>' : '') +
           '</section>' + (K.teamHtml && payNow.team ? K.teamHtml(payNow).replace('class="k-card cb-sec pk-team"', 'class="k-card cb-sec pk-team db-team-prize"') : '');
