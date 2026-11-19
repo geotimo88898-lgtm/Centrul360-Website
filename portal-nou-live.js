@@ -26,6 +26,9 @@
   var ini = function (n) { return String(n || '?').trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase(); };
   var first = function (n) { return String(n || '').trim().split(/\s+/)[0]; };
   var lei = function (n) { return K() && K().lei ? K().lei(n) : Math.round(n) + ' lei'; };
+  // a cosmetician doesn't see the clinic's money (the owner, 20.11): the till counts the payments, not the lei
+  var hideMoney = function () { var d = K() && K().data; return !!(d && !d.isAdmin && d.me && d.me.role === 'cosmetician'); };
+  var nPay = function (n) { return n + (n === 1 ? ' încasare' : ' încasări'); };
   var today = function () { return K() && K().today ? K().today() : new Date().toISOString().slice(0, 10); };
   var mins = function (t) { var m = /^(\d{1,2}):(\d{2})/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : null; };
   var nowMin = function () { var d = new Date(); return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60; };
@@ -129,12 +132,14 @@
       f.querySelector('[data-f-stat]').textContent = x.done + ' din ' + x.total + ' programări gata · ' + x.n + (x.n === 1 ? ' încasare' : ' încasări');
       // the till: counts up from 0 the first time, then follows
       var till = f.querySelector('[data-till]');
-      if (isFirst) { tills[c] = 0; countTo(till, c, x.sum, 1400); } else if (!busyWalk && tills[c] !== x.sum && !queue.length) countTo(till, c, x.sum, 700);
+      if (hideMoney()) till.textContent = nPay(x.n);
+      else if (isFirst) { tills[c] = 0; countTo(till, c, x.sum, 1400); } else if (!busyWalk && tills[c] !== x.sum && !queue.length) countTo(till, c, x.sum, 700);
     });
     var s = root.querySelector('[data-live-sum]');
-    s.textContent = all.inRoom + ' în cabinet acum · ' + all.waiting + ' vin în următoarea oră · ' + lei(all.sum) + ' încasat azi';
+    s.textContent = all.inRoom + ' în cabinet acum · ' + all.waiting + ' vin în următoarea oră' + (hideMoney() ? '' : ' · ' + lei(all.sum) + ' încasat azi');
   }
   function countTo(el, c, to, ms) {
+    if (hideMoney()) return;
     var from = tills[c] || 0; tills[c] = to;
     if (calm() || from === to) { el.textContent = lei(to); return; }
     var t0 = performance.now();
@@ -162,7 +167,7 @@
         // the money: a coin with the sum, in an arc to the till
         var coin = document.createElement('span');
         coin.className = 'n-coin';
-        coin.textContent = '+' + lei(Number(s.amount) || 0);
+        coin.textContent = hideMoney() ? '+1' : '+' + lei(Number(s.amount) || 0);
         f.appendChild(coin);
         var fr = f.getBoundingClientRect(), st = (walker || from).getBoundingClientRect();
         var x0 = st.left - fr.left + st.width / 2, y0 = st.top - fr.top;

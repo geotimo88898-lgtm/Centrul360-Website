@@ -170,7 +170,9 @@
     var d = D(); if (!d) return [];
     var out = [];
     var t = today();
-    (d.incasari || []).filter(function (s) { return s.date === t; }).slice(-8).reverse().forEach(function (s) {
+    // a cosmetician sees only her own payments (the owner, 20.11: not the clinic's money)
+    var mineOnly = !d.isAdmin && d.me && d.me.role === 'cosmetician';
+    (d.incasari || []).filter(function (s) { return s.date === t && (!mineOnly || s.performedBy === d.me.id); }).slice(-8).reverse().forEach(function (s) {
       out.push('<i class="is-pay"></i><b>+' + esc(lei(Number(s.amount) || 0)) + '</b> ' + esc(first(s.client)) + (s.treatment ? ' · ' + esc(s.treatment) : ''));
     });
     ((d.appointmentsToday && d.appointmentsToday.list) || []).filter(function (a) { return a.status !== 'anulata' && a.status !== 'finalizata'; }).slice(0, 8).forEach(function (a) {
