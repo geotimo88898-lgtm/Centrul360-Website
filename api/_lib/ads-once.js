@@ -12,6 +12,13 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 19.11 22:47, the routine: AR RF „stai întinsă” (T2) at ~30 lei a lead over two days (T3 „căutăm 8 doamne” at ~7) off,
+  // its money to T3 (+50%); the new TM laser „căutăm 15 doamne” (E1) brought 5 leads for 20 lei in its first hours: +50%
+  { id: 'night-2026-11-19', why: 'lead scump la AR RF stai întinsă; banii pe ce aduce leaduri ieftine', actions: [
+    { campaignId: '120251992596850103', name: 'AR RF GUSA · stai întinsă (port TM)', status: 'PAUSED', why: '~30 lei pe lead, de 4 ori cât T3' },
+    { campaignId: '120251992601670103', name: 'AR RF GUSA · căutăm 8 doamne (port TM)', daily: 110, why: 'lead la ~7 lei, programează' },
+    { campaignId: '120252019959160103', name: 'TM LASER · căutăm 15 doamne', daily: 105, why: '5 leaduri la 20 lei în primele ore' },
+  ] },
   // 19.11 evening, the owner („STINGE RESTART, avem nevoie doar de overflow de HIFU gușă și epilare laser”): from next
   // week Mădălina does laser consultations non-stop (2 an hour, 16 a day) and Bianca + Raluca HIFU gușă (about 17 a day)
   // with the package pitch; every Restart ad off and the Timișoara LipoSonix too, the money goes to HIFU gușă and laser.
