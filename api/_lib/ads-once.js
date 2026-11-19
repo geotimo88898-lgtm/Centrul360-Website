@@ -12,6 +12,13 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 19.11 morning (Claude, George's rule of 19.11: the calendar full at its target): Timișoara at 75-77% today and
+  // tomorrow against 126%, ~15 hours missing; no paused winner left with cheap leads to recycle, so the two cheapest
+  // running ones get more: HIFU sezon (a lead at ~8 lei, 3 clients this week) and Restart fără ace (~10 lei, 8 bookings)
+  { id: 'tm-scale-2026-11-19', why: 'Timișoara: buget mai mare pe cele mai ieftine două reclame, calendarul e la 75-77%', actions: [
+    { campaignId: '120251401215320103', name: 'TM HIFU G · sezon', daily: 110, why: 'lead ~8 lei, calendarul TM la 75-77%' },
+    { campaignId: '120251418278340103', name: 'TM RESTART · fără ace', daily: 75, why: 'lead ~10 lei, 8 programări în 3 zile' },
+  ] },
   // 18.11 evening, the owner in his main session („da”): Timișoara's Restart local back on at 50 lei a day, for Thursday
   // and Friday's calendar (75-77% against 125%); ROAS 4,1, 5 clients, a lead at 8 lei when it last ran
   { id: 'tm-restart-local-on-2026-11-18', why: 'TM Restart local pornit la 50 lei/zi pentru calendarul de joi și vineri, cerut de voi pe 18.11', actions: [
