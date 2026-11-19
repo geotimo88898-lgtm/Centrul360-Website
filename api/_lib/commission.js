@@ -34,10 +34,9 @@ const NEW_FROM = '2026-11';
 // A refund of an upsell that brought a bonus takes back the same share of what it brought (its lei per lei paid).
 const PACK = { from: '2026-11-23', until: '', tiers: [{ min: 3000, lei: 350 }, { min: 2500, lei: 200 }, { min: 2000, lei: 150 }, { min: 1500, lei: 100 }], perDay: 1, shortDay: 1, shortHours: 6 };
 // On top of it (George, 20.11), on the payments that bring the package bonus:
-//   whole: the package paid whole at once (no instalments, no advance) +50 lei: the cash comes now
 //   third: her 3rd payment of 1.500+ of the day and every one after it +50 lei each (by the time it came in)
 //   again: a client who had bought a package before buys another one +100 lei, on the first payment of the new one
-const EXTRA = { whole: 50, third: 50, again: 100 };
+const EXTRA = { third: 50, again: 100 };
 const packTier = (cash, date) => (date >= PACK.from && (!PACK.until || date <= PACK.until) ? PACK.tiers.find((t) => cash >= t.min) || null : null);
 const packMinOf = (emp) => { const h = Number(emp && emp.contractedHoursPerDay); return h > 0 && h < PACK.shortHours ? PACK.shortDay : PACK.perDay; };
 const r2 = M.r2;
@@ -116,7 +115,6 @@ function linesOf(u, C) {
     if (t && (days.get(u.employeeId + '|' + l.date) || []).length >= min) {
       l.lei = Math.max(t.lei, l.lei); l.pack = t.min; // never under the 4% (a payment of 8.750+)
       const extra = [];
-      if (l.cash >= l.total && l.paidSoFar >= l.total) extra.push(['whole', EXTRA.whole]);
       if ((C.packRank.get(u.id + '|' + l.date + '|' + (l.at || u.createdAt || '')) || 0) >= 2) extra.push(['third', EXTRA.third]);
       if (again && firstPack) extra.push(['again', EXTRA.again]);
       firstPack = false;

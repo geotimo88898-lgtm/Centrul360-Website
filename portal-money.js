@@ -1217,7 +1217,7 @@
     const live = today >= P.from;
     return '<div class="pk-box"><b>Bonus pachete · de la ' + esc(K.dateShort(P.from)) + '</b>' +
       '<p>La fiecare plată de pachet: 1.500-1.999 lei = <b>100 lei</b>, 2.000-2.499 lei = <b>150 lei</b>, 2.500-2.999 lei = <b>200 lei</b>, 3.000+ lei = <b>350 lei</b>. ' +
-      'Contează și avansul. În plus: <b>+50 lei</b> dacă pachetul e plătit integral pe loc, <b>+50 lei</b> la a 3-a vânzare din zi și la fiecare după ea, <b>+100 lei</b> când o clientă care a mai cumpărat un pachet cumpără altul. Sub 1.500 rămâne comisionul obișnuit.</p>' +
+      'Contează și avansul. În plus: <b>+50 lei</b> la a 3-a vânzare din zi și la fiecare după ea, <b>+100 lei</b> când o clientă care a mai cumpărat un pachet cumpără altul. Sub 1.500 rămâne comisionul obișnuit.</p>' +
       (live ? '<p class="pk-now">Azi: <b>' + mine.length + '</b> ' + (mine.length === 1 ? 'pachet' : 'pachete') + (lei ? ' · <b>+' + lei2s(lei) + '</b> bonus' : '') + '</p>' : '') + '</div>';
   }
   // Premiul echipei (_lib/payroll.js TEAM): this week's packages of the whole team against the two steps, and the weeks won
@@ -1244,7 +1244,7 @@
     const waitTxt = (l) => (l.status === 'pending' ? ' · în așteptare' : '');
     const out = (lines || []).map((l) => {
       const day = esc(K.dateShort(l.date));
-      const EX = { whole: 'plătit integral +50', third: 'a 3-a vânzare din zi +50', again: 'clientă care revine +100' };
+      const EX = { third: 'a 3-a vânzare din zi +50', again: 'clientă care revine +100' };
       if (l.kind === 'pay') return row('is-pay' + wait(l), (l.pack ? 'Bonus pachet din ' : 'Comision din ') + lei2s(l.cash) + ' încasați' + (l.extras ? ' · ' + l.extras.map((x) => EX[x]).join(', ') : ''), what(l) + ', ' + lei2s(l.paidSoFar) + ' din ' + lei2s(l.total) + ' · ' + day + waitTxt(l), '+' + lei2s(l.lei));
       if (l.kind === 'whole') return row('is-pay' + wait(l), 'Upsell ' + lei2s(l.cash), what(l) + ' · comision pe toată valoarea · ' + day + waitTxt(l), '+' + lei2s(l.lei),
         o.cancel && l.status === 'pending' && o.cancel(l.upsellId) ? '<button type="button" class="k-btn is-ghost is-sm" data-comm-cancel="' + esc(l.upsellId) + '">Retrage</button>' : '');
@@ -1257,6 +1257,7 @@
       (come.length ? '<div class="cl-head"><span>De încasat din pachete</span><span>' + lei2s(toCome.reduce((a, t) => a + t.lei, 0)) + '</span></div><ul class="cl-lines">' + come.join('') + '</ul>' : '');
   }
   K.commLinesHtml = commLinesHtml;
+  K.teamHtml = teamHtml;
 
   function renderComision() {
     if (!cpanel || !K.data) return;

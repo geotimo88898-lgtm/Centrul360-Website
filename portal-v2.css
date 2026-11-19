@@ -63,6 +63,15 @@
 .pk-box b{ font-weight:700; }
 .pk-box p{ margin:.35rem 0 0; }
 .pk-box .pk-now{ font-size:.92rem; }
+.db-earn{ display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-top:.4rem; }
+.db-earn div{ min-width:0; padding:.7rem .8rem; border:1px solid var(--line); border-radius:12px; }
+.db-earn span{ display:block; color:var(--muted); font-size:.8rem; }
+.db-earn b{ display:block; font-size:1.5rem; font-weight:700; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.db-earn small{ color:var(--muted); font-size:.78rem; }
+.db-earn-next{ display:flex; gap:.45rem; align-items:flex-start; margin:.7rem 0 0; font-size:.88rem; overflow-wrap:anywhere; }
+.db-team-prize{ margin-top:.9rem; }
+.db-earn-next span{ min-width:0; }
+.db-earn-next svg{ flex:none; width:16px; height:16px; margin-top:.15rem; color:var(--good, #2e9d5b); }
 .pk-team p{ margin:.4rem 0 0; font-size:.88rem; overflow-wrap:anywhere; }
 .pk-bar{ position:relative; height:10px; margin:.7rem 0 .2rem; border-radius:99px; background:var(--line); overflow:hidden; }
 .pk-bar i{ position:absolute; inset:0 auto 0 0; border-radius:99px; background:var(--good, #2e9d5b); }
