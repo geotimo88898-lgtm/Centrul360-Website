@@ -1215,10 +1215,12 @@
     const mine = (pay.commissionLines || []).filter((l) => l.kind === 'pay' && l.date === today && l.pack);
     const lei = mine.reduce((a, l) => a + l.lei, 0);
     const live = today >= P.from;
+    const planToday = pay.plan ? pay.plan.plans.filter((x) => x.date === today).length : 0;
     return '<div class="pk-box"><b>Bonus pachete · de la ' + esc(K.dateShort(P.from)) + '</b>' +
       '<p>La fiecare plată de pachet: 1.500-1.999 lei = <b>100 lei</b>, 2.000-2.499 lei = <b>150 lei</b>, 2.500-2.999 lei = <b>200 lei</b>, 3.000+ lei = <b>350 lei</b>. ' +
       'Contează și avansul. În plus: <b>+50 lei</b> la a 3-a vânzare din zi și la fiecare după ea, <b>+100 lei</b> când o clientă care a mai cumpărat un pachet cumpără altul. Sub 1.500 rămâne comisionul obișnuit.</p>' +
-      (live ? '<p class="pk-now">Azi: <b>' + mine.length + '</b> ' + (mine.length === 1 ? 'pachet' : 'pachete') + (lei ? ' · <b>+' + lei2s(lei) + '</b> bonus' : '') + '</p>' : '') + '</div>';
+      '<p><b>+' + lei2s((pay.plan && pay.plan.rate) || 5) + '</b> la fiecare plan prezentat și salvat în portal („Salvează la clientă”), la o clientă venită.' + (pay.plan && pay.plan.count ? ' Luna asta: <b>' + K.plural(pay.plan.count, 'plan', 'planuri') + ' = +' + lei2s(pay.plan.lei) + '</b>.' : '') + '</p>' +
+      (live ? '<p class="pk-now">Azi: <b>' + mine.length + '</b> ' + (mine.length === 1 ? 'pachet' : 'pachete') + (lei ? ' · <b>+' + lei2s(lei) + '</b> bonus' : '') + (planToday ? ' · ' + K.plural(planToday, 'plan', 'planuri') + ' <b>+' + lei2s(planToday * pay.plan.rate) + '</b>' : '') + '</p>' : '') + '</div>';
   }
   // Premiul echipei (_lib/payroll.js TEAM): this week's packages of the whole team against the two steps, and the weeks won
   function teamHtml(pay) {

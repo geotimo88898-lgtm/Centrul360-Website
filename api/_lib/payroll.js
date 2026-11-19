@@ -154,6 +154,25 @@ function teamPrize(emp, month, sales, dues, attendance, today, cctx) {
   return { tiers: TEAM.tiers, min: TEAM.min, weeks, lei: weeks.reduce((a, w) => a + w.lei, 0) };
 }
 
+// Planul prezentat (George, 20.11): +5 lei for every plan she made and saved for a client in the portal (Calculatorul de
+// ofertă → „Salvează la clientă” on her own booking), from 23.11, on a visit that took place (finalizată); one a client a
+// day. In the month of the visit.
+const PLAN = { from: '2026-11-23', lei: 5 };
+function planBonus(emp, month, appointments) {
+  if (!hasCommission(emp) || month < PLAN.from.slice(0, 7)) return null;
+  const seen = new Set(), days = [];
+  (appointments || []).forEach((a) => {
+    if (!a || a.cosmeticianId !== emp.id || a.status !== 'finalizata' || !a.offer || a.offer.byId !== emp.id) return;
+    const d = String(a.date || '');
+    if (d < PLAN.from || d.slice(0, 7) !== month) return;
+    const k = d + '|' + (a.clientId || a.clientPhone || a.id);
+    if (seen.has(k)) return;
+    seen.add(k); days.push({ date: d, client: a.clientName || '' });
+  });
+  days.sort((a, b) => (a.date < b.date ? 1 : -1));
+  return { lei: days.length * PLAN.lei, rate: PLAN.lei, count: days.length, plans: days };
+}
+
 // One month of pay for one person.
 function monthPay({ emp, month, isCurrent, sales, dues, payouts, bank, attendance, appointments, finals, cctx }) {
   // the salary of the month by its dates (salaryOfMonth); none in the months before the first one
@@ -173,14 +192,16 @@ function monthPay({ emp, month, isCurrent, sales, dues, payouts, bank, attendanc
   const managerBonus = fin && Number.isFinite(Number(fin.lei)) ? Number(fin.lei) : 0;
   const team = teamPrize(emp, month, sales, dues, attendance, bucharestDate(new Date().toISOString()), cctx);
   const teamLei = team ? team.lei : 0;
+  const plan = planBonus(emp, month, appointments);
+  const planLei = plan ? plan.lei : 0;
   return {
     month, base, overtimeLei: r2(paidLei + dueLei), overtimeMinutes: paidMin + dueMin, overtimePaidLei: r2(paidLei), overtimeDueLei: r2(dueLei),
     commission: r2(commission), commissionWaiting: r2(waiting), upsells, bonus, booking, manual: r2(manual),
     ...(lines ? { commissionLines: lines, toCome: toCome || [] } : {}),
     ...(lines && month >= CM.PACK.from.slice(0, 7) && (!CM.PACK.until || month <= CM.PACK.until.slice(0, 7)) ? { pack: { from: CM.PACK.from, until: CM.PACK.until, tiers: CM.PACK.tiers, min: CM.packMinOf(emp) } } : {}),
-    total: r2(base + paidLei + dueLei + commission + bonus + manual + managerBonus + teamLei), ...(team ? { team } : {}), hasCommission: hasCommission(emp), hasBonus: hasBookingBonus(emp, month),
+    total: r2(base + paidLei + dueLei + commission + bonus + manual + managerBonus + teamLei + planLei), ...(team ? { team } : {}), ...(plan ? { plan } : {}), hasCommission: hasCommission(emp), hasBonus: hasBookingBonus(emp, month),
     ...(hasManagerBonus(emp, month) ? { hasManagerBonus: true, managerBonus: r2(managerBonus), managerFinal: !!fin } : {}),
   };
 }
 
-module.exports = { TEAM, teamPrize, BOOKING_TIERS, bonusUntil, bookingBonus, monthPay, commissionMonth, salaryHistoryOf, salaryOn, salaryOfMonth, withSalary, hasBookingBonus, hasCommission, hasManagerBonus, bucharestDate };
+module.exports = { TEAM, teamPrize, PLAN, planBonus, BOOKING_TIERS, bonusUntil, bookingBonus, monthPay, commissionMonth, salaryHistoryOf, salaryOn, salaryOfMonth, withSalary, hasBookingBonus, hasCommission, hasManagerBonus, bucharestDate };
