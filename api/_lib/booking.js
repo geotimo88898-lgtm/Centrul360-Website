@@ -130,10 +130,13 @@ function catOf(o) {
 }
 const plain = (s) => String(s || '').replace(/\s+[–—-]\s+/g, ': ').replace(/[–—]/g, '-');
 
-// what can be booked in a city: the free consultation, then the offers of the site sold there
-async function services(city) {
+// what can be booked in a city: the free consultation, then the offers sold there; for the site's booking ({ site: true })
+// only the offers of the site (an offer kept for the ads with site: false, like Full Body at its ads price since 19.11,
+// is booked from the site by its name, at the clinic's price)
+async function services(city, opts) {
   const ck = CITY_KEY[city];
-  const offers = (await loadOffers(readJSON, null)).filter((o) => o && o.active && (!Array.isArray(o.locations) || !o.locations.length || o.locations.includes(ck)))
+  const site = !!(opts && opts.site);
+  const offers = (await loadOffers(readJSON, null)).filter((o) => o && o.active && !(site && o.site === false) && (!Array.isArray(o.locations) || !o.locations.length || o.locations.includes(ck)))
     .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
   return [CONSULT].concat(offers.map((o) => ({ id: o.key, title: plain(o.title), sub: '', price: Number(o.priceNew) || 0, old: Number(o.priceOld) || 0, minutes: minutesOf(o), cat: catOf(o) })));
 }
@@ -142,7 +145,9 @@ async function services(city) {
 function custom(label, city) {
   const t = clip(String(label || '').replace(/[^\p{L}\p{N} .,+·&/()%-]/gu, ''), 80);
   if (city === 'Arad' && /\bems\b|epil|laser/.test(fold(t))) return null; // EMS and laser hair removal: Timișoara only
-  return t.length >= 3 ? { id: 'custom', title: t, sub: '', price: 0, old: 0, minutes: 60, cat: catOf({ title: t }) } : null;
+  // a full body laser takes 90 minutes, as the offer did (minutesOf); the rest an hour
+  const minutes = /full\s*body/.test(fold(t)) && /epil|laser/.test(fold(t)) ? 90 : 60;
+  return t.length >= 3 ? { id: 'custom', title: t, sub: '', price: 0, old: 0, minutes, cat: catOf({ title: t }) } : null;
 }
 
 // What is taken on a day at a clinic: the intervals (minutes from midnight, how many places each takes), how many

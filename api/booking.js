@@ -25,7 +25,7 @@ const MONTHS = ['ian.', 'feb.', 'mar.', 'apr.', 'mai', 'iun.', 'iul.', 'aug.', '
 const nice = (d) => { const x = new Date(d + 'T12:00:00Z'); return DAYS[x.getUTCDay()] + ' ' + x.getUTCDate() + ' ' + MONTHS[x.getUTCMonth()]; };
 
 async function pick(city, id, label) {
-  const list = await B.services(city);
+  const list = await B.services(city, { site: true }); // the site's booking: only the offers of the site
   if (id === 'custom') return { list, svc: B.custom(label, city) };
   return { list, svc: list.find((s) => s.id === id) || null };
 }

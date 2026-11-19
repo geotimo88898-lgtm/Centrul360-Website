@@ -328,7 +328,8 @@
     if (w.svc === 'custom' && w.label && !(S.city === 'Arad' && /\bems\b|epil|laser/.test(t))) return 'custom';
     return '';
   }
-  const byId = (id) => (id === 'custom' ? { id: 'custom', title: S.label, minutes: 60, price: 0 } : (S.services || []).find((s) => s.id === id) || null);
+  const fullBody = (t) => /full\s*body/.test(fold(t)) && /epil|laser/.test(fold(t)); // a full body laser: 90 minutes (api/_lib/booking.js custom)
+  const byId = (id) => (id === 'custom' ? { id: 'custom', title: S.label, minutes: fullBody(S.label) ? 90 : 60, price: 0 } : (S.services || []).find((s) => s.id === id) || null);
 
   // ---------------------------------------------------------------- painting
   function prog(n) { root.querySelectorAll('.bk-prog i').forEach((i, k) => i.classList.toggle('on', k < n)); }
@@ -598,11 +599,13 @@
     const svc = /hifu/.test(t) && /gus/.test(t) && !/pachet|mini|360/.test(t) ? 'hifu-gusa-1sedinta'
       : /liposonix/.test(t) && !/pachet|o zona/.test(t) ? 'liposonix-2zone'
       : /restart/.test(t) ? 'facial-restart'
-      : /full body/.test(t) && /epil|laser|pachet/.test(t + m) ? 'epilare-full-body'
       : /cavitatie\s*\+\s*ems/.test(t) ? 'cavitatie-ems'
       : /cavitatie\s*1\s*\+\s*1/.test(t) ? 'cavitatie-1plus1'
       : 'custom';
-    const nice = /pachetul/i.test(msg) && label && !/^pachet/i.test(label) ? 'Pachetul ' + label : label;
+    let nice = /pachetul/i.test(msg) && label && !/^pachet/i.test(label) ? 'Pachetul ' + label : label;
+    // Full Body (19.11): off the site's offers, booked by its name (the Admin offer of the same name, while it is on
+    // the site, still matches it by its words)
+    if (svc === 'custom' && /full body/.test(t) && /epil|laser|pachet/.test(t + m) && !/epil/.test(fold(nice))) nice = /full body/i.test(nice) ? nice.replace(/full body/i, 'Epilare laser Full Body') : 'Epilare laser Full Body';
     return { service: svc, city, label: nice.slice(0, 80) };
   }
   document.addEventListener('click', (e) => {

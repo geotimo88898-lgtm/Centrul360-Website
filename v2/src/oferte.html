@@ -29,6 +29,7 @@ description: Toate ofertele active Centrul360: remodelare corporală, tratamente
 .ofr-notes a{ color:var(--ink); font-weight:600; text-decoration:none; white-space:nowrap; }
 .ofr-notes a .ar{ display:inline-block; width:15px; height:15px; vertical-align:-2px; margin-left:4px; transition:transform .5s var(--e); }
 .ofr-notes a:hover .ar{ transform:translateX(4px); }
+.ofr-fb{ font-size:15px; line-height:1.5; color:rgba(255,255,255,.66); text-wrap:pretty; }
 .ofr-empty{ text-align:center; color:var(--mute); max-width:30rem; margin:8px auto 0; }
 .ofr-in{ animation:ofrIn .8s var(--e) both; }
 @keyframes ofrIn{ from{ opacity:0; transform:translateY(18px); } to{ opacity:1; transform:none; } }
@@ -80,7 +81,13 @@ description: Toate ofertele active Centrul360: remodelare corporală, tratamente
   </div>
   <div class="ofr-grp" data-grp="epilare">
     <div class="ofr-gh"><div><span class="eye">Epilare · doar Timișoara</span><h3>Epilare laser</h3></div><span class="ofr-n"></span></div>
-    <div class="offers" data-offers="epilare"></div>
+    <div class="offers">
+      <div class="slip rv"><span class="pct">-10%</span><span class="k"><b>Pachet</b> · Epilare laser</span><h3>Full Body · 6 ședințe</h3><p class="ofr-fb">Toate zonele de corp, fără față: axile, inghinal total, brațe total, picior lung. O ședință: 920 lei.</p>
+        <div class="pr"><b data-count="4968" data-suffix=" lei">4.968 lei</b><s>5.520 lei</s></div>
+        <span class="save">Doar la plata integrală</span>
+        <span class="where">Timișoara</span>
+        <button type="button" class="btn book gold" data-book data-book-service="custom" data-book-label="Epilare Full Body · pachet 6 ședințe" data-book-city="Timișoara">Programează-te{{arrow}}</button></div>
+    </div>
     <div class="ofr-notes">
       <p><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.2-3 7.6-7 9-4-1.4-7-4.8-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span>Epilare laser cu garanție scrisă: dacă părul crește la loc, continuăm gratuit. <a href="{{base}}epilare-laser">Detalii{{arrow}}</a></span></p>
       <p><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Toate zonele și prețurile pe ședință sunt pe <a href="{{base}}preturi#epilare">pagina de prețuri{{arrow}}</a></span></p>
@@ -126,7 +133,7 @@ description: Toate ofertele active Centrul360: remodelare corporală, tratamente
 </div></section>
 
 <script>
-/* Oferte: kit.js fills the three boxes from Admin; here the two filters (category, city), the counts per
+/* Oferte: kit.js fills Corp and Față from Admin (Epilare has the Full Body package, fixed, since 19.11); here the two filters (category, city), the counts per
    group, and the "până la -X%" of the headline from the real offers. */
 (function () {
   var groups = [].slice.call(document.querySelectorAll('.ofr-grp'));
