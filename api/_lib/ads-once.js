@@ -12,6 +12,17 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 19.11 evening, the owner („STINGE RESTART, avem nevoie doar de overflow de HIFU gușă și epilare laser”): from next
+  // week Mădălina does laser consultations non-stop (2 an hour, 16 a day) and Bianca + Raluca HIFU gușă (about 17 a day)
+  // with the package pitch; every Restart ad off and the Timișoara LipoSonix too, the money goes to HIFU gușă and laser.
+  // HIFU sezon (a lead at ~8 lei) to 200 lei a day now; the laser ones scale once their first day shows the lead's price
+  { id: 'focus-hifu-laser-2026-11-19', why: 'doar HIFU gușă și epilare laser: Restart și LipoSonix TM oprite, cerut de voi pe 19.11', actions: [
+    { campaignId: '120251418278340103', name: 'TM RESTART · fără ace', status: 'PAUSED', why: 'planul: doar HIFU gușă și laser' },
+    { campaignId: '120251400568370103', name: 'TM RESTART · local', status: 'PAUSED', why: 'planul: doar HIFU gușă și laser' },
+    { campaignId: '120251992594590103', name: 'AR RESTART · căutăm 8 doamne (port TM)', status: 'PAUSED', why: 'planul: fără Restart' },
+    { campaignId: '120252015088300103', name: 'TM LIPO · stai întinsă v2', status: 'PAUSED', why: 'planul: doar HIFU gușă și laser' },
+    { campaignId: '120251401215320103', name: 'TM HIFU G · sezon', daily: 200, why: 'overflow HIFU gușă, lead ~8 lei' },
+  ] },
   // 19.11 afternoon, the owner („avem nevoie de lead overflow, principal HIFU gușă la Timișoara, foarte tare”): the
   // clinic's best ad, HIFU sezon (ROAS 11, a lead at ~8 lei), to 150 lei a day; 3 new HIFU gușă ads published next to it
   { id: 'tm-hifu-overflow-2026-11-19', why: 'HIFU gușă Timișoara: lead overflow, cerut de voi pe 19.11', actions: [
