@@ -202,6 +202,15 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, form: { id: r.form.id, name: r.form.name, lastAt: '', created: new Date().toISOString(), offer: offer ? offer.title : '', location: r.form.location } });
       return;
     }
+    // the move to another ad account (21.11): a campaign of the old account remade in the connected one (meta-ads port)
+    if (body.action === 'port') {
+      const conn = await loadConnection(readJSON);
+      if (!conn.userToken || !conn.adAccountId) { res.status(400).json({ error: 'not_connected', message: REASONS.not_connected }); return; }
+      const r = await ads.port(conn, String(body.campaignId || ''), { name: body.name, budget: body.budget, dry: body.dry === true, paused: body.paused === true, videoId: body.videoId, formId: body.formId });
+      if (r.ok && !r.dry) await require('./_lib/ads-cache').clear().catch(() => {});
+      res.status(r.error ? 400 : 200).json(r);
+      return;
+    }
     if (body.action !== 'publish') { res.status(400).json({ error: 'invalid_action' }); return; }
     await require('./_lib/ads-cache').clear().catch(() => {});
 
