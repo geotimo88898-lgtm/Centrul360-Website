@@ -14,6 +14,10 @@ const KEY = 'data/ads-once.json';
 const JOBS = [
   // 20.11 13:00, George: „reclamele merg ca naiba”. Off what spent two days with no lead (laser E2 32 lei, E3 31 lei,
   // HIFU sezon v2 26 lei); the money stays on what brings leads
+  // 20.11 13:10: TM laser E1 spent 41 lei today with no lead; its creative goes on fresh (E1 reluat) next to E4, published now
+  { id: 'noon-e1-2026-11-20', why: '41 lei azi fără lead, înlocuită cu E1 reluat și E4', actions: [
+    { campaignId: '120252019959160103', name: 'TM LASER · căutăm 15 doamne', status: 'PAUSED', why: '41 lei azi, 0 leaduri' },
+  ] },
   { id: 'noon-stop-2026-11-20', why: 'zero leaduri în două zile', actions: [
     { campaignId: '120252019966140103', name: 'TM LASER · fără ras pentru totdeauna', status: 'PAUSED', why: '32 lei, 0 leaduri în 2 zile' },
     { campaignId: '120252019962330103', name: 'TM LASER · stai întinsă', status: 'PAUSED', why: '31 lei, 0 leaduri în 2 zile' },
