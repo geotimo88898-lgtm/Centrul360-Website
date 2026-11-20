@@ -39,6 +39,13 @@ module.exports = async (req, res) => {
   // (api/_lib/fastcash.js); GET ?fastcash=status: Meta's answers. Nothing is sent to clients from here.
   if (req.query && req.query.fastcash) {
     const FC = require('./_lib/fastcash');
+    // ?fastcash=pic&label=<template label>: the picture an existing template sends (to match the campaign's look to it)
+    if (req.query.fastcash === 'pic') {
+      const d = await WT.load(); const t = d.templates.find((x) => x.label === String(req.query.label || ''));
+      const path = WT.imageOf(t); const buf = path ? await require('./_lib/store').readBinary(path) : null;
+      if (!buf) { res.status(404).json({ error: 'no_picture', labels: d.templates.filter((x) => WT.imageOf(x)).map((x) => x.label) }); return; }
+      res.setHeader('Content-Type', 'image/jpeg'); res.status(200).send(buf); return;
+    }
     const r = req.method === 'POST' && req.query.fastcash === 'templates' ? await FC.templates(req.body || {}) : await FC.status();
     res.status(r.error ? 400 : 200).json(r);
     return;
