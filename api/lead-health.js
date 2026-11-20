@@ -65,6 +65,32 @@ module.exports = async (req, res) => {
   // in total and per cosmetician id, approved and waiting; ids and sums only, never a name. Read only.
   // ?team=1: the team as Echipa has it, read only (the owner, 20.11: „ai tot sistemul la dispoziție”): who has an account,
   // the role, the clinic, active or not, the hours a day; never the pay, the phone or the papers
+  // ?fcaudience=1: who a „Fast Cash” WhatsApp offer could go to (the owner, 20.11), counts only, per clinic: clients
+  // with a finished visit in the last 6 months, older clients, and the leads of the last 90 days who never came;
+  // with a phone, without a test name. Never a name or a number. Read only.
+  if (req.query && req.query.fcaudience) {
+    const [clients, appts, leads] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/appointments.json', []), readJSON('data/leads.json', [])]);
+    const { normalizePhone } = require('./_lib/clients');
+    const C = require('./_lib/clinic');
+    const test = (n) => /^\s*test\b/i.test(String(n || ''));
+    const now = Date.now(), d180 = new Date(now - 180 * 864e5).toISOString().slice(0, 10), d90 = new Date(now - 90 * 864e5).toISOString();
+    const last = new Map();   // client id -> { date, city } of the last finished visit
+    appts.forEach((a) => { if (!a || a.status !== 'finalizata' || !a.clientId) return; const p = last.get(a.clientId); if (!p || a.date > p.date) last.set(a.clientId, { date: a.date, city: C.clinicOf(a.location) || '?' }); });
+    const phones = new Set(), out = {};
+    const add = (city, seg) => { out[city] = out[city] || { recent: 0, older: 0, leads90: 0 }; out[city][seg]++; };
+    clients.forEach((c) => {
+      const ph = normalizePhone(c && c.phone); const v = c && last.get(c.id);
+      if (!ph || !v || test(c.name) || phones.has(ph)) return;
+      phones.add(ph); add(v.city, v.date >= d180 ? 'recent' : 'older');
+    });
+    leads.forEach((l) => {
+      const ph = normalizePhone(l && l.phone);
+      if (!ph || test(l.name) || phones.has(ph) || !(String(l.createdAt || '') >= d90)) return;
+      phones.add(ph); add(C.clinicOf(l.location) || '?', 'leads90');
+    });
+    res.status(200).json({ ok: true, cities: out, clientsWithPhone: clients.filter((c) => c && normalizePhone(c.phone)).length, leadsTotal: leads.length });
+    return;
+  }
   if (req.query && req.query.team) {
     const [emps, sched] = await Promise.all([readJSON('data/employees.json', []), require('./_lib/team-schedule').load().catch(() => null)]);
     const TS = require('./_lib/team-schedule');
