@@ -19,10 +19,10 @@ const WA = require('./whatsapp');
 
 const KEY = 'data/wa-templates.json';
 // what a message can say about the client / the appointment (the names in _lib/workflows.js vars())
-const VARS = ['prenume', 'nume', 'telefon', 'procedura', 'interes', 'tratament', 'locatie', 'adresa', 'zi', 'data', 'ora', 'link_recenzie'];
+const VARS = ['prenume', 'nume', 'telefon', 'procedura', 'interes', 'tratament', 'locatie', 'adresa', 'zi', 'data', 'ora', 'link_recenzie', 'ocupate', 'ramase'];
 // Meta wants an example for each variable when it reviews a template
 const SAMPLE = { prenume: 'Andreea', nume: 'Andreea Popescu', telefon: '0722 123 456', procedura: 'LipoSonix', interes: 'LipoSonix', tratament: 'Facial Restart',
-  locatie: 'Timișoara', adresa: 'Str. Bucegi 7, Timișoara', zi: 'mâine', data: '14.10.2026', ora: '11:00', link_recenzie: 'https://g.page/r/centrul360/review' };
+  locatie: 'Timișoara', adresa: 'Str. Bucegi 7, Timișoara', zi: 'mâine', data: '14.10.2026', ora: '11:00', link_recenzie: 'https://g.page/r/centrul360/review', ocupate: '4', ramase: '6' };
 const CATEGORIES = ['UTILITY', 'MARKETING'];
 
 const clip = (s, n) => String(s == null ? '' : s).slice(0, n);

@@ -35,6 +35,14 @@ module.exports = async (req, res) => {
   if (!fromCreative(req) && !(session && session.role === 'admin')) { res.status(401).json({ error: 'unauthorized' }); return; }
   // POST ?regulament=1 { name, dataUrl }: a new version of the internal regulation, uploaded for the owner when he asks
   // (18.11); the same path as Meniu → Regulament intern → Versiune nouă (api/portal-regulament.js)
+  // POST ?fastcash=templates { campaign, steps }: the owner's Fast Cash WhatsApp campaign made into templates and sent to Meta
+  // (api/_lib/fastcash.js); GET ?fastcash=status: Meta's answers. Nothing is sent to clients from here.
+  if (req.query && req.query.fastcash) {
+    const FC = require('./_lib/fastcash');
+    const r = req.method === 'POST' && req.query.fastcash === 'templates' ? await FC.templates(req.body || {}) : await FC.status();
+    res.status(r.error ? 400 : 200).json(r);
+    return;
+  }
   if (req.method === 'POST' && req.query && req.query.regulament) {
     const r = await require('./portal-regulament').upload({ role: 'admin', employeeId: 'admin' }, req.body || {});
     res.status(r.error ? 400 : 200).json(r);
