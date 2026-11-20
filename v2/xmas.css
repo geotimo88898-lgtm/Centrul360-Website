@@ -31,6 +31,7 @@ html:not(.xmas) .xm-pill, html:not(.xmas) .xm-band, html:not(.xmas) .xm-only{ di
 @media (min-width:921px){ .xmas .menu .xm-pill{ display:none; } }
 
 /* the thin band under the header, on every page whose first screen is a hero (not on the card's own pages) */
+.xm-band{ border:0; font-family:inherit; cursor:pointer; }
 .xm-band{ position:absolute; z-index:5; top:82px; left:50%; transform:translateX(-50%); max-width:calc(100% - 32px); align-items:center; gap:10px;
   padding:7px 14px 7px 10px; border-radius:999px; text-decoration:none; white-space:nowrap; font-size:13.5px; font-weight:500; color:#5a1030;
   background:linear-gradient(100deg,rgba(255,240,244,.95),rgba(255,248,236,.95)); box-shadow:0 0 0 1px rgba(201,160,74,.45) inset, 0 10px 24px -16px rgba(176,23,90,.45);

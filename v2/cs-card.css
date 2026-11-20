@@ -54,8 +54,9 @@
 @keyframes cscTw{ 0%,100%{ transform:scale(.7) rotate(0deg); opacity:.55; } 50%{ transform:scale(1.1) rotate(45deg); opacity:1; } }
 .csc-val{ position:absolute; left:6.6cqw; top:26.6cqw; display:grid; gap:1.6cqw; }
 .csc-val p{ margin:0; display:flex; align-items:baseline; gap:2.2cqw; line-height:.9; }
-.csc-val b{ font-size:15cqw; font-weight:800; letter-spacing:-.055em; font-variant-numeric:tabular-nums; padding-bottom:.4cqw; }
+.csc-val b{ font-size:13.6cqw; font-weight:800; letter-spacing:-.055em; font-variant-numeric:tabular-nums; padding-bottom:.4cqw; }
 .csc-val i{ font-family:'Fraunces',Georgia,serif; font-style:italic; font-weight:400; font-size:6.8cqw; letter-spacing:-.02em; padding-right:.6cqw; }
+.csc-val .csc-pre{ font-size:5.4cqw; padding-right:.4cqw; }
 .csc-val small{ font-size:2.8cqw; font-weight:500; letter-spacing:.02em; color:rgba(255,240,225,.85); }
 .csc-bot{ position:absolute; left:7cqw; right:30cqw; bottom:5cqw; display:flex; align-items:flex-end; gap:6cqw; }
 .csc-bot small{ display:block; margin-bottom:1cqw; font-size:2.05cqw; font-weight:600; letter-spacing:.17em; text-transform:uppercase; color:rgba(247,220,151,.85); white-space:nowrap; }
@@ -65,9 +66,13 @@
 .csc-nm b.out{ opacity:0; transform:translateY(-40%); filter:blur(4px); }
 .csc-nm b.pre{ opacity:0; transform:translateY(40%); filter:blur(4px); transition:none; }
 .csc-exp b{ font-variant-numeric:tabular-nums; font-weight:500; }
-.csc-shadow{ position:absolute; z-index:-1; bottom:calc(clamp(44px,7vw,72px) - 30px); width:min(360px,70vw); height:34px; border-radius:50%;
+.csc-shadow{ position:absolute; z-index:-1; bottom:calc(clamp(44px,7vw,72px) + 30px); width:min(360px,70vw); height:34px; border-radius:50%;
   background:radial-gradient(closest-side,rgba(130,20,60,.3),transparent); filter:blur(4px); animation:cscShadow 9s var(--e2) infinite alternate; }
 @keyframes cscShadow{ 0%{ transform:scale(1.04) translateX(-8px); } 100%{ transform:scale(.86) translateX(8px); opacity:.7; } }
+/* the price, by the card: what she pays, first and plain (the owner, 20.11: „lumea crede că plătește 2.500”) */
+.csc-tag{ position:relative; z-index:2; margin-top:22px; display:inline-flex; align-items:baseline; gap:8px; padding:9px 18px; border-radius:999px; font-size:14.5px; color:var(--ink2);
+  background:#fff; box-shadow:0 0 0 1px rgba(201,160,74,.55) inset, 0 12px 26px -16px rgba(120,10,50,.45); }
+.csc-tag b{ font-size:1.12rem; font-weight:800; letter-spacing:-.02em; color:var(--ink); font-variant-numeric:tabular-nums; }
 /* a few points of light that rise slowly around it: gold, rose, white */
 .csc-dust{ position:absolute; inset:0; z-index:-1; pointer-events:none; }
 .csc-dust i{ position:absolute; width:5px; height:5px; border-radius:50%; background:#e3c27a; opacity:0; animation:cscDust 9s var(--e2) infinite; box-shadow:0 0 10px rgba(227,194,122,.9); }
@@ -109,7 +114,8 @@
   .csc-stage{ padding:50px 0 46px; }
   .csc-card{ width:min(360px,calc(100vw - 48px)); border-radius:22px; }
   .csc-edge{ border-radius:22px; }
-  .csc-shadow{ bottom:16px; }
+  .csc-shadow{ bottom:86px; }
+  .csc-tag{ margin-top:18px; font-size:13.5px; padding:8px 16px; }
 }
 @media (prefers-reduced-motion:reduce){ .csc-float,.csc-sheen,.csc-dust i,.csc-star,.csc-tw,.csc-shadow,.csc-hat .sw,.csc-hat .tip{ animation:none !important; } .csc-dust,.csc-snow{ display:none; } }
 /* a part the page hides stays hidden, whatever its own display (buttons, tags, rows) */

@@ -1,18 +1,22 @@
-// /api/card-sarbatori: the Card de Sărbători (the owner, 20.11): 990 lei for a credit of 2.500 lei in treatments.
-// Only 100 cards in all (both clinics), on sale until 24 December 2026, 23:59 (Romania). Public, so: our own pages only
+// /api/card-sarbatori: the Card de Sărbători (the owner, 20.11): three cards, 290 → 500 lei, 490 → 1.000 lei,
+// 990 → 2.500 lei in treatments, 1 to 5 of one card in an order. Only 10 cards in all (both clinics, whatever the
+// card), on sale until 24 December 2026, 23:59 (Romania). Public, so: our own pages only
 // (Origin), a hidden trap field, the consent box, a few tries per address. The rules and the payment: api/_lib/card-sarbatori.js.
-//   GET                → { total: 100, left, deadline, open, online }   left = 100 minus the reservations not cancelled;
-//                        online = myPOS eCommerce answers (the last check), so the page may offer the online payment
-//   POST { name, phone, gift, recipient, city, pay, consent, website, page, event_id }
-//                      → { ok, reservation: { id, city, recipient, pay }, left } | { error }
-//        A reservation goes in data/card-sarbatori.json (status 'rezervat', via 'site', a unique card code), her lead
+//   GET                → { total: 10, left, deadline, open, online, tiers }   left = 10 minus the cards of the orders not
+//                        cancelled; online = the myPOS card form is set up (MYPOS_EMBED_*), so the window may offer it
+//   POST { action: 'intent', tier, qty, id? }   online payment: the order made here first ('draft': our orderID, the sum
+//        made here), or the same draft with another card or quantity → { id, checkout } for the myPOS card form (v2/cs-buy.js)
+//   POST { tier, qty, names: [..], name, phone, city, pay, draft?, consent, website, page, event_id }
+//                      → { ok, reservation: { id, city, tier, qty, amount, credit, pay }, checkout?, left } | { error }
+//        The price, the credit and the sum to pay are made here (tier × qty), never taken from the page. With a draft
+//        (online), that order gets her details and becomes a reservation she then pays in the form; else a new one, paid in
+//        the clinic. Orders in data/card-sarbatori.json (status 'rezervat', via 'site', each card its own code and name), her lead
 //        in the Pipeline (source Site, interest „Card de Sărbători”, no welcome WhatsApp: reception calls her) and the
 //        owner and reception hear it like any site lead (LEAD SITE TM 🌐 - Card de Sărbători).
-//   POST { action: 'order', id }   the checkout page: what she reserved (her phone masked), paid or not, online or not
-//   POST { action: 'pay', id }     a myPOS payment request for 990 lei (fixed here) → { url } to pay on myPOS's page
-//   POST { action: 'status', id }  asks myPOS how the payment is → { paid, status }
-//   POST { action: 'list' } / { action: 'set', id, status }   the team (admin, manager, reception): the reservations;
-//        'platit' (paid in the clinic) or 'anulat' (its card goes back to the counter).
+//   POST { action: 'order', id } / { action: 'status', id }   what she ordered (her phone masked), paid or not: the payment
+//        is confirmed only by myPOS's notification (api/card-notify.js), never by the page
+//   POST { action: 'list' } / { action: 'set', id, status }   the team (admin, manager, reception): the orders;
+//        'platit' (paid in the clinic) or 'anulat' (its cards go back to the counter).
 // After payment she gets her card on WhatsApp (her name and the code); at the desk the card is tied to her name and phone.
 
 const crypto = require('crypto');
@@ -36,19 +40,21 @@ function limited(what, ip, max) {
   tries.set(k, mine.concat(now));
   return false;
 }
-const publicOf = (r) => ({ id: r.id, city: r.city, recipient: r.recipient, pay: r.pay, status: r.status });
+const publicOf = (r) => ({ id: r.id, city: r.city, recipient: r.recipient, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit, names: (r.cards || []).map((c) => c.recipient), pay: r.pay, status: r.status });
 // the checkout page's view of one reservation: her phone only by its last 3 digits
-const orderOf = (r, online) => ({
-  id: r.id, name: r.name, phone: '•••• ' + String(r.phone || '').replace(/\D/g, '').slice(-3), recipient: r.recipient, gift: !!r.gift, city: r.city,
-  status: r.status, paid: r.status === 'platit', bonusRestart: !!r.bonusRestart, amount: C.PRICE, online: !!online,
-  payment: r.payment ? { status: r.payment.status, url: ['Pending', 'Seen', 'None', ''].includes(r.payment.status || '') ? r.payment.url : '' } : null,
+const orderOf = (r) => (C.norm(r), {
+  id: r.id, name: r.name, phone: '•••• ' + String(r.phone || '').replace(/\D/g, '').slice(-3), city: r.city,
+  tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit, names: (r.cards || []).map((c) => c.recipient),
+  status: r.status, paid: r.status === 'platit', bonusRestart: r.bonusRestart || 0, pay: r.pay,
 });
+const siteOf = (req) => 'https://' + (String(req.headers['x-forwarded-host'] || req.headers.host || 'www.centrul360.com').split(',')[0].trim());
 const CODES = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I: easy to read out at the desk
-function codeOf(list) {
+function codeOf(list, more) {
+  const used = new Set([].concat(...list.map((r) => (C.norm(r).cards || []).map((c) => c.code))).concat(more || []));
   for (;;) {
     const b = crypto.randomBytes(8);
     const c = 'C360-' + [0, 1, 2, 3].map((i) => CODES[b[i] % 32]).join('') + '-' + [4, 5, 6, 7].map((i) => CODES[b[i] % 32]).join('');
-    if (!list.some((r) => r.code === c)) return c;
+    if (!used.has(c)) return c;
   }
 }
 
@@ -57,7 +63,7 @@ module.exports = async (req, res) => {
   if (!ourOrigin(String(req.headers.origin || ''))) { res.status(403).json({ error: 'forbidden' }); return; }
   try {
     if (req.method === 'GET') {
-      const [list, on] = await Promise.all([readJSON(C.KEY, []), C.online()]);
+      const list = await readJSON(C.KEY, []), on = !!C.embed();
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=10, stale-while-revalidate=30');
       res.status(200).json(C.counter(list, Date.now(), on));
       return;
@@ -71,7 +77,7 @@ module.exports = async (req, res) => {
     if (b.action === 'list' || b.action === 'set') {
       const session = await require('./_lib/auth').requireRole(req, res, ['admin', 'manager', 'receptie']);
       if (!session) return;
-      if (b.action === 'list') { const list = await readJSON(C.KEY, []); res.status(200).json(Object.assign({ reservations: list.slice().reverse() }, C.counter(list))); return; }
+      if (b.action === 'list') { const list = await readJSON(C.KEY, []); res.status(200).json(Object.assign({ reservations: list.filter((r) => r.status !== 'draft').reverse() }, C.counter(list))); return; }
       const id = clip(b.id, 60);
       if (!['rezervat', 'platit', 'anulat'].includes(b.status)) { res.status(400).json({ error: 'bad_status' }); return; }
       let row;
@@ -86,37 +92,36 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ---- the checkout page: the order, the payment request, its status
-    if (b.action === 'order' || b.action === 'pay' || b.action === 'status') {
-      if (limited(b.action, ip, b.action === 'pay' ? 6 : 120)) { res.status(429).json({ error: 'too_many' }); return; }
-      const id = clip(b.id, 60);
-      let row = (await readJSON(C.KEY, [])).find((r) => r.id === id);
-      if (!row || row.status === 'anulat') { res.status(404).json({ error: 'not_found' }); return; }
-      if (b.action === 'order') { res.status(200).json({ ok: true, order: orderOf(row, row.status !== 'platit' && await C.online()) }); return; }
-      if (b.action === 'status') {
-        try { row = await C.check(id) || row; } catch (e) { console.error('card-sarbatori status:', e.message, e.status || ''); }
-        res.status(200).json({ ok: true, paid: row.status === 'platit', status: (row.payment && row.payment.status) || '', order: orderOf(row, false) });
-        return;
-      }
-      // pay: one request per reservation while it can still be paid; a final one (expired, cancelled, failed) gets a new one
-      if (row.status === 'platit') { res.status(200).json({ ok: true, paid: true }); return; }
-      if (row.payment && row.payment.url && !C.FINAL.includes(row.payment.status) && row.payment.expires >= new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date())) {
-        res.status(200).json({ ok: true, url: row.payment.url });
-        return;
-      }
-      if (!(await C.online())) { res.status(200).json({ error: 'payment_not_configured' }); return; }
-      let payment;
-      try { payment = await C.request(row); } catch (e) {
-        console.error('card-sarbatori request:', e.message, e.status || '', e.code || '');
-        res.status(502).json({ error: 'payment_failed' });
-        return;
-      }
-      const list = await readJSON(C.KEY, []);
-      const cur = list.find((r) => r.id === id);
-      if (!cur) { res.status(404).json({ error: 'not_found' }); return; }
-      cur.payment = payment; cur.pay = 'online';
+    // ---- the online payment: the order first (a draft), with our orderID and the sum made here
+    if (b.action === 'intent') {
+      if (limited('intent', ip, 40)) { res.status(429).json({ error: 'too_many' }); return; }
+      if (!C.embed()) { res.status(200).json({ error: 'payment_not_configured' }); return; }
+      const tier = Number(b.tier), qty = Number(b.qty);
+      if (!C.TIERS[tier]) { res.status(400).json({ error: 'bad_tier' }); return; }
+      if (!Number.isInteger(qty) || qty < 1 || qty > C.MAXQ) { res.status(400).json({ error: 'bad_qty' }); return; }
+      if (Date.now() >= Date.parse(C.DEADLINE)) { res.status(409).json({ error: 'closed' }); return; }
+      let list = await readJSON(C.KEY, []);
+      const left = C.counter(list).left;
+      if (left <= 0) { res.status(409).json({ error: 'sold_out' }); return; }
+      if (left < qty) { res.status(409).json({ error: 'not_enough', left }); return; }
+      // drafts never paid nor finished are dropped after 2 days
+      list = list.filter((r) => r.status !== 'draft' || Date.now() - Date.parse(r.created) < 2 * 86400e3);
+      // her draft (another card or quantity), or her reservation to pay online after a payment that did not pass (same card,
+      // same quantity): a new orderID each time, myPOS takes an orderID once
+      let row = list.find((r) => r.id === clip(b.id, 60) && (r.status === 'draft' || (r.status === 'rezervat' && r.pay === 'online' && r.tier === tier && r.qty === qty)));
+      const orderId = C.newOrderId();
+      if (row && row.status === 'draft') Object.assign(row, { tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty });
+      if (row) Object.assign(row, { orderId, orderIds: (row.orderIds || []).concat(orderId).slice(-20) });
+      else { row = { id: crypto.randomUUID(), created: new Date().toISOString(), status: 'draft', via: 'site', pay: 'online', tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty, orderId, orderIds: [orderId], cards: [] }; list.push(row); }
       await writeJSON(C.KEY, list);
-      res.status(200).json({ ok: true, url: payment.url });
+      res.status(200).json({ ok: true, id: row.id, checkout: C.checkout(row, siteOf(req)) });
+      return;
+    }
+    if (b.action === 'order' || b.action === 'status') {
+      if (limited(b.action, ip, 120)) { res.status(429).json({ error: 'too_many' }); return; }
+      const row = (await readJSON(C.KEY, [])).find((r) => r.id === clip(b.id, 60));
+      if (!row || row.status === 'anulat') { res.status(404).json({ error: 'not_found' }); return; }
+      res.status(200).json({ ok: true, paid: row.status === 'platit', order: orderOf(row) });
       return;
     }
 
@@ -127,11 +132,12 @@ module.exports = async (req, res) => {
     let phone = normalizePhone(clip(b.phone, 30));
     if (/^7\d{8}$/.test(phone)) phone = '0' + phone; // typed without the 0
     const city = cityOf(b.city);
-    const gift = b.gift === true || b.gift === 'true' || b.gift === 'on';
-    const recipient = gift ? clean(b.recipient, 80) : name;
+    const tier = Number(b.tier), qty = Number(b.qty);
+    if (!C.TIERS[tier]) { res.status(400).json({ error: 'bad_tier' }); return; }
+    if (!Number.isInteger(qty) || qty < 1 || qty > C.MAXQ) { res.status(400).json({ error: 'bad_qty' }); return; }
+    const names = Array.from({ length: qty }, (_, i) => clean((Array.isArray(b.names) ? b.names : [])[i], 80));
     if (name.length < 2) { res.status(400).json({ error: 'missing_name' }); return; }
     if (!/^07\d{8}$/.test(phone) && !/^[1-9]\d{10,14}$/.test(phone)) { res.status(400).json({ error: 'bad_phone' }); return; }
-    if (gift && recipient.length < 2) { res.status(400).json({ error: 'missing_recipient' }); return; }
     if (!city) { res.status(400).json({ error: 'missing_city' }); return; }
     if (!(b.consent === true || b.consent === 'true' || b.consent === 'on')) { res.status(400).json({ error: 'missing_consent' }); return; }
 
@@ -139,21 +145,31 @@ module.exports = async (req, res) => {
     if (now >= Date.parse(C.DEADLINE)) { res.status(409).json({ error: 'closed' }); return; }
     let list = await readJSON(C.KEY, []);
     const left0 = C.counter(list, now).left;
-    const on = b.pay === 'online' ? await C.online() : false;
-    const pay = on ? 'online' : 'salon';
-    // the same card again (a second tap, the page sent twice): the one she has
+    // online: the draft the form was made for (same card, same quantity), else in the clinic
+    const draft = b.pay === 'online' && C.embed() ? list.find((r) => r.id === clip(b.draft, 60) && r.status === 'draft' && r.tier === tier && r.qty === qty) : null;
+    const pay = draft ? 'online' : 'salon';
+    // the same order again within 10 minutes (a second tap, the page sent twice): the one she has
     const hers = list.filter((r) => C.live(r) && d9(r.phone) === d9(phone));
-    const same = hers.find((r) => fold(r.recipient) === fold(recipient));
-    if (same) { res.status(200).json({ ok: true, again: true, reservation: Object.assign(publicOf(same), same.status === 'rezervat' && pay === 'online' ? { pay } : {}), left: left0 }); return; }
-    if (hers.length >= 5) { res.status(409).json({ error: 'too_many_cards' }); return; }
+    const same = hers.find((r) => C.norm(r).tier === tier && r.qty === qty && r.status === 'rezervat' && Date.now() - Date.parse(r.created) < 10 * 60e3 &&
+      r.cards.map((c) => fold(c.recipient)).join('|') === names.map(fold).join('|'));
+    if (same && !draft) { res.status(200).json({ ok: true, again: true, reservation: publicOf(same), left: left0 }); return; }
+    if (hers.reduce((n, r) => n + C.qtyOf(r), 0) + qty > 10) { res.status(409).json({ error: 'too_many_cards' }); return; }
     if (left0 <= 0) { res.status(409).json({ error: 'sold_out' }); return; }
+    if (left0 < qty) { res.status(409).json({ error: 'not_enough', left: left0 }); return; }
 
-    const entry = { id: crypto.randomUUID(), created: new Date().toISOString(), name, phone, recipient, gift, city, status: 'rezervat', via: 'site', pay, code: codeOf(list), page: clip(b.page, 200) };
-    list.push(entry);
+    const codes = [];
+    names.forEach(() => codes.push(codeOf(list, codes)));
+    const cards = names.map((n, i) => ({ code: codes[i], recipient: n }));
+    const details = { name, phone, city, tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty, cards, recipient: names[0] || '', status: 'rezervat', via: 'site', pay, page: clip(b.page, 200) };
+    let entry;
+    if (draft) { entry = Object.assign(draft, details, { reservedAt: new Date().toISOString() }); }
+    else { entry = Object.assign({ id: crypto.randomUUID(), created: new Date().toISOString() }, details); list.push(entry); }
     await writeJSON(C.KEY, list);
-    // two at the same second for the last card: the later one gives way
+    // two at the same second for the last cards: the later one gives way
     list = await readJSON(C.KEY, []);
-    if (list.filter(C.live).findIndex((r) => r.id === entry.id) >= C.TOTAL) {
+    const before = list.filter(C.live);
+    const upTo = before.slice(0, before.findIndex((r) => r.id === entry.id) + 1).reduce((n, r) => n + C.qtyOf(r), 0);
+    if (upTo > C.TOTAL) {
       await writeJSON(C.KEY, list.filter((r) => r.id !== entry.id));
       res.status(409).json({ error: 'sold_out' });
       return;
@@ -162,8 +178,8 @@ module.exports = async (req, res) => {
     // the Pipeline: her lead (or the one she has), so reception calls her; the bell and the phones like any site lead
     let lead = null;
     try {
-      const note = 'Card de Sărbători rezervat pe site (990 lei, credit 2.500 lei)' + (gift ? ' · cadou, pe numele: ' + recipient : ' · pentru ea') +
-        ' · plata: ' + (pay === 'online' ? 'online' : 'în clinică') + ' · cod ' + entry.code;
+      const note = 'Card de Sărbători comandat pe site: ' + qty + ' × ' + tier + ' lei (credit ' + C.TIERS[tier] + ' lei fiecare), de plată ' + entry.amount + ' lei' +
+        ' · plata: ' + (pay === 'online' ? 'online' : 'în clinică') + ' · ' + cards.map((c) => c.code + ' pe numele ' + (c.recipient || '(de întrebat)')).join('; ');
       const r = await require('./portal-leads').createLead({ name, phone, source: 'site', location: city, createdBy: 'site-form', interest: 'Card de Sărbători', note, authorLabel: 'Site · Card de Sărbători', welcome: false });
       lead = r && r.lead;
       if (lead) {
@@ -173,8 +189,8 @@ module.exports = async (req, res) => {
       }
     } catch (e) { console.error('card-sarbatori lead:', e.message); } // the reservation stands; the list has it
 
-    res.status(200).json({ ok: true, reservation: publicOf(entry), left: C.counter(await readJSON(C.KEY, [])).left });
-    await capi.soon(() => capi.siteEvent(req, { name: 'Lead', eventId: b.event_id, phone, leadId: lead && lead.id, url: b.page, custom: { value: C.PRICE, currency: 'RON' } }));
+    res.status(200).json({ ok: true, reservation: publicOf(entry), checkout: draft ? C.checkout(entry, siteOf(req)) : undefined, left: C.counter(await readJSON(C.KEY, [])).left });
+    await capi.soon(() => capi.siteEvent(req, { name: 'Lead', eventId: b.event_id, phone, leadId: lead && lead.id, url: b.page, custom: { value: entry.amount, currency: 'RON' } }));
   } catch (err) {
     console.error('card-sarbatori error:', err.message);
     if (!res.headersSent) res.status(500).json({ error: 'failed' });

@@ -265,6 +265,9 @@ module.exports = async (req, res) => {
   //              be known for the ones moved before 16.11), missedOn: the moves that kept their no-show since
   // ?attfix=1: what the once fix of the manager's 19.11 pontaj found and did (times only; api/_lib/att-fix-once.js)
   // ?myposprobe=1: can the myPOS API Gateway keys make online payments (eCommerce API)? read only (api/_lib/mypos.js gwProbe)
+  // ?myposembed=1: the Card de Sărbători's online payment: is the myPOS Configuration Pack there, does it read, which fields
+  // (never a value), sandbox or not (api/_lib/card-sarbatori.js packStatus)
+  if (req.query && req.query.myposembed) { res.status(200).json(require('./_lib/card-sarbatori').packStatus()); return; }
   if (req.query && req.query.myposprobe) { const { writeJSON } = require('./_lib/store'); res.status(200).json(await require('./_lib/mypos').gwProbe({ readJSON, writeJSON }).catch((e) => ({ error: String(e.message || e) }))); return; }
   if (req.query && req.query.attfix) {
     const [fix, dup, att, emps, adjs] = await Promise.all([readJSON(require('./_lib/att-fix-once').KEY, {}), readJSON(require('./_lib/att-dup-once').KEY, {}), readJSON('data/attendance.json', []), readJSON('data/employees.json', []), readJSON('data/time-adjust.json', [])]);

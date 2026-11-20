@@ -69,8 +69,6 @@ const STEPS = [
   ['contentswap', () => require('./_lib/content-swap-once').run()],
   // the bookings from the site not confirmed yet: the last message after 4 hours, the cancel, Giovanna's calls
   ['siteconfirm', () => require('./_lib/site-confirm').tick()],
-  // the Card de Sărbători paid online on myPOS's page by someone who never came back to ours: asked here (api/_lib/card-sarbatori.js)
-  ['cardpay', () => require('./_lib/card-sarbatori').sweep()],
   // reminders stopped by a flow saved again get started back (api/_lib/workflows.js repairReminders)
   ['reminders', async () => ({ repaired: await require('./_lib/workflows').repairReminders() })],
   // Mesaje: the clients who still wait for an answer, read by Nuki, told at 10:00 and 17:00 (api/_lib/wa-waiting.js)

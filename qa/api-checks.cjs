@@ -1764,113 +1764,138 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
   // CS. the Card de Sărbători (20.11): the reservation, the counter, the checks of a public form, the online payment
   // through a myPOS payment request (myPOS answered by a mock here: no real call, no real payment)
   {
-    const CSK = 'data/card-sarbatori.json', PAYK = 'data/card-sarbatori-pay.json';
+    const CSK = 'data/card-sarbatori.json';
+    ['MYPOS_CONFIG_PACK', 'MYPOS_EMBED_SANDBOX', 'MYPOS_PUBLIC_CERT'].forEach((k) => delete process.env[k]);
     let ipn = 0; // each call from its own address (the per-address limit has its own check)
     const pub = async (body, origin, ip) => {
       const h = Object.assign({ 'x-forwarded-for': ip || '10.9.0.' + (++ipn) }, origin ? { origin } : {});
       const r = await fetch('http://127.0.0.1:' + PORT + '/api/card-sarbatori', body ? { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, h), body: JSON.stringify(body) } : { headers: h });
       return Object.assign(await r.json().catch(() => ({})), { _status: r.status });
     };
-    // myPOS eCommerce, mocked: 'deny' = the integration has no eCommerce right yet (401), 'ok' = it answers
-    const real = global.fetch;
-    let gw = 'deny', prStatus = 'Pending', made = [];
-    global.fetch = async (u, o) => {
-      const url = String(u && u.url || u);
-      if (!url.startsWith('https://api-gateway.mypos.com')) return real(u, o);
-      const J = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
-      if (url.endsWith('/api/v1/oauth/token')) return J(200, { access_token: 'tok-test', expires_in: 3600, scope: 'default' });
-      if (url.endsWith('/api/v1/auth/session')) return J(200, { session: 'ses-test', expires_in: 300 });
-      if (gw === 'deny') return J(401, { message: 'Unauthorized' });
-      if (/\/ecommerce\/v1\/payment-requests\?/.test(url)) return J(200, { items: [], pagination: { total: 0 } });
-      if (/\/ecommerce\/v1\/payment-requests$/.test(url) && o && o.method === 'POST') { const b = JSON.parse(o.body); made.push(b); return J(200, { code: 'PRTEST' + made.length, payment_request_url: 'https://mypos.com/pr/PRTEST' + made.length }); }
-      const m = url.match(/\/ecommerce\/v1\/payment-requests\/([\w-]+)$/);
-      if (m) return J(200, { code: m[1], status: prStatus, amount: 990 });
-      return J(404, {});
-    };
-    wr('data/mypos-gateway.json', { partnerId: 'mps-p-test', appId: 'mps-app-test', clientId: 'client_testtest', clientSecret: 'secret_test', merchantId: 'cli_testtest', merchantSecret: 'sec_testtest' });
-    wr(CSK, []); wr(PAYK, null);
+    wr(CSK, []);
     const leads0 = rd('data/leads.json', []).length, notes0 = rd('data/notifications.json', []).length;
 
     const g0 = await pub();
-    check('CS', 'GET: 100 cards, 100 left, open, the deadline 24.12 23:59 RO, no online payment while myPOS refuses', g0.total === 100 && g0.left === 100 && g0.open === true && g0.deadline === '2026-12-24T21:59:59.000Z' && g0.online === false, g0);
-    const ok1 = await pub({ name: 'Proba Card', phone: '0755 000 111', city: 'Timișoara', consent: true, pay: 'online', page: 'https://www.centrul360.com/v2/card-sarbatori' });
+    check('CS', 'GET: 10 cards, 10 left, open, the deadline 24.12 23:59 RO, the three cards, no online payment while the card form is not set up', g0.total === 10 && g0.left === 10 && g0.open === true && g0.deadline === '2026-12-24T21:59:59.000Z' && g0.online === false && JSON.stringify(g0.tiers) === JSON.stringify({ 290: 500, 490: 1000, 990: 2500 }) && g0.maxQty === 5, g0);
+    const ok1 = await pub({ tier: 990, qty: 1, names: [''], name: 'Proba Card', phone: '0755 000 111', city: 'Timișoara', consent: true, pay: 'online', amount: 1, page: 'https://www.centrul360.com/v2/card-sarbatori' });
     const st1 = rd(CSK, []);
     const lead1 = rd('data/leads.json', []).find((l) => String(l.phone || '').replace(/\D/g, '').endsWith('755000111'));
-    check('CS', 'reserve: ok, stored (rezervat, site, a C360 code), online asked but not open → in the clinic', ok1.ok && ok1.left === 99 && st1.length === 1 && st1[0].status === 'rezervat' && st1[0].via === 'site' && st1[0].pay === 'salon' && /^C360-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(st1[0].code) && st1[0].city === 'Timișoara', { ok1, st1 });
-    check('CS', 'her lead: source site, interest Card de Sărbători, the reservation tied to it', lead1 && lead1.source === 'site' && lead1.interest === 'Card de Sărbători' && st1[0].leadId === lead1.id && rd('data/leads.json', []).length === leads0 + 1, lead1 && { s: lead1.source, i: lead1.interest });
+    check('CS', 'order 1 × 990: stored (rezervat, site, 990 to pay, 2.500 credit, a C360 code), online asked but not set up → in the clinic', ok1.ok && ok1.left === 9 && st1.length === 1 && st1[0].status === 'rezervat' && st1[0].via === 'site' && st1[0].pay === 'salon' && st1[0].amount === 990 && st1[0].credit === 2500 && st1[0].cards.length === 1 && /^C360-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(st1[0].cards[0].code) && st1[0].city === 'Timișoara', { ok1, st1 });
+    check('CS', 'her lead: source site, interest Card de Sărbători, the order tied to it', lead1 && lead1.source === 'site' && lead1.interest === 'Card de Sărbători' && st1[0].leadId === lead1.id && rd('data/leads.json', []).length === leads0 + 1, lead1 && { s: lead1.source, i: lead1.interest });
     const nn = rd('data/notifications.json', []).slice(notes0);
     check('CS', 'the owner and reception hear it like a site lead (LEAD SITE TM 🌐 - Card de Sărbători)', nn.some((n) => n.employeeId === 'admin' && /^LEAD SITE TM/.test(n.title) && /Card de Sărbători/.test(n.title)) && nn.some((n) => n.employeeId === 'e-rec'), nn.map((n) => n.employeeId + ' ' + n.title));
+    const again = await pub({ tier: 990, qty: 1, names: [''], name: 'Proba Card', phone: '0755000111', city: 'Timișoara', consent: true });
+    check('CS', 'the same order sent twice: the one she has, not a second', again.ok && again.again && rd(CSK, []).length === 1, again);
+    const three = await pub({ tier: 490, qty: 3, names: ['Mama Proba', '', 'Sora Proba'], name: 'Proba Card', phone: '0755000111', city: 'Arad', consent: true, amount: 5, credit: 99999 });
+    const st3 = rd(CSK, []).find((r) => r.id === (three.reservation || {}).id) || {};
+    const codes = new Set(rd(CSK, []).flatMap((r) => r.cards.map((c) => c.code)));
+    check('CS', '3 × 490: 1.470 to pay and 3.000 credit made on the server (the page\'s sums ignored), each card its code and its name', three.ok && three.left === 6 && st3.amount === 1470 && st3.credit === 3000 && st3.cards.length === 3 && st3.cards.map((c) => c.recipient).join('|') === 'Mama Proba||Sora Proba' && codes.size === 4, { three, st3 });
+    const small = await pub({ tier: 290, qty: 1, name: 'Proba Mica', phone: '0755000777', city: 'Arad', consent: true });
+    check('CS', '1 × 290: 290 to pay, 500 credit', small.ok && small.reservation.amount === 290 && small.reservation.credit === 500 && small.left === 5, small);
     const g1 = await pub();
-    check('CS', 'counter: 100 minus the reservations', g1.left === 99, g1);
-    const again = await pub({ name: 'Proba Card', phone: '0755000111', city: 'Timișoara', consent: true });
-    check('CS', 'the same card sent twice: the one she has, not a second', again.ok && again.again && rd(CSK, []).length === 1, again);
-    const gift = await pub({ name: 'Proba Card', phone: '0755000111', city: 'Arad', consent: true, gift: true, recipient: 'Mama Proba' });
-    check('CS', 'a gift on the same phone: a second card, on her name', gift.ok && !gift.again && gift.reservation.recipient === 'Mama Proba' && rd(CSK, []).length === 2, gift);
+    check('CS', 'counter: 10 minus every card ordered (1 + 3 + 1)', g1.left === 5, g1);
     const bad = await Promise.all([
-      pub({ name: 'X', phone: '0755000222', city: 'Arad', consent: true }), pub({ name: 'Proba Doi', phone: '12', city: 'Arad', consent: true }),
-      pub({ name: 'Proba Doi', phone: '0755000222', city: 'Cluj', consent: true }), pub({ name: 'Proba Doi', phone: '0755000222', city: 'Arad' }),
-      pub({ name: 'Proba Doi', phone: '0755000222', city: 'Arad', consent: true, gift: true, recipient: '' })]);
-    check('CS', 'validation: name, phone, city, consent, the name on a gift card', bad.map((x) => x.error).join() === 'missing_name,bad_phone,missing_city,missing_consent,missing_recipient' && bad.every((x) => x._status === 400) && rd(CSK, []).length === 2, bad.map((x) => x.error));
-    const hp = await pub({ name: 'Bot Proba', phone: '0755000333', city: 'Arad', consent: true, website: 'http://spam' });
-    check('CS', 'the trap field: a quiet ok, nothing stored', hp.ok && !hp.reservation && rd(CSK, []).length === 2, hp);
-    const evil = await pub({ name: 'Proba Trei', phone: '0755000444', city: 'Arad', consent: true }, 'https://evil.example');
+      pub({ tier: 990, qty: 1, name: 'X', phone: '0755000222', city: 'Arad', consent: true }), pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '12', city: 'Arad', consent: true }),
+      pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '0755000222', city: 'Cluj', consent: true }), pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '0755000222', city: 'Arad' }),
+      pub({ tier: 500, qty: 1, name: 'Proba Doi', phone: '0755000222', city: 'Arad', consent: true }), pub({ tier: 990, qty: 6, name: 'Proba Doi', phone: '0755000222', city: 'Arad', consent: true }),
+      pub({ tier: 990, qty: 0, name: 'Proba Doi', phone: '0755000222', city: 'Arad', consent: true }), pub({ tier: 990, qty: 1.5, name: 'Proba Doi', phone: '0755000222', city: 'Arad', consent: true })]);
+    check('CS', 'validation: name, phone, city, consent, the card (only 290/490/990), the quantity (1 to 5)', bad.map((x) => x.error).join() === 'missing_name,bad_phone,missing_city,missing_consent,bad_tier,bad_qty,bad_qty,bad_qty' && bad.every((x) => x._status === 400) && rd(CSK, []).length === 3, bad.map((x) => x.error));
+    const hp = await pub({ tier: 990, qty: 1, name: 'Bot Proba', phone: '0755000333', city: 'Arad', consent: true, website: 'http://spam' });
+    check('CS', 'the trap field: a quiet ok, nothing stored', hp.ok && !hp.reservation && rd(CSK, []).length === 3, hp);
+    const evil = await pub({ tier: 990, qty: 1, name: 'Proba Trei', phone: '0755000444', city: 'Arad', consent: true }, 'https://evil.example');
     const evilGet = await pub(null, 'https://evil.example');
     const okOrigin = await pub(null, 'https://www.centrul360.com');
-    check('CS', 'own origin only (another site: 403, ours: ok)', evil._status === 403 && evilGet._status === 403 && okOrigin._status === 200 && rd(CSK, []).length === 2, { evil, evilGet: evilGet._status });
+    check('CS', 'own origin only (another site: 403, ours: ok)', evil._status === 403 && evilGet._status === 403 && okOrigin._status === 200 && rd(CSK, []).length === 3, { evil, evilGet: evilGet._status });
     const lim = [];
     for (let i = 0; i < 9; i++) lim.push((await pub({ name: 'X', phone: '1', city: 'Arad' }, null, '10.8.8.8'))._status);
     check('CS', 'a few tries per address: the 9th in 10 minutes gets 429', lim.slice(0, 8).every((x) => x === 400) && lim[8] === 429, lim);
     const ls = await api('receptie', 'card-sarbatori', { action: 'list' });
     const anon = await pub({ action: 'list' });
-    check('CS', 'the team sees the list (reception), the public does not', ls.reservations && ls.reservations.length === 2 && anon._status === 401, { n: ls.reservations && ls.reservations.length, anon: anon._status });
-    const cut = await api('receptie', 'card-sarbatori', { action: 'set', id: st1[0].id, status: 'anulat' });
-    check('CS', 'cancelled: back on the counter', cut.ok && cut.left === 99 && (await pub()).left === 99, cut);
-    await api('receptie', 'card-sarbatori', { action: 'set', id: st1[0].id, status: 'rezervat' });
-    // sold out: 100 cards in all
+    check('CS', 'the team sees the list (reception), the public does not', ls.reservations && ls.reservations.length === 3 && anon._status === 401, { n: ls.reservations && ls.reservations.length, anon: anon._status });
+    const cut = await api('receptie', 'card-sarbatori', { action: 'set', id: st3.id, status: 'anulat' });
+    check('CS', 'an order cancelled: its 3 cards back on the counter', cut.ok && cut.left === 8 && (await pub()).left === 8, cut);
+    await api('receptie', 'card-sarbatori', { action: 'set', id: st3.id, status: 'rezervat' });
+    // the last cards: an order bigger than what is left, then sold out
     const many = rd(CSK, []);
-    for (let i = many.length; i < 100; i++) many.push({ id: 'fill-' + i, created: new Date().toISOString(), name: 'Umplere', phone: '07' + String(10000000 + i), recipient: 'Umplere', city: 'Arad', status: 'rezervat', via: 'test', pay: 'salon', code: 'C360-FILL-' + i });
+    for (let i = 0; i < 3; i++) many.push({ id: 'fill-' + i, created: new Date().toISOString(), name: 'Umplere', phone: '07' + String(10000000 + i), city: 'Arad', tier: 290, qty: 1, amount: 290, credit: 500, cards: [{ code: 'C360-FILL-' + i, recipient: '' }], recipient: '', status: 'rezervat', via: 'test', pay: 'salon' });
     wr(CSK, many);
-    const full = await pub({ name: 'Proba Patru', phone: '0755000555', city: 'Arad', consent: true });
+    const over = await pub({ tier: 990, qty: 3, name: 'Proba Patru', phone: '0755000555', city: 'Arad', consent: true });
+    many.push({ id: 'fill-x', created: new Date().toISOString(), name: 'Umplere', phone: '0710009999', city: 'Arad', tier: 290, qty: 2, amount: 580, credit: 1000, cards: [], recipient: '', status: 'rezervat', via: 'test', pay: 'salon' });
+    wr(CSK, many);
+    const full = await pub({ tier: 290, qty: 1, name: 'Proba Patru', phone: '0755000555', city: 'Arad', consent: true });
     const gFull = await pub();
-    check('CS', 'the 101st: sold_out, the counter 0 and closed', full._status === 409 && full.error === 'sold_out' && gFull.left === 0 && gFull.open === false, { full, gFull });
+    check('CS', '2 left, 3 asked: not_enough (with what is left); then 0 left: sold_out, closed', over._status === 409 && over.error === 'not_enough' && over.left === 2 && full.error === 'sold_out' && gFull.left === 0 && gFull.open === false, { over, full, gFull });
     wr(CSK, many.filter((r) => !/^fill-/.test(r.id)));
 
-    // online payment: closed while myPOS refuses eCommerce
-    const rid = st1[0].id;
-    const ord0 = await pub({ action: 'order', id: rid });
-    const pay0 = await pub({ action: 'pay', id: rid });
-    check('CS', 'eCommerce refused (401): the order shows no online payment, pay answers payment_not_configured', ord0.order && ord0.order.online === false && /^•••• 111$/.test(ord0.order.phone) && pay0.error === 'payment_not_configured' && !made.length, { ord0, pay0 });
-    // myPOS answers now (the next check, the last one older than 15 minutes)
-    gw = 'ok'; wr(PAYK, null);
+    // online payment: our checkout with the myPOS card form (Embedded SDK); paid only by myPOS's notification
+    const notify = async (fields, key) => {
+      const pairs = Object.entries(fields).map(([k, v]) => [k, String(v)]);
+      if (key) pairs.push(['Signature', require('crypto').createSign('RSA-SHA256').update(Buffer.from(pairs.map((p) => p[1]).join('-')).toString('base64')).sign(key, 'base64')]);
+      const r = await fetch('http://127.0.0.1:' + PORT + '/api/card-notify', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(pairs).toString() });
+      return { status: r.status, text: await r.text() };
+    };
+    const int0 = await pub({ action: 'intent', tier: 990, qty: 1 });
+    check('CS', 'the card form not set up (no Configuration Pack, no sandbox): intent answers payment_not_configured, nothing stored', int0.error === 'payment_not_configured' && rd(CSK, []).length === 3, int0);
+    const C = require('../api/_lib/card-sarbatori');
+    process.env.MYPOS_CONFIG_PACK = '  not base64 json  ';
+    const ps0 = C.packStatus();
+    const packOf = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/(.{40})/g, '$1\n ');
+    process.env.MYPOS_CONFIG_PACK = packOf({ sid: '123456', cn: '40111222333', pk: '-----BEGIN PRIVATE KEY-----\nTEST\n-----END PRIVATE KEY-----', pc: '-----BEGIN CERTIFICATE-----\nTEST\n-----END CERTIFICATE-----', idx: 2 });
+    const ps1 = C.packStatus(), em1 = C.embed();
+    check('CS', 'the Configuration Pack: a broken one is not used; a good one (spaces, line breaks) reads, the browser gets sid, wallet, key index, never pk', !ps0.usable && ps0.present && !ps0.decoded && ps1.usable && ps1.hasPrivateKey && ps1.hasMyposCert && ps1.fields.join() === 'sid,cn,pk,pc,idx' && em1.sid === '123456' && em1.walletNumber === '40111222333' && em1.keyIndex === 2 && !em1.isSandbox && !JSON.stringify(em1).includes('PRIVATE') && !JSON.stringify(ps1).includes('TEST'), { ps0, ps1, em1 });
+    delete process.env.MYPOS_CONFIG_PACK;
+    process.env.MYPOS_EMBED_SANDBOX = '1';
     const g2 = await pub();
-    check('CS', 'eCommerce answers: online on', g2.online === true, g2);
-    const pay1 = await pub({ action: 'pay', id: rid });
-    const pr = made[0] || {};
-    const row1 = rd(CSK, []).find((r) => r.id === rid);
-    check('CS', 'pay: a payment request of 990 RON (fixed on the server), in Romanian, 2 days, her phone → the myPOS page', pay1.url === 'https://mypos.com/pr/PRTEST1' && pr.amount === 990 && pr.currency === 'RON' && pr.payment_request_lang === 'ro' && /^\d{4}-\d{2}-\d{2}$/.test(pr.expiry_date) && pr.notify_gsm === '+40755000111' && pr.client_name === 'Proba Card' && row1.payment && row1.payment.code === 'PRTEST1' && row1.pay === 'online', { pay1, pr });
-    const pay2 = await pub({ action: 'pay', id: rid, amount: 1 });
-    check('CS', 'pay again: the same request, no new one (an amount sent by the page is ignored)', pay2.url === pay1.url && made.length === 1, pay2);
-    const s1 = await pub({ action: 'status', id: rid });
-    check('CS', 'status Pending: not paid yet', s1.ok && !s1.paid && s1.status === 'Pending', s1);
-    prStatus = 'Paid';
-    const { sweep } = require('../api/_lib/card-sarbatori');
-    const cs = rd(CSK, []); cs.find((r) => r.id === rid).payment.checked = ''; wr(CSK, cs); // the 10 s between two asks
-    const sw = await sweep();
-    const row2 = rd(CSK, []).find((r) => r.id === rid);
-    const n2 = rd('data/notifications.json', []).filter((n) => n.tag === 'card-paid-' + rid);
-    check('CS', 'the clock finds it Paid: the card paid online, the Restart bonus, reception and the owner told', sw.paid === 1 && row2.status === 'platit' && row2.paidVia === 'online' && row2.bonusRestart === true && row2.payment.status === 'Paid' &&
-      n2.some((n) => n.employeeId === 'admin' && /CARD DE SĂRBĂTORI PLĂTIT TM ONLINE/.test(n.title)) && n2.some((n) => n.employeeId === 'e-rec'), { sw, row2: row2 && row2.status, n2: n2.map((n) => n.employeeId + ' ' + n.title) });
-    const s2 = await pub({ action: 'status', id: rid });
-    const pay3 = await pub({ action: 'pay', id: rid });
-    check('CS', 'paid: the page says so, no new request, still counted', s2.paid && pay3.paid && made.length === 1 && (await pub()).left === 98, { s2, pay3 });
-    const sw2 = await sweep();
-    check('CS', 'paid once: the clock does not ring again', sw2.checked === 0 && rd('data/notifications.json', []).filter((n) => /CARD DE SĂRBĂTORI PLĂTIT/.test(n.title) && n.employeeId === 'admin').length === 1, sw2);
-    const res2 = await pub({ name: 'Proba Cinci', phone: '0755000666', city: 'Arad', consent: true, pay: 'online' });
-    check('CS', 'with eCommerce on, a reservation can choose online', res2.ok && res2.reservation.pay === 'online', res2);
+    check('CS', 'the card form set up: online on', g2.online === true && g2.left === 5, g2);
+    const int1 = await pub({ action: 'intent', tier: 490, qty: 3, amount: 1 });
+    const co1 = int1.checkout || {};
+    check('CS', 'intent 3 × 490: the order made first (a draft, not counted), our orderID, 1.470 RON made on the server, the cart, urlNotify on our site, the sandbox settings', int1.ok && /^CS[0-9A-F]{16}$/.test(co1.orderID) && co1.amount === 1470 && co1.currency === 'RON' && co1.ipcLanguage === 'ro' && /\/api\/card-notify$/.test(co1.urlNotify) && co1.sid === '000000000000010' && co1.walletNumber === '61938166610' && co1.keyIndex === 1 && co1.isSandbox === true && co1.cartItems[0].quantity === 3 && co1.cartItems[0].price === 490 && (await pub()).left === 5 && rd(CSK, []).find((r) => r.id === int1.id).status === 'draft', int1);
+    const int2 = await pub({ action: 'intent', tier: 490, qty: 2, id: int1.id });
+    check('CS', 'the same draft, 2 cards now: a new orderID, 980 RON', int2.id === int1.id && int2.checkout.amount === 980 && int2.checkout.orderID !== co1.orderID, int2.checkout);
+    const resO = await pub({ tier: 490, qty: 2, names: ['', ''], name: 'Proba Online', phone: '0755000321', city: 'Arad', consent: true, pay: 'online', draft: int1.id, amount: 1 });
+    const rowO = rd(CSK, []).find((r) => r.id === int1.id) || {};
+    check('CS', 'her details on the draft: a reservation to pay online, its 2 cards counted, the form gets the same orderID and 980', resO.ok && resO.reservation.id === int1.id && resO.reservation.pay === 'online' && rowO.status === 'rezervat' && rowO.cards.length === 2 && resO.checkout && resO.checkout.orderID === int2.checkout.orderID && resO.checkout.amount === 980 && resO.left === 3, { resO, rowO });
+    const st0 = await pub({ action: 'status', id: int1.id });
+    check('CS', 'the page asks: not paid (the browser\'s word never pays it)', st0.ok && !st0.paid, st0);
+    const base = { IPCmethod: 'IPCPurchaseNotify', SID: '000000000000010', Amount: '980.00', Currency: 'RON', OrderID: int2.checkout.orderID, IPC_Trnref: '1234567', RequestSTAN: '000123', RequestDateTime: '2026-11-21 10:00:00' };
+    const n1 = await notify(Object.assign({}, base, { Amount: '979.00' }));
+    const n2 = await notify(Object.assign({}, base, { Currency: 'EUR' }));
+    const n3 = await notify(Object.assign({}, base, { OrderID: 'CS0000000000000000' }));
+    check('CS', 'notify: always 200 OK; another sum, another currency, an unknown order: not paid', [n1, n2, n3].every((x) => x.status === 200 && x.text === 'OK') && rd(CSK, []).find((r) => r.id === int1.id).status === 'rezervat', [n1, n2, n3]);
+    const kp = require('crypto').generateKeyPairSync('rsa', { modulusLength: 2048 }), kp2 = require('crypto').generateKeyPairSync('rsa', { modulusLength: 2048 });
+    process.env.MYPOS_CONFIG_PACK = packOf({ sid: '000000000000010', cn: '61938166610', pk: '', pc: kp.publicKey.export({ type: 'spki', format: 'pem' }), idx: 1 }); // myPOS's certificate from the pack
+    const n4 = await notify(base, kp2.privateKey);
+    const n5 = await notify(base);
+    check('CS', 'with myPOS\'s certificate in the pack: a wrong signature or none, not paid', n4.text === 'OK' && n5.text === 'OK' && rd(CSK, []).find((r) => r.id === int1.id).status === 'rezervat', [n4, n5]);
+    const n6 = await notify(base, kp.privateKey);
+    const rowP = rd(CSK, []).find((r) => r.id === int1.id) || {};
+    const nP = rd('data/notifications.json', []).filter((n) => n.tag === 'card-paid-' + int1.id);
+    check('CS', 'the right signature, the sum and the currency of the order: paid online, verified, no Restart (490), reception and the owner told', n6.text === 'OK' && rowP.status === 'platit' && rowP.paidVia === 'online' && rowP.paidVerified === true && rowP.bonusRestart === 0 &&
+      nP.some((n) => n.employeeId === 'admin' && /CARD DE SĂRBĂTORI PLĂTIT AR ONLINE/.test(n.title) && /980/.test(n.title)) && nP.some((n) => n.employeeId === 'e-rec'), { rowP: rowP.status, nP: nP.map((n) => n.employeeId + ' ' + n.title) });
+    await notify(base, kp.privateKey);
+    const st1b = await pub({ action: 'status', id: int1.id });
+    check('CS', 'notified twice: rung once; the page now says paid', st1b.paid && rd('data/notifications.json', []).filter((n) => n.tag === 'card-paid-' + int1.id && n.employeeId === 'admin').length === 1, st1b);
+    const intB = await pub({ action: 'intent', tier: 990, qty: 2 });
+    await pub({ tier: 990, qty: 2, names: ['Ana Proba', 'Ioana Proba'], name: 'Proba Cinci', phone: '0755000666', city: 'Timișoara', consent: true, pay: 'online', draft: intB.id });
+    const nB = await notify(Object.assign({}, base, { Amount: '1980.00', OrderID: intB.checkout.orderID }), kp.privateKey);
+    const rowB = rd(CSK, []).find((r) => r.id === intB.id) || {};
+    check('CS', '2 × 990 paid online: 1.980, 2 Restart treatments', nB.text === 'OK' && rowB.status === 'platit' && rowB.amount === 1980 && rowB.bonusRestart === 2, { s: rowB.status, a: rowB.amount, b: rowB.bonusRestart });
+    const draftOnly = await pub({ action: 'intent', tier: 290, qty: 1 });
+    const lsD = await api('receptie', 'card-sarbatori', { action: 'list' });
+    check('CS', 'a draft is not in the team\'s list nor on the counter', !lsD.reservations.some((r) => r.id === draftOnly.id) && lsD.left === 1, { left: lsD.left });
+    const resFake = await pub({ tier: 290, qty: 1, name: 'Proba Fals', phone: '0755000432', city: 'Arad', consent: true, pay: 'online', draft: 'nu-exista' });
+    check('CS', 'online asked with no draft of hers: a reservation in the clinic', resFake.ok && resFake.reservation.pay === 'salon' && !resFake.checkout, resFake);
+    await api('receptie', 'card-sarbatori', { action: 'set', id: resFake.reservation.id, status: 'anulat' });
+    ['MYPOS_CONFIG_PACK', 'MYPOS_EMBED_SANDBOX', 'MYPOS_PUBLIC_CERT'].forEach((k) => delete process.env[k]);
+    const res2 = small;
     const paidDesk = await api('receptie', 'card-sarbatori', { action: 'set', id: res2.reservation.id, status: 'platit' });
     check('CS', 'paid in the clinic (reception): paid, no Restart bonus', paidDesk.ok && paidDesk.reservation.status === 'platit' && paidDesk.reservation.paidVia === 'clinica' && !paidDesk.reservation.bonusRestart, paidDesk.reservation);
-    global.fetch = real;
-    wr('data/mypos-gateway.json', {}); wr(CSK, []); wr(PAYK, null);
+    // an order of before the three cards reads as one card of 990
+    const legacy = { id: 'old-1', created: new Date().toISOString(), name: 'Veche', phone: '0755000999', recipient: 'Veche', city: 'Arad', status: 'rezervat', via: 'site', pay: 'salon', code: 'C360-OLDD-0001' };
+    wr(CSK, rd(CSK, []).concat(legacy));
+    const oldOrd = await pub({ action: 'order', id: 'old-1' });
+    check('CS', 'an old order (one card, before the three): 1 × 990, counted once', oldOrd.order && oldOrd.order.tier === 990 && oldOrd.order.qty === 1 && oldOrd.order.amount === 990 && (await pub()).left === 0, oldOrd.order);
+    wr(CSK, []);
   }
 
   // the independent second reading agrees with production on the harness's data
