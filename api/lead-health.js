@@ -92,7 +92,7 @@ module.exports = async (req, res) => {
       const n = CM.monthOfPerson(sales, dues, e.id, month, true, C);
       const come = n.toCome.reduce((a, t) => a + t.lei, 0);
       if (!o && !ow && !n.commission && !n.waiting && !come) return;
-      people[e.id] = { old: r2(o), oldWaiting: r2(ow), new: n.commission, newWaiting: n.waiting, toCome: r2(come), lines: n.lines.length };
+      people[e.id] = { old: r2(o), oldWaiting: r2(ow), new: n.commission, newWaiting: n.waiting, toCome: r2(come), lines: req.query.detail === e.id ? n.lines : n.lines.length, ...(req.query.detail === e.id ? { toComeLines: n.toCome } : {}) };
       total.old += o; total.oldWaiting += ow; total.new += n.commission; total.newWaiting += n.waiting; total.toCome += come;
     });
     Object.keys(total).forEach((k) => { total[k] = r2(total[k]); });
