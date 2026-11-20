@@ -123,7 +123,9 @@
     const people = [];
     cs.forEach((c) => t.cities[c].people.forEach((p) => people.push(Object.assign({ city: c }, p))));
     const row = (p) => '<div class="k-row mg-azi-p">' + K.avatar(p.name, 32) + '<div class="k-row-main"><div class="k-row-title">' + esc(p.name) + '</div><div class="k-row-sub">' + K.plural(p.clients, 'clientă', 'cliente') + ' azi · ' + K.plural(p.newClients, 'nouă', 'noi') + '</div></div>' +
-      '<div class="mg-azi-n"><span class="' + (p.newClients && p.programs < p.newClients ? 'is-warn' : p.programs ? 'is-good' : '') + '"><b>' + p.programs + '/' + p.newClients + '</b><small>programe</small></span><span class="' + (p.packages ? 'is-good' : '') + '"><b>' + p.packages + '</b><small>pachete</small></span></div></div>';
+      '<div class="mg-azi-n"><span class="' + (p.newClients && p.programs < p.newClients ? 'is-warn' : p.programs ? 'is-good' : '') + '"><b>' + p.programs + '/' + p.newClients + '</b><small>programe</small></span><span class="' + (p.packages ? 'is-good' : '') + '"><b>' + p.packages + '</b><small>pachete</small></span></div>' +
+      (p.bonus && p.bonus.due > 0 ? '<button type="button" class="k-btn is-accent is-sm mg-pay" data-bonus-pay="' + esc(p.id) + '" data-lei="' + p.bonus.due + '" data-name="' + esc(p.name) + '">' + icon('cash') + 'Dă bonusul: ' + K.lei(p.bonus.due) + '</button>'
+        : p.bonus && p.bonus.paid > 0 ? '<span class="k-tag is-good mg-pay">' + icon('check') + 'Bonus dat: ' + K.lei(p.bonus.paid) + '</span>' : '') + '</div>';
     return '<p class="mg-month">' + icon('zap') + 'Azi, ' + esc(K.dateShort(t.today)) + ' · se actualizează singur la un minut</p>' +
       '<div class="k-grid c4 mg-stats mg-azi-stats">' +
         fillTile(0, 'Ocupat azi') + fillTile(1, 'Ocupat mâine') +
@@ -636,6 +638,15 @@
       if (w === 'retry') return body();
       if (w === 'schedule' && K.openTeamSchedule) return K.openTeamSchedule(a);
       if (w === 'leave-new') return newLeave();
+    }
+    const bp = e.target.closest('[data-bonus-pay]');
+    if (bp) {
+      (async () => {
+        if (!(await K.ui().confirm({ title: 'Dai bonusul acum?', message: bp.dataset.name + ' primește ' + K.lei(+bp.dataset.lei) + ', bonusul pachetelor de azi. Nu se mai adaugă la salariul lunii.', confirmText: 'Da, i l-am dat' }))) return;
+        try { const r = await K.api('/api/portal-manager', { action: 'bonus_pay', employeeId: bp.dataset.bonusPay }); K.ui().toast('Bonus dat: ' + K.lei(r.paid) + '.', 'success'); const b = panel.querySelector('[data-body]'); if (b) azi(b, true); }
+        catch (err) { K.ui().toast(err.message === 'nothing_due' ? 'Nu mai e nimic de dat azi.' : 'Nu am putut salva. Reîncearcă.', 'error'); }
+      })();
+      return;
     }
     const ct = e.target.closest('[data-rl-contact]');
     if (ct) return K.emit('contacts:open', { id: ct.dataset.rlContact, tab: ct.dataset.tab || 'fise' });

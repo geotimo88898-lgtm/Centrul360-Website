@@ -43,6 +43,18 @@ const REASONS = { nu_raspund: 'Nu răspund', nu_stiu: 'Nu știu de ce au lăsat 
 const FATES = { ridicare: 'păstrat pentru ridicare', depus: 'depus în contul firmei' };
 const KEEP = 400;
 
+// The package bonus of a day (payments of 1.500+, with their +50 / +100), paid at the end of the shift (the owner, 20.11):
+// what it is, what was already handed over (a „manual” line with origin 'bonus-paid', minus, so the month's salary
+// doesn't pay it twice) and what is still to give
+function bonusToday(empId, day, sales, cctx) {
+  const CM = require('./_lib/commission');
+  let earned = 0;
+  (sales || []).forEach((u) => { if (CM.isUpsellReq(u) && u.employeeId === empId && u.status !== 'rejected') CM.linesOf(u, cctx).forEach((l) => { if (l.kind === 'pay' && l.date === day && l.pack) earned += l.lei; }); });
+  const paid = (sales || []).filter((x) => x && x.source === 'manual' && x.origin === 'bonus-paid' && x.employeeId === empId && x.date === day && x.status === 'approved').reduce((a, x) => a - (Number(x.commission) || 0), 0);
+  const r = (n) => Math.round(n * 100) / 100;
+  return { earned: r(earned), paid: r(paid), due: r(Math.max(0, earned - paid)) };
+}
+
 // „Azi”: what the manager has to see and do now (no lei of the clinic, only counts and names)
 async function todayOf(mine) {
   const C = require('./_lib/clinic');
@@ -85,7 +97,8 @@ async function todayOf(mine) {
       const news = mineToday.filter((a) => isNew(a));
       let packs = 0;
       N.sales.forEach((u) => { if (CM.isUpsellReq(u) && u.employeeId === e.id && u.status !== 'rejected') CM.linesOf(u, cctx).forEach((l) => { if (l.kind === 'pay' && l.date === day && l.pack && !l.topup) packs++; }); });
-      return { id: e.id, name: e.name || '', clients: mineToday.length, newClients: news.length, programs: news.filter((a) => a.program).length, packages: packs };
+      const due = bonusToday(e.id, day, N.sales, cctx);
+      return { id: e.id, name: e.name || '', clients: mineToday.length, newClients: news.length, programs: news.filter((a) => a.program).length, packages: packs, bonus: due };
     }).filter((p) => p.clients || p.packages);
     out[city] = { fill, uncalled: warm, uncalledOlder: older, late, confirm, noProgram, people };
   });
@@ -266,6 +279,24 @@ module.exports = async (req, res) => {
   try {
     if (b.action === 'stats') { res.status(200).json(await stats(b.month, mine)); return; }
     if (b.action === 'today') { res.status(200).json(await todayOf(mine)); return; }
+    // „Dă bonusul”: the day's package bonus handed over at the end of the shift; the amount is the server's, never the page's
+    if (b.action === 'bonus_pay') {
+      const CM = require('./_lib/commission');
+      const [sales, dues, emps] = await Promise.all([readJSON('data/sales.json', []), readJSON('data/client-dues.json', []), readJSON('data/employees.json', [])]);
+      const emp = emps.find((e) => e && e.id === b.employeeId && e.role === 'cosmetician');
+      if (!emp) { res.status(404).json({ error: 'not_found' }); return; }
+      if (session.role === 'manager' && !mine.includes(require('./_lib/clinic').clinicOf(emp.location))) { res.status(403).json({ error: 'forbidden' }); return; }
+      const day = B.roNow().date;
+      const x = bonusToday(emp.id, day, sales, CM.context(sales, dues, emps));
+      if (!(x.due > 0)) { res.status(400).json({ error: 'nothing_due' }); return; }
+      const now = new Date().toISOString(), by = await who();
+      sales.push({ id: crypto.randomUUID(), source: 'manual', origin: 'bonus-paid', employeeId: emp.id, date: day, categories: [], category: '', treatment: 'Bonus pachete primit pe loc',
+        amount: 0, commission: -x.due, note: 'Dat la sfârșitul programului' + (by ? ', de ' + by : ''), clientId: '', client: '', status: 'approved', createdAt: now, decidedAt: now, addedBy: session.employeeId });
+      await writeJSON('data/sales.json', sales);
+      await N.notify({ readJSON, writeJSON }, emp.id, { kind: 'commission', tone: 'good', title: 'BONUS PRIMIT 💵 - ' + x.due.toLocaleString('ro-RO') + ' lei', text: 'Bonusul pachetelor de azi, dat pe loc.', go: 'comision' }).catch(() => 0);
+      res.status(200).json({ ok: true, paid: x.due });
+      return;
+    }
     // „Reguli”: whether the internal regulation is kept, read only, per clinic, today or the last 7 days (api/_lib/rules.js);
     // the manager sees her clinics' people, never herself
     if (b.action === 'rules') {

@@ -1275,3 +1275,5 @@ button.k-row.cd-fix-row:hover .k-row-title{ color:var(--accent-text, var(--accen
   .mg-hbar .mg-tabs button{ min-width:0; padding:.55rem .1rem; font-size:.72rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 }
 .mg-todo a > .k-tag{ flex:none; }
+.mg-azi-p{ flex-wrap:wrap; }
+.mg-azi-p .mg-pay{ flex-basis:100%; justify-content:center; margin-top:.4rem; }

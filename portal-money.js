@@ -1242,12 +1242,14 @@
     const todayLei = lines.reduce((a, l) => a + l.lei, 0) + plansToday * planRate;
     const packs = lines.filter((l) => l.pack && !l.topup).length;
     const month = (pay.commission || 0) + ((pay.plan && pay.plan.lei) || 0) + ((pay.team && pay.team.lei) || 0);
+    // the day's package bonus already handed over (Manager → Azi → „Dă bonusul”)
+    const gotToday = (K.data && K.data.mySales ? K.data.mySales : []).filter((x) => x && x.origin === 'bonus-paid' && x.date === today).reduce((a, x) => a - (Number(x.commission) || 0), 0);
     const waiting = (pay.toCome || []).reduce((a, t) => a + t.lei, 0), nW = (pay.toCome || []).length;
     const next = today < pay.pack.from ? 'De luni, ' + esc(K.dateShort(pay.pack.from)) + ': fiecare pachet îți aduce între <b>100 și 350 lei</b>.'
       : 'Următorul pachet îți aduce între <b>100 și 350 lei</b>' + (packs >= 2 ? ', <b>+50</b> fiind a ' + (packs + 1) + '-a vânzare de azi' : packs === 1 ? '. De la a 3-a vânzare din zi, încă <b>+50</b>' : '') + '.';
     return '<section class="k-card sl-earn"><div class="sl-earn-top"><span>Câștigul tău · ' + esc(K.monthLabel(pay.month)) + '</span>' +
         '<b data-count="' + Math.round(month) + '" data-fmt="lei" data-key="sl-e-' + pay.month + '">' + lei2s(month) + '</b><small>comision, bonusuri, programe și premiul echipei, peste salariu</small></div>' +
-      '<div class="sl-earn-row"><div><span>Azi</span><b>+' + lei2s(todayLei) + '</b><small>' + K.plural(packs, 'pachet', 'pachete') + ' · ' + K.plural(plansToday, 'program', 'programe') + '</small></div>' +
+      '<div class="sl-earn-row"><div><span>Azi</span><b>+' + lei2s(todayLei) + '</b><small>' + K.plural(packs, 'pachet', 'pachete') + ' · ' + K.plural(plansToday, 'program', 'programe') + (gotToday > 0 ? ' · primit pe loc ' + lei2s(gotToday) : packs ? ' · bonusul îl primești la final de program' : '') + '</small></div>' +
         '<div class="' + (waiting ? 'is-wait' : '') + '"><span>Te așteaptă</span><b>+' + lei2s(waiting) + '</b><small>' + (nW ? K.plural(nW, 'clientă mai are', 'cliente mai au') + ' de plătit' : 'nicio clientă cu rest') + '</small></div></div>' +
       '<p class="sl-earn-next">' + icon('zap') + '<span>' + next + '</span></p></section>';
   }
@@ -1389,7 +1391,7 @@
           tile('clock', 'Ore suplimentare', lei2(pay.overtimeLei), pay.overtimeMinutes ? hm(pay.overtimeMinutes) + ' × 40 lei' + (pay.overtimeDueLei ? ', neplătite încă (toate lunile), vin cu salariul' : '') : 'nicio oră luna asta') +
           (pay.hasBonus ? tile('trophy', 'Bonus programări', K.lei(pay.bonus), pay.booking && pay.booking.days ? 'media ' + avg1(pay.booking.avg) + ' pe zi' : 'nicio zi pontată încă', pay.bonus ? 'is-good' : '')
             : tile('percent', 'Comision', lei2(pay.commission), K.plural(pay.upsells, 'upsell', 'upselluri') + (pay.commissionWaiting ? ' · ' + lei2(pay.commissionWaiting) + ' în așteptare' : ''))) +
-          (pay.manual ? tile('sliders', 'Comision adăugat', (pay.manual > 0 ? '+' : '') + lei2(pay.manual), 'luna asta', pay.manual > 0 ? 'is-good' : '') : '') +
+          (pay.manual ? tile('sliders', pay.manual < 0 ? 'Bonus primit pe loc' : 'Comision adăugat', (pay.manual > 0 ? '+' : '−') + lei2(Math.abs(pay.manual)), pay.manual < 0 ? 'dat la final de program, scăzut din salariu' : 'luna asta', pay.manual > 0 ? 'is-good' : '') : '') +
         '</div></section>';
 
     // the treatments and upsells (cosmeticians)
