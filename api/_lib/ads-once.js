@@ -12,6 +12,11 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 20.11 15:10: the best ad of all time on HIFU (the iPad video with the real cases: 29 bookings, 12 clients) back on
+  { id: 'video-back-2026-11-20', why: 'cea mai bună reclamă HIFU din istoric, cu cazuri reale', actions: [
+    { campaignId: '120251585544900103', name: 'TM VIDEO · HIFU gușă · iPad', status: 'ACTIVE', why: '29 programări, 12 cliente, lead la 10 lei' },
+    { campaignId: '120251585544900103', name: 'TM VIDEO · HIFU gușă · iPad', daily: 60, why: 'repornită' },
+  ] },
   // 20.11 13:47, the hourly check: AR RF T3 at 9 lei a lead today (8 over 3 days), the cheapest of all: back to 110
   { id: 'h1347-2026-11-20', why: 'AR T3 lead la 8-9 lei', actions: [
     { campaignId: '120251992601670103', name: 'AR RF GUSA · căutăm 8 doamne (port TM)', daily: 110, why: 'lead la 9 lei azi, 8 lei pe 3 zile' },
