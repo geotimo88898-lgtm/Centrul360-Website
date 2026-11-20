@@ -1,67 +1,78 @@
 /* Cardul de Sărbători (the owner, 20.11): the card itself, drawn once and used on its page, the home page and the checkout.
-   A premium card in 3D, warm pearl pink (the owner, 20.11: „cardul roz și o căciuliță în colț sus”), a Santa hat hung on
-   its top left corner: it floats and tilts slowly, a light passes over it, the name on it changes softly.
-   Transform and opacity only, the kit's easings. Every class starts with csc-. */
+   A Christmas gift, not a bank card (the owner, 20.11: „roz mai bogat, mai mult Crăciun, fără albastru”): deep raspberry
+   rose, gold foil for the text, a gold ribbon wrapped round it with a bow, gold snowflakes, a fir sprig with red berries,
+   gold sparkles, and the Santa hat hung on its top left corner. It floats and tilts slowly, a light passes over it, the
+   name on it changes softly. No blue or turquoise on or around it. Transform and opacity only. Classes start with csc-. */
 .csc-stage{ position:relative; display:grid; place-items:center; padding:clamp(64px,7vw,84px) 0 clamp(44px,7vw,72px); perspective:1500px; isolation:isolate; }
-.csc-stage::before{ content:''; position:absolute; z-index:-1; width:min(520px,96%); aspect-ratio:1; border-radius:50%;
-  background:radial-gradient(circle at 46% 44%,rgba(244,184,180,.42),rgba(95,212,198,.12) 52%,transparent 70%); animation:breathe 7s var(--e2) infinite alternate; }
+.csc-stage::before{ content:''; position:absolute; z-index:-1; width:min(540px,96%); aspect-ratio:1; border-radius:50%;
+  background:radial-gradient(circle at 48% 46%,rgba(232,120,154,.34),rgba(227,194,122,.16) 48%,transparent 70%); animation:breathe 7s var(--e2) infinite alternate; }
 .csc-tilt{ position:relative; transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)); transition:transform 1.1s var(--e); transform-style:preserve-3d; }
 .csc-float{ position:relative; transform-style:preserve-3d; animation:cscFloat 9s var(--e2) infinite alternate; }
 @keyframes cscFloat{ 0%{ transform:rotateX(10deg) rotateY(-16deg) rotateZ(-3deg) translateY(-8px); } 100%{ transform:rotateX(-5deg) rotateY(12deg) rotateZ(1.5deg) translateY(8px); } }
-.csc-edge{ position:absolute; inset:0; border-radius:28px; transform:translateZ(-5px); background:linear-gradient(160deg,#e9b3ad,#b9787a); box-shadow:0 0 0 1px rgba(255,255,255,.25) inset; }
-.csc-card{ position:relative; width:min(440px,84vw); aspect-ratio:1.586; container-type:inline-size; border-radius:28px; overflow:hidden; color:#3a1820;
+.csc-edge{ position:absolute; inset:0; border-radius:28px; transform:translateZ(-5px); background:linear-gradient(160deg,#b0245d,#5e0a2c); box-shadow:0 0 0 1px rgba(255,220,160,.25) inset; }
+.csc-card{ position:relative; width:min(440px,84vw); aspect-ratio:1.586; container-type:inline-size; border-radius:28px; overflow:hidden; color:#fff6ea;
   background:
-    radial-gradient(110% 80% at 96% 2%,rgba(255,255,255,.72),rgba(255,255,255,0) 46%),
-    radial-gradient(90% 90% at 0% 100%,rgba(214,122,134,.42),transparent 62%),
-    conic-gradient(from 210deg at 72% 34%,rgba(255,236,214,.5),rgba(236,214,255,.32),rgba(206,244,236,.36),rgba(255,226,222,.3),rgba(255,236,214,.5)),
-    linear-gradient(142deg,#f8d6cf 0%,#efb2ae 34%,#e2959c 62%,#f2c4bf 100%);
-  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 0 0 1px rgba(255,255,255,.45) inset, 0 -1px 0 rgba(150,70,80,.25) inset,
-    0 50px 90px -40px rgba(120,50,60,.5), 0 22px 36px -22px rgba(120,50,60,.4); }
-/* the mark, large and faint, behind everything */
-.csc-art{ position:absolute; right:-24%; top:-38%; width:92%; aspect-ratio:1; pointer-events:none; opacity:.9; }
-.csc-art svg{ width:100%; height:100%; overflow:visible; fill:none; stroke:rgba(255,255,255,.5); }
-.csc-art .ev{ animation:cscGy 14s var(--e2) infinite; transform-origin:50% 50%; transform-box:fill-box; }
-@keyframes cscGy{ 0%,30%{ transform:scaleX(1); } 50%{ transform:scaleX(-1); } 70%,100%{ transform:scaleX(1); } }
-/* fine lines like a banknote, very soft */
-.csc-lines{ position:absolute; inset:0; pointer-events:none; opacity:.5;
-  background:repeating-linear-gradient(115deg,rgba(255,255,255,.22) 0 1px,transparent 1px 7px);
-  -webkit-mask-image:linear-gradient(100deg,transparent 30%,#000 70%); mask-image:linear-gradient(100deg,transparent 30%,#000 70%); }
+    radial-gradient(70% 60% at 18% 8%,rgba(255,206,222,.55),transparent 62%),
+    radial-gradient(80% 70% at 100% 100%,rgba(70,0,30,.55),transparent 64%),
+    linear-gradient(138deg,#ec87a6 0%,#d9497f 26%,#c2185b 54%,#9c0f4a 78%,#7e0b3c 100%);
+  box-shadow:0 1px 0 rgba(255,230,200,.55) inset, 0 0 0 1px rgba(242,207,126,.45) inset, 0 -1px 0 rgba(60,0,25,.5) inset,
+    0 50px 90px -40px rgba(120,10,50,.6), 0 22px 36px -22px rgba(120,10,50,.5); }
+/* fine lines like a banknote, very soft, and gold snowflakes in relief */
+.csc-lines{ position:absolute; inset:0; pointer-events:none; opacity:.55;
+  background:repeating-linear-gradient(115deg,rgba(255,235,210,.07) 0 1px,transparent 1px 7px);
+  -webkit-mask-image:linear-gradient(100deg,transparent 25%,#000 75%); mask-image:linear-gradient(100deg,transparent 25%,#000 75%); }
+.csc-flakes{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+/* the ribbon wrapped round it, gold, with a soft shadow on the card */
+.csc-rib{ position:absolute; z-index:1; pointer-events:none;
+  background:linear-gradient(var(--a,90deg),#9c6d22 0%,#e2b458 14%,#fff0c2 34%,#e9c06a 52%,#b4832b 74%,#f1d38a 90%,#a8782a 100%);
+  box-shadow:0 0 0 .25cqw rgba(255,240,200,.35) inset, 0 .8cqw 2cqw rgba(70,0,25,.35); }
+.csc-rib::after{ content:''; position:absolute; inset:0; background:repeating-linear-gradient(var(--b,0deg),rgba(255,255,255,.14) 0 .3cqw,transparent .3cqw 1.1cqw); }
+.csc-rib.v{ left:75cqw; top:0; bottom:0; width:6.6cqw; --a:90deg; --b:0deg; }
+.csc-rib.h{ left:0; right:0; top:19.6cqw; height:4.4cqw; --a:180deg; --b:90deg; }
+.csc-bow{ position:absolute; z-index:3; left:62.8cqw; top:7cqw; width:31cqw; height:auto; overflow:visible; pointer-events:none; filter:drop-shadow(0 1.2cqw 1.4cqw rgba(70,0,25,.45)); }
+.csc-fir{ position:absolute; z-index:2; right:-1.5cqw; bottom:-2cqw; width:27cqw; height:auto; overflow:visible; pointer-events:none; filter:drop-shadow(0 .8cqw 1cqw rgba(50,0,20,.4)); }
+/* gold sparkles that twinkle */
+.csc-tw{ position:absolute; z-index:3; width:3.2cqw; height:3.2cqw; color:#ffe7a8; pointer-events:none; filter:drop-shadow(0 0 1.2cqw rgba(255,226,150,.95)); animation:cscTw 3.2s var(--e2) infinite; }
+.csc-tw svg{ display:block; width:100%; height:100%; }
+.csc-tw:nth-of-type(1){ left:66cqw; top:34cqw; animation-delay:.4s; } .csc-tw:nth-of-type(2){ left:92cqw; top:6cqw; width:2.4cqw; height:2.4cqw; animation-delay:1.4s; }
+.csc-tw:nth-of-type(3){ left:69cqw; top:50cqw; width:2.2cqw; height:2.2cqw; animation-delay:2.3s; } .csc-tw:nth-of-type(4){ left:2.6cqw; top:44cqw; width:2cqw; height:2cqw; animation-delay:.9s; }
 /* the light that passes over it */
-.csc-sheen{ position:absolute; inset:-30% -60%; pointer-events:none; z-index:3;
-  background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.12) 46%,rgba(255,255,255,.6) 50%,rgba(255,255,255,.12) 54%,transparent 58%);
+.csc-sheen{ position:absolute; inset:-30% -60%; pointer-events:none; z-index:5;
+  background:linear-gradient(105deg,transparent 42%,rgba(255,240,220,.08) 46%,rgba(255,245,230,.38) 50%,rgba(255,240,220,.08) 54%,transparent 58%);
   transform:translateX(-62%); animation:cscSheen 6.5s var(--e2) 1.2s infinite; }
 @keyframes cscSheen{ 0%,52%{ transform:translateX(-62%); } 88%,100%{ transform:translateX(62%); } }
-.csc-face{ position:absolute; inset:0; z-index:2; display:grid; grid-template-rows:auto 1fr auto; padding:6.6cqw 7cqw 6.2cqw; }
-.csc-top{ display:flex; align-items:center; justify-content:flex-end; gap:3cqw; }
-.csc-brand{ display:inline-flex; align-items:center; gap:2.2cqw; }
-.csc-brand svg{ width:7.6cqw; height:7.6cqw; flex:none; overflow:visible; fill:none; stroke:#3a1820; }
-.csc-brand b{ font:800 3.9cqw/1 'Montserrat','Inter',sans-serif; letter-spacing:-.005em; }
+/* the words: cream, the sum in gold foil */
+.csc-face{ position:absolute; inset:0; z-index:4; pointer-events:none; }
+.csc-gold{ background:linear-gradient(100deg,#b8862e 0%,#f3d589 20%,#fff4cc 36%,#dcb055 54%,#a87a26 72%,#f0cf7e 100%); -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 .25cqw 0 rgba(80,0,30,.45)); }
+.csc-brand{ position:absolute; left:20.5cqw; top:4.4cqw; display:inline-flex; align-items:center; gap:2cqw; }
+.csc-brand svg{ width:6.4cqw; height:6.4cqw; flex:none; overflow:visible; fill:none; stroke:#f3d589; }
+.csc-brand b{ font:800 3.5cqw/1 'Montserrat','Inter',sans-serif; letter-spacing:-.005em; color:#fff6ea; }
 .csc-brand b span{ font-weight:300; }
-.csc-k{ display:flex; align-items:center; gap:1.6cqw; font-size:2.55cqw; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:rgba(58,24,32,.62); white-space:nowrap; }
-.csc-star{ width:3.4cqw; height:3.4cqw; flex:none; color:#c9a04a; animation:cscTw 3.6s var(--e2) infinite; filter:drop-shadow(0 0 5px rgba(255,236,190,.95)); }
-@keyframes cscTw{ 0%,100%{ transform:scale(.75) rotate(0deg); opacity:.6; } 50%{ transform:scale(1.1) rotate(45deg); opacity:1; } }
-.csc-val{ align-self:center; display:grid; gap:1.4cqw; padding-top:1cqw; }
-.csc-val p{ margin:0; display:flex; align-items:baseline; gap:2.4cqw; line-height:.9; }
-.csc-val b{ font-size:16.5cqw; font-weight:800; letter-spacing:-.055em; font-variant-numeric:tabular-nums; }
-.csc-val i{ font-family:'Fraunces',Georgia,serif; font-style:italic; font-weight:400; font-size:7.4cqw; letter-spacing:-.02em; color:#0b7f74; }
-.csc-val small{ font-size:2.9cqw; font-weight:500; letter-spacing:.02em; color:rgba(58,24,32,.72); }
-.csc-bot{ display:flex; align-items:flex-end; justify-content:space-between; gap:4cqw; }
-.csc-bot small{ display:block; margin-bottom:1.1cqw; font-size:2.15cqw; font-weight:600; letter-spacing:.17em; text-transform:uppercase; color:rgba(58,24,32,.55); }
-.csc-bot b{ display:block; font-size:4cqw; font-weight:600; letter-spacing:-.015em; line-height:1.1; white-space:nowrap; }
+.csc-k{ position:absolute; left:7cqw; top:13.4cqw; display:flex; align-items:center; gap:1.5cqw; font-size:2.5cqw; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:#f7dc97; white-space:nowrap; }
+.csc-star{ width:3.2cqw; height:3.2cqw; flex:none; color:#ffe7a8; animation:cscTw 3.6s var(--e2) infinite; filter:drop-shadow(0 0 1cqw rgba(255,226,150,.9)); }
+@keyframes cscTw{ 0%,100%{ transform:scale(.7) rotate(0deg); opacity:.55; } 50%{ transform:scale(1.1) rotate(45deg); opacity:1; } }
+.csc-val{ position:absolute; left:6.6cqw; top:26.6cqw; display:grid; gap:1.6cqw; }
+.csc-val p{ margin:0; display:flex; align-items:baseline; gap:2.2cqw; line-height:.9; }
+.csc-val b{ font-size:15cqw; font-weight:800; letter-spacing:-.055em; font-variant-numeric:tabular-nums; padding-bottom:.4cqw; }
+.csc-val i{ font-family:'Fraunces',Georgia,serif; font-style:italic; font-weight:400; font-size:6.8cqw; letter-spacing:-.02em; padding-right:.6cqw; }
+.csc-val small{ font-size:2.8cqw; font-weight:500; letter-spacing:.02em; color:rgba(255,240,225,.85); }
+.csc-bot{ position:absolute; left:7cqw; right:30cqw; bottom:5cqw; display:flex; align-items:flex-end; gap:6cqw; }
+.csc-bot small{ display:block; margin-bottom:1cqw; font-size:2.05cqw; font-weight:600; letter-spacing:.17em; text-transform:uppercase; color:rgba(247,220,151,.85); white-space:nowrap; }
+.csc-bot b{ display:block; font-size:3.7cqw; font-weight:600; letter-spacing:-.015em; line-height:1.1; white-space:nowrap; color:#fff6ea; }
 .csc-nm{ min-width:0; }
 .csc-nm b{ transition:opacity .45s var(--e), transform .6s var(--e), filter .45s var(--e); }
 .csc-nm b.out{ opacity:0; transform:translateY(-40%); filter:blur(4px); }
 .csc-nm b.pre{ opacity:0; transform:translateY(40%); filter:blur(4px); transition:none; }
-.csc-exp{ text-align:right; }
-.csc-exp b{ font-variant-numeric:tabular-nums; font-weight:500; color:rgba(58,24,32,.86); }
+.csc-exp b{ font-variant-numeric:tabular-nums; font-weight:500; }
 .csc-shadow{ position:absolute; z-index:-1; bottom:calc(clamp(44px,7vw,72px) - 30px); width:min(360px,70vw); height:34px; border-radius:50%;
-  background:radial-gradient(closest-side,rgba(140,60,70,.26),transparent); filter:blur(4px); animation:cscShadow 9s var(--e2) infinite alternate; }
+  background:radial-gradient(closest-side,rgba(130,20,60,.3),transparent); filter:blur(4px); animation:cscShadow 9s var(--e2) infinite alternate; }
 @keyframes cscShadow{ 0%{ transform:scale(1.04) translateX(-8px); } 100%{ transform:scale(.86) translateX(8px); opacity:.7; } }
-/* a few points of light that rise slowly around it */
+/* a few points of light that rise slowly around it: gold, rose, white */
 .csc-dust{ position:absolute; inset:0; z-index:-1; pointer-events:none; }
 .csc-dust i{ position:absolute; width:5px; height:5px; border-radius:50%; background:#e3c27a; opacity:0; animation:cscDust 9s var(--e2) infinite; box-shadow:0 0 10px rgba(227,194,122,.9); }
-.csc-dust i:nth-child(2n){ background:#f1a9b0; box-shadow:0 0 10px rgba(241,169,176,.9); width:4px; height:4px; }
-.csc-dust i:nth-child(3n){ background:#5fd4c6; box-shadow:0 0 10px rgba(95,212,198,.8); }
+.csc-dust i:nth-child(2n){ background:#ec87a6; box-shadow:0 0 10px rgba(236,135,166,.9); width:4px; height:4px; }
+.csc-dust i:nth-child(3n){ background:#fff; box-shadow:0 0 10px rgba(227,194,122,.9); }
 .csc-dust i:nth-child(1){ left:8%; top:70%; animation-delay:0s; } .csc-dust i:nth-child(2){ left:20%; top:20%; animation-delay:1.6s; }
 .csc-dust i:nth-child(3){ left:86%; top:76%; animation-delay:3.1s; } .csc-dust i:nth-child(4){ left:92%; top:24%; animation-delay:4.4s; }
 .csc-dust i:nth-child(5){ left:52%; top:88%; animation-delay:5.8s; } .csc-dust i:nth-child(6){ left:66%; top:8%; animation-delay:7.1s; }
@@ -77,7 +88,7 @@
 
 /* the snow: fine flakes that fall slowly, only in the first screen (cs-card.js fills .csc-snow) */
 .csc-snow{ position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; -webkit-mask-image:linear-gradient(180deg,#000 70%,transparent); mask-image:linear-gradient(180deg,#000 70%,transparent); }
-.csc-snow i{ position:absolute; top:-24px; display:block; width:var(--s,10px); height:var(--s,10px); opacity:0; color:var(--c,rgba(20,165,150,.35));
+.csc-snow i{ position:absolute; top:-24px; display:block; width:var(--s,10px); height:var(--s,10px); opacity:0; color:var(--c,rgba(201,160,74,.5));
   animation:cscFall var(--d,16s) linear var(--w,0s) infinite; will-change:transform; }
 .csc-snow i svg{ display:block; width:100%; height:100%; animation:cscSpin var(--d,16s) linear var(--w,0s) infinite; }
 @keyframes cscFall{ 0%{ opacity:0; transform:translate3d(0,0,0); } 8%{ opacity:var(--o,.8); } 50%{ transform:translate3d(var(--x,20px),calc(var(--h,800px) * .5),0); } 88%{ opacity:var(--o,.8); } 100%{ opacity:0; transform:translate3d(0,var(--h,800px),0); } }
@@ -100,7 +111,7 @@
   .csc-edge{ border-radius:22px; }
   .csc-shadow{ bottom:16px; }
 }
-@media (prefers-reduced-motion:reduce){ .csc-float,.csc-sheen,.csc-dust i,.csc-star,.csc-art .ev,.csc-shadow,.csc-hat .sw,.csc-hat .tip{ animation:none !important; } .csc-dust,.csc-snow{ display:none; } }
+@media (prefers-reduced-motion:reduce){ .csc-float,.csc-sheen,.csc-dust i,.csc-star,.csc-tw,.csc-shadow,.csc-hat .sw,.csc-hat .tip{ animation:none !important; } .csc-dust,.csc-snow{ display:none; } }
 /* a part the page hides stays hidden, whatever its own display (buttons, tags, rows) */
 main [hidden]{ display:none !important; }
 

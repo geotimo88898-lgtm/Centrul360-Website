@@ -52,10 +52,10 @@
     if (d && typeof d.left === 'number') CSC.set(d);
   }).catch(function () {});
 
-  // ---- the snow of the first screen: fine flakes, in the site's colours, that fall slowly (none with reduced motion)
+  // ---- the snow of the first screen: fine flakes, rose and gold, that fall slowly (none with reduced motion)
   var FLAKE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10"/><path d="M9.5 3.5 12 6l2.5-2.5M9.5 20.5 12 18l2.5 2.5"/></svg>';
   var DOT = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg>';
-  var TINTS = ['rgba(20,165,150,.5)', 'rgba(214,122,134,.6)', 'rgba(201,160,74,.62)', 'rgba(95,212,198,.6)'];
+  var TINTS = ['rgba(214,122,134,.6)', 'rgba(201,160,74,.65)', 'rgba(236,135,166,.55)', 'rgba(227,194,122,.7)']; // rose and gold: no blue round the card (the owner, 20.11)
   if (!reduce) $$('.csc-snow').forEach(function (box) {
     // never over the words: on a computer they fall on the card's side; on a phone only around the card (cs-card.css)
     var wide = innerWidth > 920, n = innerWidth < 640 ? 16 : 24, html = '';
