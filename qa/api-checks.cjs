@@ -1796,10 +1796,10 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     check('CS', 'counter: 10 minus every card ordered (1 + 3 + 1)', g1.left === 5, g1);
     const bad = await Promise.all([
       pub({ tier: 990, qty: 1, name: 'X', phone: '0755000222', city: 'Arad', consent: true, terms: true }), pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '12', city: 'Arad', consent: true, terms: true }),
-      pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '0755000222', city: 'Cluj', consent: true, terms: true }), pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '0755000222', city: 'Arad' }), pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '0755000222', city: 'Arad', consent: true }),
+      pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '0755000222', city: 'Cluj', consent: true, terms: true }), pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '0755000222', city: 'Arad' }),
       pub({ tier: 500, qty: 1, name: 'Proba Doi', phone: '0755000222', city: 'Arad', consent: true, terms: true }), pub({ tier: 990, qty: 6, name: 'Proba Doi', phone: '0755000222', city: 'Arad', consent: true, terms: true }),
       pub({ tier: 990, qty: 0, name: 'Proba Doi', phone: '0755000222', city: 'Arad', consent: true, terms: true }), pub({ tier: 990, qty: 1.5, name: 'Proba Doi', phone: '0755000222', city: 'Arad', consent: true, terms: true })]);
-    check('CS', 'validation: name, phone, city, consent, the card\'s terms, the card (only 290/490/990), the quantity (1 to 5)', bad.map((x) => x.error).join() === 'missing_name,bad_phone,missing_city,missing_consent,missing_terms,bad_tier,bad_qty,bad_qty,bad_qty' && bad.every((x) => x._status === 400) && rd(CSK, []).length === 3, bad.map((x) => x.error));
+    check('CS', 'validation: name, phone, city, consent, the card (only 290/490/990), the quantity (1 to 5)', bad.map((x) => x.error).join() === 'missing_name,bad_phone,missing_city,missing_consent,bad_tier,bad_qty,bad_qty,bad_qty' && bad.every((x) => x._status === 400) && rd(CSK, []).length === 3, bad.map((x) => x.error));
     const hp = await pub({ tier: 990, qty: 1, name: 'Bot Proba', phone: '0755000333', city: 'Arad', consent: true, terms: true, website: 'http://spam' });
     check('CS', 'the trap field: a quiet ok, nothing stored', hp.ok && !hp.reservation && rd(CSK, []).length === 3, hp);
     const evil = await pub({ tier: 990, qty: 1, name: 'Proba Trei', phone: '0755000444', city: 'Arad', consent: true, terms: true }, 'https://evil.example');
@@ -1809,6 +1809,17 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const lim = [];
     for (let i = 0; i < 9; i++) lim.push((await pub({ name: 'X', phone: '1', city: 'Arad' }, null, '10.8.8.8'))._status);
     check('CS', 'a few tries per address: the 9th in 10 minutes gets 429', lim.slice(0, 8).every((x) => x === 400) && lim[8] === 429, lim);
+    const C0 = require('../api/_lib/card-sarbatori');
+    const lk0 = (await pub()).links;
+    const lkBad = await C0.setLinks({ 290: 'https://evil.example/pay' });
+    const lkHttp = await C0.setLinks({ 290: 'http://mypos.com/paylink/x' });
+    const lkOk = await C0.setLinks({ 290: 'https://mypos.com/vmp/paylink/abc290', 990: 'https://www.mypos.eu/paylink/abc990' });
+    const lk1 = (await pub()).links;
+    const lkClr = await C0.setLinks({ 290: '' });
+    const lkHealthAnon = await fetch('http://127.0.0.1:' + PORT + '/api/lead-health?cardlinks=1');
+    const lkHealth = await api('admin', 'lead-health', { 490: 'https://mypos.com/vmp/paylink/abc490' }, 'cardlinks=1');
+    check('CS', 'the PayLinks: all null first; only https links of mypos.com / mypos.eu; one per card; \'\' clears; set by an admin only (lead-health ?cardlinks)', lk0 && lk0[290] === null && lk0[990] === null && lkBad.error === 'bad_link' && lkHttp.error === 'bad_link' && lkOk.ok && lk1[290] === 'https://mypos.com/vmp/paylink/abc290' && lk1[990] === 'https://www.mypos.eu/paylink/abc990' && lk1[490] === null && lkClr.links[290] === null && lkHealthAnon.status === 401 && lkHealth.ok && lkHealth.links[490] === 'https://mypos.com/vmp/paylink/abc490', { lk0, lkBad, lk1, lkClr: lkClr.links, h: lkHealth });
+    wr('data/card-sarbatori-links.json', {});
     const ls = await api('receptie', 'card-sarbatori', { action: 'list' });
     const anon = await pub({ action: 'list' });
     check('CS', 'the team sees the list (reception), the public does not', ls.reservations && ls.reservations.length === 3 && anon._status === 401, { n: ls.reservations && ls.reservations.length, anon: anon._status });

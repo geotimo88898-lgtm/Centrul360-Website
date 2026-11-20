@@ -35,7 +35,7 @@
 .csc-tw{ position:absolute; z-index:3; width:3.2cqw; height:3.2cqw; color:#ffe7a8; pointer-events:none; filter:drop-shadow(0 0 1.2cqw rgba(255,226,150,.95)); animation:cscTw 3.2s var(--e2) infinite; }
 .csc-tw svg{ display:block; width:100%; height:100%; }
 .csc-tw:nth-of-type(1){ display:none; } .csc-tw:nth-of-type(2){ left:92cqw; top:6cqw; width:2.4cqw; height:2.4cqw; animation-delay:1.4s; }
-.csc-tw:nth-of-type(3){ left:69cqw; top:50cqw; width:2.2cqw; height:2.2cqw; animation-delay:2.3s; } .csc-tw:nth-of-type(4){ left:2.6cqw; top:44cqw; width:2cqw; height:2cqw; animation-delay:.9s; }
+.csc-tw:nth-of-type(3){ left:70cqw; top:40cqw; width:2.2cqw; height:2.2cqw; animation-delay:2.3s; } .csc-tw:nth-of-type(4){ left:2.6cqw; top:44cqw; width:2cqw; height:2cqw; animation-delay:.9s; }
 /* the light that passes over it */
 .csc-sheen{ position:absolute; inset:-30% -60%; pointer-events:none; z-index:5; /* under the words (.csc-face, 6): the light never washes them */
   background:linear-gradient(105deg,transparent 42%,rgba(255,240,220,.08) 46%,rgba(255,245,230,.38) 50%,rgba(255,240,220,.08) 54%,transparent 58%);
@@ -148,6 +148,10 @@ main [hidden]{ display:none !important; }
 .cst-go .btn{ width:100%; }
 .cst-sub{ font-size:14px; color:var(--mute); }
 .cst-sub b{ color:var(--teal2); font-weight:700; }
+.cst-pay{ font-size:13.5px; color:var(--mute); }
+.cst-alt{ justify-self:start; padding:4px 0; border:0; background:none; font:inherit; font-size:14px; color:var(--mute); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.cst-alt u{ color:var(--ink); text-underline-offset:3px; }
+.cst-go [hidden]{ display:none; }
 [data-cs-v]{ font-variant-numeric:tabular-nums; white-space:nowrap; }
 /* the sum on the card changes with a short turn */
 /* the sum changes clean: only opacity and a few px, no blur, no scale (the owner, 20.11: „clean și smooth din prima”) */

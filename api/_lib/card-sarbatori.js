@@ -135,4 +135,31 @@ async function notified(pairs) {
   return { paid: !!paid, verified: ok === true };
 }
 
-module.exports = { KEY, TOTAL, PRICE, TIERS, MAXQ, DEADLINE, live, norm, qtyOf, counter, embed, packStatus, newOrderId, checkout, markPaid, signed, notified };
+// ---- the payment links (the owner, 20.11): one myPOS PayLink per card, made by him in myPOS; the buttons go straight to
+// the link of the card chosen. Kept here, set by the owner (api/lead-health.js ?cardlinks), only https links of myPOS.
+const LINKS = 'data/card-sarbatori-links.json';
+const okLink = (u) => { try { const x = new URL(String(u || '').trim()); return x.protocol === 'https:' && /(^|\.)mypos\.(com|eu)$/i.test(x.hostname) ? x.href : ''; } catch (e) { return ''; } };
+async function links() {
+  const d = (await readJSON(LINKS, {}).catch(() => ({}))) || {};
+  const out = {};
+  Object.keys(TIERS).forEach((t) => { out[t] = okLink(d[t]) || null; });
+  return out;
+}
+// { 290?, 490?, 990? }: a link sets it, '' clears it, a link not of myPOS is refused (nothing saved)
+async function setLinks(input, by) {
+  const cur = (await readJSON(LINKS, {}).catch(() => ({}))) || {};
+  const next = Object.assign({}, cur);
+  for (const t of Object.keys(TIERS)) {
+    if (!input || !(t in input)) continue;
+    const v = String(input[t] == null ? '' : input[t]).trim();
+    if (!v) { delete next[t]; continue; }
+    const ok = okLink(v);
+    if (!ok) return { error: 'bad_link', tier: t };
+    next[t] = ok;
+  }
+  next.updatedAt = new Date().toISOString(); next.by = by || '';
+  await writeJSON(LINKS, next);
+  return { ok: true, links: await links() };
+}
+
+module.exports = { LINKS, links, setLinks, okLink, KEY, TOTAL, PRICE, TIERS, MAXQ, DEADLINE, live, norm, qtyOf, counter, embed, packStatus, newOrderId, checkout, markPaid, signed, notified };

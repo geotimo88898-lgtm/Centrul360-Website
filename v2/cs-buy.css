@@ -118,13 +118,5 @@ html.csb-lock{ overflow:hidden; }
 @media (prefers-reduced-motion:reduce){ .csb-bg,.csb-in{ transition:none; } .csb.sent .csb-done{ animation:none; } }
 /* for her or a gift: the names only for a gift */
 .csb-nm{ margin-top:10px; }
-.csb-nm[hidden],.csb-pay[hidden],.csb-wait[hidden]{ display:none; }
-/* the card form of myPOS, inside our window (its own iframe; at least 320 × 620 by myPOS's rules) */
-.csb-pay{ display:grid; gap:4px; }
-.csb-lk{ display:inline-grid; vertical-align:-3px; width:16px; height:16px; margin-right:6px; color:var(--teal2); }
-.csb-lk svg{ width:16px; height:16px; }
-.csb-mp{ min-height:40px; border-radius:18px; overflow:hidden; box-shadow:0 0 0 1px var(--line2) inset; }
-.csb-mp:empty{ display:none; }
-.csb-mp iframe{ display:block; width:100% !important; min-width:300px; border:0; }
-.csb-wait{ padding:18px; border-radius:16px; font-size:14px; color:var(--mute); text-align:center; background:rgba(11,11,13,.035); }
+.csb-nm[hidden]{ display:none; }
 .csb-spin-big{ width:44px; height:44px; border-width:3px; border-color:rgba(20,165,150,.25); border-top-color:var(--teal); }

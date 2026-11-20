@@ -2,11 +2,11 @@
 // 990 → 2.500 lei in treatments, 1 to 5 of one card in an order. Only 10 cards in all (both clinics, whatever the
 // card), on sale until 24 December 2026, 23:59 (Romania). Public, so: our own pages only
 // (Origin), a hidden trap field, the consent box, a few tries per address. The rules and the payment: api/_lib/card-sarbatori.js.
-//   GET                → { total: 10, left, deadline, open, online, tiers }   left = 10 minus the cards of the orders not
+//   GET                → { total: 10, left, deadline, open, online, tiers, links }   links: the myPOS PayLink of each card (or null)   left = 10 minus the cards of the orders not
 //                        cancelled; online = the myPOS card form is set up (MYPOS_EMBED_*), so the window may offer it
 //   POST { action: 'intent', tier, qty, id? }   online payment: the order made here first ('draft': our orderID, the sum
 //        made here), or the same draft with another card or quantity → { id, checkout } for the myPOS card form (v2/cs-buy.js)
-//   POST { tier, qty, names: [..], name, phone, city, pay, draft?, consent, terms, website, page, event_id }
+//   POST { tier, qty, names: [..], name, phone, city, pay, draft?, consent, website, page, event_id }
 //                      → { ok, reservation: { id, city, tier, qty, amount, credit, pay }, checkout?, left } | { error }
 //        The price, the credit and the sum to pay are made here (tier × qty), never taken from the page. With a draft
 //        (online), that order gets her details and becomes a reservation she then pays in the form; else a new one, paid in
@@ -63,9 +63,9 @@ module.exports = async (req, res) => {
   if (!ourOrigin(String(req.headers.origin || ''))) { res.status(403).json({ error: 'forbidden' }); return; }
   try {
     if (req.method === 'GET') {
-      const list = await readJSON(C.KEY, []), on = !!C.embed();
+      const [list, links] = await Promise.all([readJSON(C.KEY, []), C.links()]);
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=10, stale-while-revalidate=30');
-      res.status(200).json(C.counter(list, Date.now(), on));
+      res.status(200).json(Object.assign(C.counter(list, Date.now(), !!C.embed()), { links }));
       return;
     }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
@@ -140,7 +140,6 @@ module.exports = async (req, res) => {
     if (!/^07\d{8}$/.test(phone) && !/^[1-9]\d{10,14}$/.test(phone)) { res.status(400).json({ error: 'bad_phone' }); return; }
     if (!city) { res.status(400).json({ error: 'missing_city' }); return; }
     if (!(b.consent === true || b.consent === 'true' || b.consent === 'on')) { res.status(400).json({ error: 'missing_consent' }); return; }
-    if (!(b.terms === true || b.terms === 'true' || b.terms === 'on')) { res.status(400).json({ error: 'missing_terms' }); return; } // the card's terms, read and accepted
 
     const now = Date.now();
     if (now >= Date.parse(C.DEADLINE)) { res.status(409).json({ error: 'closed' }); return; }
@@ -161,7 +160,7 @@ module.exports = async (req, res) => {
     const codes = [];
     names.forEach(() => codes.push(codeOf(list, codes)));
     const cards = names.map((n, i) => ({ code: codes[i], recipient: n }));
-    const details = { termsAt: new Date().toISOString(), name, phone, city, tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty, cards, recipient: names[0] || '', status: 'rezervat', via: 'site', pay, page: clip(b.page, 200) };
+    const details = { name, phone, city, tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty, cards, recipient: names[0] || '', status: 'rezervat', via: 'site', pay, page: clip(b.page, 200) };
     let entry;
     if (draft) { entry = Object.assign(draft, details, { reservedAt: new Date().toISOString() }); }
     else { entry = Object.assign({ id: crypto.randomUUID(), created: new Date().toISOString() }, details); list.push(entry); }

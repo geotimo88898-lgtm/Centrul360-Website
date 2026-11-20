@@ -47,6 +47,7 @@
     $$('[data-cs-bar]').forEach(function (el) { el.style.setProperty('--k', (s.left / s.total).toFixed(3)); });
     $$('[data-cs-live]').forEach(function (el) { el.hidden = false; });
     CSC.subs.forEach(function (fn) { try { fn(s); } catch (e) {} });
+    if (CSC.tier && CSC.current) CSC.tier(CSC.current, true);
   };
   fetch('/api/card-sarbatori').then(function (r) { if (!r.ok) throw new Error('card'); return r.json(); }).then(function (d) {
     if (d && typeof d.left === 'number') CSC.set(d);
@@ -91,6 +92,8 @@
     $$('[data-cs-ex]').forEach(function (el) { el.hidden = el.getAttribute('data-cs-ex') !== String(t); });
     $$('[data-cs-follow]').forEach(function (el) { el.setAttribute('data-cs-tier', String(t)); });
     $$('[data-cst] input').forEach(function (i) { i.checked = Number(i.value) === t; });
+    var link = CSC.state && CSC.state.open && CSC.state.links && CSC.state.links[t];
+    $$('[data-cs-if-link]').forEach(function (el) { el.hidden = !link; }); // the PayLink of this card: „Rezervă cardul” as the second way
     if (!quiet) { try { localStorage.setItem(KEY, String(t)); } catch (e) {} }
   };
   $$('[data-cst]').forEach(function (box) { box.addEventListener('change', function (e) { if (e.target.name === 'cst') CSC.tier(e.target.value); }); });
