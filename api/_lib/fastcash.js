@@ -14,7 +14,7 @@ const CITY = { 'Timișoara': 'Timișoara', Arad: 'Arad' };
 
 async function load() { return Object.assign({ campaign: '', steps: [], log: [] }, (await readJSON(KEY, null)) || {}); }
 
-// { campaign, steps: [{ key, label, city, body, footer, buttons, dataUrl? }] } → each one a template (upserted by its
+// { campaign, steps: [{ key, label, city, body, footer, buttons, dataUrl?, replaces? }] } → each one a template (upserted by its
 // label), its picture stored as the template's example and as the picture sent with every message, then sent to Meta
 async function templates(b) {
   const steps = Array.isArray(b && b.steps) ? b.steps : [];
@@ -31,6 +31,12 @@ async function templates(b) {
       path = 'fastcash/' + key + '.jpg';
       await writeBinary(path, Buffer.from(m[1], 'base64'), 'image/jpeg');
     }
+    // replaces: the label of a template this one takes the place of (already sent, so Meta can't change it): deleted
+    // at Meta and here first; the new one has its own label (a deleted name stays taken at Meta for a while)
+    if (s.replaces && s.replaces !== s.label) {
+      const old = d.templates.find((t) => t.label === s.replaces);
+      if (old) { const r = await WT.remove(d, old.id); if (r.error) { out.push({ key, error: r.error }); continue; } await WT.save(d); }
+    }
     const prev = d.templates.find((t) => t.label === s.label);
     const c = WT.clean({ label: s.label, category: 'MARKETING', headerType: path ? 'IMAGE' : '', body: s.body, footer: s.footer || '', buttons: s.buttons || [], only: [s.city] }, prev);
     if (c.error) { out.push({ key, error: c.error }); continue; }
@@ -45,7 +51,9 @@ async function templates(b) {
   }
   const doc = await load();
   doc.campaign = String((b && b.campaign) || doc.campaign || '').slice(0, 80);
-  doc.steps = out.map((x) => ({ key: x.key, label: x.label, name: x.name }));
+  const byKey = new Map((doc.steps || []).map((x) => [x.key, x]));
+  out.filter((x) => x.label).forEach((x) => byKey.set(x.key, { key: x.key, label: x.label, name: x.name }));
+  doc.steps = Array.from(byKey.values());
   await writeJSON(KEY, doc);
   return { ok: true, templates: out };
 }
