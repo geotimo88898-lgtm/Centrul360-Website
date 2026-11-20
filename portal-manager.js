@@ -91,6 +91,7 @@
   let aziTimer = null;
   async function azi(el, quiet) {
     if (!S.today || !quiet) el.innerHTML = S.today ? aziHtml() : skel(320);
+    K.api('/api/portal-manager', { action: 'ready' }).then((r) => { S.ready = r; }, () => {});
     try { S.today = await K.api('/api/portal-manager', { action: 'today' }); } catch (e) { if (!S.today) return fail(el, 'ziua de azi'); }
     if (S.tab === 'azi' && el.isConnected) el.innerHTML = aziHtml();
     clearTimeout(aziTimer);
@@ -119,6 +120,9 @@
       if (x.confirm.length) todo.push([7000, '<li class="mg-todo"><a href="#programari/maine/de-confirmat" data-go="programari/maine/de-confirmat">' + icon('check') + '<span><b>' + K.plural(x.confirm.length, 'programare de mâine de confirmat', 'programări de mâine de confirmat') + '</b><small>sună sau scrie-le azi</small></span>' + tag + '</a></li>']);
       if (x.uncalledOlder) todo.push([8000, '<li class="mg-todo"><a href="#pipeline" data-go="pipeline" data-then="pipeline:queue">' + icon('phone') + '<span><b>' + K.plural(x.uncalledOlder, 'lead mai vechi nesunat', 'leaduri mai vechi nesunate') + '</b><small>în coada de apeluri</small></span>' + tag + '</a></li>']);
     });
+    // who hasn't finished reading (the regulation, the job description, the trainings): one line, opens Echipa
+    const unread = ((S.ready && S.ready.people) || []).filter((p) => p.todo.length && cs.includes(p.city));
+    if (unread.length) todo.push([9000, '<li class="mg-todo"><a href="#manager" data-sub="echipa">' + icon('book') + '<span><b>' + K.plural(unread.length, 'colegă n-a terminat de citit', 'colege n-au terminat de citit') + '</b><small>' + esc(unread.slice(0, 3).map((p) => p.name.split(' ')[0]).join(', ') + (unread.length > 3 ? '…' : '')) + ' · vezi în Echipa, Ce au citit</small></span>' + icon('right') + '</a></li>']);
     todo.sort((a, b) => a[0] - b[0]); // the leads waiting longest first, then who hasn't come, then the rest
     const people = [];
     cs.forEach((c) => t.cities[c].people.forEach((p) => people.push(Object.assign({ city: c }, p))));
@@ -251,7 +255,8 @@
         K.api('/api/portal-attendance', { action: 'adjust_list' }),
         K.api('/api/portal-leave', { action: 'list' }),
         K.api('/api/portal-attendance', { action: 'balance_all' }),
-      ]);
+        K.api('/api/portal-manager', { action: 'ready' }).catch(() => null),
+      ]).then((r) => { S.ready = r[3] || S.ready; return r; });
       S.adj = adj; S.leave = lv.requests || []; S.team = ov.employees || [];
     } catch (e) { return fail(el, 'echipa'); }
     if (S.tab === 'echipa' && el.isConnected) el.innerHTML = echipaHtml();
@@ -290,7 +295,7 @@
             '<span>concediu rămas ' + K.plural(r.daysLeft, 'zi', 'zile') + '</span>' + (r.pending ? '<span class="is-warn">' + r.pending + ' la aprobare</span>' : '') + '</div></div>' +
         '<div class="k-row-end">' + icon('right') + '</div></button>';
     };
-    return '<section class="k-card"><div class="k-card-head"><h3>' + icon('shield') + 'De decis</h3><span class="k-sub">pontaj și concedii, ' + (S.city === 'all' ? 'ambele clinici' : esc(S.city)) + '</span></div>' +
+    return readyHtml() + '<section class="k-card"><div class="k-card-head"><h3>' + icon('shield') + 'De decis</h3><span class="k-sub">pontaj și concedii, ' + (S.city === 'all' ? 'ambele clinici' : esc(S.city)) + '</span></div>' +
         (adjs.length || leaves.length ? '<div class="ad-list">' + adjs.filter((x) => !own(x)).map(timeCard).join('') + leaves.filter((x) => !own(x)).map(leaveCard).join('') + adjs.filter(own).map(timeCard).join('') + leaves.filter(own).map(leaveCard).join('') + '</div>' : '<p class="k-muted">Nimic de decis acum.</p>') +
         '<p class="ct-hint">' + icon('info') + 'Upsellurile și comisioanele se aprobă separat, la fel cererile tale.</p></section>' +
       '<section class="k-card"><div class="k-card-head"><h3>' + icon('clock') + 'Pontajul echipei</h3><div class="mg-row-btns">' +
@@ -325,6 +330,62 @@
     return m.join(' și ');
   }
   // one person's month: her days, with the correction of a mistaken entry (never one's own)
+  // „Ce au citit” (the owner, 20.11): who confirmed the regulation and the job description, how far each one is with the
+  // trainings, and one tap to remind those who haven't finished (each hears only what she still has)
+  const readyPeople = () => ((S.ready && S.ready.people) || []).filter((p) => inShown(p.city));
+  const okChip = (ok, label) => '<span class="k-tag ' + (ok ? 'is-good' : 'is-bad') + '">' + icon(ok ? 'check' : 'x') + esc(label) + '</span>';
+  function readyChips(p) {
+    const t = p.train;
+    return (p.reg ? okChip(!!p.reg.at, 'Regulament') : '') + (p.fisa ? okChip(!!p.fisa.at, 'Fișa postului') : '') +
+      (t ? '<span class="k-tag ' + (t.read >= t.total && t.passed >= t.tests ? 'is-good' : t.read ? 'is-warn' : 'is-bad') + '">' + icon('book') + 'Traininguri ' + t.read + '/' + t.total + (t.tests ? ' · teste ' + t.passed + '/' + t.tests : '') + '</span>' : '');
+  }
+  function readyHtml() {
+    const R = S.ready;
+    if (!R) return '';
+    const ps = readyPeople().filter((p) => p.reg || p.fisa || p.train);
+    if (!ps.length) return '';
+    const left = ps.filter((p) => p.todo.length);
+    const row = (p) => '<div class="k-row mg-ready-row">' +
+      '<button type="button" class="mg-ready-who" data-ready="' + esc(p.id) + '">' + K.avatar(p.name, 36) + '<span class="k-row-main"><span class="k-row-title">' + esc(p.name) + '</span>' +
+        '<span class="k-row-sub">' + esc(K.roleLabel(p.role)) + (p.city ? ' · ' + esc(p.city) : '') + (p.reminded && p.todo.length ? ' · reamintit ' + esc(K.ago(p.reminded)) : '') + '</span>' +
+        '<span class="mg-ready-chips">' + readyChips(p) + '</span></span></button>' +
+      (p.todo.length ? '<button type="button" class="k-btn is-outline is-sm mg-ready-btn" data-ready-remind="' + esc(p.id) + '">' + icon('bell') + 'Reamintește</button>' : '<span class="k-tag is-good mg-ready-btn">' + icon('checkCircle') + 'Gata</span>') + '</div>';
+    const vers = [R.reg ? 'Regulament v' + R.reg.n : '', R.fisa ? 'Fișa postului v' + R.fisa.n : ''].filter(Boolean).join(' · ');
+    return '<section class="k-card mg-ready"><div class="k-card-head"><h3>' + icon('book') + 'Ce au citit</h3>' +
+        (left.length ? '<button type="button" class="k-btn is-primary is-sm" data-ready-all>' + icon('bell') + 'Reamintește tuturor (' + left.length + ')</button>' : '<span class="k-tag is-good">' + icon('check') + 'Toți au terminat</span>') + '</div>' +
+      '<p class="mg-ready-sum"><b>' + (ps.length - left.length) + ' din ' + ps.length + '</b> au terminat tot' + (vers ? ' · ' + esc(vers) : '') + '</p>' +
+      '<div class="k-list">' + ps.map(row).join('') + '</div>' +
+      '<p class="ct-hint">' + icon('info') + 'Atinge un nume ca să vezi exact ce i-a rămas. Reamintirea îi ajunge pe telefon și îi spune doar ce mai are.</p></section>';
+  }
+  function openReady(id) {
+    const p = readyPeople().find((x) => x.id === id);
+    if (!p) return;
+    const when = (at) => (at ? 'confirmat ' + esc(K.dateLong(String(at).slice(0, 10))) : 'neconfirmat încă');
+    const line = (ok, title, sub) => '<li class="mg-ready-li"><span class="' + (ok ? 'is-on' : '') + '">' + icon(ok ? 'check' : 'minus') + '</span><b>' + esc(title) + '</b><small>' + sub + '</small></li>';
+    const t = p.train;
+    const d = K.drawer({ title: p.name, lead: K.avatar(p.name, 40), width: 560, subtitle: esc(K.roleLabel(p.role)) + (p.city ? ' · ' + esc(p.city) : ''),
+      body: '<section class="tr-sec"><h5>De citit și confirmat</h5><ul class="mg-ready-ul">' +
+          (p.reg ? line(!!p.reg.at, 'Regulament intern', when(p.reg.at)) : '') + (p.fisa ? line(!!p.fisa.at, 'Fișa postului', when(p.fisa.at)) : '') + '</ul></section>' +
+        (t ? '<section class="tr-sec"><h5>Traininguri · ' + t.read + '/' + t.total + ' citite' + (t.tests ? ' · ' + t.passed + '/' + t.tests + ' teste trecute' : '') + '</h5><ul class="mg-ready-ul">' +
+          t.items.map((c) => line(c.read && (!c.quiz || (c.quiz.total && c.quiz.best === c.quiz.total)), c.title,
+            esc(c.manual) + ' · ' + (c.read ? 'citit' : 'necitit') + (c.quiz ? ' · ' + (c.quiz.total ? 'test ' + c.quiz.best + '/' + c.quiz.total : 'test nedat') : ''))).join('') +
+          '</ul>' + (t.last ? '<p class="ct-hint">' + icon('clock') + 'Ultima dată în Traininguri: ' + esc(K.ago(t.last)) + '</p>' : '') + '</section>' : '') +
+        (p.reminded ? '<p class="ct-hint">' + icon('bell') + 'Ultima reamintire: ' + esc(K.ago(p.reminded)) + '</p>' : ''),
+      footer: '<span class="k-grow"></span>' + (p.todo.length ? '<button type="button" class="k-btn is-primary" data-d-remind>' + icon('bell') + 'Trimite reamintire</button>' : '<span class="k-tag is-good">' + icon('checkCircle') + 'A terminat tot</span>'),
+      onMount(el) { const b = el.querySelector('[data-d-remind]'); if (b) b.addEventListener('click', () => remind([p.id], b, () => d.close())); },
+    });
+  }
+  function remind(ids, btn, after) {
+    return K.busy(btn, async () => {
+      try {
+        const r = await K.api('/api/portal-manager', { action: 'ready_remind', ids });
+        K.ui().toast(r.sent ? (r.sent === 1 ? 'Reamintirea e trimisă.' : 'Am trimis ' + r.sent + ' reamintiri.') : 'Nu mai are nimeni nimic de citit.', 'success');
+        if (after) after();
+        S.ready = await K.api('/api/portal-manager', { action: 'ready' }).catch(() => S.ready);
+        const b = panel.querySelector('[data-body]'); if (S.tab === 'echipa' && b) b.innerHTML = echipaHtml();
+      } catch (err) { K.ui().toast('Nu am putut trimite. Reîncearcă.', 'error'); }
+    });
+  }
   async function openEmp(id) {
     const r = (S.team || []).find((x) => x.employeeId === id) || { name: nameOf(id) };
     const month = K.thisMonth();
@@ -659,6 +720,10 @@
     if (t('[data-lv-ok]', (x) => decideLeave(x.dataset.lvOk, true))) return;
     if (t('[data-lv-no]', (x) => decideLeave(x.dataset.lvNo, false))) return;
     if (t('[data-emp]', (x) => openEmp(x.dataset.emp))) return;
+    if (t('[data-ready]', (x) => openReady(x.dataset.ready))) return;
+    if (t('[data-ready-remind]', (x) => remind([x.dataset.readyRemind], x))) return;
+    if (t('[data-ready-all]', (x) => remind(readyPeople().filter((p) => p.todo.length).map((p) => p.id), x))) return;
+    if (t('[data-sub]', (x) => K.emit('manager:sub', x.dataset.sub))) return;
     if (t('[data-fb]', (x) => { const f = (S.feedback || []).find((y) => y.id === x.dataset.fb); if (f) openFeedback(f); })) return;
     if (t('[data-rep]', (x) => { const r = (S.reports || []).find((y) => y.id === x.dataset.rep); if (r) openReport(r); })) return;
     t('[data-close]', (x) => { const c = (S.closes || []).find((y) => y.id === x.dataset.close); if (c) openClose(c); });

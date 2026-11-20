@@ -1277,3 +1277,20 @@ button.k-row.cd-fix-row:hover .k-row-title{ color:var(--accent-text, var(--accen
 .mg-todo a > .k-tag{ flex:none; }
 .mg-azi-p{ flex-wrap:wrap; }
 .mg-azi-p .mg-pay{ flex-basis:100%; justify-content:center; margin-top:.4rem; }
+/* Manager → Echipa, „Ce au citit” (20.11): who confirmed what, the trainings, a reminder in one tap */
+.mg-ready-sum{ margin:0 0 .6rem; color:var(--muted); font-size:.85rem; overflow-wrap:anywhere; }
+.mg-ready-sum b{ color:var(--text, inherit); }
+.mg-ready-row{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; min-width:0; }
+.mg-ready-who{ all:unset; cursor:pointer; flex:1 1 15rem; min-width:0; display:flex; align-items:flex-start; gap:.6rem; }
+.mg-ready-who .k-row-main{ display:grid; gap:.15rem; min-width:0; }
+.mg-ready-who .k-row-sub{ overflow-wrap:anywhere; }
+.mg-ready-chips{ display:flex; flex-wrap:wrap; gap:.3rem; margin-top:.2rem; min-width:0; }
+.mg-ready-chips .k-tag{ max-width:100%; white-space:normal; }
+.mg-ready-btn{ flex:none; margin-left:auto; }
+.mg-ready-ul{ list-style:none; margin:0; padding:0; }
+.mg-ready-li{ display:grid; grid-template-columns:auto minmax(0, 1fr); column-gap:.5rem; padding:.4rem 0; border-bottom:1px solid var(--line); font-size:.88rem; }
+.mg-ready-li > span{ grid-row:span 2; color:var(--muted); display:inline-flex; padding-top:.1rem; }
+.mg-ready-li > span.is-on{ color:var(--good, #2e9d5b); }
+.mg-ready-li > span svg{ width:16px; height:16px; }
+.mg-ready-li b{ overflow-wrap:anywhere; }
+.mg-ready-li small{ color:var(--muted); font-size:.78rem; overflow-wrap:anywhere; }

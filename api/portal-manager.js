@@ -21,6 +21,9 @@
 //                                      tomorrow vs the target, the leads nobody called, who hasn't come yet, tomorrow's
 //                                      bookings to confirm, new clients with no program photographed, each cosmetician's
 //                                      new clients, programs and packages today
+//   { action: 'ready' }               „Ce au citit” (20.11): per person of her clinics, the regulation and the job description
+//                                      confirmed or not, the trainings read and passed
+//   { action: 'ready_remind', ids? }   a reminder to each one (or to those ids) of what she still has to read
 //   { action: 'rules', period: 'azi' | '7z' }  Reguli: the regulation kept or not, per clinic (api/_lib/rules.js)
 // Data: data/manager-feedback.json, data/day-closes.json, data/manager-reports.json (newest last, the last 400 kept).
 
@@ -103,6 +106,71 @@ async function todayOf(mine) {
     out[city] = { fill, uncalled: warm, uncalledOlder: older, late, confirm, noProgram, people };
   });
   return { ok: true, today: day, tomorrow, now: now.min, cities: out };
+}
+// „Ce au citit” (the owner, 20.11: the manager sees who read the regulation, the job description and the trainings,
+// and reminds them in one tap): per person of her clinics, the version in force of each text confirmed or not, and the
+// trainings read and passed (the cosmeticians' chapters, as Traininguri shows them)
+const READY_KEY = 'data/ready-reminders.json';
+const TRAIN_HIDE = ['vanzari', 'cabina']; // what Traininguri hides from the cosmeticians (portal-academy.js areaCards)
+async function readyOf(mine, meId) {
+  const C = require('./_lib/clinic');
+  const RG = require('./portal-regulament');
+  const { mergeAcademy } = require('./_lib/academy');
+  const [emps, cfg, prog, regDoc, fisaDoc, sent] = await Promise.all([readJSON('data/employees.json', []), readJSON('data/config.json', null),
+    readJSON('data/academy-progress.json', {}), RG.load(RG.DOCS.regulament), RG.load(RG.DOCS.fisa), readJSON(READY_KEY, {})]);
+  const ac = mergeAcademy((cfg && cfg.academy) || null);
+  const chapters = ac.manuals.filter((m) => (m.roles || []).includes('cosmetician') && !TRAIN_HIDE.includes(m.id))
+    .flatMap((m) => m.chapters.map((c) => ({ ref: 'm:' + m.id + '/' + c.id, title: c.title || '', manual: m.title || '', quiz: (c.quiz || []).length > 0 })));
+  const cur = (d) => d.versions[d.versions.length - 1] || null;
+  const reg = cur(regDoc), fisa = cur(fisaDoc);
+  const sign = (doc, v, D, e) => (v && D.signs.includes(e.role) ? { at: (doc.acks[v.id] || {})[e.id] || '' } : null);
+  const people = (emps || []).filter((e) => e && e.active !== false && e.id !== meId && ['cosmetician', 'receptie', 'manager'].includes(e.role) && mine.includes(C.clinicOf(e.location)))
+    .map((e) => {
+      const p = Object.assign({ read: {}, quiz: {} }, prog[e.id] || {});
+      let train = null;
+      if (e.role === 'cosmetician' && chapters.length) {
+        const tests = chapters.filter((c) => c.quiz);
+        const q = (c) => p.quiz[c.ref];
+        const stamps = [].concat(Object.values(p.read || {}), Object.values(p.quiz || {}).map((x) => x && x.at)).filter(Boolean).sort();
+        train = { read: chapters.filter((c) => p.read[c.ref]).length, total: chapters.length, tests: tests.length,
+          passed: tests.filter((c) => q(c) && q(c).total && q(c).best === q(c).total).length, last: stamps[stamps.length - 1] || '',
+          items: chapters.map((c) => ({ title: c.title, manual: c.manual, read: !!p.read[c.ref], quiz: c.quiz ? (q(c) ? { best: q(c).best, total: q(c).total } : { best: null, total: 0 }) : null })) };
+      }
+      const r = sign(regDoc, reg, RG.DOCS.regulament, e), f = sign(fisaDoc, fisa, RG.DOCS.fisa, e);
+      const todo = [];
+      if (r && !r.at) todo.push('regulament');
+      if (f && !f.at) todo.push('fisa');
+      if (train && (train.read < train.total || train.passed < train.tests)) todo.push('train');
+      return { id: e.id, name: e.name || '', role: e.role, city: C.clinicOf(e.location), reg: r, fisa: f, train, todo, reminded: sent[e.id] || '' };
+    })
+    .sort((a, b) => b.todo.length - a.todo.length || a.city.localeCompare(b.city) || a.name.localeCompare(b.name));
+  const ver = (v) => (v ? { n: v.n, at: v.at } : null);
+  return { ok: true, reg: ver(reg), fisa: ver(fisa), people };
+}
+// the reminder: each one hears only what she still has, and opens the first of it
+async function readyRemind(mine, meId, ids) {
+  const R = await readyOf(mine, meId);
+  const want = Array.isArray(ids) && ids.length ? new Set(ids.map(String)) : null;
+  const to = R.people.filter((p) => p.todo.length && (!want || want.has(p.id)));
+  const words = (p) => p.todo.map((t) => (t === 'regulament' ? 'Regulamentul intern' : t === 'fisa' ? 'Fișa postului'
+    : (p.train.total - p.train.read ? (p.train.total - p.train.read) + ' ' + (p.train.total - p.train.read === 1 ? 'capitol' : 'capitole') + ' din Traininguri' : 'testele din Traininguri')));
+  const day = B.roNow().date;
+  for (const p of to) {
+    const go = p.todo[0] === 'regulament' ? 'regulament' : p.todo[0] === 'fisa' ? 'fisapost' : 'traininguri';
+    await N.notify({ readJSON, writeJSON }, p.id, { kind: 'info', tone: 'info', go, tag: 'ready-' + day,
+      title: 'DE CITIT ÎN PORTAL 📚', text: 'Mai ai: ' + words(p).join(', ') + '. Citește și confirmă la final.' });
+  }
+  if (to.length) {
+    for (let i = 0; i < 3; i++) {
+      const sent = await readJSON(READY_KEY, {});
+      const at = new Date().toISOString();
+      to.forEach((p) => { sent[p.id] = at; });
+      await writeJSON(READY_KEY, sent);
+      const chk = await readJSON(READY_KEY, {});
+      if (to.every((p) => chk[p.id] === at)) break;
+    }
+  }
+  return { ok: true, sent: to.length };
 }
 const KEYS = { feedback: 'data/manager-feedback.json', closes: 'data/day-closes.json', reports: 'data/manager-reports.json' };
 
@@ -279,6 +347,8 @@ module.exports = async (req, res) => {
   try {
     if (b.action === 'stats') { res.status(200).json(await stats(b.month, mine)); return; }
     if (b.action === 'today') { res.status(200).json(await todayOf(mine)); return; }
+    if (b.action === 'ready') { res.status(200).json(await readyOf(mine, session.employeeId)); return; }
+    if (b.action === 'ready_remind') { res.status(200).json(await readyRemind(mine, session.employeeId, b.ids)); return; }
     // „Dă bonusul”: the day's package bonus handed over at the end of the shift; the amount is the server's, never the page's
     if (b.action === 'bonus_pay') {
       const CM = require('./_lib/commission');
