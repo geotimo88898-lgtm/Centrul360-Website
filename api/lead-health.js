@@ -63,6 +63,18 @@ module.exports = async (req, res) => {
   // ?commission=1&month=YYYY-MM: the upsell commission of a month under the old rule (the whole value, in the upsell's
   // month) and under the rule from November 2026 (4% of each payment received, minus the refunds: _lib/commission.js),
   // in total and per cosmetician id, approved and waiting; ids and sums only, never a name. Read only.
+  // ?team=1: the team as Echipa has it, read only (the owner, 20.11: „ai tot sistemul la dispoziție”): who has an account,
+  // the role, the clinic, active or not, the hours a day; never the pay, the phone or the papers
+  if (req.query && req.query.team) {
+    const [emps, sched] = await Promise.all([readJSON('data/employees.json', []), require('./_lib/team-schedule').load().catch(() => null)]);
+    const TS = require('./_lib/team-schedule');
+    const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+    const next = (n) => { const t = new Date(day + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+    res.status(200).json({ ok: true, team: emps.filter((e) => e && e.id && e.id !== 'admin').map((e) => ({ id: e.id, name: e.name || '', role: e.role || '', location: e.location || '',
+      active: e.active !== false, leftAt: e.leftAt || '', hoursPerDay: e.contractedHoursPerDay != null ? e.contractedHoursPerDay : null, login: !!(e.username || e.pin || e.passwordHash || e.password),
+      week: sched ? [0, 1, 2, 3, 4, 5, 6].map((i) => { const d = next(i); const w = TS.workingAt(sched, e.id, d, null, {}); return w ? d.slice(5) + ' ' + w.from + '-' + w.to : null; }).filter(Boolean) : [] })) });
+    return;
+  }
   if (req.query && req.query.commission) {
     const CM = require('./_lib/commission');
     const month = /^\d{4}-\d{2}$/.test(String(req.query.month || '')) ? req.query.month : new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date()).slice(0, 7);
