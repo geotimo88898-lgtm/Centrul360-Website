@@ -52,6 +52,22 @@
     if (d && typeof d.left === 'number') CSC.set(d);
   }).catch(function () {});
 
+  // ---- the snow of the first screen: fine flakes, in the site's colours, that fall slowly (none with reduced motion)
+  var FLAKE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10"/><path d="M9.5 3.5 12 6l2.5-2.5M9.5 20.5 12 18l2.5 2.5"/></svg>';
+  var DOT = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg>';
+  var TINTS = ['rgba(20,165,150,.5)', 'rgba(214,122,134,.6)', 'rgba(201,160,74,.62)', 'rgba(95,212,198,.6)'];
+  if (!reduce) $$('.csc-snow').forEach(function (box) {
+    var n = innerWidth < 640 ? 16 : 28, html = '';
+    for (var i = 0; i < n; i++) {
+      var dot = i % 3 === 2, s = dot ? 4 + Math.random() * 4 : 10 + Math.random() * 10;
+      html += '<i style="left:' + (Math.random() * 100).toFixed(1) + '%;--s:' + s.toFixed(1) + 'px;--d:' + (13 + Math.random() * 12).toFixed(1) + 's;--w:-' + (Math.random() * 24).toFixed(1) +
+        's;--x:' + (Math.random() * 60 - 30).toFixed(0) + 'px;--o:' + (dot ? 0.7 : 0.85) + ';--c:' + TINTS[i % TINTS.length] + '">' + (dot ? DOT : FLAKE) + '</i>';
+    }
+    box.innerHTML = html;
+    var size = function () { box.style.setProperty('--h', (box.offsetHeight + 30) + 'px'); };
+    size(); addEventListener('resize', size);
+  });
+
   // ---- the time left
   var two = function (n) { return (n < 10 ? '0' : '') + n; };
   function clock() {
