@@ -222,6 +222,8 @@ module.exports = async (req, res) => {
   //              many of them are package sessions
   //   movedAhead bookings „reprogramată” sitting on a day still ahead (moved; whether their old day passed without her can't
   //              be known for the ones moved before 16.11), missedOn: the moves that kept their no-show since
+  // ?attfix=1: what the once fix of the manager's 19.11 pontaj found and did (times only; api/_lib/att-fix-once.js)
+  if (req.query && req.query.attfix) { res.status(200).json(await readJSON(require('./_lib/att-fix-once').KEY, {})); return; }
   if (req.query && req.query.time) {
     const C = require('./_lib/clinic'), L = require('./_lib/left'), T = require('./_lib/team-schedule'), B = require('./_lib/booking');
     const [appts, sales, emps, doc] = await Promise.all([readJSON('data/appointments.json', []), readJSON('data/sales.json', []), readJSON('data/employees.json', []), T.load()]);

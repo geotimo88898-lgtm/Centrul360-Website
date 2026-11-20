@@ -59,6 +59,8 @@ const STEPS = [
   ['hours', () => require('./_lib/content-hours-once').run()],
   // once: Full Body leaves the site's offers, the site shows its fixed prices (the owner, 19.11; api/_lib/fb-site-off-once.js)
   ['fbsiteoff', () => require('./_lib/fb-site-off-once').run()],
+  // once: the manager's pontaj of 19.11 back to 8 hours, its overtime taken out (the owner, 20.11; api/_lib/att-fix-once.js)
+  ['attfix', () => require('./_lib/att-fix-once').run()],
   // once: Timișoara's WhatsApp messages refused for the account's payment (14-15.11) go again, a probe first (api/_lib/wa-resend-once.js)
   ['waresend', () => require('./_lib/wa-resend-once').run()],
   // once: week 16.11 starts with the four reels the owner approved, the four he rejected out (api/_lib/content-swap-once.js)
