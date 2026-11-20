@@ -1270,7 +1270,7 @@
       : 'Următorul pachet îți aduce între <b>100 și 350 lei</b>' + (packs >= 2 ? ', <b>+50</b> fiind a ' + (packs + 1) + '-a vânzare de azi' : packs === 1 ? '. De la a 3-a vânzare din zi, încă <b>+50</b>' : '') + '.';
     return '<section class="k-card sl-earn"><div class="sl-earn-top"><span>Câștigul tău · ' + esc(K.monthLabel(pay.month)) + '</span>' +
         '<b data-count="' + Math.round(month) + '" data-fmt="lei" data-key="sl-e-' + pay.month + '">' + lei2s(month) + '</b><small>comision, bonusuri, programe și premiul echipei, peste salariu</small></div>' +
-      '<div class="sl-earn-row"><div><span>Azi</span><b>+' + lei2s(todayLei) + '</b><small>' + K.plural(packs, 'pachet', 'pachete') + ' · ' + K.plural(plansToday, 'program', 'programe') + (gotToday > 0 ? ' · primit pe loc ' + lei2s(gotToday) : packs ? ' · bonusul îl primești la final de program' : '') + '</small></div>' +
+      '<div class="sl-earn-row"><div><span>Câștigat azi</span><b>+' + lei2s(todayLei) + '</b><small>' + K.plural(packs, 'pachet', 'pachete') + ' · ' + K.plural(plansToday, 'program', 'programe') + (gotToday > 0 ? ' · primit pe loc ' + lei2s(gotToday) : packs ? ' · bonusul îl primești la final de program' : todayLei > 0 ? ' · se plătește cu salariul' : '') + '</small></div>' +
         '<div class="' + (waiting ? 'is-wait' : '') + '"><span>Te așteaptă</span><b>+' + lei2s(waiting) + '</b><small>' + (nW ? K.plural(nW, 'clientă mai are', 'cliente mai au') + ' de plătit' : 'nicio clientă cu rest') + '</small></div></div>' +
       '<p class="sl-earn-next">' + icon('zap') + '<span>' + next + '</span></p></section>';
   }
