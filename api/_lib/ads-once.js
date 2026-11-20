@@ -12,6 +12,19 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 20.11 16:05, George: „stinge RF gușă la Arad și aprinde HIFU gușă la Arad”. RF off; the two Arad HIFU „sezon” back on
+  // (23 and 17 bookings, 19 and 10 clients in October), next to a new ad with a real Arad HIFU case (H5 Arad)
+  { id: 'arad-hifu-2026-11-20', why: 'Arad: RF gușă oprit, HIFU gușă pornit', actions: [
+    { campaignId: '120251992601670103', name: 'AR RF GUSA · căutăm 8 doamne (port TM)', status: 'PAUSED', why: 'Arad trece pe HIFU gușă (George, 20.11)' },
+    { campaignId: '120252030180490103', name: 'AR RF GUSA · căutăm 8 doamne contur (U1)', status: 'PAUSED', why: 'Arad trece pe HIFU gușă (George, 20.11)' },
+    { campaignId: '120252030190520103', name: 'AR RF GUSA · bărbia dublă fără operație (U3)', status: 'PAUSED', why: 'Arad trece pe HIFU gușă (George, 20.11)' },
+    { campaignId: '120252030191620103', name: 'AR RF GUSA · până de sărbători (U4)', status: 'PAUSED', why: 'Arad trece pe HIFU gușă (George, 20.11)' },
+    { campaignId: '120251962566280103', name: 'AR RF GUSA · copertă 3', status: 'PAUSED', why: 'Arad trece pe HIFU gușă (George, 20.11)' },
+    { campaignId: '120251418098280103', name: 'AR HIFU G · sezon', status: 'ACTIVE', why: '23 programări, 19 cliente' },
+    { campaignId: '120251418098280103', name: 'AR HIFU G · sezon', daily: 100, why: 'repornită' },
+    { campaignId: '120251418133050103', name: 'AR HIFU G · sezon (2)', status: 'ACTIVE', why: '17 programări, 10 cliente' },
+    { campaignId: '120251418133050103', name: 'AR HIFU G · sezon (2)', daily: 80, why: 'repornită' },
+  ] },
   // 20.11 15:10: the best ad of all time on HIFU (the iPad video with the real cases: 29 bookings, 12 clients) back on
   { id: 'video-back-2026-11-20', why: 'cea mai bună reclamă HIFU din istoric, cu cazuri reale', actions: [
     { campaignId: '120251585544900103', name: 'TM VIDEO · HIFU gușă · iPad', status: 'ACTIVE', why: '29 programări, 12 cliente, lead la 10 lei' },
