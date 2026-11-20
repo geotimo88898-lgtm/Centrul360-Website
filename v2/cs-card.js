@@ -84,7 +84,7 @@
   CSC.tier = function (t, quiet) {
     t = Number(t); if (!TIERS[t]) return;
     CSC.current = t;
-    var get = TIERS[t][0], worth = get + (t === 990 ? 300 : 0);
+    var get = TIERS[t][0], worth = get + 250;
     var val = { pay: fmt(t) + ' lei', get: fmt(get) + ' lei', payd: fmt(t) + ' lei.', getd: fmt(get) + ' lei.', save: fmt(get - t) + ' lei', save2: fmt(worth - t) + ' lei', worth: fmt(worth) + ' lei', mul: 'x' + TIERS[t][1] };
     $$('[data-cs-v]').forEach(function (el) { var k = el.getAttribute('data-cs-v'); if (val[k] != null && el.textContent !== val[k]) el.textContent = val[k]; });
     $$('[data-csc-credit]').forEach(function (el) { setCredit(el, fmt(get)); });
