@@ -127,7 +127,7 @@ module.exports = async (req, res) => {
       const pay = byId.get(u.incasareId);
       if (u.status === 'approved' && String(u.date).slice(0, 7) >= '2026-11' && (!pay || !(Number(pay.upsell) > 0))) { drop.add(u.id); out.orphanDropped++; return; }
       if (u.status === 'approved' && String(u.date).slice(0, 7) >= '2026-11' && pay && Math.abs(Number(pay.upsell) - Number(u.amount)) > 0.005) { u.amount = r2(pay.upsell); out.valueFollowed++; }
-      if (u.status === 'pending' && !emps.some((e) => e && e.id === u.employeeId && e.role === 'cosmetician')) { drop.add(u.id); out.pendingDropped++; }
+      if (u.status === 'pending' && !emps.some((e) => e && e.id === u.employeeId && (e.role === 'cosmetician' || e.role === 'manager'))) { drop.add(u.id); out.pendingDropped++; }
     });
     if (apply) { await writeJSON('data/sales.json', sales.filter((x) => !(x && drop.has(x.id)))); await writeJSON(D.KEY, dues); }
     res.status(200).json(Object.assign({ applied: apply }, out));
@@ -152,7 +152,7 @@ module.exports = async (req, res) => {
       refundEdited: dues.filter((d) => { const c = cutsOf(d.id), st = byId.get(d.saleId); return c > 0 && st && Number(st.upsell) > 0 && Math.abs(Number(d.total) - Number(st.upsell)) < 0.01; }).length,
       backDated: sales.filter((s) => s && s.source === 'incasare' && s.createdAt && String(s.date).slice(0, 7) < roDay(s.createdAt).slice(0, 7)).length,
       upsellBelowValue: reqs.filter((u) => u.status === 'approved' && cash(u) && byId.get(u.incasareId) && Number(byId.get(u.incasareId).upsell) - Number(u.amount) > 0.005).length,
-      pendingNotCosm: reqs.filter((u) => u.status === 'pending' && !emps.some((e) => e && e.id === u.employeeId && e.role === 'cosmetician')).length,
+      pendingNotCosm: reqs.filter((u) => u.status === 'pending' && !emps.some((e) => e && e.id === u.employeeId && (e.role === 'cosmetician' || e.role === 'manager'))).length,
       refundsCutValue: sales.filter((r) => r && r.kind === 'refund' && !(r.restCut || []).length && (r.dues || []).some((x) => Number(x.cut) > 0)).length,
     };
     res.status(200).json(out);

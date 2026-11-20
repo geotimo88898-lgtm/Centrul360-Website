@@ -314,7 +314,7 @@ module.exports = async (req, res) => {
       // the people who left (name and last day): the Calendar still names them on their appointments, to give to someone else
       leftEmployees: isAdmin || me.role === 'receptie' || me.role === 'manager' ? employeesRaw.filter((e) => e && e.active === false && e.id !== 'admin' && (!manages || inCity(manages, e.location)))
         .map((e) => ({ id: e.id, name: e.name, location: e.location, role: e.role, leftAt: e.leftAt || '' })) : [],
-      activeEmployees: activeEmployees.filter((e) => !manages || e.role === 'admin' || e.id === me.id || inCity(manages, e.location)).map((e) => ({ id: e.id, name: e.name, location: e.location, role: e.role, photo: photoOf(e) })),
+      activeEmployees: activeEmployees.filter((e) => !manages || e.role === 'admin' || e.id === me.id || inCity(manages, e.location)).map((e) => ({ id: e.id, name: e.name, location: e.location, role: e.role, photo: photoOf(e), ...(e.role === 'manager' ? { manages: require('./_lib/roles').managesOf(e) } : {}) })),
       appointmentsToday: {
         list: todaysAppointments,
         countsToday,

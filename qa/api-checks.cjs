@@ -541,6 +541,82 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
       check('Z', '… with cash + card picked and 0 lei now it still saves', z3.ok && z3.entry && z3.entry.amount === 0 && !z3.entry.split, z3);
     }
 
+    // MU (20.11): the manager sells an upsell herself (on the phone): the desk picks her at „Cine a vândut upsell-ul?”; the
+    // commission is hers under the cosmeticians' rules, approved only by the owner; no plan bonus, no team prize
+    {
+      const empM = () => rd('data/employees.json', []).find((e) => e.id === 'e-mgr');
+      const payM = (m) => PAY.monthPay({ emp: empM(), month: m, isCurrent: m === MONTH, sales: rd('data/sales.json', []), dues: rd('data/client-dues.json', []), payouts: [], bank: null, attendance: rd('data/attendance.json', []), appointments: rd('data/appointments.json', []) });
+      const reqOf = (r) => rd('data/sales.json', []).find((x) => x.source === 'comision' && x.incasareId === (r.entry && r.entry.id));
+      const sell = (id, by, value, paid) => { mkAppt(id, 'Telefon ' + id); return api('receptie', 'portal-sale', { source: 'incasare', appointmentId: id, method: 'cash', performedBy: 'e-c1', upsellBy: by, parts: { session: 0, upsell: true, upsellValue: value, upsellPaid: paid, upsellWhat: 'Pachet vândut la telefon' } }); };
+      const before = payM(MONTH);
+      check('MU', 'the manager: no commission before she sells one (hasCommission, nothing counted)', before.hasCommission && !before.commission && !before.commissionWaiting, { c: before.commission, w: before.commissionWaiting });
+      // validation of the seller
+      const bad1 = await sell('mu-bad1', 'e-rec', 1000, 500);
+      const bad2 = await sell('mu-bad2', 'e-c5', 1000, 500);
+      const bad3 = await sell('mu-bad3', 'nimeni', 1000, 500);
+      check('MU', 'upsellBy: reception refused (invalid_seller), who left refused (seller_left), unknown refused', bad1._status === 400 && bad1.error === 'invalid_seller' && bad2._status === 400 && bad2.error === 'seller_left' && bad3._status === 400 && bad3.error === 'invalid_seller', [bad1.error, bad2.error, bad3.error]);
+      // the seller is the manager; the treatment stays the cosmetician's
+      const m1 = await sell('mu-1', 'e-mgr', 1000, 500);
+      const u1m = reqOf(m1);
+      check('MU', 'sold by the manager: the commission request is hers, the payment stays the cosmetician\'s', m1.ok && m1.entry.performedBy === 'e-c1' && m1.entry.upsellBy === 'e-mgr' && u1m && u1m.employeeId === 'e-mgr' && u1m.status === 'pending' && m1.upsell && m1.upsell.employeeId === 'e-mgr', { err: m1.error, u: u1m && u1m.employeeId });
+      // no seller given: as before, the one who did the treatment; the seller = the performer: no upsellBy kept
+      const m0 = await sell('mu-0', '', 800, 800);
+      const m0b = await sell('mu-0b', 'e-c1', 800, 800);
+      check('MU', 'no seller (or the performer herself): the cosmetician, as before', m0.ok && reqOf(m0).employeeId === 'e-c1' && !m0.entry.upsellBy && m0b.ok && reqOf(m0b).employeeId === 'e-c1' && !m0b.entry.upsellBy, [m0.error, m0b.error]);
+      // another cosmetician of the clinic can be the seller too
+      const m2 = await sell('mu-2', 'e-c2', 600, 600);
+      check('MU', 'another cosmetician as the seller: hers', m2.ok && reqOf(m2).employeeId === 'e-c2', m2.error);
+      // 0 lei now (sold on the phone, nothing paid yet) still works with the manager as the seller
+      const mz = await sell('mu-z', 'e-mgr', 2000, 0);
+      check('MU', 'the 0-lei upsell with the manager as the seller: saved, whole value owed, request hers', mz.ok && mz.entry.amount === 0 && mz.due && Math.abs(mz.due.rest - 2000) < 0.01 && reqOf(mz).employeeId === 'e-mgr', mz.error);
+      // waiting: her Salariu shows it as waiting
+      const w = payM(MONTH);
+      check('MU', 'her Salariu: the line waiting (20 lei), nothing counted yet', (w.commissionLines || []).some((l) => l.upsellId === u1m.id && l.status === 'pending' && l.lei === 20) && w.commissionWaiting >= 20 && !w.commission, { lines: w.commissionLines, w: w.commissionWaiting });
+      // the approval: never by herself; the owner can; nobody decides her own
+      const own = await api('manager', 'portal-approve', { saleId: u1m.id, decision: 'approve' });
+      const sx = rd('data/sales.json', []); const fake = Object.assign({}, u1m, { id: 'mu-own', employeeId: 'e-adm' }); sx.push(fake); wr('data/sales.json', sx);
+      const own2 = await api('admin', 'portal-approve', { saleId: 'mu-own', decision: 'approve' });
+      wr('data/sales.json', rd('data/sales.json', []).filter((x) => x.id !== 'mu-own'));
+      check('MU', 'her own upsell: she can\'t approve it (403); nobody approves her own (own_request)', own._status === 403 && rd('data/sales.json', []).find((x) => x.id === u1m.id).status === 'pending' && own2._status === 403 && own2.error === 'own_request', [own._status, own2._status, own2.error]);
+      const ok1 = await api('admin', 'portal-approve', { saleId: u1m.id, decision: 'approve' });
+      const nM = rd('data/notifications.json', []).filter((n) => n.employeeId === 'e-mgr' && n.kind === 'commission' && /COMISION ✅ - \+20 lei/.test(n.title || ''));
+      check('MU', 'the owner approves it: she hears „COMISION ✅ - +20 lei”', ok1.ok && nM.length === 1, { ok: ok1.error, n: nM.length });
+      const a = payM(MONTH);
+      check('MU', 'her Salariu: 20 lei commission, in the total, 20 more to come; no plan bonus, no team prize', a.commission === 20 && (a.toCome || []).some((t) => t.upsellId === u1m.id && t.lei === 20) && !a.plan && !a.team && Math.abs(a.total - before.total - 20) < 0.01, { c: a.commission, total: a.total, before: before.total, plan: a.plan, team: a.team });
+      const cosPay = PAY.monthPay({ emp: emp1(), month: MONTH, isCurrent: true, sales: rd('data/sales.json', []), dues: rd('data/client-dues.json', []), payouts: [], bank: null, attendance: [], appointments: [] });
+      check('MU', 'the cosmetician who did the treatment: no line for the manager\'s upsell', !(cosPay.commissionLines || []).some((l) => l.upsellId === u1m.id), cosPay.commissionLines && cosPay.commissionLines.length);
+      // the rest paid later („Încasează restul”): 4% of it comes to her, she hears it
+      const due1 = rd('data/client-dues.json', []).find((d) => d.saleId === m1.entry.id);
+      const rest = await api('receptie', 'portal-sale', { source: 'incasare', dueId: due1 && due1.id, amount: 500, method: 'transfer' });
+      const r = payM(MONTH);
+      const nR = rd('data/notifications.json', []).filter((n) => n.employeeId === 'e-mgr' && /Din restul pachetului/.test(n.text || ''));
+      check('MU', 'the rest paid: +20 lei more for her (40), she hears it', rest.ok && r.commission === 40 && nR.length === 1, { err: rest.error, c: r.commission, n: nR.length });
+      // the costs of her bonus: her commission is in „Comisioane și bonusuri” like the cosmeticians'; the 1.500 lei a day
+      // condition stays the cosmeticians' (her upsell's payment stays the cosmetician's)
+      const ctxM = await MP.loadCtx(require('../api/_lib/store').readJSON);
+      const autos = await MP.payrollAutos(ctxM, ['Timișoara', 'Arad'], MONTH, true);
+      const autos0 = await MP.payrollAutos(Object.assign({}, ctxM, { sales: ctxM.sales.filter((x) => !(x.source === 'comision' && x.employeeId === 'e-mgr')) }), ['Timișoara', 'Arad'], MONTH, true);
+      const cond = MP.conditionOf(ctxM.employees, ctxM.sales, ctxM.attendance, ['Timișoara', 'Arad'], MONTH, TODAY);
+      check('MU', 'manager-pay: her commission counted in the month\'s costs (+40); the condition is still only the cosmeticians\'', Math.abs(autos.commissions - autos0.commissions - 40) < 0.01 && !cond.people.some((p) => p.id === 'e-mgr') && cond.people.some((p) => p.id === 'e-c1'), { a: autos.commissions, a0: autos0.commissions });
+      // an older request on her name (before 20.11) never counts; a month before: nothing
+      const so = rd('data/sales.json', []); so.push(Object.assign({}, u1m, { id: 'mu-old', date: '2026-11-19', origin: 'manual', incasareId: undefined, amount: 1000, commission: 40, status: 'approved' })); wr('data/sales.json', so);
+      const o = payM(MONTH), oct = payM('2026-10');
+      wr('data/sales.json', rd('data/sales.json', []).filter((x) => x.id !== 'mu-old'));
+      check('MU', 'before 20.11 nothing of hers counts (an older request, October)', o.commission === 40 && !(o.commissionLines || []).some((l) => l.upsellId === 'mu-old') && !oct.commission, { c: o.commission, oct: oct.commission });
+      // the owner corrects the payment (another cosmetician did it): the seller stays the manager
+      const m2e = rd('data/sales.json', []).find((x) => x.id === mz.entry.id);
+      const up = await api('admin', 'portal-incasari', { action: 'update', id: m2e.id, date: m2e.date, method: 'cash', performedBy: 'e-c2', amount: 0, categories: m2e.categories,
+        parts: { session: 0, upsell: true, upsellValue: 2000, upsellPaid: 100, upsellWhat: 'Pachet vândut la telefon' } });
+      const zq = reqOf(mz);
+      check('MU', 'a correction keeps her as the seller (the waiting request stays hers)', up.ok && zq && zq.employeeId === 'e-mgr' && rd('data/sales.json', []).find((x) => x.id === m2e.id).upsellBy === 'e-mgr', { err: up.error, who: zq && zq.employeeId });
+      const up2 = await api('admin', 'portal-incasari', { action: 'update', id: m2e.id, date: m2e.date, method: 'cash', performedBy: 'e-c2', amount: 100, categories: m2e.categories, upsellBy: '',
+        parts: { session: 0, upsell: true, upsellValue: 2000, upsellPaid: 100, upsellWhat: 'Pachet vândut la telefon' } });
+      check('MU', '… and the owner can give it back to the one who did the treatment (upsellBy empty)', up2.ok && reqOf(mz).employeeId === 'e-c2' && !rd('data/sales.json', []).find((x) => x.id === m2e.id).upsellBy, up2.error);
+      // the form: the choice is there, only when „Upsell” is ticked (inside its box), with the managers of the clinic
+      const pm = fs.readFileSync(path.join(__dirname, '..', 'portal-money.js'), 'utf8');
+      check('MU', 'Încasare: „Cine a vândut upsell-ul?” inside the upsell, sends upsellBy', /data-ups-box>[\s\S]*Cine a vândut upsell-ul\?[\s\S]*'<\/div><\/div>' \+\s*\/\/ a payment on what she still owes/.test(pm) && /upsellBy: by/.test(pm) && /e\.role === 'manager'/.test(pm));
+    }
+
     // October, as paid: an older upsell (whole value, 1.000 → 40 lei) with a rest still owed
     const salesO = rd('data/sales.json', []);
     salesO.push({ id: 'oct-pay', source: 'incasare', employeeId: 'e-mgr', performedBy: 'e-c1', clientId: 'cl-oct', client: 'Octombrie', date: '2026-10-20', location: 'Timișoara', categories: ['corporale'], treatment: 'Pachet', amount: 500, upsell: 1000, parts: { session: 0, upsell: 500, due: 0 }, packageTotal: 1000, method: 'cash', status: 'recorded', createdAt: '2026-10-20T10:00:00Z' });

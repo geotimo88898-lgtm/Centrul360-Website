@@ -267,6 +267,12 @@ async function handleIncasare(req, res, session) {
     const upsellDone = parts ? parts.upsellValue > 0 : !owed && (req.body.upsell === true || req.body.upsell === 'true' || req.body.upsell === 1);
     const upsell = parts ? parts.upsellValue : upsellDone ? (Number(req.body.upsellAmount) > 0 ? Math.round(Number(req.body.upsellAmount) * 100) / 100 : packageTotal > amount ? packageTotal : amount) : 0;
     if (!parts && upsellDone && !(upsell > 0 && upsell <= Math.max(amount, packageTotal))) { res.status(400).json({ error: 'invalid_upsell' }); return; }
+    // who sold the upsell (George, 20.11): by default the one who did the treatment; the desk can pick another cosmetician
+    // or the manager (a package she sold herself, on the phone): the commission request is hers, under the same rules
+    // (_lib/commission.js), approved only by the owner (api/portal-approve.js). The treatment stays the performer's.
+    const sellerErr = upsell > 0 ? sellerError(employees, req.body.upsellBy, appt.location, date) : '';
+    if (sellerErr) { res.status(400).json({ error: sellerErr }); return; }
+    const seller = upsell > 0 && req.body.upsellBy ? employees.find((e) => e.id === String(req.body.upsellBy)) : null;
     // the same sum for the same visit a moment ago: the first try did go through (its second write failed), not a second visit
     if (sales.some((x) => x.source === 'incasare' && x.appointmentId === appt.id && Math.abs(Number(x.amount) - amount) < 0.01 && Date.now() - Date.parse(x.createdAt || 0) < 10 * 60e3)) { res.status(409).json({ error: 'already_paid' }); return; }
 
@@ -289,6 +295,7 @@ async function handleIncasare(req, res, session) {
       upsell,
       ...(parts ? { parts: { session: parts.session, upsell: parts.upsellPaid, due: parts.due } } : {}),
       ...(upsellWhat ? { upsellWhat } : {}),
+      ...(seller && seller.id !== performer.id ? { upsellBy: seller.id } : {}),
       ...(cross ? { crossSell: cross } : {}),
       ...(parts ? (packageTotal ? { packageTotal } : {}) : packageTotal > amount ? { packageTotal } : {}),
       ...(owed && (!parts || parts.due > 0) ? { dueId: owed.id, toDue: parts ? parts.due : Math.min(amount, D.rest(owed)) } : {}),
@@ -303,8 +310,9 @@ async function handleIncasare(req, res, session) {
     sales.push(entry);
 
     let upsellEntry = null;
-    if (upsell > 0 && performer.role === 'cosmetician') {
-      upsellEntry = upsellFor(entry, performer.id);
+    const earner = seller || (performer.role === 'cosmetician' ? performer : null);
+    if (upsell > 0 && earner) {
+      upsellEntry = upsellFor(entry, earner.id);
       sales.push(upsellEntry);
     }
     await writeJSON('data/sales.json', sales);
@@ -346,6 +354,7 @@ async function handleIncasare(req, res, session) {
           title: nothingNow ? 'UPSELL' + N.cityTag(entry.location) + ' 💵💵 - ' + N.leiTxt(upsell) + ', 0 lei acum' // a package sold, nothing paid yet
             : 'ÎNCASARE' + N.cityTag(entry.location) + ' ' + (upsell > 0 ? '💵💵' : '💵') + ' - ' + N.leiTxt(amount) + ' ' + METHOD_WORD[method], // an upsell: two banknotes
           text: (upsell > 0 ? 'Upsell' + (parts ? ' ' + N.leiTxt(upsell) + (parts.upsellPaid < upsell ? ', avans ' + N.leiTxt(parts.upsellPaid) : '') : upsell < amount ? ' ' + N.leiTxt(upsell) : '') : 'Fără upsell') +
+            (entry.upsellBy && seller ? ' · vândut de ' + String(seller.name || '').split(' ')[0] : '') +
             (cross ? ' · cross-sell: ' + cross.to + ' în loc de ' + cross.from : '') + (entry.toDue > 0 && parts ? ' · ' + N.leiTxt(entry.toDue) + ' din restul pachetului' : '') + (entry.client ? ' · ' + entry.client : ''),
         });
       } catch (e) { /* never blocks a payment */ }
@@ -438,6 +447,18 @@ async function handleRest(req, res, session) {
   }
 }
 
+// „Cine a vândut upsell-ul?”: '' when the choice is fine (none given: the one who did the treatment), else the error.
+// A seller: active, a cosmetician or a manager (of that clinic), working that day (_lib/left.js)
+const SELLER_ROLES = ['cosmetician', 'manager'];
+function sellerError(employees, id, location, date) {
+  if (!id) return '';
+  const e = (employees || []).find((x) => x && x.id === String(id));
+  if (!e || e.id === 'admin' || !SELLER_ROLES.includes(e.role)) return 'invalid_seller';
+  if (e.role === 'manager' && !require('./_lib/roles').managesCity(e, require('./_lib/clinic').clinicOf(location) || location)) return 'invalid_seller';
+  if (e.active === false || !require('./_lib/left').worksOn(e, date)) return 'seller_left';
+  return '';
+}
+
 // The commission request for the upsell of a payment, for whoever made it: waits in the owner's
 // Aprobări (the amount shown is upsell - 60% costs, 10% of the profit; approving fixes it). A
 // correction of the payment (api/portal-incasari.js) keeps a still-waiting request in step.
@@ -521,5 +542,6 @@ const handler = async (req, res) => {
 // instead of maintaining a second copy that could drift out of sync.
 handler.VALID_CATEGORIES = VALID_CATEGORIES;
 handler.upsellFor = upsellFor;
+handler.sellerError = sellerError;
 
 module.exports = handler;

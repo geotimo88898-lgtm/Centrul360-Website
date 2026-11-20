@@ -218,7 +218,7 @@ module.exports = async (req, res) => {
           (!np || (was ? near(np.session, was.session) && near(np.upsellPaid, was.upsell) && near(np.upsellValue, entry.upsell) : near(np.upsellValue, entry.upsell)));
         if (!same) { res.status(409).json({ error: 'has_refunds' }); return; }
       }
-      const before = { date: entry.date, amount: Number(entry.amount) || 0, performedBy: entry.performedBy || '', upsell: Number(entry.upsell) || 0 };
+      const before = { date: entry.date, amount: Number(entry.amount) || 0, performedBy: entry.performedBy || '', upsell: Number(entry.upsell) || 0, upsellBy: entry.upsellBy || '' };
       let split = null;
       if (method === 'cash_card') {
         const cash = Math.round(Number(req.body.cashAmount) * 100) / 100;
@@ -244,6 +244,13 @@ module.exports = async (req, res) => {
       if (req.body.treatment) entry.treatment = String(req.body.treatment).slice(0, 200);
       if (req.body.client) entry.client = String(req.body.client).slice(0, 150);
       entry.performedBy = performedBy ? String(performedBy).slice(0, 100) : '';
+      // who sold the upsell (portal-sale.js sellerError): left out = unchanged, '' = the one who did the treatment
+      if (req.body.upsellBy !== undefined) {
+        const by = String(req.body.upsellBy || '');
+        const err = by && by !== (entry.upsellBy || '') ? portalSale.sellerError(await readJSON('data/employees.json', []), by, entry.location, date) : '';
+        if (err) { res.status(400).json({ error: err }); return; }
+        if (by && by !== entry.performedBy) entry.upsellBy = by; else delete entry.upsellBy;
+      }
       if (req.body.note !== undefined) entry.note = String(req.body.note || '').trim().slice(0, 300);
       let startDue = false;
       if (np) {
@@ -271,13 +278,15 @@ module.exports = async (req, res) => {
 
       // Keep the commission request in step: one still waiting follows the payment (value, person, day); an approved one
       // goes when the upsell is taken off, and under the cash rule its value follows the package's (the commission is 4% of
-      // what comes in up to it). Whoever can't earn commission (not a cosmetician) has no request.
+      // what comes in up to it). Whoever can't earn commission (not a cosmetician) has no request. The seller picked at the
+      // payment (upsellBy: another cosmetician or the manager) keeps it, whoever did the treatment.
       let next = sales;
       const employees = await readJSON('data/employees.json', []);
-      const earner = entry.performedBy ? employees.find((e) => e.id === entry.performedBy && e.role === 'cosmetician') : null;
+      const earner = entry.upsellBy ? employees.find((e) => e.id === entry.upsellBy && (e.role === 'cosmetician' || e.role === 'manager'))
+        : entry.performedBy ? employees.find((e) => e.id === entry.performedBy && e.role === 'cosmetician') : null;
       if (upsellEntry && (upsellEntry.automatic || upsellEntry.status === 'pending')) {
         if (entry.upsell > 0 && earner) {
-          Object.assign(upsellEntry, { amount: entry.upsell, paidAmount: amount, employeeId: entry.performedBy, date: entry.date, categories, category: categories[0],
+          Object.assign(upsellEntry, { amount: entry.upsell, paidAmount: amount, employeeId: earner.id, date: entry.date, categories, category: categories[0],
             profit: profitOf(entry.upsell), commission: commissionOf(entry.upsell),
             note: 'Upsell ' + entry.upsell + ' lei, minus 60% cheltuieli = ' + profitOf(entry.upsell) + ' lei profit, 10% = ' + commissionOf(entry.upsell) + ' lei' });
         } else next = sales.filter((s) => s.id !== upsellEntry.id);
@@ -298,7 +307,7 @@ module.exports = async (req, res) => {
         if (startDue) await D.start({ readJSON, writeJSON }, entry, np.upsellValue, np.upsellPaid, entry.upsellWhat || 'Upsell · ' + entry.treatment);
       } else await D.resync({ readJSON, writeJSON }, entry.id, amount); // its part follows the new sum (never above the package)
       // a month before this one: the page warned before saving; Activitate notes it; a closed month: the owner hears it
-      const moneyMoved = before.date !== entry.date || Math.abs(before.amount - amount) > 0.005 || before.performedBy !== entry.performedBy || Math.abs(before.upsell - (Number(entry.upsell) || 0)) > 0.005;
+      const moneyMoved = before.date !== entry.date || Math.abs(before.amount - amount) > 0.005 || before.performedBy !== entry.performedBy || before.upsellBy !== (entry.upsellBy || '') || Math.abs(before.upsell - (Number(entry.upsell) || 0)) > 0.005;
       const months = [...new Set([monthOf(before.date), monthOf(entry.date)])];
       const pastM = moneyMoved ? months.filter((m) => MC.isPast(m)) : [];
       if (moneyMoved) for (const m of months) await MC.changed({ readJSON, writeJSON }, m, 'Încasare corectată: ' + before.amount + ' lei din ' + before.date + (before.date !== entry.date || before.amount !== amount ? ' → ' + amount + ' lei din ' + entry.date : ''));

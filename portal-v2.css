@@ -172,6 +172,17 @@
 .pay-people .k-avatar{ flex:none; }
 .pay-people button.is-on{ border-color:var(--accent); background:var(--accent-soft); }
 .pay-people button.is-other{ opacity:.7; }
+/* „Cine a vândut upsell-ul?” (20.11): small pills inside the upsell, the one who did the treatment by default */
+.pay-seller{ display:flex; flex-direction:column; gap:.45rem; min-width:0; }
+.pay-seller-l{ font-size:.82rem; font-weight:600; color:var(--fg); }
+.pay-seller-h{ font-size:.74rem; color:var(--muted); }
+.pay-sellers{ display:flex; flex-wrap:wrap; gap:.4rem; min-width:0; }
+.pay-sellers button{ display:inline-flex; align-items:center; gap:.45rem; min-height:44px; max-width:100%; min-width:0; padding:.3rem .75rem .3rem .35rem; border-radius:999px; border:1.5px solid var(--line); background:var(--paper-2); color:var(--fg); font:inherit; text-align:left; cursor:pointer; transition:border-color .15s ease, background .15s ease; }
+.pay-sellers button > span:not(.k-avatar){ display:flex; flex-direction:column; min-width:0; line-height:1.15; }
+.pay-sellers button b{ font-size:.84rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pay-sellers button small{ font-size:.7rem; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pay-sellers .k-avatar{ flex:none; border-radius:50%; }
+.pay-sellers button.is-on{ border-color:var(--accent); background:var(--accent-soft); }
 
 /* payment: step 1 filters (city, day) + appointment dropdown */
 .pay-filters{ display:flex; flex-wrap:wrap; gap:.7rem 1rem; align-items:flex-end; }

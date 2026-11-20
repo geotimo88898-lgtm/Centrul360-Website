@@ -15,7 +15,8 @@
 // + the manager's bonus (_lib/manager-pay.js): 5% of her clinics' profit in a month every trained cosmetician made more
 //   than 1.500 lei a day worked. Only the final number counts here, the one the owner confirms at month close
 //   (data/manager-bonus.json, passed in as finals); until then Salariu shows it as an estimate, outside the total.
-// Reception has no commission and the cosmeticians no bonus.
+// Reception has no commission and the cosmeticians no bonus. The manager: her own upsells' commission (from 20.11, the
+// same rules as the cosmeticians'), never the plan bonus or the team prize.
 
 const CM = require('./commission');
 
@@ -30,7 +31,12 @@ const hasBookingBonus = (emp, month) => {
   const until = bonusUntil(emp);
   return !!(until && month && month <= until.slice(0, 7));
 };
-const hasCommission = (emp) => !!emp && emp.role === 'cosmetician';
+// the upsell commission: the cosmeticians, and the manager for the upsells she sells herself (George, 20.11: chosen at the
+// payment, „Cine a vândut upsell-ul?”), from MANAGER_FROM, under exactly the same rules (_lib/commission.js); not the
+// cosmeticians' plan bonus (planBonus) nor the team prize (hasTeamPrize)
+const MANAGER_FROM = '2026-11-20';
+const hasCommission = (emp) => !!emp && (emp.role === 'cosmetician' || emp.role === 'manager');
+const isCosmetician = (emp) => !!emp && emp.role === 'cosmetician';
 // the months she is a manager in (from the month she became one; an old record without the day: every month)
 const hasManagerBonus = (emp, month) => !!emp && emp.role === 'manager' && (!/^\d{4}-\d{2}-\d{2}$/.test(String(emp.roleSince || '')) || month >= emp.roleSince.slice(0, 7));
 
@@ -105,10 +111,12 @@ function withSalary(emp, from, lei) {
 // the Panou, lead-health): the approved upsell commission and what is waiting, the manual lines apart
 function commissionMonth({ emp, month, isCurrent, sales, dues, cctx }) {
   let commission = 0, waiting = 0, upsells = 0, lines = null, toCome = null;
-  if (hasCommission(emp) && month >= CM.NEW_FROM) {
-    const c = CM.monthOfPerson(sales, dues, emp.id, month, isCurrent, cctx || CM.context(sales, dues, [emp]));
+  // the manager: only the upsells sold from MANAGER_FROM count (nothing of hers before it changes)
+  const own = emp && emp.role === 'manager' ? (sales || []).filter((s) => !(s && s.employeeId === emp.id && CM.isUpsellReq(s) && String(s.date || '') < MANAGER_FROM)) : sales;
+  if (hasCommission(emp) && month >= CM.NEW_FROM && (emp.role !== 'manager' || month >= MANAGER_FROM.slice(0, 7))) {
+    const c = CM.monthOfPerson(own, dues, emp.id, month, isCurrent, cctx || CM.context(sales, dues, [emp]));
     commission = c.commission; waiting = c.waiting; upsells = c.upsells; lines = c.lines; toCome = c.toCome;
-  } else if (hasCommission(emp)) {
+  } else if (isCosmetician(emp) && month < CM.NEW_FROM) {
     (sales || []).forEach((s) => {
       if (s.source === 'incasare' || s.source === 'manual' || s.employeeId !== emp.id || String(s.date).slice(0, 7) !== month) return;
       if (s.status === 'approved') { commission += Number(s.commission) || 0; upsells += 1; }
@@ -162,7 +170,7 @@ function teamPrize(emp, month, sales, dues, attendance, today, cctx) {
 // booking of that day), from 23.11, on a visit that took place (finalizată); one a client a day. In the month of the visit.
 const PLAN = { from: '2026-11-23', lei: 5 };
 function planBonus(emp, month, appointments) {
-  if (!hasCommission(emp) || month < PLAN.from.slice(0, 7)) return null;
+  if (!isCosmetician(emp) || month < PLAN.from.slice(0, 7)) return null;
   const seen = new Set(), days = [];
   (appointments || []).forEach((a) => {
     if (!a || a.cosmeticianId !== emp.id || a.status !== 'finalizata' || !a.program || a.program.byId !== emp.id) return;
@@ -207,4 +215,4 @@ function monthPay({ emp, month, isCurrent, sales, dues, payouts, bank, attendanc
   };
 }
 
-module.exports = { TEAM, teamPrize, PLAN, planBonus, BOOKING_TIERS, bonusUntil, bookingBonus, monthPay, commissionMonth, salaryHistoryOf, salaryOn, salaryOfMonth, withSalary, hasBookingBonus, hasCommission, hasManagerBonus, bucharestDate };
+module.exports = { MANAGER_FROM, isCosmetician, TEAM, teamPrize, PLAN, planBonus, BOOKING_TIERS, bonusUntil, bookingBonus, monthPay, commissionMonth, salaryHistoryOf, salaryOn, salaryOfMonth, withSalary, hasBookingBonus, hasCommission, hasManagerBonus, bucharestDate };

@@ -36,6 +36,11 @@ module.exports = async (req, res) => {
       res.status(409).json({ error: 'already_decided' });
       return;
     }
+    // nobody decides her own commission (the manager's upsells: the owner, like her own days and leave, portal-attendance.js)
+    if (sale.employeeId && sale.employeeId === session.employeeId) {
+      res.status(403).json({ error: 'own_request' });
+      return;
+    }
 
     if (decision === 'approve') {
       // One rule for everyone: upsell - 60% costs, 10% of the profit (see _lib/cats.js).

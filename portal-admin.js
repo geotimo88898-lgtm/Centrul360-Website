@@ -573,7 +573,9 @@
         const mg = r.role === 'manager' ? mgrOf(r.id) : null;
         const extra = r.role === 'manager'
           ? (r.hasBonus && r.bonus ? '<div><dt>Bonus recepție</dt><dd>' + K.lei(r.bonus) + '</dd><small>oprit la ' + esc(K.dateShort((r.booking && r.booking.frozen) || '')) + '</small></div>' : '') +
-            '<div><dt>Bonus</dt><dd>' + (r.managerFinal ? K.lei(r.managerBonus) : mgrBonusText(mg)) + '</dd><small>' + (r.managerFinal ? 'final' : mg && mg.estimate ? 'estimat, în afara totalului' : 'după costurile lunii') + '</small></div>'
+            '<div><dt>Bonus</dt><dd>' + (r.managerFinal ? K.lei(r.managerBonus) : mgrBonusText(mg)) + '</dd><small>' + (r.managerFinal ? 'final' : mg && mg.estimate ? 'estimat, în afara totalului' : 'după costurile lunii') + '</small></div>' +
+            // the upsells she sold herself (20.11): commission like the cosmeticians'
+            (r.commission || r.commissionWaiting || (r.commissionLines || []).length ? '<div><dt>Comision</dt><dd>' + K.lei(r.commission, r.commission % 1 ? 2 : 0) + '</dd><small>' + (r.commissionWaiting ? K.lei(r.commissionWaiting, 2) + ' în așteptare' : K.plural(r.upsells, 'upsell', 'upselluri')) + '</small></div>' : '')
           : r.hasBonus
           ? '<div><dt>Bonus programări</dt><dd>' + K.lei(r.bonus) + '</dd><small>' + (r.booking && r.booking.days ? 'media ' + K.num(r.booking.avg) + '/zi' : 'fără zile pontate') + '</small></div>'
           : '<div><dt>Comision</dt><dd>' + K.lei(r.commission, r.commission % 1 ? 2 : 0) + '</dd><small>' + (r.commissionWaiting ? K.lei(r.commissionWaiting, 2) + ' în așteptare' : K.plural(r.upsells, 'upsell', 'upselluri')) + '</small></div>';

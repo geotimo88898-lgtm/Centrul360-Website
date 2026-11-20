@@ -349,10 +349,14 @@
       cosmetician: [NOT_MINE + ' Spune la recepție ce s-a întâmplat.', ''] } },
     { q: 'lipsește un upsell de-al meu din comision', by: {
       cosmetician: ['În Salariu: „Adaugă comision”, completezi ce ai vândut și „Trimite la aprobare”.', 'comision.adauga'] } },
+    { q: 'am vândut eu un pachet (la telefon): cum îl trec pe mine?', by: {
+      manager: ['La încasarea clientei (prima ei vizită, chiar cu 0 lei acum): bifezi „Upsell” și la „Cine a vândut upsell-ul?” te alegi pe tine. Comisionul se aprobă separat și apare în Salariu.', 'incasari'],
+      receptie: ['La încasarea clientei: bifezi „Upsell” și la „Cine a vândut upsell-ul?” alegi cine l-a vândut.', 'incasari'],
+      admin: ['La încasare: „Upsell”, apoi „Cine a vândut upsell-ul?”. Comisionul apare în „Aprobări”.', 'incasari'] } },
     { q: 'de unde văd comisionul meu?', by: {
       cosmetician: ['În Salariu: comisionul e 4% din fiecare plată încasată pentru upsellurile tale; fiecare upsell se aprobă o singură dată.', 'comision'],
       receptie: ['Recepția nu are comision pe upselluri: are „Bonusul de programări”, în Salariu.', 'comision.bonus'],
-      manager: ['Tu ai bonusul pe profit, în Salariu → „Bonusul”.', 'comision.bonus'],
+      manager: ['Tu ai bonusul pe profit, în Salariu → „Bonusul”. Upsellurile vândute de tine aduc comision ca la cosmeticiene (4% din fiecare plată, după aprobare), tot în Salariu.', 'comision.bonus'],
       admin: ['Comisioanele echipei: „Aprobări” pentru upsellurile care așteaptă, „Echipa” → „Salarii” pentru sume.', 'aprobari'] } },
     { q: 'cât mai am până la bonus?', by: {
       receptie: ['În Salariu, cardul „Bonusul de programări” îți arată cât mai ai până la următorul prag.', 'comision.bonus'],
@@ -462,7 +466,7 @@
       admin: ['„Cheltuieli”: toate costurile lunii. Costurile trimise pentru bonus apar sus, cu „Folosește”.', 'cheltuieli'] } },
     { q: 'propunerea de costuri trimisă pentru bonus', by: { admin: ['„Cheltuieli”, sus: „Folosește” sau „Nu”.', 'cheltuieli.propunere'] } },
     { q: 'aprob comisioanele / upsellurile', by: { admin: ['„Aprobări”: „Aprobă” sau „Respinge” la fiecare upsell; „Aprobă toate” când sunt mai multe.', 'aprobari'],
-      manager: [NOT_MINE, ''], receptie: [NOT_MINE, ''], cosmetician: ['Upsellurile tale se aprobă separat; până atunci comisionul apare „În așteptare”, în Salariu.', 'comision'] } },
+      manager: [NOT_MINE + ' Comisionul upsellurilor vândute de tine se aprobă separat, nu din contul tău.', ''], receptie: [NOT_MINE, ''], cosmetician: ['Upsellurile tale se aprobă separat; până atunci comisionul apare „În așteptare”, în Salariu.', 'comision'] } },
     { q: 'salariile / confirm bonusul pe profit al colegei care conduce clinicile', by: { admin: ['„Echipa” → „Salarii”. Bonusul pe profit: „Confirmă la închiderea lunii”.', 'angajati.salarii'] } },
     { q: 'văd portalul ca o colegă', by: { admin: ['„Echipa”: apeși pe ea, apoi „Intră în cont”.', 'angajati'] } },
     { q: 'cine a schimbat ceva?', by: { admin: ['„Activitate”: cine a schimbat ce, pe zile.', 'activitate'] } },
