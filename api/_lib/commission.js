@@ -37,10 +37,9 @@ const PACK = { from: '2026-11-23', until: '', tiers: [{ min: 3000, lei: 350 }, {
 //   third: her 3rd payment of 1.500+ of the day and every one after it +50 lei each (by the time it came in)
 //   again: a client who had bought a package before buys another one +100 lei, on the first payment of the new one
 const EXTRA = { third: 50, again: 100 };
-// the package bonus from 23.11 (George, 20.11: „primesc doar o singură dată 350”): a package's bonus is the tier of what
-// has been paid of it so far, never under the 4% of it; every payment brings the difference. 1.500 advance = 100 now,
-// the other 1.500 later = +250 (350 in all); 6.000 in two payments of 3.000 = 350 once (+ nothing, 4% of 6.000 is 240).
-// Only packages sold from 23.11 (u.date); older ones keep the 4% of each payment.
+// the package bonus from 23.11: every payment brings the bonus of its own amount, never under its 4% (packLei); the
+// payments of one package on the same day count as one. 1.500 advance = 100, the other 1.500 later = 100 more; two payments
+// of 3.000 on two days = 700. Only packages sold from 23.11 (u.date); older ones keep the 4% of each payment.
 const packOn = (u) => !!u && cashRule(u) && String(u.date || '') >= PACK.from && (!PACK.until || String(u.date) <= PACK.until);
 const packLei = (cum) => { const t = PACK.tiers.find((x) => cum >= x.min); return r2(Math.max(t ? t.lei : 0, commissionOf(cum))); };
 const packTier = (cash, date) => (date >= PACK.from && (!PACK.until || date <= PACK.until) ? PACK.tiers.find((t) => cash >= t.min) || null : null);
@@ -91,8 +90,11 @@ function packDays(C) {
   (C.sales || []).forEach((u) => {
     if (!isUpsellReq(u) || u.status === 'rejected' || !packOn(u)) return;
     // the day the package crossed 1.500 lei paid: one package, counted once, whatever its payments
-    const x = rawLinesOf(u, C).find((l) => l.kind === 'pay' && l.paidSoFar >= PACK.tiers[PACK.tiers.length - 1].min);
-    if (!x) return;
+    const sums = new Map(), firstAt = new Map();
+    rawLinesOf(u, C).forEach((l) => { if (l.kind !== 'pay') return; sums.set(l.date, r2((sums.get(l.date) || 0) + l.cash)); if (!firstAt.has(l.date)) firstAt.set(l.date, l.at || ''); });
+    const day = [...sums.keys()].sort().find((d) => sums.get(d) >= PACK.tiers[PACK.tiers.length - 1].min);
+    if (!day) return;
+    const x = { date: day, at: firstAt.get(day) };
     const k = u.employeeId + '|' + x.date;
     (m.get(k) || m.set(k, []).get(k)).push({ id: u.id, client: clientOf(u, C), at: x.at || u.createdAt || '' });
   });
@@ -120,23 +122,28 @@ function linesOf(u, C) {
   if (!packOn(u) || !out.some((l) => l.kind === 'pay')) return out;
   packDays(C);
   const again = boughtBefore(u, C);
-  const first = PACK.tiers[PACK.tiers.length - 1].min;
-  let paid = 0, lei = 0;
-  out.forEach((l) => {
-    if (l.kind !== 'pay') return;
-    // the package's bonus follows what has been paid of it so far (packLei): each payment brings the difference
-    const before = r2(l.paidSoFar - l.cash), now = packLei(l.paidSoFar), was = packLei(before);
-    l.lei = r2(now - was);
-    const t = packTier(l.paidSoFar, l.date);
-    if (t && before < first) {
-      // the payment that made it a package (1.500+ paid): the tier, and the extras, once
+  // each payment brings the bonus of its own amount (George, 20.11: 1.500 more = 100, twice 3.000 = 700); the payments
+  // of the same package on the same day count as one (an amount split in two on the spot doesn't double the bonus)
+  const days = new Map();
+  out.forEach((l) => { if (l.kind === 'pay') (days.get(l.date) || days.set(l.date, []).get(l.date)).push(l); });
+  let paid = 0, lei = 0, firstPack = true;
+  days.forEach((list) => {
+    const sum = r2(list.reduce((a, l) => a + l.cash, 0));
+    const t = packTier(sum, list[0].date);
+    list.forEach((l, i) => { l.lei = i === 0 ? packLei(sum) : 0; if (i > 0) l.sameDay = true; });
+    const l = list[0];
+    if (t) {
       l.pack = t.min;
-      const extra = [];
-      if ((C.packRank.get(u.id) || 0) >= 2) extra.push(['third', EXTRA.third]);
-      if (again) extra.push(['again', EXTRA.again]);
-      if (extra.length) { l.extras = extra.map((x) => x[0]); l.packLei = l.lei; l.lei = r2(l.lei + extra.reduce((a, x) => a + x[1], 0)); }
-    } else if (t) { l.pack = t.min; l.topup = true; }
-    paid += l.cash; lei += l.lei;
+      if (!firstPack) l.topup = true;
+      if (firstPack) {
+        const extra = [];
+        if ((C.packRank.get(u.id) || 0) >= 2) extra.push(['third', EXTRA.third]);
+        if (again) extra.push(['again', EXTRA.again]);
+        if (extra.length) { l.extras = extra.map((x) => x[0]); l.packLei = l.lei; l.lei = r2(l.lei + extra.reduce((a, x) => a + x[1], 0)); }
+        firstPack = false;
+      }
+    }
+    list.forEach((x) => { paid += x.cash; lei += x.lei; });
   });
   if (paid > 0 && out.some((l) => l.pack)) out.forEach((l) => { if (l.kind === 'refund') l.lei = r2(Math.max(-lei, l.cash * lei / paid)); });
   return out;
@@ -195,7 +202,7 @@ function toComeOf(u, C) {
   if (!due) return null;
   const counted = r2(linesOf(u, C).filter((l) => l.kind === 'pay' || l.kind === 'refund').reduce((a, l) => a + l.cash, 0)); // net of what went back
   const rest = r2(Math.min(Math.max(0, Number(due.total) - Number(due.paid)), Math.max(0, r2(u.amount) - counted)));
-  const leiRest = packOn(u) ? r2(packLei(r2(counted + rest)) - packLei(counted)) : commissionOf(rest);
+  const leiRest = packOn(u) ? packLei(rest) : commissionOf(rest); // the rest paid at once
   return rest > 0 ? { upsellId: u.id, what: String(u.treatment || '').replace(/^Upsell · /, ''), client: u.client || '', rest, lei: leiRest, paid: r2(due.paid), total: r2(due.total), status: u.status } : null;
 }
 // what a payment of `cash` lei toward the package of this upsell brings her now (the cap of toComeOf): lei
@@ -203,9 +210,7 @@ function nextPayLei(u, C, cash) {
   const t = toComeOf(u, C);
   if (!t) return 0;
   const c = Math.min(r2(cash), t.rest);
-  if (!packOn(u)) return commissionOf(c);
-  const done = r2(linesOf(u, C).filter((l) => l.kind === 'pay' || l.kind === 'refund').reduce((a, l) => a + l.cash, 0));
-  return r2(packLei(r2(done + c)) - packLei(done));
+  return packOn(u) ? packLei(c) : commissionOf(c);
 }
 
 // one person's commission in a month (from NEW_FROM; the months before keep payroll.js's own count)
