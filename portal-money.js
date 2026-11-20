@@ -682,18 +682,20 @@
     }
     function ready() {
       const v = vals();
-      if (!v.a || !(v.amt > 0) || !st.who || !whoOk()) return false;
+      // a package sold with nothing paid now (e.g. at the free consultation): 0 lei is allowed (the owner, 20.11)
+      const zero = st.upsell && v.upsValue > 0 && v.amt === 0;
+      if (!v.a || !(v.amt > 0 || zero) || !st.who || !whoOk()) return false;
       if (st.cross && !String(st.crossTo).trim()) return false;
       if (st.upsell && (!(v.upsValue > 0) || v.upsPaid > v.upsValue)) return false;
       if (st.dueId && (!(v.duePaid > 0) || v.duePaid > v.owedRest + 0.01)) return false;
-      if (st.method === 'cash_card' && (!(v.cash > 0) || !(v.card > 0) || Math.abs(v.cash + v.card - v.amt) > 0.01)) return false;
+      if (v.amt > 0 && st.method === 'cash_card' && (!(v.cash > 0) || !(v.card > 0) || Math.abs(v.cash + v.card - v.amt) > 0.01)) return false;
       return true;
     }
     function updateSave() {
       const b = d.el.querySelector('[data-save]');
       const { amt } = vals();
       b.disabled = !ready();
-      d.el.querySelector('[data-save-label]').textContent = amt > 0 ? 'Încasează ' + K.lei(amt, 2) : 'Încasează';
+      d.el.querySelector('[data-save-label]').textContent = amt > 0 ? 'Încasează ' + K.lei(amt, 2) : st.upsell && num(st.upsValue) > 0 ? 'Salvează, 0 lei acum' : 'Încasează';
     }
     function onDrawerClick(e) {
       if (e.target.closest('[data-go-cal]')) { d.close(); K.go('programari'); return; }
@@ -793,7 +795,7 @@
         const dueTxt = r.due ? (r.due.rest > 0 ? ' Rest de plată din pachet: ' + K.lei(r.due.rest, 2) + '.' : st.dueId ? ' Pachetul e achitat integral.' : '') : '';
         // the upsell's commission as it comes (4% of the money received): now, and what the rest of the package brings later
         const c = r.commission, commTxt = r.upsell ? (c && c.rule === 'cash' ? '. Comision acum ' + K.lei(c.now, 2) + (c.later > 0 ? ', încă ' + K.lei(c.later, 2) + ' la restul' : '') + '.' : '. Comision ' + K.lei(c ? c.now : r.upsell.commission, 2) + '.') : '';
-        K.ui().toast('Încasat ' + K.lei(amt, 2) + ' · ' + a.clientName + commTxt + dueTxt, 'success'); K.emit('sale:recorded');
+        K.ui().toast((amt > 0 ? 'Încasat ' + K.lei(amt, 2) : 'Upsell salvat, 0 lei acum') + ' · ' + a.clientName + commTxt + dueTxt, 'success'); K.emit('sale:recorded');
         DUES.at = 0; loadDues(true);
         if (!(a.date >= range()[0] && a.date <= range()[1])) { S.period = a.date === K.today() ? 'today' : 'month'; }
         K.reload();

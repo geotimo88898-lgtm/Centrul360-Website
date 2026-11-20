@@ -529,6 +529,17 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const sumL = (ls) => Math.round(ls.reduce((a, l) => a + l.lei, 0) * 100) / 100;
     const dueOf = (id) => rd('data/client-dues.json', []).find((d) => d.id === id);
     const coll = () => MP.collectionsOf(rd('data/sales.json', []), rd('data/appointments.json', []), rd('data/employees.json', []), ['Timișoara', 'Arad'], MONTH, TODAY);
+    // 20.11: a package sold at the consultation with nothing paid now is saved at 0 lei (the whole value owed); 0 lei
+    // without an upsell is still refused
+    {
+      const z = await payPkg('zero-1', 2000, 0);
+      check('Z', 'a package sold with 0 lei now is saved, the whole value owed', z.ok && z.entry && z.entry.amount === 0 && z.due && Math.abs(z.due.rest - 2000) < 0.01, z);
+      mkAppt('zero-2', 'Zero fara upsell');
+      const z2 = await api('receptie', 'portal-sale', { source: 'incasare', appointmentId: 'zero-2', method: 'cash', performedBy: 'e-c1', parts: { session: 0, upsell: false } });
+      check('Z', '… but 0 lei without an upsell is refused (invalid_amount)', z2._status === 400 && z2.error === 'invalid_amount', z2);
+      const z3 = await api('receptie', 'portal-sale', { source: 'incasare', appointmentId: 'zero-2', method: 'cash_card', performedBy: 'e-c1', parts: { session: 0, upsell: true, upsellValue: 900, upsellPaid: 0, upsellWhat: 'Pachet zero' } });
+      check('Z', '… with cash + card picked and 0 lei now it still saves', z3.ok && z3.entry && z3.entry.amount === 0 && !z3.entry.split, z3);
+    }
 
     // October, as paid: an older upsell (whole value, 1.000 → 40 lei) with a rest still owed
     const salesO = rd('data/sales.json', []);

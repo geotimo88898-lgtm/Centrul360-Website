@@ -215,9 +215,12 @@ async function handleIncasare(req, res, session) {
     upsellWhat = ups ? String(P.upsellWhat || '').trim().slice(0, 120) : '';
   }
   const amount = parts ? r2(parts.session + parts.upsellPaid + parts.due) : Math.round(Number(req.body.amount) * 100) / 100;
-  if (!Number.isFinite(amount) || amount <= 0) { res.status(400).json({ error: 'invalid_amount' }); return; }
+  // 20.11 (the owner): a package sold at the visit with nothing paid now (e.g. at the free consultation) is recorded at
+  // 0 lei: the upsell's whole value is owed (_lib/dues.js) and its commission comes with each later payment
+  const nothingNow = !!parts && amount === 0 && parts.upsellValue > 0;
+  if (!Number.isFinite(amount) || amount < 0 || (amount === 0 && !nothingNow)) { res.status(400).json({ error: 'invalid_amount' }); return; }
   let split = null;
-  if (method === 'cash_card') {
+  if (method === 'cash_card' && !nothingNow) {
     const cash = Math.round(Number(req.body.cashAmount) * 100) / 100;
     const card = Math.round(Number(req.body.cardAmount) * 100) / 100;
     if (!(cash > 0) || !(card > 0) || Math.abs(cash + card - amount) > 0.01) { res.status(400).json({ error: 'invalid_split' }); return; }
@@ -340,7 +343,8 @@ async function handleIncasare(req, res, session) {
         await N.notifyMany(store, await N.adminIds(store), {
           kind: 'money', tone: 'good', go: 'incasari', tag: pos ? pos.tag : 'pay-' + entry.id, quiet: !!pos,
           ref: cardIn > 0 ? N.payRef('desk', cardIn) : '',
-          title: 'ÎNCASARE' + N.cityTag(entry.location) + ' ' + (upsell > 0 ? '💵💵' : '💵') + ' - ' + N.leiTxt(amount) + ' ' + METHOD_WORD[method], // an upsell: two banknotes
+          title: nothingNow ? 'UPSELL' + N.cityTag(entry.location) + ' 💵💵 - ' + N.leiTxt(upsell) + ', 0 lei acum' // a package sold, nothing paid yet
+            : 'ÎNCASARE' + N.cityTag(entry.location) + ' ' + (upsell > 0 ? '💵💵' : '💵') + ' - ' + N.leiTxt(amount) + ' ' + METHOD_WORD[method], // an upsell: two banknotes
           text: (upsell > 0 ? 'Upsell' + (parts ? ' ' + N.leiTxt(upsell) + (parts.upsellPaid < upsell ? ', avans ' + N.leiTxt(parts.upsellPaid) : '') : upsell < amount ? ' ' + N.leiTxt(upsell) : '') : 'Fără upsell') +
             (cross ? ' · cross-sell: ' + cross.to + ' în loc de ' + cross.from : '') + (entry.toDue > 0 && parts ? ' · ' + N.leiTxt(entry.toDue) + ' din restul pachetului' : '') + (entry.client ? ' · ' + entry.client : ''),
         });
