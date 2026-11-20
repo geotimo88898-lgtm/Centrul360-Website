@@ -12,6 +12,10 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 20.11 19:47: TM LipoSonix isn't in the Timișoara plan (laser and HIFU gușă only), and spent 14 lei today with no lead
+  { id: 'lipo-off-2026-11-20', why: 'LipoSonix nu e în planul TM', actions: [
+    { campaignId: '120252015088300103', name: 'TM LIPO · stai întinsă v2', status: 'PAUSED', why: 'în afara planului TM, 14 lei azi fără lead' },
+  ] },
   // 20.11 16:05, George: „stinge RF gușă la Arad și aprinde HIFU gușă la Arad”. RF off; the two Arad HIFU „sezon” back on
   // (23 and 17 bookings, 19 and 10 clients in October), next to a new ad with a real Arad HIFU case (H5 Arad)
   { id: 'arad-hifu-2026-11-20', why: 'Arad: RF gușă oprit, HIFU gușă pornit', actions: [
