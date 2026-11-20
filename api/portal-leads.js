@@ -655,6 +655,16 @@ module.exports = async (req, res) => {
       return save();
     }
 
+    // the lead's grade (the owner, 20.11): A = knows what she wants and is open to a program, B = interested, C = only the
+    // offer. Giovanna sets it in one tap after the call; the lead filter's form will set it by itself from the answers.
+    if (action === 'set_grade') {
+      const g = ['A', 'B', 'C'].includes(body.grade) ? body.grade : '';
+      if ((lead.grade || '') === g) { res.status(200).json({ ok: true, lead: withComputedFields(lead, stages) }); return; }
+      lead.grade = g; lead.gradeAt = nowISO(); lead.gradeBy = author;
+      addActivity(lead, { type: 'edit', text: g ? 'nota ' + g : 'fără notă', author });
+      return save();
+    }
+
     if (action === 'move_stage') {
       const target = stages.find((s) => s.id === body.stage);
       if (!target) return fail(400, 'invalid_stage');

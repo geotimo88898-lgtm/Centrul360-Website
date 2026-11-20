@@ -111,7 +111,7 @@
       return 'Lead nou' + (bits.length ? ': ' + bits.join(' · ') : '');
     }
     if (t.type === 'stage_changed') return 'Lead mutat în „' + ((B.meta.stages.find((s) => s.id === t.stage) || {}).name || 'alege etapa') + '”';
-    if (t.type === 'lead_idle') return 'Lead nesunat ' + (t.hours || 2) + 'h';
+    if (t.type === 'lead_idle') return 'Lead nesunat ' + (t.minutes ? t.minutes + ' min' : (t.hours || 2) + 'h');
     if (t.type === 'appointment_before') { const h = t.hours || 24; return 'Cu ' + (h % 24 === 0 ? (h / 24 === 1 ? 'o zi' : h / 24 + ' zile') : h + 'h') + ' înainte de programare'; }
     if (t.type === 'appointment_after') { const d = t.days == null ? 1 : t.days; return d === 0 ? 'În ziua tratamentului' : 'La ' + (d === 1 ? 'o zi' : d + ' zile') + ' după tratament'; }
     if (t.type === 'appointment_status') return 'Programare devenită „' + (STATUS[t.status] || 'alege statusul') + '”';
@@ -315,7 +315,8 @@
       f.push(K.field('Sursa', '<select data-t="source">' + K.options(meta.sources.map((s) => [s, SOURCE[s] || s]), t.source || 'any') + '</select>', 'full'));
     }
     if (t.type === 'stage_changed') f.push(K.field('Etapa', '<select data-t="stage">' + K.options([['', 'Alege etapa…']].concat(meta.stages.map((s) => [s.id, s.name])), t.stage || '') + '</select>', 'full'));
-    if (t.type === 'lead_idle') f.push(K.field('După câte ore fără contact', '<input type="number" min="1" max="720" data-t="hours" value="' + esc(t.hours || 2) + '">', 'full'));
+    if (t.type === 'lead_idle') f.push(t.minutes ? K.field('După câte minute fără contact', '<input type="number" min="5" max="1440" data-t="minutes" value="' + esc(t.minutes) + '">', 'full')
+      : K.field('După câte ore fără contact', '<input type="number" min="1" max="720" data-t="hours" value="' + esc(t.hours || 2) + '">', 'full'));
     if (t.type === 'appointment_before') f.push(K.field('Cu câte ore înainte', '<input type="number" min="1" max="168" data-t="hours" value="' + esc(t.hours || 24) + '">', 'full'));
     if (t.type === 'appointment_after') f.push(K.field('La câte zile după „Finalizată”', '<input type="number" min="0" max="365" data-t="days" value="' + esc(t.days == null ? 1 : t.days) + '">', 'full'));
     if (t.type === 'appointment_status') f.push(K.field('Statusul', '<select data-t="status">' + K.options([['', 'Alege statusul…']].concat(meta.statuses.map((s) => [s, STATUS[s]])), t.status || '') + '</select>', 'full'));

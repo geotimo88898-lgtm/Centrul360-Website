@@ -17,6 +17,10 @@
 //   { action: 'report_draft', week }   the week's numbers (week = its Monday)
 //   { action: 'report_send', week, notes, problems }  saved with the numbers of that moment; the admins are told
 //   { action: 'reports_list' }
+//   { action: 'today' }               „Azi” (the owner, 20.11): the day at a glance, per clinic: the calendar today and
+//                                      tomorrow vs the target, the leads nobody called, who hasn't come yet, tomorrow's
+//                                      bookings to confirm, new clients with no program photographed, each cosmetician's
+//                                      new clients, programs and packages today
 //   { action: 'rules', period: 'azi' | '7z' }  Reguli: the regulation kept or not, per clinic (api/_lib/rules.js)
 // Data: data/manager-feedback.json, data/day-closes.json, data/manager-reports.json (newest last, the last 400 kept).
 
@@ -38,6 +42,55 @@ const REASONS = { nu_raspund: 'Nu răspund', nu_stiu: 'Nu știu de ce au lăsat 
   se_programeaza: 'Interesate, se programează', altele: 'Altele' };
 const FATES = { ridicare: 'păstrat pentru ridicare', depus: 'depus în contul firmei' };
 const KEEP = 400;
+
+// „Azi”: what the manager has to see and do now (no lei of the clinic, only counts and names)
+async function todayOf(mine) {
+  const C = require('./_lib/clinic');
+  const CM = require('./_lib/commission');
+  const FU = require('./_lib/followups');
+  const [appts, sales, clients, emps, leads, stagesRaw, dues, cfg] = await Promise.all([readJSON('data/appointments.json', []), readJSON('data/sales.json', []),
+    readJSON('data/clients.json', []), readJSON('data/employees.json', []), readJSON('data/leads.json', []), readJSON('data/pipeline-stages.json', null),
+    readJSON('data/client-dues.json', []), B.settings({ team: true })]);
+  const N = C.normalize({ leads, appts, sales, convos: [], emps });
+  const now = B.roNow(), day = now.date, tomorrow = C.addDay(day, 1);
+  const stages = Array.isArray(stagesRaw) && stagesRaw.length ? stagesRaw : [];
+  const kind = (id) => (stages.find((x) => x.id === id) || {}).kind || 'open';
+  const test = (n) => /^\s*test\b/i.test(String(n || ''));
+  const tg = C.fillTargets(N.appts, N.sales, CITIES, day, clients);
+  const minOf = (t) => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : null; };
+  // clients who already had a visit before today: the others are new
+  const seenBefore = new Set(N.appts.filter((a) => a && a.date < day && a.status === 'finalizata' && a.clientId).map((a) => a.clientId));
+  const cctx = CM.context(N.sales, dues, emps);
+  const cos = emps.filter((e) => e && e.active !== false && e.role === 'cosmetician');
+  const out = {};
+  mine.filter((c) => CITIES.includes(c)).forEach((city) => {
+    const fill = C.fillDays(cfg, city, day, 2, N.appts, tg[city] ? tg[city].target : null);
+    const ap = N.appts.filter((a) => a && a.location === city && !test(a.clientName) && a.status !== 'concediu');
+    const todays = ap.filter((a) => a.date === day && a.status !== 'anulata');
+    const late = todays.filter((a) => (a.status === 'programata' || a.status === 'confirmata') && minOf(a.time) != null && minOf(a.time) + 15 < now.min)
+      .map((a) => ({ id: a.id, client: a.clientName || '', time: a.time || '', who: a.cosmeticianName || '' }));
+    const confirm = ap.filter((a) => a.date === tomorrow && C.toConfirm(a)).map((a) => ({ id: a.id, client: a.clientName || '', time: a.time || '' }));
+    const fresh = N.leads.filter((l) => l && l.location === city && !test(l.name) && kind(l.stage) !== 'won' && kind(l.stage) !== 'lost' && !l.lastContactAt && !l.contactCount)
+      .map((l) => ({ id: l.id, name: l.name || '', interest: l.interest || '', at: l.createdAt || '', grade: l.grade || '' }))
+      .sort((a, b) => (a.at < b.at ? -1 : 1));
+    // the warm ones first: the last 2 days; older ones only counted (the call queue has them)
+    const since = new Date(Date.now() - 48 * 3600e3).toISOString();
+    const older = fresh.filter((l) => l.at < since).length;
+    const warm = fresh.filter((l) => l.at >= since).map((l) => Object.assign(l, { mins: Math.max(0, Math.round((Date.now() - Date.parse(l.at)) / 60e3)) }));
+    const isNew = (a) => C.isConsult(a) || !a.clientId || !seenBefore.has(a.clientId);
+    const doneNew = todays.filter((a) => a.status === 'finalizata' && isNew(a));
+    const noProgram = doneNew.filter((a) => !a.program).map((a) => ({ id: a.id, client: a.clientName || '', who: a.cosmeticianName || '', time: a.time || '' }));
+    const people = cos.filter((e) => C.clinicOf(e.location) === city || todays.some((a) => a.cosmeticianId === e.id)).map((e) => {
+      const mineToday = todays.filter((a) => a.cosmeticianId === e.id);
+      const news = mineToday.filter((a) => isNew(a));
+      let packs = 0;
+      N.sales.forEach((u) => { if (CM.isUpsellReq(u) && u.employeeId === e.id && u.status !== 'rejected') CM.linesOf(u, cctx).forEach((l) => { if (l.kind === 'pay' && l.date === day && l.pack && !l.topup) packs++; }); });
+      return { id: e.id, name: e.name || '', clients: mineToday.length, newClients: news.length, programs: news.filter((a) => a.program).length, packages: packs };
+    }).filter((p) => p.clients || p.packages);
+    out[city] = { fill, uncalled: warm, uncalledOlder: older, late, confirm, noProgram, people };
+  });
+  return { ok: true, today: day, tomorrow, now: now.min, cities: out };
+}
 const KEYS = { feedback: 'data/manager-feedback.json', closes: 'data/day-closes.json', reports: 'data/manager-reports.json' };
 
 const clip = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
@@ -212,6 +265,7 @@ module.exports = async (req, res) => {
   };
   try {
     if (b.action === 'stats') { res.status(200).json(await stats(b.month, mine)); return; }
+    if (b.action === 'today') { res.status(200).json(await todayOf(mine)); return; }
     // „Reguli”: whether the internal regulation is kept, read only, per clinic, today or the last 7 days (api/_lib/rules.js);
     // the manager sees her clinics' people, never herself
     if (b.action === 'rules') {

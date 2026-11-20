@@ -338,7 +338,11 @@ function validateWorkflow(input) {
     trigger.returning = !!t.returning;
   }
   if (t.type === 'stage_changed') { trigger.stage = clip(t.stage, 60); if (!trigger.stage) return { error: 'invalid_trigger' }; }
-  if (t.type === 'lead_idle') trigger.hours = Math.min(720, Math.max(1, Math.round(Number(t.hours) || 2)));
+  if (t.type === 'lead_idle') {
+    // minutes for the fast ones (the owner, 20.11: a lead not called in 10 minutes rings the manager), hours otherwise
+    if (Number(t.minutes) > 0) trigger.minutes = Math.min(1440, Math.max(5, Math.round(Number(t.minutes))));
+    else trigger.hours = Math.min(720, Math.max(1, Math.round(Number(t.hours) || 2)));
+  }
   if (t.type === 'appointment_before') trigger.hours = Math.min(168, Math.max(1, Math.round(Number(t.hours) || 24)));
   // 0 = the day of the treatment (a wait step then sets the hour), not missing
   if (t.type === 'appointment_after') trigger.days = t.days === '' || t.days == null || !Number.isFinite(Number(t.days)) ? 1 : Math.min(365, Math.max(0, Math.round(Number(t.days))));
@@ -386,7 +390,7 @@ function matches(wf, event, p) {
 const apptKey = (a) => [a && a.date, a && a.time, a && a.location, String((a && a.clientPhone) || '').replace(/\D/g, '').slice(-9)].join('|');
 function dueFor(wf, p, now) {
   const t = wf.trigger;
-  if (t.type === 'lead_idle') return now + t.hours * 3600e3;
+  if (t.type === 'lead_idle') return now + (t.minutes ? t.minutes * 60e3 : t.hours * 3600e3);
   if (t.type === 'appointment_before') {
     const at = apptStart(p.appointment) - t.hours * 3600e3;
     // Booked too late for this reminder (e.g. a same-day booking and a 24h reminder): skip it.

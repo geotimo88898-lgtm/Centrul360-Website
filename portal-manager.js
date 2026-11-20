@@ -34,7 +34,7 @@
     invalid_week: 'Săptămâna nu e validă.', forbidden: 'Nu ai acces aici.', not_enough_overtime: 'Nu mai are destule ore suplimentare.', already_decided: 'A fost deja decisă.',
   };
   const errText = (e) => ERR[e && e.code] || K.errText(e);
-  const S = { tab: 'cifre', city: 'all', stats: null, team: null, adj: null, leave: null, closes: null, pos: null, posCity: '', reports: null, feedback: null, empPick: '' };
+  const S = { tab: 'azi', today: null, city: 'all', stats: null, team: null, adj: null, leave: null, closes: null, pos: null, posCity: '', reports: null, feedback: null, empPick: '' };
   let panel = null;
 
   const admin = () => !!(K.data && K.data.isAdmin);
@@ -64,7 +64,7 @@
         '<button type="button" class="k-btn is-outline" data-act="close">' + icon('cash') + 'Închide ziua</button>' +
         (admin() ? '' : '<button type="button" class="k-btn is-outline" data-act="report">' + icon('listCheck') + 'Raport săptămânal</button>') +
       '</div></div>' +
-      '<div class="mg-hbar">' + K.seg('mgtab', [['cifre', 'Cifre', 'trend'], ['echipa', 'Echipa', 'users'], ['reguli', 'Reguli', 'shield'], ['casa', 'Casa', 'wallet'], ['rapoarte', 'Rapoarte', 'file']], S.tab, 'mg-tabs') +
+      '<div class="mg-hbar">' + K.seg('mgtab', [['azi', 'Azi', 'zap'], ['cifre', 'Cifre', 'trend'], ['echipa', 'Echipa', 'users'], ['reguli', 'Reguli', 'shield'], ['casa', 'Casa', 'wallet'], ['rapoarte', 'Rapoarte', 'file']], S.tab, 'mg-tabs') +
       (CL().length > 1 ? K.seg('mgcity', [['all', CL().length === 2 ? 'Ambele' : 'Toate']].concat(CL().map((c) => [c, c])), S.city, 'mg-city') : '') + '</div>';
   }
   function paint() {
@@ -77,6 +77,7 @@
   function body() {
     const el = panel && panel.querySelector('[data-body]');
     if (!el) return;
+    if (S.tab === 'azi') return azi(el);
     if (S.tab === 'cifre') return cifre(el);
     if (S.tab === 'echipa') return echipa(el);
     if (S.tab === 'reguli') return reguli(el);
@@ -85,6 +86,56 @@
   }
   const skel = (h) => '<div class="k-skel" style="height:' + (h || 160) + 'px"></div>';
   const fail = (el, what) => { el.innerHTML = '<section class="k-card">' + K.empty('alert', 'Nu am putut încărca ' + what, 'Verifică conexiunea și reîncearcă.', '<button type="button" class="k-btn is-primary" data-act="retry">Reîncearcă</button>') + '</section>'; };
+
+  // ------------------------------------------------------------------ Azi (the owner, 20.11): the day at a glance, what to do now
+  let aziTimer = null;
+  async function azi(el, quiet) {
+    if (!S.today || !quiet) el.innerHTML = S.today ? aziHtml() : skel(320);
+    try { S.today = await K.api('/api/portal-manager', { action: 'today' }); } catch (e) { if (!S.today) return fail(el, 'ziua de azi'); }
+    if (S.tab === 'azi' && el.isConnected) el.innerHTML = aziHtml();
+    clearTimeout(aziTimer);
+    aziTimer = setTimeout(() => { const b = panel && panel.querySelector('[data-body]'); if (S.tab === 'azi' && b && b.isConnected && K.isActive('manager')) azi(b, true); }, 60e3);
+  }
+  const ago = (m) => (m < 60 ? m + ' min' : m < 1440 ? Math.floor(m / 60) + ' h' : Math.floor(m / 1440) + ' z');
+  function aziHtml() {
+    const t = S.today;
+    if (!t) return skel(320);
+    const cs = cities().filter((c) => t.cities[c]);
+    const sum = (k) => cs.reduce((a, c) => a + ((t.cities[c][k] || []).length), 0);
+    const tile = (tone, ic, label, value, sub) => '<div class="k-stat ' + tone + '"><div class="k-stat-top"><span class="k-stat-ic">' + icon(ic) + '</span>' + esc(label) + '</div><div class="k-stat-value">' + value + '</div><div class="k-stat-sub">' + sub + '</div></div>';
+    const fillTile = (i, label) => {
+      const fs = cs.map((c) => t.cities[c].fill[i]).filter((f) => f && f.capHours);
+      if (!fs.length) return tile('', 'calendar', label, '-', 'nimeni nu lucrează');
+      const tone = fs.every((f) => f.pct >= f.targetPct) ? 'is-good' : fs.some((f) => f.pct < 100) ? 'is-bad' : 'is-warn';
+      return tile(tone, 'calendar', label, fs.map((f) => f.pct + '%').join(' · '), 'ținta ' + fs.map((f) => f.targetPct + '%').join(' · ') + (cs.length > 1 ? ' (' + cs.map(short).join(' · ') + ')' : ''));
+    };
+    const unc = sum('uncalled'), late = sum('late'), nop = sum('noProgram'), conf = sum('confirm');
+    const todo = [];
+    cs.forEach((c) => {
+      const x = t.cities[c], tag = cs.length > 1 ? '<span class="k-tag">' + short(c) + '</span>' : '';
+      x.uncalled.forEach((l) => todo.push([-l.mins, '<li class="mg-todo is-bad"><a href="#pipeline" data-go="pipeline" data-then="pipeline:queue">' + icon('phone') + '<span><b>Sună: ' + esc(l.name) + '</b><small>' + esc(l.interest || 'lead nou') + ' · așteaptă de ' + ago(l.mins) + (l.grade ? ' · nota ' + esc(l.grade) : '') + '</small></span>' + tag + '</a></li>']));
+      x.late.forEach((a) => todo.push([5000, '<li class="mg-todo is-warn"><a href="#programari" data-go="programari">' + icon('clock') + '<span><b>N-a venit încă: ' + esc(a.client) + '</b><small>la ' + esc(a.time) + (a.who ? ' · ' + esc(a.who) : '') + ' · sun-o sau reprogrameaz-o</small></span>' + tag + '</a></li>']));
+      x.noProgram.forEach((a) => todo.push([6000, '<li class="mg-todo is-warn"><a href="#programari" data-go="programari">' + icon('file') + '<span><b>Fără program fotografiat: ' + esc(a.client) + '</b><small>' + (a.who ? esc(a.who) + ' · ' : '') + 'clientă nouă, la ' + esc(a.time) + '</small></span>' + tag + '</a></li>']));
+      if (x.confirm.length) todo.push([7000, '<li class="mg-todo"><a href="#programari/maine/de-confirmat" data-go="programari/maine/de-confirmat">' + icon('check') + '<span><b>' + K.plural(x.confirm.length, 'programare de mâine de confirmat', 'programări de mâine de confirmat') + '</b><small>sună sau scrie-le azi</small></span>' + tag + '</a></li>']);
+      if (x.uncalledOlder) todo.push([8000, '<li class="mg-todo"><a href="#pipeline" data-go="pipeline" data-then="pipeline:queue">' + icon('phone') + '<span><b>' + K.plural(x.uncalledOlder, 'lead mai vechi nesunat', 'leaduri mai vechi nesunate') + '</b><small>în coada de apeluri</small></span>' + tag + '</a></li>']);
+    });
+    todo.sort((a, b) => a[0] - b[0]); // the leads waiting longest first, then who hasn't come, then the rest
+    const people = [];
+    cs.forEach((c) => t.cities[c].people.forEach((p) => people.push(Object.assign({ city: c }, p))));
+    const row = (p) => '<div class="k-row mg-azi-p">' + K.avatar(p.name, 32) + '<div class="k-row-main"><div class="k-row-title">' + esc(p.name) + '</div><div class="k-row-sub">' + K.plural(p.clients, 'clientă', 'cliente') + ' azi · ' + K.plural(p.newClients, 'nouă', 'noi') + '</div></div>' +
+      '<div class="mg-azi-n"><span class="' + (p.newClients && p.programs < p.newClients ? 'is-warn' : p.programs ? 'is-good' : '') + '"><b>' + p.programs + '/' + p.newClients + '</b><small>programe</small></span><span class="' + (p.packages ? 'is-good' : '') + '"><b>' + p.packages + '</b><small>pachete</small></span></div></div>';
+    return '<p class="mg-month">' + icon('zap') + 'Azi, ' + esc(K.dateShort(t.today)) + ' · se actualizează singur la un minut</p>' +
+      '<div class="k-grid c4 mg-stats mg-azi-stats">' +
+        fillTile(0, 'Ocupat azi') + fillTile(1, 'Ocupat mâine') +
+        tile(unc ? 'is-bad' : 'is-good', 'phone', 'Leaduri nesunate', String(unc), unc ? 'sună-le acum, sunt calde' : 'toate sunate') +
+        tile(nop ? 'is-warn' : 'is-good', 'file', 'Fără program', String(nop), nop ? 'cliente noi fără poza programului' : 'toate cu program') +
+      '</div>' +
+      '<section class="k-card"><div class="k-card-head"><h3>' + icon('listCheck') + 'De rezolvat acum</h3><span class="k-sub">' + (todo.length ? K.plural(todo.length, 'lucru', 'lucruri') : '') + '</span></div>' +
+        (todo.length ? '<ul class="mg-todos">' + todo.map((x) => x[1]).join('') + '</ul>' : K.empty('check', 'Totul e la zi', 'Nimic de rezolvat acum. Verifică din nou peste câteva minute.')) +
+        '</section>' +
+      '<section class="k-card"><div class="k-card-head"><h3>' + icon('users') + 'Cosmeticienele azi</h3><span class="k-sub">programe prezentate / cliente noi · pachete</span></div>' +
+        (people.length ? people.map(row).join('') : '<p class="k-muted">Nicio clientă azi încă.</p>') + '</section>';
+  }
 
   // ------------------------------------------------------------------ Cifre
   async function cifre(el, quiet) {
@@ -657,7 +708,7 @@
   // the manager's three actions, also from her KPI page (Panou → KPI, „Țintele tale”; 16.11 her Manager tab is gone from the menu)
   window.C360Manager = { george, close: closeDay, report };
   // opened from Panou on a tab (K.go('manager/casa'), the manager's signals): that tab
-  K.on('manager:sub', (t) => { if (!['cifre', 'echipa', 'reguli', 'casa', 'rapoarte'].includes(t)) return; S.tab = t; if (panel && K.isActive('manager')) paint(); });
+  K.on('manager:sub', (t) => { if (!['azi', 'cifre', 'echipa', 'reguli', 'casa', 'rapoarte'].includes(t)) return; S.tab = t; if (panel && K.isActive('manager')) paint(); });
   // a save somewhere: the numbers read again, at most once a minute (they read a lot)
   let lastRemote = 0;
   K.on('remote', () => {

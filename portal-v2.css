@@ -1223,3 +1223,55 @@ button.k-row.cd-fix-row:hover .k-row-title{ color:var(--accent-text, var(--accen
 @media (max-width:600px){ .cd-fix-go{ display:none; } .cd-fix-chev{ display:inline-flex; } .cd-fix-row .k-row-end{ flex-wrap:nowrap; } }
 .cd-sched{ display:flex; align-items:center; gap:.45rem; margin:.9rem 0 0; font-size:.86rem; color:var(--muted); }
 .cd-sched svg{ width:15px; height:15px; flex:none; }
+
+/* Manager → Azi (20.11): the list of what to do now, and each cosmetician's day */
+.mg-todos{ list-style:none; margin:0; padding:0; display:grid; gap:.4rem; }
+.mg-todo a{ display:flex; align-items:center; gap:.6rem; padding:.6rem .7rem; border-radius:12px; border:1px solid var(--line); color:inherit; text-decoration:none; min-width:0; }
+.mg-todo a > svg{ flex:none; width:18px; height:18px; color:var(--muted); }
+.mg-todo a > span{ flex:1; min-width:0; display:grid; }
+.mg-todo b{ font-size:.9rem; overflow-wrap:anywhere; }
+.mg-todo small{ color:var(--muted); font-size:.78rem; overflow-wrap:anywhere; }
+.mg-todo.is-bad a{ border-color:color-mix(in srgb, var(--bad, #d64545) 55%, transparent); }
+.mg-todo.is-bad a > svg{ color:var(--bad, #d64545); }
+.mg-todo.is-warn a > svg{ color:var(--warn, #d9a33b); }
+.mg-azi-p .k-row-main{ min-width:0; }
+.mg-azi-n{ display:flex; gap:.9rem; flex:none; }
+.mg-azi-n span{ display:grid; justify-items:end; }
+.mg-azi-n b{ font-size:1.1rem; font-variant-numeric:tabular-nums; }
+.mg-azi-n small{ color:var(--muted); font-size:.7rem; }
+.mg-azi-n .is-good b{ color:var(--good, #2e9d5b); }
+.mg-azi-n .is-warn b{ color:var(--warn, #d9a33b); }
+
+/* Pipeline: the lead's grade A / B / C (20.11) */
+.pl-grade{ display:flex; align-items:center; gap:.4rem; margin:.6rem 0; flex-wrap:wrap; }
+.pl-grade > span{ color:var(--muted); font-size:.8rem; margin-right:.2rem; }
+.pl-grade-b{ display:flex; align-items:baseline; gap:.35rem; padding:.4rem .7rem; border-radius:999px; border:1px solid var(--line); background:transparent; color:inherit; cursor:pointer; }
+.pl-grade-b b{ font-size:.95rem; }
+.pl-grade-b small{ color:var(--muted); font-size:.74rem; }
+.pl-grade-b.is-on.is-a{ background:color-mix(in srgb, var(--good, #2e9d5b) 18%, transparent); border-color:var(--good, #2e9d5b); }
+.pl-grade-b.is-on.is-b{ background:color-mix(in srgb, var(--warn, #d9a33b) 18%, transparent); border-color:var(--warn, #d9a33b); }
+.pl-grade-b.is-on.is-c{ background:color-mix(in srgb, var(--muted, #888) 18%, transparent); border-color:var(--muted, #888); }
+.pl-grade-t{ font-weight:800; }
+.pl-grade-t.is-a{ color:var(--good, #2e9d5b); } .pl-grade-t.is-b{ color:var(--warn, #d9a33b); }
+
+/* Salariu, a cosmetician with the package bonus (20.11): what she earns, at the top */
+.sl-earn{ padding:1.1rem; background:linear-gradient(160deg, color-mix(in srgb, var(--good, #2e9d5b) 16%, transparent), transparent 70%); border-color:color-mix(in srgb, var(--good, #2e9d5b) 40%, var(--line)); }
+.sl-earn-top{ display:grid; gap:.1rem; }
+.sl-earn-top > span{ color:var(--muted); font-size:.78rem; letter-spacing:.06em; text-transform:uppercase; }
+.sl-earn-top > b{ font-size:clamp(2rem, 9vw, 2.8rem); line-height:1.05; font-weight:800; color:var(--good, #2e9d5b); font-variant-numeric:tabular-nums; }
+.sl-earn-top > small{ color:var(--muted); font-size:.8rem; }
+.sl-earn-row{ display:grid; grid-template-columns:1fr 1fr; gap:.6rem; margin-top:.9rem; }
+.sl-earn-row > div{ min-width:0; padding:.65rem .75rem; border-radius:12px; border:1px solid var(--line); background:var(--card, transparent); }
+.sl-earn-row span{ display:block; color:var(--muted); font-size:.78rem; }
+.sl-earn-row b{ display:block; font-size:1.35rem; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.sl-earn-row small{ color:var(--muted); font-size:.74rem; }
+.sl-earn-row .is-wait b{ color:var(--warn, #d9a33b); }
+.sl-earn-next{ display:flex; gap:.45rem; align-items:flex-start; margin:.8rem 0 0; font-size:.88rem; }
+.sl-earn-next svg{ flex:none; width:16px; height:16px; margin-top:.15rem; color:var(--good, #2e9d5b); }
+.sl-earn-next span{ min-width:0; }
+/* Manager: six tabs fit a phone (Azi added, 20.11) */
+@media (max-width: 640px){
+  .mg-hbar .mg-tabs{ grid-auto-columns:minmax(0, 1fr); }
+  .mg-hbar .mg-tabs button{ min-width:0; padding:.55rem .1rem; font-size:.72rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+}
+.mg-todo a > .k-tag{ flex:none; }

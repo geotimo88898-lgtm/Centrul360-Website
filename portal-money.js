@@ -1232,6 +1232,25 @@
         '<li>Sub 1.500 lei: 4% din plată, ca până acum. Bonusul nu e niciodată mai mic decât 4%.</li>' +
       '</ul></details></div>' + calcHtml(P, planRate);
   }
+  // the top of a cosmetician's Salariu with the package bonus (20.11): what she earned this month, today and what waits for
+  // her, and what the next package brings
+  function earnHero(pay) {
+    const today = K.today();
+    const lines = (pay.commissionLines || []).filter((l) => l.kind === 'pay' && l.date === today);
+    const planRate = (pay.plan && pay.plan.rate) || 5;
+    const plansToday = pay.plan ? pay.plan.plans.filter((x) => x.date === today).length : 0;
+    const todayLei = lines.reduce((a, l) => a + l.lei, 0) + plansToday * planRate;
+    const packs = lines.filter((l) => l.pack && !l.topup).length;
+    const month = (pay.commission || 0) + ((pay.plan && pay.plan.lei) || 0) + ((pay.team && pay.team.lei) || 0);
+    const waiting = (pay.toCome || []).reduce((a, t) => a + t.lei, 0), nW = (pay.toCome || []).length;
+    const next = today < pay.pack.from ? 'De luni, ' + esc(K.dateShort(pay.pack.from)) + ': fiecare pachet îți aduce între <b>100 și 350 lei</b>.'
+      : 'Următorul pachet îți aduce între <b>100 și 350 lei</b>' + (packs >= 2 ? ', <b>+50</b> fiind a ' + (packs + 1) + '-a vânzare de azi' : packs === 1 ? '. De la a 3-a vânzare din zi, încă <b>+50</b>' : '') + '.';
+    return '<section class="k-card sl-earn"><div class="sl-earn-top"><span>Câștigul tău · ' + esc(K.monthLabel(pay.month)) + '</span>' +
+        '<b data-count="' + Math.round(month) + '" data-fmt="lei" data-key="sl-e-' + pay.month + '">' + lei2s(month) + '</b><small>comision, bonusuri, programe și premiul echipei, peste salariu</small></div>' +
+      '<div class="sl-earn-row"><div><span>Azi</span><b>+' + lei2s(todayLei) + '</b><small>' + K.plural(packs, 'pachet', 'pachete') + ' · ' + K.plural(plansToday, 'program', 'programe') + '</small></div>' +
+        '<div class="' + (waiting ? 'is-wait' : '') + '"><span>Te așteaptă</span><b>+' + lei2s(waiting) + '</b><small>' + (nW ? K.plural(nW, 'clientă mai are', 'cliente mai au') + ' de plătit' : 'nicio clientă cu rest') + '</small></div></div>' +
+      '<p class="sl-earn-next">' + icon('zap') + '<span>' + next + '</span></p></section>';
+  }
   // „Calculator: cât câștig?”: packages a day, their value, plans a day, days a month, the team's prize: what it brings
   function calcHtml(P, planRate) {
     const tiers = P.tiers.slice().sort((x, y) => x.min - y.min);
@@ -1374,6 +1393,9 @@
         '</div></section>';
 
     // the treatments and upsells (cosmeticians)
+    // the package bonus (from 23.11): the page opens with what she earns, the steps and the calculator (the owner, 20.11:
+    // „foarte motivantă și să se înțeleagă bine totul”); the salary's detail comes after
+    const bonusMode = !isDesk && !!(pay && pay.pack) && isNow;
     const listsHtml = isDesk ? '' :
         '<div class="mo-row cb-lists">' +
           '<section class="k-card"><div class="k-card-head"><h3>' + icon('sparkles') + 'Tratamentele tale</h3><span class="k-sub">' + K.plural(done.length, 'tratament', 'tratamente') + '</span></div>' +
@@ -1381,8 +1403,8 @@
               '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(s.client || '-') + '</div><div class="k-row-sub">' + esc(K.dateShort(s.date)) + ' · ' + esc(s.treatment || '') + '</div></div>' +
               '<div class="k-row-end">' + (s.upsell ? '<span class="k-tag is-good">upsell</span>' : '') + '<span class="k-amount">' + K.lei(s.amount) + '</span></div></div>').join('') + '</div>'
               : K.empty('sparkles', 'Niciun tratament încasat', 'Tratamentele la care ești trecută la încasare apar aici.')) + '</section>' +
-          (pay && pay.commissionLines ? '<section class="k-card"><div class="k-card-head"><h3>' + icon('percent') + 'Comisionul tău</h3><span class="k-sub">' + lei2(pay.commission) + (pay.commissionWaiting ? ' · ' + lei2(pay.commissionWaiting) + ' în așteptare' : '') + '</span></div>' +
-            packHtml(pay) +
+          (pay && pay.commissionLines ? '<section class="k-card"><div class="k-card-head"><h3>' + icon('percent') + (bonusMode ? 'Toate vânzările tale' : 'Comisionul tău') + '</h3><span class="k-sub">' + lei2(pay.commission) + (pay.commissionWaiting ? ' · ' + lei2(pay.commissionWaiting) + ' în așteptare' : '') + '</span></div>' +
+            (bonusMode ? '' : packHtml(pay)) +
             (commLinesHtml(pay.commissionLines, pay.toCome, { cancel: (id) => { const x = sales.find((y) => y.id === id); return x && x.origin === 'manual'; } }) ||
               K.empty('trend', 'Niciun comision luna asta', 'Comisionul vine din banii încasați pentru upsellurile tale: 4% din fiecare plată.', me.role === 'cosmetician' ? '<button type="button" class="k-btn is-accent is-sm" data-comm-new>' + icon('plus') + 'Adaugă comision</button>' : '')) + '</section>' :
           '<section class="k-card"><div class="k-card-head"><h3>' + icon('percent') + 'Upsellurile tale</h3><span class="k-sub">' + (pay ? lei2(pay.commission) + ' comision' : '') + '</span></div>' +
@@ -1404,10 +1426,14 @@
     const histHtml = '<section class="k-card"><div class="k-card-head"><h3>' + icon('calendar') + 'Lunile tale</h3></div>' +
       '<div class="cb-hist sl-hist"><div class="cb-hist-row is-head"><span>Luna</span><span>Salariu</span><span>Ore supl.</span><span>' + (isDesk ? 'Bonus' : 'Comision') + '</span><span>Total</span></div>' +
       hist.map((h) => '<button type="button" class="cb-hist-row' + (h.month === C.month ? ' is-on' : '') + '" data-month="' + h.month + '"><span>' + esc(K.monthLabel(h.month)) + '</span><span data-l="salariu">' + K.lei(h.base) + '</span><span data-l="ore supl.">' + lei2(h.overtimeLei) + '</span><span data-l="' + (isDesk ? 'bonus' : 'comision') + '">' + lei2(isDesk ? h.bonus : h.commission) + '</span><b>' + lei2(h.total) + '</b></button>').join('') + '</div></section>';
-    const tips = isDesk ? '' : '<section class="k-card cb-tip"><div class="k-card-head"><h3>' + icon('zap') + 'Cum îți crești comisionul</h3></div>' +
-      '<ol><li>La finalul tratamentului spune-i clientei ce ai observat și ce ar ajuta-o să ajungă mai repede la rezultat.</li>' +
+    const tips = isDesk ? '' : '<section class="k-card cb-tip"><div class="k-card-head"><h3>' + icon('zap') + (bonusMode ? 'Cum câștigi mai mult' : 'Cum îți crești comisionul') + '</h3></div>' +
+      (bonusMode ? '<ol><li>La fiecare clientă nouă: întreabă ce își dorește, apoi arată-i programul ei pe foaia „Program recomandat și ofertă”.</li>' +
+        '<li>Fotografiază foile în fișa ei (Contacte → Fișe → „Program recomandat”): <b>+5 lei</b> pe loc.</li>' +
+        '<li>Spune prețul pachetului abia la final, cu reducerea pentru plata de azi. Un avans de 1.500 lei îți aduce deja <b>+100 lei</b>.</li>' +
+        '<li>Clientele care mai au de plătit: amintește-le de rest la ședința următoare. Le vezi sus, la „Te așteaptă”.</li></ol>'
+      : '<ol><li>La finalul tratamentului spune-i clientei ce ai observat și ce ar ajuta-o să ajungă mai repede la rezultat.</li>' +
       '<li>Recomandă <b>o singură</b> combinație potrivită (ex. grăsime → plus tonifiere; facial → întreținere lunară).</li>' +
-      '<li>Programeaz-o pe loc la următoarea ședință.</li></ol>' +
+      '<li>Programeaz-o pe loc la următoarea ședință.</li></ol>') +
       '<button type="button" class="k-btn is-outline" data-go-train>' + icon('book') + 'Manualul de vânzări</button></section>';
 
     // ---- every number this page can show (her pick, K.prefs 'sal.kpis') and its blocks ('sal.blocks')
@@ -1445,7 +1471,7 @@
     const BLOCK = {
       kpis: () => (isDesk ? (kpiRow ? '<section class="cb-sec">' + kpiRow + '</section>' : '')
         : '<section class="cb-sec"><h3>' + icon('percent') + 'Comisionul meu · ' + esc(K.monthLabel(C.month)) + '</h3>' +
-          '<p class="cd-rule">' + icon('info') + (C.month >= '2026-11' ? 'Primești 4% din fiecare plată încasată pentru upsell, în luna în care vin banii: 500 lei plătiți din 1.000 înseamnă 20 lei acum și încă 20 când vine restul. La o rambursare, se scad 4% din banii dați înapoi.'
+          '<p class="cd-rule">' + icon('info') + (bonusMode ? 'Fiecare plată de pachet de 1.500 lei sau mai mult aduce bonusul ei (sus, „Bonus pe fiecare pachet”). Plățile mai mici aduc 4%. La o rambursare se scade partea ei din bonus.' : C.month >= '2026-11' ? 'Primești 4% din fiecare plată încasată pentru upsell, în luna în care vin banii: 500 lei plătiți din 1.000 înseamnă 20 lei acum și încă 20 când vine restul. La o rambursare, se scad 4% din banii dați înapoi.'
             : 'Din valoarea upsell-ului se scad ' + RULE.cost + '% (cheltuielile medii ale procedurii), iar din ce rămâne primești ' + RULE.rate + '%. Exemplu: 3.000 lei upsell, 120 lei comision.') + '</p>' + kpiRow + '</section>'),
       bonus: () => (pay && pay.hasBonus && pay.booking ? bookingHtml(pay.booking, isNow) : ''),
       chart: () => (done.length ? '<section class="k-card cb-sec"><div class="k-card-head"><h3>' + icon('trend') + 'Pe zile</h3></div><div data-cbchart></div></section>' : ''),
@@ -1455,7 +1481,9 @@
     };
     // her own row of the 1.500 lei a day (this month): right under the pay, the same bar the manager's condition draws
     const dt = isNow && me.role === 'cosmetician' && D.salary && D.salary.dayTarget ? K.dayTargetHtml(D.salary.dayTarget, me.name) : '';
-    cpanel.querySelector('[data-body]').innerHTML = hero + (isNow ? teamHtml(pay) : '') + dt + salBlocks.map((b) => BLOCK[b]()).join('');
+    cpanel.querySelector('[data-body]').innerHTML = bonusMode
+      ? earnHero(pay) + packHtml(pay) + teamHtml(pay) + hero + dt + salBlocks.map((b) => BLOCK[b]()).join('')
+      : hero + (isNow ? teamHtml(pay) : '') + dt + salBlocks.map((b) => BLOCK[b]()).join('');
     calcFill(cpanel);
 
     const ch = cpanel.querySelector('[data-cbchart]');

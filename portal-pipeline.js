@@ -680,6 +680,7 @@
       const due = l.followUpState === 'overdue' || l.followUpState === 'today';
       chips.push('<span class="pl-tag is-' + (due ? 'accent' : 'mute') + '" title="' + esc(l.nextAction || 'Revin la ea') + '">' + ic('clock') + (l.followUpState === 'overdue' ? 'Întârziat · ' : '') + when(l.followUpAt) + '</span>');
     }
+    if (l.grade) chips.push('<span class="pl-tag pl-grade-t is-' + l.grade.toLowerCase() + '" title="Nota leadului">' + esc(l.grade) + '</span>');
     if (l.neverContacted) chips.push('<span class="pl-tag is-accent">Nesunat · ' + ago(l.createdAt) + '</span>');
     else if (l.isInactive) chips.push('<span class="pl-tag is-mute">' + l.idleDays + ' zile fără activitate</span>');
     if (l.appointmentAt && l.kind !== 'won') chips.push('<span class="pl-tag is-mute">' + ic('calendar') + esc(apptWhen(l.appointmentAt)) + '</span>');
@@ -1195,6 +1196,9 @@
       '<div class="pl-dbody">' +
         // stage stepper
         stageBarHtml(l, flow) +
+        // the lead's grade (20.11): A = knows what she wants, open to a program; B = interested; C = only the offer
+        '<div class="pl-grade" role="group" aria-label="Nota leadului"><span>Nota</span>' + [['A', 'Vrea program'], ['B', 'Interesată'], ['C', 'Doar oferta']].map((g) =>
+          '<button type="button" class="pl-grade-b is-' + g[0].toLowerCase() + (l.grade === g[0] ? ' is-on' : '') + '" data-grade="' + g[0] + '" aria-pressed="' + (l.grade === g[0]) + '"><b>' + g[0] + '</b><small>' + g[1] + '</small></button>').join('') + '</div>' +
         (l.kind === 'lost' ? '<div class="pl-banner is-bad">' + ic('ban') + '<div><b>Pierdut</b>' + (l.lostReason ? ' · ' + esc(l.lostReason) : '') + '</div><button type="button" class="pl-btn is-ghost is-sm" data-move="' + (S.stages.find((s) => s.kind === 'open') || {}).id + '">Redeschide</button></div>' : '') +
         (l.kind === 'won' ? '<div class="pl-banner is-good">' + ic('trophy') + '<div><b>Client câștigat</b> · e în baza de clienți a clinicii.</div></div>' : '') +
         // contact row
@@ -1296,6 +1300,12 @@
     if (!l) return;
     const stagePick = t.closest('[data-stage-pick]');
     if (stagePick) return stageMenu(stagePick);
+    const gr = t.closest('[data-grade]');
+    if (gr) {
+      const g = l.grade === gr.dataset.grade ? '' : gr.dataset.grade;
+      api('set_grade', { leadId: l.id, grade: g }).then((j) => { if (j && j.lead) { replaceLead(j.lead); renderAll(); renderDrawer(); } }).catch((e) => K.ui().toast(e.message || 'Nu am putut salva nota.', 'error'));
+      return;
+    }
     const move = t.closest('[data-move]');
     if (move && move.dataset.move && move.dataset.move !== l.stage) return moveLead(l.id, move.dataset.move, null);
     const lt = t.closest('[data-ltab]');

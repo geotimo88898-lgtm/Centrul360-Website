@@ -127,7 +127,22 @@ async function tmOneAtATime() {
   return { saved: true, changed };
 }
 
-const JOBS = [{ id: 'booking-only-location-2026-10-28b', run: onlyLocationAtBooking, tell: (r) => (r.removed && r.removed.length
+// 20.11 (the owner: a lead not called in 10 minutes rings the manager): a flow „Lead nesunat în 10 minute” in Intake,
+// one notification to reception and the manager of the lead's clinic; nothing if it's already there
+async function leadTenMinutes() {
+  const doc = await WF.loadDoc();
+  if (doc.workflows.some((w) => w.trigger && w.trigger.type === 'lead_idle' && w.trigger.minutes === 10)) return { skipped: true };
+  const v = WF.validateWorkflow({ name: 'Lead nesunat în 10 minute → alertă', note: 'Leadul e cald câteva minute. Cine îl sună primul, îl programează.', active: true,
+    folder: ((doc.folders || [])[0] || {}).id || '', trigger: { type: 'lead_idle', minutes: 10 },
+    steps: [{ type: 'notify', to: ['role:receptie'], title: 'LEAD NESUNAT DE 10 MIN 📞 - {nume}', text: '{telefon} · {interes}', whatsapp: false }] });
+  if (v.error) return { error: v.error };
+  const id = 'wf-' + require('crypto').randomUUID().slice(0, 8);
+  doc.workflows.unshift(Object.assign({ id, createdAt: nowISO(), updatedAt: nowISO(), createdBy: 'claude' }, v.workflow));
+  await WF.saveDoc(doc);
+  return { added: id };
+}
+
+const JOBS = [{ id: 'lead-10-minutes-2026-11-20', run: leadTenMinutes, tell: () => null },{ id: 'booking-only-location-2026-10-28b', run: onlyLocationAtBooking, tell: (r) => (r.removed && r.removed.length
   ? { title: 'Automatizări: la programare pleacă doar „Ne vedem pe…”', text: 'Am scos ' + r.removed.map((x) => '„' + x.template + '”').join(', ') + ' din ' + [...new Set(r.removed.map((x) => '„' + x.flow + '”'))].join(', ') + '. Remindere rămân la fel.' }
   : null) },
 // the admins hear about each clinic from reminders.js itself (switched, or a message Meta refused)
