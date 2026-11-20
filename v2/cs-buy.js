@@ -118,9 +118,17 @@
     mount.innerHTML = '';
     var params = { sid: c.sid, ipcLanguage: c.ipcLanguage, walletNumber: c.walletNumber, amount: c.amount, currency: c.currency, orderID: c.orderID,
       urlNotify: c.urlNotify, urlOk: location.href, urlCancel: location.href, keyIndex: c.keyIndex, cartItems: c.cartItems };
-    var callbacks = { isSandbox: !!c.isSandbox, onSuccess: function () { confirmPaid(); }, onError: function () { failed(); }, onMessageReceived: function () {} };
+    // an error before she pressed „Plătește” is myPOS refusing the form itself (e.g. the store not approved): no online payment then
+    var callbacks = { isSandbox: !!c.isSandbox, onSuccess: function () { confirmPaid(); }, onError: function () { if (st.paying) failed(); else unavailable(); }, onMessageReceived: function () {} };
     var look = { formBackgroundColor: '#ffffff', labelFontSize: '13px', labelColor: '#262a30', inputBorderRadius: '14px' };
     window.MyPOSEmbedded.createPaymentForm('csbPayForm', params, callbacks, look).then(function (p) { st.pay = p; st.order = c; wait.hidden = true; paint(); });
+    // myPOS refused the form (its error page is a few lines, the card form is 600 px and more): the reservation in the clinic
+    var made = st.made;
+    setTimeout(function () {
+      var f = mount.querySelector('iframe');
+      if (st.made !== made || (f && f.getBoundingClientRect().height > 300)) return;
+      unavailable();
+    }, 15000);
   }
 
   // grows out of the button, goes back into it (transform only)
@@ -189,6 +197,7 @@
       if (typeof d.left === 'number') { st.left = d.left; if (window.CSC && window.CSC.state) window.CSC.set(Object.assign({}, window.CSC.state, { left: d.left })); }
       st.res = d.reservation;
       if (d.reservation.pay !== 'online' || !d.checkout || !st.pay) { done(d.reservation, false); return; }
+      st.paying = true;
       st.pay.processPayment(); // myPOS: the card, 3-D Secure in the form; then onSuccess / onError
     }).catch(function (x) {
       setBusy(false);
@@ -209,7 +218,16 @@
     };
     ask();
   }
+  // myPOS's form did not come: the reservation with payment in the clinic, said once
+  function unavailable() {
+    if (!st.online) return;
+    st.online = false; st.pay = null; st.made = '';
+    var mount = root.querySelector('.csb-mp'); if (mount) mount.innerHTML = '';
+    paint();
+    root.querySelector('.csb-err').textContent = 'Plata online nu e disponibilă acum. Rezervă cardul și plătești în clinică.';
+  }
   function failed() {
+    st.paying = false;
     setBusy(false);
     root.querySelector('.csb-err').textContent = 'Plata nu a trecut. Verifică datele cardului sau încearcă alt card. Cardul rămâne rezervat pe numele tău.';
     st.draft = st.res ? st.res.id : st.draft; intent(); // a new orderID for the next try

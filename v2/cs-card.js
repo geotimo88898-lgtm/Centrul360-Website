@@ -19,7 +19,7 @@
     setTimeout(function () {
       el.textContent = text; el.classList.remove('out'); el.classList.add('pre');
       void el.offsetWidth; el.classList.remove('pre');
-    }, 380);
+    }, 260);
   }
   CSC.name = function (text) { CSC.fixed = true; $$('[data-csc-name]').forEach(function (el) { setName(el, text); }); };
   var ni = 0;
@@ -78,7 +78,7 @@
     if (el.textContent === text) return;
     if (reduce) { el.textContent = text; return; }
     el.classList.add('out');
-    setTimeout(function () { el.textContent = text; el.classList.remove('out'); el.classList.add('pre'); void el.offsetWidth; el.classList.remove('pre'); }, 260);
+    setTimeout(function () { el.textContent = text; el.classList.remove('out'); el.classList.add('pre'); void el.offsetWidth; el.classList.remove('pre'); }, 120);
   }
   CSC.tier = function (t, quiet) {
     t = Number(t); if (!TIERS[t]) return;

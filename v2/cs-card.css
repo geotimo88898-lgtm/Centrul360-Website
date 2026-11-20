@@ -37,14 +37,14 @@
 .csc-tw:nth-of-type(1){ display:none; } .csc-tw:nth-of-type(2){ left:92cqw; top:6cqw; width:2.4cqw; height:2.4cqw; animation-delay:1.4s; }
 .csc-tw:nth-of-type(3){ left:69cqw; top:50cqw; width:2.2cqw; height:2.2cqw; animation-delay:2.3s; } .csc-tw:nth-of-type(4){ left:2.6cqw; top:44cqw; width:2cqw; height:2cqw; animation-delay:.9s; }
 /* the light that passes over it */
-.csc-sheen{ position:absolute; inset:-30% -60%; pointer-events:none; z-index:5;
+.csc-sheen{ position:absolute; inset:-30% -60%; pointer-events:none; z-index:5; /* under the words (.csc-face, 6): the light never washes them */
   background:linear-gradient(105deg,transparent 42%,rgba(255,240,220,.08) 46%,rgba(255,245,230,.38) 50%,rgba(255,240,220,.08) 54%,transparent 58%);
   transform:translateX(-62%); animation:cscSheen 6.5s var(--e2) 1.2s infinite; }
 @keyframes cscSheen{ 0%,52%{ transform:translateX(-62%); } 88%,100%{ transform:translateX(62%); } }
 /* the words: cream, the sum in gold foil */
-.csc-face{ position:absolute; inset:0; z-index:4; pointer-events:none; }
-.csc-gold{ background:linear-gradient(100deg,#b8862e 0%,#f3d589 20%,#fff4cc 36%,#dcb055 54%,#a87a26 72%,#f0cf7e 100%); -webkit-background-clip:text; background-clip:text; color:transparent;
-  filter:drop-shadow(0 .25cqw 0 rgba(80,0,30,.45)); }
+.csc-face{ position:absolute; inset:0; z-index:6; pointer-events:none; }
+.csc-gold{ background:linear-gradient(100deg,#ffe9a8 0%,#fff8dc 22%,#ffd978 42%,#fff3c4 60%,#f6c75a 80%,#ffe7a0 100%); -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 .22cqw 0 rgba(70,0,28,.7)) drop-shadow(0 0 .35cqw rgba(70,0,28,.55)); } /* bright warm foil; the fine dark edge keeps it off the rose */
 .csc-brand{ position:absolute; left:20.5cqw; top:4.4cqw; display:inline-flex; align-items:center; gap:2cqw; }
 .csc-brand svg{ width:6.4cqw; height:6.4cqw; flex:none; overflow:visible; fill:none; stroke:#f3d589; }
 .csc-brand b{ font:800 3.5cqw/1 'Montserrat','Inter',sans-serif; letter-spacing:-.005em; color:#fff6ea; }
@@ -53,18 +53,20 @@
 .csc-star{ width:3.2cqw; height:3.2cqw; flex:none; color:#ffe7a8; animation:cscTw 3.6s var(--e2) infinite; filter:drop-shadow(0 0 1cqw rgba(255,226,150,.9)); }
 @keyframes cscTw{ 0%,100%{ transform:scale(.7) rotate(0deg); opacity:.55; } 50%{ transform:scale(1.1) rotate(45deg); opacity:1; } }
 .csc-val{ position:absolute; left:6.6cqw; top:26.6cqw; display:grid; gap:1.6cqw; }
-.csc-val p{ margin:0; display:flex; align-items:baseline; gap:2.2cqw; line-height:.9; }
-.csc-val b{ font-size:13.6cqw; font-weight:800; letter-spacing:-.055em; font-variant-numeric:tabular-nums; padding-bottom:.4cqw; }
-.csc-val i{ font-family:'Fraunces',Georgia,serif; font-style:italic; font-weight:400; font-size:6.8cqw; letter-spacing:-.02em; padding-right:.6cqw; }
-.csc-val .csc-pre{ font-size:5.4cqw; padding-right:.4cqw; }
-.csc-val small{ font-size:2.8cqw; font-weight:500; letter-spacing:.02em; color:rgba(255,240,225,.85); }
-.csc-bot{ position:absolute; left:7cqw; right:30cqw; bottom:5cqw; display:flex; align-items:flex-end; gap:6cqw; }
+.csc-val p{ margin:0; display:flex; align-items:baseline; gap:1.6cqw; line-height:.9; }
+.csc-val b{ font-size:12.6cqw; font-weight:800; letter-spacing:-.055em; font-variant-numeric:tabular-nums; padding-bottom:.4cqw; }
+.csc-val i{ font-style:normal; font-weight:800; font-size:6.6cqw; letter-spacing:-.03em; padding-right:.4cqw; } /* „Credit” and „lei”: big and bold, not a thin italic */
+.csc-val .csc-pre{ font-size:5cqw; font-weight:700; letter-spacing:-.01em; }
+.csc-val small{ font-size:2.8cqw; font-weight:600; letter-spacing:.02em; color:#fff3e4; text-shadow:0 .2cqw .4cqw rgba(70,0,28,.45); }
+.csc-bot{ position:absolute; left:7cqw; right:26cqw; bottom:5cqw; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; column-gap:4cqw; }
 .csc-bot small{ display:block; margin-bottom:1cqw; font-size:2.05cqw; font-weight:600; letter-spacing:.17em; text-transform:uppercase; color:rgba(247,220,151,.85); white-space:nowrap; }
 .csc-bot b{ display:block; font-size:3.7cqw; font-weight:600; letter-spacing:-.015em; line-height:1.1; white-space:nowrap; color:#fff6ea; }
-.csc-nm{ min-width:0; }
-.csc-nm b{ transition:opacity .45s var(--e), transform .6s var(--e), filter .45s var(--e); }
-.csc-nm b.out{ opacity:0; transform:translateY(-40%); filter:blur(4px); }
-.csc-nm b.pre{ opacity:0; transform:translateY(40%); filter:blur(4px); transition:none; }
+.csc-nm{ min-width:0; overflow:hidden; }
+.csc-nm b{ overflow:hidden; text-overflow:ellipsis; }
+.csc-nm b{ transition:opacity .25s ease-out, transform .25s ease-out; } /* no blur: the text stays sharp on the 3D card */
+.csc-nm b.out{ opacity:0; transform:translate3d(0,-4px,0); }
+.csc-nm b.pre{ opacity:0; transform:translate3d(0,4px,0); transition:none; }
+.csc-exp{ text-align:right; }
 .csc-exp b{ font-variant-numeric:tabular-nums; font-weight:500; }
 .csc-shadow{ position:absolute; z-index:-1; bottom:calc(clamp(44px,7vw,72px) - 30px); width:min(360px,70vw); height:34px; border-radius:50%;
   background:radial-gradient(closest-side,rgba(130,20,60,.3),transparent); filter:blur(4px); animation:cscShadow 9s var(--e2) infinite alternate; }
@@ -148,9 +150,10 @@ main [hidden]{ display:none !important; }
 .cst-sub b{ color:var(--teal2); font-weight:700; }
 [data-cs-v]{ font-variant-numeric:tabular-nums; white-space:nowrap; }
 /* the sum on the card changes with a short turn */
-.csc-val b.out{ opacity:0; transform:translateY(-30%); filter:blur(3px); }
-.csc-val b.pre{ opacity:0; transform:translateY(30%); filter:blur(3px); transition:none; }
-.csc-val b[data-csc-credit]{ display:inline-block; transition:opacity .35s var(--e), transform .5s var(--e), filter .35s var(--e); }
+/* the sum changes clean: only opacity and a few px, no blur, no scale (the owner, 20.11: „clean și smooth din prima”) */
+.csc-val b.out{ opacity:0; transform:translate3d(0,-4px,0); }
+.csc-val b.pre{ opacity:0; transform:translate3d(0,4px,0); transition:none; }
+.csc-val b[data-csc-credit]{ display:inline-block; transition:opacity .22s ease-out, transform .22s ease-out; backface-visibility:hidden; }
 @media (max-width:640px){
   .cst{ gap:7px; padding-top:8px; }
   .cst-t{ padding:12px 9px 10px; border-radius:16px; }
