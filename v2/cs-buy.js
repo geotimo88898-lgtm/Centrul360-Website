@@ -60,7 +60,7 @@
     root.addEventListener('click', function (e) { if (e.target.closest('[data-csb-close]')) close(); });
     addEventListener('keydown', function (e) { if (e.key === 'Escape' && root.classList.contains('open')) close(); });
     form.addEventListener('change', function (e) {
-      if (e.target.name === 'tier') { st.tier = Number(e.target.value); paint(); intent(); }
+      if (e.target.name === 'tier') { st.tier = Number(e.target.value); paint(); intent(); if (window.CSC && window.CSC.tier) window.CSC.tier(st.tier); else { try { localStorage.setItem('c360_cs_tier', String(st.tier)); } catch (x) {} } }
       if (e.target.name === 'for') { st.gift = e.target.value === 'gift'; paint(); if (st.gift) { var f = form.querySelector('[name="n0"]'); if (f) f.focus(); } }
     });
     form.addEventListener('input', function () { root.querySelector('.csb-err').textContent = ''; });
@@ -136,6 +136,7 @@
     if (!root) build();
     from = btn || null;
     var t = Number(btn && btn.getAttribute('data-cs-tier'));
+    if (!t) { try { t = Number(localStorage.getItem('c360_cs_tier')); } catch (e) {} } // the card chosen on another page
     st.tier = TIERS.some(function (x) { return x[0] === t; }) ? t : 990;
     root.classList.remove('sent', 'shown');
     paint();

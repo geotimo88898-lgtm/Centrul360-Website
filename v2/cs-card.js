@@ -69,6 +69,35 @@
     size(); addEventListener('resize', size);
   });
 
+  // ---- the card chosen (290 / 490 / 990): everything that depends on it changes at once, and it is kept from page to page
+  var TIERS = { 290: [500, '1,7'], 490: [1000, '2'], 990: [2500, '2,5'] }, KEY = 'c360_cs_tier';
+  var fmt = function (n) { return Math.round(n).toLocaleString('ro-RO'); };
+  var saved = 990;
+  try { var v = Number(localStorage.getItem(KEY)); if (TIERS[v]) saved = v; } catch (e) {}
+  function setCredit(el, text) {
+    if (el.textContent === text) return;
+    if (reduce) { el.textContent = text; return; }
+    el.classList.add('out');
+    setTimeout(function () { el.textContent = text; el.classList.remove('out'); el.classList.add('pre'); void el.offsetWidth; el.classList.remove('pre'); }, 260);
+  }
+  CSC.tier = function (t, quiet) {
+    t = Number(t); if (!TIERS[t]) return;
+    CSC.current = t;
+    var get = TIERS[t][0], worth = get + (t === 990 ? 300 : 0);
+    var val = { pay: fmt(t) + ' lei', get: fmt(get) + ' lei', payd: fmt(t) + ' lei.', getd: fmt(get) + ' lei.', save: fmt(get - t) + ' lei', save2: fmt(worth - t) + ' lei', worth: fmt(worth) + ' lei', mul: 'x' + TIERS[t][1] };
+    $$('[data-cs-v]').forEach(function (el) { var k = el.getAttribute('data-cs-v'); if (val[k] != null && el.textContent !== val[k]) el.textContent = val[k]; });
+    $$('[data-csc-credit]').forEach(function (el) { setCredit(el, fmt(get)); });
+    $$('[data-cs-only]').forEach(function (el) { el.hidden = el.getAttribute('data-cs-only').split(',').indexOf(String(t)) < 0; });
+    $$('[data-cs-ex]').forEach(function (el) { el.hidden = el.getAttribute('data-cs-ex') !== String(t); });
+    $$('[data-cs-follow]').forEach(function (el) { el.setAttribute('data-cs-tier', String(t)); });
+    $$('[data-cst] input').forEach(function (i) { i.checked = Number(i.value) === t; });
+    if (!quiet) { try { localStorage.setItem(KEY, String(t)); } catch (e) {} }
+  };
+  $$('[data-cst]').forEach(function (box) { box.addEventListener('change', function (e) { if (e.target.name === 'cst') CSC.tier(e.target.value); }); });
+  // a button for one card (the three cards lower on the page) chooses it too
+  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-cs-buy][data-cs-tier]:not([data-cs-follow])'); if (b) CSC.tier(b.getAttribute('data-cs-tier')); }, true);
+  CSC.tier(saved, true);
+
   // ---- the time left
   var two = function (n) { return (n < 10 ? '0' : '') + n; };
   function clock() {
