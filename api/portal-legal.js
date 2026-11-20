@@ -144,3 +144,4 @@ module.exports = async (req, res) => {
     return fail(500, 'server_error');
   }
 };
+module.exports.load = load;

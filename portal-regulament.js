@@ -8,8 +8,11 @@
   const K = window.K;
   if (!K) return;
   const { esc, icon } = K;
+// the same page for the job description (the owner, 20.11): „Fișa postului”, read and confirmed by the cosmeticians
+function make(C) {
   const S = { d: null, busy: false, url: '' };
   let panel = null;
+  const api = (b) => K.api('/api/portal-regulament', Object.assign({ doc: C.doc }, b));
 
   const boss = () => !!(K.canManage && K.canManage());
   const when = (iso) => { try { return new Intl.DateTimeFormat('ro-RO', { timeZone: 'Europe/Bucharest', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(iso)); } catch (e) { return ''; } };
@@ -20,22 +23,22 @@
   function mount(p) {
     panel = p;
     panel.classList.add('k-panel', 'rg');
-    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>Regulament intern</h2></div><div class="k-head-actions" data-rghead></div></div>' +
+    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Echipă</div><h2>' + esc(C.title) + '</h2></div><div class="k-head-actions" data-rghead></div></div>' +
       '<div data-rgbody><div class="k-skel" style="height:420px"></div></div>';
     panel.addEventListener('click', onClick);
     panel.addEventListener('change', onChange);
   }
   async function load() {
-    try { S.d = await K.api('/api/portal-regulament', { action: 'get' }); paint(); }
-    catch (err) { const b = panel && panel.querySelector('[data-rgbody]'); if (b) b.innerHTML = K.empty('alert', 'Nu am putut încărca regulamentul', esc(K.errText(err))); }
+    try { S.d = await api({ action: 'get' }); paint(); }
+    catch (err) { const b = panel && panel.querySelector('[data-rgbody]'); if (b) b.innerHTML = K.empty('alert', 'Nu am putut încărca ' + C.what, esc(K.errText(err))); }
   }
   const upBtn = () => '<label class="k-btn is-outline">' + icon('plus') + 'Versiune nouă<input type="file" accept="application/pdf,.pdf" data-rgup hidden></label>';
   function paint() {
     if (!panel || !S.d) return;
     const d = S.d, cur = d.current;
-    panel.querySelector('[data-rghead]').innerHTML = (cur ? '<a class="k-btn is-outline" href="' + esc(cur.url) + '" download="Regulament-intern-Centrul360.pdf" data-pv-raw>' + icon('download') + 'Descarcă</a>' : '') + (boss() ? upBtn() : '');
+    panel.querySelector('[data-rghead]').innerHTML = (cur ? '<a class="k-btn is-outline" href="' + esc(cur.url) + '" download="' + C.file + '" data-pv-raw>' + icon('download') + 'Descarcă</a>' : '') + (boss() ? upBtn() : '');
     const body = panel.querySelector('[data-rgbody]');
-    if (!cur) { body.innerHTML = '<section class="k-card">' + K.empty('book', 'Regulamentul nu e încărcat încă', boss() ? 'Încarcă PDF-ul cu „Versiune nouă”.' : 'Apare aici imediat ce e încărcat.') + '</section>'; return; }
+    if (!cur) { body.innerHTML = '<section class="k-card">' + K.empty('book', C.Title + ' nu e încărcat' + (C.fem ? 'ă' : '') + ' încă', boss() ? 'Încarcă PDF-ul cu „Versiune nouă”.' : 'Apare aici imediat ce e încărcat.') + '</section>'; return; }
     // a repaint (her confirmation, a live refresh) keeps the pages already drawn; only the parts around them change
     const host = body.querySelector('[data-rgpages]');
     if (host && S.url === cur.url) {
@@ -47,7 +50,7 @@
     }
     const w = boss() ? who() : '', a = ack();
     body.innerHTML = '<div data-rgwho>' + w + '</div>' + meta(cur) +
-      '<div class="rg-pages" data-rgpages><div class="rg-wait">Se deschide regulamentul…</div></div><div data-rgend>' + a + '</div>';
+      '<div class="rg-pages" data-rgpages><div class="rg-wait">Se deschide ' + C.what + '…</div></div><div data-rgend>' + a + '</div>';
     body.querySelector('[data-rgwho]').__h = w; body.querySelector('[data-rgend]').__h = a;
     draw(cur.url);
   }
@@ -61,14 +64,14 @@
       if (!window.C360Pdf || !window.C360Pdf.render) throw new Error('viewer');
       await window.C360Pdf.render(url, host);
     } catch (e) {
-      if (host.isConnected) host.innerHTML = '<div class="rg-wait">Regulamentul nu s-a putut afișa aici.<br><a class="k-btn is-outline is-sm" href="' + esc(url) + '" target="_blank" rel="noopener" data-pv-raw>Deschide PDF-ul</a></div>';
+      if (host.isConnected) host.innerHTML = '<div class="rg-wait">' + C.Title + ' nu s-a putut afișa aici.<br><a class="k-btn is-outline is-sm" href="' + esc(url) + '" target="_blank" rel="noopener" data-pv-raw>Deschide PDF-ul</a></div>';
     }
   }
   // at the end of the text: her one confirmation (or when she gave it); nothing for the owner's own login
   function ack() {
     const me = S.d.me || {};
-    if (me.must) return '<section class="rg-ack" data-rgack><p>Ai citit tot regulamentul? Confirmarea rămâne în portal, cu data.</p>' +
-      '<button type="button" class="k-btn is-primary is-lg" data-rgok>' + icon('check') + 'Am citit regulamentul</button></section>';
+    if (me.must) return '<section class="rg-ack" data-rgack><p>' + C.ask + ' Confirmarea rămâne în portal, cu data.</p>' +
+      '<button type="button" class="k-btn is-primary is-lg" data-rgok>' + icon('check') + C.ok + '</button></section>';
     if (me.at) return '<p class="rg-done">' + icon('checkCircle') + 'Ai confirmat pe ' + esc(whenHm(me.at)) + '.</p>';
     return '';
   }
@@ -84,7 +87,7 @@
       (no.length ? '<h4 class="rg-h">Încă nu</h4><ul class="rg-people is-no">' + no.map(row).join('') + '</ul>' : '') +
       (yes.length ? '<details class="rg-more"' + (no.length ? '' : ' open') + '><summary>Au confirmat (' + yes.length + ')' + icon('down') + '</summary><ul class="rg-people">' + yes.map(row).join('') + '</ul></details>' : '') +
       (old.length ? '<details class="rg-more"><summary>Versiuni anterioare (' + old.length + ')' + icon('down') + '</summary><ul class="rg-vers">' +
-        old.map((v) => '<li><a href="' + esc(v.url) + '" data-pdf-view data-pdf-title="Regulament intern, versiunea ' + v.n + '">' + icon('file') + '<span><b>Versiunea ' + v.n + '</b><small>din ' + esc(when(v.at)) + ' · ' + esc(size(v.size)) + ' · ' + K.plural(v.confirmed, 'confirmare', 'confirmări') + '</small></span>' + icon('right') + '</a></li>').join('') +
+        old.map((v) => '<li><a href="' + esc(v.url) + '" data-pdf-view data-pdf-title="' + esc(C.title) + ', versiunea ' + v.n + '">' + icon('file') + '<span><b>Versiunea ' + v.n + '</b><small>din ' + esc(when(v.at)) + ' · ' + esc(size(v.size)) + ' · ' + K.plural(v.confirmed, 'confirmare', 'confirmări') + '</small></span>' + icon('right') + '</a></li>').join('') +
       '</ul></details>' : '') + '</section>';
   }
 
@@ -93,9 +96,9 @@
     if (ok && !S.busy) {
       S.busy = true; ok.disabled = true;
       try {
-        S.d = await K.api('/api/portal-regulament', { action: 'ack' });
-        if (K.data && K.data.regulament) K.data.regulament.must = false;
-        K.badge('regulament', 0);
+        S.d = await api({ action: 'ack' });
+        if (K.data && K.data[C.tab]) K.data[C.tab].must = false;
+        K.badge(C.tab, 0);
         paint();
         K.ui().toast('Mulțumim. Confirmarea a fost salvată.', 'success');
       } catch (err) { ok.disabled = false; K.ui().toast(K.errText(err), 'error'); }
@@ -114,13 +117,18 @@
     S.busy = true;
     try {
       const dataUrl = String(await asData(file)).replace(/^data:[^;]*;/, 'data:application/pdf;');
-      S.d = await K.api('/api/portal-regulament', { action: 'upload', name: file.name.replace(/\.pdf$/i, ''), dataUrl });
+      S.d = await api({ action: 'upload', name: file.name.replace(/\.pdf$/i, ''), dataUrl });
       S.url = ''; paint();
       K.ui().toast('Versiunea ' + n + ' e încărcată.', 'success');
     } catch (err) { K.ui().toast(K.errText(err, (err.data && err.data.message) || 'Nu am putut încărca.'), 'error'); }
     finally { S.busy = false; }
   }
 
-  K.on('remote', () => { if (panel && K.isActive('regulament') && !S.busy) load(); });
-  K.section('regulament', { mount, show() { load(); } });
+  K.on('remote', () => { if (panel && K.isActive(C.tab) && !S.busy) load(); });
+  K.section(C.tab, { mount, show() { load(); } });
+}
+  make({ tab: 'regulament', doc: 'regulament', title: 'Regulament intern', Title: 'Regulamentul', what: 'regulamentul', fem: false, file: 'Regulament-intern-Centrul360.pdf',
+    ask: 'Ai citit tot regulamentul?', ok: 'Am citit regulamentul' });
+  make({ tab: 'fisapost', doc: 'fisa', title: 'Fișa postului', Title: 'Fișa postului', what: 'fișa postului', fem: true, file: 'Fisa-postului-Cosmetician-Centrul360.pdf',
+    ask: 'Ai citit toată fișa postului?', ok: 'Am citit fișa postului' });
 })();

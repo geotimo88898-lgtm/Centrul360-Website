@@ -59,6 +59,7 @@
     acte: P('Acte și autorizații', BOSS, { tab: 'acte' }),
     ofertele: P('Oferte', STAFF, { tab: 'ofertele' }),
     regulament: P('Regulament intern', ALL, { tab: 'regulament' }),
+    fisapost: P('Fișa postului', [A, M, C], { tab: 'fisapost' }),
     manager: P('Manager', BOSS, { tab: 'manager' }),
     'manager.cifre': P('Manager → Cifre', BOSS, { tab: 'manager', sub: 'cifre' }),
     'manager.echipa': P('Manager → Echipa', BOSS, { tab: 'manager', sub: 'echipa' }),

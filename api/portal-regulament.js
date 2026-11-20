@@ -13,49 +13,78 @@ const { readJSON, writeJSON, writeBinary } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');
 const R = require('./_lib/roles');
 
-const KEY = 'data/regulament.json';
+// The same page serves the job description too (the owner, 20.11: „Fișa postului”, the cosmeticians read and confirm it,
+// and it shows in Acte și autorizații): b.doc 'fisa' → data/fisa-postului.json, PDFs under fise-post/, confirmed by the
+// cosmeticians; each confirmation is noted on her „Fișa postului” in Acte și autorizații (data/legal.json).
+const DOCS = {
+  regulament: { key: 'data/regulament.json', dir: 'regulament', signs: ['receptie', 'cosmetician', 'manager'], name: 'Regulament intern', go: 'regulament',
+    title: (n) => (n === 1 ? 'REGULAMENT INTERN 📄' : 'REGULAMENT INTERN, VERSIUNE NOUĂ 📄') },
+  fisa: { key: 'data/fisa-postului.json', dir: 'fise-post', signs: ['cosmetician'], name: 'Fișa postului · Cosmetician', go: 'fisapost',
+    title: (n) => (n === 1 ? 'FIȘA POSTULUI 📄' : 'FIȘA POSTULUI, VERSIUNE NOUĂ 📄') },
+};
+const docOf = (b) => DOCS[(b && b.doc) === 'fisa' ? 'fisa' : 'regulament'];
+const KEY = DOCS.regulament.key;
 const MAX_BYTES = 20 * 1024 * 1024;
 // who confirms: the team (the owners' own logins never)
-const SIGNS = ['receptie', 'cosmetician', 'manager'];
+const SIGNS = DOCS.regulament.signs;
 const clip = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
 const nowISO = () => new Date().toISOString();
 const fileUrl = (v) => '/api/portal-file?p=' + encodeURIComponent(v.path);
 
-async function load() {
-  const d = await readJSON(KEY, null);
+async function load(D) {
+  const d = await readJSON((D || DOCS.regulament).key, null);
   return { versions: Array.isArray(d && d.versions) ? d.versions : [], acks: (d && d.acks && typeof d.acks === 'object') ? d.acks : {} };
 }
 const current = (doc) => doc.versions[doc.versions.length - 1] || null;
 // has she confirmed the version in force (none uploaded: nothing to confirm)
-function pending(doc, employeeId, role) {
+function pending(doc, employeeId, role, D) {
   const cur = current(doc);
-  if (!cur || !SIGNS.includes(role)) return false;
+  if (!cur || !(D || DOCS.regulament).signs.includes(role)) return false;
   return !((doc.acks[cur.id] || {})[employeeId]);
 }
 
 // a new version (the owner from the portal, or Claude for the owner through api/lead-health ?regulament): the PDF stored
 // privately, the version listed, the team told once
 async function upload(session, b) {
+  const D = docOf(b);
   const m = /^data:application\/pdf;base64,([A-Za-z0-9+/=]+)$/.exec(String((b && b.dataUrl) || ''));
   if (!m) return { error: 'invalid_file', message: 'Se poate încărca doar un PDF.' };
   const buf = Buffer.from(m[1], 'base64');
   if (!buf.length || buf.length > MAX_BYTES) return { error: 'file_too_big', message: 'Fișierul trece de 20 MB.' };
   if (buf.slice(0, 5).toString('latin1') !== '%PDF-') return { error: 'invalid_file', message: 'Se poate încărca doar un PDF.' };
-  const path = 'regulament/' + crypto.randomUUID() + '.pdf';
+  const path = D.dir + '/' + crypto.randomUUID() + '.pdf';
   await writeBinary(path, buf, 'application/pdf');
   const by = await require('./_lib/activity').whoName(session.employeeId);
-  const fresh = await load();
+  const fresh = await load(D);
   const n = fresh.versions.reduce((x, v) => Math.max(x, v.n || 0), 0) + 1;
-  fresh.versions.push({ id: crypto.randomUUID(), n, name: clip(b.name, 120) || 'Regulament intern', path, size: buf.length, at: nowISO(), by, byId: session.employeeId });
-  await writeJSON(KEY, fresh);
+  fresh.versions.push({ id: crypto.randomUUID(), n, name: clip(b.name, 120) || D.name, path, size: buf.length, at: nowISO(), by, byId: session.employeeId });
+  await writeJSON(D.key, fresh);
   // the team hears it once (the bell and the phone): a new text to read and confirm
   try {
     const N = require('./_lib/notify');
-    const ids = (await readJSON('data/employees.json', [])).filter((e) => e && e.active !== false && SIGNS.includes(e.role) && e.id !== session.employeeId).map((e) => e.id);
-    if (ids.length) await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'info', tone: 'info', go: 'regulament', tag: 'regulament-' + n,
-      title: n === 1 ? 'REGULAMENT INTERN 📄' : 'REGULAMENT INTERN, VERSIUNE NOUĂ 📄', text: 'Citește-l în portal și confirmă la final.' });
+    const ids = (await readJSON('data/employees.json', [])).filter((e) => e && e.active !== false && D.signs.includes(e.role) && e.id !== session.employeeId).map((e) => e.id);
+    if (ids.length) await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'info', tone: 'info', go: D.go, tag: D.go + '-' + n,
+      title: D.title(n), text: 'Citește-o în portal și confirmă la final.' });
+    if (D === DOCS.fisa) await legalNote(ids, 'Fișa postului, versiunea ' + n + ', e în portal (Echipă → Fișa postului): de citit, confirmat și semnat pe hârtie.');
   } catch (err) { console.error('regulament notify:', err.message); }
   return { ok: true, n, size: buf.length };
+}
+
+// Acte și autorizații: a line on each cosmetician's „Fișa postului” (data/legal.json, scope emp:<id>, item fisa-post)
+async function legalNote(ids, line, ok) {
+  try {
+    const L = await require('./portal-legal').load(); // as Acte și autorizații reads it (its start when there's nothing yet)
+    ids.forEach((id) => {
+      const box = L.scopes['emp:' + id] = L.scopes['emp:' + id] || { items: {}, custom: [] };
+      box.items = box.items || {};
+      const it = box.items['fisa-post'] = box.items['fisa-post'] || { status: '', files: [] };
+      it.files = it.files || [];
+      it.notes = (String(it.notes || '') + (it.notes ? '\n' : '') + line).slice(-2000);
+      if (!it.status || it.status === 'verif' || it.status === 'lipsa') it.status = 'lucru';
+      it.updatedAt = nowISO(); it.updatedBy = 'Portal';
+    });
+    await writeJSON('data/legal.json', L);
+  } catch (err) { console.error('fisa legal note:', err.message); }
 }
 
 module.exports = async (req, res) => {
@@ -66,17 +95,18 @@ module.exports = async (req, res) => {
   const b = req.body || {};
   const fail = (code, error, message) => res.status(code).json(message ? { error, message } : { error });
   try {
-    const doc = await load();
+    const D = docOf(b);
+    const doc = await load(D);
     const boss = R.canManage(session);
     const answer = async () => {
       const cur = current(doc);
       const view = (v) => ({ id: v.id, n: v.n, name: v.name, at: v.at, size: v.size, url: fileUrl(v), confirmed: Object.keys(doc.acks[v.id] || {}).length });
       const mine = cur ? (doc.acks[cur.id] || {})[session.employeeId] || '' : '';
       const out = { ok: true, current: cur ? view(cur) : null, versions: boss ? doc.versions.slice().reverse().map(view) : [],
-        me: { must: !!cur && SIGNS.includes(session.role) && !mine, at: mine } };
+        me: { must: !!cur && D.signs.includes(session.role) && !mine, at: mine } };
       if (boss) {
         // the people who confirm: the owner sees everyone; the manager her clinics' people and herself
-        let emps = (await readJSON('data/employees.json', [])).filter((e) => e && e.id && e.id !== 'admin' && e.active !== false && SIGNS.includes(e.role));
+        let emps = (await readJSON('data/employees.json', [])).filter((e) => e && e.id && e.id !== 'admin' && e.active !== false && D.signs.includes(e.role));
         const team = await R.teamOf(session, null, emps);
         if (team) emps = emps.filter((e) => e.id === session.employeeId || team.has(e.id));
         out.people = emps.map((e) => {
@@ -93,13 +123,16 @@ module.exports = async (req, res) => {
     if (b.action === 'ack') {
       const cur = current(doc);
       if (!cur) return fail(400, 'no_version');
-      if (!SIGNS.includes(session.role)) return fail(400, 'not_needed');
+      if (!D.signs.includes(session.role)) return fail(400, 'not_needed');
       // two taps at once, or two devices: the first one stays
-      const fresh = await load();
+      const fresh = await load(D);
       const v = fresh.versions.find((x) => x.id === cur.id);
       if (!v) return fail(409, 'version_changed');
       fresh.acks[v.id] = fresh.acks[v.id] || {};
-      if (!fresh.acks[v.id][session.employeeId]) { fresh.acks[v.id][session.employeeId] = nowISO(); await writeJSON(KEY, fresh); }
+      if (!fresh.acks[v.id][session.employeeId]) {
+        fresh.acks[v.id][session.employeeId] = nowISO(); await writeJSON(D.key, fresh);
+        if (D === DOCS.fisa) await legalNote([session.employeeId], 'Citită și confirmată în portal (versiunea ' + v.n + ') pe ' + new Intl.DateTimeFormat('ro-RO', { timeZone: 'Europe/Bucharest', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date()) + '.');
+      }
       Object.assign(doc, fresh);
       return answer();
     }
@@ -108,7 +141,7 @@ module.exports = async (req, res) => {
       if (!boss) return fail(403, 'forbidden');
       const r = await upload(session, b);
       if (r.error) return fail(400, r.error, r.message);
-      Object.assign(doc, await load());
+      Object.assign(doc, await load(D));
       return answer();
     }
     return fail(400, 'invalid_action');
@@ -121,3 +154,4 @@ module.exports.pending = pending;
 module.exports.load = load;
 module.exports.KEY = KEY;
 module.exports.upload = upload;
+module.exports.DOCS = DOCS;

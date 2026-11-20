@@ -67,6 +67,8 @@
   async function load() {
     // the internal regulation lives in its own page; „Actele de muncă” (ITM) shows it from there, one copy only (18.11)
     K.api('/api/portal-regulament', { action: 'get' }).then((r) => { S.reg = r; if (S.d) paint(); }).catch(() => {});
+    // the job description the same way (20.11): on each cosmetician's „Fișa postului”, the version in force and her confirmation
+    K.api('/api/portal-regulament', { action: 'get', doc: 'fisa' }).then((r) => { S.fisa = r; if (S.d) paint(); }).catch(() => {});
     try { S.d = await K.api('/api/portal-legal', { action: 'get' }); paint(); }
     catch (err) { const b = panel && panel.querySelector('[data-lgbody]'); if (b) b.innerHTML = K.empty('alert', 'Nu am putut încărca actele', esc(K.errText(err))); }
   }
@@ -131,6 +133,17 @@
       : 'Nu e încărcat încă.') + '</p>' +
       '<button type="button" class="k-btn is-outline is-sm" data-go="regulament">' + icon('file') + 'Deschide regulamentul</button></div></section>';
   }
+  // Fișa postului (Meniu → Fișa postului): the version in force and whether she confirmed it, on her own item
+  function fisaHtml(scope) {
+    const r = S.fisa, cur = r && r.current;
+    if (!r) return '';
+    const id = String(scope || '').replace(/^emp:/, '');
+    const p = (r.people || []).find((x) => x.id === id);
+    return '<section class="lg-need"><div><small>Fișa postului în portal</small><p>' + (cur
+      ? 'Versiunea ' + cur.n + ', din ' + esc(dShort(String(cur.at).slice(0, 10))) + '. ' + (p ? (p.at ? 'A confirmat că a citit-o pe ' + esc(dShort(String(p.at).slice(0, 10))) + '. Rămâne de semnat pe hârtie, dacă nu e deja.' : 'Nu a confirmat încă.') : '')
+      : 'Nu e încărcată încă.') + '</p>' +
+      '<button type="button" class="k-btn is-outline is-sm" data-go="fisapost">' + icon('file') + 'Deschide fișa postului</button></div></section>';
+  }
   function itemBody(scope, r) {
     const s = state(scope, r), it = s.it;
     // the manager, a colleague's contract / REGES / additional acts (they say her pay): only whether it is in order
@@ -149,7 +162,7 @@
       (r.basis ? '<div><small>Temei legal</small><p>' + esc(r.basis) + '</p></div>' : '') +
       (r.note ? '<div><small>De reținut</small><p>' + esc(r.note) + '</p></div>' : '') +
       (r.src && r.src.length ? '<div class="lg-src">' + r.src.map((u) => { let h = u; try { h = new URL(u).hostname.replace(/^www\./, ''); } catch (e) { /* as it is */ } return '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + icon('link') + esc(h) + '</a>'; }).join('') + '</div>' : '') + '</section>';
-    const reg = r.id === 'itm' ? regHtml() : '';
+    const reg = r.id === 'itm' ? regHtml() : r.id === 'fisa-post' ? fisaHtml(scope) : '';
     return pick + warn + reg +
       '<div class="lg-fields"><label class="k-field"><span>Număr</span><input data-lgf="number" value="' + esc(it.number || '') + '" maxlength="80" autocomplete="off"></label>' +
         '<label class="k-field"><span>Emis la</span><input type="date" data-lgf="issued" value="' + esc(it.issued || '') + '"></label>' +
@@ -187,6 +200,7 @@
       onMount(el) {
         el.addEventListener('click', async (e) => {
           if (e.target.closest('[data-go="regulament"]')) { if (dr && dr.close) dr.close(); return K.place ? K.place('regulament', { from: e.target }) : K.go('regulament'); }
+          if (e.target.closest('[data-go="fisapost"]')) { if (dr && dr.close) dr.close(); return K.place ? K.place('fisapost', { from: e.target }) : K.go('fisapost'); }
           const st = e.target.closest('[data-lgst]');
           if (st) { const cur = (box(scope).items[id] || {}).status || 'verif'; return save({ status: st.dataset.lgst === cur ? 'verif' : st.dataset.lgst }); }
           const del = e.target.closest('[data-lgdel]');

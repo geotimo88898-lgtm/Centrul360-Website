@@ -404,7 +404,7 @@ module.exports = async (req, res) => {
     }
 
     // Regulament intern (api/portal-regulament.js): the version in force not confirmed yet by her (a dot on its menu entry)
-    try { const RG = require('./portal-regulament'); payload.regulament = { must: RG.pending(await RG.load(), me.id, me.role) }; }
+    try { const RG = require('./portal-regulament'); payload.regulament = { must: RG.pending(await RG.load(), me.id, me.role) }; payload.fisapost = { must: RG.pending(await RG.load(RG.DOCS.fisa), me.id, me.role, RG.DOCS.fisa) }; }
     catch (err) { console.error('portal-data regulament:', err.message); }
 
     // the manager: what waits for her decision (the team's days over / under 8 hours, the leave requests; never her own)
