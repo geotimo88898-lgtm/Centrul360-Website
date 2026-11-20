@@ -498,4 +498,24 @@ async function balance(store, fresh) {
   }
 }
 
-module.exports = { CONN, PAY, EVENTS, MyposError, token, listDevices, listTransactions, fromApi, fromHook, merge, sync, ensureWebhook, dropWebhook, validSignature, loadConn, connected, dayOf, balance, parseMt940, saveGateway, dropGateway, loadGateway };
+// Read only (20.11): can the API Gateway keys reach the eCommerce API (payment links / requests for an online
+// checkout)? A token with myPOS's default scopes, a session, then GET /ecommerce/v1/common/settlement-data. Returns
+// the scopes and myPOS's answer (status, field names, never the values or the keys).
+async function gwProbe(store) {
+  const g = await store.readJSON(GW_KEY, null);
+  if (!gwReady(g)) return { ready: false };
+  const r = await fetch(GW + '/api/v1/oauth/token', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: g.clientId, client_secret: g.clientSecret, grant_type: 'client_credentials' }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.access_token) return { ready: true, token: r.status, message: gwMsg(j) };
+  const ses = await gwSession(g, j.access_token).catch((e) => ({ err: e.message }));
+  if (ses && ses.err) return { ready: true, scope: j.scope || '', session: ses.err };
+  const out = { ready: true, scope: String(j.scope || ''), calls: {} };
+  for (const path of ['/ecommerce/v1/common/settlement-data', '/ecommerce/v1/payment-requests?page=1&size=1', '/ecommerce/v1/payment-links?page=1&size=1']) {
+    const x = await fetch(GW + path, { headers: { Accept: 'application/json', Authorization: 'Bearer ' + j.access_token, 'X-Session': ses, 'X-Partner-Id': g.partnerId, 'X-Application-Id': g.appId } });
+    const b = await x.json().catch(() => ({}));
+    out.calls[path.split('?')[0]] = { status: x.status, keys: Object.keys(b || {}).slice(0, 12), message: x.ok ? '' : gwMsg(b) };
+  }
+  return out;
+}
+
+module.exports = { gwProbe, CONN, PAY, EVENTS, MyposError, token, listDevices, listTransactions, fromApi, fromHook, merge, sync, ensureWebhook, dropWebhook, validSignature, loadConn, connected, dayOf, balance, parseMt940, saveGateway, dropGateway, loadGateway };

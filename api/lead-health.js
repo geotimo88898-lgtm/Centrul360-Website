@@ -264,6 +264,8 @@ module.exports = async (req, res) => {
   //   movedAhead bookings „reprogramată” sitting on a day still ahead (moved; whether their old day passed without her can't
   //              be known for the ones moved before 16.11), missedOn: the moves that kept their no-show since
   // ?attfix=1: what the once fix of the manager's 19.11 pontaj found and did (times only; api/_lib/att-fix-once.js)
+  // ?myposprobe=1: can the myPOS API Gateway keys make online payments (eCommerce API)? read only (api/_lib/mypos.js gwProbe)
+  if (req.query && req.query.myposprobe) { const { writeJSON } = require('./_lib/store'); res.status(200).json(await require('./_lib/mypos').gwProbe({ readJSON, writeJSON }).catch((e) => ({ error: String(e.message || e) }))); return; }
   if (req.query && req.query.attfix) {
     const [fix, dup, att, emps, adjs] = await Promise.all([readJSON(require('./_lib/att-fix-once').KEY, {}), readJSON(require('./_lib/att-dup-once').KEY, {}), readJSON('data/attendance.json', []), readJSON('data/employees.json', []), readJSON('data/time-adjust.json', [])]);
     const who = (id) => { const e = emps.find((x) => x.id === id) || {}; return { role: e.role || '', first: String(e.name || '').split(/\s+/)[0] }; };
