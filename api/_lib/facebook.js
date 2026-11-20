@@ -45,7 +45,7 @@ async function loadConnection(readJSON) {
   if (!(conn && conn.pageId && conn.pageAccessToken)) return {};
   // which campaigns of the shared ad account are ours (_lib/ads-scope.js); not enumerable, so it is never saved
   // back with the connection (a copy without it falls back to the default in meta-ads.js)
-  Object.defineProperty(conn, 'scope', { value: await require('./ads-scope').load(readJSON), enumerable: false, configurable: true });
+  Object.defineProperty(conn, 'scope', { value: require('./ads-scope').forAccount(await require('./ads-scope').load(readJSON), conn.adAccountId), enumerable: false, configurable: true });
   return conn;
 }
 

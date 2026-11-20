@@ -154,7 +154,7 @@ module.exports = async (req, res) => {
     const { conn, problem } = await connection();
     const defaults = await ads.loadDefaults(readJSON);
     // which campaigns of the shared account are Centrul360's (_lib/ads-scope.js), shown on the page
-    const sc = await SCOPE.load(readJSON);
+    const sc = SCOPE.forAccount(await SCOPE.load(readJSON), conn && conn.adAccountId);
     const scope = Object.assign({ text: SCOPE.describe(sc) }, sc);
     // a picture of an ad, to save it (?media=<Meta link>)
     if (req.method === 'GET' && req.query && req.query.media) {

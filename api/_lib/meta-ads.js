@@ -14,7 +14,8 @@
 const ADS_GRAPH = 'https://graph.facebook.com/v25.0';
 const SCOPE = require('./ads-scope');
 // only this business's campaigns of the shared ad account (conn.scope, set by loadConnection; the default otherwise)
-const ours = (conn, name) => SCOPE.keep(conn && conn.scope, name);
+const scopeOf = (conn) => (conn && conn.scope) || SCOPE.forAccount(SCOPE.DEFAULT, conn && conn.adAccountId);
+const ours = (conn, name) => SCOPE.keep(scopeOf(conn), name);
 const DEFAULTS_KEY = 'data/ads-defaults.json';
 
 // city centres; the radius is set per ad set (the owner uses about 6-7 km)
@@ -625,5 +626,5 @@ async function delivery(conn, id) {
   return r.ok ? r.j : { error: metaError(r.j) };
 }
 // whether the account is shared (some campaigns are left out), so its own totals can't be used as ours
-const scoped = (conn) => { const s = (conn && conn.scope) || SCOPE.DEFAULT; return !!(s.include || (s.exclude || []).length); };
+const scoped = (conn) => { const s = scopeOf(conn); return !!(s.include || (s.exclude || []).length); };
 module.exports = { audienceCreate, audienceList, ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };
