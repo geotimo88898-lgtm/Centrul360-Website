@@ -1,0 +1,155 @@
+<!--meta
+title: Plata cardului de Sărbători · Centrul360
+description: Plata online a Cardului de Sărbători Centrul360: 990 lei pentru un credit de 2.500 lei în tratamente.
+path: card-sarbatori-plata
+dock: off
+robots: noindex,nofollow
+-->
+<link rel="stylesheet" href="/v2/cs-card.css">
+<style>
+/* the checkout of the Card de Sărbători: the order, her data, „Plătește 990 lei”; the card is paid on myPOS's own page.
+   Every class starts with cp-. */
+.cp{ padding:clamp(120px,13vw,160px) 0 clamp(80px,10vw,120px); }
+.cp .wrap{ max-width:600px; }
+.cp-head{ display:grid; gap:14px; justify-items:center; text-align:center; }
+.cp-head h1{ font-size:clamp(2.3rem,5vw,3.4rem); }
+.cp-head .lead{ margin-inline:auto; }
+.cp .csc-stage{ padding:22px 0 40px; }
+.cp .csc-card{ width:min(380px,calc(100vw - 56px)); }
+.cp-box{ padding:clamp(22px,3vw,34px); }
+.cp-rows{ display:grid; }
+.cp-rows > div{ display:flex; justify-content:space-between; align-items:baseline; gap:18px; padding:15px 0; border-bottom:1px solid var(--line); font-size:15.5px; }
+.cp-rows > div > span:first-child{ color:var(--mute); flex:none; }
+.cp-rows > div > b{ font-weight:600; text-align:right; min-width:0; overflow-wrap:anywhere; }
+.cp-rows .cp-gift b{ color:var(--teal2); }
+.cp-total{ display:flex; justify-content:space-between; align-items:baseline; gap:16px; padding:20px 0 6px; }
+.cp-total span{ font-weight:600; }
+.cp-total b{ font-size:clamp(2.2rem,5vw,2.8rem); font-weight:800; letter-spacing:-.05em; font-variant-numeric:tabular-nums; }
+.cp-act{ display:grid; gap:14px; margin-top:20px; }
+.cp-act .btn{ width:100%; }
+.cp-act .btn[disabled]{ opacity:.7; cursor:default; }
+.cp-safe{ display:flex; align-items:flex-start; justify-content:center; gap:10px; font-size:13px; line-height:1.5; color:var(--mute); text-align:left; }
+.cp-safe svg{ width:16px; height:16px; flex:none; margin-top:2px; color:var(--teal2); }
+.cp-msg{ display:none; gap:14px; justify-items:start; }
+.cp-msg p{ color:var(--mute); }
+.cp-msg h2{ font-size:clamp(1.6rem,3.4vw,2.1rem); letter-spacing:-.04em; }
+.cp-tick{ width:64px; height:64px; border-radius:50%; display:grid; place-items:center; color:#fff; background:linear-gradient(180deg,#1bb9a9,#0f9083); box-shadow:0 16px 30px -14px rgba(16,145,132,.8); }
+.cp-tick svg{ width:28px; height:28px; }
+.cp-tick path{ stroke-dasharray:24; stroke-dashoffset:24; transition:stroke-dashoffset .8s var(--e) .3s; }
+[data-state="paid"] .cp-tick path{ stroke-dashoffset:0; }
+.cp-next{ list-style:none; margin:4px 0 0; padding:0; display:grid; gap:12px; counter-reset:n; }
+.cp-next li{ display:flex; gap:12px; align-items:flex-start; font-size:15px; line-height:1.45; color:var(--ink2); counter-increment:n; }
+.cp-next li::before{ content:counter(n); flex:none; width:26px; height:26px; border-radius:50%; display:grid; place-items:center; font-size:12.5px; font-weight:700; color:var(--teal2); background:var(--tint); }
+.cp-spin{ width:18px; height:18px; border-radius:50%; border:2px solid rgba(255,255,255,.45); border-top-color:#fff; animation:spin .9s linear infinite; }
+.cp-err{ font-size:14px; font-weight:600; color:var(--ink); text-align:center; }
+.cp-err:empty{ display:none; }
+.cp-back{ display:flex; justify-content:center; margin-top:26px; }
+/* the states: one box, its content changes in place */
+.cp-order,.cp-msg{ transition:opacity .5s var(--e), transform .7s var(--e); }
+[data-state="loading"] .cp-order{ opacity:.35; }
+[data-state="missing"] .cp-order,[data-state="paid"] .cp-order{ display:none; }
+[data-state="missing"] .cp-m-missing,[data-state="paid"] .cp-m-paid{ display:grid; animation:cpIn .8s var(--e); }
+@keyframes cpIn{ from{ opacity:0; transform:translateY(14px); } }
+.cp-offline,.cp-wait{ display:none; }
+[data-state="offline"] .cp-offline,[data-state="wait"] .cp-wait{ display:grid; }
+[data-state="offline"] .cp-pay,[data-state="offline"] .cp-safe{ display:none; }
+.cp-note{ gap:6px; padding:16px 18px; border-radius:16px; font-size:14.5px; line-height:1.5; color:var(--ink2); background:rgba(11,11,13,.04); }
+.cp-note b{ color:var(--ink); }
+@media (max-width:640px){
+  .cp{ padding-top:104px; }
+  .cp .csc-stage{ padding:12px 0 30px; }
+  .cp-rows > div{ font-size:15px; padding:13px 0; }
+}
+</style>
+
+<section class="cp" data-state="loading"><div class="wrap">
+  <div class="cp-head">
+    <span class="eye">Plata cardului</span>
+    <h1>Cardul de <em>Sărbători.</em></h1>
+  </div>
+  <div class="csc-stage" aria-hidden="true"><div class="csc-dust"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="csc-tilt"><div class="csc-float"><span class="csc-edge"></span><div class="csc-card"><span class="csc-art"><svg viewBox="130 130 550 550" aria-hidden="true"><circle cx="405" cy="405" r="262" stroke-width="1.5" vector-effect="non-scaling-stroke"/><ellipse class="ev" cx="405" cy="405" rx="104" ry="207" stroke-width="1.5" vector-effect="non-scaling-stroke"/><ellipse cx="405" cy="405" rx="207" ry="113" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg></span><span class="csc-lines"></span><div class="csc-face"><div class="csc-top"><span class="csc-brand"><svg viewBox="130 130 550 550" aria-hidden="true"><circle cx="405" cy="405" r="262" stroke-width="1.5" vector-effect="non-scaling-stroke"/><ellipse cx="405" cy="405" rx="104" ry="207" stroke-width="1.5" vector-effect="non-scaling-stroke"/><ellipse cx="405" cy="405" rx="207" ry="113" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg><b>CENTRUL360<span>.COM</span></b></span><svg class="csc-star" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1.5l2.2 8.3 8.3 2.2-8.3 2.2-2.2 8.3-2.2-8.3L1.5 12l8.3-2.2z"/></svg></div><div class="csc-val"><span class="csc-k">Cardul de Sărbători</span><p><b>2.500</b><i>lei</i></p><small>credit pentru tratamente</small></div><div class="csc-bot"><span class="csc-nm"><small>Pe numele</small><b data-csc-name>Pentru tine</b></span><span class="csc-exp"><small>Valabil până la</small><b>30.06.2027</b></span></div></div><span class="csc-sheen"></span></div></div></div><span class="csc-shadow"></span></div>
+  <div class="card cp-box">
+    <div class="cp-order">
+      <div class="cp-rows">
+        <div><span>Pe numele</span><b data-o="recipient">…</b></div>
+        <div data-o-gift hidden><span>Cadou de la</span><b data-o="name">…</b></div>
+        <div data-o-me><span>Rezervat de</span><b data-o="name2">…</b></div>
+        <div><span>Telefon</span><b data-o="phone">…</b></div>
+        <div><span>Clinica</span><b data-o="city">…</b></div>
+        <div><span>Credit pentru tratamente</span><b>2.500 lei</b></div>
+        <div class="cp-gift"><span>Cadou la plata online</span><b>Tratament Restart</b></div>
+      </div>
+      <div class="cp-total"><span>De plată</span><b>990 lei</b></div>
+      <div class="cp-act">
+        <div class="cp-note cp-wait"><b>Ai început plata.</b>Dacă ai plătit, verificăm acum. Dacă nu, o poți continua.</div>
+        <div class="cp-note cp-offline"><b>Plata online nu e disponibilă acum.</b>Rezervarea ta rămâne: te sună recepția și plătești 990 lei în clinică.</div>
+        <button type="button" class="btn book halo cp-pay" disabled>Plătește 990 lei{{arrow}}</button>
+        <p class="cp-err" role="alert"></p>
+        <p class="cp-safe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg><span>Plătești cu cardul bancar pe pagina securizată myPOS. Datele cardului tău nu ajung la noi.</span></p>
+      </div>
+    </div>
+    <div class="cp-msg cp-m-paid" aria-live="polite">
+      <span class="cp-tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+      <h2>Plata a ajuns. Mulțumim!</h2>
+      <ol class="cp-next">
+        <li>Îi trimitem cardul pe WhatsApp, cu numele ei și un cod unic.</li>
+        <li>Tratamentul Restart e cadou, pe același card.</li>
+        <li>Locul în Clubul 360 e rezervat. Te anunțăm când se deschide.</li>
+      </ol>
+    </div>
+    <div class="cp-msg cp-m-missing">
+      <h2>Nu găsim rezervarea.</h2>
+      <p>Linkul poate fi incomplet. Poți rezerva cardul din nou sau ne poți scrie pe WhatsApp.</p>
+      <a class="btn book" href="{{base}}card-sarbatori#rezerva">Vreau cardul{{arrow}}</a>
+    </div>
+  </div>
+  <div class="cp-back"><a class="more" href="{{base}}card-sarbatori">Înapoi la Cardul de Sărbători{{arrow}}</a></div>
+</div></section>
+
+<script src="/v2/cs-card.js" defer></script>
+<script>
+/* the checkout: the order from /api/card-sarbatori, then the payment request (myPOS's page), and back here its status */
+(function () {
+  var box = document.querySelector('.cp'), btn = box.querySelector('.cp-pay'), label = btn.innerHTML;
+  var id = new URLSearchParams(location.search).get('r') || '';
+  var set = function (s) { box.setAttribute('data-state', s); };
+  var post = function (body) { return fetch('/api/card-sarbatori', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }); };
+  var put = function (k, v) { var el = box.querySelector('[data-o="' + k + '"]'); if (el) el.textContent = v; };
+  var order = null, polls = 0, timer = 0;
+  function show(o) {
+    order = o;
+    put('recipient', o.recipient); put('name', o.name); put('name2', o.name); put('phone', o.phone); put('city', o.city);
+    box.querySelector('[data-o-gift]').hidden = !o.gift; box.querySelector('[data-o-me]').hidden = o.gift;
+    var tryName = function () { if (window.CSC) window.CSC.name(o.recipient); else setTimeout(tryName, 100); }; tryName();
+    if (o.paid) { set('paid'); return; }
+    var started = o.payment && o.payment.status && o.payment.status !== 'None';
+    if (!o.online && !(started && o.payment.url)) { set('offline'); return; }
+    btn.disabled = false;
+    if (started) { set('wait'); btn.innerHTML = 'Continuă plata' + label.slice(label.indexOf('<svg')); poll(); }
+    else set('ready');
+  }
+  function poll() {
+    clearTimeout(timer);
+    if (document.hidden || polls > 24) return;
+    polls++;
+    post({ action: 'status', id: id }).then(function (d) {
+      if (d.paid) { set('paid'); if (window.CSC) window.CSC.name(order.recipient); return; }
+      timer = setTimeout(poll, 5000);
+    }, function () { timer = setTimeout(poll, 8000); });
+  }
+  if (!id) { set('missing'); return; }
+  post({ action: 'order', id: id }).then(function (d) { if (d && d.order) show(d.order); else set('missing'); }, function () { set('missing'); });
+  btn.addEventListener('click', function () {
+    btn.disabled = true; btn.innerHTML = '<span class="cp-spin" aria-hidden="true"></span>Se deschide plata…';
+    post({ action: 'pay', id: id }).then(function (d) {
+      if (d.paid) { set('paid'); return; }
+      if (d.url) { location.href = d.url; return; }
+      if (d.error === 'payment_not_configured') { set('offline'); return; }
+      throw new Error(d.error || 'x');
+    }).catch(function () { btn.disabled = false; btn.innerHTML = label; box.querySelector('.cp-err').textContent = 'Nu am putut deschide plata. Încearcă din nou peste câteva minute.'; });
+  });
+  // back from myPOS's page (the browser keeps this page): ask again
+  addEventListener('pageshow', function (e) { if (e.persisted && order && !order.paid) { polls = 0; post({ action: 'order', id: id }).then(function (d) { if (d && d.order) show(d.order); }); } });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && box.getAttribute('data-state') === 'wait') { polls = 0; poll(); } });
+})();
+</script>

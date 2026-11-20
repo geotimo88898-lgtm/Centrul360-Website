@@ -1,0 +1,496 @@
+<!--meta
+title: Cardul de Sărbători | 2.500 lei în tratamente pentru 990 lei · Centrul360
+description: Cardul de Sărbători Centrul360: plătești 990 lei și primești un credit de 2.500 lei pentru orice tratament, valabil până pe 30 iunie 2027, în Timișoara și Arad. Doar 100 de carduri, până pe 24 decembrie.
+og-title: Cardul de Sărbători Centrul360 · 2.500 lei în tratamente pentru 990 lei
+dock: off
+-->
+<link rel="stylesheet" href="/v2/cs-card.css">
+<style>
+/* Cardul de Sărbători: the page (the owner, 20.11). Every class starts with cs-. The card itself is in /v2/cs-card.css. */
+.cs-hero .wrap{ grid-template-columns:1.02fr .98fr; }
+.cs-hero h1{ font-size:clamp(2.7rem,5.8vw,4.6rem); }
+.cs-hero h1 em{ white-space:nowrap; }
+.cs-hero .csc-live{ margin-top:-4px; }
+@media (min-width:921px){ .cs-hero .csc-card{ width:min(470px,36vw); } .cs-res > div:first-child{ position:sticky; top:110px; } }
+.cs-sec{ padding-top:0; }
+
+/* the price, at one glance */
+.cs-ps{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:clamp(18px,4vw,56px); padding:clamp(30px,5vw,64px) clamp(24px,5vw,72px); text-align:center; }
+.cs-ps small{ display:block; margin-bottom:12px; font-size:12px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--mute2); }
+.cs-ps b{ display:block; font-size:clamp(3.4rem,9vw,7.2rem); font-weight:800; letter-spacing:-.06em; line-height:.9; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.cs-ps b i{ font-family:'Fraunces',Georgia,serif; font-style:italic; font-weight:400; font-size:.42em; letter-spacing:-.02em; color:var(--mute); margin-left:.12em; }
+.cs-ps .cs-get b{ color:var(--teal2); }
+.cs-ps .cs-get b i{ color:var(--teal2); }
+.cs-ps .cs-arr{ width:clamp(40px,6vw,64px); height:clamp(40px,6vw,64px); border-radius:50%; display:grid; place-items:center; color:var(--teal2); background:var(--tint); }
+.cs-ps .cs-arr svg{ width:46%; height:46%; }
+.cs-ps .cs-save{ grid-column:1 / -1; display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:10px 14px; padding-top:clamp(22px,3vw,34px); border-top:1px solid var(--line); font-size:clamp(1.02rem,1.6vw,1.2rem); color:var(--ink2); }
+.cs-ps .cs-save strong{ font-weight:700; }
+.cs-pct{ display:inline-flex; align-items:center; height:30px; padding:0 12px; border-radius:999px; font-size:14px; font-weight:700; color:var(--teal2); background:var(--tint); }
+
+/* everything she gets, each with its value */
+.cs-stack{ max-width:860px; margin:auto; padding:clamp(8px,1.4vw,14px) clamp(22px,3.6vw,44px); }
+.cs-row{ display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:18px; padding:24px 0; border-bottom:1px solid var(--line); }
+.cs-row > i{ width:44px; height:44px; border-radius:14px; display:grid; place-items:center; color:var(--teal2); background:var(--tint); }
+.cs-row > i svg{ width:21px; height:21px; }
+.cs-row b{ display:block; font-size:1.08rem; font-weight:700; letter-spacing:-.02em; line-height:1.3; }
+.cs-row p{ margin-top:3px; font-size:14.5px; color:var(--mute); line-height:1.45; }
+.cs-row .cs-v{ font-size:1.12rem; font-weight:700; letter-spacing:-.02em; white-space:nowrap; font-variant-numeric:tabular-nums; text-align:right; }
+.cs-row .cs-v.inc{ font-size:14px; font-weight:600; color:var(--teal2); }
+.cs-soon{ display:inline-flex; margin-left:6px; padding:2px 9px; border-radius:999px; font-size:11.5px; font-weight:600; letter-spacing:.02em; color:var(--mute); background:rgba(11,11,13,.05); vertical-align:2px; white-space:nowrap; }
+.cs-tot{ display:grid; gap:10px; padding:26px 0 24px; }
+.cs-tot > div{ display:flex; justify-content:space-between; align-items:baseline; gap:16px; font-size:16px; color:var(--mute); }
+.cs-tot s{ color:var(--mute2); font-variant-numeric:tabular-nums; }
+.cs-tot .cs-me{ color:var(--ink); font-weight:600; }
+.cs-tot .cs-me b{ font-size:clamp(2rem,4vw,2.6rem); font-weight:800; letter-spacing:-.05em; font-variant-numeric:tabular-nums; }
+.cs-tot .cs-sv{ color:var(--teal2); font-weight:600; }
+.cs-stack + .fine{ max-width:44rem; margin-inline:auto; }
+
+/* what 2.500 lei can be: three cards that open in place */
+.cs-ex{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; align-items:start; }
+.cs-x{ position:relative; display:block; width:100%; padding:30px 30px 26px; border:0; text-align:left; font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  transition:transform .7s var(--e), box-shadow .7s var(--e); }
+.cs-x:hover{ transform:translateY(-4px); box-shadow:0 0 0 1px rgba(20,165,150,.2) inset, 0 40px 70px -44px rgba(11,60,55,.45); }
+.cs-x:focus-visible{ outline:2px solid var(--teal); outline-offset:3px; }
+.cs-x .k{ display:block; font-size:12px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--mute2); }
+.cs-x h3{ margin-top:12px; font-size:1.32rem; padding-right:44px; }
+.cs-x .cs-sum{ display:flex; align-items:baseline; gap:10px; margin-top:20px; }
+.cs-x .cs-sum b{ font-size:2.3rem; font-weight:800; letter-spacing:-.05em; line-height:1; font-variant-numeric:tabular-nums; }
+.cs-x .cs-sum span{ font-size:14px; color:var(--mute); }
+.cs-x .cs-pm{ position:absolute; top:26px; right:24px; width:34px; height:34px; border-radius:50%; background:rgba(11,11,13,.04); transition:background-color .5s, transform .7s var(--e); }
+.cs-x .cs-pm::before,.cs-x .cs-pm::after{ content:''; position:absolute; top:50%; left:50%; width:12px; height:1.6px; margin:-.8px 0 0 -6px; border-radius:2px; background:var(--ink); transition:transform .7s var(--e), background-color .5s; }
+.cs-x .cs-pm::after{ transform:rotate(90deg); }
+.cs-x[aria-expanded="true"] .cs-pm{ background:var(--tint); transform:rotate(180deg); }
+.cs-x[aria-expanded="true"] .cs-pm::before,.cs-x[aria-expanded="true"] .cs-pm::after{ background:var(--teal2); }
+.cs-x[aria-expanded="true"] .cs-pm::after{ transform:rotate(0); }
+.cs-x .cs-in{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .7s var(--e); }
+.cs-x[aria-expanded="true"] .cs-in{ grid-template-rows:1fr; }
+.cs-x .cs-in > div{ overflow:hidden; }
+.cs-x ul{ list-style:none; margin:22px 0 0; padding:18px 0 0; border-top:1px solid var(--line); display:grid; gap:12px; opacity:0; transform:translateY(-6px); transition:opacity .5s var(--e), transform .7s var(--e); }
+.cs-x[aria-expanded="true"] ul{ opacity:1; transform:none; transition-delay:.12s; }
+.cs-x li{ display:flex; justify-content:space-between; gap:14px; font-size:14.5px; line-height:1.4; color:var(--ink2); }
+.cs-x li span:last-child{ flex:none; font-weight:600; font-variant-numeric:tabular-nums; }
+.cs-x li.cs-rest{ color:var(--teal2); }
+.cs-x .cs-hint{ display:block; margin-top:16px; font-size:13px; color:var(--mute2); transition:opacity .4s; }
+.cs-x[aria-expanded="true"] .cs-hint{ opacity:0; }
+
+/* the gift */
+.cs-gift{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(30px,6vw,90px); align-items:center; }
+.cs-gift .head{ margin-bottom:0; }
+.cs-chips{ display:flex; flex-wrap:wrap; gap:10px; margin-top:30px; }
+.cs-chips button{ height:46px; padding:0 20px; border:0; border-radius:999px; font:inherit; font-size:15px; font-weight:500; color:var(--ink2); cursor:pointer; background:rgba(255,255,255,.85);
+  box-shadow:0 0 0 1px var(--line2) inset; transition:box-shadow .45s var(--e), background-color .45s var(--e), color .3s, transform .5s var(--e); -webkit-tap-highlight-color:transparent; }
+.cs-chips button:hover{ background:#fff; box-shadow:0 0 0 1px rgba(11,11,13,.22) inset; }
+.cs-chips button:active{ transform:scale(.97); }
+.cs-chips button[aria-pressed="true"]{ color:var(--ink); background:#fff; box-shadow:0 0 0 1.5px rgba(20,165,150,.6) inset, 0 10px 22px -16px rgba(11,60,55,.45); }
+.cs-gift .say{ margin-top:40px; }
+.cs-gift .csc-card{ width:min(400px,80vw); }
+
+/* the club */
+.cs-club{ display:grid; grid-template-columns:.8fr 1.2fr; gap:clamp(30px,6vw,90px); align-items:center; }
+.cs-club .head{ margin-bottom:28px; }
+.cs-badge{ display:inline-flex; align-items:center; gap:8px; height:32px; padding:0 14px; border-radius:999px; font-size:13px; font-weight:600; color:var(--teal2); background:var(--tint); }
+.cs-badge::before{ content:''; width:7px; height:7px; border-radius:50%; background:var(--teal); animation:ping2 2.4s var(--e) infinite; }
+@keyframes ping2{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+.cs-perks{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.cs-perks li{ display:flex; align-items:center; gap:14px; padding:18px 20px; font-size:15.5px; font-weight:500; line-height:1.35; color:var(--ink2); }
+.cs-perks i{ flex:none; width:38px; height:38px; border-radius:12px; display:grid; place-items:center; color:var(--teal2); background:var(--tint); }
+.cs-perks svg{ width:18px; height:18px; }
+.cs-nuki{ display:grid; justify-items:center; }
+.cs-nuki .fl{ animation:float 6s var(--e2) infinite alternate; }
+.cs-nuki img{ width:min(300px,62vw); filter:drop-shadow(0 26px 30px rgba(11,60,55,.14)); }
+
+/* the reservation: the cards left, the time left, the form */
+.cs-res{ display:grid; grid-template-columns:.92fr 1.08fr; gap:clamp(36px,6vw,90px); align-items:start; }
+.cs-res .head{ margin-bottom:30px; }
+.cs-count{ display:grid; gap:14px; padding:28px; }
+.cs-count[hidden]{ display:none; }
+.cs-count .cs-big{ display:flex; align-items:baseline; gap:12px; }
+.cs-count .cs-big b{ font-size:clamp(3.4rem,7vw,5rem); font-weight:800; letter-spacing:-.06em; line-height:.9; font-variant-numeric:tabular-nums; }
+.cs-count .cs-big span{ font-size:15px; color:var(--mute); }
+.cs-bar{ position:relative; height:8px; border-radius:8px; overflow:hidden; background:var(--line2); }
+.cs-bar::after{ content:''; position:absolute; inset:0; border-radius:8px; background:linear-gradient(90deg,var(--teal3),var(--teal)); transform-origin:0 50%; transform:scaleX(var(--k,1)); transition:transform 1.6s var(--e); }
+.cs-cd{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px; }
+.cs-cd > div{ display:grid; justify-items:center; gap:6px; padding:16px 6px 14px; border-radius:18px; background:rgba(255,255,255,.85); box-shadow:0 0 0 1px var(--line) inset; }
+.cs-cd b{ font-size:clamp(1.8rem,3.4vw,2.4rem); font-weight:800; letter-spacing:-.05em; line-height:1; font-variant-numeric:tabular-nums; }
+.cs-cd span{ font-size:11.5px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--mute2); }
+.cs-when{ margin-top:14px; font-size:14px; color:var(--mute); }
+.cs-say2{ margin-top:34px; }
+
+.cs-form{ padding:clamp(24px,3vw,38px); }
+.cs-form form{ display:grid; gap:18px; }
+.cs-lbl{ display:block; margin-bottom:9px; font-size:14px; font-weight:600; color:var(--ink2); }
+.cs-seg{ display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:5px; border-radius:18px; background:rgba(11,11,13,.045); }
+.cs-seg label{ position:relative; display:grid; place-items:center; height:48px; border-radius:14px; font-size:15px; font-weight:600; color:var(--mute); cursor:pointer; transition:color .35s, background-color .45s var(--e), box-shadow .45s var(--e); -webkit-tap-highlight-color:transparent; }
+.cs-seg input{ position:absolute; opacity:0; width:1px; height:1px; margin:0; }
+.cs-seg label:has(input:checked){ color:var(--ink); background:#fff; box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 6px 16px -8px rgba(11,40,38,.3); }
+.cs-seg label:has(input:focus-visible){ outline:2px solid var(--teal); outline-offset:2px; }
+.cs-f{ display:grid; gap:8px; font-size:14px; font-weight:600; color:var(--ink2); }
+.cs-f input{ width:100%; height:56px; padding:0 18px; border:0; border-radius:16px; font:inherit; font-size:16px; font-weight:400; color:var(--ink); background:rgba(255,255,255,.92);
+  box-shadow:0 0 0 1px var(--line2) inset; transition:box-shadow .45s var(--e); -webkit-appearance:none; appearance:none; }
+.cs-f input::placeholder{ color:var(--mute2); }
+.cs-f input:focus{ outline:none; box-shadow:0 0 0 1.5px var(--teal) inset, 0 0 0 5px rgba(20,165,150,.12); }
+.cs-rec{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .6s var(--e); margin-bottom:-18px; }
+.cs-rec > div{ overflow:hidden; }
+.cs-rec .cs-f{ padding-bottom:18px; opacity:0; transform:translateY(-6px); transition:opacity .45s var(--e), transform .6s var(--e); }
+.cs-form.gift .cs-rec{ grid-template-rows:1fr; }
+.cs-form.gift .cs-rec .cs-f{ opacity:1; transform:none; transition-delay:.08s; }
+.cs-opts{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.cs-o{ position:relative; display:grid; gap:3px; align-content:center; min-height:68px; padding:12px 44px 12px 16px; border-radius:16px; cursor:pointer; background:rgba(255,255,255,.75); box-shadow:0 0 0 1px var(--line2) inset;
+  transition:box-shadow .45s var(--e), background-color .45s var(--e), opacity .4s; -webkit-tap-highlight-color:transparent; }
+.cs-o input{ position:absolute; opacity:0; width:1px; height:1px; margin:0; }
+.cs-o b{ font-size:15.5px; font-weight:600; color:var(--ink); line-height:1.25; }
+.cs-o small{ font-size:12.5px; color:var(--mute); line-height:1.35; }
+.cs-o i{ position:absolute; top:50%; right:14px; width:22px; height:22px; margin-top:-11px; border-radius:50%; box-shadow:0 0 0 1.5px var(--line2) inset; display:grid; place-items:center; transition:background-color .4s var(--e), box-shadow .4s var(--e); }
+.cs-o i svg{ width:12px; height:12px; color:#fff; opacity:0; transform:scale(.3); transition:opacity .3s var(--e), transform .5s var(--e); }
+.cs-o:has(input:checked){ background:#fff; box-shadow:0 0 0 1.5px rgba(20,165,150,.55) inset, 0 12px 24px -18px rgba(11,60,55,.45); }
+.cs-o:has(input:checked) i{ background:var(--teal); box-shadow:none; }
+.cs-o:has(input:checked) i svg{ opacity:1; transform:none; }
+.cs-o:has(input:focus-visible){ outline:2px solid var(--teal); outline-offset:2px; }
+.cs-o:has(input:disabled){ cursor:default; opacity:.55; }
+.cs-o .cs-soon{ margin:4px 0 0; justify-self:start; }
+.cs-ok{ position:relative; display:flex; align-items:flex-start; gap:12px; font-size:13.5px; line-height:1.45; color:var(--mute); cursor:pointer; }
+.cs-ok input{ position:absolute; opacity:0; width:1px; height:1px; margin:0; }
+.cs-ok i{ flex:none; width:22px; height:22px; margin-top:1px; border-radius:7px; display:grid; place-items:center; box-shadow:0 0 0 1.5px var(--line2) inset; transition:background-color .4s var(--e), box-shadow .4s; }
+.cs-ok i svg{ width:12px; height:12px; color:#fff; opacity:0; transform:scale(.3); transition:opacity .3s var(--e), transform .5s var(--e); }
+.cs-ok input:checked + i{ background:var(--teal); box-shadow:none; }
+.cs-ok input:checked + i svg{ opacity:1; transform:none; }
+.cs-ok input:focus-visible + i{ outline:2px solid var(--teal); outline-offset:2px; }
+.cs-hp{ position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+.cs-err{ min-height:0; font-size:14px; font-weight:600; color:var(--ink); }
+.cs-form .btn{ width:100%; }
+.cs-note{ font-size:13px; color:var(--mute2); text-align:center; }
+/* the form gives way to what happens next, in the same card */
+.cs-swap{ position:relative; display:grid; }
+.cs-swap > *{ grid-area:1 / 1; min-width:0; }
+.cs-done{ display:grid; gap:18px; align-content:start; opacity:0; visibility:hidden; transform:translateY(18px); transition:opacity .6s var(--e), transform .8s var(--e), visibility 0s .8s; }
+.cs-form.sent form{ position:absolute; inset:0 0 auto; opacity:0; visibility:hidden; transform:translateY(-14px); pointer-events:none; transition:opacity .4s var(--e), transform .6s var(--e), visibility 0s .6s; }
+.cs-form form{ transition:opacity .5s var(--e), transform .7s var(--e); }
+.cs-form.sent .cs-done{ opacity:1; visibility:visible; transform:none; transition:opacity .7s var(--e) .25s, transform .9s var(--e) .25s, visibility 0s; }
+.cs-tick{ width:64px; height:64px; border-radius:50%; display:grid; place-items:center; color:#fff; background:linear-gradient(180deg,#1bb9a9,#0f9083); box-shadow:0 16px 30px -14px rgba(16,145,132,.8); }
+.cs-tick svg{ width:28px; height:28px; }
+.cs-tick path{ stroke-dasharray:24; stroke-dashoffset:24; }
+.cs-form.sent .cs-tick path{ stroke-dashoffset:0; transition:stroke-dashoffset .8s var(--e) .6s; }
+.cs-done h3{ font-size:clamp(1.6rem,3vw,2rem); letter-spacing:-.04em; }
+.cs-done .cs-what{ display:flex; flex-wrap:wrap; gap:6px; }
+.cs-done .cs-what span{ padding:5px 12px; border-radius:999px; font-size:13px; font-weight:500; color:var(--ink2); background:rgba(11,11,13,.045); }
+.cs-next{ list-style:none; margin:4px 0 0; padding:0; display:grid; gap:14px; counter-reset:n; }
+.cs-next li{ display:flex; gap:14px; align-items:flex-start; font-size:15px; line-height:1.45; color:var(--ink2); counter-increment:n; }
+.cs-next li::before{ content:counter(n); flex:none; width:28px; height:28px; border-radius:50%; display:grid; place-items:center; font-size:13px; font-weight:700; color:var(--teal2); background:var(--tint); }
+.cs-next b{ display:block; color:var(--ink); }
+.cs-done .cs-paynow{ width:100%; white-space:normal; text-align:center; height:auto; min-height:54px; padding:12px 22px; }
+.cs-gone{ display:grid; gap:14px; justify-items:start; }
+
+/* the bar at the bottom of the phone */
+.cs-dock{ display:none; }
+
+@media (max-width:920px){
+  .cs-hero .wrap,.cs-gift,.cs-club,.cs-res{ grid-template-columns:1fr; }
+  .cs-ex{ grid-template-columns:1fr; max-width:560px; margin:auto; }
+  .cs-club .cs-nuki{ order:-1; }
+}
+@media (max-width:640px){
+  .cs-hero{ padding-bottom:20px; }
+  .cs-hero h1{ font-size:clamp(2.5rem,11.4vw,3.1rem); }
+  .cs-hero .stage{ min-height:0; }
+  .cs-ps{ grid-template-columns:1fr; gap:14px; padding:30px 22px; }
+  .cs-ps .cs-arr{ justify-self:center; transform:rotate(90deg); width:42px; height:42px; }
+  .cs-ps b{ font-size:clamp(3.4rem,17vw,4.6rem); }
+  .cs-stack{ padding:4px 20px; }
+  .cs-row{ grid-template-columns:auto 1fr; gap:6px 14px; padding:20px 0; }
+  .cs-row > i{ width:38px; height:38px; border-radius:12px; grid-row:1 / span 2; align-self:start; }
+  .cs-row .cs-v{ grid-column:2; text-align:left; }
+  .cs-tot > div{ font-size:15px; }
+  .cs-x{ padding:26px 24px 22px; }
+  .cs-perks{ grid-template-columns:1fr; gap:10px; }
+  .cs-perks li{ padding:14px 16px; }
+  .cs-count{ padding:22px; }
+  .cs-cd{ gap:8px; }
+  .cs-cd > div{ padding:14px 4px 12px; border-radius:16px; }
+  .cs-opts{ grid-template-columns:1fr; }
+  .cs-opts.two{ grid-template-columns:1fr 1fr; }
+  .cs-opts.two .cs-o{ padding:12px 38px 12px 14px; }
+  .cs-opts.two .cs-o i{ right:12px; }
+  /* the first screen on the phone: the card is the picture, between the label and the headline */
+  .cs-hero .wrap{ display:flex; flex-direction:column; gap:22px; }
+  .cs-hero .txt{ display:contents; }
+  .cs-hero .txt > *{ order:2; }
+  .cs-hero .txt > .pill{ order:0; align-self:flex-start; }
+  .cs-hero .stage{ display:block; order:1; height:auto; min-height:0; margin:-8px 0 -10px; }
+  .cs-hero .csc-stage{ padding:14px 0 30px; }
+  .cs-hero .csc-shadow{ bottom:4px; }
+  .cs-hero .meta{ margin-top:2px; }
+  .cs-gift .csc-card{ width:min(340px,calc(100vw - 56px)); }
+  .cs-dock{ display:flex; position:fixed; z-index:55; left:10px; right:10px; bottom:calc(10px + env(safe-area-inset-bottom)); align-items:center; gap:12px; padding:7px 7px 7px 18px; border-radius:999px;
+    background:rgba(255,255,255,.82); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:0 0 0 1px var(--line2) inset, 0 18px 40px -18px rgba(11,40,38,.4);
+    transform:translateY(170%); transition:transform .8s var(--e); }
+  .cs-dock.in{ transform:none; }
+  .cs-dock .t{ flex:1; min-width:0; font-size:12.5px; line-height:1.3; color:var(--mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cs-dock .t b{ display:block; color:var(--ink); font-size:14px; font-weight:600; }
+  .cs-dock .btn{ height:46px; padding:0 20px; font-size:15px; }
+}
+@media (prefers-reduced-motion:reduce){ .cs-badge::before{ animation:none; } }
+</style>
+
+<section class="hero cs-hero"><div class="wrap">
+  <div class="txt">
+    <span class="pill rv in"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></span>Cardul de Sărbători Centrul360</span>
+    <h1 data-words>2.500 lei în tratamente. <em>Plătești 990.</em></h1>
+    <p class="lead rv"><span class="ld-l">Un credit pentru orice tratament din lista noastră de prețuri, valabil până pe 30 iunie 2027. Pentru tine sau ca un cadou de Crăciun.</span><span class="ld-s">Credit pentru orice tratament, până pe 30 iunie 2027. Pentru tine sau cadou.</span></p>
+    <div class="ctas rv"><a class="btn book halo" href="#rezerva" data-cs-go>Vreau cardul{{arrow}}</a><a class="btn ghost" href="#ce-primesti">Ce primești</a></div>
+    <div class="meta rv">
+      <div class="csc-live" data-cs-live hidden><span class="csc-left"><span class="dot"></span><span>Mai sunt <b data-cs-left></b> din 100 de carduri</span></span><span class="csc-time">Se încheie în <b data-cs-time></b></span></div>
+      <div class="trust"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><b>5,0</b>&nbsp;·&nbsp;300+ recenzii Google</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Timișoara și Arad</span></div>
+    </div>
+  </div>
+  <div class="stage rv zoom">
+    <div class="csc-stage" aria-hidden="true"><div class="csc-dust"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="csc-tilt"><div class="csc-float"><span class="csc-edge"></span><div class="csc-card"><span class="csc-art"><svg viewBox="130 130 550 550" aria-hidden="true"><circle cx="405" cy="405" r="262" stroke-width="1.5" vector-effect="non-scaling-stroke"/><ellipse class="ev" cx="405" cy="405" rx="104" ry="207" stroke-width="1.5" vector-effect="non-scaling-stroke"/><ellipse cx="405" cy="405" rx="207" ry="113" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg></span><span class="csc-lines"></span><div class="csc-face"><div class="csc-top"><span class="csc-brand"><svg viewBox="130 130 550 550" aria-hidden="true"><circle cx="405" cy="405" r="262" stroke-width="1.5" vector-effect="non-scaling-stroke"/><ellipse cx="405" cy="405" rx="104" ry="207" stroke-width="1.5" vector-effect="non-scaling-stroke"/><ellipse cx="405" cy="405" rx="207" ry="113" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg><b>CENTRUL360<span>.COM</span></b></span><svg class="csc-star" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1.5l2.2 8.3 8.3 2.2-8.3 2.2-2.2 8.3-2.2-8.3L1.5 12l8.3-2.2z"/></svg></div><div class="csc-val"><span class="csc-k">Cardul de Sărbători</span><p><b>2.500</b><i>lei</i></p><small>credit pentru tratamente</small></div><div class="csc-bot"><span class="csc-nm"><small>Pe numele</small><b data-csc-name>Pentru tine</b></span><span class="csc-exp"><small>Valabil până la</small><b>30.06.2027</b></span></div></div><span class="csc-sheen"></span></div></div></div><span class="csc-shadow"></span></div>
+  </div>
+</div></section>
+
+<div class="band" aria-hidden="true"><div class="row"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Orice tratament din listă</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Valabil până pe 30 iunie 2027</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Timișoara și Arad</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Cadou cu numele ei</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Cardul vine pe WhatsApp</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Doar 100 de carduri</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Până pe 24 decembrie</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Orice tratament din listă</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Valabil până pe 30 iunie 2027</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Timișoara și Arad</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Cadou cu numele ei</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Cardul vine pe WhatsApp</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Doar 100 de carduri</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Până pe 24 decembrie</span></div></div>
+
+<section class="s cs-sec" id="ce-primesti"><div class="wrap">
+  <div class="head rv"><span class="eye">Pe scurt</span><h2>Plătești mai puțin. <em>Primești mai mult.</em></h2></div>
+  <div class="card cs-ps rv">
+    <div><small>Plătești</small><b><span data-count="990">990</span><i>lei</i></b></div>
+    <span class="cs-arr" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    <div class="cs-get"><small>Primești în tratamente</small><b><span data-count="2500">2.500</span><i>lei</i></b></div>
+    <p class="cs-save">Economisești <strong>1.510 lei</strong><span class="cs-pct">-60%</span></p>
+  </div>
+</div></section>
+
+<section class="s cs-sec"><div class="wrap">
+  <div class="head rv"><span class="eye">Tot ce primești</span><h2>Fiecare lucru, <em>cu valoarea lui.</em></h2></div>
+  <div class="card cs-stack rv">
+    <div class="cs-row"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg></i><div><b>Credit de 2.500 lei pentru tratamente</b><p>Orice tratament din lista de prețuri, la prețul de listă. Până pe 30 iunie 2027.</p></div><span class="cs-v">2.500 lei</span></div>
+    <div class="cs-row"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></i><div><b>Tratament Restart, cadou <span class="cs-soon" data-cs-soon>plata online, în curând</span></b><p>Când plătești online. Redă pielii textura și luminozitatea.</p></div><span class="cs-v">300 lei</span></div>
+    <div class="cs-row"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.6-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg></i><div><b>Cardul pe numele ei, pe WhatsApp</b><p>O imagine elegantă, cu numele ei și un cod unic. La recepție e legat de numele și telefonul ei.</p></div><span class="cs-v inc">inclus</span></div>
+    <div class="cs-row"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg></i><div><b>Locul tău în Clubul 360</b><p>Aplicația membrelor. Se deschide în curând.</p></div><span class="cs-v inc">inclus</span></div>
+    <div class="cs-tot">
+      <div><span>Valoare totală</span><s>2.800 lei</s></div>
+      <div class="cs-me"><span>Prețul tău</span><b>990 lei</b></div>
+      <div class="cs-sv"><span>Economisești</span><span>1.810 lei</span></div>
+    </div>
+  </div>
+  <p class="fine rv">Cu plata în clinică primești creditul de 2.500 lei și locul în Clubul 360, fără Tratamentul Restart.</p>
+</div></section>
+
+<section class="s cs-sec" id="exemple"><div class="wrap">
+  <div class="head rv"><span class="eye">Ce poți face cu 2.500 lei</span><h2>Trei idei. <em>Alegi tu.</em></h2><p class="lead">Atinge o idee și vezi tratamentele, la prețurile din lista noastră.</p></div>
+  <div class="cs-ex">
+    <button type="button" class="card cs-x rv" aria-expanded="false"><span class="cs-pm" aria-hidden="true"></span><span class="k">Față</span><h3>Gușă, contur și față</h3><span class="cs-sum"><b>2.440 lei</b><span>din 2.500</span></span>
+      <span class="cs-in"><div><ul><li><span>HIFU gușă, 3 ședințe (3 × 290 lei)</span><span>870 lei</span></li><li><span>RF Sculpt gușă și contur mandibular, 4 ședințe</span><span>690 lei</span></li><li><span>Radiofrecvență Full Face, 4 ședințe</span><span>880 lei</span></li><li class="cs-rest"><span>Îți mai rămân</span><span>60 lei</span></li></ul></div></span><span class="cs-hint">Vezi tratamentele</span></button>
+    <button type="button" class="card cs-x rv" aria-expanded="false"><span class="cs-pm" aria-hidden="true"></span><span class="k">Corp</span><h3>Grăsime localizată și fermitate</h3><span class="cs-sum"><b>2.270 lei</b><span>din 2.500</span></span>
+      <span class="cs-in"><div><ul><li><span>Liposonix, 2 zone (2 × 640 lei)</span><span>1.280 lei</span></li><li><span>Radiofrecvență corporală, 4 ședințe</span><span>990 lei</span></li><li class="cs-rest"><span>Îți mai rămân</span><span>230 lei</span></li></ul></div></span><span class="cs-hint">Vezi tratamentele</span></button>
+    <button type="button" class="card cs-x rv" aria-expanded="false"><span class="cs-pm" aria-hidden="true"></span><span class="k">Ten</span><h3>Ten, textură și riduri</h3><span class="cs-sum"><b>2.440 lei</b><span>din 2.500</span></span>
+      <span class="cs-in"><div><ul><li><span>Microneedling Exozomi PDRN, 3 ședințe</span><span>1.290 lei</span></li><li><span>Tratament intensiv antirid, 4 ședințe</span><span>1.150 lei</span></li><li class="cs-rest"><span>Îți mai rămân</span><span>60 lei</span></li></ul></div></span><span class="cs-hint">Vezi tratamentele</span></button>
+  </div>
+  <p class="fine rv">Prețuri de listă de pe pagina <a href="{{base}}preturi">Prețuri</a>. Poți alege orice alte tratamente. Rezultatele diferă de la o persoană la alta.</p>
+</div></section>
+
+<section class="s cs-sec" id="cadou"><div class="wrap cs-gift">
+  <div>
+    <div class="head left rv"><span class="eye">Cadoul de Crăciun</span><h2>Un cadou pe care <em>chiar îl folosește.</em></h2><p class="lead">Cardul poartă numele ei. Tu îl rezervi, ea îl primește pe WhatsApp și vine la noi când vrea, până pe 30 iunie 2027.</p></div>
+    <div class="cs-chips rv" role="group" aria-label="Pentru cine e cardul">
+      <button type="button" aria-pressed="false" data-for="Pentru mama">Pentru mama</button><button type="button" aria-pressed="false" data-for="Pentru sora ta">Pentru sora ta</button><button type="button" aria-pressed="false" data-for="Pentru prietena ta">Pentru prietena ta</button><button type="button" aria-pressed="false" data-for="Pentru tine">Pentru tine</button>
+    </div>
+    <div class="say rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/cadou.webp" alt="" width="96" height="96" loading="lazy"></span><div><q>Eu l-aș face cadou mamei. Tu cui îl dai?</q><small>Nuki</small></div></div>
+  </div>
+  <div class="rv zoom"><div class="csc-stage" aria-hidden="true"><div class="csc-dust"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="csc-tilt"><div class="csc-float"><span class="csc-edge"></span><div class="csc-card"><span class="csc-art"><svg viewBox="130 130 550 550" aria-hidden="true"><circle cx="405" cy="405" r="262" stroke-width="1.5" vector-effect="non-scaling-stroke"/><ellipse class="ev" cx="405" cy="405" rx="104" ry="207" stroke-width="1.5" vector-effect="non-scaling-stroke"/><ellipse cx="405" cy="405" rx="207" ry="113" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg></span><span class="csc-lines"></span><div class="csc-face"><div class="csc-top"><span class="csc-brand"><svg viewBox="130 130 550 550" aria-hidden="true"><circle cx="405" cy="405" r="262" stroke-width="1.5" vector-effect="non-scaling-stroke"/><ellipse cx="405" cy="405" rx="104" ry="207" stroke-width="1.5" vector-effect="non-scaling-stroke"/><ellipse cx="405" cy="405" rx="207" ry="113" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg><b>CENTRUL360<span>.COM</span></b></span><svg class="csc-star" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1.5l2.2 8.3 8.3 2.2-8.3 2.2-2.2 8.3-2.2-8.3L1.5 12l8.3-2.2z"/></svg></div><div class="csc-val"><span class="csc-k">Cardul de Sărbători</span><p><b>2.500</b><i>lei</i></p><small>credit pentru tratamente</small></div><div class="csc-bot"><span class="csc-nm"><small>Pe numele</small><b data-csc-name>Pentru tine</b></span><span class="csc-exp"><small>Valabil până la</small><b>30.06.2027</b></span></div></div><span class="csc-sheen"></span></div></div></div><span class="csc-shadow"></span></div></div>
+</div></section>
+
+<section class="s cs-sec" id="cum"><div class="wrap split">
+  <div>
+    <div class="head left rv"><span class="eye">Cum funcționează</span><h2>Rezervi acum. <em>Restul e simplu.</em></h2></div>
+    <ol class="tl" data-tl>
+      <li class="rv"><small>Acum · un minut</small><b>Rezervi cardul</b><p>Completezi formularul de mai jos. Nu plătești nimic acum.</p></li>
+      <li class="rv"><small>Apoi</small><b>Te sună recepția</b><p>Confirmăm datele și numele de pe card.</p></li>
+      <li class="rv"><small>În clinică</small><b>Plătești 990 lei</b><p>La Timișoara sau la Arad. Sau online, cu Tratamentul Restart cadou <span class="cs-soon" data-cs-soon>în curând</span></p></li>
+      <li class="rv"><small>Pe WhatsApp</small><b>Primește cardul</b><p>O imagine elegantă, cu numele ei și un cod unic. La recepție, cardul e legat de numele și telefonul ei.</p></li>
+      <li class="rv"><small>Până pe 30 iunie 2027</small><b>Îl folosește când vrea</b><p>Orice tratament din lista de prețuri, în Timișoara sau Arad.</p></li>
+    </ol>
+  </div>
+  <div class="stick rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/telefon.webp" alt="Nuki cu telefonul" width="300" height="300" loading="lazy"></span><q>Cardul vine pe WhatsApp, cu numele ei pe el.</q><small>Nuki</small></div>
+</div></section>
+
+<section class="s cs-sec" id="club"><div class="wrap cs-club">
+  <div class="cs-nuki rv zoom"><span class="fl"><img src="/brand_asset/mascota/ipostaze/bucurie.webp" alt="Nuki se bucură" width="300" height="300" loading="lazy"></span></div>
+  <div>
+    <div class="head left rv"><span class="cs-badge">Se deschide în curând</span><h2>Bonus: locul tău în <em>Clubul 360.</em></h2><p class="lead">Aplicația clientelor noastre. Cine are cardul are locul rezervat pe lista de așteptare și află primul când se deschide.</p></div>
+    <ul class="cs-perks">
+      <li class="card rv"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></i>Mici cadouri în fiecare lună</li>
+      <li class="card rv"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></i>Reduceri doar pentru membre</li>
+      <li class="card rv"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="m9 15 2 2 4-4"/></svg></i>Programare cu prioritate</li>
+      <li class="card rv"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></i>Tombole și giveaway-uri</li>
+      <li class="card rv"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 19.5c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.4.2 4 1.7 4.5 4.3"/></svg></i>Comunitatea 360</li>
+      <li class="card rv"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5z"/><path d="M8.5 9.5h.01M12 9.5h.01M15.5 9.5h.01"/></svg></i>Nuki, asistentul tău personal</li>
+    </ul>
+  </div>
+</div></section>
+
+<section class="s cs-sec" id="recenzii"><div class="wrap">
+  <div class="score"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><span>Google</span></span><div class="n" data-count="5.0">5,0</div><div class="st"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg></div><span><b data-count="300" data-suffix="+">300+</b> recenzii · Timișoara și Arad</span></div>
+  <div class="revs">
+    <div class="card rev rv"><span class="stars">★★★★★</span><span class="h">„Rezultatul a fost exact pe măsura așteptărilor.”</span><p>„O experiență foarte plăcută, atmosfera relaxantă, iar rezultatul a fost exact pe măsura așteptărilor.”</p><small>Maria Muntean · Timișoara</small></div>
+    <div class="card rev rv"><span class="stars">★★★★★</span><span class="h">„Cu căldură și profesionalism.”</span><p>„O experiență minunată, d-na Andreea m-a abordat cu căldură și profesionalism.”</p><small>Alina Galuțiu · Arad</small></div>
+    <div class="card rev rv"><span class="stars">★★★★★</span><span class="h">„Rezultatul este vizibil.”</span><p>„Locație frumoasă, curată, liniștită. Domnișoara este minunată, rezultatul este vizibil.”</p><small>Simona-Mihaela J. · Timișoara</small></div>
+  </div>
+</div></section>
+
+<section class="s cs-sec" id="intrebari"><div class="wrap">
+  <div class="head rv"><span class="eye">Întrebări</span><h2>Tot ce vrei <em>să știi.</em></h2></div>
+  <div class="faq rv">
+    <div class="q"><button type="button">Până când pot folosi creditul?<span class="pm"></span></button><div class="a"><div><p>Până pe 30 iunie 2027, în clinica din Timișoara sau din Arad.</p></div></div></div>
+    <div class="q"><button type="button">Pe ce tratamente îl pot folosi?<span class="pm"></span></button><div class="a"><div><p>Pe orice tratament din lista noastră de prețuri, la prețul de listă. Creditul nu se adaugă peste ofertele deja reduse și nu se schimbă pe bani. Epilarea laser, EMS și împachetarea la cald se fac doar la Timișoara.</p></div></div></div>
+    <div class="q"><button type="button">Îl pot face cadou?<span class="pm"></span></button><div class="a"><div><p>Da. În formular alegi „Cadou” și scrii numele ei. Cardul poartă numele ei și îl folosește ea.</p></div></div></div>
+    <div class="q"><button type="button">Cum primesc cardul?<span class="pm"></span></button><div class="a"><div><p>După plată, pe WhatsApp: o imagine elegantă, cu numele ei și un cod unic. La recepție, cardul e legat de numele și telefonul ei, deci nu are nimic de adus cu ea.</p></div></div></div>
+    <div class="q"><button type="button">Cum plătesc?<span class="pm"></span></button><div class="a"><div><p>Rezervi aici, te sună recepția și plătești 990 lei în clinică, la Timișoara sau la Arad. Când plata online e deschisă, plătești cu cardul bancar pe pagina securizată myPOS și primești și un Tratament Restart cadou (valoare 300 lei).</p></div></div></div>
+    <div class="q"><button type="button">Ce e Clubul 360?<span class="pm"></span></button><div class="a"><div><p>Aplicația clientelor Centrul360, care se deschide în curând: mici cadouri lunare, reduceri doar pentru membre, programare cu prioritate, tombole și giveaway-uri, comunitatea 360 și Nuki ca asistent personal. Cu cardul ai locul rezervat pe lista de așteptare și te anunțăm când se deschide.</p></div></div></div>
+    <div class="q"><button type="button">Câte carduri sunt?<span class="pm"></span></button><div class="a"><div><p>100 în total, pentru ambele clinici, până pe 24 decembrie 2026, ora 23:59. Numărul de pe pagină vine din rezervările reale.</p></div></div></div>
+  </div>
+</div></section>
+
+<section class="s cs-sec" id="rezerva"><div class="wrap cs-res">
+  <div>
+    <div class="head left rv"><span class="eye">Rezervă-ți cardul</span><h2>Vreau <em>cardul.</em></h2><p class="lead">Un minut. Nu plătești nimic acum: te sună recepția și plătești în clinică.</p></div>
+    <div class="card cs-count rv" data-cs-live hidden>
+      <div class="cs-big"><b data-cs-left></b><span>carduri rămase din 100</span></div>
+      <div class="cs-bar" data-cs-bar aria-hidden="true"></div>
+    </div>
+    <div class="cs-cd rv" data-cs-cd aria-label="Timp rămas"><div><b data-d>0</b><span>Zile</span></div><div><b data-h>00</b><span>Ore</span></div><div><b data-m>00</b><span>Minute</span></div><div><b data-s>00</b><span>Secunde</span></div></div>
+    <p class="cs-when rv">Până pe 24 decembrie 2026, ora 23:59. Sau până se termină cele 100 de carduri.</p>
+  </div>
+  <div class="card cs-form rv"><div class="cs-swap">
+    <form id="cs-form" novalidate>
+      <div><span class="cs-lbl" id="cs-l1">Pentru cine e cardul?</span>
+        <div class="cs-seg" role="radiogroup" aria-labelledby="cs-l1"><label><input type="radio" name="for" value="me" checked>Pentru mine</label><label><input type="radio" name="for" value="gift">Cadou</label></div></div>
+      <div class="cs-rec"><div><label class="cs-f"><span>Numele de pe card</span><input name="recipient" autocomplete="off" placeholder="ex: numele mamei"></label></div></div>
+      <label class="cs-f"><span>Numele tău</span><input name="name" autocomplete="name" placeholder="ex: Maria Popescu"></label>
+      <label class="cs-f"><span>Telefon (WhatsApp)</span><input name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="ex: 07xx xxx xxx"></label>
+      <div><span class="cs-lbl" id="cs-l2">Clinica</span>
+        <div class="cs-opts two" role="radiogroup" aria-labelledby="cs-l2">
+          <label class="cs-o"><input type="radio" name="city" value="Timișoara"><b>Timișoara</b><small>Str. Bucegi 7</small><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i></label>
+          <label class="cs-o"><input type="radio" name="city" value="Arad"><b>Arad</b><small>Str. Ioan Alexandru 16-18</small><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i></label>
+        </div></div>
+      <div><span class="cs-lbl" id="cs-l3">Plata</span>
+        <div class="cs-opts" role="radiogroup" aria-labelledby="cs-l3">
+          <label class="cs-o"><input type="radio" name="pay" value="salon" checked><b>În clinică</b><small>990 lei, după ce te sunăm</small><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i></label>
+          <label class="cs-o" data-cs-online><input type="radio" name="pay" value="online" disabled><b>Online, acum</b><small>+ Tratament Restart cadou</small><span class="cs-soon" data-cs-soon>în curând</span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i></label>
+        </div></div>
+      <label class="cs-hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+      <label class="cs-ok"><input type="checkbox" name="consent"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i><span>Sunt de acord să fiu contactat/ă telefonic sau pe WhatsApp de Centrul360 pentru cardul de Sărbători.</span></label>
+      <p class="cs-err" role="alert"></p>
+      <button type="submit" class="btn book halo">Vreau cardul{{arrow}}</button>
+      <p class="cs-note">Prin rezervare nu plătești nimic acum.</p>
+    </form>
+    <div class="cs-done" aria-live="polite">
+      <span class="cs-tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+      <h3>Cardul e rezervat.</h3>
+      <p class="cs-what"></p>
+      <ol class="cs-next">
+        <li><span><b>Te sună recepția</b>Confirmăm datele și numele de pe card.</span></li>
+        <li><span><b>Plătești 990 lei în clinică</b><span class="cs-city"></span></span></li>
+        <li><span><b>Primește cardul pe WhatsApp</b>Cu numele ei și un cod unic, legat la recepție de numele și telefonul ei.</span></li>
+        <li><span><b>Locul în Clubul 360 e rezervat</b>Te anunțăm când se deschide.</span></li>
+      </ol>
+      <a class="btn ghost cs-paynow" href="#" hidden>Plătește acum online, cu Restart cadou</a>
+    </div>
+  </div></div>
+</div></section>
+
+<div class="cs-dock" aria-hidden="true"><div class="t"><b>Cardul de Sărbători</b>990 lei · 2.500 lei în tratamente</div><a class="btn book" href="#rezerva" data-cs-go tabindex="-1">Vreau cardul</a></div>
+
+<script src="/v2/cs-card.js" defer></script>
+<script>
+/* Cardul de Sărbători: the ideas open in place, the gift's names go on the card, the form reserves it (/api/card-sarbatori) */
+(function () {
+  var BASE = '{{base}}';
+  var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+
+  // the ideas: a tap opens the card in place, another closes it
+  $$('.cs-x').forEach(function (b) { b.addEventListener('click', function () { b.setAttribute('aria-expanded', String(b.getAttribute('aria-expanded') !== 'true')); }); });
+
+  // the gift: a name goes on the card, and on the form
+  var form = document.getElementById('cs-form'), box = form.closest('.cs-form');
+  $$('.cs-chips button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('.cs-chips button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      if (window.CSC) window.CSC.name(b.getAttribute('data-for'));
+      var gift = b.getAttribute('data-for') !== 'Pentru tine';
+      form.querySelector('input[name="for"][value="' + (gift ? 'gift' : 'me') + '"]').checked = true; mode();
+    });
+  });
+  function mode() { box.classList.toggle('gift', form.querySelector('input[name="for"]:checked').value === 'gift'); }
+  form.addEventListener('change', function (e) { if (e.target.name === 'for') mode(); });
+  mode();
+
+  // every „Vreau cardul” lands on the form
+  $$('[data-cs-go]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      var t = document.getElementById('rezerva'), y = t.getBoundingClientRect().top + scrollY - (innerWidth < 920 ? 70 : 90);
+      scrollTo({ top: y, behavior: 'smooth' });
+      setTimeout(function () { var i = form.querySelector('input[name="name"]'); if (i && !box.classList.contains('sent')) i.focus({ preventScroll: true }); }, 900);
+    });
+  });
+
+  // the live state: online payment on only when it is set up; sold out or ended: no form
+  var ended = function (why) {
+    form.innerHTML = '<div class="cs-gone"><h3>' + (why === 'sold_out' ? 'Cardurile s-au terminat.' : 'Oferta s-a încheiat.') + '</h3><p class="lead">Mulțumim! La consultația gratuită îți spunem ce ți se potrivește.</p>' +
+      '<button type="button" class="btn book" data-book data-book-service="consult">Programează consultația gratuită</button></div>';
+  };
+  if (window.CSC) window.CSC.on(function (s) {
+    if (s.online) {
+      var o = form.querySelector('input[name="pay"][value="online"]'); if (o) o.disabled = false;
+      $$('[data-cs-soon]').forEach(function (el) { el.hidden = true; });
+    }
+    if (!s.open && !box.classList.contains('sent')) ended(s.left <= 0 ? 'sold_out' : 'closed');
+  });
+
+  // the dock: after the first screen, never over the form
+  var dock = document.querySelector('.cs-dock'), hero = document.querySelector('.cs-hero .btn.book'), res = document.getElementById('rezerva');
+  var place = function () {
+    if (!dock) return;
+    var past = hero.getBoundingClientRect().bottom < 0, r = res.getBoundingClientRect(), at = r.top < innerHeight * 0.85 && r.bottom > 0;
+    dock.classList.toggle('in', past && !at);
+  };
+  addEventListener('scroll', function () { requestAnimationFrame(place); }, { passive: true }); place();
+
+  // the reservation
+  var err = form.querySelector('.cs-err');
+  var MSG = { missing_name: 'Scrie numele tău.', bad_phone: 'Scrie un număr de telefon valid.', missing_recipient: 'Scrie numele de pe card.', missing_city: 'Alege clinica.',
+    missing_consent: 'Bifează acordul, ca să te putem suna.', too_many: 'Prea multe încercări. Încearcă din nou în câteva minute.', too_many_cards: 'Pe acest număr sunt deja 5 carduri rezervate. Te sunăm noi.' };
+  form.addEventListener('input', function () { err.textContent = ''; });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = function (n) { var el = form.querySelector('[name="' + n + '"]'); return el ? el.value.trim() : ''; };
+    var pick = function (n) { var el = form.querySelector('input[name="' + n + '"]:checked'); return el ? el.value : ''; };
+    var gift = pick('for') === 'gift', body = { name: v('name'), phone: v('phone'), gift: gift, recipient: gift ? v('recipient') : '', city: pick('city'), pay: pick('pay') || 'salon',
+      consent: form.consent.checked, website: v('website'), page: location.href };
+    if (gift && body.recipient.length < 2) { err.textContent = MSG.missing_recipient; return; }
+    if (body.name.length < 2) { err.textContent = MSG.missing_name; return; }
+    if (body.phone.replace(/\D/g, '').length < 9) { err.textContent = MSG.bad_phone; return; }
+    if (!body.city) { err.textContent = MSG.missing_city; return; }
+    if (!body.consent) { err.textContent = MSG.missing_consent; return; }
+    if (window.C360_CONSENT === true) body.event_id = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
+    var btn = form.querySelector('button[type="submit"]'); btn.disabled = true; btn.firstChild.textContent = 'Se trimite…';
+    fetch('/api/card-sarbatori', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.error === 'sold_out' || d.error === 'closed') { ended(d.error); return; }
+      if (!d.ok || !d.reservation) throw new Error(d.error || 'x');
+      var rs = d.reservation;
+      var payUrl = BASE + 'card-sarbatori-plata?r=' + encodeURIComponent(rs.id);
+      if (rs.pay === 'online') { location.href = payUrl; return; }
+      var pl = box.querySelector('.cs-paynow'); if (pl) { pl.href = payUrl; pl.hidden = !(window.CSC && window.CSC.state && window.CSC.state.online); }
+      box.querySelector('.cs-what').innerHTML = '<span>Pe numele: ' + esc(rs.recipient) + '</span><span>' + esc(rs.city) + '</span>';
+      box.querySelector('.cs-city').textContent = rs.city === 'Arad' ? 'La clinica din Arad, Str. Ioan Alexandru 16-18.' : 'La clinica din Timișoara, Str. Bucegi 7.';
+      box.classList.add('sent');
+      if (typeof d.left === 'number' && window.CSC && window.CSC.state) window.CSC.set(Object.assign({}, window.CSC.state, { left: d.left }));
+      var top = box.getBoundingClientRect().top; if (top < 70) scrollTo({ top: scrollY + top - 90, behavior: 'smooth' });
+    }).catch(function (x) {
+      btn.disabled = false; btn.firstChild.textContent = 'Vreau cardul';
+      err.textContent = MSG[x && x.message] || 'Nu am putut trimite. Încearcă din nou.';
+    });
+  });
+})();
+</script>

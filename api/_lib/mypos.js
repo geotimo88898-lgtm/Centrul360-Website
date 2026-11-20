@@ -518,4 +518,34 @@ async function gwProbe(store) {
   return out;
 }
 
-module.exports = { gwProbe, CONN, PAY, EVENTS, MyposError, token, listDevices, listTransactions, fromApi, fromHook, merge, sync, ensureWebhook, dropWebhook, validSignature, loadConn, connected, dayOf, balance, parseMt940, saveGateway, dropGateway, loadGateway };
+// The eCommerce API through the same API Gateway keys (20.11, the Card de Sărbători, api/_lib/card-sarbatori.js): a token
+// with myPOS's default scopes, the merchant's session, then the call. Keys refused before (g.error): not tried (myPOS locks
+// after three refused sessions); a refused session now is noted the same way. Returns { status, json }; throws only when
+// the keys are missing or refused, or myPOS can't be reached.
+async function gwEcom(store, method, path, body) {
+  const g = await store.readJSON(GW_KEY, null);
+  if (!gwReady(g)) throw new MyposError('gw_missing', 0);
+  if (g.error) throw new MyposError(g.error, g.status || 0, 'keys refused before');
+  const k = 'te|' + g.clientId;
+  let tok = (gwCache.get(k) || {}).until > Date.now() + 30e3 ? gwCache.get(k).v : '';
+  if (!tok) {
+    const r = await fetch(GW + '/api/v1/oauth/token', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ client_id: g.clientId, client_secret: g.clientSecret, grant_type: 'client_credentials' }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.access_token) throw new MyposError(r.status >= 400 && r.status < 500 && r.status !== 429 ? 'gw_partner' : 'mypos_down', r.status, gwMsg(j));
+    tok = j.access_token;
+    gwCache.set(k, { v: tok, until: Date.now() + (Number(j.expires_in) || 3600) * 1000, scope: String(j.scope || '') });
+  }
+  let ses;
+  try { ses = await gwSession(g, tok); } catch (e) {
+    if (e.code === 'gw_merchant') await store.writeJSON(GW_KEY, Object.assign({}, g, { error: e.code, errorAt: new Date().toISOString(), status: e.status || 0, message: e.message || '' }), { quiet: true });
+    throw e;
+  }
+  const r = await fetch(GW + path, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok, 'X-Session': ses, 'X-Partner-Id': g.partnerId, 'X-Application-Id': g.appId },
+    body: body ? JSON.stringify(body) : undefined });
+  const json = await r.json().catch(() => ({}));
+  if (r.status === 401) { gwCache.delete(k); gwCache.delete('s|' + g.merchantId); } // the next call starts anew
+  return { status: r.status, json, message: r.ok ? '' : gwMsg(json) };
+}
+
+module.exports = { gwEcom, gwProbe, CONN, PAY, EVENTS, MyposError, token, listDevices, listTransactions, fromApi, fromHook, merge, sync, ensureWebhook, dropWebhook, validSignature, loadConn, connected, dayOf, balance, parseMt940, saveGateway, dropGateway, loadGateway };

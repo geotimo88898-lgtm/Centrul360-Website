@@ -470,7 +470,8 @@ async function alertTeam(lead, returning, fromSite) {
 const organicOf = (o) => ({ itemId: clip(o.itemId, 60), keyword: clip(o.keyword, 40), net: clip(o.net, 4), at: nowISO() });
 // organic: { itemId, keyword, net } for a lead made from a reel's word (api/_lib/content-dm.js), kept on the lead as
 // lead.organic so Conținut → Rezultate can follow it to the money (api/_lib/content-insights.js)
-async function createLead({ name, phone, source, location, createdBy, email, interest, value, note, stageId, authorLabel, form, organic }) {
+// welcome: false = no welcome WhatsApp (a Card de Sărbători reservation: reception calls her, api/card-sarbatori.js)
+async function createLead({ name, phone, source, location, createdBy, email, interest, value, note, stageId, authorLabel, form, organic, welcome }) {
   const filled = cleanForm(form);
   const result = validateFields({ name, phone, source, location, email: email || '', interest: interest || '', value: value || 0 }, { partial: false });
   if (result.error) return { error: result.error };
@@ -544,7 +545,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
   leads.push(lead);
   await writeJSON(LEADS_KEY, leads);
   await workflows.emit('lead_created', { lead }); // the flows on a new lead, if any
-  if (SELF.includes(createdBy)) await workflows.welcome(lead); // the welcome WhatsApp of its offer, to a lead that came by herself (one typed at the desk is on the phone already)
+  if (SELF.includes(createdBy) && welcome !== false) await workflows.welcome(lead); // the welcome WhatsApp of its offer, to a lead that came by herself (one typed at the desk is on the phone already)
   await alertTeam(lead, false, createdBy === 'site-form');
   if (filled && filled.leadgenId) await capi.soon(() => capi.crmSync({ leadIds: [lead.id] })); // "Lead_nou" for Meta
   return { lead: withComputedFields(lead, stages) };
