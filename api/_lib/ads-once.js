@@ -12,6 +12,10 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 20.11 13:47, the hourly check: AR RF T3 at 9 lei a lead today (8 over 3 days), the cheapest of all: back to 110
+  { id: 'h1347-2026-11-20', why: 'AR T3 lead la 8-9 lei', actions: [
+    { campaignId: '120251992601670103', name: 'AR RF GUSA · căutăm 8 doamne (port TM)', daily: 110, why: 'lead la 9 lei azi, 8 lei pe 3 zile' },
+  ] },
   // 20.11 13:00, George: „reclamele merg ca naiba”. Off what spent two days with no lead (laser E2 32 lei, E3 31 lei,
   // HIFU sezon v2 26 lei); the money stays on what brings leads
   // 20.11 13:20: TM HIFU „stai întinsă” at 28 lei a lead over two days (TM ~9): off; the winning „sezon” creative goes on fresh
