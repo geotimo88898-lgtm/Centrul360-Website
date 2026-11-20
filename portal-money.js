@@ -1212,7 +1212,7 @@
     const P = pay && pay.pack;
     const today = K.today();
     if (!P || (P.until && today > P.until)) return '';
-    const mine = (pay.commissionLines || []).filter((l) => l.kind === 'pay' && l.date === today && l.pack);
+    const mine = (pay.commissionLines || []).filter((l) => l.kind === 'pay' && l.date === today && l.pack && !l.topup);
     const planRate = (pay.plan && pay.plan.rate) || 5;
     const planToday = pay.plan ? pay.plan.plans.filter((x) => x.date === today).length : 0;
     // everything she earned today (the packages, the 4% under 1.500 and the plans), as her Panou shows it
@@ -1221,11 +1221,11 @@
     const tiers = P.tiers.slice().sort((x, y) => x.min - y.min);
     return '<div class="pk-box">' +
       '<div class="pk-head"><b>' + icon('trophy') + 'Bonus pe fiecare pachet</b><span>' + (live ? '' : 'de la ' + esc(K.dateShort(P.from))) + '</span></div>' +
-      '<div class="pk-ladder">' + tiers.map((t) => '<div><small>plată de</small><b>' + lei2s(t.min).replace(' lei', '') + '+</b><em>+' + t.lei + '</em><small>lei</small></div>').join('') + '</div>' +
+      '<div class="pk-ladder">' + tiers.map((t) => '<div><small>pachet plătit</small><b>' + lei2s(t.min).replace(' lei', '') + '+</b><em>+' + t.lei + '</em><small>lei</small></div>').join('') + '</div>' +
       '<div class="pk-plus"><span><b>+50</b> a 3-a vânzare din zi</span><span><b>+100</b> clientă care revine</span><span><b>+' + planRate + '</b> program recomandat încărcat</span></div>' +
       (live ? '<div class="pk-today"><span>Azi</span><span>' + K.plural(mine.length, 'pachet', 'pachete') + ' · ' + K.plural(planToday, 'program', 'programe') + '</span><strong>+' + lei2s(lei) + '</strong></div>' : '') +
       '<details class="pk-more"><summary>Cum se calculează</summary><ul>' +
-        '<li>Contează fiecare plată pentru pachet, și avansul. 1.500 lei avans dintr-un pachet de 3.000 = +100 lei azi, restul de 1.500 = încă +100 când vine.</li>' +
+        '<li>Bonusul e pe pachet, după cât a plătit clienta din el. Avans de 1.500 lei dintr-un pachet de 3.000 = +100 lei azi. Când plătește restul, mai primești +250 (350 în total). Un pachet primește bonusul o singură dată.</li>' +
         '<li>De la a 3-a vânzare de 1.500+ din aceeași zi, fiecare mai aduce +50 lei.</li>' +
         '<li>+100 lei când o clientă care a mai cumpărat un pachet cumpără altul.</li>' +
         '<li>+' + planRate + ' lei la fiecare program recomandat prezentat clientei: fotografiezi foile „Program recomandat și ofertă” în fișa ei (Contacte → clienta → Fișe → „Program recomandat”), în ziua programării. Ședința trebuie să se încheie. Unul pe clientă pe zi.</li>' +
@@ -1304,16 +1304,16 @@
     const out = (lines || []).map((l) => {
       const day = esc(K.dateShort(l.date));
       const EX = { third: 'a 3-a vânzare din zi +50', again: 'clientă care revine +100' };
-      if (l.kind === 'pay') return row('is-pay' + wait(l), (l.pack ? 'Bonus pachet din ' : 'Comision din ') + lei2s(l.cash) + ' încasați' + (l.extras ? ' · ' + l.extras.map((x) => EX[x]).join(', ') : ''), what(l) + ', ' + lei2s(l.paidSoFar) + ' din ' + lei2s(l.total) + ' · ' + day + waitTxt(l), '+' + lei2s(l.lei));
+      if (l.kind === 'pay') return row('is-pay' + wait(l), (l.topup ? 'Restul de bonus, din ' : l.pack ? 'Bonus pachet din ' : 'Comision din ') + lei2s(l.cash) + ' încasați' + (l.extras ? ' · ' + l.extras.map((x) => EX[x]).join(', ') : ''), what(l) + ', ' + lei2s(l.paidSoFar) + ' din ' + lei2s(l.total) + ' · ' + day + waitTxt(l), '+' + lei2s(l.lei));
       if (l.kind === 'whole') return row('is-pay' + wait(l), 'Upsell ' + lei2s(l.cash), what(l) + ' · comision pe toată valoarea · ' + day + waitTxt(l), '+' + lei2s(l.lei),
         o.cancel && l.status === 'pending' && o.cancel(l.upsellId) ? '<button type="button" class="k-btn is-ghost is-sm" data-comm-cancel="' + esc(l.upsellId) + '">Retrage</button>' : '');
       if (l.kind === 'refund') return row('is-cut' + wait(l), 'Rambursare ' + lei2s(-l.cash), what(l) + (l.reason ? ' · ' + esc(l.reason) : '') + ' · ' + day + waitTxt(l), '−' + lei2s(-l.lei));
       return row('is-cut' + wait(l), 'Rest anulat ' + lei2s(-l.cash), what(l) + ' închis, comisionul fusese pe toată valoarea · ' + day, '−' + lei2s(-l.lei));
     });
-    const come = (toCome || []).map((t) => row('is-come', 'încă ' + lei2s(t.rest) + ' de încasat → ' + lei2s(t.lei) + ' comision', what(t) + ', plătit ' + lei2s(t.paid) + ' din ' + lei2s(t.total) + (t.status === 'pending' ? ' · după aprobare' : ''), lei2s(t.lei)));
+    const come = (toCome || []).map((t) => row('is-come', (t.client && !o.noClient ? esc(t.client) + ' mai are ' : 'Mai sunt ') + lei2s(t.rest) + ' de plătit → tu primești +' + lei2s(t.lei), what(t) + ', plătit ' + lei2s(t.paid) + ' din ' + lei2s(t.total) + (t.status === 'pending' ? ' · după aprobare' : ''), lei2s(t.lei)));
     if (!out.length && !come.length) return '';
     return (out.length ? '<ul class="cl-lines">' + out.join('') + '</ul>' : '') +
-      (come.length ? '<div class="cl-head"><span>De încasat din pachete</span><span>' + lei2s(toCome.reduce((a, t) => a + t.lei, 0)) + '</span></div><ul class="cl-lines">' + come.join('') + '</ul>' : '');
+      (come.length ? '<div class="cl-head"><span>Bani care te așteaptă</span><span>' + lei2s(toCome.reduce((a, t) => a + t.lei, 0)) + '</span></div><ul class="cl-lines">' + come.join('') + '</ul>' : '');
   }
   K.commLinesHtml = commLinesHtml;
   K.teamHtml = teamHtml;

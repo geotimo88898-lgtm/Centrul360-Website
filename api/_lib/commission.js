@@ -37,6 +37,12 @@ const PACK = { from: '2026-11-23', until: '', tiers: [{ min: 3000, lei: 350 }, {
 //   third: her 3rd payment of 1.500+ of the day and every one after it +50 lei each (by the time it came in)
 //   again: a client who had bought a package before buys another one +100 lei, on the first payment of the new one
 const EXTRA = { third: 50, again: 100 };
+// the package bonus from 23.11 (George, 20.11: „primesc doar o singură dată 350”): a package's bonus is the tier of what
+// has been paid of it so far, never under the 4% of it; every payment brings the difference. 1.500 advance = 100 now,
+// the other 1.500 later = +250 (350 in all); 6.000 in two payments of 3.000 = 350 once (+ nothing, 4% of 6.000 is 240).
+// Only packages sold from 23.11 (u.date); older ones keep the 4% of each payment.
+const packOn = (u) => !!u && cashRule(u) && String(u.date || '') >= PACK.from && (!PACK.until || String(u.date) <= PACK.until);
+const packLei = (cum) => { const t = PACK.tiers.find((x) => cum >= x.min); return r2(Math.max(t ? t.lei : 0, commissionOf(cum))); };
 const packTier = (cash, date) => (date >= PACK.from && (!PACK.until || date <= PACK.until) ? PACK.tiers.find((t) => cash >= t.min) || null : null);
 const packMinOf = (emp) => { const h = Number(emp && emp.contractedHoursPerDay); return h > 0 && h < PACK.shortHours ? PACK.shortDay : PACK.perDay; };
 const r2 = M.r2;
@@ -83,17 +89,23 @@ function packDays(C) {
   const m = new Map();
   C.packDays = m;
   (C.sales || []).forEach((u) => {
-    if (!isUpsellReq(u) || u.status === 'rejected') return;
-    rawLinesOf(u, C).forEach((l) => { if (l.kind === 'pay' && packTier(l.cash, l.date)) { const k = u.employeeId + '|' + l.date; (m.get(k) || m.set(k, []).get(k)).push({ id: u.id, at: l.at || u.createdAt || '' }); } });
+    if (!isUpsellReq(u) || u.status === 'rejected' || !packOn(u)) return;
+    // the day the package crossed 1.500 lei paid: one package, counted once, whatever its payments
+    const x = rawLinesOf(u, C).find((l) => l.kind === 'pay' && l.paidSoFar >= PACK.tiers[PACK.tiers.length - 1].min);
+    if (!x) return;
+    const k = u.employeeId + '|' + x.date;
+    (m.get(k) || m.set(k, []).get(k)).push({ id: u.id, client: clientOf(u, C), at: x.at || u.createdAt || '' });
   });
-  // each payment's place in her day (0 = the first), by the time it came in
+  // each package's place in her day (0 = the first), by the time it came in; one client's packages of a day count once
   C.packRank = new Map();
   m.forEach((list, k) => {
     list.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-    list.forEach((x, i) => C.packRank.set(x.id + '|' + k.split('|')[1] + '|' + x.at, i));
+    const seen = new Map();
+    list.forEach((x) => { if (!seen.has(x.client)) seen.set(x.client, seen.size); C.packRank.set(x.id, seen.get(x.client)); });
   });
   return m;
 }
+const clientOf = (u, C) => ((C.byId.get(u.incasareId) || {}).clientId) || String(u.client || '').trim().toLowerCase() || u.id;
 // the payment's part that went to the upsell (no package rest: it was paid whole now), or null when the payment is gone
 function upsellPaidOf(u, C) {
   const s = C.byId.get(u.incasareId);
@@ -105,24 +117,28 @@ function upsellPaidOf(u, C) {
 // every line of one commission request, whatever the month, with the package bonus where it applies
 function linesOf(u, C) {
   const out = rawLinesOf(u, C);
-  if (!out.some((l) => l.kind === 'pay' && packTier(l.cash, l.date))) return out;
-  const days = packDays(C), min = packMinOf(C.emps && C.emps.get(u.employeeId));
-  let paid = 0, lei = 0, firstPack = true;
+  if (!packOn(u) || !out.some((l) => l.kind === 'pay')) return out;
+  packDays(C);
   const again = boughtBefore(u, C);
+  const first = PACK.tiers[PACK.tiers.length - 1].min;
+  let paid = 0, lei = 0;
   out.forEach((l) => {
     if (l.kind !== 'pay') return;
-    const t = packTier(l.cash, l.date);
-    if (t && (days.get(u.employeeId + '|' + l.date) || []).length >= min) {
-      l.lei = Math.max(t.lei, l.lei); l.pack = t.min; // never under the 4% (a payment of 8.750+)
+    // the package's bonus follows what has been paid of it so far (packLei): each payment brings the difference
+    const before = r2(l.paidSoFar - l.cash), now = packLei(l.paidSoFar), was = packLei(before);
+    l.lei = r2(now - was);
+    const t = packTier(l.paidSoFar, l.date);
+    if (t && before < first) {
+      // the payment that made it a package (1.500+ paid): the tier, and the extras, once
+      l.pack = t.min;
       const extra = [];
-      if ((C.packRank.get(u.id + '|' + l.date + '|' + (l.at || u.createdAt || '')) || 0) >= 2) extra.push(['third', EXTRA.third]);
-      if (again && firstPack) extra.push(['again', EXTRA.again]);
-      firstPack = false;
+      if ((C.packRank.get(u.id) || 0) >= 2) extra.push(['third', EXTRA.third]);
+      if (again) extra.push(['again', EXTRA.again]);
       if (extra.length) { l.extras = extra.map((x) => x[0]); l.packLei = l.lei; l.lei = r2(l.lei + extra.reduce((a, x) => a + x[1], 0)); }
-    }
+    } else if (t) { l.pack = t.min; l.topup = true; }
     paid += l.cash; lei += l.lei;
   });
-  if (out.some((l) => l.pack) && paid > 0) out.forEach((l) => { if (l.kind === 'refund') l.lei = r2(Math.max(-lei, l.cash * lei / paid)); });
+  if (paid > 0 && out.some((l) => l.pack)) out.forEach((l) => { if (l.kind === 'refund') l.lei = r2(Math.max(-lei, l.cash * lei / paid)); });
   return out;
 }
 
@@ -179,12 +195,17 @@ function toComeOf(u, C) {
   if (!due) return null;
   const counted = r2(linesOf(u, C).filter((l) => l.kind === 'pay' || l.kind === 'refund').reduce((a, l) => a + l.cash, 0)); // net of what went back
   const rest = r2(Math.min(Math.max(0, Number(due.total) - Number(due.paid)), Math.max(0, r2(u.amount) - counted)));
-  return rest > 0 ? { upsellId: u.id, what: String(u.treatment || '').replace(/^Upsell · /, ''), client: u.client || '', rest, lei: commissionOf(rest), paid: r2(due.paid), total: r2(due.total), status: u.status } : null;
+  const leiRest = packOn(u) ? r2(packLei(r2(counted + rest)) - packLei(counted)) : commissionOf(rest);
+  return rest > 0 ? { upsellId: u.id, what: String(u.treatment || '').replace(/^Upsell · /, ''), client: u.client || '', rest, lei: leiRest, paid: r2(due.paid), total: r2(due.total), status: u.status } : null;
 }
 // what a payment of `cash` lei toward the package of this upsell brings her now (the cap of toComeOf): lei
 function nextPayLei(u, C, cash) {
   const t = toComeOf(u, C);
-  return t ? commissionOf(Math.min(r2(cash), t.rest)) : 0;
+  if (!t) return 0;
+  const c = Math.min(r2(cash), t.rest);
+  if (!packOn(u)) return commissionOf(c);
+  const done = r2(linesOf(u, C).filter((l) => l.kind === 'pay' || l.kind === 'refund').reduce((a, l) => a + l.cash, 0));
+  return r2(packLei(r2(done + c)) - packLei(done));
 }
 
 // one person's commission in a month (from NEW_FROM; the months before keep payroll.js's own count)
@@ -216,4 +237,4 @@ function summaryOf(u, C) {
   return { rule: cashRule(u) ? 'cash' : 'whole', paid, refunded, total: r2(u.amount), lei: r2(lines.reduce((a, l) => a + l.lei, 0)), rest: t ? t.rest : 0, restLei: t ? t.lei : 0 };
 }
 
-module.exports = { NEW_FROM, PACK, EXTRA, packTier, packMinOf, packDays, cashRule, context, linesOf, toComeOf, nextPayLei, monthOfPerson, summaryOf, isUpsellReq, upsellPaidOf };
+module.exports = { NEW_FROM, PACK, EXTRA, packOn, packLei, packTier, packMinOf, packDays, cashRule, context, linesOf, toComeOf, nextPayLei, monthOfPerson, summaryOf, isUpsellReq, upsellPaidOf };
