@@ -135,6 +135,22 @@ module.exports = async (req, res) => {
       return;
     }
     if (req.method === 'GET' && req.query && req.query.action === 'results') { res.status(200).json(await results(req.query.since)); return; }
+    // retargeting audiences (20.11): GET ?action=audiences lists them, POST { action: 'audience_create', kind, days } makes one
+    if (req.query && req.query.action === 'audiences' || (req.body && (req.body.action === 'audience_create'))) {
+      const AM = require('./ads-manager');
+      const { conn, problem } = await AM.connection();
+      if (problem) { res.status(200).json({ ok: false, reason: problem }); return; }
+      if (req.method === 'POST') {
+        const opt = await options().catch(() => ({}));
+        const igId = (opt && opt.instagram && opt.instagram.id) || '';
+        const r = await ads.audienceCreate(conn, String(req.body.kind || ''), Number(req.body.days) || 30, igId);
+        res.status(r.error ? 400 : 200).json(r.error ? { ok: false, error: r.error } : Object.assign({ ok: true }, r));
+        return;
+      }
+      const r = await ads.audienceList(conn);
+      res.status(200).json(r.error ? { ok: false, error: r.error } : Object.assign({ ok: true }, r));
+      return;
+    }
     // Claude asks George something about the ads (the owner, 19.11: „îmi trimiți o notificare prin aplicație, prin contul
     // George, ADS ACTION NEEDED și un mesaj”): his bell and his phone, opening Reclame
     if (req.method === 'POST' && req.body && req.body.action === 'notify') {

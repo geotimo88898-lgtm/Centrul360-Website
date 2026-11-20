@@ -179,6 +179,12 @@ function cleanSettings(x) {
   s.paused = x.paused === true;
   if (s.paused) s.startNow = false;
   s.employment = x.employment === true; // a job ad (api/_lib/hire-once.js)
+  // retargeting (20.11): custom audiences the ad set reaches (made with audienceCreate), and the ones it leaves out
+  s.audiences = (Array.isArray(x.audiences) ? x.audiences : []).map(String).filter((id) => /^\d{5,25}$/.test(id)).slice(0, 10);
+  s.excludeAudiences = (Array.isArray(x.excludeAudiences) ? x.excludeAudiences : []).map(String).filter((id) => /^\d{5,25}$/.test(id)).slice(0, 10);
+  // „Conversion leads” (20.11): the ad set looks for leads who become clients (Meta reads the CRM steps the portal sends,
+  // _lib/meta-capi.js), not the cheapest leads
+  s.quality = x.quality === true;
   if (!s.adName) return { error: 'missing_names' };
   if (!s.formId) return { error: 'missing_form' };
   if (!s.primaryText) return { error: 'missing_text' };
@@ -205,9 +211,35 @@ function targeting(s) {
   if (s.women && !s.employment) t.genders = [2];
   // a job ad: Meta's rules for employment (everyone 18-65, at least 15 miles / 25 km around, no detailed targeting)
   if (s.employment) { t.age_min = 18; t.age_max = 65; t.geo_locations.custom_locations[0].radius = Math.max(25, s.radiusKm); delete t.targeting_automation; }
+  if (s.audiences && s.audiences.length) t.custom_audiences = s.audiences.map((id) => ({ id }));
+  if (s.excludeAudiences && s.excludeAudiences.length) t.excluded_custom_audiences = s.excludeAudiences.map((id) => ({ id }));
   if (fb.length) t.facebook_positions = fb;
   if (ig.length) t.instagram_positions = ig;
   return t;
+}
+
+// Retargeting audiences (20.11), made once and reused: who opened a lead form of the Page and didn't send it, who engaged
+// with the Page or the Instagram profile. kind: 'form_open' | 'page_engaged' | 'ig_engaged'; days: how far back.
+async function audienceCreate(conn, kind, days, igId) {
+  const tok = conn.userToken, act = conn.adAccountId, sec = Math.min(365, Math.max(1, Number(days) || 30)) * 86400;
+  const page = { id: conn.pageId, type: 'page' };
+  const rules = {
+    form_open: { name: 'Retargeting · formular deschis, netrimis · ' + days + 'z', rule: { inclusions: { operator: 'or', rules: [{ event_sources: [{ id: conn.pageId, type: 'lead' }], retention_seconds: sec, filter: { operator: 'and', filters: [{ field: 'event', operator: 'eq', value: 'opened_form' }] } }] },
+      exclusions: { operator: 'or', rules: [{ event_sources: [{ id: conn.pageId, type: 'lead' }], retention_seconds: sec, filter: { operator: 'and', filters: [{ field: 'event', operator: 'eq', value: 'submitted_form' }] } }] } } },
+    page_engaged: { name: 'Retargeting · a interacționat cu pagina · ' + days + 'z', rule: { inclusions: { operator: 'or', rules: [{ event_sources: [page], retention_seconds: sec, filter: { operator: 'and', filters: [{ field: 'event', operator: 'eq', value: 'page_engaged' }] } }] } } },
+    ig_engaged: { name: 'Retargeting · a interacționat pe Instagram · ' + days + 'z', rule: { inclusions: { operator: 'or', rules: [{ event_sources: [{ id: igId, type: 'ig_business' }], retention_seconds: sec, filter: { operator: 'and', filters: [{ field: 'event', operator: 'eq', value: 'ig_business_profile_all' }] } }] } } },
+  };
+  const r = rules[kind];
+  if (!r || (kind === 'ig_engaged' && !igId)) return { error: 'invalid_kind' };
+  const x = await call('POST', '/' + act + '/customaudiences', tok, { name: r.name, rule: JSON.stringify(r.rule), prefill: 'true' });
+  if (!x.ok) return { error: metaError(x.j, 'Publicul') };
+  return { id: x.j.id, name: r.name };
+}
+// the account's audiences (id, name, size), to pick from
+async function audienceList(conn) {
+  const x = await call('GET', '/' + conn.adAccountId + '/customaudiences', conn.userToken, { fields: 'id,name,approximate_count_lower_bound,approximate_count_upper_bound,subtype,time_created', limit: '100' });
+  if (!x.ok) return { error: metaError(x.j, 'Publicurile') };
+  return { audiences: (x.j.data || []).map((a) => ({ id: a.id, name: a.name, subtype: a.subtype, min: a.approximate_count_lower_bound, max: a.approximate_count_upper_bound, created: a.time_created })) };
 }
 
 // The whole publish. image = { base64, name }. Returns ids or { error }.
@@ -235,7 +267,7 @@ async function publish(conn, image, s) {
       made.push(campaignId);
       const adset = await call('POST', '/' + act + '/adsets', tok, {
         name: s.adsetName, campaign_id: campaignId, daily_budget: String(Math.round(s.budget * 100)), billing_event: 'IMPRESSIONS',
-        optimization_goal: 'LEAD_GENERATION', bid_strategy: 'LOWEST_COST_WITHOUT_CAP', destination_type: 'ON_AD',
+        optimization_goal: s.quality ? 'QUALITY_LEAD' : 'LEAD_GENERATION', bid_strategy: 'LOWEST_COST_WITHOUT_CAP', destination_type: 'ON_AD',
         promoted_object: { page_id: conn.pageId }, targeting: targeting(s), status: 'PAUSED',
       });
       if (!adset.ok) { await undo(); return { error: metaError(adset.j, 'Setul de reclame') }; }
@@ -594,4 +626,4 @@ async function delivery(conn, id) {
 }
 // whether the account is shared (some campaigns are left out), so its own totals can't be used as ours
 const scoped = (conn) => { const s = (conn && conn.scope) || SCOPE.DEFAULT; return !!(s.include || (s.exclude || []).length); };
-module.exports = { ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };
+module.exports = { audienceCreate, audienceList, ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };
