@@ -170,6 +170,24 @@ module.exports = async (req, res) => {
         entries.push(entry);
       }
       await writeJSON(KEY, entries);
+      // two taps at the same instant could each add a row for the day (20.11: a second, open row gave hours twice):
+      // the rows of her day become one, the first one, with the earliest arrival and the latest departure
+      const again = await readJSON(KEY, entries);
+      const mine = again.filter((e) => e && e.employeeId === session.employeeId && e.date === date);
+      if (mine.length > 1) {
+        mine.sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+        const keep = mine[0], drop = new Set(mine.slice(1).map((e) => e.id));
+        mine.slice(1).forEach((x) => {
+          if (x.checkIn && (!keep.checkIn || x.checkIn < keep.checkIn)) keep.checkIn = x.checkIn;
+          if (x.checkOut && (!keep.checkOut || x.checkOut > keep.checkOut)) keep.checkOut = x.checkOut;
+        });
+        keep.updatedAt = nowISO();
+        await writeJSON(KEY, again.filter((e) => !(e && drop.has(e.id))));
+        const adjs = await readJSON('data/time-adjust.json', []);
+        const left = adjs.filter((a) => !(a && drop.has(a.attendanceId) && a.status === 'pending'));
+        if (left.length !== adjs.length) await writeJSON('data/time-adjust.json', left);
+        entry = keep;
+      }
       // a finished day over / under 8 hours (or any weekend time) goes to the owner's Aprobări
       const adjust = await TB.syncAdjust(entry, { readJSON, writeJSON });
       res.status(200).json({ ok: true, entry, adjust });

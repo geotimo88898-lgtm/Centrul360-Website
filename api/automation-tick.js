@@ -61,6 +61,8 @@ const STEPS = [
   ['fbsiteoff', () => require('./_lib/fb-site-off-once').run()],
   // once: the manager's pontaj of 19.11 back to 8 hours, its overtime taken out (the owner, 20.11; api/_lib/att-fix-once.js)
   ['attfix', () => require('./_lib/att-fix-once').run()],
+  // once: the manager's second, open pontaj row of 19.11 removed (the owner, 20.11; api/_lib/att-dup-once.js)
+  ['attdup', () => require('./_lib/att-dup-once').run()],
   // once: Timișoara's WhatsApp messages refused for the account's payment (14-15.11) go again, a probe first (api/_lib/wa-resend-once.js)
   ['waresend', () => require('./_lib/wa-resend-once').run()],
   // once: week 16.11 starts with the four reels the owner approved, the four he rejected out (api/_lib/content-swap-once.js)

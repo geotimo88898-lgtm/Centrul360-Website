@@ -224,12 +224,12 @@ module.exports = async (req, res) => {
   //              be known for the ones moved before 16.11), missedOn: the moves that kept their no-show since
   // ?attfix=1: what the once fix of the manager's 19.11 pontaj found and did (times only; api/_lib/att-fix-once.js)
   if (req.query && req.query.attfix) {
-    const [fix, att, emps, adjs] = await Promise.all([readJSON(require('./_lib/att-fix-once').KEY, {}), readJSON('data/attendance.json', []), readJSON('data/employees.json', []), readJSON('data/time-adjust.json', [])]);
+    const [fix, dup, att, emps, adjs] = await Promise.all([readJSON(require('./_lib/att-fix-once').KEY, {}), readJSON(require('./_lib/att-dup-once').KEY, {}), readJSON('data/attendance.json', []), readJSON('data/employees.json', []), readJSON('data/time-adjust.json', [])]);
     const who = (id) => { const e = emps.find((x) => x.id === id) || {}; return { role: e.role || '', first: String(e.name || '').split(/\s+/)[0] }; };
     const days = att.filter((e) => e && e.date >= '2026-11-17').map((e) => Object.assign(who(e.employeeId), { id: e.id, date: e.date, in: e.checkIn, out: e.checkOut,
       hist: (e.history || []).slice(-3).map((h) => ({ at: h.at, by: h.byName, before: h.before && (h.before.checkIn + '-' + h.before.checkOut), after: h.after && (h.after.checkIn + '-' + h.after.checkOut) })) }));
     const adj = adjs.filter((a) => a && a.date >= '2026-11-17').map((a) => Object.assign(who(a.employeeId), { date: a.date, minutes: a.minutes, status: a.status, in: a.checkIn, out: a.checkOut }));
-    res.status(200).json({ fix, days, adj }); return;
+    res.status(200).json({ fix, dup, days, adj }); return;
   }
   if (req.query && req.query.time) {
     const C = require('./_lib/clinic'), L = require('./_lib/left'), T = require('./_lib/team-schedule'), B = require('./_lib/booking');
