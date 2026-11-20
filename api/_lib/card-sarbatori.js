@@ -54,9 +54,15 @@ function pack() {
   const ok = /^\d{3,40}$/.test(v.sid) && /^\d{3,40}$/.test(v.cn) && v.idx > 0;
   return { present: true, decoded: true, ok, fields: Object.keys(j), v };
 }
-// what the browser may know (no pack and no sandbox: none, no online payment)
+// THE SWITCH of the online payment on the site (the owner, 20.11): off while myPOS checks the store („Activat, în curs de
+// verificare”, its card form answers error 25 until then); on = true here, or CARD_PAY_ONLINE = '1' in the Worker's settings.
+// Off: the window sells with „Rezervă cardul, plătești în salon” only.
+const PAY_ONLINE = false;
+const payOn = () => PAY_ONLINE || process.env.CARD_PAY_ONLINE === '1';
+// what the browser may know (no pack and no sandbox, or the switch off: none, no online payment)
 function embed() {
   if (process.env.MYPOS_EMBED_SANDBOX === '1') return { sid: TEST.sid, walletNumber: TEST.cn, keyIndex: TEST.idx, isSandbox: true };
+  if (!payOn()) return null;
   const p = pack();
   if (!p.ok) return null;
   return { sid: p.v.sid, walletNumber: p.v.cn, keyIndex: p.v.idx, isSandbox: false };
@@ -65,7 +71,7 @@ function embed() {
 function packStatus() {
   const p = pack();
   return { present: p.present, decoded: !!p.decoded, usable: !!p.ok, fields: p.fields || [], hasPrivateKey: !!(p.v && /BEGIN/.test(p.v.pk)), hasMyposCert: !!(p.v && /BEGIN/.test(p.v.pc)),
-    sandbox: process.env.MYPOS_EMBED_SANDBOX === '1', online: !!embed() };
+    sandbox: process.env.MYPOS_EMBED_SANDBOX === '1', switchOn: payOn(), online: !!embed() };
 }
 const newOrderId = () => 'CS' + crypto.randomBytes(8).toString('hex').toUpperCase();
 const lei = (n) => Number(n).toLocaleString('ro-RO');

@@ -6,7 +6,7 @@
 //                        cancelled; online = the myPOS card form is set up (MYPOS_EMBED_*), so the window may offer it
 //   POST { action: 'intent', tier, qty, id? }   online payment: the order made here first ('draft': our orderID, the sum
 //        made here), or the same draft with another card or quantity → { id, checkout } for the myPOS card form (v2/cs-buy.js)
-//   POST { tier, qty, names: [..], name, phone, city, pay, draft?, consent, website, page, event_id }
+//   POST { tier, qty, names: [..], name, phone, city, pay, draft?, consent, terms, website, page, event_id }
 //                      → { ok, reservation: { id, city, tier, qty, amount, credit, pay }, checkout?, left } | { error }
 //        The price, the credit and the sum to pay are made here (tier × qty), never taken from the page. With a draft
 //        (online), that order gets her details and becomes a reservation she then pays in the form; else a new one, paid in
@@ -140,6 +140,7 @@ module.exports = async (req, res) => {
     if (!/^07\d{8}$/.test(phone) && !/^[1-9]\d{10,14}$/.test(phone)) { res.status(400).json({ error: 'bad_phone' }); return; }
     if (!city) { res.status(400).json({ error: 'missing_city' }); return; }
     if (!(b.consent === true || b.consent === 'true' || b.consent === 'on')) { res.status(400).json({ error: 'missing_consent' }); return; }
+    if (!(b.terms === true || b.terms === 'true' || b.terms === 'on')) { res.status(400).json({ error: 'missing_terms' }); return; } // the card's terms, read and accepted
 
     const now = Date.now();
     if (now >= Date.parse(C.DEADLINE)) { res.status(409).json({ error: 'closed' }); return; }
@@ -160,7 +161,7 @@ module.exports = async (req, res) => {
     const codes = [];
     names.forEach(() => codes.push(codeOf(list, codes)));
     const cards = names.map((n, i) => ({ code: codes[i], recipient: n }));
-    const details = { name, phone, city, tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty, cards, recipient: names[0] || '', status: 'rezervat', via: 'site', pay, page: clip(b.page, 200) };
+    const details = { termsAt: new Date().toISOString(), name, phone, city, tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty, cards, recipient: names[0] || '', status: 'rezervat', via: 'site', pay, page: clip(b.page, 200) };
     let entry;
     if (draft) { entry = Object.assign(draft, details, { reservedAt: new Date().toISOString() }); }
     else { entry = Object.assign({ id: crypto.randomUUID(), created: new Date().toISOString() }, details); list.push(entry); }

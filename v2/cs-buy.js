@@ -13,6 +13,7 @@
   var ARROW = '<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
   var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
   var LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>';
+  var BASE = /^\/v2\//.test(location.pathname) ? '/v2/' : '/'; // the preview or the live site
   var st = { tier: 990, qty: 1, gift: false, online: false, open: true, left: 10, loaded: false, draft: '', pay: null, made: '' };
   var root, panel, form, from = null, busy = false, timer = 0, sdk = null;
   var post = function (b) { return fetch('/api/card-sarbatori', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json(); }); };
@@ -49,9 +50,10 @@
         '<div><span class="csb-l" id="csb-l3">Clinica</span><div class="csb-seg" role="radiogroup" aria-labelledby="csb-l3"><label><input type="radio" name="city" value="Timișoara">Timișoara</label><label><input type="radio" name="city" value="Arad">Arad</label></div></div>' +
         '<div class="csb-pay" hidden><span class="csb-l"><span class="csb-lk">' + LOCK + '</span>Cardul bancar</span><div class="csb-mp" id="csbPayForm"></div><p class="csb-wait">Se încarcă plata securizată…</p></div>' +
         '<label class="csb-hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>' +
+        '<label class="csb-ok"><input type="checkbox" name="terms"><i>' + TICK + '</i><span>Am citit și accept <a href="' + BASE + 'termeni-card-sarbatori" target="_blank" rel="noopener">Termenii Cardului de Sărbători</a>.</span></label>' +
         '<label class="csb-ok"><input type="checkbox" name="consent"><i>' + TICK + '</i><span>Sunt de acord să fiu contactat/ă telefonic sau pe WhatsApp de Centrul360 pentru card.</span></label>' +
       '</form></div>' +
-      '<div class="csb-ft"><p class="csb-sum"><span class="p">Plătești <b data-csb-pay></b></span><span class="g">primești <b data-csb-get></b> în tratamente</span></p><p class="csb-err" role="alert"></p>' +
+      '<div class="csb-ft"><p class="csb-sum"><span class="p">Plătești <b data-csb-pay></b> <small class="cur">lei (RON)</small></span><span class="g">primești <b data-csb-get></b> în tratamente</span></p><p class="csb-err" role="alert"></p>' +
         '<button type="button" class="btn book csb-go"></button><p class="csb-note"></p></div>' +
       '<div class="csb-done" aria-live="polite"></div>' +
     '</div></div>';
@@ -77,7 +79,7 @@
   function paint() {
     form.querySelector('input[name="tier"][value="' + st.tier + '"]').checked = true;
     var t = TIERS.filter(function (x) { return x[0] === st.tier; })[0];
-    root.querySelector('[data-csb-pay]').textContent = lei(t[0] * st.qty);
+    root.querySelector('[data-csb-pay]').textContent = Math.round(t[0] * st.qty).toLocaleString('ro-RO');
     root.querySelector('[data-csb-get]').textContent = lei(t[1] * st.qty);
     root.querySelector('.csb-st output').textContent = st.qty;
     root.querySelector('[data-q="-1"]').disabled = st.qty <= 1;
@@ -170,7 +172,7 @@
       '<button type="button" class="btn ghost" data-csb-close>Închide</button>';
   }
 
-  var MSG = { missing_name: 'Scrie numele tău.', bad_phone: 'Scrie un număr de telefon valid.', missing_city: 'Alege clinica.', missing_consent: 'Bifează acordul, ca să te putem contacta.',
+  var MSG = { missing_name: 'Scrie numele tău.', bad_phone: 'Scrie un număr de telefon valid.', missing_city: 'Alege clinica.', missing_consent: 'Bifează acordul, ca să te putem contacta.', missing_terms: 'Bifează că ai citit și accepți Termenii Cardului de Sărbători.',
     too_many: 'Prea multe încercări. Încearcă din nou în câteva minute.', too_many_cards: 'Pe acest număr sunt deja multe carduri. Te sunăm noi.', bad_tier: 'Alege cardul.', bad_qty: 'Alege câte carduri.' };
   function setBusy(on, label) {
     busy = on; var go = root.querySelector('.csb-go'); go.disabled = on;
@@ -182,10 +184,11 @@
     var city = (form.querySelector('input[name="city"]:checked') || {}).value || '';
     var names = []; for (var i = 0; i < st.qty; i++) names.push(st.gift ? v('n' + i) : v('name'));
     var online = st.online && st.pay && st.made === st.tier + 'x' + st.qty;
-    var body = { tier: st.tier, qty: st.qty, names: names, name: v('name'), phone: v('phone'), city: city, pay: online ? 'online' : 'salon', draft: online ? st.draft : '', consent: form.consent.checked, website: v('website'), page: location.href };
+    var body = { tier: st.tier, qty: st.qty, names: names, name: v('name'), phone: v('phone'), city: city, pay: online ? 'online' : 'salon', draft: online ? st.draft : '', consent: form.consent.checked, terms: form.terms.checked, website: v('website'), page: location.href };
     if (body.name.length < 2) { err.textContent = MSG.missing_name; return; }
     if (body.phone.replace(/\D/g, '').length < 9) { err.textContent = MSG.bad_phone; return; }
     if (!city) { err.textContent = MSG.missing_city; return; }
+    if (!body.terms) { err.textContent = MSG.missing_terms; return; }
     if (!body.consent) { err.textContent = MSG.missing_consent; return; }
     if (st.online && !online) { err.textContent = 'Plata securizată se încarcă. Încearcă din nou într-o clipă.'; return; }
     if (window.C360_CONSENT === true) body.event_id = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
