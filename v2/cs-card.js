@@ -57,10 +57,11 @@
   var DOT = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg>';
   var TINTS = ['rgba(20,165,150,.5)', 'rgba(214,122,134,.6)', 'rgba(201,160,74,.62)', 'rgba(95,212,198,.6)'];
   if (!reduce) $$('.csc-snow').forEach(function (box) {
-    var n = innerWidth < 640 ? 16 : 28, html = '';
+    // never over the words: on a computer they fall on the card's side; on a phone only around the card (cs-card.css)
+    var wide = innerWidth > 920, n = innerWidth < 640 ? 16 : 24, html = '';
     for (var i = 0; i < n; i++) {
       var dot = i % 3 === 2, s = dot ? 4 + Math.random() * 4 : 10 + Math.random() * 10;
-      html += '<i style="left:' + (Math.random() * 100).toFixed(1) + '%;--s:' + s.toFixed(1) + 'px;--d:' + (13 + Math.random() * 12).toFixed(1) + 's;--w:-' + (Math.random() * 24).toFixed(1) +
+      html += '<i style="left:' + (wide ? 46 + Math.random() * 54 : Math.random() * 100).toFixed(1) + '%;--s:' + s.toFixed(1) + 'px;--d:' + (13 + Math.random() * 12).toFixed(1) + 's;--w:-' + (Math.random() * 24).toFixed(1) +
         's;--x:' + (Math.random() * 60 - 30).toFixed(0) + 'px;--o:' + (dot ? 0.7 : 0.85) + ';--c:' + TINTS[i % TINTS.length] + '">' + (dot ? DOT : FLAKE) + '</i>';
     }
     box.innerHTML = html;

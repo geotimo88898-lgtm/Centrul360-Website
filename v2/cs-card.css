@@ -91,6 +91,9 @@
 .csc-left .dot{ position:relative; width:8px; height:8px; border-radius:50%; background:var(--teal); flex:none; }
 .csc-left .dot::after{ content:''; position:absolute; inset:0; border-radius:50%; background:var(--teal); animation:ping 2.4s var(--e) infinite; }
 .csc-time b{ color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+@media (max-width:920px){
+  .csc-snow{ -webkit-mask-image:linear-gradient(180deg,#000 0,#000 34%,transparent 48%); mask-image:linear-gradient(180deg,#000 0,#000 34%,transparent 48%); }
+}
 @media (max-width:640px){
   .csc-stage{ padding:50px 0 46px; }
   .csc-card{ width:min(360px,calc(100vw - 48px)); border-radius:22px; }
