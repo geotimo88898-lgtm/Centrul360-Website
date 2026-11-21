@@ -32,7 +32,11 @@ function shown(list, net) {
   return out.sort((a, b) => b.at - a.at);
 }
 // the evergreen reserve: approved, ready, and not a sale that has ended (a Card de Sărbători story after 24.12)
-const pool = (list) => list.filter((it) => isStory(it) && it.evergreen && it.state === 'ready' && P.review(it) === 'approved' && !(it.promo && !C.promoOn(it)));
+// an evergreen sequence (21.11: every story tells one story over a few taps) counts once, by its first; it goes only whole
+const members = (list, it) => (P.seqOf(it) ? list.filter((x) => isStory(x) && P.seqOf(x) && P.seqOf(x).id === P.seqOf(it).id).sort((a, b) => P.seqOf(a).i - P.seqOf(b).i) : [it]);
+const okItem = (it) => it.state === 'ready' && P.review(it) === 'approved';
+const pool = (list) => list.filter((it) => isStory(it) && it.evergreen && !P.follower(it) && okItem(it) && !(it.promo && !C.promoOn(it))
+  && members(list, it).every(okItem) && (!P.seqOf(it) || members(list, it).length >= (Number(P.seqOf(it).n) || 1)));
 // the next approved story planned on a network from `now` (a sequence's first: its followers come with it)
 function nextOf(list, net, now) {
   let best = 0;
@@ -78,10 +82,15 @@ async function putNow(id, net, now) {
   const { out } = await C.update((list) => {
     const it = C.findItem(list, id);
     if (!it) return false;
-    const old = (it.plan || []).filter((e) => e.net === net);
-    if (old.some((e) => e.state === 'posting')) return false;
-    it.reposts = (it.reposts || []).concat(old.filter((e) => e.state === 'posted')).slice(-60);
-    it.plan = (it.plan || []).filter((e) => e.net !== net).concat({ net, kind: 'story', at: iso(now), state: 'planned', evergreen: true });
+    const all = members(list, it);
+    if (all.some((m) => (m.plan || []).some((e) => e.net === net && e.state === 'posting'))) return false;
+    // the whole sequence, its frames seconds apart, in order (content-plan.js due() keeps the order)
+    all.forEach((m) => {
+      const i = P.seqOf(m) ? Number(P.seqOf(m).i) || 0 : 0;
+      const old = (m.plan || []).filter((e) => e.net === net);
+      m.reposts = (m.reposts || []).concat(old.filter((e) => e.state === 'posted')).slice(-60);
+      m.plan = (m.plan || []).filter((e) => e.net !== net).concat(Object.assign({ net, kind: 'story', at: iso(now + i * 1000), state: 'planned', evergreen: true }, i > 0 ? { follow: true } : {}));
+    });
     return true;
   });
   return out === true;
@@ -124,6 +133,7 @@ async function tick(opts) {
       if (!(await POST.claim(ev.id, net))) continue;
       const r = await POST.postOne(a, ev.id, net, 20e3);
       (out.guard = out.guard || []).push(Object.assign({ evergreen: ev.topic || ev.id }, r));
+      // the rest of an evergreen sequence goes on the next minutes, in order (due() waits for the frame before)
       list = await C.items();
     }
     // the reserve running low: the admins hear it once a day

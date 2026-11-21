@@ -178,7 +178,7 @@ async function create(input) {
     if (x.kind !== 'story' || !id || !Number.isInteger(i) || !Number.isInteger(n) || n < 2 || n > 10 || i < 0 || i >= n) throw fail('invalid_seq');
     it.seq = { id, i, n };
   }
-  if (x.evergreen) { if (x.kind !== 'story' || x.seq) throw fail('invalid_evergreen'); it.evergreen = true; }
+  if (x.evergreen) { if (x.kind !== 'story') throw fail('invalid_evergreen'); it.evergreen = true; }
   if (x.variantOf) {
     if (!isId(x.variantOf) || !findItem(await items(), x.variantOf)) throw fail('invalid_variant');
     it.variantOf = x.variantOf;
