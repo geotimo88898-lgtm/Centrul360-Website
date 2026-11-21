@@ -29,7 +29,8 @@ const NEEDS = ['video.publish'];
 const PRIVACY = ['PUBLIC_TO_EVERYONE', 'FOLLOWER_OF_CREATOR', 'MUTUAL_FOLLOW_FRIENDS', 'SELF_ONLY'];
 const PRIVATE_NOTE = 'TikTok le pune private până la auditul aplicației';
 const UNAUDITED_MS = 3 * 864e5;
-const redirectUri = () => C.ORIGIN() + '/api/tt-oauth?cb=1';
+// TikTok refuses a redirect URI with query parameters; the answer is known by its code / error (api/tt-oauth.js)
+const redirectUri = () => C.ORIGIN() + '/api/tt-oauth';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const stop = (msg, access, drop) => Object.assign(new Error(String(msg).slice(0, 300)), { access: !!access, drop: !!drop });
