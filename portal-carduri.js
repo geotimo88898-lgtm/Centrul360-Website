@@ -59,7 +59,7 @@
     const box = S.box.querySelector('[data-cd-orders]'), list = S.d.orders || [];
     if (!list.length) { box.innerHTML = ''; return; }
     box.innerHTML = '<section class="k-card cd-orders"><div class="k-card-head"><h3>De confirmat</h3><span class="k-muted">' + list.length + '</span></div><div class="k-list">' +
-      list.map((o) => '<div class="k-row cd-order"><div class="k-row-main"><div class="k-row-title">' + esc(o.name) + ' · ' + o.qty + ' × ' + o.tier + ' lei</div>' +
+      list.map((o) => '<div class="k-row cd-order"><div class="k-row-main"><div class="k-row-title">' + esc(o.name || 'Fără nume') + ' · ' + o.qty + ' × ' + o.tier + ' lei</div>' +
         '<div class="k-row-sub">' + (o.pay === 'online' ? 'La plata online (myPOS) · se confirmă singură când apare plata' : 'Plătește în clinică') + ' · ' + esc(o.city) + ' · ' + esc(when(o.created)) +
         (o.names.some(Boolean) ? ' · pe numele: ' + esc(o.names.map((n) => n || 'ea').join(', ')) : '') + ' · <a href="' + K.tel(o.phone) + '">' + esc(o.phone) + '</a></div></div>' +
         '<div class="k-row-end">' + tag(o.status) + '<button type="button" class="k-btn is-primary is-sm" data-cd-confirm="' + esc(o.id) + '" data-via="' + (o.pay === 'online' ? 'online' : 'clinica') + '">' + icon('check') + 'Confirmă plata (' + lei(o.amount) + ')</button>' +
@@ -79,7 +79,7 @@
       const pct = c.value ? Math.round((c.left / c.value) * 100) : 0;
       return '<button type="button" class="k-row is-click cd-row" data-cd-open="' + esc(c.code) + '">' +
         '<span class="cd-mini" aria-hidden="true"><b>' + esc(String(c.value / 1000 >= 1 ? (c.value / 1000).toLocaleString('ro-RO') + 'k' : c.value)) + '</b></span>' +
-        '<span class="k-row-main"><span class="k-row-title"><span>' + esc(c.recipient || c.buyer) + '</span><span class="cd-code">' + esc(c.code) + '</span></span>' +
+        '<span class="k-row-main"><span class="k-row-title"><span>' + esc(c.recipient || c.buyer || 'Fără nume') + '</span><span class="cd-code">' + esc(c.code) + '</span></span>' +
         '<span class="k-row-sub">' + (c.recipient && c.recipient !== c.buyer ? 'Cumpărat de ' + esc(c.buyer) + ' · ' : '') + esc(c.phone) + ' · ' + esc(c.city) + ' · ' + c.tier + ' lei, ' + (c.paidVia === 'online' ? 'online' : 'în clinică') + ' · ' + esc(dayOf(c.paidAt)) +
         (c.gift ? ' · ' + (c.gift.state === 'open' ? 'Cadou: ' : 'Cadou folosit: ') + esc(c.gift.what) : '') + (c.club ? ' · Clubul 360' : '') + '</span>' +
         '<span class="cd-bar2" aria-hidden="true"><i style="width:' + pct + '%"></i></span></span>' +
@@ -206,7 +206,7 @@
       '<small>' + esc(K.dateShort(x.date)) + ' · ' + esc(x.city) + (x.performerName ? ' · a făcut-o ' + esc(x.performerName) : '') + (x.byName ? ' · trecut de ' + esc(x.byName) : '') + (x.rest > 0 ? ' · a plătit în plus ' + lei(x.rest) : '') + (x.undone ? ' · anulat' : '') + '</small></div>' +
       '<span class="cd-amt">' + (x.applied ? '−' + lei(x.applied) : '0 lei') + '</span>' + (admin && x.id === lastId ? '<button type="button" class="k-btn is-ghost is-sm" data-undo>Anulează</button>' : '') + '</li>').join('') + '</ol>' : '<p class="k-muted">Nefolosit încă.</p>';
     const dr = K.drawer({
-      from, title: c.recipient || c.buyer, icon: 'gift', width: 560,
+      from, title: c.recipient || c.buyer || 'Fără nume', icon: 'gift', width: 560,
       subtitle: esc(c.code) + ' · ' + tag(c.state),
       body: '<figure class="cd-img"><img src="' + img(c.code) + '" alt="Cardul de Sărbători ' + esc(c.code) + '" loading="lazy"></figure>' +
         '<div class="cd-acts"><a class="k-btn is-outline is-sm" href="' + img(c.code, 1) + '" download="Card-' + esc(c.code) + '.png">' + icon('download') + 'Descarcă</a>' +
