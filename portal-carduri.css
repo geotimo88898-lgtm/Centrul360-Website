@@ -69,3 +69,6 @@
   .cd-left{ justify-items:start; }
   .cd-bar .k-search{ max-width:none; }
 }
+.cd-stock{ padding:0; border:0; background:none; font:inherit; color:var(--accent); font-weight:600; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+.cd-stock-left{ font-size:.85rem; color:var(--muted); }
+.cd-stock-left b{ color:var(--fg); }

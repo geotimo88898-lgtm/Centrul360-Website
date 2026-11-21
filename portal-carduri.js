@@ -1,5 +1,5 @@
 // Centrul360 portal, „Carduri de Sărbători” (the owner, 21.11): admin, manager and reception (reception records payments).
-//   on top     what is left of the 10 cards, the money of the cards paid, the credit used, the WhatsApp templates
+//   on top     the cards left (the stock: the owner sets it, „Stoc”), the money of the cards paid, the credit used, the WhatsApp templates
 //   De confirmat  the orders sent to the PayLink (found in myPOS by themselves, or one tap here) and the reservations to pay
 //              in the clinic: „Confirmă plata (X lei)”, „Anulează”
 //   the cards  code, name on the card, who bought it, phone, the card, credit used / left, state, clinic, bonuses, dates;
@@ -44,7 +44,7 @@
     const tpl = d.templates || {}, tplOk = Object.values(tpl).length && Object.values(tpl).every((x) => x === 'APPROVED');
     const stat = (ic, cls, label, value, sub) => '<div class="k-stat ' + cls + '"><div class="k-stat-top"><span class="k-stat-ic">' + icon(ic) + '</span><span class="k-stat-l">' + label + '</span></div><div class="k-stat-value">' + value + '</div><div class="k-stat-sub">' + sub + '</div></div>';
     body.innerHTML = '<div class="k-grid c4 cd-stats">' +
-      stat('gift', 'is-accent', 'Carduri rămase', d.left + ' <small>din ' + d.total + '</small>', d.open ? 'în vânzare până pe 24 dec.' : 'vânzarea s-a încheiat') +
+      stat('gift', 'is-accent', 'Carduri rămase', String(d.left), (d.open ? 'în vânzare până pe 24 dec.' : 'vânzarea s-a încheiat') + (d.role === 'admin' ? ' · <button type="button" class="cd-stock" data-cd-stock>Stoc: ' + d.total + '</button>' : '')) +
       stat('wallet', 'is-good', 'Încasat din carduri', lei(t.money || 0), (t.cards || 0) + ' carduri plătite · ' + lei(t.online || 0) + ' online') +
       stat('card', '', 'Credit folosit', lei(t.used || 0), 'din ' + lei(t.credit || 0) + ' credit dat') +
       stat('chat', tplOk ? 'is-good' : 'is-warn', 'Mesaje WhatsApp', tplOk ? 'Automate' : 'Manual', tplOk ? 'șabloanele sunt aprobate de Meta' : 'șabloanele așteaptă aprobarea Meta') +
@@ -93,6 +93,7 @@
     if (!b || !S.box.contains(b)) return;
     if (b.dataset.cdF) { S.f = b.dataset.cdF; paintList(); return; }
     if (b.hasAttribute('data-cd-add')) { addDrawer(b); return; }
+    if (b.hasAttribute('data-cd-stock')) { stockDrawer(b); return; }
     if (b.dataset.cdOpen) { cardDrawer(b.dataset.cdOpen, b); return; }
     if (b.dataset.cdConfirm) {
       const o = (S.d.orders || []).find((x) => x.id === b.dataset.cdConfirm);
@@ -108,9 +109,31 @@
       return;
     }
     if (b.dataset.cdCancel) {
-      if (!(await K.ui().confirm({ title: 'Anulezi comanda?', message: 'Cardurile ei se întorc în cele 10.', confirmText: 'Anulează', danger: true }))) return;
+      if (!(await K.ui().confirm({ title: 'Anulezi comanda?', message: 'Cardurile ei se întorc în stoc.', confirmText: 'Anulează', danger: true }))) return;
       await K.busy(b, async () => { try { await api({ action: 'cancel', id: b.dataset.cdCancel }); await load(true); } catch (err) { K.ui().toast(K.errText(err), 'error'); } });
     }
+  }
+
+  // the stock (the owner only): how many cards are for sale in all; the page and the counter use it at once
+  function stockDrawer(from) {
+    const sold = S.d.sold || 0;
+    const left = (n) => Math.max(0, n - sold);
+    K.drawer({
+      from, title: 'Stocul cardurilor', icon: 'sliders', width: 460,
+      subtitle: 'Câte carduri sunt de vânzare în total. Pagina și numărătoarea se schimbă imediat.',
+      body: '<form class="k-form" data-f>' + K.field('Carduri de vânzare', '<input type="number" name="total" min="0" max="500" step="1" inputmode="numeric" value="' + S.d.total + '">') +
+        '<p class="cd-stock-left" data-left>Au mai rămas <b>' + left(S.d.total) + '</b> · ' + sold + ' comandate sau plătite</p></form>',
+      footer: '<button type="button" class="k-btn" data-cancel>Renunță</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
+      onMount(root, h) {
+        const inp = root.querySelector('input[name=total]');
+        inp.addEventListener('input', () => { root.querySelector('[data-left] b').textContent = left(Math.max(0, Math.floor(Number(inp.value) || 0))); });
+        root.querySelector('[data-cancel]').addEventListener('click', () => h.close());
+        root.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          try { const r = await api({ action: 'stock', total: Math.floor(Number(inp.value)) }); h.close(); K.ui().toast('Stoc salvat: au mai rămas ' + r.left + ' carduri.', 'success'); await load(true); }
+          catch (err) { K.ui().toast(err.code === 'bad_stock' ? 'Scrie un număr între 0 și 500.' : K.errText(err), 'error'); }
+        }));
+      },
+    });
   }
 
   // „Adaugă card plătit”: a payment seen in myPOS or taken in the clinic

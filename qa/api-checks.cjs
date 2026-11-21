@@ -1773,7 +1773,7 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
       return Object.assign(await r.json().catch(() => ({})), { _status: r.status });
     };
     const cs = (role, body) => api(role, 'card-sarbatori', body);
-    wr(CSK, []); wr(CLK, []); wr('data/card-sarbatori-links.json', {});
+    wr(CSK, []); wr(CLK, []); wr('data/card-sarbatori-links.json', {}); wr('data/card-sarbatori-stock.json', {});
     const CL = require('../api/_lib/card-sarbatori');
     const leads0 = rd('data/leads.json', []).length, notes0 = rd('data/notifications.json', []).length;
     const ord = (id) => rd(CSK, []).find((r) => r.id === id) || {};
@@ -1823,6 +1823,19 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const cosm = await fetch('http://127.0.0.1:' + PORT + '/api/card-sarbatori', { method: 'POST', headers: { 'content-type': 'application/json', cookie: cookieFor('e-c1', 'cosmetician') }, body: JSON.stringify({ action: 'list' }) });
     const ls0 = await cs('receptie', { action: 'list', scan: false });
     check('CS', 'the list: reception, manager and admin; a cosmetician 403, the public 401; the waiting orders on top, no card issued yet', anonList._status === 401 && cosm.status === 403 && ls0.orders && ls0.orders.length === 3 && ls0.cards.length === 0 && ls0.left === 5 && Array.isArray(ls0.treatments), { anon: anonList._status, cosm: cosm.status, n: ls0.orders && ls0.orders.length });
+
+    // the stock: the owner sets how many cards are for sale; the page and the counter follow at once; Activitate notes it
+    const stR = await cs('receptie', { action: 'stock', total: 20 });
+    const stBad = await cs('admin', { action: 'stock', total: -1 });
+    const stOk = await cs('admin', { action: 'stock', total: 12 });
+    const gSt = await pub();
+    const actSt = rd('data/activity/' + day(0) + '.json', []).filter((e) => e.area === 'Carduri de Sărbători' && /stocul/.test(e.verb));
+    check('CS', 'the stock: admin only (reception 403), a number 0 to 500; 12 → 7 left at once on the page, Activitate has the line', stR._status === 403 && stBad._status === 400 && stOk.ok && stOk.total === 12 && stOk.left === 7 && gSt.total === 12 && gSt.left === 7 && actSt.length === 1 && /de vânzare: 12/.test(actSt[0].detail), { stR: stR._status, stOk, g: [gSt.total, gSt.left], actSt });
+    await cs('admin', { action: 'stock', total: 10 });
+    const stLow = await cs('admin', { action: 'stock', total: 4 });
+    const lowOrd = await pub({ tier: 290, qty: 1, name: 'Proba Stoc', phone: '0755000444', city: 'Arad', consent: true, pay: 'clinica' });
+    await cs('admin', { action: 'stock', total: 10 });
+    check('CS', 'a stock under what is ordered: 0 left, sold out (closed on the page)', stLow.left === 0 && stLow.open === false && lowOrd.error === 'sold_out', { stLow, lowOrd });
 
     // 4. found in myPOS by itself: the same sum, after the order, within 48 h, the oldest first, each payment once
     const t0 = Date.now();
@@ -1919,7 +1932,7 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     check('CS', 'reminders: 14 days with credit and no booking, each card once (WhatsApp not connected here: marked „netrimis”), none at night', rmN.sent === 0 && !rmN.due && rm1.due === 3 && rm2.due === 0 && prc.every((c) => c.remind && /^netrimis/.test(c.remind.d14)), { rmN, rm1, rm2 });
     const rmE = await CL.reminders(Date.parse('2027-05-02T08:00:00Z'));
     check('CS', 'before the end: 60 days left → the 60-day reminder to every card with credit', rmE.due >= 4 && rd(CSK, []).some((r) => r.cards.some((c) => c.remind && c.remind.e60)), rmE);
-    wr(CSK, []); wr(CLK, []); wr('data/card-sarbatori-links.json', {});
+    wr(CSK, []); wr(CLK, []); wr('data/card-sarbatori-links.json', {}); wr('data/card-sarbatori-stock.json', {});
   }
 
   // the independent second reading agrees with production on the harness's data

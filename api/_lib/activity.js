@@ -28,6 +28,7 @@ const ROUTES = {
   'portal-workflows': { area: 'Automatizări', go: 'fluxuri' },
   'portal-automation-tasks': { area: 'Sarcini', go: 'automatizari' },
   'portal-whatsapp': { area: 'Mesaje', go: 'mesaje' },
+  'card-sarbatori': { area: 'Carduri de Sărbători', go: 'carduri' },
   'portal-wa': { area: 'WhatsApp', go: 'integrari' },
   'portal-integrations': { area: 'Integrări', go: 'integrari' },
   'portal-mypos': { area: 'Integrări', go: 'integrari' },
@@ -58,6 +59,7 @@ const READS = ['list', 'search', 'get', 'unpaid', 'thread', 'balance', 'balance_
   'transcribe', 'stats', 'context', 'feedback_list', 'close_prefill', 'closes_list', 'pos', 'report_draft', 'reports_list']; // (a voice note written out in Mesaje: no change of the clinic's work)
 // what only reads in one route (an action name another route uses for a change stays a change there)
 const READS_IN = {
+  'card-sarbatori': ['scan'],
   'portal-followups': ['free', 'packages', 'counts', 'recontact', 'people', 'sheet'],
   'portal-appointments': ['orphans'],
   'portal-schedule': ['break_info', 'preview_weeks'],
@@ -70,6 +72,9 @@ const SKIP = ['portal-prefs', 'portal-pulse', 'portal-impersonate', 'portal-crea
 
 // the words for each change (route:action; route: for the routes without actions)
 const VERBS = {
+  'card-sarbatori:confirm': 'a confirmat plata Cardului de Sărbători', 'card-sarbatori:add': 'a adăugat un Card de Sărbători plătit', 'card-sarbatori:cancel': 'a anulat comanda de Card de Sărbători',
+  'card-sarbatori:redeem': 'a folosit creditul cardului', 'card-sarbatori:undo': 'a anulat ultima folosire a cardului', 'card-sarbatori:resend': 'a retrimis pe WhatsApp cardul',
+  'card-sarbatori:rename': 'a schimbat numele de pe cardul', 'card-sarbatori:stock': 'a schimbat stocul Cardurilor de Sărbători',
   'portal-appointments:create': 'a programat', 'portal-appointments:update': 'a modificat programarea', 'portal-appointments:delete': 'a șters programarea',
   'portal-schedule:save_week': 'a modificat programul pentru', 'portal-schedule:save_weeks': 'a modificat programul pe săptămâni pentru', 'portal-schedule:save_date': 'a modificat programul dintr-o zi pentru',
   'portal-schedule:break_set': 'a mutat pauza pentru', 'portal-schedule:break_off': 'a scos pauza de azi pentru', 'portal-schedule:break_reset': 'a pus pauza la mijlocul programului pentru',
@@ -188,8 +193,12 @@ function describe(route, action, body, before, after, out) {
     const a = b.academy, it = (a.upsert && a.upsert.item) || {};
     subject = it.name || it.title || (a.remove ? 'un element' : '') || (a.manualId ? 'manualul ' + a.manualId : '') || (a.rules ? 'regulile ofertei' : '') || (a.paths ? 'drumul de început' : '') || 'Traininguri';
   }
+  if (route === 'card-sarbatori' && b.code) subject = String(b.code);
   let detail = '';
-  if (route === 'portal-appointments' && action === 'create') detail = [b.treatment, [pretty('date', b.date), b.time].filter((x) => x && x !== '-').join(' '), b.location].filter(Boolean).join(' · ');
+  if (route === 'card-sarbatori' && action === 'stock') detail = 'de vânzare: ' + b.total + (out && typeof out.left === 'number' ? ' · au mai rămas ' + out.left : '');
+  if (route === 'card-sarbatori' && action === 'redeem' && out && out.claim) detail = (out.claim.items || []).map((i) => i.name).join(', ') + ' · ' + out.claim.applied + ' lei · rămân ' + out.left + ' lei';
+  if (detail) { /* said above */ }
+  else if (route === 'portal-appointments' && action === 'create') detail = [b.treatment, [pretty('date', b.date), b.time].filter((x) => x && x !== '-').join(' '), b.location].filter(Boolean).join(' · ');
   else if (route === 'portal-leads' && action === 'move_stage' && after && (after.activities || []).length) detail = clip(after.activities[after.activities.length - 1].text, 80);
   else if (route === 'portal-schedule' && /^break_/.test(action || '')) detail = [pretty('date', b.date), action === 'break_set' ? 'la ' + b.from : ''].filter((x) => x && x !== '-').join(' · ');
   else if (route === 'portal-leads' && action === 'log_contact') detail = [b.channel === 'whatsapp' ? 'pe WhatsApp' : 'telefonic', OUTCOME[b.outcome] || '', clip(b.text, 60)].filter(Boolean).join(' · ');

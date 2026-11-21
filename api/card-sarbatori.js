@@ -16,6 +16,7 @@
 //   POST { action: 'redeem', code, items: [{ name, amount, kind }], date, performer, city }   the credit used
 //   POST { action: 'undo', code }  the last use undone (admin only)
 //   POST { action: 'resend', code }   her card on WhatsApp again;   POST { action: 'rename', code, recipient }
+//   POST { action: 'stock', total }   how many cards are for sale in all (admin only; Activitate notes it)
 //   POST { action: 'scan' }        look in myPOS for the payments now
 //   GET ?img=<code>                the card's picture (the team, a portal session)
 
@@ -90,7 +91,7 @@ module.exports = async (req, res) => {
       }
       const [list, links] = await Promise.all([readJSON(C.KEY, []), C.links()]);
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=10, stale-while-revalidate=30');
-      res.status(200).json(Object.assign(C.counter(list), { links }));
+      res.status(200).json(Object.assign(await C.count(list), { links }));
       return;
     }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
@@ -99,7 +100,7 @@ module.exports = async (req, res) => {
     const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
 
     // ---- the team
-    const TEAM = ['list', 'confirm', 'add', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set'];
+    const TEAM = ['stock', 'list', 'confirm', 'add', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set'];
     if (TEAM.includes(b.action)) {
       const session = await require('./_lib/auth').requireRole(req, res, b.action === 'undo' ? ['admin'] : ['admin', 'manager', 'receptie']);
       if (!session) return;
@@ -123,7 +124,14 @@ module.exports = async (req, res) => {
         const WT = require('./_lib/wa-templates');
         const tpl = Object.fromEntries(Object.entries(T.t || {}).map(([k, t]) => [k, t ? WT.overall(t) : 'LIPSĂ']));
         res.status(200).json(Object.assign({ cards: cards.filter((c) => c.code).reverse(), orders, totals, templates: tpl, scan, treatments: await treatments(), team: emps.filter((e) => e.active !== false && ['cosmetician', 'manager'].includes(e.role)).map((e) => ({ id: e.id, name: e.name, city: e.location || '' })),
-          role: session.role, links: await C.links(), gift: { 'Timișoara': C.giftShort('Timișoara'), Arad: C.giftShort('Arad') } }, C.counter(list, now)));
+          role: session.role, links: await C.links(), gift: { 'Timișoara': C.giftShort('Timișoara'), Arad: C.giftShort('Arad') } }, await C.count(list, now)));
+        return;
+      }
+      if (b.action === 'stock') {
+        if (session.role !== 'admin') { res.status(403).json({ error: 'forbidden' }); return; }
+        const x = await C.setStock(b.total, session.employeeId || '');
+        if (x.error) { res.status(400).json(x); return; }
+        res.status(200).json(Object.assign({ ok: true }, await C.count(await readJSON(C.KEY, []))));
         return;
       }
       if (b.action === 'scan') { res.status(200).json(await C.autoMatch(true)); return; }
@@ -135,7 +143,7 @@ module.exports = async (req, res) => {
         const via = b.via === 'online' || (b.via !== 'clinica' && r.pay === 'online') ? 'online' : 'clinica';
         const x = await C.confirm(r.id, via, { by: session.employeeId || '', byName });
         if (x.error) { res.status(400).json(x); return; }
-        res.status(200).json(Object.assign({ ok: true, again: !!x.again, reservation: x.row, cards: x.row.cards.map((c) => C.cardView(x.row, c)) }, C.counter(await readJSON(C.KEY, []))));
+        res.status(200).json(Object.assign({ ok: true, again: !!x.again, reservation: x.row, cards: x.row.cards.map((c) => C.cardView(x.row, c)) }, await C.count(await readJSON(C.KEY, []))));
         return;
       }
       if (b.action === 'cancel' || (b.action === 'set' && b.status === 'anulat')) {
@@ -145,7 +153,7 @@ module.exports = async (req, res) => {
         if (r.status === 'platit') { res.status(409).json({ error: 'paid' }); return; }
         Object.assign(r, { status: 'anulat', cancelledAt: new Date().toISOString(), cancelledBy: session.employeeId || '' });
         await writeJSON(C.KEY, list);
-        res.status(200).json(Object.assign({ ok: true, reservation: r }, C.counter(list)));
+        res.status(200).json(Object.assign({ ok: true, reservation: r }, await C.count(list)));
         return;
       }
       if (b.action === 'set' && b.status === 'rezervat') {
@@ -154,7 +162,7 @@ module.exports = async (req, res) => {
         if (!r || r.status === 'platit') { res.status(409).json({ error: 'not_open' }); return; }
         Object.assign(r, { status: 'rezervat', pay: 'clinica' }); delete r.cancelledAt;
         await writeJSON(C.KEY, list);
-        res.status(200).json(Object.assign({ ok: true, reservation: r }, C.counter(list)));
+        res.status(200).json(Object.assign({ ok: true, reservation: r }, await C.count(list)));
         return;
       }
       if (b.action === 'add') {
@@ -172,7 +180,7 @@ module.exports = async (req, res) => {
         list.push(row);
         await writeJSON(C.KEY, list);
         const x = await C.confirm(row.id, row.pay, { by: session.employeeId || '', byName });
-        res.status(200).json(Object.assign({ ok: true, reservation: x.row, cards: x.row.cards.map((c) => C.cardView(x.row, c)) }, C.counter(await readJSON(C.KEY, []))));
+        res.status(200).json(Object.assign({ ok: true, reservation: x.row, cards: x.row.cards.map((c) => C.cardView(x.row, c)) }, await C.count(await readJSON(C.KEY, []))));
         return;
       }
       if (b.action === 'redeem') {
@@ -229,7 +237,7 @@ module.exports = async (req, res) => {
     const lk = online ? (await C.links())[tier] : null;
     if (online && !lk) { res.status(409).json({ error: 'no_link' }); return; }
     let list = await readJSON(C.KEY, []);
-    const left0 = C.counter(list, now).left;
+    const left0 = (await C.count(list, now)).left;
     const hers = list.filter((r) => C.live(r, now) && d9(r.phone) === d9(phone));
     // the same order again within 10 minutes (a second tap, back from the PayLink): the one she has
     const same = hers.find((r) => C.norm(r).tier === tier && r.qty === qty && r.pay === (online ? 'online' : 'clinica') && ['rezervat', 'asteptare'].includes(r.status) && now - Date.parse(r.created) < 10 * 60e3 &&
@@ -248,12 +256,12 @@ module.exports = async (req, res) => {
     list = await readJSON(C.KEY, []);
     const before = list.filter((r) => C.live(r));
     const upTo = before.slice(0, before.findIndex((r) => r.id === entry.id) + 1).reduce((n, r) => n + C.qtyOf(r), 0);
-    if (upTo > C.TOTAL) { await writeJSON(C.KEY, list.filter((r) => r.id !== entry.id)); res.status(409).json({ error: 'sold_out' }); return; }
+    if (upTo > await C.total()) { await writeJSON(C.KEY, list.filter((r) => r.id !== entry.id)); res.status(409).json({ error: 'sold_out' }); return; }
 
     const note = 'Card de Sărbători ' + (online ? 'trimis la plata online (PayLink myPOS), de confirmat plata' : 'rezervat pe site, plata în clinică') + ': ' + qty + ' × ' + tier + ' lei (credit ' + C.TIERS[tier] + ' lei fiecare), de plată ' + entry.amount + ' lei' +
       (names.some(Boolean) ? ' · pe numele: ' + names.map((n) => n || '(al ei)').join(', ') : '');
     if (online) {
-      res.status(200).json({ ok: true, id: entry.id, link: lk, amount: entry.amount, left: C.counter(list).left });
+      res.status(200).json({ ok: true, id: entry.id, link: lk, amount: entry.amount, left: (await C.count(list)).left });
       await lead(entry, b, req, note); // after the answer: she goes to myPOS at once
       try {
         const N = require('./_lib/notify');
@@ -263,7 +271,7 @@ module.exports = async (req, res) => {
       return;
     }
     await lead(entry, b, req, note);
-    res.status(200).json({ ok: true, reservation: publicOf(entry), left: C.counter(await readJSON(C.KEY, [])).left });
+    res.status(200).json({ ok: true, reservation: publicOf(entry), left: (await C.count(await readJSON(C.KEY, []))).left });
   } catch (err) {
     console.error('card-sarbatori error:', err.message);
     if (!res.headersSent) res.status(500).json({ error: 'failed' });

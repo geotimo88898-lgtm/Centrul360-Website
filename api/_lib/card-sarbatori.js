@@ -1,5 +1,5 @@
 // The Card de Sărbători (the owner, 20-21.11): three cards, the more she pays the more she gets (290 → 500 lei, 490 → 1.000
-// lei, 990 → 2.500 lei in treatments, at list price, not on top of the discounted offers), 10 cards in all whatever the card
+// lei, 990 → 2.500 lei in treatments, at list price, not on top of the discounted offers), 10 cards in all at first (the stock, set in the portal) whatever the card
 // (both clinics), on sale until 24 December 2026, 23:59 (Romania), valid until 30 June 2027.
 //
 //   data/card-sarbatori.json  [order]
@@ -73,11 +73,25 @@ function live(r, now) {
   if (r.status === 'asteptare') return (now || Date.now()) - Date.parse(r.created) < HOLD_MS;
   return true;
 }
-function counter(list, now) {
-  const t = now || Date.now();
-  const left = Math.max(0, TOTAL - (list || []).filter((r) => live(r, t)).reduce((n, r) => n + qtyOf(r), 0));
-  return { total: TOTAL, left, deadline: DEADLINE, open: t < Date.parse(DEADLINE) && left > 0, tiers: TIERS, maxQty: MAXQ, validUntil: VALID_UNTIL };
+// the stock (the owner, 21.11): how many cards are for sale in all, set by him in the portal (Carduri de Sărbători → Stoc)
+const STOCK = 'data/card-sarbatori-stock.json';
+async function total() {
+  const d = (await readJSON(STOCK, null).catch(() => null)) || {};
+  return Number.isInteger(d.total) && d.total >= 0 ? d.total : TOTAL;
 }
+async function setStock(n, by) {
+  const v = Number(n);
+  if (!Number.isInteger(v) || v < 0 || v > 500) return { error: 'bad_stock' };
+  await writeJSON(STOCK, { total: v, by: by || '', at: nowISO() });
+  return { ok: true, total: v };
+}
+const ordered = (list, now) => (list || []).filter((r) => live(r, now || Date.now())).reduce((n, r) => n + qtyOf(r), 0);
+function counter(list, now, tot) {
+  const t = now || Date.now(), all = Number.isInteger(tot) ? tot : TOTAL;
+  const left = Math.max(0, all - ordered(list, t));
+  return { total: all, left, sold: ordered(list, t), deadline: DEADLINE, open: t < Date.parse(DEADLINE) && left > 0, tiers: TIERS, maxQty: MAXQ, validUntil: VALID_UNTIL };
+}
+const count = async (list, now) => counter(list, now, await total());
 const expired = (now) => (now || Date.now()) > Date.parse(VALID_UNTIL);
 const usedOf = (c) => r2((c.claims || []).filter((x) => !x.undone).reduce((n, x) => n + (Number(x.applied) || 0), 0));
 const leftOf = (c) => Math.max(0, r2((Number(c.value) || 0) - usedOf(c)));
@@ -543,7 +557,7 @@ function cardView(r, c, now) {
 }
 
 module.exports = {
-  KEY, CLUB, PROBE, LINKS, TOTAL, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
+  KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, total, setStock, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
   norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, confirm, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
 };
