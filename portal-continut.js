@@ -1295,7 +1295,7 @@
   // Organic → vânzări (21.11): the last 14 days, per source (network × bio / story / dm / reel): visits, how far they went
   // on the site, the cards paid and their lei, the site's lead-filter leads; then the keyword messages per network
   const ORG_NET = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
-  const ORG_MED = { bio: 'bio', story: 'story', dm: 'mesaj privat', reel: 'reel', post: 'postare', altele: 'alt link' };
+  const ORG_MED = { bio: 'bio', profil: 'profil', story: 'story', dm: 'mesaj privat', reel: 'reel', post: 'postare', altele: 'alt link' };
   function orgBlock(R) {
     const O = R.organic;
     if (!O || !O.ok) return '';

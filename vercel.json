@@ -133,6 +133,50 @@
       ],
       "destination": "/login",
       "permanent": false
+    },
+    {
+      "source": "/ig",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.centrul360.com"
+        }
+      ],
+      "destination": "https://www.centrul360.com/?utm_source=instagram&utm_medium=bio",
+      "permanent": false
+    },
+    {
+      "source": "/fb",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.centrul360.com"
+        }
+      ],
+      "destination": "https://www.centrul360.com/?utm_source=facebook&utm_medium=bio",
+      "permanent": false
+    },
+    {
+      "source": "/tt",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.centrul360.com"
+        }
+      ],
+      "destination": "https://www.centrul360.com/?utm_source=tiktok&utm_medium=bio",
+      "permanent": false
+    },
+    {
+      "source": "/yt",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.centrul360.com"
+        }
+      ],
+      "destination": "https://www.centrul360.com/?utm_source=youtube&utm_medium=bio",
+      "permanent": false
     }
   ],
   "rewrites": [
