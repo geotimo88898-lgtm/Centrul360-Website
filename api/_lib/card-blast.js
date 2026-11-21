@@ -201,4 +201,70 @@ async function backfillChats() {
   return { ok: true, added };
 }
 
-module.exports = { pick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats };
+// ---- a further batch (the owner, 21.11): clients with the most potential who are NOT on the Transformarea list (its
+// people get their own week), never one already sent the card, who bought a card, who paid in the last 7 days or bought a
+// package (a payment of 1.500 lei or more) in the last 60 days. Potential: what she paid us in all, her visits, and a last
+// visit 1 to 12 months ago (she knows us and has room to come back). Added to the same list (one send per phone, ever).
+async function pickMore(n) {
+  const want = Math.max(1, Math.min(1000, Number(n) || 250));
+  const st = await loadState();
+  if (st.armed && !st.doneAt) return { error: 'still_sending' };
+  const FC = require('./fc-campaign');
+  const { normalizePhone } = require('./clients');
+  const C = require('./clinic');
+  const [trans, clients, appts, sales, orders, emps, sentMap] = await Promise.all([FC.buildAudience(), readJSON('data/clients.json', []), readJSON('data/appointments.json', []),
+    readJSON('data/sales.json', []), readJSON('data/card-sarbatori.json', []), readJSON('data/employees.json', []), readJSON(SENT, null)]);
+  const sent = sentMap || {};
+  const inTrans = new Set(trans.map((p) => p.k));
+  const already = new Set(st.list.map((p) => p.k).concat(Object.keys(sent)));
+  const bought = new Set(orders.map((o) => d9(o && o.phone)).filter((k) => k.length === 9));
+  const staff = new Set(emps.map((e) => d9(e && e.phone)).filter((x) => x.length === 9));
+  const now = Date.now(), iso = (d) => new Date(now - d * 864e5).toISOString().slice(0, 10);
+  const d7 = iso(7), d60 = iso(60), d30 = iso(30), d365 = iso(365);
+  const money = new Map(), recentPay = new Set();
+  sales.forEach((x) => {
+    if (!x || !x.clientId || !(Number(x.amount) > 0)) return;
+    money.set(x.clientId, (money.get(x.clientId) || 0) + Number(x.amount));
+    const d = String(x.date || '').slice(0, 10);
+    if (d >= d7 || (d >= d60 && Number(x.amount) >= 1500)) recentPay.add(x.clientId);
+  });
+  const vis = new Map();
+  appts.forEach((a) => {
+    if (!a || !a.clientId || a.status !== 'finalizata') return;
+    const v = vis.get(a.clientId) || { n: 0, last: '', city: '' };
+    v.n++; if (a.date > v.last) { v.last = a.date; v.city = C.clinicOf(a.location); }
+    vis.set(a.clientId, v);
+  });
+  const seen = new Set(), pool = [];
+  clients.forEach((c) => {
+    const ph = normalizePhone(c && c.phone); const k = d9(ph);
+    if (!ph || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(c.name || ''))) return;
+    seen.add(k);
+    if (inTrans.has(k) || already.has(k) || bought.has(k) || staff.has(k) || recentPay.has(c.id)) return;
+    const v = vis.get(c.id); if (!v || !CITIES.includes(v.city)) return; // only clients who came at least once, to one of our clinics
+    const to = WA.toE164(c.phone); if (!to) return;
+    const paid = money.get(c.id) || 0;
+    const score = Math.min(paid, 20000) / 200 + v.n * 8 + (v.last >= d365 && v.last < d30 ? 15 : v.last >= d30 ? 5 : 0);
+    pool.push({ k, to, city: v.city, fn: FC.firstName(c.name), seg: 'client2', score: Math.round(score), visits: v.n, paid: Math.round(paid), batch: 2 });
+  });
+  const tot = pool.length || 1;
+  const share = {}; share['Timișoara'] = Math.round(want * pool.filter((p) => p.city === 'Timișoara').length / tot); share.Arad = want - share['Timișoara'];
+  const list = [];
+  CITIES.forEach((c) => { pool.filter((p) => p.city === c).sort((a, b) => b.score - a.score).slice(0, share[c]).forEach((p) => list.push(p)); });
+  st.list = st.list.concat(list); st.armed = false; st.doneAt = ''; st.pickedAt = nowISO();
+  await saveState(st);
+  const by = (f) => CITIES.reduce((o, c) => Object.assign(o, { [c]: list.filter((p) => p.city === c).length }), {});
+  const paidOf = list.map((p) => p.paid).sort((a, b) => a - b);
+  return { ok: true, picked: list.length, byCity: by(), pool: pool.length, paidMedian: paidOf.length ? paidOf[Math.floor(paidOf.length / 2)] : 0, visits: { min: Math.min(...list.map((p) => p.visits)), max: Math.max(...list.map((p) => p.visits)) } };
+}
+// a picked batch not sent yet, taken back (nothing went): only the ones still unsent of that batch
+async function unpick(batch) {
+  const st = await loadState();
+  const sent = (await readJSON(SENT, null)) || {};
+  const before = st.list.length;
+  st.list = st.list.filter((p) => (p.batch || 1) !== Number(batch) || sent[p.k]);
+  await saveState(st);
+  return { ok: true, removed: before - st.list.length };
+}
+
+module.exports = { pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats };
