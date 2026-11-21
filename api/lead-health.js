@@ -63,6 +63,15 @@ module.exports = async (req, res) => {
   if (req.query && req.query.leadfilter) {
     const LF = require('./_lib/leadfilter');
     const a = String(req.query.leadfilter);
+    // ?leadfilter=recent: the last lead-filter leads, what each chose and from which ad (no name, no phone), for Claude
+    if (a === 'recent') {
+      const all = await readJSON('data/leads.json', []);
+      const rows = (all || []).filter((l) => l && l.lf).sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt))).slice(0, Math.min(200, Number(req.query.n) || 50))
+        .map((l) => ({ at: l.createdAt, city: l.location, zone: l.lf.zoneLabel || l.lf.zone, problem: l.lf.problemLabel, when: l.lf.whenLabel, tier: l.lf.tier, pack: l.lf.packName,
+          ad: (((l.forms || []).slice(-1)[0]) || {}).ad || '', stage: l.stageId || '', messaged: !!(l.lfSent || (l.lf && l.lf.sentAt)), test: /test/i.test(String(l.name || '')) }));
+      res.status(200).json({ ok: true, n: rows.length, leads: rows });
+      return;
+    }
     let r;
     if (req.method === 'GET' && a === 'kpi') r = Object.assign({ ok: true }, await LF.kpi());
     else if (req.method === 'GET' && a === 'dryrun') r = await LF.dryRun();
