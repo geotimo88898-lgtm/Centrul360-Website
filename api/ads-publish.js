@@ -206,7 +206,7 @@ module.exports = async (req, res) => {
     if (body.action === 'port') {
       const conn = await loadConnection(readJSON);
       if (!conn.userToken || !conn.adAccountId) { res.status(400).json({ error: 'not_connected', message: REASONS.not_connected }); return; }
-      const r = await ads.port(conn, String(body.campaignId || ''), { name: body.name, budget: body.budget, dry: body.dry === true, paused: body.paused === true, videoId: body.videoId, formId: body.formId });
+      const r = await ads.port(conn, String(body.campaignId || ''), { name: body.name, budget: body.budget, dry: body.dry === true, paused: body.paused === true, videoId: body.videoId, formId: body.formId, women: body.women === true });
       if (r.ok && !r.dry) await require('./_lib/ads-cache').clear().catch(() => {});
       res.status(r.error ? 400 : 200).json(r.error ? Object.assign({}, r, { error: ME.clean(r.error) }) : r);
       return;
