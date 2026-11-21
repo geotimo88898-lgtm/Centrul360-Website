@@ -24,7 +24,10 @@ const APP_KEY = 'data/tt-app.json';
 const CONN_KEY = 'data/tt-connection.json';
 const AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 const API = 'https://open.tiktokapis.com/v2';
-const SCOPES = ['user.info.basic', 'user.info.stats', 'video.publish', 'video.upload', 'video.list'];
+// what the login asks for: only what the clinic's app has (21.11: its developer portal offers Login Kit and the Content
+// Posting API, not the Display API, so user.info.stats and video.list can't be asked yet: the numbers wait for them;
+// TikTok refuses a login that asks for a scope the app doesn't have). TT_STATS adds them once the app has them.
+const SCOPES = ['user.info.basic', 'video.publish', 'video.upload'].concat(process.env.TT_STATS === '1' ? ['user.info.stats', 'video.list'] : []);
 const NEEDS = ['video.publish'];
 const PRIVACY = ['PUBLIC_TO_EVERYONE', 'FOLLOWER_OF_CREATOR', 'MUTUAL_FOLLOW_FRIENDS', 'SELF_ONLY'];
 const PRIVATE_NOTE = 'TikTok le pune private până la auditul aplicației';
