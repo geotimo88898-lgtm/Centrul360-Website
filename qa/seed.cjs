@@ -214,3 +214,24 @@ w('data/attendance.json', att);
 w('data/attendance-requests.json', [{ id: 'rq1', employeeId: 'e-c1', date: '2026-11-12', checkIn: '08:45', checkOut: null, note: 'Am venit mai devreme, am uitat să pontez la timp', status: 'pending', at: '2026-11-12T17:30:00Z' }]);
 console.log('pontaj to fix seeded');
 })();
+
+// 6. the „Transformarea 360” campaign (Admin → Campanie TRANSFORMARE): a frozen list, two steps sent, people who answered
+// (long names, every status), so the section is drawn full
+(() => {
+const f = (p) => path.join(DATA, p.replace(/\//g, '__'));
+const w = (p, d) => fs.writeFileSync(f(p), JSON.stringify(d));
+const names = ['Maria-Magdalena Constantinescu-Ionescu', 'Ana Proba', 'Elena Lungu-Teodorescu', 'Ioana Proba', 'Cristina Popa', 'Andreea Marinescu-Vasilescu', 'Diana Proba', 'Roxana Ilie'];
+const aud = [];
+for (let i = 0; i < 40; i++) { const k = String(722000100 + i); aud.push({ k, to: '40' + k, phone: '0' + k, name: names[i % names.length], fn: names[i % names.length].split(/[\s-]/)[0], city: i % 3 ? 'Timișoara' : 'Arad', seg: i % 2 ? 'client' : 'lead' }); }
+w('fc360/audience.json', aud);
+const sent = (n) => { const m = {}; aud.slice(0, n).forEach((p, i) => { m[p.k] = i % 13 === 5 ? { e: 'numărul nu are WhatsApp', code: 131026, at: '2026-11-22T18:01:00Z', c: p.city } : { w: 'wamid.' + p.k + '.' + n, at: '2026-11-22T18:01:00Z', c: p.city }; }); return m; };
+w('fc360/sent/1.json', sent(40)); w('fc360/sent/2.json', sent(32));
+w('fc360/state.json', { armed: true, paused: false, frozenAt: '2026-11-22T18:00:10Z', testPhone: '', media: {}, steps: { 1: { startedAt: '2026-11-22T18:00:10Z', doneAt: '2026-11-22T18:09:00Z', sent: 37, failed: 3 }, 2: { startedAt: '2026-11-23T08:00:10Z', sent: 30, failed: 2, note: 'Timișoara: Meta a refuzat (cod 131048: limita zilnică a numărului)' }, 3: { skipped: 'a trecut ora' } },
+  log: [{ at: '2026-11-22T18:00:10Z', text: 'Transformarea 360: lista s-a fixat, 40 persoane.' }, { at: '2026-11-22T18:09:00Z', text: 'Transformarea 360 · Teaser: trimis la toată lista.' }] });
+const st = ['call', 'consult', 'came', 'paid', 'paid', 'no', 'call', 'paid'];
+const people = {};
+aud.slice(0, 16).forEach((p, i) => { people[p.k] = { k: p.k, phone: p.phone, name: p.name, city: p.city, src: 'wa', interested: i % 4 !== 3, optout: i === 15, status: i === 15 ? undefined : st[i % st.length], plan: i % 2 ? 'monthly' : 'full', paidAt: st[i % st.length] === 'paid' ? '2026-11-23T1' + (i % 10) + ':00:00Z' : undefined, consultAt: i % 8 === 1 ? '2026-11-25T17:30' : '',
+  replies: [{ id: 'm' + i, at: '2026-11-23T08:1' + (i % 10) + ':00Z', step: '2', kind: i === 15 ? 'stop' : i % 4 === 3 ? 'text' : 'yes', text: i % 4 === 3 ? 'Bună ziua, se poate plăti și în rate lunare la Arad sau doar integral? Mulțumesc frumos!' : i === 15 ? 'Nu mă interesează' : 'DA' }] }; });
+w('fc360/people.json', { people });
+console.log('Transformarea 360 seeded');
+})();

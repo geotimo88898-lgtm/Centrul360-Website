@@ -160,9 +160,7 @@ main [hidden]{ display:none !important; }
   .cst-best{ right:5px; font-size:9.5px; padding:2px 7px; }
   .cst-sub{ font-size:13px; }
 }
-/* paying in the clinic, as a real second button under the online one (the owner, 21.11) */
-.cst-go .cst-alt{ width:100%; }
-/* the pages live before the swap still carry the Santa hat and the small „Rezervă cardul” link: kept as they were until the
+/* the pages live before the swap still carry the Santa hat: kept as they were until the
    new pages replace them (then these lines can go) */
 .csc-hat{ position:absolute; z-index:4; left:-5.5%; top:-19%; width:24%; pointer-events:none; transform:translateZ(6px) rotate(-24deg); transform-origin:42% 88%; }
 .csc-hat svg{ display:block; width:100%; height:auto; overflow:visible; filter:drop-shadow(0 10px 12px rgba(120,30,40,.28)); }
@@ -171,5 +169,8 @@ main [hidden]{ display:none !important; }
 @keyframes cscSway{ 0%{ transform:rotate(-3deg); } 100%{ transform:rotate(4deg); } }
 @keyframes cscTip{ 0%{ transform:rotate(-6deg); } 100%{ transform:rotate(7deg); } }
 @media (prefers-reduced-motion:reduce){ .csc-hat .sw,.csc-hat .tip{ animation:none !important; } }
-.cst-alt:not(.btn){ justify-self:start; padding:4px 0; border:0; background:none; font:inherit; font-size:14px; color:var(--mute); cursor:pointer; -webkit-tap-highlight-color:transparent; }
-.cst-alt:not(.btn) u{ color:var(--ink); text-underline-offset:3px; }
+
+/* paying at the clinic: a real second button, as visible as the online one (the owner, 21.11) */
+.cst-or{ display:flex; align-items:center; gap:12px; color:var(--mute); font-size:13px; }
+.cst-or::before, .cst-or::after{ content:''; flex:1; height:1px; background:rgba(11,11,13,.12); }
+.cst-go .cst-cash{ width:100%; }

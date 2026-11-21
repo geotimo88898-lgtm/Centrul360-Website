@@ -14,7 +14,8 @@
 const ADS_GRAPH = 'https://graph.facebook.com/v25.0';
 const SCOPE = require('./ads-scope');
 // only this business's campaigns of the shared ad account (conn.scope, set by loadConnection; the default otherwise)
-const ours = (conn, name) => SCOPE.keep(conn && conn.scope, name);
+const scopeOf = (conn) => (conn && conn.scope) || SCOPE.forAccount(SCOPE.DEFAULT, conn && conn.adAccountId);
+const ours = (conn, name) => SCOPE.keep(scopeOf(conn), name);
 const DEFAULTS_KEY = 'data/ads-defaults.json';
 
 // city centres; the radius is set per ad set (the owner uses about 6-7 km)
@@ -243,6 +244,20 @@ async function audienceList(conn) {
 }
 
 // The whole publish. image = { base64, name }. Returns ids or { error }.
+// who the ad is for and who pays for it (Meta asks every ad set shown in the EU, the DSA): the connected account's own
+// defaults; an account without them (the CAD account Centrul360 uses since 21.11, another business's) takes the old
+// Centrul360 account's, else the Page's name. Read once per run.
+let DSA = null;
+async function dsaOf(conn) {
+  if (DSA) return DSA;
+  const read = async (act) => { const r = await call('GET', '/' + act, conn.userToken, { fields: 'default_dsa_beneficiary,default_dsa_payor' }); return r.ok ? r.j : {}; };
+  const a = await read(conn.adAccountId);
+  const b = a.default_dsa_beneficiary && a.default_dsa_payor ? a : await read('act_4502494523405059');
+  const name = conn.pageName || 'Centrul360';
+  DSA = { dsa_beneficiary: a.default_dsa_beneficiary || b.default_dsa_beneficiary || name, dsa_payor: a.default_dsa_payor || b.default_dsa_payor || name };
+  return DSA;
+}
+
 async function publish(conn, image, s) {
   const tok = conn.userToken;
   const act = conn.adAccountId;
@@ -268,7 +283,7 @@ async function publish(conn, image, s) {
       const adset = await call('POST', '/' + act + '/adsets', tok, {
         name: s.adsetName, campaign_id: campaignId, daily_budget: String(Math.round(s.budget * 100)), billing_event: 'IMPRESSIONS',
         optimization_goal: s.quality ? 'QUALITY_LEAD' : 'LEAD_GENERATION', bid_strategy: 'LOWEST_COST_WITHOUT_CAP', destination_type: 'ON_AD',
-        promoted_object: { page_id: conn.pageId }, targeting: targeting(s), status: 'PAUSED',
+        promoted_object: { page_id: conn.pageId }, targeting: targeting(s), status: 'PAUSED', ...(await dsaOf(conn)),
       });
       if (!adset.ok) { await undo(); return { error: metaError(adset.j, 'Setul de reclame') }; }
       adsetId = adset.j.id;
@@ -318,6 +333,116 @@ async function publish(conn, image, s) {
       if (!a.ok || !c.ok) return { ok: true, campaignId, adsetId, adId: ad.j.id, started: false, warning: [metaError(!a.ok ? a.j : c.j, 'Pornirea'), textNote].filter(Boolean).join(' ') };
     }
     return Object.assign({ ok: true, campaignId, adsetId, adId: ad.j.id, started: s.startNow, paused: !!s.paused, texts: textNote ? 1 : Math.max(bodies.length, titles.length) }, textNote ? { warning: textNote } : {});
+  } catch (err) {
+    await undo();
+    return { error: 'Rețea: ' + err.message };
+  }
+}
+
+// ---------------------------------------------------------------- the move to another ad account (21.11)
+// A campaign of the old ad account remade in the connected one: the same ad (texts, title, button, lead form, picture
+// or video), the same audience (place, age, women; custom audiences stay behind, they belong to the old account), one
+// ad set and one ad, its new name and its daily budget in the connected account's money. Only a campaign of ours in the
+// old account (OLD_OWN), and only a name the connected account counts as ours. dry: only what it would make.
+// A video is copied by Meta from its link and processed for a while: the call answers { pending, videoId } and the
+// same call with that videoId goes on from there.
+const OLD_OWN = { act_4502494523405059: true };
+const KEEP_T = ['geo_locations', 'excluded_geo_locations', 'age_min', 'age_max', 'genders', 'publisher_platforms', 'facebook_positions', 'instagram_positions', 'device_platforms', 'locales', 'targeting_automation'];
+async function port(conn, oldId, o) {
+  const tok = conn.userToken, act = conn.adAccountId;
+  if (!/^\d{5,25}$/.test(String(oldId || ''))) return { error: 'ID invalid' };
+  const name = String((o && o.name) || '').trim().slice(0, 200);
+  const budget = Math.round((Number(o && o.budget) || 0) * 100) / 100;
+  if (!name || !ours(conn, name)) return { error: 'numele nu e al nostru în contul conectat' };
+  if (!(budget >= 5)) return { error: 'budget_too_low' };
+  const r = await call('GET', '/' + oldId, tok, { fields: 'name,account_id,adsets.limit(5){targeting,daily_budget,effective_status},ads.limit(5){effective_status,creative{object_story_spec,asset_feed_spec}}' });
+  if (!r.ok) return { error: metaError(r.j, 'Campania veche') };
+  const oldAct = 'act_' + r.j.account_id;
+  if (!OLD_OWN[oldAct]) return { error: 'campania nu e din contul vechi al Centrul360' };
+  if (oldAct === act) return { error: 'campania e deja în contul conectat' };
+  if (!SCOPE.keep(SCOPE.DEFAULT, r.j.name)) return { error: 'campania e a altei afaceri' };
+  const sets = (r.j.adsets && r.j.adsets.data) || [], adsL = (r.j.ads && r.j.ads.data) || [];
+  const ad = adsL.find((a) => a.effective_status !== 'DELETED' && a.effective_status !== 'ARCHIVED') || adsL[0];
+  if (!ad || !ad.creative) return { error: 'campania veche n-are reclamă' };
+  const oss = ad.creative.object_story_spec || {}, feed = ad.creative.asset_feed_spec || null;
+  const t0 = (sets[0] && sets[0].targeting) || {};
+  const t = {}; KEEP_T.forEach((k) => { if (t0[k] !== undefined) t[k] = t0[k]; });
+  const ld = oss.link_data || null, vd = oss.video_data || null;
+  // the texts of an ad that mixes several (Meta's asset feed) live there, not in the story: the first ones stand in
+  const fb0 = (k) => (feed && feed[k] && feed[k][0] && feed[k][0].text) || '';
+  const cta = (ld && ld.call_to_action) || (vd && vd.call_to_action) || (feed && feed.call_to_action_types && { type: feed.call_to_action_types[0] }) || {};
+  const formId = String((cta.value && cta.value.lead_gen_form_id) || (o && o.formId) || '');
+  const plan = { oldName: r.j.name, kind: vd ? 'video' : 'image', formId, targeting: t, cta: cta.type || '', text: ((ld && ld.message) || (vd && vd.message) || fb0('bodies')).slice(0, 120), feed: !!feed };
+  if (!formId) return Object.assign({ error: 'formularul vechi nu se vede' }, { plan });
+  if (o && o.dry) return { ok: true, dry: true, plan, dsa: await dsaOf(conn), creative: ad.creative };
+
+  // the picture or the video, into the connected account
+  let mediaSpec = {};
+  if (vd) {
+    let vid = String((o && o.videoId) || '');
+    if (!vid) {
+      const src = await call('GET', '/' + vd.video_id, tok, { fields: 'source' });
+      if (!src.ok || !src.j.source) return { error: metaError(src.j, 'Videoul vechi') };
+      const up = await call('POST', '/' + act + '/advideos', tok, { file_url: src.j.source, name: name });
+      if (!up.ok) return { error: metaError(up.j, 'Videoul') };
+      vid = up.j.id;
+    }
+    let ready = false;
+    for (let i = 0; i < 8 && !ready; i++) {
+      const st = await call('GET', '/' + vid, tok, { fields: 'status' });
+      const vs = st.ok && st.j.status && st.j.status.video_status;
+      if (vs === 'ready') ready = true; else if (vs === 'error') return { error: 'Meta n-a putut procesa videoul' };
+      else await new Promise((res) => setTimeout(res, 4000));
+    }
+    if (!ready) return { ok: false, pending: true, videoId: vid };
+    let thumb = vd.image_url || '';
+    if (!thumb) { const th = await call('GET', '/' + vid + '/thumbnails', tok, {}); thumb = th.ok && th.j.data && th.j.data[0] ? th.j.data[0].uri : ''; }
+    mediaSpec = { video_data: Object.assign({ video_id: vid, message: vd.message || fb0('bodies'), title: vd.title || fb0('titles') || undefined, link_description: vd.link_description || fb0('descriptions') || undefined,
+      call_to_action: { type: cta.type || 'LEARN_MORE', value: { lead_gen_form_id: formId } } }, thumb ? { image_url: thumb } : {}) };
+  } else {
+    const hash = (ld && ld.image_hash) || (feed && feed.images && feed.images[0] && feed.images[0].hash) || '';
+    let url = (ld && (ld.picture || ld.image_url)) || '';
+    if (hash && !url) {
+      const im = await call('GET', '/' + oldAct + '/adimages', tok, { hashes: JSON.stringify([hash]), fields: 'hash,url,permalink_url' });
+      const x = im.ok && im.j.data && im.j.data[0];
+      url = x ? (x.url || x.permalink_url || '') : '';
+    }
+    if (!url) return { error: 'imaginea veche nu se vede' };
+    const bin = await fetch(url);
+    if (!bin.ok) return { error: 'imaginea veche nu se descarcă (' + bin.status + ')' };
+    const b64 = Buffer.from(await bin.arrayBuffer()).toString('base64');
+    const img = await call('POST', '/' + act + '/adimages', tok, { bytes: b64, name: name.slice(0, 60) + '.jpg' });
+    if (!img.ok) return { error: metaError(img.j, 'Imaginea') };
+    const imgs = img.j.images || {}; const h = (imgs[Object.keys(imgs)[0]] || {}).hash;
+    if (!h) return { error: 'Imaginea: Meta n-a întors codul imaginii' };
+    mediaSpec = { link_data: { image_hash: h, link: 'https://fb.me/', message: (ld && ld.message) || fb0('bodies'), name: (ld && ld.name) || fb0('titles') || undefined, description: (ld && ld.description) || fb0('descriptions') || undefined,
+      call_to_action: { type: cta.type || 'LEARN_MORE', value: { lead_gen_form_id: formId } } } };
+  }
+
+  const made = [];
+  const undo = async () => { for (const id of made.slice().reverse()) await call('DELETE', '/' + id, tok).catch(() => {}); };
+  try {
+    const camp = await call('POST', '/' + act + '/campaigns', tok, { name, objective: 'OUTCOME_LEADS', status: 'PAUSED', special_ad_categories: [], buying_type: 'AUCTION', is_adset_budget_sharing_enabled: false });
+    if (!camp.ok) return { error: metaError(camp.j, 'Campania') };
+    made.push(camp.j.id);
+    const adset = await call('POST', '/' + act + '/adsets', tok, { name, campaign_id: camp.j.id, daily_budget: String(Math.round(budget * 100)), billing_event: 'IMPRESSIONS',
+      optimization_goal: 'LEAD_GENERATION', bid_strategy: 'LOWEST_COST_WITHOUT_CAP', destination_type: 'ON_AD', promoted_object: { page_id: conn.pageId }, targeting: t, status: 'PAUSED', ...(await dsaOf(conn)) });
+    if (!adset.ok) { await undo(); return { error: metaError(adset.j, 'Setul de reclame') }; }
+    const spec = Object.assign({ page_id: conn.pageId }, mediaSpec);
+    const ig = await call('GET', '/' + conn.pageId, conn.pageAccessToken, { fields: 'instagram_business_account' });
+    if (ig.ok && ig.j.instagram_business_account) spec.instagram_user_id = ig.j.instagram_business_account.id;
+    // the old ad's extra texts / titles (Meta mixing them), when it had them
+    const multi = feed && ((feed.bodies || []).length > 1 || (feed.titles || []).length > 1);
+    const af = multi ? { bodies: (feed.bodies || []).map((x) => ({ text: x.text })), titles: (feed.titles || []).map((x) => ({ text: x.text })), descriptions: feed.descriptions ? feed.descriptions.map((x) => ({ text: x.text })) : undefined, optimization_type: 'DEGREES_OF_FREEDOM' } : null;
+    let creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name, object_story_spec: spec }, af ? { asset_feed_spec: af } : {}));
+    if (!creative.ok && af) creative = await call('POST', '/' + act + '/adcreatives', tok, { name, object_story_spec: spec });
+    if (!creative.ok) { await undo(); return { error: metaError(creative.j, 'Reclama (textele și imaginea)') }; }
+    made.push(creative.j.id);
+    const adM = await call('POST', '/' + act + '/ads', tok, { name, adset_id: adset.j.id, creative: { creative_id: creative.j.id }, status: 'ACTIVE' });
+    if (!adM.ok) { await undo(); return { error: metaError(adM.j, 'Reclama') }; }
+    const on = (o && o.paused) ? { ok: true } : await call('POST', '/' + adset.j.id, tok, { status: 'ACTIVE' });
+    const onC = (o && o.paused) ? { ok: true } : await call('POST', '/' + camp.j.id, tok, { status: 'ACTIVE' });
+    return { ok: true, campaignId: camp.j.id, adsetId: adset.j.id, adId: adM.j.id, started: !(o && o.paused) && on.ok && onC.ok, plan };
   } catch (err) {
     await undo();
     return { error: 'Rețea: ' + err.message };
@@ -625,5 +750,5 @@ async function delivery(conn, id) {
   return r.ok ? r.j : { error: metaError(r.j) };
 }
 // whether the account is shared (some campaigns are left out), so its own totals can't be used as ours
-const scoped = (conn) => { const s = (conn && conn.scope) || SCOPE.DEFAULT; return !!(s.include || (s.exclude || []).length); };
-module.exports = { audienceCreate, audienceList, ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };
+const scoped = (conn) => { const s = scopeOf(conn); return !!(s.include || (s.exclude || []).length); };
+module.exports = { port, audienceCreate, audienceList, ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };

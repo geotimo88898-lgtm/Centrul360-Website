@@ -3,6 +3,7 @@
 // Fișierele (fostul Vercel Blob) sunt în R2: BLOB = portalul, CREATIVE_BLOB = creativele, cu aceleași căi.
 // Ceasul: o singură expresie, din oră în oră la :17 (cf/worker.js scheduled): automatizările în fiecare oră (ca ceasul
 // de pe GitHub, care primea 401 după mutare), plus la 05 producția de creative și la 19 raportul zilei. Oprit cu CRON_ON = "0".
+// A doua expresie, din minut în minut: doar campania „Transformarea 360” (api/fastcash-tick.js), care nu face nimic cât e oprită.
 {
   "name": "centrul360-website",
   "keep_vars": true,
@@ -34,7 +35,7 @@
   "workflows": [
     { "name": "centrul360-creative-jobs", "binding": "CREATIVE_JOBS", "class_name": "CreativeJobs" }
   ],
-  "triggers": { "crons": ["17 * * * *"] },
+  "triggers": { "crons": ["17 * * * *", "* * * * *"] },
   "vars": { "CRON_ON": "1", "BLOB_STORE_ID": "r2" },
   // cheile comune din Secrets Store (ANTHROPIC, GEMINI, FB_APP_ID, FB_APP_SECRET; comune cu celelalte afaceri; VERTEX: imaginile, pe creditul GCP, când AI Studio n-are credit)
   "secrets_store_secrets": [
