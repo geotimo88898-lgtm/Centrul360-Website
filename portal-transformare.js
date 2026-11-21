@@ -26,7 +26,7 @@
   function mount(p) {
     panel = p;
     panel.classList.add('k-panel', 'tf');
-    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Campanie TRANSFORMARE</h2>' +
+    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Fast Cash</h2>' +
       '<p class="k-lede">Transformarea 360 pe WhatsApp, 22-29 noiembrie: 10 locuri în fiecare clinică.</p></div><div class="k-head-actions" data-tfhead></div></div>' +
       '<div data-tfbody><div class="k-skel" style="height:520px"></div></div>';
     panel.addEventListener('click', onClick);
