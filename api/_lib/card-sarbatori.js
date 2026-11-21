@@ -227,6 +227,10 @@ const TPL = {
     body: 'Bună! Ți-am pregătit Cardul de Sărbători de {{1}} lei, cu {{2}} lei în tratamente, valabil până pe 30 iunie 2027. Cum vrei să-l plătești? Online, cu cardul, primești în plus {{3}} și acces în Clubul 360. Sau îl plătești în clinică, cash sau card. Alege mai jos.' },
   rezervat: { label: 'Card de Sărbători rezervat', headerType: 'IMAGE', map: ['suma', 'credit', 'locatie'], sample: { code: '', mark: 'Rezervat', name: '' },
     body: 'Bună! Ți-am rezervat Cardul de Sărbători de {{1}} lei, cu {{2}} lei în tratamente. Te sunăm în curând să stabilim când treci să-l plătești în clinica din {{3}}, cash sau card. Mulțumim!' },
+  // the same, shorter and ending with a question, so the chat goes on (the owner, 21.11: „să se termine cu o întrebare ca să putem să-i dăm close”);
+  // used once Meta approves it, until then the one above
+  rezervat2: { label: 'Card de Sărbători rezervat 2', headerType: 'IMAGE', map: ['suma', 'credit', 'locatie'], sample: { code: '', mark: 'Rezervat', name: '' },
+    body: 'Bună! Cardul tău de Sărbători de {{1}} lei e rezervat: primești {{2}} lei în tratamente, la clinica din {{3}}, valabil până pe 30 iunie 2027. Îl plătești când treci pe la noi, cash sau card. Când îți e mai ușor să vii, mâine sau în zilele următoare?' },
   // the payment she started and did not finish (the owner, 21.11): about an hour after, and once more a day later, with the
   // picture of her card (her name, no code: nothing is issued yet) and three buttons (recover, onWhatsApp below)
   // (no name in them: an online order is only her phone and her card, 21.11)
@@ -371,7 +375,10 @@ async function reservedMsg(id) {
     png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: (r.cards[0] || {}).recipient || r.name || '', code: '', mark: 'Rezervat', valid: VALID_TXT });
     await writeBinary(path, png, 'image/png').catch(() => { path = ''; });
   } catch (e) { console.error('card reserved image:', e.message); }
-  const m = png ? await say('rezervat', r, vars, fill('rezervat', vars), png, '', { path, only: 'template', tag: { cardOrder: r.id, cardStep: 'rezervat' } }).catch((e) => ({ sent: false, error: e.message }))
+  // the version ending with a question once approved for her number, else the first one
+  const T2 = await templates().catch(() => ({ t: {} }));
+  const kind = T2.t && T2.t.rezervat2 && require('./wa-templates').overall(T2.t.rezervat2) === 'APPROVED' ? 'rezervat2' : 'rezervat';
+  const m = png ? await say(kind, r, vars, fill(kind, vars), png, '', { path, only: 'template', tag: { cardOrder: r.id, cardStep: 'rezervat' } }).catch((e) => ({ sent: false, error: e.message }))
     : { sent: false, error: 'poza cardului' };
   const rez = m.sent ? { at: nowISO(), how: m.how } : { at: nowISO(), skipped: m.tpl ? 'șablonul nu e aprobat încă' : String(m.error || 'netrimis').slice(0, 160) };
   const l2 = await readJSON(KEY, []);
