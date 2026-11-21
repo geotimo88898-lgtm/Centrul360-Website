@@ -228,7 +228,7 @@ async function afterLead(lead, x, city) {
       // a second form from her keeps what was sent before for the same package
       prev.tier === x.tier && prev.zone === x.zone ? { sentAt: prev.sentAt, tplId: prev.tplId, f1At: prev.f1At, f2At: prev.f2At } : {});
     l.activities = l.activities || [];
-    l.activities.push({ id: require('crypto').randomUUID(), type: 'note', text: 'Lead filter: ' + summary(x) + (HOT.includes(x.tier) ? ' · SUNĂ ACUM' : ''), author: 'Facebook Lead Ads', at });
+    l.activities.push({ id: require('crypto').randomUUID(), type: 'note', text: 'Lead filter: ' + summary(x) + (HOT.includes(x.tier) ? ' · SUNĂ ACUM' : ''), author: l.source === 'site' ? 'Site' : 'Facebook Lead Ads', at });
     await writeJSON(LEADS_KEY, leads);
     if (HOT.includes(x.tier)) {
       const N = require('./notify');

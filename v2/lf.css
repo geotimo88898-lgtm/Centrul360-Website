@@ -1,3 +1,75 @@
+/* The lead filter window, on its own (21.11 evening): the card checkout moved into the card block and its window lost the
+   form styles, so the lead filter keeps its own copy of them, scoped to .lfs (taken from cs-buy.css of 21.11 morning). */
+.csb.lfs{ position:fixed; inset:0; z-index:140; display:grid; place-items:center; visibility:hidden; pointer-events:none; }
+.csb.lfs.open{ visibility:visible; pointer-events:auto; }
+.lfs .csb-bg{ position:absolute; inset:0; background:rgba(20,8,14,.42); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); opacity:0; transition:opacity .45s var(--e); }
+.csb.lfs.open .csb-bg{ opacity:1; }
+.lfs .csb-p{ position:relative; width:min(560px,calc(100vw - 48px)); max-height:min(860px,calc(100dvh - 48px)); display:flex; flex-direction:column; overflow:hidden;
+  border-radius:30px; background:#fff; box-shadow:0 0 0 1px rgba(11,11,13,.06), 0 40px 100px -30px rgba(60,10,30,.55); transform-origin:50% 50%; }
+.lfs .csb-in{ display:flex; flex-direction:column; min-height:0; flex:1; opacity:0; transition:opacity .35s var(--e); }
+.csb.lfs.open.shown .csb-in{ opacity:1; transition-delay:.12s; }
+.lfs .csb-h{ position:relative; display:flex; align-items:center; gap:12px; padding:18px 18px 10px 24px; }
+.lfs .csb-h h2{ flex:1; font-size:1.3rem; letter-spacing:-.03em; line-height:1.2; }
+.lfs .csb-h h2 em{ font-size:inherit; }
+.lfs .csb-x{ flex:none; position:relative; width:38px; height:38px; border:0; border-radius:50%; background:rgba(11,11,13,.05); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.lfs .csb-x i{ position:absolute; left:50%; top:50%; width:15px; height:1.7px; margin-left:-7.5px; border-radius:2px; background:var(--ink); }
+.lfs .csb-x i:first-child{ transform:rotate(45deg); }
+.lfs .csb-x i:last-child{ transform:rotate(-45deg); }
+.lfs .csb-grab{ display:none; }
+.lfs .csb-sc{ flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:6px 24px 18px; }
+.lfs .csb-f{ display:grid; gap:16px; }
+.lfs .csb-l{ display:block; margin-bottom:8px; font-size:13.5px; font-weight:600; color:var(--ink2); }
+.lfs .csb-in input[type=text],.lfs .csb-in input[type=tel]{ width:100%; height:52px; padding:0 16px; border:0; border-radius:15px; font:inherit; font-size:16px; color:var(--ink); background:#fff;
+  box-shadow:0 0 0 1px var(--line2) inset; transition:box-shadow .4s var(--e); -webkit-appearance:none; appearance:none; }
+.lfs .csb-in input::placeholder{ color:var(--mute2); }
+.lfs .csb-in input[type=text]:focus,.lfs .csb-in input[type=tel]:focus{ outline:none; box-shadow:0 0 0 1.5px var(--teal) inset, 0 0 0 4px rgba(20,165,150,.12); }
+.lfs .csb-two{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.lfs .csb-ok{ position:relative; display:flex; align-items:flex-start; gap:10px; font-size:12.5px; line-height:1.45; color:var(--mute); cursor:pointer; }
+.lfs .csb-ok input{ position:absolute; opacity:0; width:1px; height:1px; margin:0; }
+.lfs .csb-ok i{ flex:none; width:20px; height:20px; margin-top:1px; border-radius:6px; display:grid; place-items:center; box-shadow:0 0 0 1.5px var(--line2) inset; transition:background-color .3s; }
+.lfs .csb-ok i svg{ width:11px; height:11px; color:#fff; opacity:0; }
+.lfs .csb-ok input:checked + i{ background:var(--teal); box-shadow:none; }
+.lfs .csb-ok input:checked + i svg{ opacity:1; }
+.lfs .csb-ok input:focus-visible + i{ outline:2px solid var(--teal); outline-offset:2px; }
+.lfs .csb-hp{ position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+.lfs .csb-ft{ padding:14px 24px calc(18px + env(safe-area-inset-bottom)); border-top:1px solid var(--line); background:linear-gradient(180deg,#fff,#fffafb); }
+.lfs .csb-ok a{ color:var(--ink); text-decoration:underline; text-underline-offset:2px; pointer-events:auto; }
+.lfs .csb-err{ margin-bottom:10px; font-size:14px; font-weight:600; color:#9c0f4a; }
+.lfs .csb-err:empty{ display:none; }
+.lfs .csb-ft .btn{ width:100%; white-space:normal; height:auto; min-height:58px; padding:12px 24px; text-align:center; }
+.lfs .csb-ft .btn[disabled]{ opacity:.7; cursor:default; }
+.lfs .csb-note{ margin-top:10px; font-size:12.5px; line-height:1.45; color:var(--mute2); text-align:center; }
+.lfs .csb-spin{ width:18px; height:18px; flex:none; border-radius:50%; border:2px solid rgba(255,255,255,.45); border-top-color:#fff; animation:spin .9s linear infinite; }
+.lfs .csb-done{ display:none; flex-direction:column; gap:16px; padding:6px 24px calc(24px + env(safe-area-inset-bottom)); overflow-y:auto; }
+.csb.lfs.sent .csb-sc,.csb.lfs.sent .csb-ft{ display:none; }
+.csb.lfs.sent .csb-done{ display:flex; animation:lfsIn .7s var(--e); }
+@keyframes lfsIn{from{ opacity:0; transform:translateY(14px); }}
+.lfs .csb-tick{ width:60px; height:60px; border-radius:50%; display:grid; place-items:center; color:#fff; background:linear-gradient(180deg,#1bb9a9,#0f9083); box-shadow:0 14px 28px -12px rgba(16,145,132,.8); }
+.lfs .csb-tick svg{ width:26px; height:26px; }
+.lfs .csb-done h3{ font-size:1.6rem; letter-spacing:-.04em; }
+.lfs .csb-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+.lfs .csb-chips span{ padding:5px 12px; border-radius:999px; font-size:13px; font-weight:500; color:var(--ink2); background:rgba(11,11,13,.045); }
+.lfs .csb-next{ list-style:none; margin:0; padding:0; display:grid; gap:12px; counter-reset:n; }
+.lfs .csb-next li{ display:flex; gap:12px; align-items:flex-start; font-size:15px; line-height:1.45; color:var(--ink2); counter-increment:n; }
+.lfs .csb-next li::before{ content:counter(n); flex:none; width:26px; height:26px; border-radius:50%; display:grid; place-items:center; font-size:12.5px; font-weight:700; color:var(--teal2); background:var(--tint); }
+.lfs .csb-next b{ display:block; color:var(--ink); }
+.lfs .csb-done .btn{ width:100%; }
+html.csb-lock{ overflow:hidden; }
+@media (max-width:640px){
+  .csb.lfs{ place-items:end stretch; }
+  .lfs .csb-p{ width:100%; max-height:calc(100dvh - 28px); border-radius:26px 26px 0 0; }
+  .lfs .csb-grab{ display:block; position:absolute; top:8px; left:50%; width:40px; height:5px; margin-left:-20px; border-radius:5px; background:rgba(11,11,13,.14); }
+  .lfs .csb-h{ padding:20px 14px 6px 20px; }
+  .lfs .csb-sc{ padding:4px 20px 16px; }
+  .lfs .csb-ft{ padding:12px 20px calc(14px + env(safe-area-inset-bottom)); }
+  .lfs .csb-done{ padding:6px 20px calc(22px + env(safe-area-inset-bottom)); }
+  .lfs .csb-two{ grid-template-columns:1fr; }
+}
+@media (prefers-reduced-motion:reduce){
+  .lfs .csb-bg,.lfs .csb-in{ transition:none; }
+  .csb.lfs.sent .csb-done{ animation:none; }
+}
+.lfs .csb-spin-big{ width:44px; height:44px; border-width:3px; border-color:rgba(20,165,150,.25); border-top-color:var(--teal); }
 /* The lead filter on the site (v2/lf.js): the card window's look (cs-buy.css, .csb) with one question per screen, big tap
    targets, the zone's four packages as cards, the highest first. Classes start with lfs-. Teal, like the booking: it's the
    clinic's own path (the card window keeps its Christmas red). */
@@ -82,3 +154,8 @@
 /* one height for every question, so the window doesn't jump between them */
 @media (max-width:640px){ .lfs .csb-p{ min-height:min(640px, calc(100dvh - 28px)); } }
 @media (min-width:641px){ .lfs .csb-p{ min-height:min(620px, calc(100dvh - 48px)); } }
+/* the preview's open question on the package step (never on the live site) */
+.lfs-prop{ font-size:13px; line-height:1.5; }
+.lfs-prop summary{ display:inline-flex; padding:6px 12px; border-radius:999px; list-style:none; cursor:pointer; font-weight:600; color:#6b5300; background:#fff6d1; box-shadow:0 0 0 1px rgba(107,83,0,.18) inset; }
+.lfs-prop summary::-webkit-details-marker{ display:none; }
+.lfs-prop p{ margin-top:8px; padding:12px 14px; border-radius:14px; color:var(--ink2); background:#fffbea; box-shadow:0 0 0 1px rgba(107,83,0,.14) inset; }

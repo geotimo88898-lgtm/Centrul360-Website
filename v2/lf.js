@@ -11,6 +11,8 @@
   var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>';
   var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
   var CITIES = ['Timișoara', 'Arad'];
+  // the preview only (/v2/): the owner's open question that belongs to this step
+  var PROP = location.pathname.indexOf('/v2/') === 0 ? '<details class="lfs-prop"><summary>De confirmat: plata online aici</summary><p>Propunere: plata online direct din acest pas, pentru pachetele de 390 și 990 lei (și 190 la gușă), ca HIFU gușă plătit cu cardul care a vândut 90 într-o zi. Cine plătește online are locul rezervat pe loc și primește un bonus ales de tine (de exemplu un tratament facial Restart). Prețul rămâne cel întreg. Trebuie câte un PayLink myPOS pe pachet. O pornim?</p></details>' : '';
   // a topic from a link (?din=gusa, a reel's word) → the zone
   var TOPIC = { gusa: 'gusa-contur', 'barbie-dubla': 'gusa-contur', barbie: 'gusa-contur', contur: 'gusa-contur', gat: 'gusa-contur',
     abdomen: 'abdomen-talie', talie: 'abdomen-talie', burta: 'abdomen-talie', burtica: 'abdomen-talie', grasime: 'abdomen-talie',
@@ -88,7 +90,7 @@
     } else if (step === 'when') {
       html = q('Când vrei să vezi rezultatul?') + '<div class="lfs-list">' + ((offer && offer.timeline) || []).map(function (t) { return opt('when', t.key, '<b>' + esc(t.label) + '</b>', st.when === t.key); }).join('') + '</div>';
     } else if (step === 'pack') {
-      html = q('Ce variantă ți se potrivește?', 'Prețul e pentru tot pachetul. Plătești la clinică, după consultația gratuită.') + '<div class="lfs-packs">' + ((z && z.tiers) || []).map(function (t) { return pack(t, z.packs[t]); }).join('') + '</div>';
+      html = q('Ce variantă ți se potrivește?', 'Prețul e pentru tot pachetul. Plătești la clinică, după consultația gratuită.') + PROP + '<div class="lfs-packs">' + ((z && z.tiers) || []).map(function (t) { return pack(t, z.packs[t]); }).join('') + '</div>';
     } else if (step === 'contact') {
       var p = z && z.packs[st.tier];
       html = q('Unde îți trimitem detaliile?', 'Pe WhatsApp primești acum tot ce include pachetul. Nu plătești nimic acum.') +
