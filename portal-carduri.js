@@ -44,7 +44,7 @@
     const tpl = d.templates || {}, tplOk = Object.values(tpl).length && Object.values(tpl).every((x) => x === 'APPROVED');
     const stat = (ic, cls, label, value, sub) => '<div class="k-stat ' + cls + '"><div class="k-stat-top"><span class="k-stat-ic">' + icon(ic) + '</span><span class="k-stat-l">' + label + '</span></div><div class="k-stat-value">' + value + '</div><div class="k-stat-sub">' + sub + '</div></div>';
     body.innerHTML = '<div class="k-grid c4 cd-stats">' +
-      stat('gift', 'is-accent', 'Carduri rămase', String(d.left), (d.open ? 'în vânzare până pe 24 dec.' : 'vânzarea s-a încheiat') + (d.role === 'admin' ? ' · <button type="button" class="cd-stock" data-cd-stock>Stoc: ' + d.total + '</button>' : '')) +
+      stat('gift', 'is-accent', 'Carduri rămase', String(d.left), d.role === 'admin' ? '<button type="button" class="cd-stock" data-cd-stock>Stoc ' + d.total + ' · schimbă</button>' : d.open ? 'în vânzare până pe 24 dec.' : 'vânzarea s-a încheiat') +
       stat('wallet', 'is-good', 'Încasat din carduri', lei(t.money || 0), (t.cards || 0) + ' carduri plătite · ' + lei(t.online || 0) + ' online') +
       stat('card', '', 'Credit folosit', lei(t.used || 0), 'din ' + lei(t.credit || 0) + ' credit dat') +
       stat('chat', tplOk ? 'is-good' : 'is-warn', 'Mesaje WhatsApp', tplOk ? 'Automate' : 'Manual', tplOk ? 'șabloanele sunt aprobate de Meta' : 'șabloanele așteaptă aprobarea Meta') +
