@@ -274,9 +274,19 @@ module.exports = async (req, res) => {
   //              be known for the ones moved before 16.11), missedOn: the moves that kept their no-show since
   // ?attfix=1: what the once fix of the manager's 19.11 pontaj found and did (times only; api/_lib/att-fix-once.js)
   // ?myposprobe=1: can the myPOS API Gateway keys make online payments (eCommerce API)? read only (api/_lib/mypos.js gwProbe)
-  // ?myposembed=1: the Card de Sărbători's online payment: is the myPOS Configuration Pack there, does it read, which fields
-  // (never a value), sandbox or not (api/_lib/card-sarbatori.js packStatus)
-  if (req.query && req.query.myposembed) { res.status(200).json(require('./_lib/card-sarbatori').packStatus()); return; }
+  // ?cardpay=1: the Card de Sărbători's payments in myPOS: what the transactions API shows of the last 14 days, in counts and
+  // field names only (type, POS or not, currency), the webhook events myPOS offers, the orders waiting, the WhatsApp templates
+  if (req.query && req.query.cardpay) {
+    const C = require('./_lib/card-sarbatori');
+    // ?cardpay=templates: its WhatsApp templates made and sent to Meta now (the clock does it too, every 6 hours until approved)
+    if (req.query.cardpay === 'templates') { res.status(200).json(await C.ensureTemplates().catch((e) => ({ error: e.message }))); return; }
+    const s = await C.scanMypos(Number(req.query.days) > 0 ? Math.min(60, Number(req.query.days)) : 14, { events: true }).catch((e) => ({ ok: false, error: e.code || e.message }));
+    const list = await readJSON(C.KEY, []);
+    const T = await C.templates().catch(() => ({ t: {} }));
+    res.status(200).json({ probe: s.probe || null, error: s.error || '', online: (s.pays || []).map((p) => ({ amount: p.amount, at: p.at })), waiting: list.filter((r) => r.status === 'asteptare').map((r) => ({ amount: r.amount, created: r.created })),
+      templates: Object.fromEntries(Object.entries(T.t || {}).map(([k, t]) => [k, t ? WT.overall(t) : 'LIPSĂ'])) });
+    return;
+  }
   if (req.query && req.query.myposprobe) { const { writeJSON } = require('./_lib/store'); res.status(200).json(await require('./_lib/mypos').gwProbe({ readJSON, writeJSON }).catch((e) => ({ error: String(e.message || e) }))); return; }
   if (req.query && req.query.attfix) {
     const [fix, dup, att, emps, adjs] = await Promise.all([readJSON(require('./_lib/att-fix-once').KEY, {}), readJSON(require('./_lib/att-dup-once').KEY, {}), readJSON('data/attendance.json', []), readJSON('data/employees.json', []), readJSON('data/time-adjust.json', [])]);

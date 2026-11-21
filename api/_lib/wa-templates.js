@@ -22,7 +22,9 @@ const KEY = 'data/wa-templates.json';
 const VARS = ['prenume', 'nume', 'telefon', 'procedura', 'interes', 'tratament', 'locatie', 'adresa', 'zi', 'data', 'ora', 'link_recenzie', 'ocupate', 'ramase'];
 // Meta wants an example for each variable when it reviews a template
 const SAMPLE = { prenume: 'Andreea', nume: 'Andreea Popescu', telefon: '0722 123 456', procedura: 'LipoSonix', interes: 'LipoSonix', tratament: 'Facial Restart',
-  locatie: 'Timișoara', adresa: 'Str. Bucegi 7, Timișoara', zi: 'mâine', data: '14.10.2026', ora: '11:00', link_recenzie: 'https://g.page/r/centrul360/review', ocupate: '4', ramase: '6' };
+  locatie: 'Timișoara', adresa: 'Str. Bucegi 7, Timișoara', zi: 'mâine', data: '14.10.2026', ora: '11:00', link_recenzie: 'https://g.page/r/centrul360/review', ocupate: '4', ramase: '6',
+  // the Card de Sărbători's own templates (api/_lib/card-sarbatori.js TPL): not offered in the editor, only their examples
+  credit: '2.500', cod: 'C360-AB2C-DE3F', cadou: 'Cadou: o ședință de EMS cadou. Locul tău în Clubul 360 e rezervat: https://www.centrul360.com/club-360', folosit: '450', sold: '2.050' };
 const CATEGORIES = ['UTILITY', 'MARKETING'];
 
 const clip = (s, n) => String(s == null ? '' : s).slice(0, n);
@@ -150,7 +152,7 @@ async function compsFor(t, a) {
   if (t.headerType !== 'IMAGE') return { c: components(t) };
   const buf = t.samplePath ? await readBinary(t.samplePath) : null;
   if (!buf) return { error: 'lipsește poza exemplu' };
-  const h = await WA.resumableHandle(a.token, buf, 'image/jpeg');
+  const h = await WA.resumableHandle(a.token, buf, buf[0] === 0x89 && buf[1] === 0x50 ? 'image/png' : 'image/jpeg');
   if (h.error) return { error: 'poza exemplu: ' + h.error };
   return { c: components(t, h.h) };
 }

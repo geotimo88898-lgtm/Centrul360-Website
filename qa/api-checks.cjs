@@ -1761,154 +1761,165 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     delete process.env.RULES_SINCE;
   }
 
-  // CS. the Card de Sărbători (20.11): the reservation, the counter, the checks of a public form, the online payment
-  // through a myPOS payment request (myPOS answered by a mock here: no real call, no real payment)
+  // CS. the Card de Sărbători (20-21.11): the order online (to the myPOS PayLink) or reserved (paid in the clinic), the counter,
+  // the checks of a public form, the payment found in myPOS or confirmed by the team, the card issued (bonuses only online),
+  // the credit used (partial, over, the gift, undo, expired), the roles, Clubul 360's waiting list. No real call, no real payment.
   {
-    const CSK = 'data/card-sarbatori.json';
-    ['MYPOS_CONFIG_PACK', 'MYPOS_EMBED_SANDBOX', 'MYPOS_PUBLIC_CERT'].forEach((k) => delete process.env[k]);
+    const CSK = 'data/card-sarbatori.json', CLK = 'data/club360-waitlist.json';
     let ipn = 0; // each call from its own address (the per-address limit has its own check)
-    const pub = async (body, origin, ip) => {
+    const pub = async (body, origin, ip, route) => {
       const h = Object.assign({ 'x-forwarded-for': ip || '10.9.0.' + (++ipn) }, origin ? { origin } : {});
-      const r = await fetch('http://127.0.0.1:' + PORT + '/api/card-sarbatori', body ? { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, h), body: JSON.stringify(body) } : { headers: h });
+      const r = await fetch('http://127.0.0.1:' + PORT + '/api/' + (route || 'card-sarbatori'), body ? { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, h), body: JSON.stringify(body) } : { headers: h });
       return Object.assign(await r.json().catch(() => ({})), { _status: r.status });
     };
-    wr(CSK, []);
+    const cs = (role, body) => api(role, 'card-sarbatori', body);
+    wr(CSK, []); wr(CLK, []); wr('data/card-sarbatori-links.json', {});
+    const CL = require('../api/_lib/card-sarbatori');
     const leads0 = rd('data/leads.json', []).length, notes0 = rd('data/notifications.json', []).length;
+    const ord = (id) => rd(CSK, []).find((r) => r.id === id) || {};
 
     const g0 = await pub();
-    check('CS', 'GET: 10 cards, 10 left, open, the deadline 24.12 23:59 RO, the three cards, no online payment while the card form is not set up', g0.total === 10 && g0.left === 10 && g0.open === true && g0.deadline === '2026-12-24T21:59:59.000Z' && g0.online === false && JSON.stringify(g0.tiers) === JSON.stringify({ 290: 500, 490: 1000, 990: 2500 }) && g0.maxQty === 5, g0);
-    const ok1 = await pub({ tier: 990, qty: 1, names: [''], name: 'Proba Card', phone: '0755 000 111', city: 'Timișoara', consent: true, terms: true, pay: 'online', amount: 1, page: 'https://www.centrul360.com/v2/card-sarbatori' });
-    const st1 = rd(CSK, []);
+    check('CS', 'GET: 10 cards, 10 left, open, the deadline 24.12 23:59 RO, valid until 30.06.2027, the three cards, no PayLink yet', g0.total === 10 && g0.left === 10 && g0.open === true && g0.deadline === '2026-12-24T21:59:59.000Z' && g0.validUntil === '2027-06-30T20:59:59.000Z' && JSON.stringify(g0.tiers) === JSON.stringify({ 290: 500, 490: 1000, 990: 2500 }) && g0.links[990] === null, g0);
+    const me = { tier: 990, forWho: 'eu', name: 'Proba Card', phone: '0755 000 111', city: 'Timișoara', consent: true, pay: 'online', page: 'https://www.centrul360.com/v2/card-sarbatori' };
+    const noLink = await pub(me);
+    check('CS', 'online with no PayLink for that card: no_link, nothing stored (the page offers the reservation)', noLink._status === 409 && noLink.error === 'no_link' && rd(CSK, []).length === 0, noLink);
+    const lkBad = await CL.setLinks({ 290: 'https://evil.example/pay' });
+    const lkHttp = await CL.setLinks({ 290: 'http://mypos.com/paylink/x' });
+    const lkOk = await CL.setLinks({ 290: 'https://mypos.com/vmp/paylink/abc290', 490: 'https://mypos.com/vmp/paylink/abc490', 990: 'https://www.mypos.eu/paylink/abc990' });
+    const lkHealthAnon = await fetch('http://127.0.0.1:' + PORT + '/api/lead-health?cardlinks=1');
+    check('CS', 'the PayLinks: only https links of mypos.com / mypos.eu, one per card, set by an admin only (lead-health ?cardlinks)', lkBad.error === 'bad_link' && lkHttp.error === 'bad_link' && lkOk.ok && (await pub()).links[990] === 'https://www.mypos.eu/paylink/abc990' && lkHealthAnon.status === 401, lkOk);
+
+    // 1. online: the order waits for its payment, she goes to the PayLink; no code yet
+    const on1 = await pub(Object.assign({}, me, { qty: 3, amount: 1, credit: 99999 }));
+    const o1 = ord(on1.id);
     const lead1 = rd('data/leads.json', []).find((l) => String(l.phone || '').replace(/\D/g, '').endsWith('755000111'));
-    check('CS', 'order 1 × 990: stored (rezervat, site, 990 to pay, 2.500 credit, a C360 code), online asked but not set up → in the clinic', ok1.ok && ok1.left === 9 && st1.length === 1 && st1[0].status === 'rezervat' && st1[0].via === 'site' && st1[0].pay === 'salon' && st1[0].amount === 990 && st1[0].credit === 2500 && st1[0].cards.length === 1 && /^C360-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(st1[0].cards[0].code) && st1[0].city === 'Timișoara', { ok1, st1 });
-    check('CS', 'her lead: source site, interest Card de Sărbători, the order tied to it', lead1 && lead1.source === 'site' && lead1.interest === 'Card de Sărbători' && st1[0].leadId === lead1.id && rd('data/leads.json', []).length === leads0 + 1, lead1 && { s: lead1.source, i: lead1.interest });
-    const nn = rd('data/notifications.json', []).slice(notes0);
-    check('CS', 'the owner and reception hear it like a site lead (LEAD SITE TM 🌐 - Card de Sărbători)', nn.some((n) => n.employeeId === 'admin' && /^LEAD SITE TM/.test(n.title) && /Card de Sărbători/.test(n.title)) && nn.some((n) => n.employeeId === 'e-rec'), nn.map((n) => n.employeeId + ' ' + n.title));
-    const again = await pub({ tier: 990, qty: 1, names: [''], name: 'Proba Card', phone: '0755000111', city: 'Timișoara', consent: true, terms: true });
-    check('CS', 'the same order sent twice: the one she has, not a second', again.ok && again.again && rd(CSK, []).length === 1, again);
-    const three = await pub({ tier: 490, qty: 3, names: ['Mama Proba', '', 'Sora Proba'], name: 'Proba Card', phone: '0755000111', city: 'Arad', consent: true, terms: true, amount: 5, credit: 99999 });
-    const st3 = rd(CSK, []).find((r) => r.id === (three.reservation || {}).id) || {};
-    const codes = new Set(rd(CSK, []).flatMap((r) => r.cards.map((c) => c.code)));
-    check('CS', '3 × 490: 1.470 to pay and 3.000 credit made on the server (the page\'s sums ignored), each card its code and its name', three.ok && three.left === 6 && st3.amount === 1470 && st3.credit === 3000 && st3.cards.length === 3 && st3.cards.map((c) => c.recipient).join('|') === 'Mama Proba||Sora Proba' && codes.size === 4, { three, st3 });
-    const small = await pub({ tier: 290, qty: 1, name: 'Proba Mica', phone: '0755000777', city: 'Arad', consent: true, terms: true });
-    check('CS', '1 × 290: 290 to pay, 500 credit', small.ok && small.reservation.amount === 290 && small.reservation.credit === 500 && small.left === 5, small);
-    const g1 = await pub();
-    check('CS', 'counter: 10 minus every card ordered (1 + 3 + 1)', g1.left === 5, g1);
+    check('CS', 'online 990 for her: the PayLink of 990, one card (the quantity and the page\'s sums ignored), waiting (asteptare), no code issued, 9 left', on1.ok && on1.link === 'https://www.mypos.eu/paylink/abc990' && on1.amount === 990 && o1.status === 'asteptare' && o1.pay === 'online' && o1.qty === 1 && o1.credit === 2500 && o1.cards.length === 1 && !o1.cards[0].code && on1.left === 9, { on1, o1 });
+    check('CS', 'her lead: source site, interest Card de Sărbători, tied to the order', lead1 && lead1.source === 'site' && lead1.interest === 'Card de Sărbători' && ord(on1.id).leadId === lead1.id && rd('data/leads.json', []).length === leads0 + 1, lead1 && { s: lead1.source, i: lead1.interest });
+    const again1 = await pub(me);
+    check('CS', 'the same order again (back from the PayLink): the one she has, not a second', again1.ok && again1.again && again1.id === on1.id && rd(CSK, []).length === 1, again1);
+    const noRec = await pub(Object.assign({}, me, { forWho: 'cadou', recipient: '', phone: '0755000112' }));
+    const giftAr = await pub(Object.assign({}, me, { tier: 490, forWho: 'cadou', recipient: 'Mama Proba', name: 'Proba Arad', phone: '0755000113', city: 'Arad' }));
+    check('CS', 'a gift online: the name on the card is asked; with it, kept on the card', noRec.error === 'missing_recipient' && giftAr.ok && ord(giftAr.id).cards[0].recipient === 'Mama Proba' && ord(giftAr.id).forWho === 'cadou' && giftAr.amount === 490, { noRec, g: ord(giftAr.id).cards });
+
+    // 2. reserved, paid in the clinic: nothing issued until the payment
+    const res3 = await pub({ tier: 490, qty: 3, names: ['Mama Proba', '', 'Sora Proba'], name: 'Proba Clinica', phone: '0755000232', city: 'Arad', consent: true, pay: 'clinica', amount: 5 });
+    const o3 = ord((res3.reservation || {}).id);
+    check('CS', 'reserved 3 × 490 (clinic): 1.470 and 3.000 made on the server, each card its name, no code until paid, 5 left', res3.ok && o3.status === 'rezervat' && o3.pay === 'clinica' && o3.amount === 1470 && o3.credit === 3000 && o3.cards.map((c) => c.recipient).join('|') === 'Mama Proba||Sora Proba' && o3.cards.every((c) => !c.code) && res3.left === 5, { res3, o3 });
     const bad = await Promise.all([
-      pub({ tier: 990, qty: 1, name: 'X', phone: '0755000222', city: 'Arad', consent: true, terms: true }), pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '12', city: 'Arad', consent: true, terms: true }),
-      pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '0755000222', city: 'Cluj', consent: true, terms: true }), pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '0755000222', city: 'Arad' }),
-      pub({ tier: 500, qty: 1, name: 'Proba Doi', phone: '0755000222', city: 'Arad', consent: true, terms: true }), pub({ tier: 990, qty: 6, name: 'Proba Doi', phone: '0755000222', city: 'Arad', consent: true, terms: true }),
-      pub({ tier: 990, qty: 0, name: 'Proba Doi', phone: '0755000222', city: 'Arad', consent: true, terms: true }), pub({ tier: 990, qty: 1.5, name: 'Proba Doi', phone: '0755000222', city: 'Arad', consent: true, terms: true })]);
-    check('CS', 'validation: name, phone, city, consent, the card (only 290/490/990), the quantity (1 to 5)', bad.map((x) => x.error).join() === 'missing_name,bad_phone,missing_city,missing_consent,bad_tier,bad_qty,bad_qty,bad_qty' && bad.every((x) => x._status === 400) && rd(CSK, []).length === 3, bad.map((x) => x.error));
-    const hp = await pub({ tier: 990, qty: 1, name: 'Bot Proba', phone: '0755000333', city: 'Arad', consent: true, terms: true, website: 'http://spam' });
-    check('CS', 'the trap field: a quiet ok, nothing stored', hp.ok && !hp.reservation && rd(CSK, []).length === 3, hp);
-    const evil = await pub({ tier: 990, qty: 1, name: 'Proba Trei', phone: '0755000444', city: 'Arad', consent: true, terms: true }, 'https://evil.example');
-    const evilGet = await pub(null, 'https://evil.example');
-    const okOrigin = await pub(null, 'https://www.centrul360.com');
-    check('CS', 'own origin only (another site: 403, ours: ok)', evil._status === 403 && evilGet._status === 403 && okOrigin._status === 200 && rd(CSK, []).length === 3, { evil, evilGet: evilGet._status });
+      pub({ tier: 990, qty: 1, name: 'X', phone: '0755000222', city: 'Arad', consent: true }), pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '12', city: 'Arad', consent: true }),
+      pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '0755000223', city: 'Cluj', consent: true }), pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '0755000223', city: 'Arad' }),
+      pub({ tier: 500, qty: 1, name: 'Proba Doi', phone: '0755000223', city: 'Arad', consent: true }), pub({ tier: 990, qty: 6, name: 'Proba Doi', phone: '0755000223', city: 'Arad', consent: true }),
+      pub({ tier: 990, qty: 0, name: 'Proba Doi', phone: '0755000223', city: 'Arad', consent: true })]);
+    check('CS', 'validation: name, phone, city, consent, the card (only 290/490/990), the quantity (1 to 5)', bad.map((x) => x.error).join() === 'missing_name,bad_phone,missing_city,missing_consent,bad_tier,bad_qty,bad_qty' && bad.every((x) => x._status === 400) && rd(CSK, []).length === 3, bad.map((x) => x.error));
+    const hp = await pub({ tier: 990, qty: 1, name: 'Bot Proba', phone: '0755000333', city: 'Arad', consent: true, website: 'http://spam' });
+    const evil = await pub({ tier: 990, qty: 1, name: 'Proba Trei', phone: '0755000444', city: 'Arad', consent: true }, 'https://evil.example');
+    check('CS', 'the trap field: a quiet ok, nothing stored; another site\'s origin: 403', hp.ok && !hp.id && !hp.reservation && evil._status === 403 && rd(CSK, []).length === 3, { hp, evil: evil._status });
     const lim = [];
     for (let i = 0; i < 9; i++) lim.push((await pub({ name: 'X', phone: '1', city: 'Arad' }, null, '10.8.8.8'))._status);
     check('CS', 'a few tries per address: the 9th in 10 minutes gets 429', lim.slice(0, 8).every((x) => x === 400) && lim[8] === 429, lim);
-    const C0 = require('../api/_lib/card-sarbatori');
-    const lk0 = (await pub()).links;
-    const lkBad = await C0.setLinks({ 290: 'https://evil.example/pay' });
-    const lkHttp = await C0.setLinks({ 290: 'http://mypos.com/paylink/x' });
-    const lkOk = await C0.setLinks({ 290: 'https://mypos.com/vmp/paylink/abc290', 990: 'https://www.mypos.eu/paylink/abc990' });
-    const lk1 = (await pub()).links;
-    const lkClr = await C0.setLinks({ 290: '' });
-    const lkHealthAnon = await fetch('http://127.0.0.1:' + PORT + '/api/lead-health?cardlinks=1');
-    const lkHealth = await api('admin', 'lead-health', { 490: 'https://mypos.com/vmp/paylink/abc490' }, 'cardlinks=1');
-    check('CS', 'the PayLinks: all null first; only https links of mypos.com / mypos.eu; one per card; \'\' clears; set by an admin only (lead-health ?cardlinks)', lk0 && lk0[290] === null && lk0[990] === null && lkBad.error === 'bad_link' && lkHttp.error === 'bad_link' && lkOk.ok && lk1[290] === 'https://mypos.com/vmp/paylink/abc290' && lk1[990] === 'https://www.mypos.eu/paylink/abc990' && lk1[490] === null && lkClr.links[290] === null && lkHealthAnon.status === 401 && lkHealth.ok && lkHealth.links[490] === 'https://mypos.com/vmp/paylink/abc490', { lk0, lkBad, lk1, lkClr: lkClr.links, h: lkHealth });
-    wr('data/card-sarbatori-links.json', {});
-    const ls = await api('receptie', 'card-sarbatori', { action: 'list' });
-    const anon = await pub({ action: 'list' });
-    check('CS', 'the team sees the list (reception), the public does not', ls.reservations && ls.reservations.length === 3 && anon._status === 401, { n: ls.reservations && ls.reservations.length, anon: anon._status });
-    const cut = await api('receptie', 'card-sarbatori', { action: 'set', id: st3.id, status: 'anulat' });
-    check('CS', 'an order cancelled: its 3 cards back on the counter', cut.ok && cut.left === 8 && (await pub()).left === 8, cut);
-    await api('receptie', 'card-sarbatori', { action: 'set', id: st3.id, status: 'rezervat' });
-    // the last cards: an order bigger than what is left, then sold out
-    const many = rd(CSK, []);
-    for (let i = 0; i < 3; i++) many.push({ id: 'fill-' + i, created: new Date().toISOString(), name: 'Umplere', phone: '07' + String(10000000 + i), city: 'Arad', tier: 290, qty: 1, amount: 290, credit: 500, cards: [{ code: 'C360-FILL-' + i, recipient: '' }], recipient: '', status: 'rezervat', via: 'test', pay: 'salon' });
-    wr(CSK, many);
-    const over = await pub({ tier: 990, qty: 3, name: 'Proba Patru', phone: '0755000555', city: 'Arad', consent: true, terms: true });
-    many.push({ id: 'fill-x', created: new Date().toISOString(), name: 'Umplere', phone: '0710009999', city: 'Arad', tier: 290, qty: 2, amount: 580, credit: 1000, cards: [], recipient: '', status: 'rezervat', via: 'test', pay: 'salon' });
-    wr(CSK, many);
-    const full = await pub({ tier: 290, qty: 1, name: 'Proba Patru', phone: '0755000555', city: 'Arad', consent: true, terms: true });
-    const gFull = await pub();
-    check('CS', '2 left, 3 asked: not_enough (with what is left); then 0 left: sold_out, closed', over._status === 409 && over.error === 'not_enough' && over.left === 2 && full.error === 'sold_out' && gFull.left === 0 && gFull.open === false, { over, full, gFull });
-    wr(CSK, many.filter((r) => !/^fill-/.test(r.id)));
 
-    // online payment: our checkout with the myPOS card form (Embedded SDK); paid only by myPOS's notification
-    const notify = async (fields, key) => {
-      const pairs = Object.entries(fields).map(([k, v]) => [k, String(v)]);
-      if (key) pairs.push(['Signature', require('crypto').createSign('RSA-SHA256').update(Buffer.from(pairs.map((p) => p[1]).join('-')).toString('base64')).sign(key, 'base64')]);
-      const r = await fetch('http://127.0.0.1:' + PORT + '/api/card-notify', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(pairs).toString() });
-      return { status: r.status, text: await r.text() };
-    };
-    const int0 = await pub({ action: 'intent', tier: 990, qty: 1 });
-    check('CS', 'the card form not set up (no Configuration Pack, no sandbox): intent answers payment_not_configured, nothing stored', int0.error === 'payment_not_configured' && rd(CSK, []).length === 3, int0);
-    const C = require('../api/_lib/card-sarbatori');
-    process.env.MYPOS_CONFIG_PACK = '  not base64 json  ';
-    const ps0 = C.packStatus();
-    const packOf = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/(.{40})/g, '$1\n ');
-    process.env.MYPOS_CONFIG_PACK = packOf({ sid: '123456', cn: '40111222333', pk: '-----BEGIN PRIVATE KEY-----\nTEST\n-----END PRIVATE KEY-----', pc: '-----BEGIN CERTIFICATE-----\nTEST\n-----END CERTIFICATE-----', idx: 2 });
-    const off1 = C.embed();
-    process.env.CARD_PAY_ONLINE = '1';
-    const ps1 = C.packStatus(), em1 = C.embed();
-    check('CS', 'the Configuration Pack: a broken one is not used; a good one (spaces, line breaks) reads; with the switch off no online payment; on: the browser gets sid, wallet, key index, never pk', off1 === null && ps1.switchOn && !ps0.usable && ps0.present && !ps0.decoded && ps1.usable && ps1.hasPrivateKey && ps1.hasMyposCert && ps1.fields.join() === 'sid,cn,pk,pc,idx' && em1.sid === '123456' && em1.walletNumber === '40111222333' && em1.keyIndex === 2 && !em1.isSandbox && !JSON.stringify(em1).includes('PRIVATE') && !JSON.stringify(ps1).includes('TEST'), { ps0, ps1, em1 });
-    delete process.env.MYPOS_CONFIG_PACK; delete process.env.CARD_PAY_ONLINE;
-    process.env.MYPOS_EMBED_SANDBOX = '1';
-    const g2 = await pub();
-    check('CS', 'the card form set up: online on', g2.online === true && g2.left === 5, g2);
-    const int1 = await pub({ action: 'intent', tier: 490, qty: 3, amount: 1 });
-    const co1 = int1.checkout || {};
-    check('CS', 'intent 3 × 490: the order made first (a draft, not counted), our orderID, 1.470 RON made on the server, the cart, urlNotify on our site, the sandbox settings', int1.ok && /^CS[0-9A-F]{16}$/.test(co1.orderID) && co1.amount === 1470 && co1.currency === 'RON' && co1.ipcLanguage === 'ro' && /\/api\/card-notify$/.test(co1.urlNotify) && co1.sid === '000000000000010' && co1.walletNumber === '61938166610' && co1.keyIndex === 1 && co1.isSandbox === true && co1.cartItems[0].quantity === 3 && co1.cartItems[0].price === 490 && (await pub()).left === 5 && rd(CSK, []).find((r) => r.id === int1.id).status === 'draft', int1);
-    const int2 = await pub({ action: 'intent', tier: 490, qty: 2, id: int1.id });
-    check('CS', 'the same draft, 2 cards now: a new orderID, 980 RON', int2.id === int1.id && int2.checkout.amount === 980 && int2.checkout.orderID !== co1.orderID, int2.checkout);
-    const resO = await pub({ tier: 490, qty: 2, names: ['', ''], name: 'Proba Online', phone: '0755000321', city: 'Arad', consent: true, terms: true, pay: 'online', draft: int1.id, amount: 1 });
-    const rowO = rd(CSK, []).find((r) => r.id === int1.id) || {};
-    check('CS', 'her details on the draft: a reservation to pay online, its 2 cards counted, the form gets the same orderID and 980', resO.ok && resO.reservation.id === int1.id && resO.reservation.pay === 'online' && rowO.status === 'rezervat' && rowO.cards.length === 2 && resO.checkout && resO.checkout.orderID === int2.checkout.orderID && resO.checkout.amount === 980 && resO.left === 3, { resO, rowO });
-    const st0 = await pub({ action: 'status', id: int1.id });
-    check('CS', 'the page asks: not paid (the browser\'s word never pays it)', st0.ok && !st0.paid, st0);
-    const base = { IPCmethod: 'IPCPurchaseNotify', SID: '000000000000010', Amount: '980.00', Currency: 'RON', OrderID: int2.checkout.orderID, IPC_Trnref: '1234567', RequestSTAN: '000123', RequestDateTime: '2026-11-21 10:00:00' };
-    const n1 = await notify(Object.assign({}, base, { Amount: '979.00' }));
-    const n2 = await notify(Object.assign({}, base, { Currency: 'EUR' }));
-    const n3 = await notify(Object.assign({}, base, { OrderID: 'CS0000000000000000' }));
-    check('CS', 'notify: always 200 OK; another sum, another currency, an unknown order: not paid', [n1, n2, n3].every((x) => x.status === 200 && x.text === 'OK') && rd(CSK, []).find((r) => r.id === int1.id).status === 'rezervat', [n1, n2, n3]);
-    const kp = require('crypto').generateKeyPairSync('rsa', { modulusLength: 2048 }), kp2 = require('crypto').generateKeyPairSync('rsa', { modulusLength: 2048 });
-    process.env.MYPOS_CONFIG_PACK = packOf({ sid: '000000000000010', cn: '61938166610', pk: '', pc: kp.publicKey.export({ type: 'spki', format: 'pem' }), idx: 1 }); // myPOS's certificate from the pack
-    const n4 = await notify(base, kp2.privateKey);
-    const n5 = await notify(base);
-    check('CS', 'with myPOS\'s certificate in the pack: a wrong signature or none, not paid', n4.text === 'OK' && n5.text === 'OK' && rd(CSK, []).find((r) => r.id === int1.id).status === 'rezervat', [n4, n5]);
-    const n6 = await notify(base, kp.privateKey);
-    const rowP = rd(CSK, []).find((r) => r.id === int1.id) || {};
-    const nP = rd('data/notifications.json', []).filter((n) => n.tag === 'card-paid-' + int1.id);
-    check('CS', 'the right signature, the sum and the currency of the order: paid online, verified, no Restart (490), reception and the owner told', n6.text === 'OK' && rowP.status === 'platit' && rowP.paidVia === 'online' && rowP.paidVerified === true && rowP.bonusRestart === 0 &&
-      nP.some((n) => n.employeeId === 'admin' && /CARD DE SĂRBĂTORI PLĂTIT AR ONLINE/.test(n.title) && /980/.test(n.title)) && nP.some((n) => n.employeeId === 'e-rec'), { rowP: rowP.status, nP: nP.map((n) => n.employeeId + ' ' + n.title) });
-    await notify(base, kp.privateKey);
-    const st1b = await pub({ action: 'status', id: int1.id });
-    check('CS', 'notified twice: rung once; the page now says paid', st1b.paid && rd('data/notifications.json', []).filter((n) => n.tag === 'card-paid-' + int1.id && n.employeeId === 'admin').length === 1, st1b);
-    const intB = await pub({ action: 'intent', tier: 990, qty: 2 });
-    await pub({ tier: 990, qty: 2, names: ['Ana Proba', 'Ioana Proba'], name: 'Proba Cinci', phone: '0755000666', city: 'Timișoara', consent: true, terms: true, pay: 'online', draft: intB.id });
-    const nB = await notify(Object.assign({}, base, { Amount: '1980.00', OrderID: intB.checkout.orderID }), kp.privateKey);
-    const rowB = rd(CSK, []).find((r) => r.id === intB.id) || {};
-    check('CS', '2 × 990 paid online: 1.980, 2 Restart treatments', nB.text === 'OK' && rowB.status === 'platit' && rowB.amount === 1980 && rowB.bonusRestart === 2, { s: rowB.status, a: rowB.amount, b: rowB.bonusRestart });
-    const draftOnly = await pub({ action: 'intent', tier: 290, qty: 1 });
-    const lsD = await api('receptie', 'card-sarbatori', { action: 'list' });
-    check('CS', 'a draft is not in the team\'s list nor on the counter', !lsD.reservations.some((r) => r.id === draftOnly.id) && lsD.left === 1, { left: lsD.left });
-    const resFake = await pub({ tier: 290, qty: 1, name: 'Proba Fals', phone: '0755000432', city: 'Arad', consent: true, terms: true, pay: 'online', draft: 'nu-exista' });
-    check('CS', 'online asked with no draft of hers: a reservation in the clinic', resFake.ok && resFake.reservation.pay === 'salon' && !resFake.checkout, resFake);
-    await api('receptie', 'card-sarbatori', { action: 'set', id: resFake.reservation.id, status: 'anulat' });
-    ['MYPOS_CONFIG_PACK', 'MYPOS_EMBED_SANDBOX', 'MYPOS_PUBLIC_CERT'].forEach((k) => delete process.env[k]);
-    const res2 = small;
-    const paidDesk = await api('receptie', 'card-sarbatori', { action: 'set', id: res2.reservation.id, status: 'platit' });
-    check('CS', 'paid in the clinic (reception): paid, no Restart bonus', paidDesk.ok && paidDesk.reservation.status === 'platit' && paidDesk.reservation.paidVia === 'clinica' && !paidDesk.reservation.bonusRestart, paidDesk.reservation);
-    // an order of before the three cards reads as one card of 990
-    const legacy = { id: 'old-1', created: new Date().toISOString(), name: 'Veche', phone: '0755000999', recipient: 'Veche', city: 'Arad', status: 'rezervat', via: 'site', pay: 'salon', code: 'C360-OLDD-0001' };
-    wr(CSK, rd(CSK, []).concat(legacy));
-    const oldOrd = await pub({ action: 'order', id: 'old-1' });
-    check('CS', 'an old order (one card, before the three): 1 × 990, counted once', oldOrd.order && oldOrd.order.tier === 990 && oldOrd.order.qty === 1 && oldOrd.order.amount === 990 && (await pub()).left === 0, oldOrd.order);
-    wr(CSK, []);
+    // 3. the roles
+    const anonList = await pub({ action: 'list' });
+    const cosm = await fetch('http://127.0.0.1:' + PORT + '/api/card-sarbatori', { method: 'POST', headers: { 'content-type': 'application/json', cookie: cookieFor('e-c1', 'cosmetician') }, body: JSON.stringify({ action: 'list' }) });
+    const ls0 = await cs('receptie', { action: 'list', scan: false });
+    check('CS', 'the list: reception, manager and admin; a cosmetician 403, the public 401; the waiting orders on top, no card issued yet', anonList._status === 401 && cosm.status === 403 && ls0.orders && ls0.orders.length === 3 && ls0.cards.length === 0 && ls0.left === 5 && Array.isArray(ls0.treatments), { anon: anonList._status, cosm: cosm.status, n: ls0.orders && ls0.orders.length });
+
+    // 4. found in myPOS by itself: the same sum, after the order, within 48 h, the oldest first, each payment once
+    const t0 = Date.now();
+    const early = await CL.matchPayments([{ ref: 'mypos-early', amount: 990, at: new Date(t0 - 3600e3).toISOString() }]);
+    const other = await CL.matchPayments([{ ref: 'mypos-x', amount: 980, at: new Date(t0).toISOString() }]);
+    check('CS', 'a payment before the order, or of another sum: not matched', early.length === 0 && other.length === 0 && ord(on1.id).status === 'asteptare', { early, other });
+    const m1 = await CL.matchPayments([{ ref: 'mypos-1', amount: 990, at: new Date(t0 + 60e3).toISOString() }]);
+    const m1b = await CL.matchPayments([{ ref: 'mypos-1', amount: 990, at: new Date(t0 + 60e3).toISOString() }]);
+    const p1 = ord(on1.id);
+    const club1 = rd(CLK, []);
+    const nP = rd('data/notifications.json', []).filter((n) => n.tag === 'card-paid-' + on1.id);
+    check('CS', 'matched: paid online by myPOS, the card issued (a C360 code, 2.500 credit), the gift open (EMS, Timișoara), on the Club\'s list as a card holder', m1.length === 1 && m1b.length === 0 && p1.status === 'platit' && p1.paidVia === 'online' && p1.match.ref === 'mypos-1' && p1.bonus === true && /^C360-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(p1.cards[0].code) && p1.cards[0].value === 2500 &&
+      p1.cards[0].gift && p1.cards[0].gift.state === 'open' && /EMS/.test(p1.cards[0].gift.what) && club1.length === 1 && club1[0].holder === true && club1[0].code === p1.cards[0].code, { m1, p1: p1.status, club1 });
+    check('CS', 'the desk and the owner told once; her WhatsApp tried (not connected here: kept as „de trimis manual”, with why)', nP.some((n) => n.employeeId === 'admin' && /CARD DE SĂRBĂTORI PLĂTIT TM ONLINE/.test(n.title)) && nP.some((n) => n.employeeId === 'e-rec') && nP.filter((n) => n.employeeId === 'admin').length === 1 && p1.cards[0].sent && !p1.cards[0].sent.how && /WhatsApp/.test(p1.cards[0].sent.error), { nP: nP.map((n) => n.employeeId + ' ' + n.title), sent: p1.cards[0].sent });
+    const leadNote = rd('data/leads.json', []).find((l) => l.id === lead1.id) || {};
+    const cl1 = rd('data/clients.json', []).find((c) => String(c.phone || '').replace(/\D/g, '').endsWith('755000111'));
+    check('CS', 'her lead gets the payment as a note, her client file exists', JSON.stringify(leadNote).includes('Card de Sărbători plătit online') && !!cl1 && p1.clientId === cl1.id, { cl1: !!cl1 });
+    const mA = await CL.matchPayments([{ ref: 'mypos-2', amount: 490, at: new Date(Date.now() + 60e3).toISOString() }]);
+    check('CS', 'Arad online: the gift is the Arad one (one constant: Tratament Restart)', mA.length === 1 && /Restart/.test(ord(giftAr.id).cards[0].gift.what) && CL.giftOf('Arad') === CL.GIFT_ARAD, ord(giftAr.id).cards[0].gift);
+
+    // 5. confirmed by the team: paid in the clinic (no gift, no Club), one tap
+    const club0 = rd(CLK, []).length;
+    const c3 = await cs('receptie', { action: 'confirm', id: o3.id, via: 'clinica' });
+    const p3 = ord(o3.id);
+    check('CS', 'reception confirms the clinic payment: 3 cards issued, each its code and name, no gift, not on the Club\'s list', c3.ok && p3.status === 'platit' && p3.paidVia === 'clinica' && !p3.bonus && p3.cards.every((c) => /^C360-/.test(c.code) && !c.gift) && new Set(p3.cards.map((c) => c.code)).size === 3 && rd(CLK, []).length === club0, { s: p3.status, b: p3.bonus });
+    const c3b = await cs('receptie', { action: 'confirm', id: o3.id, via: 'clinica' });
+    check('CS', 'confirmed twice: once (no second set of codes)', c3b.again && ord(o3.id).cards.map((c) => c.code).join() === p3.cards.map((c) => c.code).join(), c3b);
+    const cutPaid = await cs('receptie', { action: 'cancel', id: o3.id });
+    check('CS', 'a paid order cannot be cancelled', cutPaid._status === 409, cutPaid);
+    // an order sent to the PayLink and left: its card back on the counter after 2 hours, still matched within 48 h
+    const old = { id: 'old-wait', created: new Date(Date.now() - 3 * 3600e3).toISOString(), name: 'Proba Veche', phone: '0755000555', city: 'Timișoara', tier: 290, qty: 1, amount: 290, credit: 500, cards: [{ code: '', recipient: '' }], status: 'asteptare', via: 'site', pay: 'online' };
+    const leftBefore = (await pub()).left;
+    wr(CSK, rd(CSK, []).concat(old));
+    const leftAfter = (await pub()).left;
+    const mOld = await CL.matchPayments([{ ref: 'mypos-3', amount: 290, at: new Date().toISOString() }]);
+    check('CS', 'a PayLink order not paid in 2 hours frees its card on the counter; paid later (within 48 h) it is still matched', leftAfter === leftBefore && mOld.length === 1 && ord('old-wait').status === 'platit', { leftBefore, leftAfter, mOld });
+    const add = await cs('receptie', { action: 'add', tier: 290, qty: 1, name: 'Proba Adaugata', phone: '0755000666', city: 'Arad', via: 'clinica' });
+    check('CS', '„Adaugă card plătit”: issued at once, paid in the clinic, the counter keeps it', add.ok && add.reservation.status === 'platit' && /^C360-/.test(add.cards[0].code) && add.reservation.via === 'portal', add.reservation && add.reservation.status);
+    const resX = await pub({ tier: 290, qty: 1, name: 'Proba Anulare', phone: '0755000777', city: 'Arad', consent: true, pay: 'clinica' });
+    const l1 = (await pub()).left;
+    const cut = await cs('receptie', { action: 'cancel', id: resX.reservation.id });
+    check('CS', 'a reservation cancelled: its card back on the counter', cut.ok && cut.left === l1 + 1, { l1, cut: cut.left });
+
+    // 6. the credit used
+    const code1 = p1.cards[0].code;
+    const r1 = await cs('receptie', { action: 'redeem', code: code1, items: [{ name: 'LipoSonix', amount: 450 }], performer: 'e-c1', date: day(0) });
+    check('CS', 'a partial use: 450 off, 2.050 left, who claimed and who did it kept', r1.ok && r1.left === 2050 && r1.claim.applied === 450 && r1.claim.rest === 0 && r1.claim.performer === 'e-c1' && r1.claim.by === 'e-rec', r1);
+    const rG = await cs('receptie', { action: 'redeem', code: code1, items: [{ kind: 'gift', name: 'x', amount: 300 }] });
+    const rG2 = await cs('receptie', { action: 'redeem', code: code1, items: [{ kind: 'gift', name: 'x' }] });
+    const cClin = ord(o3.id).cards[0].code;
+    const rGc = await cs('receptie', { action: 'redeem', code: cClin, items: [{ kind: 'gift', name: 'x' }] });
+    check('CS', 'the gift as its own line (0 lei, the credit stays), once; a card paid in the clinic has none', rG.ok && rG.left === 2050 && rG.claim.items[0].amount === 0 && rG2.error === 'no_gift' && rGc.error === 'no_gift', { rG, rG2: rG2.error, rGc: rGc.error });
+    const rO = await cs('receptie', { action: 'redeem', code: code1, items: [{ name: 'Pachet mare', amount: 2400 }] });
+    const rE = await cs('receptie', { action: 'redeem', code: code1, items: [{ name: 'Altceva', amount: 100 }] });
+    check('CS', 'more than the credit: the card goes to 0, never below, the rest is what she pays; then an empty card refuses', rO.ok && rO.left === 0 && rO.claim.applied === 2050 && rO.claim.rest === 350 && rE.error === 'empty', { rO, rE: rE.error });
+    const uR = await cs('receptie', { action: 'undo', code: code1 });
+    const uA = await cs('admin', { action: 'undo', code: code1 });
+    const lsU = await cs('admin', { action: 'list', scan: false });
+    const v1 = lsU.cards.find((c) => c.code === code1) || {};
+    check('CS', 'undo the last use: the owner only; the credit comes back (2.050), the state „activ”', uR._status === 403 && uA.ok && uA.left === 2050 && v1.state === 'activ' && v1.left === 2050 && v1.used === 450, { uR: uR._status, uA, v1: v1.state });
+    const realNow = Date.now;
+    Date.now = () => Date.parse('2027-07-01T09:00:00Z');
+    const rX = await cs('receptie', { action: 'redeem', code: code1, items: [{ name: 'LipoSonix', amount: 100 }] });
+    const lsX = await cs('admin', { action: 'list', scan: false });
+    Date.now = realNow;
+    check('CS', 'after 30.06.2027: „expirat”, cannot be used', rX.error === 'expired' && (lsX.cards.find((c) => c.code === code1) || {}).state === 'expirat', { rX, st: (lsX.cards.find((c) => c.code === code1) || {}).state });
+
+    // 7. her card's picture (the team) and Clubul 360's page
+    const img = await fetch('http://127.0.0.1:' + PORT + '/api/card-sarbatori?img=' + code1, { headers: { cookie: cookieFor('e-rec', 'receptie') } });
+    const buf = Buffer.from(await img.arrayBuffer());
+    const imgAnon = await fetch('http://127.0.0.1:' + PORT + '/api/card-sarbatori?img=' + code1);
+    check('CS', 'the card\'s picture: a PNG for the team, 401 for the public', img.status === 200 && buf[0] === 0x89 && buf[1] === 0x50 && buf.length > 50000 && imgAnon.status === 401, { s: img.status, n: buf.length, anon: imgAnon.status });
+    const club3 = rd(CLK, []).length;
+    const j1 = await pub({ name: 'Proba Club', phone: '0755000888', consent: true }, null, null, 'club-360');
+    const j2 = await pub({ name: 'Proba Club', phone: '0755 000 888', consent: true }, null, null, 'club-360');
+    const j3 = await pub({ name: 'Proba Card Club', phone: '0755000999', consent: true, code: cClin }, null, null, 'club-360');
+    const j4 = await pub({ code: 'C360-NUEX-ISTA' }, null, null, 'club-360');
+    const j5 = await pub({ name: 'Proba Club', phone: '0755000889' }, null, null, 'club-360');
+    check('CS', 'Clubul 360: a place on the list (once per phone), marked card holder when she comes with her card\'s code; consent asked', j1.ok && j1.place === club3 + 1 && !j1.holder && j2.again && rd(CLK, []).length === club3 + 2 && j3.holder === true && j4.ok && j4.holder === false && j5.error === 'missing_consent', { j1, j2, j3, j4, j5 });
+
+    // 8. myPOS's own notification: only with a signature that holds (no certificate here: nothing paid)
+    const waitN = await pub(Object.assign({}, me, { phone: '0755000123', tier: 290 }));
+    const nf = await fetch('http://127.0.0.1:' + PORT + '/api/card-notify', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ IPCmethod: 'IPCPurchaseNotify', Amount: '290.00', Currency: 'RON', OrderID: 'X1', IPC_Trnref: '99' }).toString() });
+    check('CS', 'myPOS\'s notification without a signature that holds: OK to myPOS, nothing paid', nf.status === 200 && (await nf.text()) === 'OK' && ord(waitN.id).status === 'asteptare', ord(waitN.id).status);
+
+    // 9. the reminders: 14 days active with credit left and no booking (once), not at night
+    const lst = rd(CSK, []);
+    const pr = lst.find((r) => r.id === o3.id); pr.paidAt = new Date(Date.now() - 15 * 864e5).toISOString(); wr(CSK, lst);
+    const tenRo = Date.parse(day(0) + 'T08:00:00Z'), nightRo = Date.parse(day(0) + 'T01:00:00Z');
+    const rmN = await CL.reminders(nightRo);
+    const rm1 = await CL.reminders(tenRo);
+    const rm2 = await CL.reminders(tenRo);
+    const prc = ord(o3.id).cards;
+    check('CS', 'reminders: 14 days with credit and no booking, each card once (WhatsApp not connected here: marked „netrimis”), none at night', rmN.sent === 0 && !rmN.due && rm1.due === 3 && rm2.due === 0 && prc.every((c) => c.remind && /^netrimis/.test(c.remind.d14)), { rmN, rm1, rm2 });
+    const rmE = await CL.reminders(Date.parse('2027-05-02T08:00:00Z'));
+    check('CS', 'before the end: 60 days left → the 60-day reminder to every card with credit', rmE.due >= 4 && rd(CSK, []).some((r) => r.cards.some((c) => c.remind && c.remind.e60)), rmE);
+    wr(CSK, []); wr(CLK, []); wr('data/card-sarbatori-links.json', {});
   }
 
   // the independent second reading agrees with production on the harness's data

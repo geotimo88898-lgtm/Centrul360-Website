@@ -1,0 +1,104 @@
+<!--meta
+title: Clubul 360 | Lista de așteptare · Centrul360
+description: Clubul 360, aplicația clientelor Centrul360, se deschide în curând: mici cadouri în fiecare lună, reduceri doar pentru membre, programare cu prioritate, tombole și Nuki ca asistent personal. Rezervă-ți locul pe lista de așteptare.
+og-title: Clubul 360 · Rezervă-ți locul pe lista de așteptare
+dock: off
+-->
+<style>
+/* Clubul 360: the waiting list (the owner, 21.11). Every class starts with cl-. */
+.cl-hero .wrap{ grid-template-columns:1.05fr .95fr; align-items:center; }
+.cl-badge{ display:inline-flex; align-items:center; gap:8px; height:32px; padding:0 14px; border-radius:999px; font-size:13px; font-weight:600; color:var(--teal2); background:var(--tint); }
+.cl-badge::before{ content:''; width:7px; height:7px; border-radius:50%; background:var(--teal); animation:ping2 2.4s var(--e) infinite; }
+@keyframes ping2{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+.cl-nuki{ display:grid; justify-items:center; }
+.cl-nuki .fl{ display:inline-block; animation:float 6s var(--e2) infinite alternate; }
+.cl-nuki img{ width:min(320px,62vw); height:auto; filter:drop-shadow(0 26px 30px rgba(11,60,55,.14)); }
+.cl-perks{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.cl-perks li{ display:flex; align-items:center; gap:14px; padding:18px 20px; font-size:15.5px; font-weight:500; line-height:1.35; color:var(--ink2); }
+.cl-perks i{ flex:none; width:38px; height:38px; border-radius:12px; display:grid; place-items:center; color:var(--teal2); background:var(--tint); }
+.cl-perks svg{ width:18px; height:18px; }
+.cl-join{ max-width:560px; margin:auto; padding:clamp(24px,3.6vw,40px); display:grid; gap:16px; }
+.cl-join h2{ font-size:clamp(1.6rem,3vw,2.1rem); }
+.cl-f{ display:grid; gap:12px; }
+.cl-f input[type=text],.cl-f input[type=tel]{ width:100%; height:54px; padding:0 16px; border:0; border-radius:15px; font:inherit; font-size:16px; color:var(--ink); background:#fff; box-shadow:0 0 0 1px var(--line2) inset; -webkit-appearance:none; appearance:none; }
+.cl-f input:focus{ outline:none; box-shadow:0 0 0 1.5px var(--teal) inset, 0 0 0 4px rgba(20,165,150,.12); }
+.cl-ok{ display:flex; align-items:flex-start; gap:10px; font-size:13px; line-height:1.45; color:var(--mute); cursor:pointer; }
+.cl-ok input{ margin-top:2px; width:18px; height:18px; accent-color:#14a596; flex:none; }
+.cl-hp{ position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+.cl-err{ font-size:14px; font-weight:600; color:#9c0f4a; }
+.cl-err:empty{ display:none; }
+.cl-f .btn{ width:100%; }
+.cl-card{ display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:14px; font-size:14px; color:#7a1240; background:#fff4f7; }
+.cl-card[hidden]{ display:none; }
+.cl-done{ display:grid; gap:12px; justify-items:start; }
+.cl-done[hidden]{ display:none; }
+.cl-done b{ font-size:1.5rem; letter-spacing:-.03em; }
+@media (max-width:920px){ .cl-hero .wrap{ grid-template-columns:1fr; } .cl-nuki{ order:-1; } .cl-perks{ grid-template-columns:1fr 1fr; } }
+@media (max-width:640px){ .cl-perks{ grid-template-columns:1fr; gap:10px; } .cl-perks li{ padding:14px 16px; } }
+@media (prefers-reduced-motion:reduce){ .cl-badge::before,.cl-nuki .fl{ animation:none; } }
+</style>
+
+<section class="hero cl-hero"><div class="wrap">
+  <div class="txt">
+    <span class="cl-badge rv in">Se deschide în curând</span>
+    <h1 data-words>Clubul <em>360.</em></h1>
+    <p class="lead rv">Aplicația clientelor Centrul360. Lista de așteptare e deschisă: cine e pe listă află prima când se deschide.</p>
+    <div class="ctas rv"><a class="btn book halo" href="#lista">Rezervă-mi locul{{arrow}}</a></div>
+  </div>
+  <div class="cl-nuki rv zoom"><span class="fl"><img src="/brand_asset/mascota/ipostaze/telefon.webp" alt="Nuki cu telefonul" width="320" height="320"></span></div>
+</div></section>
+
+<section class="s"><div class="wrap">
+  <div class="head rv"><span class="eye">Ce primești în club</span><h2>Mici bucurii, <em>tot anul.</em></h2></div>
+    <ul class="cl-perks">
+      <li class="card rv"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></i>Mici cadouri în fiecare lună</li>
+      <li class="card rv"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></i>Reduceri doar pentru membre</li>
+      <li class="card rv"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="m9 15 2 2 4-4"/></svg></i>Programare cu prioritate</li>
+      <li class="card rv"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></i>Tombole și giveaway-uri</li>
+      <li class="card rv"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 19.5c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.4.2 4 1.7 4.5 4.3"/></svg></i>Comunitatea 360</li>
+      <li class="card rv"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5z"/><path d="M8.5 9.5h.01M12 9.5h.01M15.5 9.5h.01"/></svg></i>Nuki, asistentul tău personal</li>
+    </ul>
+</div></section>
+
+<section class="s" id="lista"><div class="wrap">
+  <div class="card cl-join rv">
+    <h2>Locul tău pe <em>lista de așteptare.</em></h2>
+    <p class="cl-card" data-cl-card hidden>Ai Cardul de Sărbători: locul tău e deja rezervat. Lasă-ne numele și telefonul ca să te anunțăm.</p>
+    <form class="cl-f" data-cl-form novalidate>
+      <input type="text" name="name" autocomplete="name" placeholder="Numele tău">
+      <input type="tel" name="phone" inputmode="tel" autocomplete="tel" placeholder="Telefon (WhatsApp)">
+      <label class="cl-hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+      <label class="cl-ok"><input type="checkbox" name="consent"><span>Sunt de acord să fiu anunțată pe WhatsApp sau telefonic de Centrul360 când se deschide Clubul 360.</span></label>
+      <p class="cl-err" role="alert"></p>
+      <button type="submit" class="btn book">Rezervă-mi locul{{arrow}}</button>
+    </form>
+    <div class="cl-done" data-cl-done hidden aria-live="polite"><b>Ești pe listă.</b><p class="lead" style="font-size:16px" data-cl-msg></p></div>
+  </div>
+</div></section>
+
+<script>
+(function () {
+  'use strict';
+  var form = document.querySelector('[data-cl-form]'); if (!form) return;
+  var code = (new URLSearchParams(location.search).get('cod') || '').trim().toUpperCase().slice(0, 20);
+  var post = function (b) { return fetch('/api/club-360', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json(); }); };
+  if (code) post({ code: code }).then(function (d) { if (d && d.holder) document.querySelector('[data-cl-card]').hidden = false; }).catch(function () {});
+  var MSG = { missing_name: 'Scrie numele tău.', bad_phone: 'Scrie un număr de telefon valid.', missing_consent: 'Bifează acordul, ca să te putem anunța.', too_many: 'Prea multe încercări. Încearcă din nou în câteva minute.' };
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var err = form.querySelector('.cl-err'), btn = form.querySelector('button');
+    var b = { name: form.name.value.trim(), phone: form.phone.value.trim(), consent: form.consent.checked, website: form.website.value, code: code };
+    if (b.name.length < 2) { err.textContent = MSG.missing_name; return; }
+    if (b.phone.replace(/\D/g, '').length < 9) { err.textContent = MSG.bad_phone; return; }
+    if (!b.consent) { err.textContent = MSG.missing_consent; return; }
+    err.textContent = ''; btn.disabled = true;
+    post(b).then(function (d) {
+      btn.disabled = false;
+      if (!d.ok) { err.textContent = MSG[d.error] || 'Nu am putut trimite. Încearcă din nou.'; return; }
+      form.hidden = true; document.querySelector('[data-cl-card]').hidden = true;
+      document.querySelector('[data-cl-msg]').textContent = (d.holder ? 'Ai Cardul de Sărbători, deci locul tău e confirmat. ' : '') + (d.again ? 'Erai deja pe listă. ' : '') + 'Te anunțăm pe WhatsApp când se deschide Clubul 360.';
+      document.querySelector('[data-cl-done]').hidden = false;
+    }).catch(function () { btn.disabled = false; err.textContent = 'Nu am putut trimite. Încearcă din nou.'; });
+  });
+})();
+</script>

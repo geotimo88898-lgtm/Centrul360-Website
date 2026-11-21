@@ -1,7 +1,7 @@
-// POST /api/card-notify: myPOS tells us a Card de Sărbători was paid in the card form of our checkout (the Embedded SDK,
-// urlNotify; api/_lib/card-sarbatori.js). myPOS wants HTTP 200 with exactly "OK" whatever it sent; the order is marked
-// paid only when the notification is a purchase, its signature holds (when MYPOS_PUBLIC_CERT is set), the order exists
-// and the sum and the currency are the order's own. Only the order id and the answer go to the log.
+// POST /api/card-notify: myPOS's own notification of a payment (IPCPurchaseNotify), if the store of the Card de Sărbători's
+// PayLinks is set to send it here. myPOS wants HTTP 200 with exactly "OK" whatever it sent. A card is paid from here only
+// when the signature holds (myPOS's certificate in MYPOS_PUBLIC_CERT) and the sum is that of an order waiting for its
+// payment (api/_lib/card-sarbatori.js notified). Only the order id and the answer go to the log.
 
 const C = require('./_lib/card-sarbatori');
 

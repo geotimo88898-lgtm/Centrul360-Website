@@ -42,6 +42,19 @@ module.exports = async (req, res) => {
   try { body = JSON.parse(raw.toString('utf8')); } catch (e) { res.status(400).json({ error: 'bad_json' }); return; }
   const event = String(req.headers['x-mypos-event'] || body.event || '');
   const payload = body.payload && typeof body.payload === 'object' ? body.payload : body;
+  // an online payment (a PayLink of the Card de Sărbători), if myPOS sends one here: signed like the rest, matched by its sum
+  // to an order waiting for it (api/_lib/card-sarbatori.js); nothing else is done with it
+  if (!M.EVENTS.includes(event) && /payment/i.test(event) && /complet|success|paid/i.test(event) && Number(payload.amount) > 0) {
+    const tids0 = new Set((conn.devices || []).map((d) => d.tid));
+    if (!payload.tid || !tids0.has(String(payload.tid))) {
+      const C = require('./_lib/card-sarbatori');
+      const ref = 'webhook-' + String(payload.payment_reference || payload.reference || payload.id || payload.timestamp || Date.now());
+      const m = await C.matchPayments([{ ref, amount: Math.abs(Number(payload.amount)), at: new Date().toISOString(), src: 'webhook' }]).catch(() => []);
+      await logDelivery({ at, ok: true, event, amount: Math.abs(Number(payload.amount)), reason: m.length ? 'card de Sărbători' : 'online, fără comandă' });
+      res.status(200).json({ ok: true, card: m.length > 0 });
+      return;
+    }
+  }
   if (!M.EVENTS.includes(event) || !payload.tid) {
     await logDelivery({ at, ok: true, event, reason: 'ignorat' });
     res.status(200).json({ ok: true, ignored: true });

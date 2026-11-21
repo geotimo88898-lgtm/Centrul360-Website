@@ -20,6 +20,7 @@ import vercel from "../vercel.json";
 import { makeBlob } from "./blob-r2.js";
 import { makeJobs } from "./creative-jobs.js";
 import { loadSecrets } from "./secrets.js";
+import { svgToPng } from "./card-png.js";
 import * as BUILD from "./build-id.gen.js";
 const BUILD_ID = BUILD.default;
 const FILES = BUILD.FILES || {}; // each portal script / style's own version (cf/build.mjs)
@@ -32,6 +33,8 @@ const als = new AsyncLocalStorage();
 // ce folosește mașina de creative din build-ul ei Next (module mici care cheamă globalele astea)
 globalThis.__C360_CREATIVE_BLOB = makeBlob(() => ENV.CREATIVE_BLOB);
 globalThis.__C360_SHARP = sharp || null;
+// the Card de Sărbători drawn as a picture for WhatsApp (api/_lib/card-image.js)
+globalThis.__C360_SVG2PNG = svgToPng;
 globalThis.__C360_JOBS = {
   async start(job, args) {
     if (!job) throw new Error("Comandă necunoscută.");

@@ -81,14 +81,10 @@
 .csc-dust i:nth-child(5){ left:52%; top:88%; animation-delay:5.8s; } .csc-dust i:nth-child(6){ left:66%; top:8%; animation-delay:7.1s; }
 @keyframes cscDust{ 0%{ opacity:0; transform:translateY(16px) scale(.6); } 20%{ opacity:.9; } 70%{ opacity:.5; } 100%{ opacity:0; transform:translateY(-42px) scale(1); } }
 
-/* the Santa hat, hung on the card's top left corner: it moves with the card and sways a little */
-.csc-hat{ position:absolute; z-index:4; left:-5.5%; top:-19%; width:24%; pointer-events:none; transform:translateZ(6px) rotate(-24deg); transform-origin:42% 88%; }
-.csc-hat svg{ display:block; width:100%; height:auto; overflow:visible; filter:drop-shadow(0 10px 12px rgba(120,30,40,.28)); }
-.csc-hat .sw{ transform-box:view-box; transform-origin:46px 84px; animation:cscSway 4.8s var(--e2) infinite alternate; }
-.csc-hat .tip{ transform-box:view-box; transform-origin:78px 30px; animation:cscTip 3.6s var(--e2) infinite alternate; }
-@keyframes cscSway{ 0%{ transform:rotate(-3deg); } 100%{ transform:rotate(4deg); } }
-@keyframes cscTip{ 0%{ transform:rotate(-6deg); } 100%{ transform:rotate(7deg); } }
-
+/* the gold holly sprig on the card's top left corner (the owner, 21.11: instead of the Santa hat): over the edge, it moves with
+   the card. The same drawing as the card sent on WhatsApp (api/_lib/card-image.js hollySvg). */
+.csc-holly{ position:absolute; z-index:4; left:-5.4%; top:-11.6%; width:26%; pointer-events:none; transform:translateZ(6px); }
+.csc-holly svg{ display:block; width:100%; height:auto; overflow:visible; filter:drop-shadow(0 6px 8px rgba(70,0,28,.35)); }
 /* the snow: fine flakes that fall slowly, only in the first screen (cs-card.js fills .csc-snow) */
 .csc-snow{ position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; -webkit-mask-image:linear-gradient(180deg,#000 70%,transparent); mask-image:linear-gradient(180deg,#000 70%,transparent); }
 .csc-snow i{ position:absolute; top:-24px; display:block; width:var(--s,10px); height:var(--s,10px); opacity:0; color:var(--c,rgba(201,160,74,.5));
@@ -114,7 +110,7 @@
   .csc-edge{ border-radius:22px; }
   .csc-shadow{ bottom:16px; }
 }
-@media (prefers-reduced-motion:reduce){ .csc-float,.csc-sheen,.csc-dust i,.csc-star,.csc-tw,.csc-shadow,.csc-hat .sw,.csc-hat .tip{ animation:none !important; } .csc-dust,.csc-snow{ display:none; } }
+@media (prefers-reduced-motion:reduce){ .csc-float,.csc-sheen,.csc-dust i,.csc-star,.csc-tw,.csc-shadow{ animation:none !important; } .csc-dust,.csc-snow{ display:none; } }
 /* a part the page hides stays hidden, whatever its own display (buttons, tags, rows) */
 main [hidden]{ display:none !important; }
 
@@ -149,8 +145,6 @@ main [hidden]{ display:none !important; }
 .cst-sub{ font-size:14px; color:var(--mute); }
 .cst-sub b{ color:var(--teal2); font-weight:700; }
 .cst-pay{ font-size:13.5px; color:var(--mute); }
-.cst-alt{ justify-self:start; padding:4px 0; border:0; background:none; font:inherit; font-size:14px; color:var(--mute); cursor:pointer; -webkit-tap-highlight-color:transparent; }
-.cst-alt u{ color:var(--ink); text-underline-offset:3px; }
 .cst-go [hidden]{ display:none; }
 [data-cs-v]{ font-variant-numeric:tabular-nums; white-space:nowrap; }
 /* the sum on the card changes with a short turn */
@@ -166,3 +160,16 @@ main [hidden]{ display:none !important; }
   .cst-best{ right:5px; font-size:9.5px; padding:2px 7px; }
   .cst-sub{ font-size:13px; }
 }
+/* paying in the clinic, as a real second button under the online one (the owner, 21.11) */
+.cst-go .cst-alt{ width:100%; }
+/* the pages live before the swap still carry the Santa hat and the small „Rezervă cardul” link: kept as they were until the
+   new pages replace them (then these lines can go) */
+.csc-hat{ position:absolute; z-index:4; left:-5.5%; top:-19%; width:24%; pointer-events:none; transform:translateZ(6px) rotate(-24deg); transform-origin:42% 88%; }
+.csc-hat svg{ display:block; width:100%; height:auto; overflow:visible; filter:drop-shadow(0 10px 12px rgba(120,30,40,.28)); }
+.csc-hat .sw{ transform-box:view-box; transform-origin:46px 84px; animation:cscSway 4.8s var(--e2) infinite alternate; }
+.csc-hat .tip{ transform-box:view-box; transform-origin:78px 30px; animation:cscTip 3.6s var(--e2) infinite alternate; }
+@keyframes cscSway{ 0%{ transform:rotate(-3deg); } 100%{ transform:rotate(4deg); } }
+@keyframes cscTip{ 0%{ transform:rotate(-6deg); } 100%{ transform:rotate(7deg); } }
+@media (prefers-reduced-motion:reduce){ .csc-hat .sw,.csc-hat .tip{ animation:none !important; } }
+.cst-alt:not(.btn){ justify-self:start; padding:4px 0; border:0; background:none; font:inherit; font-size:14px; color:var(--mute); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.cst-alt:not(.btn) u{ color:var(--ink); text-underline-offset:3px; }

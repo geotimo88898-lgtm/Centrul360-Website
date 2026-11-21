@@ -120,3 +120,9 @@ html.csb-lock{ overflow:hidden; }
 .csb-nm{ margin-top:10px; }
 .csb-nm[hidden]{ display:none; }
 .csb-spin-big{ width:44px; height:44px; border-width:3px; border-color:rgba(20,165,150,.25); border-top-color:var(--teal); }
+/* the gift of the online payment, under the total; the other way to pay as a real second button (the owner, 21.11) */
+.csb-bonus{ margin:-4px 0 12px; font-size:13.5px; line-height:1.4; color:var(--mute); }
+.csb-bonus b{ color:#9c0f4a; font-weight:700; }
+.csb-bonus.off{ color:var(--mute2); }
+.csb-ft .csb-alt{ margin-top:8px; min-height:52px; }
+.csb-ft .csb-alt[hidden]{ display:none; }

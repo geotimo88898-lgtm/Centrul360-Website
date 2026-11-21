@@ -1,142 +1,114 @@
-// The Card de Sărbători (the owner, 20.11): three cards, the more she pays the more she gets (290 → 500 lei, 490 → 1.000
-// lei, 990 → 2.500 lei in treatments), 10 cards in all whatever the card (both clinics), on sale until 24 December 2026,
-// 23:59 (Romania). The orders and their online payment.
+// The Card de Sărbători (the owner, 20-21.11): three cards, the more she pays the more she gets (290 → 500 lei, 490 → 1.000
+// lei, 990 → 2.500 lei in treatments, at list price, not on top of the discounted offers), 10 cards in all whatever the card
+// (both clinics), on sale until 24 December 2026, 23:59 (Romania), valid until 30 June 2027.
 //
 //   data/card-sarbatori.json  [order]
 //   order = { id, created, name, phone, city, tier (290 | 490 | 990), qty (1-5), amount (tier × qty, made here), credit,
-//             cards: [{ code, recipient }]  each card its own code and the name on it ('' = to say at the desk),
-//             recipient (the first card's name, for the lists), status: 'draft' | 'rezervat' | 'platit' | 'anulat',
-//             via: 'site', pay: 'salon' | 'online', leadId, orderId (the one myPOS gets), orderIds (every one it got),
-//             paidAt, paidVia: 'online' | 'clinica', paidVerified, bonusRestart (how many Restart treatments) }
+//             forWho: 'eu' | 'cadou', cards: [card], recipient (the first card's name), via: 'site' | 'portal',
+//             pay: 'online' | 'clinica', status: 'asteptare' (sent to the PayLink, not paid yet) | 'rezervat' (to pay in
+//             the clinic) | 'platit' | 'anulat', leadId, paidAt, paidVia: 'online' | 'clinica', paidBy, paidAmount,
+//             match: { src: 'mypos' | 'ipn' | 'webhook', ref, at } (how the payment was found), bonus (paid online: the gift
+//             and Clubul 360), cancelledAt, cancelledBy }
+//   card  = { code (C360-XXXX-XXXX), recipient (the name on it; '' = hers), value (the credit), claims: [claim],
+//             gift: { what, state: 'open' | 'used', usedAt } (paid online only), sent: { at, how, error }, remind: { … } }
+//   claim = { id, at, date, city, by, byName, performer, performerName, items: [{ name, amount, kind: 'credit' | 'gift' }],
+//             applied (what came off the credit), rest (what she paid on top), undone? }
 //
-// Online payment, our own checkout (the owner, 20.11: „doar banii să intre în myPOS, ca la Stripe”): the card form of the
-// myPOS Embedded SDK in our window (v2/cs-buy.js). The order is made here first ('draft', with our orderID and the sum
-// made here), then made a reservation with her details, then she pays in the form; myPOS tells us at /api/card-notify
-// (the truth: the sum, the currency and the order must match; the signature is checked with MYPOS_PUBLIC_CERT when it
-// in the pack). The store's settings come from myPOS's Configuration Pack of the store „API plată myPOS”, a secret of
-// the Worker (MYPOS_CONFIG_PACK: base64 of JSON { sid, cn (wallet), pk (private key), pc (myPOS's certificate), idx (key
-// index) }, as myPOS's SDKs read it): the browser gets only sid, the wallet and the key index (public), never pk;
-// notifications are checked with pc. MYPOS_EMBED_SANDBOX = '1': myPOS's test store with its public test values instead.
-// No pack (or one that does not read): the site offers only the reservation with payment in the clinic.
+// How a card is sold (the owner, 21.11): the button opens a small step (for her or a gift, her name, phone, clinic), the
+// order is made here ('asteptare', its codes) and she goes to the myPOS PayLink of that card. The payment is found by
+// itself when myPOS shows it to us (the transactions API of the clinic's account, read on the clock and when the team
+// opens the cards; myPOS's own notification when its signature holds): the same sum, within 48 h after the order, the
+// oldest order first. Always: the team confirms it with one tap in the portal (myPOS writes the owner for every paid
+// link). Or she reserves it and pays in the clinic ('rezervat'): only the credit, no gift and no Club.
+// Once paid: the card is active, the counter keeps it, her lead and her client file know it, the desk and the owner hear
+// it, and she gets her card on WhatsApp (the picture, api/_lib/card-image.js, and a short message).
+//
+// Card money and Încasări (the choice, 21.11): the money comes in once, when the card is paid: it is the card's total here
+// (the section's „Încasat”). Using the credit later is not new money: a claim never writes a payment in Încasări, so
+// nothing is counted twice. A card paid in the clinic on the POS is recorded here (Confirmă plata), not as a payment.
 
 const crypto = require('crypto');
-const { readJSON, writeJSON } = require('./store');
+const { readJSON, writeJSON, readBinary, writeBinary } = require('./store');
 const N = require('./notify');
 
 const KEY = 'data/card-sarbatori.json';
-const TOTAL = 10, PRICE = 990; // only 10 cards in all (the owner, 20.11)
-// the cards: what she pays → the credit she gets (the owner, 20.11); the Restart treatment only with the 990 card paid online
+const CLUB = 'data/club360-waitlist.json';
+const PROBE = 'data/card-sarbatori-probe.json';
+const TOTAL = 10; // only 10 cards in all (the owner, 20.11)
 const TIERS = { 290: 500, 490: 1000, 990: 2500 };
 const MAXQ = 5;
 const DEADLINE = '2026-12-24T21:59:59.000Z'; // 24 December 2026, 23:59:59 in Romania (UTC+2 in winter)
+const VALID_UNTIL = '2027-06-30T20:59:59.000Z'; // 30 June 2027, 23:59:59 in Romania (UTC+3 in summer)
+const VALID_TXT = '30.06.2027';
+const HOLD_MS = 2 * 3600e3; // an order sent to the PayLink keeps its cards 2 hours on the counter
+const MATCH_MS = 48 * 3600e3; // a payment is matched to an order made at most 48 h before it
+const CLUB_URL = 'https://www.centrul360.com/club-360';
+// the gift of the online payment (the owner, 21.11): an EMS session, done only in Timișoara. For a buyer from Arad the gift
+// is this one line (change it here and only here):
+const GIFT_TM = 'o ședință de EMS cadou';
+const GIFT_ARAD = 'un Tratament Restart cadou';
+const giftOf = (city) => (city === 'Arad' ? GIFT_ARAD : GIFT_TM);
+const giftShort = (city) => (city === 'Arad' ? 'Tratament Restart cadou' : 'Ședință EMS cadou (Timișoara)');
+
 const store = { readJSON, writeJSON };
-// an order of before the three cards (one card of 990) reads as such
-const norm = (r) => (r && !r.tier ? Object.assign(r, { tier: 990, qty: 1, amount: 990, credit: 2500, cards: r.cards || [{ code: r.code || '', recipient: r.recipient || '' }] }) : r);
+const nowISO = () => new Date().toISOString();
+const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+const lei = (n) => Math.round(Number(n) || 0).toLocaleString('ro-RO').replace(/ /g, '.');
+const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+const roDay = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date(ms));
+const firstName = (s) => String(s || '').trim().split(/\s+/)[0] || '';
+
+// ---- an order as it reads now (the older ones: one card of 990; 'salon' is the clinic; a card's own fields)
+function norm(r) {
+  if (!r) return r;
+  if (!r.tier) Object.assign(r, { tier: 990, qty: 1, amount: 990, credit: 2500, cards: r.cards || [{ code: r.code || '', recipient: r.recipient || '' }] });
+  if (r.pay === 'salon') r.pay = 'clinica';
+  r.cards = (r.cards || []).map((c) => Object.assign(c, { value: Number(c.value) || TIERS[r.tier] || 0, claims: Array.isArray(c.claims) ? c.claims : [] }));
+  return r;
+}
 const qtyOf = (r) => Math.max(1, Number(norm(r).qty) || 1);
-// a card counts once it is ordered (a draft is only a sum on the way to the form; a cancelled one gives its cards back)
-const live = (r) => r.status !== 'anulat' && r.status !== 'draft';
-
-function counter(list, now, online) {
-  const left = Math.max(0, TOTAL - (list || []).filter(live).reduce((n, r) => n + qtyOf(r), 0));
-  return { total: TOTAL, left, deadline: DEADLINE, open: (now || Date.now()) < Date.parse(DEADLINE) && left > 0, online: !!online, price: PRICE, tiers: TIERS, maxQty: MAXQ };
+// a card counts once it is ordered; an order sent to the PayLink only for its first 2 hours (unless it was paid)
+function live(r, now) {
+  if (!r || r.status === 'anulat' || r.status === 'draft') return false;
+  if (r.status === 'asteptare') return (now || Date.now()) - Date.parse(r.created) < HOLD_MS;
+  return true;
+}
+function counter(list, now) {
+  const t = now || Date.now();
+  const left = Math.max(0, TOTAL - (list || []).filter((r) => live(r, t)).reduce((n, r) => n + qtyOf(r), 0));
+  return { total: TOTAL, left, deadline: DEADLINE, open: t < Date.parse(DEADLINE) && left > 0, tiers: TIERS, maxQty: MAXQ, validUntil: VALID_UNTIL };
+}
+const expired = (now) => (now || Date.now()) > Date.parse(VALID_UNTIL);
+const usedOf = (c) => r2((c.claims || []).filter((x) => !x.undone).reduce((n, x) => n + (Number(x.applied) || 0), 0));
+const leftOf = (c) => Math.max(0, r2((Number(c.value) || 0) - usedOf(c)));
+// a card's state: rezervat, asteptare, activ, folosit, expirat, anulat
+function stateOf(r, c, now) {
+  if (r.status === 'anulat') return 'anulat';
+  if (r.status === 'rezervat') return 'rezervat';
+  if (r.status === 'asteptare') return 'asteptare';
+  if (r.status !== 'platit') return r.status || 'rezervat';
+  if (leftOf(c) <= 0 && !(c.gift && c.gift.state === 'open')) return 'folosit';
+  if (expired(now)) return 'expirat';
+  return leftOf(c) <= 0 ? 'folosit' : 'activ';
 }
 
-// ---- the store's settings: the Configuration Pack (read defensively: spaces and line breaks in the base64 are dropped)
-const TEST = { sid: '000000000000010', cn: '61938166610', idx: 1 }; // myPOS's public test store (developers.mypos.com, Test Data)
-function pack() {
-  const raw = String(process.env.MYPOS_CONFIG_PACK || '').replace(/\s+/g, '').replace(/^"+|"+$/g, '');
-  if (!raw) return { present: false };
-  let j;
-  try { j = JSON.parse(Buffer.from(raw.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')); } catch (e) { return { present: true, decoded: false }; }
-  if (!j || typeof j !== 'object') return { present: true, decoded: false };
-  const pem = (v) => String(v || '').replace(/\\n/g, '\n').trim();
-  const v = { sid: String(j.sid || '').trim(), cn: String(j.cn || '').trim(), idx: Number(j.idx), pk: pem(j.pk), pc: pem(j.pc) };
-  const ok = /^\d{3,40}$/.test(v.sid) && /^\d{3,40}$/.test(v.cn) && v.idx > 0;
-  return { present: true, decoded: true, ok, fields: Object.keys(j), v };
+const CODES = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I: easy to read out at the desk
+function codeOf(list, more) {
+  const used = new Set([].concat(...(list || []).map((r) => (norm(r).cards || []).map((c) => c.code))).concat(more || []));
+  for (;;) {
+    const b = crypto.randomBytes(8);
+    const c = 'C360-' + [0, 1, 2, 3].map((i) => CODES[b[i] % 32]).join('') + '-' + [4, 5, 6, 7].map((i) => CODES[b[i] % 32]).join('');
+    if (!used.has(c)) return c;
+  }
 }
-// THE SWITCH of the online payment on the site (the owner, 20.11): off while myPOS checks the store („Activat, în curs de
-// verificare”, its card form answers error 25 until then); on = true here, or CARD_PAY_ONLINE = '1' in the Worker's settings.
-// Off: the window sells with „Rezervă cardul, plătești în salon” only.
-const PAY_ONLINE = false;
-const payOn = () => PAY_ONLINE || process.env.CARD_PAY_ONLINE === '1';
-// what the browser may know (no pack and no sandbox, or the switch off: none, no online payment)
-function embed() {
-  if (process.env.MYPOS_EMBED_SANDBOX === '1') return { sid: TEST.sid, walletNumber: TEST.cn, keyIndex: TEST.idx, isSandbox: true };
-  if (!payOn()) return null;
-  const p = pack();
-  if (!p.ok) return null;
-  return { sid: p.v.sid, walletNumber: p.v.cn, keyIndex: p.v.idx, isSandbox: false };
-}
-// for the check, read only: is the pack there, does it read, which fields (never their values)
-function packStatus() {
-  const p = pack();
-  return { present: p.present, decoded: !!p.decoded, usable: !!p.ok, fields: p.fields || [], hasPrivateKey: !!(p.v && /BEGIN/.test(p.v.pk)), hasMyposCert: !!(p.v && /BEGIN/.test(p.v.pc)),
-    sandbox: process.env.MYPOS_EMBED_SANDBOX === '1', switchOn: payOn(), online: !!embed() };
-}
-const newOrderId = () => 'CS' + crypto.randomBytes(8).toString('hex').toUpperCase();
-const lei = (n) => Number(n).toLocaleString('ro-RO');
-// what the form gets: our orderID, the sum made here, the cart, where myPOS tells us
-function checkout(row, site) {
-  const e = embed();
-  if (!e) return null;
-  return Object.assign({}, e, {
-    orderID: row.orderId, amount: row.amount, currency: 'RON', ipcLanguage: 'ro', urlNotify: site + '/api/card-notify',
-    cartItems: [{ article: 'Cardul de Sărbători ' + row.tier + ' lei (credit ' + lei(TIERS[row.tier]) + ' lei)', quantity: row.qty, price: row.tier, currency: 'RON' }],
-  });
-}
+const findCard = (list, code) => {
+  const k = String(code || '').toUpperCase().replace(/\s+/g, '');
+  for (const r of list) { norm(r); const c = r.cards.find((x) => x.code === k); if (c) return { r, c }; }
+  return null;
+};
 
-// ---- paid: the order, the bonus, the team (once)
-async function markPaid(id, via, by, verified) {
-  const list = await readJSON(KEY, []);
-  const row = list.find((r) => r.id === id);
-  if (!row || row.status === 'platit') return row || null;
-  if (row.status === 'anulat' && via !== 'online') return row;
-  norm(row);
-  row.status = 'platit'; row.paidAt = new Date().toISOString(); row.paidVia = via;
-  if (via === 'online') row.paidVerified = !!verified;
-  row.bonusRestart = via === 'online' && Number(row.tier) === 990 ? row.qty : 0; // one Restart for each 990 card paid online
-  if (by) row.updatedBy = by;
-  await writeJSON(KEY, list);
-  try {
-    const ids = [...new Set((await N.deskIds(store, row.city)).concat(await N.adminIds(store)))];
-    await N.notifyMany(store, ids, {
-      kind: 'money', tone: 'good', go: 'pipeline', tag: 'card-paid-' + row.id,
-      title: 'CARD DE SĂRBĂTORI PLĂTIT' + N.cityTag(row.city) + (via === 'online' ? ' ONLINE 💳' : ' 🎁') + ' - ' + N.leiTxt(row.amount),
-      text: row.qty + ' × ' + row.tier + ' lei (credit ' + row.credit + ') · ' + row.name + ' · ' + row.cards.map((c) => c.code).join(', ') +
-        (row.bonusRestart ? ' · + Tratament Restart cadou ×' + row.bonusRestart : '') + (via === 'online' ? ' · de trimis cardurile pe WhatsApp' + (verified ? '' : ' · semnătura myPOS neverificată, de văzut în myPOS') : ''),
-    });
-  } catch (e) { console.error('card-sarbatori notify:', e.message); }
-  return row;
-}
-
-// ---- myPOS's notification (IPCPurchaseNotify): the signature, then the order, the sum and the currency
-// The signature (myPOS IPC): every posted value except Signature, in order, joined with '-', base64; RSA-SHA256, checked
-// with myPOS's certificate from the Configuration Pack (pc; MYPOS_PUBLIC_CERT can stand in for it).
-function signed(pairs) {
-  const p = pack();
-  const cert = (p.v && p.v.pc) || String(process.env.MYPOS_PUBLIC_CERT || '').replace(/\\n/g, '\n').trim();
-  if (!cert) return null; // none: not checked (the test store)
-  const sig = (pairs.find((p) => p[0] === 'Signature') || [])[1] || '';
-  const data = Buffer.from(pairs.filter((p) => p[0] !== 'Signature').map((p) => p[1]).join('-'), 'utf8').toString('base64');
-  try { return crypto.createVerify('RSA-SHA256').update(data).verify(cert, sig, 'base64'); } catch (e) { return false; }
-}
-async function notified(pairs) {
-  const b = Object.fromEntries(pairs);
-  if (b.IPCmethod !== 'IPCPurchaseNotify') return { ignored: b.IPCmethod || 'none' };
-  const ok = signed(pairs);
-  if (ok === false) return { refused: 'signature' };
-  const list = await readJSON(KEY, []);
-  const row = list.find((r) => r.orderId === b.OrderID || (r.orderIds || []).includes(b.OrderID));
-  if (!row) return { refused: 'order' };
-  norm(row);
-  if (Math.round(Number(b.Amount) * 100) !== Math.round(row.amount * 100) || String(b.Currency || '').toUpperCase() !== 'RON') return { refused: 'amount' };
-  if (row.status === 'draft') { row.status = 'rezervat'; await writeJSON(KEY, list); } // paid before her details came: kept, reception calls
-  const paid = await markPaid(row.id, 'online', '', ok === true);
-  return { paid: !!paid, verified: ok === true };
-}
-
-// ---- the payment links (the owner, 20.11): one myPOS PayLink per card, made by him in myPOS; the buttons go straight to
-// the link of the card chosen. Kept here, set by the owner (api/lead-health.js ?cardlinks), only https links of myPOS.
+// ---- the payment links (the owner, 20.11): one myPOS PayLink per card, made by him in myPOS, kept here
+// (api/lead-health.js ?cardlinks), only https links of myPOS.
 const LINKS = 'data/card-sarbatori-links.json';
 const okLink = (u) => { try { const x = new URL(String(u || '').trim()); return x.protocol === 'https:' && /(^|\.)mypos\.(com|eu)$/i.test(x.hostname) ? x.href : ''; } catch (e) { return ''; } };
 async function links() {
@@ -145,7 +117,6 @@ async function links() {
   Object.keys(TIERS).forEach((t) => { out[t] = okLink(d[t]) || null; });
   return out;
 }
-// { 290?, 490?, 990? }: a link sets it, '' clears it, a link not of myPOS is refused (nothing saved)
 async function setLinks(input, by) {
   const cur = (await readJSON(LINKS, {}).catch(() => ({}))) || {};
   const next = Object.assign({}, cur);
@@ -157,9 +128,422 @@ async function setLinks(input, by) {
     if (!ok) return { error: 'bad_link', tier: t };
     next[t] = ok;
   }
-  next.updatedAt = new Date().toISOString(); next.by = by || '';
+  next.updatedAt = nowISO(); next.by = by || '';
   await writeJSON(LINKS, next);
   return { ok: true, links: await links() };
 }
 
-module.exports = { LINKS, links, setLinks, okLink, KEY, TOTAL, PRICE, TIERS, MAXQ, DEADLINE, live, norm, qtyOf, counter, embed, packStatus, newOrderId, checkout, markPaid, signed, notified };
+// ---- the picture of a card (made once, kept; made again when the name on it changes)
+const imgPath = (code) => 'wa-out/card-' + code + '.png'; // the chat (Mesaje) shows it from there (api/portal-file.js)
+async function image(r, c) {
+  const name = c.recipient || r.name;
+  const key = [c.code, name, c.value].join('|');
+  if (c.img === key) { const b = await readBinary(imgPath(c.code)).catch(() => null); if (b && b.length) return b; }
+  const buf = await require('./card-image').png({ credit: c.value, name, code: c.code, valid: VALID_TXT });
+  await writeBinary(imgPath(c.code), buf, 'image/png').catch((e) => console.error('card image save:', e.message));
+  c.img = key;
+  return buf;
+}
+
+// ---- WhatsApp: the templates (Meta reviews them once), the messages, and the way out when a template is not approved yet
+// Our own fields for the card's messages (the examples Meta sees are in wa-templates.js SAMPLE)
+const TPL = {
+  card: { label: 'Cardul tău de Sărbători', headerType: 'IMAGE', map: ['prenume', 'credit', 'cod', 'cadou'],
+    body: 'Bună, {{1}}! Cardul tău de Sărbători Centrul360 este activ: credit de {{2}} lei, cod {{3}}, valabil până pe 30.06.2027, pentru orice tratament la prețul de listă. {{4}} Pentru programare răspunde la acest mesaj. Mulțumim!' },
+  sold: { label: 'Card de Sărbători folosit', map: ['prenume', 'folosit', 'cod', 'sold'],
+    body: 'Bună, {{1}}! Am folosit {{2}} lei din Cardul tău de Sărbători {{3}}. Pe card mai ai {{4}} lei, valabili până pe 30.06.2027. Mulțumim!' },
+  remind: { label: 'Card de Sărbători sold', map: ['prenume', 'sold', 'cod'],
+    body: 'Bună, {{1}}! Mai ai {{2}} lei pe Cardul de Sărbători {{3}}, valabili până pe 30 iunie 2027, pentru orice tratament la prețul de listă. Pentru programare răspunde la acest mesaj.' },
+};
+async function templates() {
+  const WT = require('./wa-templates');
+  const d = await WT.load();
+  const out = {};
+  Object.keys(TPL).forEach((k) => { out[k] = d.templates.find((t) => t.purpose === 'card-' + k) || null; });
+  return { d, t: out };
+}
+// made once and sent to Meta (UTILITY), with the picture of a sample card for the one with an image; a refused one is
+// sent again with the next clock. Returns what Meta says of each.
+async function ensureTemplates() {
+  const WT = require('./wa-templates');
+  const { d, t } = await templates();
+  let changed = false;
+  const res = {};
+  for (const k of Object.keys(TPL)) {
+    let x = t[k];
+    if (!x) {
+      x = { id: 'card-' + k + '-' + crypto.randomUUID().slice(0, 6), purpose: 'card-' + k, label: TPL[k].label, name: '', language: 'ro', category: 'UTILITY',
+        headerType: TPL[k].headerType || '', header: '', body: TPL[k].body, map: TPL[k].map, footer: 'Centrul360', buttons: [], meta: {}, updatedAt: nowISO() };
+      if (x.headerType === 'IMAGE') {
+        const buf = await require('./card-image').png({ credit: 2500, name: 'Andreea Popescu', code: 'C360-AB2C-DE3F', valid: VALID_TXT });
+        x.samplePath = 'wa-templates/card-sarbatori-exemplu.png';
+        await writeBinary(x.samplePath, buf, 'image/png');
+      }
+      d.templates.push(x); changed = true;
+    }
+    const st = WT.overall(x);
+    if (st === 'DRAFT' || st === 'REJECTED' || Object.keys(x.meta || {}).length < (await WT.accounts()).list.length) {
+      const s = await WT.submit(d, x.id).catch((e) => ({ error: e.message }));
+      if (!s.error || s.partial) changed = true;
+      res[k] = s.error ? 'eroare: ' + s.error : 'trimis la Meta';
+    } else res[k] = st;
+  }
+  if (changed) await WT.save(d);
+  return res;
+}
+// the message in the chat (Mesaje): the team sees what she got, with the picture
+async function logChat(phone, city, name, text, media, id) {
+  try {
+    const { normalizePhone } = require('./clients');
+    const p = normalizePhone(phone) || String(phone || '');
+    if (!p) return;
+    const K = 'data/whatsapp-conversations.json';
+    const conversations = await readJSON(K, []);
+    let convo = conversations.find((c) => c.phone === p);
+    if (!convo) { convo = { phone: p, clientName: name || p, location: city, lastMessageAt: nowISO(), unreadCount: 0, messages: [] }; conversations.push(convo); }
+    convo.messages.push(Object.assign({ id: id || crypto.randomUUID(), direction: 'out', type: media ? 'image' : 'text', text, status: 'sent', timestamp: nowISO(), sentBy: null, sentByName: 'automat', auto: true },
+      media ? { media: { kind: 'image', mime: 'image/png', filename: 'card.png', path: media } } : {}));
+    convo.lastMessageAt = nowISO();
+    await require('./wa-convos').saveConversations(conversations);
+  } catch (e) { console.error('card chat log:', e.message); }
+}
+// one message to her: the approved template from her clinic's number, else (inside the 24 h window) a plain message;
+// { sent, how: 'template' | 'direct', error }
+async function say(kind, r, vars, text, png, code) {
+  const WA = require('./whatsapp'), WT = require('./wa-templates');
+  const cfg = await WA.loadConfig();
+  const ready = WA.readyNumbers(cfg);
+  if (!ready.length) return { sent: false, error: 'WhatsApp nu e conectat' };
+  const city = ready.includes(r.city) ? r.city : ready[0];
+  const n = cfg.numbers[city];
+  const { t } = await templates();
+  const tpl = t[kind];
+  const errs = [];
+  if (tpl && WT.approvedFor(tpl, n.wabaId)) {
+    let headerImageId;
+    if (png && tpl.headerType === 'IMAGE') {
+      const up = await WA.uploadMedia(city, png, 'image/png', 'card-' + code + '.png');
+      if (up.error) errs.push('poza: ' + up.error); else headerImageId = up.id;
+    }
+    if (!(png && tpl.headerType === 'IMAGE') || headerImageId) {
+      const x = await WA.sendWhatsApp({ phone: r.phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: 'ro', params: tpl.map.map((k) => vars[k] || '-'), from: city, headerImageId });
+      if (x.sent) { await logChat(r.phone, x.fromCity || city, r.name, text, png ? imgPath(code) : '', x.id); return { sent: true, how: 'template', city: x.fromCity || city }; }
+      errs.push(x.error);
+    }
+  } else errs.push(tpl ? 'șablonul „' + tpl.label + '” nu e aprobat încă de Meta' : 'șablonul nu e făcut încă');
+  // not approved (or refused): a plain message, which Meta lets through only if she wrote us in the last 24 hours
+  const y = png ? await WA.sendMedia({ phone: r.phone, from: city, buf: png, mime: 'image/png', filename: 'Cardul de Sarbatori.png', caption: text })
+    : await WA.sendWhatsApp({ phone: r.phone, text, from: city });
+  if (y.sent) { await logChat(r.phone, y.fromCity || city, r.name, text, png ? imgPath(code) : '', y.id); return { sent: true, how: 'direct', city: y.fromCity || city }; }
+  errs.push(y.error);
+  return { sent: false, error: errs.filter(Boolean).join(' · ').slice(0, 300) };
+}
+// the words of the card's message (the same as the template, with the gift and the Club when paid online)
+function cardText(r, c) {
+  const extra = r.bonus ? 'Cadou: ' + giftOf(r.city) + '. Locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code : 'Te așteptăm cu drag.';
+  return { vars: { prenume: firstName(r.name), credit: lei(c.value), cod: c.code, cadou: extra },
+    text: 'Bună, ' + firstName(r.name) + '! 🎁 Cardul tău de Sărbători Centrul360 este activ' + (c.recipient && c.recipient !== r.name ? ' (pe numele ' + c.recipient + ')' : '') + ':\n' +
+      '• credit de ' + lei(c.value) + ' lei, pentru orice tratament la prețul de listă\n• cod ' + c.code + '\n• valabil până pe ' + VALID_TXT + '\n' +
+      (r.bonus ? '• cadou: ' + giftOf(r.city) + (r.city === 'Arad' ? '' : ' (în clinica din Timișoara)') + '\n• locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code + '\n' : '') +
+      '\nPentru programare răspunde la acest mesaj. Mulțumim!' };
+}
+// her card, out on WhatsApp; what happened is kept on the card (the portal shows „de trimis manual” when it could not go)
+async function deliver(r, c) {
+  let png = null;
+  try { png = await image(r, c); } catch (e) { c.sent = { at: nowISO(), how: '', error: 'poza cardului: ' + e.message }; return c.sent; }
+  const m = cardText(r, c);
+  const x = await say('card', r, m.vars, m.text, png, c.code).catch((e) => ({ sent: false, error: e.message }));
+  c.sent = x.sent ? { at: nowISO(), how: x.how } : { at: nowISO(), how: '', error: x.error || 'netrimis' };
+  return c.sent;
+}
+
+// ---- paid: the card is issued (once), the gift and the Club when online, her lead and file, the team, her WhatsApp
+// via: 'online' | 'clinica'; o: { by (employee id), byName, match: { src, ref, at }, amount }
+async function confirm(id, via, o) {
+  o = o || {};
+  const list = await readJSON(KEY, []);
+  const r = list.find((x) => x.id === id);
+  if (!r) return { error: 'not_found' };
+  norm(r);
+  if (r.status === 'platit') return { row: r, again: true };
+  r.status = 'platit'; r.paidAt = nowISO(); r.paidVia = via === 'online' ? 'online' : 'clinica';
+  r.paidBy = o.by || ''; if (o.byName) r.paidByName = o.byName;
+  r.paidAmount = Number(o.amount) > 0 ? r2(o.amount) : r.amount;
+  if (o.match) r.match = o.match;
+  r.bonus = r.paidVia === 'online';
+  delete r.bonusRestart; delete r.cancelledAt; delete r.cancelledBy;
+  r.cards.forEach((c) => {
+    if (!c.code) c.code = codeOf(list);
+    c.value = TIERS[r.tier] || c.value;
+    c.gift = r.bonus ? { what: giftShort(r.city), state: 'open' } : null;
+  });
+  await writeJSON(KEY, list);
+
+  // the Club's waiting list (online only), her lead and her client file
+  if (r.bonus) await clubAdd({ name: r.name, phone: r.phone, city: r.city, code: r.cards[0].code, source: 'card' }).catch((e) => console.error('card club:', e.message));
+  try {
+    const note = 'Card de Sărbători plătit ' + (r.paidVia === 'online' ? 'online' : 'în clinică') + ': ' + r.qty + ' × ' + r.tier + ' lei, credit ' + lei(r.credit) + ' lei · ' +
+      r.cards.map((c) => c.code + (c.recipient ? ' (' + c.recipient + ')' : '')).join(', ') + (r.bonus ? ' · cadou: ' + giftShort(r.city) + ' · Clubul 360' : '');
+    const L = await require('../portal-leads').createLead({ name: r.name, phone: r.phone, source: 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: 'Card de Sărbători', welcome: false });
+    if (L && L.lead && !r.leadId) r.leadId = L.lead.id;
+  } catch (e) { console.error('card lead:', e.message); }
+  try { const cl = await require('./clients').upsertClient({ name: r.name, phone: r.phone, location: r.city }, store); if (cl) r.clientId = cl.id; } catch (e) { console.error('card client:', e.message); }
+
+  // the desk (her clinic) and the owner
+  try {
+    const ids = [...new Set((await N.deskIds(store, r.city)).concat(await N.adminIds(store)))];
+    await N.notifyMany(store, ids, {
+      kind: 'money', tone: 'good', go: 'carduri', tag: 'card-paid-' + r.id,
+      title: 'CARD DE SĂRBĂTORI PLĂTIT' + N.cityTag(r.city) + (r.paidVia === 'online' ? ' ONLINE 💳' : ' 🎁') + ' - ' + N.leiTxt(r.amount),
+      text: r.qty + ' × ' + r.tier + ' lei (credit ' + lei(r.credit) + ') · ' + r.name + ' · ' + r.cards.map((c) => c.code).join(', ') + (r.bonus ? ' · + ' + giftShort(r.city) + ' și Clubul 360' : '') +
+        (o.match ? ' · găsit automat în myPOS' : ''),
+    });
+  } catch (e) { console.error('card notify:', e.message); }
+
+  // her cards on WhatsApp
+  for (const c of r.cards) await deliver(r, c).catch((e) => { c.sent = { at: nowISO(), how: '', error: e.message }; });
+  // written back onto the newest list (another change may have come meanwhile)
+  const l2 = await readJSON(KEY, []);
+  const i = l2.findIndex((x) => x.id === r.id);
+  if (i >= 0) { l2[i] = r; await writeJSON(KEY, l2); }
+  return { row: r };
+}
+
+// ---- finding the payment by itself: a payment of the clinic's account that is not a POS payment, of the sum of an order
+// sent to its PayLink, within 48 h after the order (the oldest order first, each payment once)
+// pays = [{ ref, amount, at, src }]
+async function matchPayments(pays) {
+  const list = await readJSON(KEY, []);
+  const used = new Set(list.filter((r) => r.match && r.match.ref).map((r) => r.match.ref));
+  const done = [];
+  for (const p of (pays || []).slice().sort((a, b) => Date.parse(a.at) - Date.parse(b.at))) {
+    if (!p.ref || used.has(p.ref) || !(Number(p.amount) > 0)) continue;
+    const t = Date.parse(p.at) || Date.now();
+    const r = list.filter((x) => x.status === 'asteptare' && Math.abs(Number(x.amount) - Number(p.amount)) < 0.01 && Date.parse(x.created) <= t + 5 * 60e3 && t - Date.parse(x.created) <= MATCH_MS)
+      .sort((a, b) => Date.parse(a.created) - Date.parse(b.created))[0];
+    if (!r) continue;
+    used.add(p.ref);
+    r.status = 'matching'; // taken by this payment (written below by confirm)
+    const x = await confirm(r.id, 'online', { by: 'myPOS', byName: 'myPOS (automat)', amount: p.amount, match: { src: p.src || 'mypos', ref: p.ref, at: p.at } });
+    if (x.row) done.push({ id: r.id, ref: p.ref });
+  }
+  return done;
+}
+// the clinic's myPOS account: the payments that are not a POS terminal's (the PayLinks), the last days; a probe of what
+// myPOS gives (counts and field names only, never a name, a card or a reference) is kept for the check
+async function scanMypos(days, opts) {
+  const M = require('./mypos');
+  const conn = await M.loadConn(readJSON);
+  if (!M.connected(conn)) return { ok: false, error: 'not_connected' };
+  const now = Date.now();
+  const raw = await M.listTransactions(conn, now - (days || 3) * 86400e3, now);
+  const tids = new Set((conn.devices || []).map((d) => d.tid));
+  const probe = { at: nowISO(), days: days || 3, read: raw.length, groups: {}, fields: [], tierSums: 0 };
+  const fields = new Set();
+  const pays = [];
+  const sums = new Set([290, 490, 990, 580, 980, 1980, 870, 1470, 2970].map(String));
+  for (const t of raw) {
+    Object.keys(t || {}).forEach((k) => fields.add(k));
+    const type = String(t.transaction_type || '').padStart(3, '0');
+    const tid = String(t.terminal_id || '');
+    const pos = !!tid && (!tids.size || tids.has(tid));
+    const cur = String(t.transaction_currency || t.original_currency || '');
+    const amt = Math.abs(Number(String(t.original_currency === 'RON' ? t.original_amount : t.transaction_amount).replace(',', '.')) || 0);
+    const sign = String(t.sign || t.direction || t.debit_credit || '').toLowerCase();
+    const g = type + (tid ? (pos ? ' pos' : ' alt-terminal') : ' fără-terminal') + ' ' + cur + (sign ? ' ' + sign : '');
+    probe.groups[g] = (probe.groups[g] || 0) + 1;
+    if (sums.has(String(Math.round(amt)))) probe.tierSums++;
+    // a refund, a fee or money going out is never a card paid
+    if (pos || ['011'].includes(type) || /debit|^d$|out/.test(sign) || Number(t.transaction_amount) < 0) continue;
+    if (cur && cur !== 'RON' && t.original_currency !== 'RON') continue;
+    const at = Date.parse(t.date);
+    pays.push({ ref: 'mypos-' + String(t.payment_reference || t.id || (type + '-' + t.date + '-' + amt)), amount: r2(amt), at: Number.isFinite(at) ? new Date(at).toISOString() : nowISO(), src: 'mypos' });
+  }
+  probe.fields = [...fields].sort();
+  probe.online = pays.length;
+  if (opts && opts.events) { try { probe.events = await M.listEvents(conn); } catch (e) { probe.events = 'eroare: ' + (e.code || e.message); } }
+  await writeJSON(PROBE, probe, { quiet: true }).catch(() => 0);
+  return { ok: true, pays, probe };
+}
+// on the clock and when the team opens the cards: only while an order waits for its payment
+async function autoMatch(force) {
+  const list = await readJSON(KEY, []);
+  const waiting = list.filter((r) => r.status === 'asteptare' && Date.now() - Date.parse(r.created) < MATCH_MS);
+  if (!waiting.length && !force) return { waiting: 0 };
+  const last = await readJSON('data/card-sarbatori-scan.json', {}).catch(() => ({}));
+  if (!force && last.at && Date.now() - Date.parse(last.at) < 3 * 60e3) return { waiting: waiting.length, skipped: 'recent' };
+  await writeJSON('data/card-sarbatori-scan.json', { at: nowISO() }, { quiet: true }).catch(() => 0);
+  const s = await scanMypos(3).catch((e) => ({ ok: false, error: e.code || e.message }));
+  if (!s.ok) return { waiting: waiting.length, error: s.error };
+  return { waiting: waiting.length, matched: await matchPayments(s.pays), seen: s.pays.length };
+}
+
+// ---- myPOS's own notification (IPCPurchaseNotify), if the PayLink's store sends one to /api/card-notify: only with a
+// signature that holds (myPOS's certificate in MYPOS_PUBLIC_CERT), the sum of an order waiting for it
+function signed(pairs) {
+  const cert = String(process.env.MYPOS_PUBLIC_CERT || '').replace(/\\n/g, '\n').trim();
+  if (!cert) return null;
+  const sig = (pairs.find((p) => p[0] === 'Signature') || [])[1] || '';
+  const data = Buffer.from(pairs.filter((p) => p[0] !== 'Signature').map((p) => p[1]).join('-'), 'utf8').toString('base64');
+  try { return crypto.createVerify('RSA-SHA256').update(data).verify(cert, sig, 'base64'); } catch (e) { return false; }
+}
+async function notified(pairs) {
+  const b = Object.fromEntries(pairs);
+  if (b.IPCmethod !== 'IPCPurchaseNotify') return { ignored: b.IPCmethod || 'none' };
+  const ok = signed(pairs);
+  if (ok !== true) return { refused: ok === null ? 'no_certificate' : 'signature' };
+  if (String(b.Currency || '').toUpperCase() !== 'RON') return { refused: 'currency' };
+  const m = await matchPayments([{ ref: 'ipn-' + String(b.IPC_Trnref || b.OrderID || ''), amount: Number(b.Amount), at: nowISO(), src: 'ipn' }]);
+  return { paid: m.length > 0 };
+}
+
+// ---- the credit used: the treatments done (from the price list, at list price) or typed, the gift as its own line
+// items: [{ name, amount, kind }]; never below 0: what is over the credit she pays on top (rest)
+async function redeem(code, input, session) {
+  const list = await readJSON(KEY, []);
+  const f = findCard(list, code);
+  if (!f) return { error: 'not_found' };
+  const { r, c } = f;
+  const st = stateOf(r, c);
+  if (st === 'expirat') return { error: 'expired' };
+  if (r.status !== 'platit') return { error: 'not_paid' };
+  const items = (Array.isArray(input.items) ? input.items : []).slice(0, 12).map((x) => ({
+    name: String(x.name || '').replace(/[<>]/g, '').trim().slice(0, 120), amount: Math.max(0, r2(x.amount)), kind: x.kind === 'gift' ? 'gift' : 'credit' }))
+    .filter((x) => x.name && (x.kind === 'gift' || x.amount > 0));
+  if (!items.length) return { error: 'no_items' };
+  const gift = items.find((x) => x.kind === 'gift');
+  if (gift) { if (!c.gift || c.gift.state !== 'open') return { error: 'no_gift' }; gift.amount = 0; gift.name = c.gift.what; }
+  const total = r2(items.filter((x) => x.kind === 'credit').reduce((n, x) => n + x.amount, 0));
+  const left = leftOf(c);
+  if (total > 0 && left <= 0) return { error: 'empty' };
+  const applied = Math.min(total, left);
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(input.date || '')) ? input.date : roDay(Date.now());
+  const emps = await readJSON('data/employees.json', []);
+  const perf = emps.find((e) => e.id === String(input.performer || ''));
+  const claim = { id: crypto.randomUUID().slice(0, 12), at: nowISO(), date, city: ['Timișoara', 'Arad'].includes(input.city) ? input.city : r.city,
+    by: session.employeeId || '', byName: (emps.find((e) => e.id === session.employeeId) || {}).name || (session.employeeId === 'admin' ? 'Admin' : ''),
+    performer: perf ? perf.id : '', performerName: perf ? perf.name : String(input.performerName || '').slice(0, 80), items, applied, rest: r2(total - applied) };
+  c.claims.push(claim);
+  if (gift) c.gift = Object.assign({}, c.gift, { state: 'used', usedAt: claim.at });
+  await writeJSON(KEY, list);
+  // her new balance on WhatsApp (only when credit came off)
+  let msg = null;
+  if (applied > 0) {
+    const vars = { prenume: firstName(r.name), folosit: lei(applied), cod: c.code, sold: lei(leftOf(c)) };
+    const text = 'Bună, ' + firstName(r.name) + '! Am folosit ' + lei(applied) + ' lei din Cardul tău de Sărbători ' + c.code + '. Pe card mai ai ' + lei(leftOf(c)) + ' lei, valabili până pe ' + VALID_TXT + '. Mulțumim!';
+    msg = await say('sold', r, vars, text, null, c.code).catch((e) => ({ sent: false, error: e.message }));
+    claim.msg = msg.sent ? { how: msg.how } : { error: msg.error };
+    const l2 = await readJSON(KEY, []);
+    const f2 = findCard(l2, c.code);
+    if (f2) { const k = f2.c.claims.find((x) => x.id === claim.id); if (k) k.msg = claim.msg; await writeJSON(KEY, l2); }
+  }
+  return { ok: true, claim, left: leftOf(c), msg };
+}
+// the last claim undone (the owner only): the credit and the gift come back
+async function undo(code, session) {
+  const list = await readJSON(KEY, []);
+  const f = findCard(list, code);
+  if (!f) return { error: 'not_found' };
+  const last = f.c.claims.filter((x) => !x.undone).slice(-1)[0];
+  if (!last) return { error: 'nothing' };
+  last.undone = { at: nowISO(), by: session.employeeId || '' };
+  if (last.items.some((x) => x.kind === 'gift') && f.c.gift) f.c.gift = Object.assign({}, f.c.gift, { state: 'open', usedAt: '' });
+  await writeJSON(KEY, list);
+  return { ok: true, left: leftOf(f.c) };
+}
+
+// ---- Clubul 360's waiting list: [{ id, at, name, phone, city, code (her card's), holder, source: 'card' | 'site' }]
+async function clubAdd(o) {
+  const list = await readJSON(CLUB, []);
+  const k = d9(o.phone);
+  let row = k.length === 9 ? list.find((x) => d9(x.phone) === k) : null;
+  const cards = await readJSON(KEY, []);
+  const card = o.code ? findCard(cards, o.code) : null;
+  const holder = !!(card && card.r.status === 'platit') || o.source === 'card' ||
+    cards.some((r) => r.status === 'platit' && d9(r.phone) === k);
+  if (row) {
+    if (holder && !row.holder) { row.holder = true; row.code = row.code || (card ? card.c.code : String(o.code || '')); }
+    if (o.name && !row.name) row.name = o.name;
+    await writeJSON(CLUB, list);
+    return { row, again: true, place: list.indexOf(row) + 1 };
+  }
+  row = { id: crypto.randomUUID().slice(0, 12), at: nowISO(), name: String(o.name || '').slice(0, 100), phone: String(o.phone || ''), city: o.city || '', code: card ? card.c.code : '', holder, source: o.source || 'site' };
+  list.push(row);
+  await writeJSON(CLUB, list);
+  return { row, place: list.length };
+}
+
+// ---- reminders (only to cards paid with credit left): 14 days after it is active with no booking, and 60 / 30 / 7 days
+// before 30.06.2027 („Mai ai X lei pe card până pe 30 iunie”). Once each, from 09 to 20 (Romania).
+async function reminders(now) {
+  const t = now || Date.now();
+  const h = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', hour: '2-digit', hourCycle: 'h23' }).format(new Date(t)));
+  if (h < 9 || h > 20 || expired(t)) return { sent: 0 };
+  const list = await readJSON(KEY, []);
+  const appts = await readJSON('data/appointments.json', []);
+  const toEnd = (Date.parse(VALID_UNTIL) - t) / 86400e3;
+  const due = [];
+  for (const r of list) {
+    if (norm(r).status !== 'platit') continue;
+    for (const c of r.cards) {
+      if (leftOf(c) <= 0) continue;
+      c.remind = c.remind || {};
+      let k = '';
+      if (toEnd <= 7) k = 'e7'; else if (toEnd <= 30) k = 'e30'; else if (toEnd <= 60) k = 'e60';
+      if (k && c.remind[k]) k = '';
+      if (!k && !c.remind.d14 && t - Date.parse(r.paidAt) >= 14 * 86400e3) {
+        const booked = appts.some((a) => a && d9(a.clientPhone) === d9(r.phone) && a.status !== 'anulata' && Date.parse(a.createdAt || a.date) >= Date.parse(r.paidAt));
+        if (!booked) k = 'd14'; else c.remind.d14 = 'programată';
+      }
+      if (k) due.push({ r, c, k });
+    }
+  }
+  let sent = 0;
+  for (const x of due.slice(0, 6)) {
+    const { r, c, k } = x;
+    const vars = { prenume: firstName(r.name), sold: lei(leftOf(c)), cod: c.code };
+    const text = k === 'd14'
+      ? 'Bună, ' + firstName(r.name) + '! Pe Cardul tău de Sărbători ' + c.code + ' ai ' + lei(leftOf(c)) + ' lei pentru orice tratament la prețul de listă: remodelare corporală, tratamente faciale, epilare laser. Spune-ne ce ți-ar plăcea și îți găsim o oră. Răspunde la acest mesaj.'
+      : 'Bună, ' + firstName(r.name) + '! Mai ai ' + lei(leftOf(c)) + ' lei pe Cardul de Sărbători ' + c.code + ' până pe 30 iunie. Răspunde la acest mesaj și îți facem programarea.';
+    const m = await say('remind', r, vars, text, null, c.code).catch((e) => ({ sent: false, error: e.message }));
+    c.remind[k] = m.sent ? nowISO() : 'netrimis: ' + String(m.error || '').slice(0, 120);
+    if (m.sent) sent++;
+  }
+  if (due.length || list.some((r) => r.cards && r.cards.some((c) => c.remind && c.remind.d14 === 'programată'))) await writeJSON(KEY, list);
+  return { sent, due: due.length };
+}
+
+// ---- the clock (every hour): the templates sent to Meta, the payments looked for, the reminders, the probe now and then
+async function tick() {
+  const out = {};
+  const list = await readJSON(KEY, []);
+  if (list.some((r) => r.status === 'platit' || r.status === 'asteptare') || Date.now() < Date.parse(DEADLINE)) {
+    const last = await readJSON('data/card-sarbatori-tpl.json', {}).catch(() => ({}));
+    if (!last.at || Date.now() - Date.parse(last.at) > 6 * 3600e3 || last.pending) {
+      out.templates = await ensureTemplates().catch((e) => ({ error: e.message }));
+      await writeJSON('data/card-sarbatori-tpl.json', { at: nowISO(), res: out.templates, pending: Object.values(out.templates || {}).some((v) => /eroare|DRAFT/.test(String(v))) }, { quiet: true }).catch(() => 0);
+    }
+  }
+  out.match = await autoMatch().catch((e) => ({ error: e.message }));
+  const pr = await readJSON(PROBE, null).catch(() => null);
+  if (!pr || Date.now() - Date.parse(pr.at) > 12 * 3600e3) out.probe = await scanMypos(14, { events: true }).then((s) => (s.ok ? { read: s.probe.read, online: s.probe.online } : s)).catch((e) => ({ error: e.message }));
+  out.remind = await reminders().catch((e) => ({ error: e.message }));
+  return out;
+}
+
+// ---- what the team sees: one row per card
+function cardView(r, c, now) {
+  const used = usedOf(c);
+  return {
+    order: r.id, code: c.code, recipient: c.recipient || '', buyer: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, value: c.value,
+    used, left: leftOf(c), state: stateOf(r, c, now), pay: r.pay, paidVia: r.paidVia || '', paidAt: r.paidAt || '', created: r.created, forWho: r.forWho || '',
+    gift: c.gift || null, club: !!r.bonus, sent: c.sent || null, match: r.match || null, paidByName: r.paidByName || '',
+    claims: (c.claims || []).map((x) => ({ id: x.id, at: x.at, date: x.date, city: x.city, byName: x.byName, performerName: x.performerName, items: x.items, applied: x.applied, rest: x.rest, undone: !!x.undone, msg: x.msg || null })),
+  };
+}
+
+module.exports = {
+  KEY, CLUB, PROBE, LINKS, TOTAL, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
+  norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
+  image, deliver, cardText, confirm, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
+};

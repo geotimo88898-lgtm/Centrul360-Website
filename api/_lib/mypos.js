@@ -225,6 +225,11 @@ async function ensureWebhook(conn, url) {
   }
   return { id: hook.id, secret: hook.secret, url, events };
 }
+// the events myPOS's webhooks offer (names only): to see whether the online payments (the PayLinks) have one
+async function listEvents(conn) {
+  const ev = await call(conn, 'GET', HOOK + '/events', { scope: 'webhooks' });
+  return (ev.events || []).map((e) => String(e.name || '')).filter(Boolean);
+}
 async function dropWebhook(conn) {
   if (!conn.webhook || !conn.webhook.id) return;
   await call(conn, 'DELETE', HOOK + '/webhooks/' + encodeURIComponent(conn.webhook.id), { scope: 'webhooks' }).catch(() => null);
@@ -518,4 +523,4 @@ async function gwProbe(store) {
   return out;
 }
 
-module.exports = { gwProbe, CONN, PAY, EVENTS, MyposError, token, listDevices, listTransactions, fromApi, fromHook, merge, sync, ensureWebhook, dropWebhook, validSignature, loadConn, connected, dayOf, balance, parseMt940, saveGateway, dropGateway, loadGateway };
+module.exports = { listEvents, gwProbe, CONN, PAY, EVENTS, MyposError, token, listDevices, listTransactions, fromApi, fromHook, merge, sync, ensureWebhook, dropWebhook, validSignature, loadConn, connected, dayOf, balance, parseMt940, saveGateway, dropGateway, loadGateway };
