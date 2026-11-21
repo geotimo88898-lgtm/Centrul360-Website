@@ -49,7 +49,9 @@ const siteLabel = (c) => 'Reamintiri · Confirmare site · ' + c;
 function siteTemplate(c) {
   const C = CITY[c];
   return { key: 'site', label: siteLabel(c), category: 'UTILITY', headerType: 'LOCATION', footer: '', buttons: [{ type: 'QUICK_REPLY', text: CONFIRM }],
-    body: 'Bună, {prenume}! 🌸 Pentru a confirma programarea dvs. de pe {data}, la ora {ora}, la Centrul360 ' + c + ', vă rugăm să răspundeți la acest mesaj cu „' + CONFIRM + '”.\n📍 ' + C.addr + '\n\nCu drag, ' + SIGN };
+    // what she booked and its price (the owner, 21.11: the confirmation names the procedure and the offer's price); the text
+    // changed, so ensureSite() sends it to Meta as „… · v2” and siteSwap uses it once approved (the first one until then)
+    body: 'Bună, {prenume}! 🌸 Pentru a confirma programarea dvs. pentru {serviciu}, de pe {data}, la ora {ora}, la Centrul360 ' + c + ', vă rugăm să răspundeți la acest mesaj cu „' + CONFIRM + '”.\n📍 ' + C.addr + '\n\nCu drag, ' + SIGN };
 }
 // 4 hours later, still not confirmed (_lib/site-confirm.js): the last call, the same button
 const lastLabel = (c) => 'Reamintiri · Ultima confirmare site · ' + c;

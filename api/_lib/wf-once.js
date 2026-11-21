@@ -154,7 +154,9 @@ const JOBS = [{ id: 'lead-10-minutes-2026-11-20', run: leadTenMinutes, tell: () 
 { id: 'site-confirm-2026-11-05', run: async () => { const r = await require('./reminders').ensureSite(); return r.wait ? { wait: true, cities: r.cities } : { cities: r.cities }; }, tell: () => null },
 // 5.11, later: the last call after 4 hours ("dacă nu o confirmați acum, se anulează"), sent to Meta the same way
 { id: 'tm-one-at-a-time-2026-11-05', run: tmOneAtATime, tell: () => null },
-{ id: 'site-confirm-2026-11-05b', run: async () => { const r = await require('./reminders').ensureSite(); return r.wait ? { wait: true, cities: r.cities } : { cities: r.cities }; }, tell: () => null }];
+{ id: 'site-confirm-2026-11-05b', run: async () => { const r = await require('./reminders').ensureSite(); return r.wait ? { wait: true, cities: r.cities } : { cities: r.cities }; }, tell: () => null },
+// 21.11: the site's confirmation names what she booked and its price ({serviciu}): its new text sent to Meta the same way
+{ id: 'site-confirm-serviciu-2026-11-21', run: async () => { const r = await require('./reminders').ensureSite(); return r.wait ? { wait: true, cities: r.cities } : { cities: r.cities }; }, tell: () => null }];
 
 // a notice to the admins once (a job that runs again and again)
 async function tellOnce(key, msg) {

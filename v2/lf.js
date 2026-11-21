@@ -262,6 +262,15 @@
   var linkZone = qs.zona || TOPIC[fold(qs.din || '').replace(/[^a-z-]/g, '')] || '';
   window.C360LF = { open: open, close: close, zone: linkZone, topic: TOPIC, load: load };
   if (qs.lf || /#pachet\b/.test(location.hash)) addEventListener('load', function () { open(null, { zone: linkZone, city: qs.oras || '' }); });
+  // the phone dock waits until she has scrolled past the lead filter section (the owner, 21.11): on the card block and on
+  // the section the page's own actions are in sight; once the section's bottom has gone up out of view the dock comes,
+  // and goes again if she scrolls back above it. Pages without the section keep the kit's own rule.
+  var sec = document.querySelector('.lfs-sec');
+  if (sec) {
+    var hold = function () { document.documentElement.classList.toggle('dock-hold', sec.getBoundingClientRect().bottom > 0); };
+    var tk = false; var onS = function () { if (!tk) { tk = true; requestAnimationFrame(function () { tk = false; hold(); }); } };
+    addEventListener('scroll', onS, { passive: true }); addEventListener('resize', onS); hold();
+  }
   // the offer, ready before she taps (when the page is idle); the buttons that say „de la N lei” get the zone's real lowest price
   (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(function () {
     load().then(function (d) {

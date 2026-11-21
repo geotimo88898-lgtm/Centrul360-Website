@@ -533,6 +533,8 @@ function vars(ctx, settings) {
     data: roDate(a.date), ora: a.time || '', zi: a.date ? relDay(a.date) : '', tratament: a.treatment || l.interest || 'tratament',
     locatie: loc, adresa: (settings.addresses || {})[loc] || loc, interes: l.interest || a.treatment || 'tratamentele noastre',
     procedura: l.interest || a.treatment || 'tratament',
+    // what she booked, with the offer's price (the site's confirmation, 21.11): „HIFU · Gușă (190 lei)”, „Consultație gratuită”
+    serviciu: a.treatment ? a.treatment + (Number(a.amount) > 0 ? ' (' + Number(a.amount).toLocaleString('ro-RO') + ' lei)' : '') : (l.interest || 'consultație'),
     link_recenzie: settings.reviewLink || '',
   };
 }
@@ -713,6 +715,7 @@ const cityOf = (ctx) => (ctx.appointment && ctx.appointment.location) || (ctx.le
 // A booking made on the site gets, in place of the confirmation („Reamintiri · Confirmare · <oraș>”), the message that
 // asks her to confirm it with a button (_lib/reminders.js siteTemplate; the owner, 5.11), once Meta approved it for the
 // number it leaves from; before that, the usual confirmation.
+const verOf = (t) => { const m = /· v(\d+)$/.exec(String((t && t.label) || '')); return m ? Number(m[1]) : 1; };
 function siteSwap(wa, id, ctx, from) {
   const a = ctx && ctx.appointment;
   if (!a || !a.online) return id;
@@ -723,7 +726,8 @@ function siteSwap(wa, id, ctx, from) {
   const n = wa.cfg && wa.cfg.numbers && wa.cfg.numbers[city];
   const base = 'Reamintiri · Confirmare site · ' + city;
   const alt = n && tpls.filter((x) => (x.label === base || String(x.label || '').startsWith(base + ' · v')) && WT.approvedFor(x, n.wabaId))
-    .sort((x, y) => String(y.updatedAt || '').localeCompare(String(x.updatedAt || '')))[0];
+    // the newest version Meta approved (· v2 names what she booked and its price, 21.11), whatever was synced last
+    .sort((x, y) => verOf(y) - verOf(x) || String(y.updatedAt || '').localeCompare(String(x.updatedAt || '')))[0];
   return alt ? alt.id : id;
 }
 

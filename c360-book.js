@@ -298,7 +298,10 @@
       choose(S.svc === 'consult' ? 'consult' : S.proc.id, true);
       return;
     }
-    if (S.proc || S.note) { if (S.step !== 'svc') go('svc'); else paint(); return; } // the choice: the procedure or the free consultation
+    // „Rezervă oferta” books the procedure itself, with its own length (the owner, 21.11): straight to its hours. Only when
+    // the procedure isn't done in this clinic is there a choice (the free consultation, or the other clinic).
+    if (S.proc) { choose(S.proc.id, S.step === 'when'); return; }
+    if (S.note) { if (S.step !== 'svc') go('svc'); else paint(); return; }
     choose('consult', S.step === 'when');
   }
   const consultSvc = () => (S.services || []).find((x) => x.id === 'consult') || { id: 'consult', title: 'Consultație gratuită', minutes: 30, price: 0 };
@@ -337,7 +340,7 @@
     if (!root) return;
     body = root.querySelector('.bk-body');
     const back = root.querySelector('[data-bk-back]');
-    back.hidden = S.step === 'city' || S.step === 'done';
+    back.hidden = S.step === 'city' || S.step === 'done' || (S.step === 'when' && S.lock && !!S.proc);
     const html = S.step === 'city' ? cityHtml() : S.step === 'svc' ? svcHtml() : S.step === 'when' ? whenHtml() : S.step === 'you' ? youHtml() : doneHtml();
     prog({ city: 1, svc: 2, when: 3, you: 4, done: 4 }[S.step] || 1);
     const anim = S.dir;
@@ -374,7 +377,7 @@
   function chipHtml() {
     const s = S.service || {};
     return '<div class="bk-chip"><div><b>' + esc(s.title || '') + '</b><small>Centrul360 ' + esc(S.city) + ' · ' + mins(s.minutes || 60) + (s.id === 'consult' ? ' · gratuit' : s.price ? ' · ' + lei(s.price) : '') + '</small></div>' +
-      (S.proc || S.note ? '<button type="button" class="bk-link" data-go="svc">Schimbă</button>' : '') + '</div>';
+      (S.note ? '<button type="button" class="bk-link" data-go="svc">Schimbă</button>' : S.proc && !S.lock ? '<button type="button" class="bk-link" data-go="city">Schimbă orașul</button>' : '') + '</div>';
   }
   const addD = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
   const WDH = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
@@ -457,14 +460,14 @@
     if (t.hasAttribute('data-bk-close')) { close(); return; }
     if (t.hasAttribute('data-bk-back')) {
       if (S.step === 'you') go('when', 'back');
-      else if (S.step === 'when') go(S.proc || S.note ? 'svc' : 'city', 'back');
+      else if (S.step === 'when') go(S.note ? 'svc' : 'city', 'back');
       else if (S.step === 'svc') go('city', 'back');
       return;
     }
     if (t.dataset.city && S.step === 'city') {
       S.city = t.dataset.city; store.set('c360-book-city', S.city);
       S.date = ''; S.time = ''; S.svc = '';
-      go(S.pick && S.pick.svc && S.pick.svc !== 'consult' ? 'svc' : 'when');
+      go('when');
       loadServices('enter');
       return;
     }
@@ -544,9 +547,11 @@
     S = fresh(o || {});
     S.pick = S.svc ? { svc: S.svc, label: S.label } : null; // what the button named
     S.svc = '';
+    // an offer's button with its clinic (an offer of one city): only that clinic (the owner, 21.11)
+    S.lock = !!(o && o.city) && !!(S.pick && S.pick.svc !== 'consult');
     ['Timișoara', 'Arad'].forEach((c) => cityData(c).catch(() => {}));
     if (!S.city) { S.step = 'city'; paint(); return; }
-    S.step = S.pick && S.pick.svc !== 'consult' ? 'svc' : 'when';
+    S.step = 'when';
     paint();
     loadServices('enter');
   }
