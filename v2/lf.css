@@ -99,27 +99,36 @@ html.csb-lock{ overflow:hidden; }
 .lfs-o:hover .ar{ transform:translateX(3px); color:var(--teal2); }
 .lfs-o.on{ background:var(--tint); box-shadow:0 0 0 2px var(--teal) inset; }
 .lfs-two .lfs-o{ min-height:84px; }
-/* the packages: the price first, what she gets, the one most take marked */
-.lfs-packs{ display:grid; gap:10px; padding-top:6px; }
-.lfs-pk{ position:relative; display:grid; gap:8px; width:100%; padding:16px 16px 14px; border:0; border-radius:20px; text-align:left; font:inherit; color:var(--ink); background:#fff;
-  box-shadow:0 0 0 1px var(--line2) inset; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:box-shadow .4s var(--e), transform .4s var(--e); }
-.lfs-pk:active{ transform:scale(.99); }
-.lfs-pk.pop{ box-shadow:0 0 0 2px var(--teal) inset, 0 16px 34px -24px rgba(11,127,116,.7); background:linear-gradient(180deg,#f4fcfb,#fff 60%); margin-top:8px; }
-.lfs-pk.on{ box-shadow:0 0 0 2px var(--teal2) inset; }
-.lfs-pop{ position:absolute; top:-10px; left:14px; padding:3px 10px; border-radius:999px; font-style:normal; font-size:11px; font-weight:700; letter-spacing:.02em; color:#fff; background:var(--teal2); }
-.lfs-pr{ display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 10px; }
-.lfs-pr b{ font-size:1.6rem; font-weight:800; letter-spacing:-.04em; line-height:1.05; font-variant-numeric:tabular-nums; }
-.lfs-pr .v{ font-size:13px; color:var(--mute2); }
-.lfs-pk strong{ font-size:15.5px; font-weight:700; letter-spacing:-.015em; }
-.lfs-pk ul{ list-style:none; margin:0; padding:0; display:grid; gap:4px; }
-.lfs-pk li{ position:relative; padding-left:16px; font-size:13.5px; line-height:1.4; color:var(--ink2); }
-.lfs-pk li::before{ content:''; position:absolute; left:2px; top:.55em; width:6px; height:6px; border-radius:50%; background:var(--teal3); }
-.lfs-pk li.b{ color:var(--teal2); font-weight:600; }
-.lfs-pk li.b::before{ background:var(--teal2); }
+/* the packages: four calm rows, the highest first; the chosen one open (what's in it, its button); the one most take marked */
+.lfs-packs{ display:grid; gap:8px; padding-top:2px; }
+.lfs-pk{ position:relative; border-radius:18px; background:#fff; box-shadow:0 0 0 1px var(--line2) inset; transition:box-shadow .4s var(--e), background-color .4s var(--e); }
+.lfs-pk.pop{ margin-top:10px; }
+.lfs-pk.on{ background:linear-gradient(180deg,#f3fbfa,#fff 70%); box-shadow:0 0 0 2px var(--teal) inset, 0 18px 36px -26px rgba(11,127,116,.6); }
+.lfs-row{ position:relative; display:flex; align-items:flex-start; gap:12px; width:100%; padding:12px 14px; border:0; background:none; text-align:left; font:inherit; color:var(--ink);
+  cursor:pointer; -webkit-tap-highlight-color:transparent; border-radius:18px; }
+.lfs-pk.on .lfs-row{ padding-top:16px; }
+.lfs-rd{ flex:none; width:20px; height:20px; margin-top:2px; border-radius:50%; box-shadow:0 0 0 1.5px var(--line2) inset; transition:box-shadow .3s var(--e); }
+.lfs-pk.on .lfs-rd{ box-shadow:0 0 0 6px var(--teal) inset; }
+.lfs-rt{ display:grid; grid-template-columns:auto 1fr; align-items:baseline; gap:1px 10px; min-width:0; flex:1; }
+.lfs-rt b{ font-size:1.18rem; font-weight:800; letter-spacing:-.035em; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.lfs-rt strong{ font-size:14.5px; font-weight:600; letter-spacing:-.01em; line-height:1.3; min-width:0; }
+.lfs-rt small{ grid-column:1 / -1; font-size:12.5px; line-height:1.35; color:var(--mute); }
+.lfs-pk:not(.pop):not(.on) .lfs-rt b{ font-size:1.05rem; color:var(--ink2); }
+.lfs-pk.on .lfs-rt b{ font-size:1.45rem; }
+.lfs-pop,.lfs-start{ position:absolute; top:-9px; right:12px; padding:2px 9px; border-radius:999px; font-style:normal; font-size:10.5px; font-weight:700; letter-spacing:.02em; white-space:nowrap; }
+.lfs-pop{ color:#fff; background:var(--teal2); }
+.lfs-start{ color:var(--teal2); background:var(--tint); box-shadow:0 0 0 1px rgba(11,127,116,.18) inset; }
+.lfs-pk.low{ margin-top:10px; }
+.lfs-more{ display:grid; gap:10px; padding:0 14px 14px 46px; }
+.lfs-more ul{ list-style:none; margin:0; padding:0; display:grid; gap:4px; }
+.lfs-more li{ position:relative; padding-left:14px; font-size:13.5px; line-height:1.4; color:var(--ink2); }
+.lfs-more li::before{ content:''; position:absolute; left:0; top:.55em; width:6px; height:6px; border-radius:50%; background:var(--teal3); }
+.lfs-more li.b{ color:var(--teal2); font-weight:600; }
 .lfs-g{ justify-self:start; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; color:var(--teal2); background:var(--tint); }
-.lfs-ch{ display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:var(--teal2); }
-.lfs-ch .ar{ width:16px; height:16px; transition:transform .5s var(--e); }
-.lfs-pk:hover .lfs-ch .ar{ transform:translateX(3px); }
+.lfs-more .lfs-take{ width:100%; min-height:52px; height:auto; padding:10px 18px; white-space:normal; margin-left:-32px; width:calc(100% + 32px); }
+.lfs-safe{ margin-top:2px; font-size:13px; line-height:1.45; color:var(--mute); text-align:center; }
+.lfs-more .lfs-prop{ margin-left:-32px; }
+@media (max-width:380px){ .lfs-rt{ grid-template-columns:1fr; } .lfs-more{ padding-left:14px; } .lfs-more .lfs-take,.lfs-more .lfs-prop{ margin-left:0; width:100%; } }
 .lfs-chips{ margin-top:-4px; }
 .lfs-f{ gap:14px; }
 .lfs .csb-done .btn + .btn{ margin-top:-6px; }
@@ -159,3 +168,16 @@ html.csb-lock{ overflow:hidden; }
 .lfs-prop summary{ display:inline-flex; padding:6px 12px; border-radius:999px; list-style:none; cursor:pointer; font-weight:600; color:#6b5300; background:#fff6d1; box-shadow:0 0 0 1px rgba(107,83,0,.18) inset; }
 .lfs-prop summary::-webkit-details-marker{ display:none; }
 .lfs-prop p{ margin-top:8px; padding:12px 14px; border-radius:14px; color:var(--ink2); background:#fffbea; box-shadow:0 0 0 1px rgba(107,83,0,.14) inset; }
+
+/* „Vreau tratament pentru mine”: the second way, under „Plătesc online”, quieter than it; its line under says what it is */
+.btn.lf2{ flex-direction:column; gap:1px; height:auto; min-height:58px; padding:9px 18px; line-height:1.2; white-space:nowrap; }
+.lf2-t{ font-weight:600; }
+.lf2-s{ font-size:12.5px; font-weight:500; color:var(--mute); letter-spacing:0; }
+.btn.lf2.lf2-q{ margin-top:4px; min-height:54px; box-shadow:0 0 0 1px var(--line2) inset; }
+/* short phones (360 x 740 and the like): the card picture smaller still, so „Plătesc online” stays above the cookie bar */
+@media (max-width:720px) and (max-height:800px){
+  .home-cs .stage,.cs-hero .stage{ max-height:118px; }
+  .home-cs .csc-stage,.cs-hero .csc-stage{ transform:scale(.46); margin:-52px 0 -92px; }
+  .home-cs .txt,.cs-hero .txt{ gap:10px; }
+  .home-cs .cst-urg,.cs-hero .cst-urg{ padding:7px 12px; font-size:13px; }
+}
