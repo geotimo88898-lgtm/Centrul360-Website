@@ -81,6 +81,7 @@
     fluxuri: P('Automatizări', [A], { tab: 'fluxuri' }),
     reclame: P('Reclame', [A], { tab: 'reclame' }),
     transformare: P('Fast Cash', [A], { tab: 'transformare' }),
+    leadfilter: P('Lead filter', [A], { tab: 'leadfilter' }),
     continut: P('Content', [A], { tab: 'continut' }),
   };
 

@@ -1,0 +1,18 @@
+/* Admin → Lead filter (portal-leadfilter.js) */
+.lf .lf-top{ margin-bottom:.9rem; }
+.lf .lf-card{ margin-bottom:1rem; }
+.lf .lf-warn{ display:flex; align-items:center; gap:.4rem; margin:0 0 .9rem; font-size:.82rem; color:var(--warn); }
+.lf .lf-warn .k-ic{ width:14px; height:14px; flex:none; }
+.lf .lf-none{ margin:.2rem 0; font-size:.84rem; }
+.lf .lf-rows{ display:flex; flex-direction:column; }
+.lf .lf-row{ display:grid; grid-template-columns:minmax(0,1.4fr) repeat(4,minmax(0,1fr)); align-items:center; gap:.5rem; padding:.55rem 0; }
+.lf .lf-row + .lf-row{ border-top:1px solid var(--line); }
+.lf .lf-row-l{ font-weight:600; font-size:.88rem; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lf .lf-n{ display:flex; flex-direction:column; gap:.05rem; padding:.4rem .5rem; border-radius:10px; background:var(--glass); font-size:.7rem; color:var(--muted); min-width:0; }
+.lf .lf-n b{ font-size:1rem; color:var(--fg); font-variant-numeric:tabular-nums; }
+.lf .lf-n em{ font-style:normal; color:var(--muted-2); font-size:.68rem; }
+.lf .lf-n.is-good b{ color:var(--good); }
+@media (max-width:720px){
+  .lf .lf-row{ grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .lf .lf-row-l{ grid-column:1 / -1; }
+}
