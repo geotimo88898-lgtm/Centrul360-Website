@@ -146,7 +146,17 @@ module.exports = async (req, res) => {
   // ?cardkpi=1: Admin → Campanii's „Cardul de Sărbători” view, computed here (counts only in the answer's summary) to see
   // why it fails; the error message, never the data of a person
   if (req.query && req.query.cardkpi) {
-    try { const v = await require('./_lib/card-kpi').view({ fresh: true }); res.status(200).json({ ok: true, keys: Object.keys(v || {}), size: JSON.stringify(v).length }); }
+    try {
+      const v = await require('./_lib/card-kpi').view({ fresh: true });
+      // per wave, counts only: sent, read, answered, orders by state and money (no names, no phones)
+      const by = {};
+      (v.people || []).forEach((p) => {
+        const b = by[p.batch] = by[p.batch] || { list: 0, sent: 0, read: 0, answered: 0, orders: 0, paid: 0, reserved: 0, online: 0, lei: 0 };
+        b.list++; if (p.sent) b.sent++; if (p.read) b.read++; if ((p.answers || []).length) b.answered++;
+        (p.orders || []).forEach((o) => { b.orders++; if (o.status === 'platit') { b.paid++; b.lei += Number(o.amount) || 0; } else if (o.status === 'rezervat') b.reserved++; else if (o.status === 'asteptare' || o.status === 'lead') b.online++; });
+      });
+      res.status(200).json({ ok: true, at: v.at, byBatch: by, money: v.money && { campBy: v.money.campBy, all: v.money.all }, stock: v.stock, tracked: v.state && v.state.tracked });
+    }
     catch (e) { res.status(200).json({ ok: false, error: String(e && e.message || e), stack: String(e && e.stack || '').split('\n').slice(0, 6) }); }
     return;
   }
