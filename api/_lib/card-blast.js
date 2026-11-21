@@ -105,28 +105,34 @@ async function tick(opts) {
   const [tpls, cfg] = [(await WT.load()).templates, await WA.loadConfig(true)];
   const sent = (await readJSON(SENT, null)) || {};
   let halt = '', count = 0, failed = 0;
+  // the message for each person: her own (p.pre, a test between two offers) or the list's (st.pre); its picture is
+  // uploaded once per message and clinic (a picture kept under the clinic alone went out with the next message, 21.11)
   const media = {}, tpl = {};
-  for (const c of CITIES) {
-    tpl[c] = tplFor(tpls, cfg, c, st.pre);
-    if (!tpl[c]) continue;
-    const path = WT.imageOf(tpl[c]);
+  const keyOf = (pre, c) => (pre || 'card_sarbatori') + '|' + c;
+  const pres = [...new Set(st.list.filter((p) => !sent[p.k]).map((p) => p.pre || st.pre || ''))];
+  for (const pre of pres) for (const c of CITIES) {
+    const k = keyOf(pre, c);
+    tpl[k] = tplFor(tpls, cfg, c, pre);
+    if (!tpl[k]) continue;
+    const path = WT.imageOf(tpl[k]);
     if (!path) continue;
-    const m = (st.media || {})[c];
-    if (m && m.id && Date.now() - Date.parse(m.at) < 20 * 864e5) { media[c] = m.id; continue; }
+    const mk = tpl[k].id + '|' + c, m = (st.media || {})[mk];
+    if (m && m.id && Date.now() - Date.parse(m.at) < 20 * 864e5) { media[k] = m.id; continue; }
     const buf = await readBinary(path);
     const up = buf ? await WA.uploadMedia(c, buf, 'image/jpeg', 'card-sarbatori.jpg') : { error: 'poza lipsește' };
-    if (up.error) { tpl[c] = null; st.note = c + ': ' + up.error; continue; }
-    media[c] = up.id; st.media = Object.assign({}, st.media, { [c]: { id: up.id, at: nowISO() } });
+    if (up.error) { tpl[k] = null; st.note = c + ': ' + up.error; continue; }
+    media[k] = up.id; st.media = Object.assign({}, st.media, { [mk]: { id: up.id, at: nowISO() } });
   }
-  const queue = st.list.filter((p) => !sent[p.k] && tpl[p.city]).slice(0, BATCH);
+  const tk = (p) => keyOf(p.pre || st.pre || '', p.city);
+  const queue = st.list.filter((p) => !sent[p.k] && tpl[tk(p)]).slice(0, BATCH);
   const one = async (p) => {
     if (halt || Date.now() - t0 > budget) return;
-    const t = tpl[p.city], n = cfg.numbers[p.city];
+    const t = tpl[tk(p)], n = cfg.numbers[p.city], pre = p.pre || st.pre || '';
     const v = { prenume: p.fn || 'dragă' };
     const bi = linkVar(t);
-    const r = await WA.sendWhatsApp({ phone: p.to, template: (t.meta[n.wabaId] || {}).name || t.name, language: t.language || 'ro', params: (t.map || []).map((key) => v[key] || '-'), from: p.city, headerImageId: media[p.city] || undefined,
+    const r = await WA.sendWhatsApp({ phone: p.to, template: (t.meta[n.wabaId] || {}).name || t.name, language: t.language || 'ro', params: (t.map || []).map((key) => v[key] || '-'), from: p.city, headerImageId: media[tk(p)] || undefined,
       buttonUrl: bi == null ? undefined : { index: bi, text: tokenOf(p.k) } });
-    if (r.sent) { sent[p.k] = Object.assign({ w: r.id || '', at: nowISO(), c: p.city }, st.pre ? { t: st.pre } : {}); count++; return; }
+    if (r.sent) { sent[p.k] = Object.assign({ w: r.id || '', at: nowISO(), c: p.city }, pre ? { t: pre } : {}); count++; return; }
     const code = codeOf(r.error);
     if (r.error === 'not_configured' || OURS.has(code) || r.error === 'rețea') { halt = p.city + ': ' + r.error; return; }
     if (code === 131056) return;
@@ -260,10 +266,26 @@ async function pickMore(n, opt) {
     const score = Math.min(paid, 20000) / 200 + v.n * 8 + (v.last >= d365 && v.last < d30 ? 15 : v.last >= d30 ? 5 : 0);
     pool.push({ k, to, city: v.city, fn: FC.firstName(c.name), seg: inTrans.has(k) ? 'client-tr' : 'client2', score: Math.round(score), visits: v.n, paid: Math.round(paid), batch: (opt && opt.batch) || 2 });
   });
+  // the leads who never came (the owner, 21.11: „avem 10k contacte”), when asked: their city from the form
+  if (opt && opt.leads) {
+    const leads = await readJSON('data/leads.json', []);
+    leads.slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).forEach((l) => {
+      const ph = normalizePhone(l && l.phone); const k = d9(ph);
+      if (!ph || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(l.name || ''))) return;
+      seen.add(k);
+      if ((!withTrans && inTrans.has(k)) || already.has(k) || bought.has(k) || staff.has(k)) return;
+      const city = C.clinicOf(l.location); if (!CITIES.includes(city)) return;
+      const to = WA.toE164(l.phone); if (!to) return;
+      const age = (now - Date.parse(l.createdAt || 0)) / 864e5;
+      pool.push({ k, to, city, fn: FC.firstName(l.name), seg: 'lead', score: Math.round(age < 30 ? 30 : age < 90 ? 20 : age < 365 ? 10 : 0), visits: 0, paid: 0, batch: (opt && opt.batch) || 2 });
+    });
+  }
   const tot = pool.length || 1;
   const share = {}; share['Timișoara'] = Math.round(want * pool.filter((p) => p.city === 'Timișoara').length / tot); share.Arad = want - share['Timișoara'];
   const list = [];
-  CITIES.forEach((c) => { pool.filter((p) => p.city === c).sort((a, b) => b.score - a.score).slice(0, share[c]).forEach((p) => list.push(p)); });
+  // a test between messages (opt.pres): handed out in turn down each clinic's ranking, so both get people as good
+  const pres = String((opt && opt.pres) || '').split(',').map((x) => x.trim()).filter(Boolean);
+  CITIES.forEach((c) => { pool.filter((p) => p.city === c).sort((a, b) => b.score - a.score).slice(0, share[c]).forEach((p, i) => { if (pres.length) p.pre = pres[i % pres.length]; list.push(p); }); });
   st.list = st.list.concat(list); st.armed = false; st.doneAt = ''; st.pickedAt = nowISO();
   await saveState(st);
   // the ones from the Transformarea list: out of it (while it isn't frozen), so nobody gets both
@@ -286,7 +308,7 @@ async function unpick(batch) {
 // which message the next sends use (the owner, 21.11): '' = the first one, '290' = the one that leads with the 290 lei card
 async function useTemplate(v) {
   const st = await loadState();
-  st.pre = v === '290' ? 'card_sarbatori_290' : '';
+  st.pre = v === '290' ? 'card_sarbatori_290' : v === '490' ? 'card_sarbatori_490' : '';
   await saveState(st);
   return { ok: true, template: st.pre || 'card_sarbatori' };
 }
