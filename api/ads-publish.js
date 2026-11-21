@@ -208,7 +208,7 @@ module.exports = async (req, res) => {
       if (!conn.userToken || !conn.adAccountId) { res.status(400).json({ error: 'not_connected', message: REASONS.not_connected }); return; }
       const r = await ads.port(conn, String(body.campaignId || ''), { name: body.name, budget: body.budget, dry: body.dry === true, paused: body.paused === true, videoId: body.videoId, formId: body.formId });
       if (r.ok && !r.dry) await require('./_lib/ads-cache').clear().catch(() => {});
-      res.status(r.error ? 400 : 200).json(r);
+      res.status(r.error ? 400 : 200).json(r.error ? Object.assign({}, r, { error: ME.clean(r.error) }) : r);
       return;
     }
     if (body.action !== 'publish') { res.status(400).json({ error: 'invalid_action' }); return; }
@@ -226,7 +226,7 @@ module.exports = async (req, res) => {
     if (v.error) { res.status(400).json({ error: v.error, message: SETTINGS[v.error] || v.error }); return; }
 
     const r = await ads.publish(conn, { base64: image.base64, name: String(image.name || 'creative.jpg').slice(0, 80) }, v.s);
-    if (r.error) { ME.log('ads-publish', r.error); res.status(400).json({ error: 'meta_refused', message: ME.action(r.error) }); return; }
+    if (r.error) { ME.log('ads-publish', r.error); res.status(400).json({ error: 'meta_refused', message: ME.action(r.error), detail: ME.clean(r.error) }); return; }
     const url = ads.adsManagerUrl(conn.adAccountId, r.campaignId);
     // what was published, for the record (Creative keeps its own link too)
     const log = await readJSON(LOG_KEY, []);
