@@ -205,7 +205,8 @@ async function backfillChats() {
 // people get their own week), never one already sent the card, who bought a card, who paid in the last 7 days or bought a
 // package (a payment of 1.500 lei or more) in the last 60 days. Potential: what she paid us in all, her visits, and a last
 // visit 1 to 12 months ago (she knows us and has room to come back). Added to the same list (one send per phone, ever).
-async function pickMore(n) {
+async function pickMore(n, opt) {
+  const withTrans = !!(opt && opt.trans); // the owner, 21.11: the card first, the Transformarea list too
   const want = Math.max(1, Math.min(1000, Number(n) || 250));
   const st = await loadState();
   if (st.armed && !st.doneAt) return { error: 'still_sending' };
@@ -240,12 +241,12 @@ async function pickMore(n) {
     const ph = normalizePhone(c && c.phone); const k = d9(ph);
     if (!ph || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(c.name || ''))) return;
     seen.add(k);
-    if (inTrans.has(k) || already.has(k) || bought.has(k) || staff.has(k) || recentPay.has(c.id)) return;
+    if ((!withTrans && inTrans.has(k)) || already.has(k) || bought.has(k) || staff.has(k) || recentPay.has(c.id)) return;
     const v = vis.get(c.id); if (!v || !CITIES.includes(v.city)) return; // only clients who came at least once, to one of our clinics
     const to = WA.toE164(c.phone); if (!to) return;
     const paid = money.get(c.id) || 0;
     const score = Math.min(paid, 20000) / 200 + v.n * 8 + (v.last >= d365 && v.last < d30 ? 15 : v.last >= d30 ? 5 : 0);
-    pool.push({ k, to, city: v.city, fn: FC.firstName(c.name), seg: 'client2', score: Math.round(score), visits: v.n, paid: Math.round(paid), batch: 2 });
+    pool.push({ k, to, city: v.city, fn: FC.firstName(c.name), seg: inTrans.has(k) ? 'client-tr' : 'client2', score: Math.round(score), visits: v.n, paid: Math.round(paid), batch: (opt && opt.batch) || 2 });
   });
   const tot = pool.length || 1;
   const share = {}; share['Timișoara'] = Math.round(want * pool.filter((p) => p.city === 'Timișoara').length / tot); share.Arad = want - share['Timișoara'];
@@ -253,6 +254,9 @@ async function pickMore(n) {
   CITIES.forEach((c) => { pool.filter((p) => p.city === c).sort((a, b) => b.score - a.score).slice(0, share[c]).forEach((p) => list.push(p)); });
   st.list = st.list.concat(list); st.armed = false; st.doneAt = ''; st.pickedAt = nowISO();
   await saveState(st);
+  // the ones from the Transformarea list: out of it (while it isn't frozen), so nobody gets both
+  const fromTr = list.filter((p) => inTrans.has(p.k)).map((p) => p.k);
+  if (fromTr.length) { const ex = await excluded(); fromTr.forEach((k) => ex.add(k)); await writeJSON(EXCLUDE, [...ex], { quiet: true }); }
   const by = (f) => CITIES.reduce((o, c) => Object.assign(o, { [c]: list.filter((p) => p.city === c).length }), {});
   const paidOf = list.map((p) => p.paid).sort((a, b) => a - b);
   return { ok: true, picked: list.length, byCity: by(), pool: pool.length, paidMedian: paidOf.length ? paidOf[Math.floor(paidOf.length / 2)] : 0, visits: { min: Math.min(...list.map((p) => p.visits)), max: Math.max(...list.map((p) => p.visits)) } };
