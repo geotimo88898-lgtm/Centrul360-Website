@@ -63,9 +63,14 @@ function followFor(d, keys, city) {
   const x = typeof m === 'string' ? m : m[CTAG[city]] || m[TAG[city]] || m[city] || m.body || null;
   return x ? (typeof x === 'string' ? { body: x } : x) : null;
 }
-const tplLabel = (zone, tier, city) => 'LF · ' + zone + ' · ' + tier + ' · ' + CTAG[city];
+// Versions (21.11): an approved WhatsApp template can't be edited, so a new text (v2: „Doar N locuri la acest preț”
+// instead of the December lot) is a new template with its own label („… · v2”) and its own pictures (leadfilter/v2/…),
+// so the old approved ones keep the picture they were approved with. A lead gets the newest version Meta approved;
+// until then the older one keeps going, never a lead without a message.
+const VER = 2;
+const tplLabel = (zone, tier, city, v) => 'LF · ' + zone + ' · ' + tier + ' · ' + CTAG[city] + (v > 1 ? ' · v' + v : '');
 const followLabel = (k, city) => 'LF · urmare ' + k + ' · ' + CTAG[city];
-const picPath = (zone, tier, city) => 'leadfilter/' + zone + '_' + tier + '_' + TAG[city] + '.jpg';
+const picPath = (zone, tier, city, v) => 'leadfilter/' + (v > 1 ? 'v' + v + '/' : '') + zone + '_' + tier + '_' + TAG[city] + '.jpg';
 
 // ---------------------------------------------------------------- the forms
 // The form input for api/_lib/fb-form-create.js createForm (its own checks: 3 screening questions, the clinic's
@@ -108,7 +113,15 @@ async function dryRun() {
       out.push(c.error ? { city, zone, error: c.error } : { city, zone, params: c.params });
     }
   }
-  return { ok: true, forms: out };
+  // which WhatsApp template each zone × package × clinic would send now (the newest approved version, else the old one)
+  const tpls = (await WT.load()).templates;
+  const sends = [];
+  for (const city of CITIES) for (const z of zonesOf(d.packages, city)) for (const tier of tiersOf(d.packages)) {
+    const t = pickTpl(tpls, z.key, tier, city);
+    const nv = tplFor(tpls, tplLabel(z.key, tier, city, VER));
+    sends.push({ city, zone: z.key, tier, sends: t ? t.label : '', status: t ? WT.overall(t) : 'lipsește', newest: nv ? WT.overall(nv) : 'lipsește' });
+  }
+  return { ok: true, forms: out, sends };
 }
 // makes the forms on the Page (only when asked, after the owner's yes): each registered as a lead-filter form
 async function makeForms(only) {
@@ -178,6 +191,12 @@ function varsFor(lead, x) {
 }
 // the template of a label: an approved one first (two runs at once may have left a second copy of a label)
 function tplFor(tpls, label) { const l = tpls.filter((t) => t.label === label); return l.find((t) => WT.overall(t) === 'APPROVED') || l.find((t) => WT.overall(t) === 'PENDING') || l[0] || null; }
+// the template a zone × tier × clinic sends: the newest approved version, else the oldest one there (v1 while v2 waits)
+function pickTpl(tpls, zone, tier, city) {
+  const all = [];
+  for (let v = VER; v >= 1; v--) { const t = tplFor(tpls, tplLabel(zone, tier, city, v)); if (t) all.push(t); }
+  return all.find((t) => WT.overall(t) === 'APPROVED') || all[all.length - 1] || null;
+}
 
 // the lead's lead-filter answers, its note, the call for 4.990 / 14.900, and the message: never throws
 async function afterLead(lead, x, city) {
@@ -217,9 +236,9 @@ async function sendFirst(lead, x, city) {
   if (/700000000$/.test(String(lead.phone || '').replace(/\D/g, '')) || /test lead/i.test(String(lead.name || ''))) return note(lead.id, 'Lead de test: mesajul lead filter nu pleacă.', { tried: true });
   const W = require('./workflows');
   const wa = { tpls: (await WT.load()).templates, cfg: await WA.loadConfig() };
-  const t = tplFor(wa.tpls, tplLabel(x.zone, x.tier, city));
+  const t = pickTpl(wa.tpls, x.zone, x.tier, city);
   const once = (text) => ((lead.lf && lead.lf.tried) ? note(lead.id, '', null) : note(lead.id, text, { tried: true }));
-  if (!t) return once('Mesajul lead filter n-a plecat: lipsește șablonul ' + tplLabel(x.zone, x.tier, city) + '.');
+  if (!t) return once('Mesajul lead filter n-a plecat: lipsește șablonul ' + tplLabel(x.zone, x.tier, city, VER) + '.');
   const r = await W.sendOnce('lf|' + lead.id + '|' + t.id, () => W.sendTemplate(wa, t.id, city, lead.phone, varsFor(lead, x)));
   if (r.dup) return;
   if (!r.sent) return once('Mesajul lead filter n-a plecat: ' + r.why);
@@ -284,14 +303,15 @@ async function saveContent(b) {
   await save(d);
   return { ok: true, zones: (d.packages && d.packages.zones || []).map((z) => z.key), messages: Object.keys(d.messages || {}).length };
 }
-// pictures: [{ key: '<zone>_<tier>_<tm|ar>', dataUrl: data:image/jpeg;base64,… }]
+// pictures: [{ key: '<zone>_<tier>_<tm|ar>', dataUrl: data:image/jpeg;base64,… }], { version } for a new version's pictures
 async function saveImages(b) {
   const out = [];
+  const v = Number(b && b.version) || 1;
   for (const it of (Array.isArray(b && b.items) ? b.items : [])) {
     const key = String(it.key || '').toLowerCase();
     const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(it.dataUrl || ''));
     if (!/^[a-z0-9-]+_\d{3,5}_(tm|ar)$/.test(key) || !m) { out.push({ key, error: 'bad' }); continue; }
-    await writeBinary('leadfilter/' + key + '.jpg', Buffer.from(m[1], 'base64'), 'image/jpeg');
+    await writeBinary('leadfilter/' + (v > 1 ? 'v' + v + '/' : '') + key + '.jpg', Buffer.from(m[1], 'base64'), 'image/jpeg');
     out.push({ key, ok: true });
   }
   return { ok: true, images: out };
@@ -302,6 +322,8 @@ async function templates(b) {
   const d = await load();
   if (!d.packages) return { error: 'no_packages' };
   const { readBinary } = require('./store');
+  // { version }: which version's templates (the newest by default); the follow-ups only with v1 or { follow: true }
+  const v = Math.min(VER, Math.max(1, Number(b && b.version) || VER));
   const w = await WT.load();
   // one template per label: a copy left by two runs at the same time goes (the one Meta took stays)
   const rank = (t) => ({ APPROVED: 0, PENDING: 1, REJECTED: 2 }[WT.overall(t)] ?? 3);
@@ -331,14 +353,14 @@ async function templates(b) {
     for (const z of zonesOf(d.packages, city)) {
       for (const tier of tiersOf(d.packages)) {
         const m = msgFor(d, z.key, tier, city);
-        if (!m) { out.push({ label: tplLabel(z.key, tier, city), error: 'fără mesaj' }); continue; }
-        const pic = picPath(z.key, tier, city);
+        if (!m) { out.push({ label: tplLabel(z.key, tier, city, v), error: 'fără mesaj' }); continue; }
+        const pic = picPath(z.key, tier, city, v);
         const has = await readBinary(pic).catch(() => null);
-        await upsert(tplLabel(z.key, tier, city), city, m, has ? pic : '');
+        await upsert(tplLabel(z.key, tier, city, v), city, m, has ? pic : '');
       }
     }
     // the general form's leads get the message of the zone they picked (same templates); the follow-ups
-    for (const f of FOLLOW) { const m = followFor(d, f.msg, city); if (m) await upsert(followLabel(f.k, city), city, m, ''); }
+    if (v === 1 || (b && b.follow)) for (const f of FOLLOW) { const m = followFor(d, f.msg, city); if (m) await upsert(followLabel(f.k, city), city, m, ''); }
   }
   return { ok: true, templates: out };
 }
@@ -380,9 +402,9 @@ const TESTS_KEY = 'data/leadfilter-tests.json';
 async function testResult(formId, form, x, pairs) {
   const d = await load();
   const city = form.location || '';
-  const label = x.zone && x.tier ? tplLabel(x.zone, x.tier, city) : '';
   const tpls = (await WT.load()).templates;
-  const t = label ? tplFor(tpls, label) : null;
+  const t = x.zone && x.tier ? pickTpl(tpls, x.zone, x.tier, city) : null;
+  const label = t ? t.label : x.zone && x.tier ? tplLabel(x.zone, x.tier, city, VER) : '';
   const m = x.zone && x.tier ? msgFor(d, x.zone, x.tier, city) : null;
   const list = await readJSON(TESTS_KEY, []);
   const r = { at: nowISO(), formId, city, form: form.name, answers: pairs, parsed: summary(x), zone: x.zone, problem: x.problem, when: x.when, tier: x.tier,
