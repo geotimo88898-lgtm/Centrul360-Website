@@ -162,6 +162,8 @@ module.exports = async (req, res) => {
     // the admin, or Claude's key (server to server, the same one the content intake reads): the funnel audit
     if (!require('./_lib/content').fromProducer(req)) { const session = await requireAdmin(req, res); if (!session) return; }
     if ((req.query || {}).view === 'health') return await health(req, res);
+    // „Organic → vânzări”: the organic sources only, with the keyword messages (api/_lib/organic-sales.js)
+    if ((req.query || {}).view === 'organic') { res.setHeader('Cache-Control', 'no-store'); res.status(200).json(await require('./_lib/organic-sales').view(req.query.days)); return; }
     if ((req.query || {}).view === 'funnel') { res.setHeader('Cache-Control', 'no-store'); res.status(200).json(await require('./_lib/site-funnel').view(req.query.days)); return; }
     return await stats(res);
   } catch (err) {

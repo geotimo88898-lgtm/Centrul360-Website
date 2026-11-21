@@ -98,6 +98,9 @@ module.exports = async (req, res) => {
         // her answer to the private message sent from a reel's comment: the lead, once (api/_lib/content-dm.js)
         const DMR = require('./_lib/content-dm');
         for (const f of fresh || []) await DMR.onReply(f.channel, f.id).catch((e) => console.error('content dm reply:', e.message));
+        // a story reply (or a message) with the word: the value + the page's link, once (api/_lib/content-dm.js onMessage)
+        const words = (fresh || []).filter((f) => f && f.text && String(f.text).length < 160);
+        if (words.length) await SC.later(async () => { for (const f of words) await DMR.onMessage(f).catch((e) => console.error('content dm story word:', e.message)); });
       } catch (err) { console.error('webhook messages:', err.message); }
       if (payload.object === 'instagram') { res.status(200).json({ ok: true }); return; }
     }

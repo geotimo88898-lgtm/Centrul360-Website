@@ -33,7 +33,51 @@ const HOLD_MS = 5 * 60e3; // a message on its way holds the place (two comments 
 const LEAD_HOLD_MS = 2 * 60e3; // a lead being made (two messages of hers at once)
 const MAX_BYTES = 950; // Instagram takes at most 1000 bytes in a message
 const CHANNELS = { fb: 'Facebook', ig: 'Instagram' };
-const KIND_WORD = { reel: 'reel', carousel: 'carusel', slideshow: 'slideshow' };
+
+// ---------------------------------------------------------------- the link (the owner, 21.11: every organic touch can end
+// in a sale, measured). The AI-written message stays without links (its own rules); one line built here, never by the
+// model, is added after it: the page that answers the word, tagged with where she came from (utm_source = the network,
+// utm_medium = dm, utm_campaign = the word), so the card order or the lead made on that page counts it.
+const SITE = 'https://www.centrul360.com';
+const NET_SRC = { ig: 'instagram', fb: 'facebook' };
+// a word or a topic → which page; the first rule that matches wins (the card before everything: it is the season's offer)
+const ROUTES = [
+  { re: / (card|carduri|cardul|cadou|cadoul|sarbatori|craciun) /, to: 'card' },
+  { re: / (consult|consultatie|consultatia|consultatii|programare|programez|programeaza) /, to: 'consult' },
+  { re: / (gusa|guse|barbie|barbia|contur|gat) /, to: 'gusa', din: 'gusa', page: '/gusa-barbie-dubla' },
+  { re: / (abdomen|burta|burtica|talie|talia|grasime|grasimea|liposonix|lipo|cavitatie|ems) /, to: 'abdomen', din: 'abdomen', page: '/grasime-localizata' },
+  { re: / (celulita|celulitei|coapse|fese) /, to: 'celulita', din: 'celulita', page: '/celulita' },
+  { re: / (riduri|ridurile|fata|ten|lifting|restart|facial|pleoape|ochi) /, to: 'fata', din: 'fata', page: '/riduri-linii-fine' },
+  { re: / (laser|epilare|epilarea|par|picioare|axile) /, to: 'laser', din: 'laser', page: '/epilare-laser' },
+];
+const LINE = { card: 'Cardul de Sărbători îl găsiți aici: ', consult: 'Vă alegeți ziua și ora aici: ', zone: 'Variantele și prețurile, aici: ', home: 'Totul despre noi, aici: ' };
+// /start (the link in bio, with the reel's topic on top) once it is live; until then the topic's own page
+let startLive = { at: 0, ok: false };
+async function hasStart() {
+  if (Date.now() - startLive.at < 3600e3) return startLive.ok;
+  let ok = false;
+  try { const r = await fetch(SITE + '/start', { method: 'HEAD', redirect: 'manual' }); ok = r.status === 200; } catch (e) { ok = startLive.ok; }
+  startLive = { at: Date.now(), ok };
+  return ok;
+}
+function routeOf(keyword, topic) {
+  const w = words(keyword), t = words(topic);
+  return ROUTES.find((r) => r.re.test(w)) || ROUTES.find((r) => r.re.test(t)) || null;
+}
+// → { url, line } for this word, on this network
+async function linkFor(channel, keyword, topic) {
+  const r = routeOf(keyword, topic);
+  const tag = (camp) => 'utm_source=' + (NET_SRC[channel] || 'instagram') + '&utm_medium=dm&utm_campaign=' + encodeURIComponent(camp || 'organic');
+  const camp = kwOf(keyword).replace(/ /g, '-').slice(0, 30) || (r && r.to) || 'organic';
+  let url, line;
+  if (!r) { url = SITE + '/?' + tag(camp); line = LINE.home; }
+  else if (r.to === 'card') { url = SITE + '/card-sarbatori?' + tag('card'); line = LINE.card; }
+  else if (r.to === 'consult') { url = SITE + '/programare?' + tag(camp); line = LINE.consult; }
+  else if (await hasStart()) { url = SITE + '/start?din=' + r.din + '&' + tag(camp); line = LINE.zone; }
+  else { url = SITE + r.page + '?' + tag(camp); line = LINE.zone; }
+  return { url, line: line + url, to: r ? r.to : 'home' };
+}
+const KIND_WORD = { reel: 'reel', carousel: 'carusel', slideshow: 'slideshow', story: 'story' };
 const g = (method, path, token, params) => ads.call(method, path, token, params);
 const clip = (s, n) => String(s == null ? '' : s).trim().slice(0, n);
 const metaErr = (j) => { const e = (j && j.error) || {}; return String(e.error_user_msg || e.message || 'Meta n-a răspuns').slice(0, 300); };
@@ -175,7 +219,7 @@ function tidy(raw) {
   return t.split('\n').map((l) => l.replace(/[ \t]+/g, ' ').replace(/\s+([?.!,])/g, '$1').trim()).filter(Boolean).join('\n');
 }
 // what is wrong with it ('' when it can go)
-function problem(t, priceOk) {
+function problem(t, priceOk, maxBytes) {
   if (!t) return 'mesajul e gol';
   if (FORBIDDEN.test(t) || FORBIDDEN_CASE.test(t)) return 'fără nume pentru tine și fără să spui că ești AI, bot, asistent sau mesaj automat';
   const lines = t.split('\n');
@@ -183,33 +227,61 @@ function problem(t, priceOk) {
   if (lines.length < 3 || lines.length > 8) return 'un salut, 3-5 rânduri scurte, o întrebare';
   if (!priceOk && MONEY.test(t)) return 'fără prețuri sau sume';
   if (LINK.test(t) || PHONE.test(t)) return 'fără linkuri și fără numere de telefon';
-  if (Buffer.byteLength(t) > MAX_BYTES) return 'mai scurt, sub 650 de caractere';
+  if (Buffer.byteLength(t) > (maxBytes || MAX_BYTES)) return 'mai scurt, sub ' + Math.max(300, Math.round(((maxBytes || MAX_BYTES) * 650) / MAX_BYTES / 10) * 10) + ' de caractere';
   return '';
 }
 // the message, by Claude: { text } or { error }
-async function write(c, hit) {
+// the card's own facts (api/_lib/card-sarbatori.js), for a message about the card: it is not in „Ofertele active”
+function cardFacts() {
+  try {
+    const C = require('./card-sarbatori');
+    const lei = (n) => Number(n).toLocaleString('ro-RO');
+    const tiers = Object.keys(C.TIERS).map((t) => 'plătește ' + lei(t) + ' lei și primește ' + lei(C.TIERS[t]) + ' lei în tratamente').join('; ');
+    const until = new Intl.DateTimeFormat('ro-RO', { timeZone: 'Europe/Bucharest', day: 'numeric', month: 'long' }).format(new Date(C.DEADLINE));
+    return 'Cardul de Sărbători Centrul360: ' + tiers + '. Pentru orice tratament din lista de prețuri, la prețul întreg, în Timișoara și Arad, valabil până pe ' + C.VALID_TXT +
+      '. Se cumpără până pe ' + until + ', online (plata cu cardul) sau rezervat și plătit în clinică; vine pe WhatsApp, pe numele ei sau al celei care îl primește cadou.';
+  } catch (e) { return ''; }
+}
+// the message, by Claude: { text } or { error }. o: { via: 'comment' | 'message' (a story reply or a message with the
+// word), maxBytes (room left for the link line), card (the word is about the card) }
+async function write(c, hit, o) {
   if (!process.env.ANTHROPIC_API_KEY) return { error: 'Lipsește cheia Claude' };
+  const opt = o || {};
   const N = require('../portal-nuki').lib;
   const it = hit.item || {};
-  const priceOk = ABOUT_PRICE.test([it.topic, it.rubric, hit.keyword].join(' ')) || /c[aâ]t\s+cost|pre[tț]/i.test(c.text || '');
+  const card = !!opt.card;
+  const priceOk = card || ABOUT_PRICE.test([it.topic, it.rubric, hit.keyword].join(' ')) || /c[aâ]t\s+cost|pre[tț]/i.test(c.text || '');
   const system = [{ type: 'text', text: RULES, cache_control: { type: 'ephemeral' } }, { type: 'text', text: await factsText() }];
   const first = firstName(c);
-  const what = it.kind === 'carousel' || it.kind === 'slideshow' ? 'caruselului' : 'clipului';
+  const what = it.kind === 'carousel' || it.kind === 'slideshow' ? 'caruselului' : it.kind === 'story' ? 'story-ului' : 'clipului';
+  const facts = card ? cardFacts() : '';
   const q = ['Canal: ' + CHANNELS[c.channel], 'Cuvântul scris de ea: ' + hit.keyword,
+    opt.via === 'message' ? 'Ea n-a scris în comentarii: a răspuns la un story al clinicii (sau ne-a scris direct) cu acest cuvânt. Îi trimiți ce i-a promis story-ul.' : '',
     it.topic ? 'Tema ' + what + ': ' + it.topic : '', it.rubric ? 'Rubrica: ' + it.rubric : '',
     it.caption ? 'Textul de sub postare:\n' + it.caption : '', first ? 'Prenumele ei: ' + first : '',
-    'Comentariul ei: ' + clip(c.text, 500),
-    priceOk ? 'Poți da prețul (postarea e despre preț sau ea îl cere), doar cel exact din „Ofertele active”.' : 'Fără prețuri în mesajul ăsta.'].filter(Boolean).join('\n');
+    (opt.via === 'message' ? 'Mesajul ei: ' : 'Comentariul ei: ') + clip(c.text, 500),
+    facts ? 'Datele cardului (singurele prețuri pe care le poți da, exact așa): ' + facts : '',
+    card ? 'Poți da prețurile cardului de mai sus; nu inventezi altele și nu spui câte carduri au rămas.' : priceOk ? 'Poți da prețul (postarea e despre preț sau ea îl cere), doar cel exact din „Ofertele active”.' : 'Fără prețuri în mesajul ăsta.',
+    'Linkul îl adăugăm noi într-un rând separat, după mesajul tău: tu nu scrii niciun link și nu spui „vezi linkul de mai jos”.'].filter(Boolean).join('\n');
   let why = '';
   for (let i = 0; i < 3; i++) {
     const r = await N.ask(system, [{ role: 'user', content: q + (why ? '\n\nAtenție, încă o dată: ' + why + '.' : '') }]);
     if (r.refused) return { error: 'Claude n-a vrut să scrie mesajul' };
     const j = readJSONish(r.text);
     const t = tidy(j && typeof j.dm === 'string' ? j.dm : j ? '' : r.text);
-    why = problem(t, priceOk);
+    why = problem(t, priceOk, opt.maxBytes);
     if (!why) return { text: t };
   }
   return { error: 'Mesajul privat nu a ieșit cum trebuie (' + why + ')' };
+}
+// the AI's message + the link line, inside Instagram's 1000 bytes: → { text, url } or { error }
+async function compose(c, hit, via) {
+  const it = hit.item || {};
+  const L = await linkFor(c.channel, hit.keyword, [it.topic, it.rubric].join(' '));
+  const room = 990 - Buffer.byteLength('\n\n' + L.line);
+  const w = await write(c, hit, { via, maxBytes: Math.min(MAX_BYTES, room), card: L.to === 'card' });
+  if (w.error) return w;
+  return { text: w.text + '\n\n' + L.line, url: L.url, ai: w.text };
 }
 
 // ---------------------------------------------------------------- Meta
@@ -239,7 +311,7 @@ async function toInbox(c, s, text, keyword) {
   const ig = c.channel === 'ig';
   const nm = clip(c.from && c.from.name, 80);
   const msg = { id: s.id, direction: 'out', type: 'text', text, timestamp: new Date().toISOString(), status: 'sent', sentBy: null, sentByName: 'automat', auto: true,
-    comment: { id: c.id, keyword, postId: c.postId || '' } };
+    comment: c.id ? { id: c.id, keyword, postId: c.postId || '' } : undefined, keyword: c.id ? undefined : keyword, via: c.id ? undefined : 'message' };
   for (let i = 0; i < 5; i++) {
     const { data, etag } = await readJSONTagged(INBOX_KEY, []);
     const all = Array.isArray(data) ? data : [];
@@ -250,7 +322,7 @@ async function toInbox(c, s, text, keyword) {
     if (!ig && !conv.name && nm) conv.name = nm;
     // its echo came first (Meta tells the app of what it sent): that one is ours, automatic
     const echo = conv.messages.find((m) => m.id === msg.id);
-    if (echo) Object.assign(echo, { auto: true, sentBy: null, sentByName: 'automat', comment: msg.comment });
+    if (echo) Object.assign(echo, { auto: true, sentBy: null, sentByName: 'automat' }, msg.comment ? { comment: msg.comment } : { keyword, via: 'message' });
     else {
       conv.messages.push(msg);
       conv.messages.sort((a, b) => (a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0));
@@ -296,7 +368,7 @@ async function deliver(c, hit, token) {
   if (prior) return prior;
   let done = false;
   try {
-    const w = await write(c, hit);
+    const w = await compose(c, hit, 'comment');
     if (w.error) return { error: w.error };
     const s = await sendPrivate(c, w.text, token);
     if (s.error && s.transient) return { error: CHANNELS[c.channel] + ': ' + s.error };
@@ -306,7 +378,7 @@ async function deliver(c, hit, token) {
       await tellRefused(c, s.error).catch((e) => console.error('content dm tell:', e.message));
       return { refused: true, error: s.error, access: s.access };
     }
-    await settle(mine.id, { state: 'sent', to: s.to, messageId: s.id, text: w.text, at: new Date().toISOString() });
+    await settle(mine.id, { state: 'sent', to: s.to, messageId: s.id, text: w.text, url: w.url, at: new Date().toISOString() });
     done = true;
     // without her id (the older Facebook edge) the message comes into Mesaje by its echo
     if (s.to) await toInbox(c, s, w.text, hit.keyword).catch((e) => console.error('content dm inbox:', e.message));
@@ -351,12 +423,12 @@ async function onReply(channel, senderId) {
   const city = cityIn(inbound.join(' ')) || cityIn(item ? [item.topic, item.caption].join(' ') : '') || '';
   const what = KIND_WORD[todo.kind] || 'reel';
   const name = clip((convo && (convo.name || (convo.username ? '@' + convo.username : ''))) || todo.name, 150) || (ch === 'ig' ? 'Clientă Instagram' : 'Clientă Facebook');
-  const note = 'Din comentariu la ' + what + ': ' + (todo.topic || 'clipul cu ' + todo.keyword) + ' (cuvântul ' + todo.keyword + ')' + (city ? '' : '. Orașul nu l-a spus încă.');
+  const note = (todo.via === 'message' ? 'A răspuns la story cu ' + todo.keyword + (todo.topic ? ' (' + todo.topic + ')' : '') : 'Din comentariu la ' + what + ': ' + (todo.topic || 'clipul cu ' + todo.keyword) + ' (cuvântul ' + todo.keyword + ')') + (city ? '' : '. Orașul nu l-a spus încă.');
   let r;
   try {
     // the conversation's key in Mesaje stands for the phone: the Pipeline's chat button opens her conversation
     r = await require('../portal-leads').createLead({ name, phone: ch + ':' + id, source: ch === 'ig' ? 'instagram' : 'facebook', location: city || 'Timișoara',
-      createdBy: 'content-dm', authorLabel: 'Comentariu ' + CHANNELS[ch], interest: clip(todo.topic || todo.keyword, 120), note,
+      createdBy: 'content-dm', authorLabel: (todo.via === 'message' ? 'Story ' : 'Comentariu ') + CHANNELS[ch], interest: clip(todo.topic || todo.keyword, 120), note,
       organic: todo.itemId ? { itemId: todo.itemId, keyword: todo.keyword, net: ch } : undefined });
   } catch (e) { r = { error: (e && e.message) || 'eroare' }; }
   const lead = r && r.lead;
@@ -368,14 +440,81 @@ async function onReply(channel, senderId) {
   return lead ? { lead: lead.id, created: !r.duplicate } : null;
 }
 
+// ---------------------------------------------------------------- a story reply or a message with the word
+// The stories end with „Răspunde cu CARD / GUȘĂ / CONSULT” (the owner, 21.11). Her answer comes in as a message (Instagram
+// Direct or Messenger: api/_lib/social-inbox.js, „Răspuns la story: …”), inside the 24 hours Meta gives to answer. When it
+// is the word (a short message: the same test as a comment's), she gets the same kind of message as from a comment (the
+// value, one gentle question, the link line), once per person and word in 30 days; her next message makes the lead
+// (onReply). Not when someone of the team wrote to her in the last 2 hours (they are talking already).
+const STORY_WORDS = ['CARD', 'GUȘĂ', 'CONSULT'];
+const STORY_TOPIC = { card: 'Cardul de Sărbători', gusa: 'HIFU pe gușă, o singură ședință', consult: 'Consultația gratuită' };
+const TEAM_QUIET_MS = 2 * 3600e3;
+async function onMessage(f, token) {
+  const ch = String((f && f.channel) || ''), id = String((f && f.id) || '');
+  if (!CHANNELS[ch] || !id) return null;
+  const text = String(f.text || '').replace(/^Răspuns la story:\s*/i, '').trim();
+  if (!text || text.length > 120) return null;
+  const raw = await readJSON(ITEMS_KEY, []);
+  const items = (Array.isArray(raw) ? raw : []).filter((it) => it && it.keyword && !it.removed);
+  const words0 = STORY_WORDS.concat(items.map((it) => it.keyword)).filter((k, i, a) => a.findIndex((x) => kwOf(x) === kwOf(k)) === i);
+  const keyword = words0.find((k) => asksFor(text, k));
+  if (!keyword) return null;
+  const kw = kwOf(keyword);
+  // the team is talking with her: no automatic message in the middle
+  const convo = ((await readJSON(INBOX_KEY, [])) || []).find((x) => x.channel === ch && x.id === id) || null;
+  const now = Date.now();
+  if (((convo && convo.messages) || []).some((m) => m.direction === 'out' && !m.auto && now - Date.parse(m.timestamp) < TEAM_QUIET_MS)) return { skipped: 'team' };
+  // the item that asked for the word: a story posted lately first, then any posted item with it
+  const withKw = items.filter((it) => kwOf(it.keyword) === kw).sort((x, y) => postedAt(y).localeCompare(postedAt(x)));
+  const src = withKw.find((it) => it.kind === 'story' && postedAt(it)) || withKw.find(postedAt) || null;
+  const route = routeOf(keyword, '');
+  const item = src ? brief(src, ch) : { id: '', kind: 'story', topic: STORY_TOPIC[route ? route.to : ''] || '', rubric: '', caption: '' };
+  let prior = null, mine = null;
+  await update((d) => {
+    prior = null; mine = null;
+    const had = d.sent.filter((e) => e.channel === ch && (e.from === id || e.to === id) && e.kw === kw)
+      .find((e) => (e.state === 'sent' && now - Date.parse(e.at) < EVERY_MS) || (e.state === 'sending' && now - Date.parse(e.at) < HOLD_MS));
+    if (had) { prior = { already: true, at: had.at }; return false; }
+    mine = { id: crypto.randomUUID(), via: 'message', channel: ch, from: id, to: id, name: clip(f.name, 80), keyword: clip(keyword, 40), kw, itemId: item.id || '', kind: item.kind || 'story',
+      topic: clip(item.topic, 160), commentId: '', postId: '', state: 'sending', at: new Date(now).toISOString(), messageId: '', text: '', error: '', leadId: '', leadAt: '' };
+    d.sent.push(mine);
+  });
+  if (prior) return prior;
+  let done = false;
+  try {
+    const c = { id: '', channel: ch, text, from: { id, name: f.name || '' } };
+    const w = await compose(c, { item, keyword }, 'message');
+    if (w.error) return { error: w.error };
+    let tok = token;
+    if (!tok) tok = (await require('./facebook').loadConnection(readJSON)).pageAccessToken;
+    if (!tok) return { error: 'Facebook nu e conectat' };
+    const r = await g('POST', '/me/messages', tok, Object.assign({ recipient: { id }, message: { text: w.text } }, ch === 'fb' ? { messaging_type: 'RESPONSE' } : {}));
+    const j = r.j || {};
+    if (!r.ok || j.error || !j.message_id) {
+      const e = metaErr(j);
+      if (transient(j)) return { error: CHANNELS[ch] + ': ' + e };
+      await settle(mine.id, { state: 'refused', error: e, text: w.text });
+      done = true;
+      await tellRefused(c, e).catch(() => {});
+      return { refused: true, error: e, access: access(j) };
+    }
+    await settle(mine.id, { state: 'sent', messageId: String(j.message_id), text: w.text, url: w.url, at: new Date().toISOString() });
+    done = true;
+    await toInbox(c, { id: String(j.message_id), to: id }, w.text, keyword).catch((e) => console.error('content dm inbox:', e.message));
+    return { sent: true, text: w.text, messageId: String(j.message_id) };
+  } finally {
+    if (!done) await drop(mine.id).catch(() => {});
+  }
+}
+
 // ---------------------------------------------------------------- health
 async function summary() {
   const d = await load();
   const since = Date.now() - 7 * 864e5;
   const week = d.sent.filter((e) => Date.parse(e.at) > since);
   const count = (f) => week.filter(f).length;
-  return { sent7d: count((e) => e.state === 'sent'), refused7d: count((e) => e.state === 'refused'), leads7d: count((e) => e.leadId),
+  return { sent7d: count((e) => e.state === 'sent'), fromStories7d: count((e) => e.state === 'sent' && e.via === 'message'), refused7d: count((e) => e.state === 'refused'), leads7d: count((e) => e.leadId),
     words: [...new Set(week.map((e) => e.keyword))].slice(0, 20), told: d.told || '', lastError: d.lastError || '' };
 }
 
-module.exports = { KEY, EVERY_MS, fold, hasKeyword, asksFor, keywordIn, samePost, match, write, sendPrivate, deliver, onReply, summary, cityIn, problem, tidy };
+module.exports = { KEY, EVERY_MS, fold, hasKeyword, asksFor, keywordIn, samePost, match, write, compose, linkFor, routeOf, cardFacts, sendPrivate, deliver, onReply, onMessage, summary, cityIn, problem, tidy };
