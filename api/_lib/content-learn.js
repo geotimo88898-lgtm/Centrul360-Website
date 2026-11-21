@@ -70,7 +70,8 @@ function familyOf(it) {
 function rowsOf(list, now) {
   const rows = [];
   (list || []).forEach((it) => {
-    if (!it || it.removed) return;
+    // a story lives a day and has no feed numbers: it never weighs in what works for the reels and carousels
+    if (!it || it.removed || it.kind === 'story') return;
     (it.plan || []).forEach((e) => {
       if (e.state !== 'posted') return;
       const s = (it.stats || {})[e.net];

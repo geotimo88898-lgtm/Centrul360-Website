@@ -8,7 +8,7 @@
 //                                           the key numbers, the rates per network, the organic funnel, „Merge tare”,
 //                                           the audience, the recommended hours, what people say, the week's analysis,
 //                                           the monthly goals (content-insights.js)
-//   { action: 'settings', on?, nets?, modes?, times?, photoTime?, quotas?, startWeek?, competitors?, goals? }   (the
+//   { action: 'settings', on?, nets?, modes?, times?, photoTime?, storyTimes?, quotas?, startWeek?, competitors?, goals? }   (the
 //                                           plans follow; modes: { tt, yt, ig, fb: 'app' (Din aplicație) | 'auto' };
 //                                           goals: { followers: { ig, fb, tt, yt }, views, leads } a month)
 //   { action: 'apply_hours' }               „Folosește orele recomandate”: the recommended times saved (the plans follow)
@@ -144,6 +144,7 @@ module.exports = async (req, res) => {
       if (b.modes && typeof b.modes === 'object') { patch.modes = {}; P.NETS.forEach((n) => { if (P.MODES.includes(b.modes[n])) patch.modes[n] = b.modes[n]; }); }
       if (b.times && typeof b.times === 'object') { patch.times = {}; P.NETS.forEach((n) => { if (Array.isArray(b.times[n])) patch.times[n] = b.times[n].map(String).slice(0, 3); }); }
       if (b.photoTime && typeof b.photoTime === 'object') { patch.photoTime = {}; P.PHOTO_NETS.forEach((n) => { if (typeof b.photoTime[n] === 'string') patch.photoTime[n] = b.photoTime[n]; }); }
+      if (b.storyTimes && typeof b.storyTimes === 'object') { patch.storyTimes = {}; P.STORY_NETS.forEach((n) => { if (Array.isArray(b.storyTimes[n])) patch.storyTimes[n] = b.storyTimes[n].map(String).slice(0, 5); }); }
       if (b.quotas && typeof b.quotas === 'object') {
         patch.quotas = {};
         ['warm', 'full'].forEach((w) => { if (b.quotas[w] && typeof b.quotas[w] === 'object') { patch.quotas[w] = {}; P.NETS.forEach((n) => { if (b.quotas[w][n] && typeof b.quotas[w][n] === 'object') patch.quotas[w][n] = b.quotas[w][n]; }); } });

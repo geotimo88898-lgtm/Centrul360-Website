@@ -48,12 +48,18 @@ module.exports = async (req, res) => {
   const body = req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body) ? req.body : {};
   const action = String(q.action || body.action || (req.method === 'GET' ? 'status' : ''));
   try {
-    if (req.method === 'GET' && action === 'status') { res.status(200).json(await C.status()); return; }
+    // the stories: per network the newest, its hours left live, the next one planned, the evergreen reserve (content-story.js)
+    if (req.method === 'GET' && action === 'status') {
+      const [s, list, st] = await Promise.all([C.status(), C.items(), C.settings()]);
+      res.status(200).json(Object.assign(s, { stories: require('./_lib/content-story').coverage(list, st, Date.now()) }));
+      return;
+    }
     // what is waiting for a look (Claude reviews it, the owner 21.11): each ready item with its texts and its files' links
     if (req.method === 'GET' && action === 'items') {
       const want = String(q.review || 'pending');
       const list = (await C.items()).filter((it) => !it.removed && !it.dropped && it.state === 'ready' && (want === 'all' || (it.review || 'pending') === want));
       res.status(200).json({ ok: true, items: list.map((it) => ({ id: it.id, kind: it.kind, week: it.week, rubric: it.rubric, topic: it.topic, hook: it.hook, review: it.review || 'pending',
+        seq: it.seq || undefined, evergreen: it.evergreen || undefined, promo: it.promo || undefined, plan: (it.plan || []).map((e) => ({ net: e.net, at: e.at, state: e.state })),
         captions: it.captions || {}, caption: it.caption || '', files: (it.files || []).map((f) => ({ name: f.name, role: f.role || '', mime: f.mime, dur: f.dur, w: f.w, h: f.h, url: C.fileUrl(it.id, f.name, f.v) })) })) });
       return;
     }
@@ -84,7 +90,7 @@ module.exports = async (req, res) => {
     // organice hardcore”: Claude sets the volume and the posting itself; saveSettings merges and checks every part)
     if (action === 'settings' && req.method === 'POST') {
       const patch = { on: body.on !== false };
-      ['quotas', 'times', 'photoTime', 'modes', 'nets'].forEach((k) => { if (body[k] && typeof body[k] === 'object') patch[k] = body[k]; });
+      ['quotas', 'times', 'photoTime', 'storyTimes', 'modes', 'nets'].forEach((k) => { if (body[k] && typeof body[k] === 'object') patch[k] = body[k]; });
       res.status(200).json(Object.assign({ ok: true }, await C.saveSettings(patch)));
       return;
     }

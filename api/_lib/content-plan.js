@@ -24,17 +24,30 @@
 //  - reflow(): an approved entry still 'planned' whose time passed more than 75 minutes ago (the switch was off, a
 //    permission was missing) moves to the next free slot of its network within its week, or is 'missed'; one never
 //    approved is 'missed' when its week ends, and so is a 'todo' one the owner never posted.
+//  - Stories (the owner, 21.11: „pune și story-uri”): an item of kind 'story' (one 9:16 picture, or one 9:16 video up to
+//    60 s) goes on Instagram and Facebook, at the networks' story times (storyTimes, 3 a day by default), the same story
+//    on both networks the same day (a story isn't a feed post: the two audiences see it apart). Their quota is their own
+//    (ig.story, fb.story) and never takes a reel's or a carousel's slot; a week missing stories is still complete.
+//  - A story sequence (the owner, 21.11: the frame that fills in, story after story): items of kind 'story' with
+//    seq { id, i (0, 1 …), n }. Only the first (i 0) takes a slot; the others follow it on each of its networks, at its
+//    time plus i seconds (entries marked follow: they take no slot and no quota), and go out right after it, in order,
+//    never before the one before them is posted (due()), and only once the whole sequence is approved.
+//  - An evergreen story (evergreen: true) is never planned in a week: it is the reserve the coverage guard posts when a
+//    network would be left without a live story (content-story.js).
 //  - due() is the automatic poster's ('auto' networks only), appDue() the owner's ('app' networks: the slots due within
 //    the next 30 minutes, so the hourly clock at :17 brings each one between 30 minutes early and 30 minutes late).
 
 const TZ = 'Europe/Bucharest';
 const NETS = ['tt', 'yt', 'ig', 'fb'];
 const PHOTO_NETS = ['tt', 'ig', 'fb'];
-const KINDS = ['reel', 'carousel', 'slideshow'];
+const STORY_NETS = ['ig', 'fb'];
+const KINDS = ['reel', 'carousel', 'slideshow', 'story'];
 // how an item of a kind goes on each network (a carousel is a slideshow on TikTok: the same photos)
-const AS = { reel: { tt: 'reel', yt: 'reel', ig: 'reel', fb: 'reel' }, carousel: { ig: 'carousel', fb: 'carousel', tt: 'slideshow' }, slideshow: { tt: 'slideshow' } };
+const AS = { reel: { tt: 'reel', yt: 'reel', ig: 'reel', fb: 'reel' }, carousel: { ig: 'carousel', fb: 'carousel', tt: 'slideshow' }, slideshow: { tt: 'slideshow' }, story: { ig: 'story', fb: 'story' } };
 // the kinds each network has a quota for
-const QKINDS = { tt: ['reel', 'slideshow'], yt: ['reel'], ig: ['reel', 'carousel'], fb: ['reel', 'carousel'] };
+const QKINDS = { tt: ['reel', 'slideshow'], yt: ['reel'], ig: ['reel', 'carousel', 'story'], fb: ['reel', 'carousel', 'story'] };
+// the most of a kind a week (a reel 4 a day, a story 5 a day, a photo one a day)
+const QMAX = { reel: 28, story: 35 };
 const LEAD_MS = 30 * 60e3;
 const STALE_MS = 75 * 60e3;
 // a slot of an 'app' network comes due this long before its time (content-app.js)
@@ -47,11 +60,12 @@ const DEFAULTS = {
   startWeek: '2026-11-16',
   warmWeeks: 2,
   quotas: {
-    warm: { tt: { reel: 7, slideshow: 1 }, yt: { reel: 7 }, ig: { reel: 5, carousel: 1 }, fb: { reel: 5, carousel: 1 } },
-    full: { tt: { reel: 14, slideshow: 1 }, yt: { reel: 10 }, ig: { reel: 7, carousel: 1 }, fb: { reel: 7, carousel: 1 } },
+    warm: { tt: { reel: 7, slideshow: 1 }, yt: { reel: 7 }, ig: { reel: 5, carousel: 1, story: 21 }, fb: { reel: 5, carousel: 1, story: 21 } },
+    full: { tt: { reel: 14, slideshow: 1 }, yt: { reel: 10 }, ig: { reel: 7, carousel: 1, story: 21 }, fb: { reel: 7, carousel: 1, story: 21 } },
   },
   times: { tt: ['19:30', '12:30'], yt: ['17:00', '12:00'], ig: ['12:30'], fb: ['13:00'] },
   photoTime: { tt: '16:00', ig: '19:00', fb: '19:30' },
+  storyTimes: { ig: ['10:00', '15:00', '21:00'], fb: ['10:00', '15:00', '21:00'] },
 };
 
 const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -85,14 +99,14 @@ const okSlot = (s) => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(s));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function settingsOf(s) {
   s = s || {};
-  const nets = {}, modes = {}, quotas = { warm: {}, full: {} }, times = {}, photoTime = {};
+  const nets = {}, modes = {}, quotas = { warm: {}, full: {} }, times = {}, photoTime = {}, storyTimes = {};
   NETS.forEach((n) => { nets[n] = s.nets && typeof s.nets[n] === 'boolean' ? s.nets[n] : DEFAULTS.nets[n]; });
   NETS.forEach((n) => { modes[n] = s.modes && MODES.includes(s.modes[n]) ? s.modes[n] : DEFAULTS.modes[n]; });
   ['warm', 'full'].forEach((w) => NETS.forEach((n) => {
     quotas[w][n] = {};
     QKINDS[n].forEach((k) => {
       const v = s.quotas && s.quotas[w] && s.quotas[w][n] ? Number(s.quotas[w][n][k]) : NaN;
-      quotas[w][n][k] = Number.isFinite(v) ? clamp(Math.round(v), 0, k === 'reel' ? 28 : 7) : DEFAULTS.quotas[w][n][k];
+      quotas[w][n][k] = Number.isFinite(v) ? clamp(Math.round(v), 0, QMAX[k] || 7) : DEFAULTS.quotas[w][n][k];
     });
   }));
   NETS.forEach((n) => {
@@ -100,12 +114,16 @@ function settingsOf(s) {
     times[n] = t.length ? t : DEFAULTS.times[n].slice();
   });
   PHOTO_NETS.forEach((n) => { photoTime[n] = s.photoTime && okSlot(s.photoTime[n]) ? s.photoTime[n] : DEFAULTS.photoTime[n]; });
+  STORY_NETS.forEach((n) => {
+    const t = s.storyTimes && Array.isArray(s.storyTimes[n]) ? [...new Set(s.storyTimes[n].filter(okSlot))].sort().slice(0, 5) : [];
+    storyTimes[n] = t.length ? t : DEFAULTS.storyTimes[n].slice();
+  });
   const ww = Number(s.warmWeeks);
   // the competitors' names the texts never mention (content.js qa)
   const comp = Array.isArray(s.competitors) ? s.competitors : typeof s.competitors === 'string' ? s.competitors.split(/[,;\n]/) : [];
   const competitors = [...new Set(comp.map((x) => String(x || '').replace(/\s+/g, ' ').trim().slice(0, 60)).filter((x) => x.length >= 3))].slice(0, 40);
   return { on: s.on !== false, nets, modes, startWeek: isDay(s.startWeek) ? mondayOf(s.startWeek) : DEFAULTS.startWeek,
-    warmWeeks: Number.isFinite(ww) ? clamp(Math.round(ww), 0, 8) : DEFAULTS.warmWeeks, quotas, times, photoTime, competitors };
+    warmWeeks: Number.isFinite(ww) ? clamp(Math.round(ww), 0, 8) : DEFAULTS.warmWeeks, quotas, times, photoTime, storyTimes, competitors };
 }
 // the owner posts this network himself (Din aplicație); its entries go out without the API
 const isApp = (st, net) => !!(st && st.modes && st.modes[net] === 'app');
@@ -115,17 +133,23 @@ const live = (st, net) => isApp(st, net) || !!(st && st.nets && st.nets[net]);
 const weekNo = (week, st) => Math.max(1, Math.floor(dayDiff(st.startWeek, week) / 7) + 1);
 const quotasFor = (week, st) => (weekNo(week, st) <= st.warmWeeks ? st.quotas.warm : st.quotas.full);
 // what a week needs: as many reels as the network that takes most, as many carousels as the network that takes most
-const needOf = (q) => ({ reel: Math.max.apply(null, NETS.map((n) => q[n].reel || 0)), carousel: Math.max(q.ig.carousel || 0, q.fb.carousel || 0, q.tt.slideshow || 0) });
+const needOf = (q) => ({ reel: Math.max.apply(null, NETS.map((n) => q[n].reel || 0)), carousel: Math.max(q.ig.carousel || 0, q.fb.carousel || 0, q.tt.slideshow || 0),
+  story: Math.max(q.ig.story || 0, q.fb.story || 0) });
 
 const netsFor = (kind) => Object.keys(AS[kind] || {});
 const kindOn = (it, net) => (AS[it.kind] || {})[net] || it.kind;
-const classOf = (kind) => (kind === 'reel' ? 'reel' : 'photo');
-const timesOf = (st, net, cls) => (cls === 'reel' ? st.times[net] : st.photoTime[net] ? [st.photoTime[net]] : []);
+const classOf = (kind) => (kind === 'reel' ? 'reel' : kind === 'story' ? 'story' : 'photo');
+const timesOf = (st, net, cls) => (cls === 'reel' ? st.times[net] : cls === 'story' ? (st.storyTimes && st.storyTimes[net]) || [] : st.photoTime[net] ? [st.photoTime[net]] : []);
+// a slot's time: a reel's by its index, a story's ('s0', 's1' …) by its index, a photo's ('p') the photo time
+const slotTime = (st, net, slot) => (slot === 'p' ? st.photoTime[net] : /^s\d+$/.test(String(slot)) ? ((st.storyTimes && st.storyTimes[net]) || [])[Number(String(slot).slice(1))] : st.times[net][slot]);
 // an entry that holds its slot (a skipped or missed one gives it back)
 const holds = (e) => !!(e && e.at && e.state !== 'skipped' && e.state !== 'missed');
 // an entry a re-plan may drop: not started, not tried
 const loose = (e) => (e.state === 'planned' || e.state === 'waiting_access') && !(e.tries > 0);
 const review = (it) => it.review || 'pending';
+// a story sequence: its id, the place in it, how many
+const seqOf = (it) => (it && it.kind === 'story' && it.seq && it.seq.id ? it.seq : null);
+const follower = (it) => !!(seqOf(it) && Number(seqOf(it).i) > 0);
 // an item the owner hasn't looked at yet: the re-plan may move it
 const movable = (it) => review(it) === 'pending' && !it.reviewedAt;
 const byAge = (a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || String(a.id).localeCompare(String(b.id));
@@ -135,7 +159,7 @@ function boardOf(items, skip) {
   const taken = new Set(), load = new Map(), days = new Map(), nets = new Map();
   const add = (m, k, v) => { if (!m.has(k)) m.set(k, new Set()); m.get(k).add(v); };
   (items || []).forEach((it) => (it.plan || []).forEach((e) => {
-    if (e === skip) return;
+    if (e === skip || e.follow || e.evergreen) return;
     add(nets, it.id, e.net);
     if (!holds(e)) return;
     const t = Date.parse(e.at), d = roDay(t);
@@ -159,7 +183,7 @@ function boardOf(items, skip) {
       const list = timesOf(st, net, cls);
       const room = list.length - (load.get(net + '|' + cls + '|' + d) || 0);
       if (room <= 0) return [];
-      return list.map((hm, k) => ({ slot: cls === 'reel' ? k : 'p', t: atRo(d, hm) })).filter((x) => x.t >= now + LEAD_MS && !taken.has(net + '|' + x.t)).slice(0, room);
+      return list.map((hm, k) => ({ slot: cls === 'reel' ? k : cls === 'story' ? 's' + k : 'p', t: atRo(d, hm) })).filter((x) => x.t >= now + LEAD_MS && !taken.has(net + '|' + x.t)).slice(0, room);
     },
   };
 }
@@ -202,17 +226,20 @@ function replanWeek(items, week, settings, now) {
   const st = settingsOf(settings), q = quotasFor(week, st);
   const days = weekDays(week);
   const all = (items || []).filter((it) => !it.removed);
-  const mine = all.filter((it) => it.week === week && it.state === 'ready' && !it.dropped && AS[it.kind]).sort(byAge);
+  const mine = all.filter((it) => it.week === week && it.state === 'ready' && !it.dropped && AS[it.kind] && !it.evergreen && !follower(it)).sort(byAge);
   mine.filter(movable).forEach((it) => { it.plan = (it.plan || []).filter((e) => !loose(e)); });
   const b = boardOf(all);
   const rank = new Map();
-  ['reel', 'photo'].forEach((cls) => mine.filter((it) => classOf(it.kind) === cls).forEach((it, i) => rank.set(it, i)));
+  ['reel', 'photo', 'story'].forEach((cls) => mine.filter((it) => classOf(it.kind) === cls).forEach((it, i) => rank.set(it, i)));
+  const nStory = mine.filter((it) => it.kind === 'story').length;
   const entries = (it) => (it.plan || []).filter(holds).length;
-  const inWeek = (n, kind) => all.reduce((s, it) => s + (it.plan || []).filter((e) => e.net === n && holds(e) && (e.kind || kindOn(it, n)) === kind && days.includes(roDay(Date.parse(e.at)))).length, 0);
+  const inWeek = (n, kind) => all.reduce((s, it) => s + (it.plan || []).filter((e) => e.net === n && holds(e) && !e.follow && !e.evergreen && (e.kind || kindOn(it, n)) === kind && days.includes(roDay(Date.parse(e.at)))).length, 0);
   // the photo kinds first (Instagram, Facebook, then TikTok, which a slideshow of its own fills first), then the
   // reels, the network with the biggest quota first
   const tasks = [];
-  ['ig', 'fb', 'tt'].forEach((n) => QKINDS[n].filter((k) => k !== 'reel').forEach((k) => tasks.push({ n, kind: k })));
+  ['ig', 'fb', 'tt'].forEach((n) => QKINDS[n].filter((k) => k !== 'reel' && k !== 'story').forEach((k) => tasks.push({ n, kind: k })));
+  // the stories: their own slots, Instagram then Facebook
+  STORY_NETS.forEach((n) => tasks.push({ n, kind: 'story' }));
   NETS.slice().sort((x, y) => (q[y].reel || 0) - (q[x].reel || 0) || NETS.indexOf(x) - NETS.indexOf(y)).forEach((n) => tasks.push({ n, kind: 'reel' }));
   for (const { n, kind } of tasks) {
     const cls = classOf(kind), j = NETS.indexOf(n);
@@ -225,8 +252,10 @@ function replanWeek(items, week, settings, now) {
     const ideal = spread(q[n][kind] || 0, timesOf(st, n, cls).length, 2 * j);
     const target = days.map((d, i) => Math.max(0, Math.min(free[i], ideal[i] - b.n(n, cls, d))));
     // the rotation day: reels two days apart per network; a photo on the day its network's spread gives it
-    const pref = (it) => prefOrder(cls === 'reel' ? (rank.get(it) + 2 * j) % 7 : (((6 - 2 * j + rank.get(it)) % 7) + 7) % 7);
-    const at = assign(cands, pref, (it, i) => free[i] > 0 && !b.has(it.id, days[i]), [target, free], need);
+    // a story: in the order handed in, spread over the week, the same day on both networks
+    const pref = (it) => prefOrder(cls === 'reel' ? (rank.get(it) + 2 * j) % 7 : cls === 'story' ? Math.min(6, Math.floor((rank.get(it) * 7) / Math.max(7, nStory)))
+      : (((6 - 2 * j + rank.get(it)) % 7) + 7) % 7);
+    const at = assign(cands, pref, (it, i) => free[i] > 0 && (cls === 'story' || !b.has(it.id, days[i])), [target, free], need);
     // the times: per day, the main time first, the items in their order
     const perDay = [[], [], [], [], [], [], []];
     at.forEach((i, it) => perDay[i].push(it));
@@ -241,9 +270,42 @@ function replanWeek(items, week, settings, now) {
     });
   }
   mine.forEach((it) => { it.plan = (it.plan || []).slice().sort((x, y) => String(x.at).localeCompare(String(y.at)) || NETS.indexOf(x.net) - NETS.indexOf(y.net)); });
+  syncSeq(all, now);
   const short = {};
   NETS.forEach((n) => QKINDS[n].forEach((k) => { const left = (q[n][k] || 0) - inWeek(n, k); if (left > 0) (short[n] = short[n] || {})[k] = left; }));
   return { short };
+}
+
+// The sequences' followers on their first's entries: on each network the first is on, at its time plus i seconds, in
+// the same state while neither has started; a network the first left is left by the ones not started. In place.
+function syncSeq(items, now) {
+  const t = now || Date.now();
+  const heads = new Map(), members = new Map();
+  (items || []).forEach((it) => {
+    const q = seqOf(it); if (!q || it.removed || it.dropped) return;
+    if (Number(q.i) === 0) heads.set(q.id, it); else { if (!members.has(q.id)) members.set(q.id, []); members.get(q.id).push(it); }
+  });
+  let n = 0;
+  members.forEach((list, id) => {
+    const h = heads.get(id);
+    list.forEach((m) => {
+      const i = Number(m.seq.i) || 0;
+      const hp = h ? (h.plan || []) : [];
+      m.plan = (m.plan || []).filter((fe) => { const keep = !loose(fe) || hp.some((e) => e.net === fe.net); if (!keep) n++; return keep; });
+      hp.forEach((e) => {
+        let fe = m.plan.find((x) => x.net === e.net);
+        const at = iso(Date.parse(e.at) + i * 1000);
+        // the first posted or being posted: the follower is due now (it waits for the one before it, due())
+        const state = e.state === 'posted' || e.state === 'posting' ? 'planned' : e.state === 'error' ? 'planned' : e.state === 'todo' ? 'planned' : e.state;
+        if (!fe) { m.plan.push({ net: e.net, kind: e.kind, slot: e.slot, at, state, follow: true }); n++; return; }
+        if (!loose(fe)) return;
+        // its first went out long ago and it never followed (it failed, the clock stopped): it doesn't go out alone, late
+        if ((e.state === 'posted' || e.state === 'error') && !(fe.tries > 0) && Date.parse(at) < t - STALE_MS) { fe.state = 'missed'; fe.missedAt = iso(t); n++; return; }
+        if (fe.at !== at || fe.state !== state || !fe.follow) { Object.assign(fe, { at, state, slot: e.slot, follow: true }); n++; }
+      });
+    });
+  });
+  return n;
 }
 
 // every week from the current one that has items, re-planned (a change of quotas, times or networks)
@@ -259,8 +321,8 @@ function retime(items, settings, now) {
   const st = settingsOf(settings);
   let n = 0;
   (items || []).forEach((it) => (it.plan || []).forEach((e) => {
-    if (!loose(e) || !holds(e) || e.slot == null || Date.parse(e.at) < now + LEAD_MS) return;
-    const hm = e.slot === 'p' ? st.photoTime[e.net] : st.times[e.net][e.slot];
+    if (e.follow || !loose(e) || !holds(e) || e.slot == null || Date.parse(e.at) < now + LEAD_MS) return;
+    const hm = slotTime(st, e.net, e.slot);
     if (!hm) return;
     const t = atRo(roDay(Date.parse(e.at)), hm);
     if (t === Date.parse(e.at) || t < now + LEAD_MS) return;
@@ -287,6 +349,8 @@ function reflow(items, settings, now) {
     if (e.state === 'planned' && !(e.tries > 0) && Date.parse(e.at) < now - STALE_MS) stale.push({ it, e });
   }));
   stale.sort((x, y) => Date.parse(x.e.at) - Date.parse(y.e.at));
+  // a sequence's follower moves with its first (syncSeq below), never on its own
+  for (let k = stale.length - 1; k >= 0; k--) if (stale[k].e.follow) stale.splice(k, 1);
   for (const { it, e } of stale) {
     const week = it.week || weekOf(Date.parse(e.at));
     if (review(it) !== 'approved' || it.removed || it.dropped || it.state !== 'ready') {
@@ -298,6 +362,7 @@ function reflow(items, settings, now) {
     else e.state = 'missed';
     n++;
   }
+  n += syncSeq(items, now);
   return n;
 }
 // The next free slot of an entry's network within its item's week, from the day `from` (a Bucharest day), never on a
@@ -307,7 +372,7 @@ function nextSlot(items, it, e, settings, now, from) {
   const week = it.week || weekOf(Date.parse(e.at));
   const b = boardOf(items, e), cls = classOf(e.kind || kindOn(it, e.net));
   for (const d of weekDays(week)) {
-    if (d < from || d < roDay(now) || b.has(it.id, d)) continue;
+    if (d < from || d < roDay(now) || (cls !== 'story' && b.has(it.id, d))) continue;
     const f = b.free(st, e.net, cls, d, now);
     if (f.length) return f[0];
   }
@@ -320,9 +385,13 @@ function nextSlot(items, it, e, settings, now, from) {
 function due(items, settings, now) {
   const st = settingsOf(settings);
   const out = [];
+  // a sequence goes only whole: every one of it approved and ready
+  const seqs = new Map();
+  (items || []).forEach((it) => { const q = seqOf(it); if (!q) return; if (!seqs.has(q.id)) seqs.set(q.id, []); seqs.get(q.id).push(it); });
+  const seqOk = (it) => { const q = seqOf(it); if (!q) return true; const l = (seqs.get(q.id) || []).filter((x) => !x.removed && !x.dropped); return l.length >= (Number(q.n) || l.length) && l.every((x) => x.state === 'ready' && review(x) === 'approved'); };
   (items || []).forEach((it) => {
     if (it.removed || it.state !== 'ready') return;
-    const ok = review(it) === 'approved';
+    const ok = review(it) === 'approved' && seqOk(it);
     (it.plan || []).forEach((e) => {
       if (!st.nets[e.net]) return;
       const t = Date.parse(e.at);
@@ -330,7 +399,21 @@ function due(items, settings, now) {
       else if (ok && !isApp(st, e.net) && e.state === 'planned' && t <= now && (t >= now - STALE_MS || e.tries > 0) && !(e.retryAt && Date.parse(e.retryAt) > now)) out.push({ it, e });
     });
   });
-  return out.sort((x, y) => Date.parse(x.e.at) - Date.parse(y.e.at));
+  out.sort((x, y) => Date.parse(x.e.at) - Date.parse(y.e.at));
+  // a follower only once the one before it is posted, or goes just before it now
+  const kept = new Set();
+  const entryAt = (id, i, net) => { const l = seqs.get(id) || []; const m = l.find((x) => Number(x.seq.i) === i); return m && (m.plan || []).find((e) => e.net === net); };
+  return out.filter(({ it, e }) => {
+    const q = seqOf(it);
+    if (!q) return true;
+    const i = Number(q.i) || 0;
+    if (i > 0 && e.state !== 'posting') {
+      const prev = entryAt(q.id, i - 1, e.net);
+      if (!(prev && (prev.state === 'posted' || kept.has(q.id + '|' + e.net + '|' + (i - 1))))) return false;
+    }
+    kept.add(q.id + '|' + e.net + '|' + i);
+    return true;
+  });
 }
 // Which entries become De postat now (content-app.js): on an 'app' network, of an approved item, planned, due within
 // APP_LEAD_MS and at most 75 minutes late (an older one is moved by reflow() first). Oldest first.
@@ -355,13 +438,14 @@ function weekInfo(items, settings, week) {
   const need = needOf(q);
   const its = (items || []).filter((it) => !it.removed && !it.dropped && it.week === week);
   const ready = its.filter((it) => it.state === 'ready');
-  const have = { reel: ready.filter((it) => it.kind === 'reel').length, carousel: ready.filter((it) => it.kind === 'carousel' || it.kind === 'slideshow').length };
-  const missing = { reel: Math.max(0, need.reel - have.reel), carousel: Math.max(0, need.carousel - have.carousel) };
+  const have = { reel: ready.filter((it) => it.kind === 'reel').length, carousel: ready.filter((it) => it.kind === 'carousel' || it.kind === 'slideshow').length,
+    story: ready.filter((it) => it.kind === 'story' && !it.evergreen && !follower(it)).length };
+  const missing = { reel: Math.max(0, need.reel - have.reel), carousel: Math.max(0, need.carousel - have.carousel), story: Math.max(0, need.story - have.story) };
   const days = new Set(weekDays(week));
   const slots = {};
   NETS.forEach((net) => { slots[net] = {}; QKINDS[net].forEach((k) => { slots[net][k] = { quota: q[net][k] || 0, planned: 0 }; }); });
   (items || []).forEach((it) => (it.plan || []).forEach((e) => {
-    if (!holds(e) || !days.has(roDay(Date.parse(e.at)))) return;
+    if (!holds(e) || e.follow || e.evergreen || !days.has(roDay(Date.parse(e.at)))) return;
     const s = slots[e.net] && slots[e.net][e.kind || kindOn(it, e.net)];
     if (s) s.planned++;
   }));
@@ -380,6 +464,6 @@ function counts(items) {
   return c;
 }
 
-module.exports = { NETS, PHOTO_NETS, KINDS, AS, QKINDS, DEFAULTS, MODES, LEAD_MS, STALE_MS, APP_LEAD_MS, settingsOf, netsFor, kindOn, classOf, holds, movable, review,
+module.exports = { NETS, PHOTO_NETS, STORY_NETS, KINDS, AS, QKINDS, DEFAULTS, MODES, LEAD_MS, STALE_MS, APP_LEAD_MS, settingsOf, netsFor, kindOn, classOf, holds, movable, review, seqOf, follower, syncSeq,
   isApp, live, weekNo, quotasFor, needOf, weekOf, mondayOf, weekEnd, weekDays, replanWeek, replanFrom, retime, reflow, nextSlot, due, appDue, weekInfo, counts, roDay, atRo,
   addDays, dayDiff, isDay, dow, spread };

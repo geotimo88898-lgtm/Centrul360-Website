@@ -4,7 +4,7 @@
 // Admin → Conținut (or sends an item back to be redone), and the clock posts only what is approved
 // (content-post.js) and reads its numbers (content-stats.js).
 //
-// data/content/items.json: [{ id, kind: reel|carousel|slideshow, rubric, topic, keyword, caption, captions: { tt, yt,
+// data/content/items.json: [{ id, kind: reel|carousel|slideshow|story, rubric, topic, keyword, caption, captions: { tt, yt,
 //   ig, fb } (a text per network, `caption` when one is missing), week: 'YYYY-MM-DD' (its Monday), review: pending|
 //   approved|redo, redoNote, reviewedAt, redoAt, replacedAt, files: [{ name, path, mime, size, w, h, dur, v, role }],
 //   cover, state: draft|ready, createdAt, readyAt, plan: [{ net: tt|yt|ig|fb, kind: reel|carousel|slideshow, slot:
@@ -14,7 +14,12 @@
 //   hook (the first words said), hookType (intrebare, cifra, contra, pov, socant, poveste …), topicTag (the topic family,
 //   hifu-gusa), ideaId (the owner's idea it makes, data/content/ideas.json), variantOf (the evergreen winner it makes
 //   again with a new hook), firstComment (the account's first comment under the post, content-post.js), boosts
-//   (content-boost.js) }]
+//   (content-boost.js), promo ('card-sarbatori': see PROMOS), seq { id, i, n } and evergreen (stories, content-plan.js) }]
+// A story (the owner, 21.11): one 9:16 picture (JPG), or one 9:16 MP4 up to 60 s (a JPG cover may come with it, only
+//   for the board); no text under it (Instagram and Facebook stories have none), so no captions are needed.
+// A promo item (the owner, 21.11: „putem face și hard marketing organic cu cardul cadou”): the organic posts for one sale
+//   of ours (PROMOS) may name its prices, the offer and the link in bio, which the organic rules otherwise refuse; every
+//   other rule (Meta's words, promises, defects, diacritics, dashes) still holds.
 // A reel has two videos (the owner, 14.11): the preview with his music, only to approve it (it never goes out: the
 //   track isn't licensed for the networks), and the clean one, voice and sound effects only (role 'clean'), the one
 //   that goes out: shared from the phone, where he puts a licensed sound on inside TikTok / Instagram (content-app.js),
@@ -48,6 +53,8 @@ const RUBRICS = ['Cazuri', 'Ce nu-ți spune nimeni', 'Unde se duce, de fapt', 'E
 const HOOK_TYPES = ['intrebare', 'cifra', 'contra', 'pov', 'socant', 'poveste'];
 // what the producer may send per text (each network's own limit is checked by qa, so a text too long is refused, not cut)
 const IN_MAX = 6000;
+// the sales the organic posts may sell openly (the owner, 21.11), until when
+const PROMOS = { 'card-sarbatori': '2026-12-24' };
 const MIMES = { 'video/mp4': 'mp4', 'image/jpeg': 'jpg', 'image/png': 'png' };
 const MAX_BYTES = 60 * 1024 * 1024;
 const CAP_MAX = { tt: 2200, yt: 100, ig: 2200, fb: 5000 };
@@ -63,6 +70,8 @@ const fold = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]
 const slug = (s, n) => fold(s).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, n || 40);
 function fail(code, status, extra) { const e = new Error(code); e.status = status || 400; if (extra) e.extra = extra; return e; }
 const findItem = (list, id) => list.find((x) => x.id === id);
+// a promo still on (its last day in Bucharest not past)
+const promoOn = (it, now) => !!(it && it.promo && PROMOS[it.promo] && P.roDay(now || Date.now()) <= PROMOS[it.promo]);
 
 // a change to the items that never overwrites one made meanwhile (the clock posting while the producer uploads)
 async function updateKey(key, fn) {
@@ -116,6 +125,7 @@ async function saveSettings(patch) {
   P.NETS.forEach((n) => { if (p.modes && P.MODES.includes(p.modes[n])) next.modes[n] = p.modes[n]; });
   next.times = Object.assign({}, cur.times, p.times || {});
   next.photoTime = Object.assign({}, cur.photoTime, p.photoTime || {});
+  next.storyTimes = Object.assign({}, cur.storyTimes, p.storyTimes || {});
   next.quotas = { warm: {}, full: {} };
   ['warm', 'full'].forEach((w) => P.NETS.forEach((n) => { next.quotas[w][n] = Object.assign({}, cur.quotas[w][n], (p.quotas && p.quotas[w] && p.quotas[w][n]) || {}); }));
   const st = P.settingsOf(next);
@@ -161,6 +171,14 @@ async function create(input) {
   // the look and the ending (reels v2), so the producer never makes two alike in a row
   if (x.theme) it.theme = slug(x.theme, 30);
   if (x.endType) it.endType = slug(x.endType, 12);
+  if (x.promo != null && x.promo !== '') { if (!PROMOS[x.promo]) throw fail('invalid_promo'); it.promo = x.promo; }
+  // a story of a sequence (content-plan.js): { id, i (from 0), n (2-10) }; an evergreen story (the coverage guard's reserve)
+  if (x.seq) {
+    const id = slug(x.seq.id, 40), i = Number(x.seq.i), n = Number(x.seq.n);
+    if (x.kind !== 'story' || !id || !Number.isInteger(i) || !Number.isInteger(n) || n < 2 || n > 10 || i < 0 || i >= n) throw fail('invalid_seq');
+    it.seq = { id, i, n };
+  }
+  if (x.evergreen) { if (x.kind !== 'story' || x.seq) throw fail('invalid_evergreen'); it.evergreen = true; }
   if (x.variantOf) {
     if (!isId(x.variantOf) || !findItem(await items(), x.variantOf)) throw fail('invalid_variant');
     it.variantOf = x.variantOf;
@@ -223,7 +241,7 @@ function problems(it) {
   const files = it.files || [], out = [];
   const all = files.filter((f) => f.mime === 'video/mp4'), jpgs = files.filter((f) => f.mime === 'image/jpeg'), imgs = files.filter((f) => /^image\//.test(f.mime));
   const vids = all.filter((f) => !isClean(f)), clean = all.filter(isClean);
-  const lacking = P.netsFor(it.kind).filter((n) => !captionFor(it, n).trim());
+  const lacking = it.kind === 'story' ? [] : P.netsFor(it.kind).filter((n) => !captionFor(it, n).trim());
   if (lacking.length) out.push('lipsește textul de sub postare pentru ' + lacking.map((n) => NET_NAME[n]).join(', ') + ' (caption sau captions)');
   if (it.kind === 'reel') {
     if (vids.length !== 1) out.push('un reel are exact un MP4 cu muzică (are ' + vids.length + ')' + (vids.length > 1 && !clean.length ? '; varianta fără muzică se urcă cu role=clean' : ''));
@@ -251,6 +269,16 @@ function problems(it) {
     const rs = imgs.map(ratio);
     if (rs.some((r) => !(near(r, 4 / 5) || near(r, 1)))) out.push('pozele ' + what + ' sunt 4:5 sau 1:1');
     if (rs.length && !rs.every((r) => Math.abs(r - rs[0]) / rs[0] <= 0.02)) out.push('pozele ' + what + ' au același format');
+  } else if (it.kind === 'story') {
+    // one picture, or one video (a JPG with it only as its cover on the board)
+    if (vids.length > 1 || clean.length) out.push('un story are cel mult un MP4 (are ' + all.length + ')');
+    if (imgs.some((f) => f.mime !== 'image/jpeg')) out.push('pozele unui story sunt JPG');
+    if (!vids.length && jpgs.length !== 1) out.push('un story are o poză JPG sau un MP4 (are ' + jpgs.length + ' poze)');
+    if (vids.length && jpgs.length > 1) out.push('un story video are cel mult o copertă JPG');
+    const main = vids[0] || jpgs[0];
+    if (main && !near(ratio(main), 9 / 16)) out.push((vids.length ? 'MP4-ul' : 'poza') + ' nu e 9:16 (' + main.w + 'x' + main.h + ')');
+    if (vids.length === 1 && (!vids[0].dur || vids[0].dur > 60)) out.push('MP4-ul are ' + (vids[0].dur || '?') + ' s (maxim 60 într-un story)');
+    if (vids.length === 1 && vids[0].dur && vids[0].dur < 3) out.push('MP4-ul are sub 3 s');
   }
   return out;
 }
@@ -292,6 +320,8 @@ const RISKS = [
   [/\bprogrameaza(-|\s)?te\b|\bprogramar\w*|\bfa(-|\s)?ti\s+(o\s+)?programare|\bsuna(-|\s)?ne\b|\bwhatsapp\b/, 'cheamă la programare („programează-te”)'],
   [/https?:\/\/|\bwww\.|\b[a-z0-9-]+\.(ro|com|net|eu)\b|\blink\w*\b/, 'are un link'],
 ];
+// the RISKS a promo post may say: the price, the offer, the call to buy, the link
+const PROMO_FREE = [7, 8, 9, 10];
 // [the words, the warning, the problem that says it already]
 const SOFT = [
   [/\bslab\w*/, '„slăbit”: mai sigur „conturare”, „grăsime localizată”', 1],
@@ -331,7 +361,9 @@ function qaText(text, net, it, competitors) {
   if (net === 'tt' && t.length > 400) warnings.push('text lung pentru TikTok (o frază, două)');
   if (/[—–]/.test(t)) problems.push('are liniuțe lungi');
   if (noDiacritics(t)) problems.push('e scris fără diacritice (ă, â, î, ș, ț)');
-  const hit = RISKS.map(([re, msg]) => { const y = re.test(f); if (y) problems.push(msg); return y; });
+  // a promo of ours (PROMOS): its prices, the offer, the link in bio and how to buy may be said
+  const free = promoOn(it) ? PROMO_FREE : null;
+  const hit = RISKS.map(([re, msg], i) => { const y = re.test(f); if (y && !(free && free.includes(i))) problems.push(msg); return y; });
   (competitors || []).forEach((c) => { const n = fold(c).trim(); if (n.length >= 3 && new RegExp('(^|[^a-z0-9])' + escRe(n) + '($|[^a-z0-9])').test(f)) problems.push('numește un concurent („' + c + '”)'); });
   SOFT.forEach(([re, msg, said]) => { if (re.test(f) && !(said != null && hit[said])) warnings.push(msg); });
   if (it && net === 'tt' && it.rubric === 'Cazuri' && !/rezultatele difera/.test(f)) warnings.push('caz înainte/după fără „Rezultatele diferă de la o persoană la alta”');
@@ -598,7 +630,7 @@ async function status() {
   const fresh = (await ideas()).filter((d) => d.state !== 'used').map((d) => Object.assign({ id: d.id, text: d.text, rubric: d.rubric || '', at: d.at }, d.source ? { source: d.source } : {}));
   // the week's analysis: its changes are what the producer follows first (after the items to redo)
   const analysis = await require('./content-insights').forProducer().catch(() => null);
-  return { on: st.on, nets: st.nets, modes: st.modes, times: st.times, photoTime: st.photoTime, startWeek: st.startWeek, today: P.roDay(now),
+  return { on: st.on, nets: st.nets, modes: st.modes, times: st.times, photoTime: st.photoTime, storyTimes: st.storyTimes, startWeek: st.startWeek, today: P.roDay(now),
     next: P.weekInfo(list, st, next), current: P.weekInfo(list, st, cur), redo, counts: P.counts(list),
     drafts: list.filter((x) => x.state === 'draft' && !x.removed).map((x) => ({ id: x.id, kind: x.kind, topic: x.topic || '', week: x.week, files: (x.files || []).map((f) => f.name) })), made,
     analysis, notes: notes.slice(0, 30), ideas: fresh, season: L.season(next), recycle: L.recycle(list, now, next, lr), learn: L.compact(lr) };
@@ -729,7 +761,7 @@ async function mondayHold(list, st, now) {
   return can ? '' : [...why].join(' · ') || 'Nimic de postat azi.';
 }
 
-module.exports = { KEY, SET_KEY, STATE_KEY, IDEAS_KEY, KINDS, MIMES, MAX_BYTES, CAP_MAX, IN_MAX, RUBRICS, HOOK_TYPES, NET_NAME, ROLES, ORIGIN, fileUrl, isId, isName, isClean, pathOf, items,
+module.exports = { PROMOS, promoOn, KEY, SET_KEY, STATE_KEY, IDEAS_KEY, KINDS, MIMES, MAX_BYTES, CAP_MAX, IN_MAX, RUBRICS, HOOK_TYPES, NET_NAME, ROLES, ORIGIN, fileUrl, isId, isName, isClean, pathOf, items,
   settings, saveSettings, update, updateKey, migrate, create, addFile, problems, fileWarnings, media, qa, qaText, ready, replace, setReview, unreview, approveWeek, approveAll, setFav, setCaptions, captionFor, status, skip, readState,
   AREAS, AREA_NAME, ATT_TYPES, ATT_MAX, isAtt, attPath, attOf, attUrl, noteOf, notesView, fromProducer,
   writeState, notices, mondayHold, ideas, addIdea, delIdea, useIdea, unuseIdea, findItem, fail, weekFor, plural, range, fold };

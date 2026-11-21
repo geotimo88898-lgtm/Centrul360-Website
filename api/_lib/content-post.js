@@ -316,7 +316,8 @@ async function run(opts) {
   if (!st.on) return Object.assign({ off: true }, told.length ? { told } : {});
   // the 'app' networks: what came due goes in De postat, one push each (nothing is posted)
   const app = await require('./content-app').run(st, Date.now()).catch((e) => { console.error('content app:', e.message); return { error: e.message }; });
-  const todo = P.due(await C.items(), st, Date.now());
+  // the stories go out on the minute clock, a sequence in one go (content-story.js)
+  const todo = P.due(await C.items(), st, Date.now()).filter((x) => P.classOf(x.e.kind || P.kindOn(x.it, x.e.net)) !== 'story');
   if (!todo.length) return Object.assign({ due: 0 }, app.todo || app.back || app.error ? { app } : {});
   const a = await access(true);
   const out = Object.assign({ due: todo.length, done: [] }, app.todo || app.back || app.error ? { app } : {});
@@ -390,4 +391,4 @@ async function followers() {
   return { yt, tt };
 }
 
-module.exports = { run, now, access, blocked, statsOf, followers, firstComment, NEEDS, STATS_NEEDS, NAMES, GRAPH_VER };
+module.exports = { run, now, access, blocked, claim, postOne, hold, tell, statsOf, followers, firstComment, NEEDS, STATS_NEEDS, NAMES, GRAPH_VER };

@@ -1704,12 +1704,16 @@
   function openSettings(goalsFirst) {
     const st = S.d.settings, G = S.d.goals || { followers: {} };
     const t = (n, i) => '<label class="k-field"><span>' + (i === 'p' ? (n === 'tt' ? 'Ora slideshow' : 'Ora carusel') : 'Ora ' + (i + 1)) + '</span><input type="text" inputmode="numeric" maxlength="5" placeholder="hh:mm" data-cttime="' + n + '|' + i + '" value="' + esc(i === 'p' ? st.photoTime[n] || '' : st.times[n][i] || '') + '"></label>';
-    const q = (n, w, kind, label) => '<label class="k-field"><span>' + label + '</span><input type="number" inputmode="numeric" min="0" max="' + (kind === 'reel' ? 28 : 7) + '" data-ctq="' + w + '|' + n + '|' + kind + '" value="' + esc(String(st.quotas[w][n][kind] != null ? st.quotas[w][n][kind] : 0)) + '"></label>';
+    const q = (n, w, kind, label) => '<label class="k-field"><span>' + label + '</span><input type="number" inputmode="numeric" min="0" max="' + (kind === 'reel' ? 28 : kind === 'story' ? 35 : 7) + '" data-ctq="' + w + '|' + n + '|' + kind + '" value="' + esc(String(st.quotas[w][n][kind] != null ? st.quotas[w][n][kind] : 0)) + '"></label>';
     const pk = { tt: 'slideshow', ig: 'carousel', fb: 'carousel' };
+    const STORY = { ig: true, fb: true };
     const card = (n) => '<div class="cn-netc"><div class="cn-setr">' + badge(n) + '<b>' + NET[n] + '</b>' + K.seg('ctmode_' + n, [['app', 'Din aplicație'], ['auto', 'Automat']], modeOf(n), 'cn-seg-sm cn-mode') + '</div>' +
       '<div class="cn-setr cn-api' + (modeOf(n) === 'app' ? ' is-hidden' : '') + '" data-ctapi="' + n + '"><span>Postare prin API</span>' + K.toggle('net_' + n, st.nets[n]) + '</div>' +
       '<div class="cn-nf">' + t(n, 0) + t(n, 1) + (pk[n] ? t(n, 'p') : '<span></span>') + '</div>' +
-      '<div class="cn-nf">' + q(n, 'warm', 'reel', 'Reels săpt. 1-' + st.warmWeeks) + q(n, 'full', 'reel', 'Reels apoi') + (pk[n] ? q(n, 'full', pk[n], n === 'tt' ? 'Slideshow' : 'Carusele') : '<span></span>') + '</div></div>';
+      '<div class="cn-nf">' + q(n, 'warm', 'reel', 'Reels săpt. 1-' + st.warmWeeks) + q(n, 'full', 'reel', 'Reels apoi') + (pk[n] ? q(n, 'full', pk[n], n === 'tt' ? 'Slideshow' : 'Carusele') : '<span></span>') + '</div>' +
+      // stories (Instagram, Facebook): their own times and quota
+      (STORY[n] ? '<div class="cn-nf"><label class="k-field cn-nf-w"><span>Ore story</span><input type="text" inputmode="numeric" maxlength="40" placeholder="10:00, 15:00, 21:00" data-ctstory="' + n + '" value="' + esc(((st.storyTimes || {})[n] || []).join(', ')) + '"></label>' +
+        q(n, 'full', 'story', 'Story-uri pe săpt.') + '</div>' : '') + '</div>';
     const conn = access();
     const body = '<section class="cn-set"><h5>Conexiuni</h5>' + (conn || '<p class="cn-set-p">' + icon('check') + ' Conturile sunt conectate.</p>') + '</section>' +
       '<section class="cn-set"><h5>Rețele, ore și cote pe săptămână</h5><p class="cn-set-p">Din aplicație: la ora din program primești o notificare și postezi tu, cu sunetul din aplicație. Automat: se postează singur, prin API.</p>' + NETS.map(card).join('') + '</section>' +
@@ -1731,7 +1735,7 @@
         el.addEventListener('click', async (e) => {
           if (e.target.closest('[data-ctgo]')) { d.close(); return K.go('integrari'); }
           const b = e.target.closest('[data-ctsave]'); if (!b) return;
-          const nets = {}, modes = {}, times = {}, photoTime = {}, quotas = { warm: {}, full: {} };
+          const nets = {}, modes = {}, times = {}, photoTime = {}, storyTimes = {}, quotas = { warm: {}, full: {} };
           let bad = '';
           NETS.forEach((n) => {
             nets[n] = el.querySelector('input[name="net_' + n + '"]').checked;
@@ -1742,7 +1746,12 @@
             const p = el.querySelector('[data-cttime="' + n + '|p"]');
             if (p) { photoTime[n] = p.value.trim().replace(/^(\d):/, '0$1:'); if (ts.includes(photoTime[n])) bad = 'Ora caruselului e alta decât orele reels.'; }
           });
-          if ([].concat(...Object.values(times), Object.values(photoTime)).some((x) => !/^([01]\d|2[0-3]):[0-5]\d$/.test(x))) bad = 'Orele se scriu ca 19:30.';
+          el.querySelectorAll('[data-ctstory]').forEach((x) => {
+            const ts = x.value.split(/[,;\s]+/).map((v) => v.trim().replace(/^(\d):/, '0$1:')).filter(Boolean);
+            if (!ts.length) bad = 'Story-urile au cel puțin o oră.';
+            storyTimes[x.dataset.ctstory] = ts.slice(0, 5);
+          });
+          if ([].concat(...Object.values(times), Object.values(photoTime), ...Object.values(storyTimes)).some((x) => !/^([01]\d|2[0-3]):[0-5]\d$/.test(x))) bad = 'Orele se scriu ca 19:30.';
           el.querySelectorAll('[data-ctq]').forEach((x) => {
             const [w, n, kind] = x.dataset.ctq.split('|'), v = Math.round(Number(x.value));
             if (!Number.isFinite(v) || v < 0 || v > Number(x.max)) bad = 'Cotele sunt între 0 și ' + x.max + '.';
@@ -1754,7 +1763,7 @@
           const competitors = el.querySelector('[data-ctcomp]').value;
           const goals = { followers: {} };
           el.querySelectorAll('[data-ctgoal]').forEach((x) => { const v = Math.round(Number(x.value)); const key = x.dataset.ctgoal; if (!(v > 0)) return; if (key.startsWith('f_')) goals.followers[key.slice(2)] = v; else goals[key] = v; });
-          if (await save({ action: 'settings', nets, modes, times, photoTime, quotas, startWeek: start || st.startWeek, competitors, goals }, b)) { K.ui().toast('Salvat.', 'success'); d.close(); loadResults(true); }
+          if (await save({ action: 'settings', nets, modes, times, photoTime, storyTimes, quotas, startWeek: start || st.startWeek, competitors, goals }, b)) { K.ui().toast('Salvat.', 'success'); d.close(); loadResults(true); }
         });
       },
     });

@@ -3911,3 +3911,5 @@ html.ui-nou #panel-panou.sx-host > .mg-strip{ order:1; }
 /* a cosmetician: one quiet line where the booking controls would be (Regulament intern, 18.11) */
 .cal-quiet{ display:flex; align-items:center; gap:.45rem; margin:.2rem 0 .7rem; color:var(--muted); font-size:.82rem; }
 .cal-quiet svg{ width:15px; height:15px; flex:none; }
+/* stories (21.11): the times take two columns, the quota one */
+.cn-nf-w{ grid-column:span 2; }

@@ -260,7 +260,8 @@ export default {
     const hour = new Date(event.scheduledTime).getUTCHours();
     const paths = [];
     // the minute clock: only the „Transformarea 360” campaign (api/fastcash-tick.js; nothing while it is off)
-    if (event.cron === "* * * * *") paths.push("/api/fastcash-tick");
+    // and the stories (api/content-story-tick.js: a sequence in one go, never a network without a live story)
+    if (event.cron === "* * * * *") paths.push("/api/fastcash-tick", "/api/content-story-tick");
     else if (hour === 5) paths.push("/creative/api/cron/auto");
     if (event.cron !== "* * * * *") {
       paths.push(hour === 6 ? "/api/automation-tick" : "/api/automation-tick?light=1");
@@ -273,7 +274,7 @@ export default {
       if (!globalThis.__C360_CRON_TOKEN) globalThis.__C360_CRON_TOKEN = crypto.randomUUID() + crypto.randomUUID();
       const req = new Request("https://admin.centrul360.com" + path, { headers: { authorization: "Bearer " + (path.startsWith("/creative") ? (env.CRON_SECRET || "") : globalThis.__C360_CRON_TOKEN), "user-agent": "vercel-cron/1.0" } });
       const r = await als.run({ ctx }, () => route(req, env, ctx)).catch((e) => ({ status: "eroare " + e.message }));
-      if (path !== "/api/fastcash-tick") console.log("cron", path, r.status);
+      if (path !== "/api/fastcash-tick" && path !== "/api/content-story-tick") console.log("cron", path, r.status);
     }
   }
 };
