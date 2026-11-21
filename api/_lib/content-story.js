@@ -25,7 +25,8 @@ const iso = (ms) => new Date(ms).toISOString();
 // every posted story on a network (the reposts of the evergreen ones too): [{ it, at }]
 function shown(list, net) {
   const out = [];
-  list.filter(isStory).forEach((it) => {
+  // what went out stays out (an item taken out of its week after it posted still has a live story)
+  list.filter((it) => it && it.kind === 'story' && !it.removed).forEach((it) => {
     (it.plan || []).concat(it.reposts || []).forEach((e) => { if (e.net === net && e.state === 'posted') out.push({ it, at: postedAt(e) }); });
   });
   return out.sort((a, b) => b.at - a.at);

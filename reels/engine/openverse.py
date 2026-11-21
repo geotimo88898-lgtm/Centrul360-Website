@@ -13,6 +13,12 @@ Doar licențe fără obligații: CC0 și Public Domain Mark (merg comercial, fă
         construiește biblioteca: pentru fiecare categorie din QUERIES ia primele sunete potrivite (durată, licență)
   python3 openverse.py fetch
         refă fișierele din openverse-library.json pe o mașină nouă (sfx/ e în .gitignore)
+  python3 openverse.py msearch "Komiku" [--source wikimedia_audio] [--min 45] [--max 400] [--allow-by]
+        muzică (21.11, ca piesele să nu se mai repete): alți furnizori decât Freesound (CDN-ul lui refuză mașinile din cloud),
+        doar CC0 / PDM (CC BY doar cu --allow-by și creditul în descriere)
+  python3 openverse.py mget <id> --mood calm|house|festive|warm [--bpm 120]
+        descarcă piesa întreagă în music/ov/<mood>_<id8>.wav (48 kHz, normalizată) și o trece în biblioteca de muzică
+        (openverse-library.json → music: sursa, autorul, licența, starea, bpm); rotația o citește de acolo
 
 Fișierele audio nu se comit (sfx/ e ignorat); se comite doar openverse-library.json, ca proveniența să fie clară
 și biblioteca să se poată reface oricând."""
@@ -20,9 +26,10 @@ import argparse, json, os, subprocess, sys, time, urllib.parse, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, 'sfx', 'ov')
+MOUT = os.path.join(HERE, 'music', 'ov')
 LIB = os.path.join(HERE, 'openverse-library.json')
 API = 'https://api.openverse.org/v1/audio/'
-UA = {'User-Agent': 'reels-sfx-fetcher/1.0'}
+UA = {'User-Agent': 'reels-sfx-fetcher/1.0 (python-urllib; low-volume media fetcher)'}
 SAFE = {'cc0', 'pdm'}
 
 # categoriile motorului (aceleași nume ca sfx.py) -> căutări și durata maximă în secunde
@@ -72,6 +79,22 @@ def search(q, max_s=3.0, n=10, allow_by=False):
         if len(out) >= n:
             break
     return out
+
+
+def msearch(q, source='wikimedia_audio', min_s=45, max_s=400, allow_by=False):
+    lic = 'cc0,pdm,by' if allow_by else 'cc0,pdm'
+    d = api({'q': q, 'license': lic, 'source': source, 'page_size': 20, 'mature': 'false'})
+    return [r for r in d.get('results', []) if min_s <= (r.get('duration') or 0) / 1000 <= max_s and (r.get('license') in SAFE or (allow_by and r.get('license') == 'by'))]
+
+
+def mdownload(entry):
+    os.makedirs(MOUT, exist_ok=True)
+    dst = os.path.join(MOUT, entry['file']); tmp = dst + '.src'
+    with urllib.request.urlopen(urllib.request.Request(entry['url'], headers=UA), timeout=120) as r, open(tmp, 'wb') as f:
+        f.write(r.read())
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', tmp, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11', '-ar', '48000', '-ac', '2', dst], check=True)
+    os.remove(tmp)
+    return dst
 
 
 def load_lib():
@@ -127,7 +150,29 @@ def main():
     g.add_argument('--trim', type=float)
     l = sub.add_parser('library'); l.add_argument('--per', type=int, default=4)
     sub.add_parser('fetch')
+    m = sub.add_parser('msearch'); m.add_argument('q'); m.add_argument('--source', default='wikimedia_audio')
+    m.add_argument('--min', type=float, default=45); m.add_argument('--max', type=float, default=400); m.add_argument('--allow-by', action='store_true')
+    mg = sub.add_parser('mget'); mg.add_argument('id'); mg.add_argument('--mood', required=True, choices=['calm', 'house', 'festive', 'warm'])
+    mg.add_argument('--bpm', type=float); mg.add_argument('--allow-by', action='store_true')
     a = ap.parse_args()
+
+    if a.cmd == 'msearch':
+        for r in msearch(a.q, a.source, a.min, a.max, a.allow_by):
+            print(f"{r['id']}  {r['duration'] / 1000:6.1f}s  {r['license']:4}  {(r.get('creator') or '')[:18]:18}  {(r.get('title') or '')[:60]}")
+        return
+    if a.cmd == 'mget':
+        with urllib.request.urlopen(urllib.request.Request(API + a.id + '/', headers=UA), timeout=30) as r:
+            rec = json.load(r)
+        if rec.get('license') not in SAFE and not (a.allow_by and rec.get('license') == 'by'):
+            sys.exit(f"licența {rec.get('license')} nu e CC0/PDM (CC BY doar cu --allow-by); nu o adaug")
+        lib = load_lib(); lib.setdefault('music', [])
+        e = entry_of(rec, 'music_' + a.mood); e['file'] = f"{a.mood}_{rec['id'][:8]}.wav"; e['mood'] = a.mood
+        if a.bpm: e['bpm'] = a.bpm
+        if rec.get('license') == 'by': e['credit'] = f"Muzica: {rec.get('title')} de {rec.get('creator')} ({rec.get('license_url')})"
+        mdownload(e)
+        lib['music'] = [x for x in lib['music'] if x['id'] != e['id']] + [e]
+        save_lib(lib); print('ok', e['file'])
+        return
 
     if a.cmd == 'search':
         for r in search(a.q, a.max, a.n, a.allow_by):
@@ -176,6 +221,9 @@ def main():
         for e in lib['sounds']:
             if not os.path.exists(os.path.join(OUT, e['file'])):
                 download(e, e.get('trim')); print('ok', e['file'])
+        for e in lib.get('music', []):
+            if not os.path.exists(os.path.join(MOUT, e['file'])):
+                mdownload(e); print('ok', e['file'])
         return
 
 
