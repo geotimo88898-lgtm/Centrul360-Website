@@ -60,8 +60,18 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
     if (action === 'create') { const it = await C.create(body.item); res.status(200).json({ ok: true, id: it.id, week: it.week }); return; }
     if (action === 'replace') { res.status(200).json(Object.assign({ ok: true }, await C.replace(String(body.id || ''), body))); return; }
-    // the global switch: { action:'settings', on }
-    if (action === 'settings' && req.method === 'POST') { res.status(200).json(Object.assign({ ok: true }, await C.saveSettings({ on: body.on !== false }))); return; }
+    // the settings: { action:'settings', on, quotas?, times?, photoTime?, modes?, nets? } (the owner, 21.11: „încredere maximă,
+    // organice hardcore”: Claude sets the volume and the posting itself; saveSettings merges and checks every part)
+    if (action === 'settings' && req.method === 'POST') {
+      const patch = { on: body.on !== false };
+      ['quotas', 'times', 'photoTime', 'modes', 'nets'].forEach((k) => { if (body[k] && typeof body[k] === 'object') patch[k] = body[k]; });
+      res.status(200).json(Object.assign({ ok: true }, await C.saveSettings(patch)));
+      return;
+    }
+    // the look, by Claude (the owner, 21.11: he leaves the approval to Claude): { action:'approve', ids } approves those
+    // still waiting; { action:'redo', id, note } sends one back to the producer
+    if (action === 'approve') { res.status(200).json({ ok: true, approved: await C.approveAll(Array.isArray(body.ids) ? body.ids : []) }); return; }
+    if (action === 'redo') { res.status(200).json({ ok: true, item: await C.setReview(String(body.id || ''), 'redo', String(body.note || '').slice(0, 1000), {}) }); return; }
     if (action === 'ready') {
       const r = await C.ready(String(body.id || ''));
       // the owner hears at once when next week's batch is complete
