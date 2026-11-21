@@ -12,7 +12,7 @@
   var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
   var CITIES = ['Timișoara', 'Arad'];
   // the preview only (/v2/): the owner's open question that belongs to this step
-  var PROP = location.pathname.indexOf('/v2/') === 0 ? '<details class="lfs-prop"><summary>De confirmat: plata online aici</summary><p>Propunere: plata online direct din acest pas, pentru pachetele de 390 și 990 lei (și 190 la gușă), ca HIFU gușă plătit cu cardul care a vândut 90 într-o zi. Cine plătește online are locul rezervat pe loc și primește un bonus ales de tine (de exemplu un tratament facial Restart). Prețul rămâne cel întreg. Trebuie câte un PayLink myPOS pe pachet. O pornim?</p></details>' : '';
+  var PROP = location.pathname.indexOf('/v2/') === 0 ? '<details class="lfs-prop"><summary>De confirmat: plata online aici?</summary><p>Propunere: plata online direct din acest pas, pentru pachetele de 390 și 990 lei (și 190 la gușă), ca HIFU gușă plătit cu cardul care a vândut 90 într-o zi. Cine plătește online are locul rezervat pe loc și primește un bonus ales de tine (de exemplu un tratament facial Restart). Prețul rămâne cel întreg. Trebuie câte un PayLink myPOS pe pachet. O pornim?</p></details>' : '';
   // a topic from a link (?din=gusa, a reel's word) → the zone
   var TOPIC = { gusa: 'gusa-contur', 'barbie-dubla': 'gusa-contur', barbie: 'gusa-contur', contur: 'gusa-contur', gat: 'gusa-contur',
     abdomen: 'abdomen-talie', talie: 'abdomen-talie', burta: 'abdomen-talie', burtica: 'abdomen-talie', grasime: 'abdomen-talie',
@@ -54,6 +54,8 @@
     root.addEventListener('click', function (e) {
       if (e.target.closest('[data-lfs-close]')) { close(); return; }
       if (e.target.closest('[data-lfs-back]')) { back(); return; }
+      var r = e.target.closest('[data-sel]');
+      if (r) { st.sel = r.getAttribute('data-sel'); var l = sc.querySelector('.lfs-packs'); if (l) { l.innerHTML = packs(zoneOf()); var m = l.querySelector('.lfs-more'); if (m && !reduce && m.animate) m.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 380, easing: 'cubic-bezier(.16,1,.3,1)' }); } return; }
       var o = e.target.closest('[data-pick]');
       if (o) pick(o.getAttribute('data-pick'), o.getAttribute('data-v'));
     });
@@ -62,7 +64,7 @@
 
   function pick(what, v) {
     if (what === 'city') { st.city = v; if (st.zone && !zonesOf(v).some(function (z) { return z.key === st.zone; })) { st.zone = ''; st.zoneFixed = false; } }
-    else if (what === 'zone') { st.zone = v; st.problem = ''; st.tier = ''; }
+    else if (what === 'zone') { st.zone = v; st.problem = ''; st.tier = ''; st.sel = ''; }
     else if (what === 'problem') st.problem = v;
     else if (what === 'when') st.when = v;
     else if (what === 'pack') st.tier = v;
@@ -90,7 +92,8 @@
     } else if (step === 'when') {
       html = q('Când vrei să vezi rezultatul?') + '<div class="lfs-list">' + ((offer && offer.timeline) || []).map(function (t) { return opt('when', t.key, '<b>' + esc(t.label) + '</b>', st.when === t.key); }).join('') + '</div>';
     } else if (step === 'pack') {
-      html = q('Ce variantă ți se potrivește?', 'Prețul e pentru tot pachetul. Plătești la clinică, după consultația gratuită.') + PROP + '<div class="lfs-packs">' + ((z && z.tiers) || []).map(function (t) { return pack(t, z.packs[t]); }).join('') + '</div>';
+      html = q('Ce variantă ți se potrivește?') + '<div class="lfs-packs" role="radiogroup" aria-label="Variantele">' + packs(z) + '</div>' +
+        '<p class="lfs-safe">Consultația e gratuită. Plătești doar la clinică, după consultație.</p>';
     } else if (step === 'contact') {
       var p = z && z.packs[st.tier];
       html = q('Unde îți trimitem detaliile?', 'Pe WhatsApp primești acum tot ce include pachetul. Nu plătești nimic acum.') +
@@ -115,16 +118,33 @@
   }
   function q(t, sub) { return '<div class="lfs-q"><h3>' + t + '</h3>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>'; }
   function opt(what, v, inner, on) { return '<button type="button" class="lfs-o' + (on ? ' on' : '') + '" data-pick="' + what + '" data-v="' + esc(v) + '"><span>' + inner + '</span>' + ARROW + '</button>'; }
-  function pack(t, p) {
+  // the packages (the owner, 21.11 evening: the anchor works by comparison, not by filling the screen): all four as calm rows,
+  // the highest first; the chosen one (at first the one most take) open, with what's in it and its button; a tap on another
+  // row opens that one instead. The lowest is the easy start.
+  // one of them: „ședințe LipoSonix” → „ședință LipoSonix”, „tratamente faciale” → „tratament facial”
+  function one(l) { return String(l || '').replace(/^ședințe\b/, 'ședință').replace(/^tratamente faciale\b/, 'tratament facial').replace(/^tratamente\b/, 'tratament'); }
+  function packs(z) {
+    var tiers = (z && z.tiers) || [];
+    if (!st.sel || tiers.indexOf(st.sel) < 0) st.sel = st.tier || tiers.filter(function (t) { return z.packs[t] && z.packs[t].popular; })[0] || tiers[tiers.length - 1];
+    return tiers.map(function (t, i) { return pack(t, z.packs[t], i === tiers.length - 1); }).join('');
+  }
+  function pack(t, p, last) {
     if (!p) return '';
-    var items = (p.items || []).slice(0, 4).map(function (x) { return '<li>' + (x.qty > 1 ? x.qty + ' × ' : '') + esc(x.label) + '</li>'; }).join('') +
-      (p.bonuses || []).slice(0, 2).map(function (b) { return '<li class="b">' + esc(b) + '</li>'; }).join('');
-    return '<button type="button" class="lfs-pk' + (p.popular ? ' pop' : '') + (st.tier === t ? ' on' : '') + '" data-pick="pack" data-v="' + esc(t) + '">' +
-      (p.popular ? '<em class="lfs-pop">Cele mai multe aleg asta</em>' : '') +
-      '<span class="lfs-pr"><b>' + lei(p.price) + '</b>' + (p.value > p.price ? '<span class="v">valoare ' + lei(p.value) + '</span>' : '') + '</span>' +
-      '<strong>' + esc(p.name) + '</strong><ul>' + items + '</ul>' +
-      (p.guarantee && p.guarantee.short ? '<span class="lfs-g">' + esc((p.guarantee.short.charAt(0) + p.guarantee.short.slice(1).toLowerCase()).replace(/\*+$/, '')) + '</span>' : '') +
-      '<span class="lfs-ch">Aleg varianta asta' + ARROW + '</span></button>';
+    var on = st.sel === t, sh = fold(p.short) === fold(p.name) ? '' : (p.short || '');
+    var head = '<button type="button" class="lfs-row" role="radio" aria-checked="' + on + '" data-sel="' + esc(t) + '">' +
+      '<span class="lfs-rd" aria-hidden="true"></span>' +
+      '<span class="lfs-rt"><b>' + lei(p.price) + '</b><strong>' + esc(p.name) + '</strong>' +
+      '<small>' + esc(sh) + (p.value > p.price ? (sh ? ' · ' : '') + 'valoare ' + lei(p.value) : '') + '</small></span>' +
+      (p.popular ? '<em class="lfs-pop">Cele mai multe aleg asta</em>' : last ? '<em class="lfs-start">Vreau doar să încep</em>' : '') + '</button>';
+    var body = '';
+    if (on) {
+      var items = (p.items || []).slice(0, 3).map(function (x) { return '<li>' + (x.qty > 1 ? x.qty + ' × ' + esc(x.label) : x.qty === 1 ? '1 ' + esc(one(x.label)) : esc(x.label)) + '</li>'; })
+        .concat((p.bonuses || []).slice(0, 1).map(function (b) { return '<li class="b">' + esc(b) + '</li>'; })).join('');
+      body = '<div class="lfs-more"><ul>' + items + '</ul>' +
+        (p.guarantee && p.guarantee.short ? '<span class="lfs-g">' + esc((p.guarantee.short.charAt(0) + p.guarantee.short.slice(1).toLowerCase()).replace(/\*+$/, '')) + '</span>' : '') +
+        '<button type="button" class="btn book lfs-take" data-pick="pack" data-v="' + esc(t) + '">Aleg varianta asta · ' + lei(p.price) + ARROW + '</button>' + PROP + '</div>';
+    }
+    return '<div class="lfs-pk' + (p.popular ? ' pop' : '') + (on ? ' on' : '') + (last ? ' low' : '') + '">' + head + body + '</div>';
   }
 
   var MSG = { missing_fields: 'Scrie numele și un telefon valid.', missing_city: 'Alege clinica.', missing_consent: 'Bifează acordul, ca să te putem contacta.', too_many: 'Prea multe încercări. Încearcă din nou în câteva minute.', bad_zone: 'Alege zona din nou.', bad_tier: 'Alege pachetul din nou.' };
@@ -220,9 +240,10 @@
     load().then(function (d) {
       if (!d) return;
       [].slice.call(document.querySelectorAll('[data-lf-from]')).forEach(function (el) {
+        // a zone's key, or * for every zone; data-lf-fmt says how ({n} = the price), else „, de la N lei”
         var z = el.getAttribute('data-lf-from'), min = Infinity;
-        CITIES.forEach(function (c) { zonesOf(c).forEach(function (x) { if (x.key === z) Object.keys(x.packs || {}).forEach(function (t) { min = Math.min(min, Number(x.packs[t].price) || Infinity); }); }); });
-        if (isFinite(min)) el.textContent = ', de la ' + lei(min);
+        CITIES.forEach(function (c) { zonesOf(c).forEach(function (x) { if (z === '*' || x.key === z) Object.keys(x.packs || {}).forEach(function (t) { min = Math.min(min, Number(x.packs[t].price) || Infinity); }); }); });
+        if (isFinite(min)) el.textContent = (el.getAttribute('data-lf-fmt') || ', de la {n}').replace('{n}', lei(min));
       });
     });
   });
