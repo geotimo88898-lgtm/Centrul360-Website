@@ -12,6 +12,15 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 21.11 ~14:15, George: „de ce avem buget așa de mic pe astea, așa nu o să fie leaduri”: the TM HIFU gușă backup is the
+  // account's best (2 leads, 2 bookings, ~3.5 lei a lead) and gets the money; per city the total stays the same
+  { id: 'bk-up-2026-11-21', why: 'Rezervele primesc banii: HIFU gușă TM programează la 3,5 lei pe lead', actions: [
+    { campaignId: '120260595784720112', name: 'BK · TM · HIFU G · sezon (contul vechi)', daily: 45, why: '2 leaduri, 2 programări, 3,5 lei pe lead' },
+    { campaignId: '120260591751460112', name: 'LF · TM · A2 · Talie definită. Fără efort', status: 'PAUSED', why: '21 lei pe lead, banii merg la HIFU gușă TM' },
+    { campaignId: '120260591748260112', name: 'LF · TM · P2 · O singură ședință', daily: 25, why: 'lead filter TM: 14 lei pe lead, rămâne' },
+    { campaignId: '120260595786020112', name: 'BK · AR · VIDEO · HIFU abdomen · vid 8 (contul vechi)', daily: 25, why: 'rezerva AR primește buget să poată aduce leaduri' },
+    { campaignId: '120260591767590112', name: 'LF · AR · C2 · Corp sau față?', daily: 30, why: 'lead filter AR: 16 lei pe lead' },
+  ] },
   // 21.11 ~13:00, George: „dacă mai văd leaduri la lead filter îi plătesc cu mare drag; dacă nu, ne mutăm pe alt cont”: the
   // ~170 lei left before the threshold go mostly to the lead filter (its 4 best at 40 lei), the backups kept small
   { id: 'lf-first-2026-11-21', why: 'Banii rămași până la prag merg întâi pe lead filter', actions: [
