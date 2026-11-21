@@ -12,6 +12,12 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 21.11 ~20:45, George: always „Plătești 990 lei” first, then „Primești 2.500 lei”: the A6 ads with the reversed
+  // order go off (their corrected v2 is already live in the same ad sets)
+  { id: 'card-a6-order-2026-11-21', why: 'Întâi ce plătești, apoi ce primești: A6 cu ordinea inversă se oprește', actions: [
+    { campaignId: '120260600117080112', name: 'CARD · FORM · A6_valoare (ordinea inversă)', status: 'PAUSED', why: 'înlocuită de A6 v2' },
+    { campaignId: '120260600831800112', name: 'CARD · VÂNZARE · HOME · A6_valoare (ordinea inversă)', status: 'PAUSED', why: 'înlocuită de A6 v2' },
+  ] },
   // 21.11 ~19:00, George: the card ads' destination is the home page: the 4 sales ads to /card-sarbatori go off, the same
   // 4 to the home page (already live in the same ad set) take their place
   { id: 'card-home-2026-11-21', why: 'Reclamele de vânzare ale cardului duc pe prima pagină', actions: [
