@@ -91,6 +91,7 @@ module.exports = async (req, res) => {
     if (action === 'settings' && req.method === 'POST') {
       const patch = { on: body.on !== false };
       if (typeof body.storyGuard === 'boolean') patch.storyGuard = body.storyGuard;
+      if (body.storyMode === 'app' || body.storyMode === 'auto') patch.storyMode = body.storyMode;
       ['quotas', 'times', 'photoTime', 'storyTimes', 'modes', 'nets'].forEach((k) => { if (body[k] && typeof body[k] === 'object') patch[k] = body[k]; });
       res.status(200).json(Object.assign({ ok: true }, await C.saveSettings(patch)));
       return;

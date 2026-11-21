@@ -61,6 +61,8 @@ function view(it, url, ins) {
       e.skips && e.skips.length ? { skips: e.skips.map((k) => ({ at: k.at || '', reason: k.reason || '', skippedAt: k.skippedAt || '' })) } : {},
       e.skipNote ? { skipNote: e.skipNote } : {})),
     fav: !!it.fav, favAt: it.favAt || '',
+    // a story: its sequence and the link it leads to (De postat: the frames in order, the link sticker to paste)
+    seq: it.seq || null, evergreen: !!it.evergreen, links: it.kind === 'story' ? { ig: C.linkFor(it, 'ig'), fb: C.linkFor(it, 'fb') } : null,
     stats: it.stats || {}, hook: it.hook || '', hookType: it.hookType || '', ideaId: it.ideaId || '', variantOf: it.variantOf || '', firstComment: it.firstComment || '',
     qa: { problems: q.problems, warnings: C.fileWarnings(it).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).concat(q.warnings) },
     boosts: (it.boosts || []).filter((b) => b && b.campaignId).map((b) => ({ net: b.net, at: b.at || '', campaignId: b.campaignId, name: b.name || '', mode: b.mode || '', daily: b.daily || 0,

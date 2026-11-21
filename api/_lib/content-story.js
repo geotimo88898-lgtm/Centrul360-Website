@@ -100,7 +100,10 @@ async function tick(opts) {
   const o = opts || {};
   const t0 = Date.now(), budget = o.budgetMs || 30e3, now = o.now || Date.now();
   const st = await C.settings();
-  if (!st.on || !P.STORY_NETS.some((n) => onNet(st, n))) return { off: true };
+  if (!st.on) return { off: true };
+  // stories in 'app' mode (the default since 21.11): a sequence coming due becomes one De postat card at its time
+  if (st.storyMode !== 'auto') { const r = await require('./content-app').run(st, now).catch((e) => ({ error: e.message })); return { app: r }; }
+  if (!P.STORY_NETS.some((n) => onNet(st, n))) return { off: true };
   let list = await C.items();
   const due = P.due(list, st, now).filter((x) => x.it.kind === 'story');
   // the guard only when it is switched on (settings.storyGuard, off by default since 21.11)

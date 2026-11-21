@@ -123,13 +123,15 @@ function settingsOf(s) {
   const comp = Array.isArray(s.competitors) ? s.competitors : typeof s.competitors === 'string' ? s.competitors.split(/[,;\n]/) : [];
   const competitors = [...new Set(comp.map((x) => String(x || '').replace(/\s+/g, ' ').trim().slice(0, 60)).filter((x) => x.length >= 3))].slice(0, 40);
   // the story coverage guard (content-story.js) posts nothing unless it is switched on (the owner, 21.11: off by default)
-  return { on: s.on !== false, storyGuard: s.storyGuard === true, nets, modes, startWeek: isDay(s.startWeek) ? mondayOf(s.startWeek) : DEFAULTS.startWeek,
+  return { on: s.on !== false, storyGuard: s.storyGuard === true, storyMode: s.storyMode === 'auto' ? 'auto' : 'app', nets, modes, startWeek: isDay(s.startWeek) ? mondayOf(s.startWeek) : DEFAULTS.startWeek,
     warmWeeks: Number.isFinite(ww) ? clamp(Math.round(ww), 0, 8) : DEFAULTS.warmWeeks, quotas, times, photoTime, storyTimes, competitors };
 }
 // the owner posts this network himself (Din aplicație); its entries go out without the API
-const isApp = (st, net) => !!(st && st.modes && st.modes[net] === 'app');
+const isApp = (st, net, kind) => (kind === 'story' ? !(st && st.storyMode === 'auto') : !!(st && st.modes && st.modes[net] === 'app'));
+// Stories have their own mode (the owner, 21.11: the CTA is a link sticker, which the API can't add): 'app' (the default)
+// makes each story sequence one De postat card with its frames and the link to paste; 'auto' posts them by the API.
 // a network whose entries can go out: the owner's ('app'), or the API's once it is enabled ('auto')
-const live = (st, net) => isApp(st, net) || !!(st && st.nets && st.nets[net]);
+const live = (st, net, kind) => isApp(st, net, kind) || !!(st && st.nets && st.nets[net]);
 // week 1, 2, 3 … from startWeek (a week before it counts as 1), and its quotas
 const weekNo = (week, st) => Math.max(1, Math.floor(dayDiff(st.startWeek, week) / 7) + 1);
 const quotasFor = (week, st) => (weekNo(week, st) <= st.warmWeeks ? st.quotas.warm : st.quotas.full);
@@ -264,7 +266,7 @@ function replanWeek(items, week, settings, now) {
       const times = b.free(st, n, cls, days[i], now);
       list.sort((x, y) => rank.get(x) - rank.get(y)).forEach((it, k) => {
         const s = times[k]; if (!s) return;
-        const e = { net: n, kind, slot: s.slot, at: iso(s.t), state: live(st, n) ? 'planned' : 'waiting_access' };
+        const e = { net: n, kind, slot: s.slot, at: iso(s.t), state: live(st, n, kind) ? 'planned' : 'waiting_access' };
         it.plan = (it.plan || []).concat(e);
         b.take(it, e);
       });
@@ -339,8 +341,8 @@ function reflow(items, settings, now) {
   const st = settingsOf(settings);
   let n = 0;
   (items || []).forEach((it) => (it.plan || []).forEach((e) => {
-    if (e.state === 'waiting_access' && live(st, e.net)) { e.state = 'planned'; n++; }
-    else if (e.state === 'planned' && !live(st, e.net)) { e.state = 'waiting_access'; n++; }
+    if (e.state === 'waiting_access' && live(st, e.net, e.kind)) { e.state = 'planned'; n++; }
+    else if (e.state === 'planned' && !live(st, e.net, e.kind)) { e.state = 'waiting_access'; n++; }
     // De postat that the owner never posted: gone with its week (the switch on or off)
     else if (e.state === 'todo' && now >= weekEnd(it.week || weekOf(Date.parse(e.at)))) { e.state = 'missed'; e.missedAt = iso(now); n++; }
   }));
@@ -397,7 +399,7 @@ function due(items, settings, now) {
       if (!st.nets[e.net]) return;
       const t = Date.parse(e.at);
       if (e.state === 'posting') out.push({ it, e });
-      else if (ok && !isApp(st, e.net) && e.state === 'planned' && t <= now && (t >= now - STALE_MS || e.tries > 0) && !(e.retryAt && Date.parse(e.retryAt) > now)) out.push({ it, e });
+      else if (ok && !isApp(st, e.net, e.kind || kindOn(it, e.net)) && e.state === 'planned' && t <= now && (t >= now - STALE_MS || e.tries > 0) && !(e.retryAt && Date.parse(e.retryAt) > now)) out.push({ it, e });
     });
   });
   out.sort((x, y) => Date.parse(x.e.at) - Date.parse(y.e.at));
@@ -421,12 +423,17 @@ function due(items, settings, now) {
 function appDue(items, settings, now) {
   const st = settingsOf(settings);
   const out = [];
+  // a story sequence comes due only whole (every frame approved), and at its time (the minute clock), not 30 minutes early
+  const seqs = new Map();
+  (items || []).forEach((it) => { const q = seqOf(it); if (q && !it.removed && !it.dropped) { if (!seqs.has(q.id)) seqs.set(q.id, []); seqs.get(q.id).push(it); } });
+  const whole = (it) => { const q = seqOf(it); if (!q) return true; const l = seqs.get(q.id) || []; return l.length >= (Number(q.n) || l.length) && l.every((x) => x.state === 'ready' && review(x) === 'approved'); };
   (items || []).forEach((it) => {
-    if (it.removed || it.dropped || it.state !== 'ready' || review(it) !== 'approved') return;
+    if (it.removed || it.dropped || it.state !== 'ready' || review(it) !== 'approved' || !whole(it)) return;
     (it.plan || []).forEach((e) => {
-      if (!isApp(st, e.net) || e.state !== 'planned') return;
+      const kind = e.kind || kindOn(it, e.net);
+      if (!isApp(st, e.net, kind) || e.state !== 'planned') return;
       const t = Date.parse(e.at);
-      if (t <= now + APP_LEAD_MS && t >= now - STALE_MS) out.push({ it, e });
+      if (t <= now + (kind === 'story' ? 60e3 : APP_LEAD_MS) && t >= now - STALE_MS) out.push({ it, e });
     });
   });
   return out.sort((x, y) => Date.parse(x.e.at) - Date.parse(y.e.at));

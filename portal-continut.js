@@ -116,6 +116,7 @@
         const [id, net] = tp.dataset.cttp.split('~'), it = S.d && S.d.items.find((x) => x.id === id);
         const sh = e.target.closest('[data-cttp-share]'); if (sh && it) return shareIt(sh, it, net);
         const cp = e.target.closest('[data-cttp-copy]'); if (cp && it) return copyFor(it, net, cp.dataset.cttpCopy);
+        const fr = e.target.closest('[data-cttp-frame]'); if (fr && it) return shareFrame(fr, it, net, Number(fr.dataset.cttpFrame));
         const sn = e.target.closest('[data-cttp-snooze]'); if (sn && it) return snoozeIt(sn, it, net);
         const sk = e.target.closest('[data-cttp-skip]'); if (sk && it) return skipIt(sk, it, net);
       }
@@ -308,7 +309,9 @@
   }
 
   // ------------------------------------------------------------------ De postat (the networks in „Din aplicație” mode)
-  const isTodo = (it, e) => e.state === 'todo' && it.state === 'ready' && review(it) === 'approved' && !it.removed && !it.dropped;
+  // a story sequence's frames after the first live inside its card (one card, one „Am postat”)
+  const isTodo = (it, e) => e.state === 'todo' && it.state === 'ready' && review(it) === 'approved' && !it.removed && !it.dropped && !(it.seq && it.seq.i > 0);
+  const framesOf = (it) => (it.seq ? (S.d.items || []).filter((x) => x.seq && x.seq.id === it.seq.id && !x.removed && !x.dropped).sort((a, b) => a.seq.i - b.seq.i) : [it]);
   const later = (e) => !!(e.snoozeUntil && Date.parse(e.snoozeUntil) > Date.now());
   const todos = () => entries().filter(({ it, e }) => isTodo(it, e)).sort((a, b) => (later(a.e) - later(b.e)) || a.e.at.localeCompare(b.e.at));
   const mb = (n) => (n >= 1e6 ? (Math.round(n / 1e5) / 10).toLocaleString('ro-RO') + ' MB' : Math.max(1, Math.round(n / 1e3)) + ' KB');
@@ -326,13 +329,34 @@
   }
   // what „Distribuie” sends: a reel's clean MP4 (the one with the music while the clean one is missing), or the photos
   function shareFiles(it) {
+    // a story: every frame of its sequence, in order (one picture or video each)
+    if (it.kind === 'story') return framesOf(it).map((x) => { const f = (x.files || []).find((y) => /^video\//.test(y.mime)) || (x.files || []).find((y) => /^image\//.test(y.mime)); return f ? Object.assign({ it: x }, f) : null; }).filter(Boolean);
     const files = (it.files || []).slice().sort(byName);
     if (photo(it)) return files.filter((f) => /^image\//.test(f.mime));
     const v = cleanVid(it) || mainVid(it);
     return v ? [v] : [];
   }
-  const shareName = (it, net, f, i, n) => 'centrul360-' + slugOf(title(it)) + '-' + NET[net].toLowerCase() + (n > 1 ? '-' + String(i + 1).padStart(2, '0') : '') + '.' + (f.name.split('.').pop().toLowerCase().replace('jpeg', 'jpg'));
+  const shareName = (it, net, f, i, n) => 'centrul360-' + slugOf(title(it).replace(/\s*\(\d+\/\d+\)$/, '')) + '-' + NET[net].toLowerCase() + (n > 1 ? '-' + String(i + 1).padStart(2, '0') : '') + '.' + (f.name.split('.').pop().toLowerCase().replace('jpeg', 'jpg'));
+  // a story sequence (the owner, 21.11: posted from the phone, with the link sticker): the frames in order, each one to
+  // save or share on its own or all at once, the link to copy, then „Am postat” for the whole sequence
+  function storyCard(it, e) {
+    const key = it.id + '~' + e.net, wait = later(e), frames = framesOf(it), link = (it.links || {})[e.net] || '';
+    const when2 = wait ? '<span class="cn-when is-off">' + icon('clock') + 'Revine ' + esc(when(e.snoozeUntil)) + '</span>' : '<span class="cn-when">' + icon('clock') + esc(when(e.at)) + '</span>';
+    const name = title(it).replace(/\s*\(\d+\/\d+\)$/, '');
+    const strip = '<div class="cn-sq">' + frames.map((x, i) => { const f = shareFiles(it)[i]; return '<figure class="cn-sq-f"><span class="cn-sq-n">' + (i + 1) + '</span>' +
+      (f ? '<img src="' + esc(fileUrl(x, f.name)) + '" alt="Cadrul ' + (i + 1) + '" loading="lazy"><button type="button" class="k-btn is-outline is-sm" data-cttp-frame="' + i + '">' + icon('share') + '<span>Cadrul ' + (i + 1) + '</span></button>' : '') + '</figure>'; }).join('') + '</div>';
+    const acts = '<div class="cn-tp-x">' +
+      '<button type="button" class="k-btn is-primary is-lg cn-tp-share" data-cttp-share>' + icon('share') + '<span>Distribuie toate</span><small>' + pl(frames.length, 'cadru', 'cadre') + ', în ordine</small></button>' +
+      (link ? '<div class="cn-sq-l"><span class="cn-sq-lb">Linkul pentru stickerul „Link” (pe ultimul cadru)</span><code>' + esc(link) + '</code><button type="button" class="k-btn is-good" data-cttp-copy="link">' + icon('copy') + '<span>Copiază linkul</span></button></div>' : '') +
+      '<p class="cn-tp-hint">' + mi('note') + '<span>Postează cadrele în ordine, unul după altul. Pe ultimul pui stickerul „Link” cu linkul copiat.</span></p>' +
+      '<form class="cn-tp-done" data-cttp-done autocomplete="off"><input type="hidden" name="link" value="">' +
+      '<button type="submit" class="k-btn is-good">' + icon('check') + '<span>Am postat ' + (frames.length > 1 ? 'toate cele ' + frames.length + ' cadre' : 'story-ul') + '</span></button></form>' +
+      '<div class="cn-tp-more"><button type="button" class="k-btn is-ghost is-sm" data-cttp-snooze>' + icon('clock') + 'Nu pot acum</button><button type="button" class="k-btn is-ghost is-sm" data-cttp-skip>' + icon('ban') + 'Sari peste</button></div></div>';
+    return '<article class="cn-tp-c is-story is-' + e.net + (wait ? ' is-later' : '') + '" data-cttp="' + esc(key) + '"><header class="cn-tp-ch">' + badge(e.net) + '<b>' + NET[e.net] + '</b><small>Story</small>' + when2 + '</header>' +
+      '<div class="cn-tp-tt"><h4>' + esc(name) + '</h4></div>' + strip + acts + '</article>';
+  }
   function tpCard(it, e) {
+    if (it.kind === 'story') return storyCard(it, e);
     const key = it.id + '~' + e.net, c = e.copy || {}, wait = later(e), kind = e.kind || it.kind;
     const files = shareFiles(it), size = files.reduce((n, f) => n + (f.size || 0), 0);
     const noClean = it.kind === 'reel' && !cleanVid(it);
@@ -358,7 +382,7 @@
     const key = it.id + '~' + net;
     if (!shareReady.has(key)) {
       const list = shareFiles(it);
-      const p = Promise.all(list.map((f, i) => fetch(fileUrl(it, f.name), { credentials: 'same-origin' }).then((r) => { if (!r.ok) throw new Error('http ' + r.status); return r.blob(); })
+      const p = Promise.all(list.map((f, i) => fetch(fileUrl(f.it || it, f.name), { credentials: 'same-origin' }).then((r) => { if (!r.ok) throw new Error('http ' + r.status); return r.blob(); })
         .then((b) => new File([b], shareName(it, net, f, i, list.length), { type: f.mime }))));
       p.then(() => shareDone.add(key), () => shareReady.delete(key));
       shareReady.set(key, p);
@@ -407,16 +431,26 @@
       download(it, net, list, copied);
     }
   }
+  // one frame of a story sequence: shared on its own (or saved)
+  async function shareFrame(btn, it, net, i) {
+    const all = shareFiles(it), f = all[i]; if (!f) return;
+    if (!canShareFiles()) { download(it, net, [f], false); return; }
+    let files;
+    try { files = await prep(it, net); } catch (err) { download(it, net, [f], false); return; }
+    const one = files[i] ? [files[i]] : null;
+    if (!one || !navigator.canShare({ files: one })) { download(it, net, [f], false); return; }
+    try { await navigator.share({ files: one }); } catch (err) { if (!(err && err.name === 'AbortError')) download(it, net, [f], false); }
+  }
   function download(it, net, list, copied) {
     list.forEach((f, i) => setTimeout(() => {
       const name = shareName(it, net, f, i, list.length), a = document.createElement('a');
-      a.href = fileUrl(it, f.name) + '&dl=1&as=' + encodeURIComponent(name); a.download = name; a.rel = 'noopener';
+      a.href = fileUrl(f.it || it, f.name) + '&dl=1&as=' + encodeURIComponent(name); a.download = name; a.rel = 'noopener';
       document.body.appendChild(a); a.click(); a.remove();
     }, i * 350));
     K.ui().toast((list.length > 1 ? 'Se descarcă pozele.' : 'Se descarcă fișierul.') + (copied ? ' Textul e copiat.' : ''), 'success');
   }
   async function copyFor(it, net, what) {
-    const e = entryOf(it, net), c = (e && e.copy) || {}, text = what === 'comment' ? c.comment : c.text;
+    const e = entryOf(it, net), c = (e && e.copy) || {}, text = what === 'link' ? ((it.links || {})[net] || c.link) : what === 'comment' ? c.comment : c.text;
     if (!text) return;
     let ok = false;
     try { await navigator.clipboard.writeText(text); ok = true; }
@@ -426,7 +460,7 @@
       try { ok = document.execCommand('copy'); } catch (x) { ok = false; }
       ta.remove();
     }
-    K.ui().toast(ok ? (what === 'comment' ? 'Comentariul e copiat.' : 'Textul pentru ' + NET[net] + ' e copiat.') : 'Nu am putut copia.', ok ? 'success' : 'error');
+    K.ui().toast(ok ? (what === 'link' ? 'Linkul e copiat. Pune-l în stickerul „Link”.' : what === 'comment' ? 'Comentariul e copiat.' : 'Textul pentru ' + NET[net] + ' e copiat.') : 'Nu am putut copia.', ok ? 'success' : 'error');
   }
   // a link of the network (the server reads it again): a wrong one is said at once, never sent
   const HOSTS = { tt: /(^|\.)tiktok\.com$/, yt: /(^|\.)(youtube\.com|youtu\.be)$/, ig: /(^|\.)(instagram\.com|instagr\.am)$/, fb: /(^|\.)(facebook\.com|fb\.com|fb\.watch)$/ };
@@ -436,7 +470,8 @@
     const link = form.elements.link.value.trim();
     if (link && !linkOk(net, link)) return badLink(net, form.elements.link);
     const r = await save({ action: 'app_posted', id, net, link }, form.querySelector('button[type=submit]'), true);
-    if (r) K.ui().toast(link ? 'Notat ca postat. Cifrele vin din link.' : 'Notat ca postat. Caut postarea pe ' + NET[net] + ' ca să-i citesc cifrele.', 'success');
+    const it0 = S.d && S.d.items.find((y) => y.id === id);
+    if (r) K.ui().toast(it0 && it0.kind === 'story' ? 'Notat: story-ul e postat.' : link ? 'Notat ca postat. Cifrele vin din link.' : 'Notat ca postat. Caut postarea pe ' + NET[net] + ' ca să-i citesc cifrele.', 'success');
   }
   async function snoozeIt(btn, it, net) {
     const r = await save({ action: 'app_snooze', id: it.id, net }, btn, true);

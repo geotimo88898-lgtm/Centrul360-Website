@@ -3913,3 +3913,13 @@ html.ui-nou #panel-panou.sx-host > .mg-strip{ order:1; }
 .cal-quiet svg{ width:15px; height:15px; flex:none; }
 /* stories (21.11): the times take two columns, the quota one */
 .cn-nf-w{ grid-column:span 2; }
+/* De postat, a story sequence (21.11): the frames in order, the link sticker's link, one „Am postat” */
+.cn-sq{ display:flex; gap:.6rem; overflow-x:auto; padding:.2rem .1rem .6rem; scroll-snap-type:x mandatory; }
+.cn-sq-f{ position:relative; flex:0 0 auto; width:min(30vw,132px); margin:0; display:flex; flex-direction:column; gap:.35rem; scroll-snap-align:start; }
+.cn-sq-f img{ width:100%; aspect-ratio:9/16; object-fit:cover; border-radius:12px; box-shadow:0 0 0 1px var(--line, rgba(0,0,0,.08)); background:#fff; }
+.cn-sq-f .k-btn{ width:100%; justify-content:center; min-width:0; }
+.cn-sq-f .k-btn span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cn-sq-n{ position:absolute; top:.35rem; left:.35rem; min-width:1.4rem; height:1.4rem; border-radius:999px; background:rgba(11,11,13,.72); color:#fff; font-size:.72rem; font-weight:700; display:grid; place-items:center; }
+.cn-sq-l{ display:grid; gap:.4rem; padding:.7rem .8rem; border-radius:14px; background:rgba(20,165,150,.12); box-shadow:inset 0 0 0 1px rgba(20,165,150,.35); color:inherit; min-width:0; }
+.cn-sq-lb{ font-size:.78rem; font-weight:600; opacity:.75; }
+.cn-sq-l code{ display:block; font-size:.78rem; overflow-wrap:anywhere; word-break:break-all; min-width:0; color:inherit; background:none; }

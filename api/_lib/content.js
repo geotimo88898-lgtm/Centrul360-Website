@@ -70,6 +70,16 @@ const fold = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]
 const slug = (s, n) => fold(s).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, n || 40);
 function fail(code, status, extra) { const e = new Error(code); e.status = status || 400; if (extra) e.extra = extra; return e; }
 const findItem = (list, id) => list.find((x) => x.id === id);
+// the link a story leads to (the owner, 21.11: the CTA is always a link straight to the site, a link sticker posted from the
+// phone): links { ig, fb } given with the item, else the sale's own link with utm per network
+const SALE_LINK = { 'card-sarbatori': 'https://www.centrul360.com/card-sarbatori?utm_source={src}&utm_medium=story&utm_campaign=card' };
+const SRC = { ig: 'instagram', fb: 'facebook' };
+function linksOf(x) {
+  const out = {};
+  ['ig', 'fb'].forEach((n) => { try { const u = new URL(String((x || {})[n] || '')); if (u.protocol === 'https:' && /(^|\.)centrul360\.com$/.test(u.hostname)) out[n] = u.href; } catch (e) { /* not a link */ } });
+  return out;
+}
+const linkFor = (it, net) => (it && it.links && it.links[net]) || (it && it.promo && SALE_LINK[it.promo] ? SALE_LINK[it.promo].replace('{src}', SRC[net] || net) : '');
 // a promo still on (its last day in Bucharest not past)
 const promoOn = (it, now) => !!(it && it.promo && PROMOS[it.promo] && P.roDay(now || Date.now()) <= PROMOS[it.promo]);
 
@@ -127,6 +137,7 @@ async function saveSettings(patch) {
   next.photoTime = Object.assign({}, cur.photoTime, p.photoTime || {});
   next.storyTimes = Object.assign({}, cur.storyTimes, p.storyTimes || {});
   if (typeof p.storyGuard === 'boolean') next.storyGuard = p.storyGuard;
+  if (p.storyMode === 'app' || p.storyMode === 'auto') next.storyMode = p.storyMode;
   next.quotas = { warm: {}, full: {} };
   ['warm', 'full'].forEach((w) => P.NETS.forEach((n) => { next.quotas[w][n] = Object.assign({}, cur.quotas[w][n], (p.quotas && p.quotas[w] && p.quotas[w][n]) || {}); }));
   const st = P.settingsOf(next);
@@ -180,6 +191,7 @@ async function create(input) {
     it.seq = { id, i, n };
   }
   if (x.evergreen) { if (x.kind !== 'story') throw fail('invalid_evergreen'); it.evergreen = true; }
+  if (x.links) it.links = linksOf(x.links);
   if (x.variantOf) {
     if (!isId(x.variantOf) || !findItem(await items(), x.variantOf)) throw fail('invalid_variant');
     it.variantOf = x.variantOf;
@@ -440,6 +452,7 @@ async function replace(id, input) {
     if (x.theme) it.theme = slug(x.theme, 30);
     if (x.endType) it.endType = slug(x.endType, 12);
     if (x.keyword != null) it.keyword = oneLine(x.keyword, 30);
+    if (x.links) it.links = linksOf(x.links);
     // another week (the check after a wave of approvals moves a post that doesn't sit well; 15.11)
     if (x.week) it.week = weekFor(x.week, Date.now());
     let dropped = [];
@@ -785,4 +798,4 @@ async function mondayHold(list, st, now) {
 module.exports = { PROMOS, promoOn, KEY, SET_KEY, STATE_KEY, IDEAS_KEY, KINDS, MIMES, MAX_BYTES, CAP_MAX, IN_MAX, RUBRICS, HOOK_TYPES, NET_NAME, ROLES, ORIGIN, fileUrl, isId, isName, isClean, pathOf, items,
   settings, saveSettings, update, updateKey, migrate, create, addFile, problems, fileWarnings, media, qa, qaText, ready, replace, setReview, unreview, approveWeek, approveAll, setFav, setCaptions, captionFor, status, skip, readState,
   AREAS, AREA_NAME, ATT_TYPES, ATT_MAX, isAtt, attPath, attOf, attUrl, noteOf, notesView, fromProducer,
-  writeState, notices, mondayHold, move, ideas, addIdea, delIdea, useIdea, unuseIdea, findItem, fail, weekFor, plural, range, fold };
+  writeState, notices, mondayHold, move, linkFor, linksOf, ideas, addIdea, delIdea, useIdea, unuseIdea, findItem, fail, weekFor, plural, range, fold };

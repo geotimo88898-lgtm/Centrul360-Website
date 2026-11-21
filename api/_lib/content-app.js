@@ -36,7 +36,7 @@ const MATCH_MS = 48 * 3600e3;
 const WIN_BEFORE_MS = 2 * 3600e3;
 const WIN_AFTER_MS = 2 * 3600e3;
 const NAMES = C.NET_NAME;
-const KIND_WORD = { reel: 'Reel', carousel: 'Carusel', slideshow: 'Slideshow' };
+const KIND_WORD = { reel: 'Reel', carousel: 'Carusel', slideshow: 'Slideshow', story: 'Story' };
 const HINT = 'Pune sunetul din aplicație (de ex. Free · Ultra Naté), la volum mic';
 const iso = (ms) => new Date(ms).toISOString();
 const hm = (ms) => new Intl.DateTimeFormat('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
@@ -57,7 +57,9 @@ function step(list, settings, now) {
   P.appDue(list, st, now).forEach(({ it, e }) => {
     e.state = 'todo'; e.todoAt = iso(now); e.toldAt = iso(now);
     delete e.snoozeUntil; delete e.hold;
-    out.push({ id: it.id, net: e.net, kind: kindOf(it, e), title: titleOf(it), at: e.at, again: false });
+    // a story sequence is one card (its first): the other frames wait inside it, no push of their own
+    if (P.follower(it)) return;
+    out.push({ id: it.id, net: e.net, kind: kindOf(it, e), title: titleOf(it), at: e.at, again: false, frames: P.seqOf(it) ? Number(P.seqOf(it).n) || 1 : 1 });
   });
   (list || []).forEach((it) => (it.plan || []).forEach((e) => {
     if (e.state !== 'todo' || !e.snoozeUntil || !usable(it)) return;
@@ -73,11 +75,14 @@ function step(list, settings, now) {
 async function tell(x) {
   try {
     const N = require('./notify'), store = { readJSON, writeJSON };
-    const title = (KIND_WORD[x.kind] || 'Material') + ' de postat pe ' + NAMES[x.net] + ': ' + x.title;
-    const how = sounded(x.kind, x.net) ? 'Distribuie-l din Content și pune sunetul din aplicație.' : 'Distribuie pozele din Content.';
+    const story = x.kind === 'story';
+    const title = (KIND_WORD[x.kind] || 'Material') + ' de postat pe ' + NAMES[x.net] + ': ' + String(x.title).replace(/\s*\(\d+\/\d+\)$/, '');
+    const how = story ? (x.frames > 1 ? x.frames + ' cadre, în ordine, cu linkul pe ultimul (sticker „Link”).' : 'Cu linkul (sticker „Link”).')
+      : sounded(x.kind, x.net) ? 'Distribuie-l din Content și pune sunetul din aplicație.' : 'Distribuie pozele din Content.';
     const text = (x.again ? 'Revine, cum ai cerut. ' : 'Ora ' + hm(Date.parse(x.at)) + '. ') + how;
     const tag = 'ct-app-' + x.id + '-' + x.net + '-' + Date.parse(x.at) + (x.again ? '-r' + Date.parse(x.until) : '');
-    return await N.notifyMany(store, await N.ownerIds(store), { kind: 'post', tone: 'info', go: 'continut/de-postat~' + x.id + '~' + x.net, tag, title, text });
+    // stories go to every admin (21.11), the reels to the owner as before
+    return await N.notifyMany(store, await (story ? N.adminIds(store) : N.ownerIds(store)), { kind: 'post', tone: 'info', go: 'continut/de-postat~' + x.id + '~' + x.net, tag, title, text });
   } catch (e) { console.error('content app notify:', e.message); return 0; }
 }
 // content-post.js run(), while the switch is on: what came due, written first, then told
@@ -85,7 +90,7 @@ async function run(settings, nowMs) {
   const now = nowMs || Date.now();
   const st = P.settingsOf(settings || (await C.settings()));
   if (!st.on) return { off: true };
-  if (!P.NETS.some((n) => P.isApp(st, n))) return { todo: 0 };
+  if (!P.NETS.some((n) => P.isApp(st, n)) && st.storyMode !== 'app') return { todo: 0 };
   const { out } = await C.update((list) => { const r = step(list, st, now); return r.length ? r : false; });
   const told = Array.isArray(out) ? out : [];
   for (const x of told) await tell(x);
@@ -101,6 +106,7 @@ function copyOf(it, net) {
   else text = C.captionFor(it, net).trim();
   let comment = '';
   try { comment = require('./content-post').firstComment(it); } catch (e) { comment = String(it.firstComment || ''); }
+  if (it.kind === 'story') return { text: '', comment: '', hint: '', link: C.linkFor(it, net) };
   return { text, comment, hint: sounded(P.kindOn(it, net), net) ? HINT : '' };
 }
 
@@ -209,6 +215,13 @@ async function posted(id, net, link, by, nowMs) {
     if (by) e.by = String(by).slice(0, 60);
     delete e.snoozeUntil; delete e.hold; delete e.retryAt; delete e.lock;
     applyLink(e, ref, now);
+    // a story sequence: every frame of it is posted with its first (one card, one „Am postat”)
+    const it = C.findItem(list, id), q = it && P.seqOf(it);
+    if (q && Number(q.i) === 0) list.forEach((m) => {
+      const mq = P.seqOf(m); if (!mq || mq.id !== q.id || m === it) return;
+      const me = (m.plan || []).find((x) => x.net === net && x.state !== 'posted');
+      if (me) { Object.assign(me, { state: 'posted', postedAt: at, markedAt: at, manual: true, error: '' }); if (by) me.by = String(by).slice(0, 60); delete me.snoozeUntil; delete me.lock; }
+    });
     return { posted: true, match: e.match.state };
   });
   return out;
@@ -268,9 +281,13 @@ async function skipSlot(id, net, reason, by, nowMs) {
     if (by) rec.by = String(by).slice(0, 60);
     e.skips = (e.skips || []).concat(rec).slice(-6);
     delete e.todoAt; delete e.toldAt; delete e.snoozeUntil; delete e.remindedAt; delete e.snoozes;
+    // a story sequence's other frames go back to waiting and follow their first to its new slot (content-plan.js syncSeq)
+    const q = P.seqOf(it);
+    if (q) list.forEach((m) => { const mq = P.seqOf(m); if (!mq || mq.id !== q.id || m === it) return; (m.plan || []).forEach((x) => { if (x.net === net && x.state === 'todo') { x.state = 'planned'; delete x.todoAt; delete x.toldAt; } }); });
     const to = P.nextSlot(list, it, e, st, now, P.addDays(P.roDay(now), 1));
-    if (to) { Object.assign(e, { state: 'planned', at: iso(to.t), slot: to.slot, moved: (e.moved || 0) + 1 }); return { moved: e.at }; }
+    if (to) { Object.assign(e, { state: 'planned', at: iso(to.t), slot: to.slot, moved: (e.moved || 0) + 1 }); if (q) P.syncSeq(list, now); return { moved: e.at }; }
     Object.assign(e, { state: 'skipped', skippedAt: iso(now), skipNote: why });
+    if (q) P.syncSeq(list, now);
     return { skipped: true };
   });
   return out;
