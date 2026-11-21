@@ -1,0 +1,52 @@
+/* Admin → Campanie TRANSFORMARE (portal-transformare.js) */
+.tf .tf-state{ font-size:.78rem; padding:.35rem .65rem; }
+.tf .tf-top{ margin-bottom:.9rem; }
+.tf .tf-top .k-stat-value small{ font-size:.55em; color:var(--muted); font-weight:600; margin-left:.1em; }
+.tf .tf-limits{ display:flex; flex-wrap:wrap; align-items:center; gap:.45rem .6rem; margin:0 0 1rem; font-size:.8rem; }
+.tf .tf-limits .k-muted{ flex:1 1 220px; min-width:0; }
+.tf .tf-warn{ display:inline-flex; align-items:center; gap:.35rem; color:var(--bad); font-weight:600; }
+.tf .tf-warn .k-ic{ width:14px; height:14px; flex:none; }
+.tf .tf-card{ margin-bottom:1rem; }
+.tf .tf-foot{ margin:.8rem 0 0; font-size:.76rem; }
+.tf .tf-fun-row{ display:grid; grid-template-columns:minmax(0,9.5rem) minmax(0,1fr) 3.6rem 2.6rem; align-items:center; gap:.7rem; padding:.32rem 0; font-size:.86rem; }
+.tf .tf-fun-l{ color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tf .tf-fun-bar{ height:10px; border-radius:6px; background:var(--glass); overflow:hidden; }
+.tf .tf-fun-bar i{ display:block; height:100%; border-radius:6px; background:linear-gradient(90deg, var(--accent), var(--accent-3, var(--accent))); transition:width .5s cubic-bezier(.2,.8,.2,1); }
+.tf .tf-fun-v{ text-align:right; font-variant-numeric:tabular-nums; }
+.tf .tf-fun-p{ text-align:right; color:var(--muted-2); font-size:.76rem; font-variant-numeric:tabular-nums; }
+.tf .tf-step{ padding:.85rem 0; }
+.tf .tf-step + .tf-step{ border-top:1px solid var(--line); }
+.tf .tf-step-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:.6rem; }
+.tf .tf-step-t{ display:flex; flex-direction:column; gap:.1rem; min-width:0; }
+.tf .tf-step-t b{ font-size:.92rem; }
+.tf .tf-step-t .k-muted{ font-size:.76rem; }
+.tf .tf-step-tpl{ display:flex; flex-wrap:wrap; align-items:center; gap:.35rem .45rem; margin:.5rem 0 .6rem; }
+.tf .tf-note{ display:inline-flex; align-items:center; gap:.3rem; font-size:.76rem; color:var(--warn); min-width:0; }
+.tf .tf-note .k-ic{ width:13px; height:13px; flex:none; }
+.tf .tf-nums{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:.4rem; }
+.tf .tf-n{ display:flex; flex-direction:column; gap:.05rem; padding:.45rem .5rem; border-radius:10px; background:var(--glass); font-size:.7rem; color:var(--muted); min-width:0; }
+.tf .tf-n b{ font-size:1rem; color:var(--fg); font-variant-numeric:tabular-nums; }
+.tf .tf-n em{ font-style:normal; color:var(--muted-2); font-size:.68rem; }
+.tf .tf-n.is-good b{ color:var(--good); }
+.tf .tf-n.is-bad b{ color:var(--bad); }
+.tf .tf-filter{ margin-bottom:.6rem; }
+.tf .tf-filter small{ opacity:.65; font-weight:600; }
+.tf .tf-person{ width:100%; text-align:left; background:none; border:0; font:inherit; color:inherit; }
+.tf .tf-person .k-row-main{ min-width:0; flex:1; display:flex; flex-direction:column; gap:.15rem; }
+.tf .tf-person .k-row-title, .tf .tf-person .k-row-sub{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tf .tf-said{ font-size:.78rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tf .tf-person .k-row-end{ display:flex; flex-direction:column; align-items:flex-end; gap:.25rem; flex:none; }
+.tf .tf-when{ font-size:.72rem; }
+.tf-log{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.45rem; font-size:.82rem; }
+.tf-log li{ display:flex; flex-direction:column; gap:.1rem; min-width:0; overflow-wrap:anywhere; }
+.tf-log li .k-muted{ font-size:.72rem; }
+.tf-sheet-go{ display:flex; gap:.5rem; margin-bottom:1rem; }
+.tf-sheet-go .k-btn{ flex:1; }
+.tf-sheet-h{ margin:1.1rem 0 .6rem; font-size:.85rem; }
+@media (max-width:900px){ .tf .tf-nums{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
+@media (max-width:720px){
+  .tf .tf-fun-row{ grid-template-columns:minmax(0,7.2rem) minmax(0,1fr) 3rem 2.4rem; gap:.5rem; font-size:.8rem; }
+  .tf .tf-person .k-row-end{ max-width:42%; }
+  .tf .tf-person .k-row-end .k-tag{ max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+}
+@media (max-width:420px){ .tf .tf-nums{ grid-template-columns:repeat(3,minmax(0,1fr)); } .tf .tf-fun-row{ grid-template-columns:minmax(0,6rem) minmax(0,1fr) 2.8rem 2.3rem; } }
