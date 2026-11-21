@@ -77,10 +77,17 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
     return 'candidat nou: ' + (name || 'fără nume') + ' · ' + (form.job || form.name);
   }
   const text = [form.name, lead.ad_name, lead.adset_name, lead.campaign_name].concat(answers).filter(Boolean).join(' · ');
+  // a lead-filter form (api/_lib/leadfilter.js): her zone, problem, timing and package; the interest names the zone
+  let lf = null;
+  if (form.kind === 'leadfilter') {
+    const LF = require('./leadfilter');
+    const d = await LF.load();
+    if (d.packages) lf = LF.parse(d.packages, form, answerPairs(lead.field_data, form.questions));
+  }
   const offers = (await loadOffers(readJSON, writeJSON)).filter((o) => o.active !== false);
   // what the person answered ("Oraș: Arad") says the city better than the form's name
   const city = form.location || detectCity(answers.join(" · ")) || detectCity(text);
-  const offer = (form.offerId && offers.find((o) => o.id === form.offerId)) || detectOffer(offers, text, city);
+  const offer = lf ? null : (form.offerId && offers.find((o) => o.id === form.offerId)) || detectOffer(offers, text, city);
   const only = offer && Array.isArray(offer.locations) && offer.locations.length === 1 ? offer.locations[0] : '';
   const location = city || (only === 'arad' ? 'Arad' : only === 'timisoara' ? 'Timișoara' : DEFAULT_LOCATION);
 
@@ -98,7 +105,9 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
   try {
     result = await createLead({
     name: name || 'Lead Facebook', phone, email, source: 'facebook', location,
-    interest: offer ? offer.title : form.name, note, createdBy: 'facebook-webhook',
+    interest: lf ? 'Lead filter · ' + (lf.zoneLabel || 'general') : offer ? offer.title : form.name, note, createdBy: 'facebook-webhook',
+    // a lead-filter lead gets its own message (its zone × package), not an offer's welcome
+    welcome: lf ? false : undefined,
     // leadgenId: Facebook's id of this lead, for the CRM steps sent back to Meta (_lib/meta-capi.js)
     form: { id: formId, leadgenId, name: form.name, ad: lead.ad_name || '', campaign: lead.campaign_name || '', adId: lead.ad_id || '', adsetId: lead.adset_id || '', campaignId: lead.campaign_id || '', sentAt: lead.created_time && !isNaN(Date.parse(lead.created_time)) ? new Date(Date.parse(lead.created_time)).toISOString() : '', answers: answerPairs(lead.field_data, form.questions) },
     });
@@ -109,7 +118,8 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
     return 'nu s-a putut salva, se reîncearcă: ' + err.message;
   }
   if (result.error) { console.error('fb-leads: createLead failed', leadgenId, result.error); return 'nu s-a putut salva: ' + result.error; }
-  return (result.duplicate ? 'lead existent, actualizat: ' : 'lead nou: ') + (name || 'fără nume') + ' · ' + (offer ? offer.title : form.name || 'procedură necunoscută') + ' · ' + location;
+  if (lf && result.lead && !result.same) await require('./leadfilter').afterLead(result.lead, lf, location);
+  return (result.duplicate ? 'lead existent, actualizat: ' : 'lead nou: ') + (name || 'fără nume') + ' · ' + (lf ? 'Lead filter · ' + require('./leadfilter').summary(lf) : offer ? offer.title : form.name || 'procedură necunoscută') + ' · ' + location;
 }
 
 // A lead announced by the webhook: read it from Facebook, then the same path.

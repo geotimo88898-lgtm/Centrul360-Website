@@ -19,6 +19,8 @@ const BUDGET_MS = 50e3;
 const STEPS = [
   ['leads', () => pollLeads(true)], // new Facebook leads first, so their automations run now too
   ['ran', () => tick(true)],
+  // the lead filter's follow-ups, 24 hours and 3 days after its message, to whoever hasn't written back (api/_lib/leadfilter.js)
+  ['leadfilter', () => require('./_lib/leadfilter').followups()],
   // the ads that don't bring leads go off (api/_lib/ads-guard.js)
   ['ads', () => require('./_lib/ads-guard').guard()],
   // Conținut: the organic reels, carousels and stories that are due go out on Instagram and Facebook (api/_lib/content-post.js),

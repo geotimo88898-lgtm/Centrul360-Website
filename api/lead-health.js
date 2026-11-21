@@ -57,6 +57,27 @@ module.exports = async (req, res) => {
     res.status(r.error ? 400 : 200).json(r);
     return;
   }
+  // ?leadfilter=…: the lead filter (api/_lib/leadfilter.js), the owner's offer ladder in the Facebook forms. Counts only.
+  //   GET  kpi | dryrun (the forms' payloads, nothing sent) | status (the templates' answers from Meta)
+  //   POST content { packages, messages } | images { items } | templates { submit? } | forms { confirm: true, city?, zone? }
+  if (req.query && req.query.leadfilter) {
+    const LF = require('./_lib/leadfilter');
+    const a = String(req.query.leadfilter);
+    let r;
+    if (req.method === 'GET' && a === 'kpi') r = Object.assign({ ok: true }, await LF.kpi());
+    else if (req.method === 'GET' && a === 'dryrun') r = await LF.dryRun();
+    else if (req.method === 'GET' && a === 'status') {
+      const d = await WT.load(); await WT.sync(d).catch(() => null); await WT.save(d);
+      r = { ok: true, templates: d.templates.filter((t) => t.leadfilter).map((t) => ({ label: t.label, name: t.name, status: WT.overall(t), reason: Object.values(t.meta || {}).map((m) => m.reason).filter(Boolean)[0] || '' })) };
+    }
+    else if (req.method === 'POST' && a === 'content') r = await LF.saveContent(req.body || {});
+    else if (req.method === 'POST' && a === 'images') r = await LF.saveImages(req.body || {});
+    else if (req.method === 'POST' && a === 'templates') r = await LF.templates(req.body || {});
+    else if (req.method === 'POST' && a === 'forms') r = req.body && req.body.confirm === true ? await LF.makeForms(req.body) : { error: 'confirm_required' };
+    else r = { error: 'bad_action' };
+    res.status(r.error ? 400 : 200).json(r);
+    return;
+  }
   // ?cardlinks=1: the Card de Sărbători's myPOS PayLinks, one per card; POST { 290, 490, 990 } sets them (only https links of
   // mypos.com / mypos.eu; '' clears one), GET reads them (api/_lib/card-sarbatori.js)
   if (req.query && req.query.cardlinks) {
