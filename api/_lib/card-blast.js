@@ -81,10 +81,10 @@ async function go() {
 }
 async function stop() { const st = await loadState(); st.armed = false; await saveState(st); return { ok: true }; }
 
-function tplFor(tpls, cfg, city) {
+function tplFor(tpls, cfg, city, pre) {
   const n = cfg.numbers[city];
   if (!n || !n.phoneId || !n.token) return null;
-  return tpls.filter((t) => t.fastcash === 'card_sarbatori_' + TAG[city] && WT.approvedFor(t, n.wabaId))
+  return tpls.filter((t) => t.fastcash === (pre || 'card_sarbatori') + '_' + TAG[city] && WT.approvedFor(t, n.wabaId))
     .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))[0] || null;
 }
 
@@ -97,7 +97,7 @@ async function tick(opts) {
   let halt = '', count = 0, failed = 0;
   const media = {}, tpl = {};
   for (const c of CITIES) {
-    tpl[c] = tplFor(tpls, cfg, c);
+    tpl[c] = tplFor(tpls, cfg, c, st.pre);
     if (!tpl[c]) continue;
     const path = WT.imageOf(tpl[c]);
     if (!path) continue;
@@ -114,7 +114,7 @@ async function tick(opts) {
     const t = tpl[p.city], n = cfg.numbers[p.city];
     const v = { prenume: p.fn || 'dragă' };
     const r = await WA.sendWhatsApp({ phone: p.to, template: (t.meta[n.wabaId] || {}).name || t.name, language: t.language || 'ro', params: (t.map || []).map((key) => v[key] || '-'), from: p.city, headerImageId: media[p.city] || undefined });
-    if (r.sent) { sent[p.k] = { w: r.id || '', at: nowISO(), c: p.city }; count++; return; }
+    if (r.sent) { sent[p.k] = Object.assign({ w: r.id || '', at: nowISO(), c: p.city }, st.pre ? { t: st.pre } : {}); count++; return; }
     const code = codeOf(r.error);
     if (r.error === 'not_configured' || OURS.has(code) || r.error === 'rețea') { halt = p.city + ': ' + r.error; return; }
     if (code === 131056) return;
@@ -169,7 +169,7 @@ async function fresh() {
   cache = { at: Date.now(), sent, list: new Map(st.list.map((p) => [p.k, p])), tpls };
   return cache;
 }
-const tplOfSent = (tpls, city) => tpls.filter((t) => t.fastcash === 'card_sarbatori_' + TAG[city]).sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))[0] || null;
+const tplOfSent = (tpls, city, pre) => tpls.filter((t) => t.fastcash === (pre || 'card_sarbatori') + '_' + TAG[city]).sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))[0] || null;
 async function onInbound(conversations, message) {
   const k = d9(message && message.from);
   if (k.length !== 9) return false;
@@ -178,7 +178,7 @@ async function onInbound(conversations, message) {
   if (!rec || !rec.w || rec.e) return false;
   const { normalizePhone } = require('./clients');
   const convo = conversations.find((x) => x.phone === (normalizePhone(message.from) || message.from));
-  const tpl = tplOfSent(c.tpls, rec.c);
+  const tpl = tplOfSent(c.tpls, rec.c, rec.t);
   if (!convo || !tpl) return false;
   return putIn(convo, msgFor(rec, c.list.get(k), tpl));
 }
@@ -193,7 +193,7 @@ async function backfillChats() {
     if (!rec.w || rec.e) continue;
     const p = c.list.get(k);
     const convo = conversations.find((x) => d9(x.phone) === k);
-    const tpl = tplOfSent(c.tpls, rec.c);
+    const tpl = tplOfSent(c.tpls, rec.c, rec.t);
     if (!convo || !tpl) continue;
     if (putIn(convo, msgFor(rec, p, tpl))) added++;
   }
@@ -267,4 +267,12 @@ async function unpick(batch) {
   return { ok: true, removed: before - st.list.length };
 }
 
-module.exports = { pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats };
+// which message the next sends use (the owner, 21.11): '' = the first one, '290' = the one that leads with the 290 lei card
+async function useTemplate(v) {
+  const st = await loadState();
+  st.pre = v === '290' ? 'card_sarbatori_290' : '';
+  await saveState(st);
+  return { ok: true, template: st.pre || 'card_sarbatori' };
+}
+
+module.exports = { useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats };
