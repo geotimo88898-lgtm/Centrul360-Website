@@ -904,7 +904,9 @@ html.ui-nou.sx-fine .sx-mcard{ -webkit-backdrop-filter:blur(8px); backdrop-filte
 :where(html.ui-nou:not([data-theme="light"])) .sx-last{ border-top:1px solid rgba(255,255,255,.08); color:rgba(225,235,238,.6); }
 .sx-last[hidden]{ display:none; }
 .sx-last span{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.sx-last b{ font-weight:500;  }
+.sx-last b{ font-weight:500; }
+.sx-last span{ display:flex; align-items:baseline; gap:.3em; }
+.sx-last span b{ flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
 :where(html.ui-nou:not([data-theme="light"])) .sx-last b{ color:#fff; }
 .sx-last em{ flex:none; font-style:normal; font:600 13px/1 var(--sx-mono); color:var(--sx-ac); white-space:nowrap; }
