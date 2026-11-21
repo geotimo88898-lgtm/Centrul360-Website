@@ -488,6 +488,10 @@ async function resend(id) {
   if (l.lf.sentAt) return { already: true };
   try { await sendFirst(l, l.lf, l.lf.city || l.location); } catch (e) { return { error: String(e && e.message || e), stack: String(e && e.stack || '').split('\n').slice(0, 4) }; }
   const after = ((await readJSON(LEADS_KEY, [])) || []).find((y) => y && y.id === id) || {};
-  return { ok: true, sent: !!(after.lf && after.lf.sentAt), note: String((((after.activities || []).slice(-1)[0]) || {}).text || '').replace(/\d{6,}/g, '…') };
+  // what WhatsApp shows for her since the lead (outbound only, no names or numbers): was it sent after all?
+  const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+  const convo = ((await readJSON('data/whatsapp-conversations.json', [])) || []).find((c) => c && d9(c.phone) === d9(l.phone));
+  const outs = ((convo && convo.messages) || []).filter((m) => m && m.direction !== 'in' && String(m.timestamp || '') >= String(l.createdAt || '')).map((m) => ({ at: m.timestamp, text: String(m.text || '').slice(0, 90), status: m.status || '' }));
+  return { ok: true, outs, sent: !!(after.lf && after.lf.sentAt), note: String((((after.activities || []).slice(-1)[0]) || {}).text || '').replace(/\d{6,}/g, '…') };
 }
 module.exports = { resend, testResult, testForms, tests, KEY, TIERS, HOT, Q, load, save, zonesOf, tiersOf, knownTiers, formInput, dryRun, makeForms, parse, summary, afterLead, followups, saveContent, saveImages, templates, kpi, tplLabel, msgFor };
