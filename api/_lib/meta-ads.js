@@ -394,11 +394,13 @@ async function port(conn, oldId, o) {
   const oss = ad.creative.object_story_spec || {}, feed = ad.creative.asset_feed_spec || null;
   const t0 = (sets[0] && sets[0].targeting) || {};
   const t = {}; KEEP_T.forEach((k) => { if (t0[k] !== undefined) t[k] = t0[k]; });
+  if (o && o.women) t.genders = [2]; // Centrul360's ads: women only
   const ld = oss.link_data || null, vd = oss.video_data || null;
   // the texts of an ad that mixes several (Meta's asset feed) live there, not in the story: the first ones stand in
   const fb0 = (k) => (feed && feed[k] && feed[k][0] && feed[k][0].text) || '';
   const cta = (ld && ld.call_to_action) || (vd && vd.call_to_action) || (feed && feed.call_to_action_types && { type: feed.call_to_action_types[0] }) || {};
-  const formId = String((cta.value && cta.value.lead_gen_form_id) || (o && o.formId) || '');
+  // a form given here wins over the old one (21.11: a proven ad sent into a lead-filter form)
+  const formId = String((o && o.formId) || (cta.value && cta.value.lead_gen_form_id) || '');
   const plan = { oldName: r.j.name, kind: vd ? 'video' : 'image', formId, targeting: t, cta: cta.type || '', text: ((ld && ld.message) || (vd && vd.message) || fb0('bodies')).slice(0, 120), feed: !!feed };
   if (!formId) return Object.assign({ error: 'formularul vechi nu se vede' }, { plan });
   if (o && o.dry) return { ok: true, dry: true, plan, dsa: await dsaOf(conn), creative: ad.creative };
