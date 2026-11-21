@@ -452,18 +452,19 @@ function cleanForm(f) {
 // the bell and on their phones. Leads the team types in don't (they know already). Built in, not an automation.
 const SELF = ['facebook-webhook', 'site-form'];
 // From the site's forms the title says LEAD SITE (the owner tells them apart from the ads' LEAD NOU at a glance).
-async function alertTeam(lead, returning, fromSite) {
+async function alertTeam(lead, returning, fromSite, alertWhat) {
   if (!SELF.includes(lead.createdBy) && !(returning && (lead.source === 'facebook' || lead.source === 'site'))) return;
   const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
   const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || e.role === 'receptie' || (e.role === 'manager' && require('./_lib/roles').managesCity(e, lead.location))).map((e) => e.id));
   const raw = lead.interest || ((lead.forms || []).slice(-1)[0] || {}).name || ''; // the offer, or the form's name
-  const what = require('./_lib/offers').shortName(await require('./_lib/offers').loadOffers(readJSON), raw); // "Lipo 640"
+  // a lead-filter lead: the package and the zone she chose (alertWhat, from _lib/fb-leads.js)
+  const what = alertWhat && alertWhat.title ? alertWhat.title : require('./_lib/offers').shortName(await require('./_lib/offers').loadOffers(readJSON), raw); // "Lipo 640"
   const city = ({ 'Timișoara': ' TM', Arad: ' AR' })[lead.location] || '';
   await notifyMany({ readJSON, writeJSON }, ids, {
     kind: 'lead', tone: 'info', go: 'pipeline', tag: 'lead-' + lead.id + (returning ? ':again' : ''),
     // the city, short, right after the kind (the owner, 19.10): LEAD NOU TM 🔥 - Lipo 640
     title: (fromSite ? (returning ? 'LEAD SITE REVENIT' + city + ' 🔁' : 'LEAD SITE' + city + ' 🌐') : returning ? 'LEAD REVENIT' + city + ' 🔁' : 'LEAD NOU' + city + ' 🔥') + (what ? ' - ' + what : ''),
-    text: lead.name,
+    text: lead.name + (alertWhat && alertWhat.text ? ' · ' + alertWhat.text : ''),
   });
 }
 
@@ -471,7 +472,7 @@ const organicOf = (o) => ({ itemId: clip(o.itemId, 60), keyword: clip(o.keyword,
 // organic: { itemId, keyword, net } for a lead made from a reel's word (api/_lib/content-dm.js), kept on the lead as
 // lead.organic so Conținut → Rezultate can follow it to the money (api/_lib/content-insights.js)
 // welcome: false = no welcome WhatsApp (a Card de Sărbători reservation: reception calls her, api/card-sarbatori.js)
-async function createLead({ name, phone, source, location, createdBy, email, interest, value, note, stageId, authorLabel, form, organic, welcome }) {
+async function createLead({ name, phone, source, location, createdBy, email, interest, value, note, stageId, authorLabel, form, organic, welcome, alertWhat }) {
   const filled = cleanForm(form);
   const result = validateFields({ name, phone, source, location, email: email || '', interest: interest || '', value: value || 0 }, { partial: false });
   if (result.error) return { error: result.error };
@@ -520,7 +521,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
     await writeJSON(LEADS_KEY, leads);
     // someone already in the Pipeline filled the form again: worth an alert, not a second welcome
     await workflows.emit('lead_created', { lead: existing, returning: true });
-    if (SELF.includes(createdBy)) await alertTeam(existing, true, createdBy === 'site-form');
+    if (SELF.includes(createdBy)) await alertTeam(existing, true, createdBy === 'site-form', alertWhat);
     if (filled && filled.leadgenId) await capi.soon(() => capi.crmSync({ leadIds: [existing.id] })); // a new Facebook lead id: its "Lead_nou"
     return { lead: withComputedFields(existing, stages), duplicate: true, reopened };
   }
@@ -546,7 +547,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
   await writeJSON(LEADS_KEY, leads);
   await workflows.emit('lead_created', { lead }); // the flows on a new lead, if any
   if (SELF.includes(createdBy) && welcome !== false) await workflows.welcome(lead); // the welcome WhatsApp of its offer, to a lead that came by herself (one typed at the desk is on the phone already)
-  await alertTeam(lead, false, createdBy === 'site-form');
+  await alertTeam(lead, false, createdBy === 'site-form', alertWhat);
   if (filled && filled.leadgenId) await capi.soon(() => capi.crmSync({ leadIds: [lead.id] })); // "Lead_nou" for Meta
   return { lead: withComputedFields(lead, stages) };
 }
