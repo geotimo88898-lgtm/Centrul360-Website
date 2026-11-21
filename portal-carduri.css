@@ -73,3 +73,5 @@
 .cd-stock-left{ font-size:.85rem; color:var(--muted); }
 .cd-stock-left b{ color:var(--fg); }
 .cd-wait{ display:flex; flex-wrap:wrap; align-items:center; gap:.6rem; padding:.7rem .8rem; border-radius:12px; font-size:.85rem; background:var(--warn-soft); color:var(--warn); }
+.cd-waves{ display:grid; grid-template-columns:minmax(0,1fr); gap:.9rem; }
+.cd-waves > *{ grid-column:1 / -1; }

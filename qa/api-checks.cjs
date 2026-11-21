@@ -1824,44 +1824,35 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const ls0 = await cs('receptie', { action: 'list', scan: false });
     check('CS', 'the list: reception, manager and admin; a cosmetician 403, the public 401; the waiting orders on top, no card issued yet', anonList._status === 401 && cosm.status === 403 && ls0.orders && ls0.orders.length === 3 && ls0.cards.length === 0 && ls0.left === 5 && Array.isArray(ls0.treatments), { anon: anonList._status, cosm: cosm.status, n: ls0.orders && ls0.orders.length });
 
-    // the waves (21.11): 10 cards a wave, 70 in all; a wave sold out opens the next the next day at 10:00 (Romania), or at once
-    // when the owner opens it; meanwhile online waits and a reservation in the clinic goes first into the next wave
+    // the waves (21.11, only inside): 10 cards a wave, 70 in all; the page says only „Au mai rămas doar N carduri”, N of the wave
+    // of now; a wave sold out opens the next at once; after the total the sale closes; the public answer says nothing of them
     const wv0 = await pub();
+    const lsW = await cs('admin', { action: 'list', scan: false });
     const stR = await cs('receptie', { action: 'stock', wave: 5, max: 20 });
     const stBad = await cs('admin', { action: 'stock', wave: 0, max: 70 });
-    check('CS', 'the waves at first: wave 1 of 7, 10 cards, 70 in all; only the owner changes them (reception 403, a bad number 400)', wv0.wave && wv0.wave.n === 1 && wv0.wave.of === 7 && wv0.wave.size === 10 && wv0.wave.max === 70 && wv0.total === 10 && wv0.left === 5 && stR._status === 403 && stBad._status === 400, { w: wv0.wave, stR: stR._status, stBad: stBad._status });
-    const fillAt = new Date(Date.now() - 60e3).toISOString();
-    wr(CSK, rd(CSK, []).concat({ id: 'wave-fill', created: fillAt, name: 'Umplere Val', phone: '0710000001', city: 'Arad', tier: 290, qty: 5, amount: 1450, credit: 2500, cards: [], status: 'rezervat', via: 'test', pay: 'clinica' }));
+    check('CS', 'the waves: inside only (the public GET has no wave, no max, no size), the portal sees wave 1 of 7 with 5 sold; only the owner changes them (reception 403, a bad number 400)', wv0.left === 5 && wv0.open && !('wave' in wv0) && !('sold' in wv0) && !('max' in wv0) && lsW.wave && lsW.wave.n === 1 && lsW.wave.of === 7 && lsW.wave.sold === 5 && lsW.wave.size === 10 && lsW.wave.max === 70 && stR._status === 403 && stBad._status === 400, { wv0, w: lsW.wave });
+    wr(CSK, rd(CSK, []).concat({ id: 'wave-fill', created: new Date(Date.now() - 60e3).toISOString(), name: 'Umplere Val', phone: '0710000001', city: 'Arad', tier: 290, qty: 5, amount: 1450, credit: 2500, cards: [], status: 'rezervat', via: 'test', pay: 'clinica' }));
     const wv1 = await pub();
     const wOn = await pub(Object.assign({}, me, { phone: '0755000301' }));
-    const wRes = await pub({ tier: 290, qty: 1, name: 'Proba Val', phone: '0755000302', city: 'Arad', consent: true, pay: 'clinica' });
     const wv1b = await pub();
-    check('CS', 'wave 1 sold out: the page shows 0 left, wave 2 waiting, opening the next day at 10:00 Romania; online waits (wave_wait), a clinic reservation goes into wave 2', wv1.open === false && wv1.left === 0 && wv1.wave.n === 2 && wv1.wave.waiting === true && wv1.wave.opensAt === new Date(CL.next10(Date.parse(fillAt))).toISOString() &&
-      wOn._status === 409 && wOn.error === 'wave_wait' && wOn.opensAt === wv1.wave.opensAt && wRes.ok && wv1b.wave.left === 9 && wv1b.wave.sold === 1 && wv1b.open === false, { wv1: wv1.wave, wOn, wv1b: wv1b.wave });
-    check('CS', '10:00 the next day in Romania: filled at 00:30 RO on 22.11 → 23.11 at 10:00; in summer UTC+3', new Date(CL.next10(Date.parse('2026-11-21T22:30:00Z'))).toISOString() === '2026-11-23T08:00:00.000Z' && new Date(CL.next10(Date.parse('2027-06-01T12:00:00Z'))).toISOString() === '2027-06-02T07:00:00.000Z');
-    const cfg = await CL.settings();
-    // (the PayLink orders still held at that hour: an order not paid in 2 hours gives its card back, even to a closed wave)
-    const at10 = CL.counter(rd(CSK, []).map((r) => (r.status === 'asteptare' ? Object.assign({}, r, { status: 'rezervat' }) : r)), Date.parse(wv1.wave.opensAt) + 1000, cfg);
-    check('CS', 'at the hour: wave 2 open by itself, 9 left', at10.open && !at10.wave.waiting && at10.left === 9 && at10.wave.n === 2, at10.wave);
+    const lsW1 = await cs('admin', { action: 'list', scan: false });
+    check('CS', 'wave 1 sold out: wave 2 opens at once (the page shows 10 again), an online order goes through, 9 left; the portal: wave 2 of 7, 1 sold of it, 11 in all', wv1.open && wv1.left === 10 && wOn.ok && wv1b.left === 9 && lsW1.wave.n === 2 && lsW1.wave.sold === 1 && lsW1.sold === 11, { wv1, wOn, w: lsW1.wave });
     const opR = await cs('receptie', { action: 'open_wave' });
     const op1 = await cs('admin', { action: 'open_wave' });
     const op2 = await cs('admin', { action: 'open_wave' });
     const wv2 = await pub();
+    const lsW2 = await cs('admin', { action: 'list', scan: false });
     const actW = rd('data/activity/' + day(0) + '.json', []).filter((e) => e.area === 'Carduri de Sărbători' && /următorul val/.test(e.verb));
-    check('CS', '„Deschide acum următorul val”: the owner only, wave 2 open now (9 left), a second time 409; Activitate has it', opR._status === 403 && op1.ok && op1.opened === 2 && op2._status === 409 && wv2.open && wv2.left === 9 && wv2.wave.n === 2 && actW.length === 1, { op1, op2: op2._status, w: wv2.wave, actW: actW.length });
-    const stMax = await cs('admin', { action: 'stock', wave: 10, max: 12 });
+    check('CS', '„Deschide acum următorul val”: the owner only; wave 3 starts now (10 on the page), a second time right after: 409; Activitate has it', opR._status === 403 && op1.ok && op1.opened === 3 && op1.left === 10 && op2._status === 409 && wv2.left === 10 && lsW2.wave.n === 3 && lsW2.wave.sold === 0 && actW.length === 1, { op1, op2: op2._status, w: lsW2.wave });
+    const stMax = await cs('admin', { action: 'stock', wave: 10, max: 13 });
     const stEnd = await cs('admin', { action: 'stock', wave: 10, max: 11 });
     const wEnd = await pub({ tier: 290, qty: 1, name: 'Proba Final', phone: '0755000303', city: 'Arad', consent: true, pay: 'clinica' });
+    const gEnd = await pub();
     const actS = rd('data/activity/' + day(0) + '.json', []).filter((e) => e.area === 'Carduri de Sărbători' && /valurile/.test(e.verb));
-    check('CS', 'the total: 12 → 1 left in wave 2 (of 2); 11 → all sold, closed, a reservation refused; Activitate has the change', stMax.ok && stMax.left === 1 && stMax.wave.of === 2 && stEnd.ok && stEnd.open === false && stEnd.wave.soldOut && wEnd.error === 'sold_out' && actS.length === 2 && /maxim 12/.test(actS[0].detail), { stMax: stMax.wave, stEnd: stEnd.wave, wEnd, actS: actS.map((x) => x.detail) });
-    const nt0 = await pub({ action: 'notify', name: 'Proba Anunt', phone: '0755000304', consent: true });
-    const nt1 = await pub({ action: 'notify', name: 'Proba Anunt', phone: '0755 000 304', consent: true });
-    const nt2 = await pub({ action: 'notify', name: 'Proba Anunt', phone: '0755000305' });
-    const lsN = await cs('receptie', { action: 'list', scan: false });
-    const ntDone = await cs('receptie', { action: 'notify_done', id: (lsN.notify || [])[0] && lsN.notify[0].id });
-    const lsN2 = await cs('receptie', { action: 'list', scan: false });
-    check('CS', '„Anunță-mă”: kept once per phone (consent asked), the desk sees it in the list and ticks it', nt0.ok && nt1.ok && nt2.error === 'missing_consent' && lsN.notify.length === 1 && ntDone.ok && lsN2.notify.length === 0, { nt0, nt2, n: lsN.notify && lsN.notify.length });
-    wr(CSK, rd(CSK, []).filter((r) => r.id !== 'wave-fill' && r.phone !== '0755000302')); wr('data/card-sarbatori-stock.json', {});
+    check('CS', 'the total: 13 → 2 left (the last wave); 11 → sold out, closed, a reservation refused; Activitate has the changes', stMax.ok && stMax.left === 2 && stMax.wave.n === stMax.wave.of && stEnd.ok && stEnd.open === false && stEnd.wave.soldOut && wEnd.error === 'sold_out' && gEnd.open === false && gEnd.left === 0 && actS.length === 2 && /maxim 13/.test(actS[0].detail), { stMax: stMax.wave, stEnd: stEnd.wave, wEnd, actS: actS.map((x) => x.detail) });
+    const ntOff = await pub({ action: 'notify', name: 'Proba Anunt', phone: '0755000304', consent: true });
+    check('CS', 'no public „Anunță-mă” for a wave (the waves stay inside)', ntOff._status === 401, ntOff);
+    wr(CSK, rd(CSK, []).filter((r) => r.id !== 'wave-fill' && r.phone !== '0755000301')); wr('data/card-sarbatori-stock.json', {});
 
     // 4. found in myPOS by itself: the same sum, after the order, within 48 h, the oldest first, each payment once
     const t0 = Date.now();

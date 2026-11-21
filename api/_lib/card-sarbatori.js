@@ -74,63 +74,51 @@ function live(r, now) {
   return true;
 }
 // the waves (the owner, 21.11): the cards sell in waves of 10, up to 70 in all (both set by him in the portal, Carduri de
-// Sărbători → Valuri). The page shows only the wave of now: „Au mai rămas doar N carduri”, N counted from the real orders.
-// A wave sold out: the next one opens by itself the next day at 10:00 (Romania), or at once when the owner opens it; until
-// then the page says so (with the time) and takes only reservations in the clinic, which go first into the next wave.
-//   data/card-sarbatori-stock.json  { wave: 10, max: 70, opens: { <wave n>: ISO (opened by hand) }, by, at }
+// Sărbători → Valuri). Only inside: the page says only „Au mai rămas doar N carduri”, N = what is left of the wave of now,
+// counted from the real orders. A wave sold out: the next opens at once (N is the wave's size again); after the last one
+// (the total) the sale closes. „Deschide acum următorul val” (the owner) ends the wave of now early: N starts over.
+//   data/card-sarbatori-stock.json  { wave: 10, max: 70, skip (cards of waves ended early), by, at }
 const STOCK = 'data/card-sarbatori-stock.json';
 const WAVE = 10, MAX = 70;
 async function settings() {
   const d = (await readJSON(STOCK, null).catch(() => null)) || {};
   const wave = Number.isInteger(d.wave) && d.wave >= 1 && d.wave <= 200 ? d.wave : WAVE;
   const max = Number.isInteger(d.max) && d.max >= 0 && d.max <= 1000 ? d.max : MAX;
-  return { wave, max, opens: d.opens && typeof d.opens === 'object' ? d.opens : {} };
+  return { wave, max, skip: Number.isInteger(d.skip) && d.skip > 0 ? d.skip : 0 };
 }
 async function setStock(input, by) {
   const cur = await settings();
   const wave = input.wave == null ? cur.wave : Number(input.wave), max = input.max == null ? cur.max : Number(input.max);
   if (!Number.isInteger(wave) || wave < 1 || wave > 200 || !Number.isInteger(max) || max < 0 || max > 1000) return { error: 'bad_stock' };
-  await writeJSON(STOCK, { wave, max, opens: cur.opens, by: by || '', at: nowISO() });
+  await writeJSON(STOCK, { wave, max, skip: cur.skip, by: by || '', at: nowISO() });
   return { ok: true, wave, max };
 }
-// „Deschide acum următorul val”: the wave waiting for its 10:00 opens now
+// „Deschide acum următorul val”: the cards left in the wave of now are skipped, the next wave starts now
 async function openNext(list, by) {
   const cfg = await settings();
   const c = counter(list, Date.now(), cfg);
-  if (!c.wave.waiting) return { error: 'not_waiting' };
-  cfg.opens[c.wave.n] = nowISO();
-  await writeJSON(STOCK, { wave: cfg.wave, max: cfg.max, opens: cfg.opens, by: by || '', at: nowISO() });
-  return { ok: true, wave: c.wave.n };
-}
-// 10:00 in Romania on the day after the moment t
-function next10(t) {
-  const day = new Date(Date.parse(roDay(t) + 'T12:00:00Z') + 86400e3).toISOString().slice(0, 10);
-  for (const off of [2, 3]) {
-    const u = Date.parse(day + 'T10:00:00Z') - off * 3600e3;
-    if (Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', hour: '2-digit', hourCycle: 'h23' }).format(new Date(u))) === 10) return u;
-  }
-  return Date.parse(day + 'T08:00:00Z');
+  if (c.wave.soldOut || c.wave.n >= c.wave.of) return { error: 'last_wave' };
+  if (c.wave.left >= cfg.wave) return { error: 'just_opened' };
+  const skip = cfg.skip + c.wave.left;
+  await writeJSON(STOCK, { wave: cfg.wave, max: cfg.max, skip, by: by || '', at: nowISO() });
+  return { ok: true, wave: c.wave.n + 1 };
 }
 const ordered = (list, now) => (list || []).filter((r) => live(r, now || Date.now())).reduce((n, r) => n + qtyOf(r), 0);
+// what the page may know (left, open, the deadline) and, for the portal only, the wave
 function counter(list, now, cfg) {
   const t = now || Date.now();
-  const W = (cfg && cfg.wave) || WAVE, max = cfg && Number.isInteger(cfg.max) ? cfg.max : MAX, opens = (cfg && cfg.opens) || {};
-  const rows = (list || []).filter((r) => live(r, t)).sort((a, b) => Date.parse(a.created) - Date.parse(b.created));
-  const sold = rows.reduce((n, r) => n + qtyOf(r), 0);
-  const waves = Math.max(1, Math.ceil(max / W));
-  const n = Math.min(Math.floor(sold / W) + 1, waves);
-  // when the wave before was filled: the order that took its last card
-  let filled = 0, acc = 0;
-  for (const r of rows) { acc += qtyOf(r); if (acc >= (n - 1) * W) { filled = Date.parse(r.created); break; } }
-  const opensAt = n === 1 ? 0 : opens[n] ? Date.parse(opens[n]) : next10(filled || t);
-  const end = Math.min(n * W, max);
-  const soldOut = sold >= max, waiting = !soldOut && t < opensAt;
-  const waveLeft = Math.max(0, end - sold);
-  const before = t < Date.parse(DEADLINE);
-  const open = before && !soldOut && !waiting && waveLeft > 0;
-  return { total: W, left: open ? waveLeft : 0, sold, deadline: DEADLINE, open, reserve: before && !soldOut && waveLeft > 0, tiers: TIERS, maxQty: MAXQ, validUntil: VALID_UNTIL,
-    wave: { n, of: waves, size: W, max, sold: Math.max(0, sold - (n - 1) * W), left: waveLeft, waiting, soldOut, opensAt: waiting ? new Date(opensAt).toISOString() : '' } };
+  const W = (cfg && cfg.wave) || WAVE, max = cfg && Number.isInteger(cfg.max) ? cfg.max : MAX, skip = (cfg && cfg.skip) || 0;
+  const sold = ordered(list, t), eff = sold + skip;
+  const soldOut = sold >= max;
+  const left = soldOut ? 0 : Math.max(0, Math.min(W - (eff % W), max - sold));
+  const n = Math.floor(eff / W) + 1;
+  const of = n + Math.ceil(Math.max(0, max - sold - left) / W);
+  const open = t < Date.parse(DEADLINE) && !soldOut && left > 0;
+  return { total: W, left, deadline: DEADLINE, open, tiers: TIERS, maxQty: MAXQ, validUntil: VALID_UNTIL,
+    sold, wave: { n, of, size: W, max, sold: eff % W, left, soldOut } };
 }
+// the public answer: nothing about the waves
+const publicCount = (c) => ({ total: c.total, left: c.left, deadline: c.deadline, open: c.open, tiers: c.tiers, maxQty: c.maxQty, validUntil: c.validUntil });
 const count = async (list, now) => counter(list, now, await settings());
 const total = async () => (await settings()).max;
 const expired = (now) => (now || Date.now()) > Date.parse(VALID_UNTIL);
@@ -581,7 +569,7 @@ async function tick() {
   }
   out.match = await autoMatch().catch((e) => ({ error: e.message }));
   const pr = await readJSON(PROBE, null).catch(() => null);
-  if (!pr || Date.now() - Date.parse(pr.at) > 12 * 3600e3) out.probe = await scanMypos(14, { events: true }).then((s) => (s.ok ? { read: s.probe.read, online: s.probe.online } : s)).catch((e) => ({ error: e.message }));
+  if (!pr || Date.now() - Date.parse(pr.at) > 7 * 86400e3) out.probe = await scanMypos(3, { events: true }).then((s) => (s.ok ? { read: s.probe.read, online: s.probe.online } : s)).catch((e) => ({ error: e.message }));
   out.remind = await reminders().catch((e) => ({ error: e.message }));
   return out;
 }
@@ -598,7 +586,7 @@ function cardView(r, c, now) {
 }
 
 module.exports = {
-  KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, next10, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
+  KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
   norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, confirm, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
 };

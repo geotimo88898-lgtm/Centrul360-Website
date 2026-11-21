@@ -16,14 +16,9 @@
   var root, panel, form, from = null, busy = false;
   var post = function (b) { return fetch('/api/card-sarbatori', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json(); }); };
 
-  function whenTxt(iso) {
-    var d = new Date(iso), ro = function (x) { return x.toLocaleDateString('sv-SE', { timeZone: 'Europe/Bucharest' }); };
-    var hm = d.toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' });
-    return (ro(d) === ro(new Date()) ? 'azi' : ro(d) === ro(new Date(Date.now() + 864e5)) ? 'mâine' : 'pe ' + d.toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', day: 'numeric', month: 'long' })) + ' la ' + hm;
-  }
   function load() {
     return fetch('/api/card-sarbatori').then(function (r) { return r.json(); }).then(function (d) {
-      if (d && typeof d.left === 'number') { st.open = d.open !== false; st.left = d.left; st.links = d.links || {}; st.wave = d.wave || null; st.reserve = d.reserve !== false; st.loaded = true; }
+      if (d && typeof d.left === 'number') { st.open = d.open !== false; st.left = d.left; st.links = d.links || {}; st.loaded = true; }
     }).catch(function () {});
   }
   function build() {
@@ -32,14 +27,14 @@
     root.innerHTML = '<div class="csb-bg" data-csb-close></div><div class="csb-p" tabindex="-1"><span class="csb-grab" aria-hidden="true"></span><div class="csb-in">' +
       '<div class="csb-h"><h2 id="csb-t">Cardul de <em>Sărbători</em></h2><button type="button" class="csb-x" data-csb-close aria-label="Închide"><i></i><i></i></button></div>' +
       '<div class="csb-sc"><form class="csb-f" novalidate>' +
-        '<div data-csb-buyonly><span class="csb-l" id="csb-l1">Alege cardul</span><div class="csb-tiers" role="radiogroup" aria-labelledby="csb-l1">' +
+        '<div><span class="csb-l" id="csb-l1">Alege cardul</span><div class="csb-tiers" role="radiogroup" aria-labelledby="csb-l1">' +
         TIERS.map(function (t) {
           return '<label class="csb-t">' + (t[0] === 990 ? '<em class="best">Cea mai bună valoare</em>' : '') + '<input type="radio" name="tier" value="' + t[0] + '">' +
             '<small>Plătești</small><b>' + lei(t[0]) + '</b><span>primești <strong>' + lei(t[1]) + '</strong> în tratamente</span><em class="x">x' + t[2] + '</em></label>';
         }).join('') + '</div></div>' +
         '<div class="csb-q" data-csb-clin><div><span class="csb-l" id="csb-l2">Câte carduri?</span><small>Până la 5.</small></div>' +
           '<div class="csb-st" role="group" aria-labelledby="csb-l2"><button type="button" data-q="-1" aria-label="Mai puține">−</button><output aria-live="polite">1</output><button type="button" data-q="1" aria-label="Mai multe">+</button></div></div>' +
-        '<div data-csb-buyonly><span class="csb-l" id="csb-l4">Pentru cine e?</span><div class="csb-seg" role="radiogroup" aria-labelledby="csb-l4"><label><input type="radio" name="for" value="me" checked>Pentru mine</label><label><input type="radio" name="for" value="gift">Cadou</label></div>' +
+        '<div><span class="csb-l" id="csb-l4">Pentru cine e?</span><div class="csb-seg" role="radiogroup" aria-labelledby="csb-l4"><label><input type="radio" name="for" value="me" checked>Pentru mine</label><label><input type="radio" name="for" value="gift">Cadou</label></div>' +
           '<div class="csb-nm"></div></div>' +
         '<div class="csb-two"><div><span class="csb-l">Numele tău</span><input type="text" name="name" autocomplete="name" placeholder="ex: Maria Popescu"></div>' +
           '<div><span class="csb-l">Telefon (WhatsApp)</span><input type="tel" name="phone" inputmode="tel" autocomplete="tel" placeholder="07xx xxx xxx"></div></div>' +
@@ -47,7 +42,7 @@
         '<label class="csb-hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>' +
         '<label class="csb-ok"><input type="checkbox" name="consent"><i>' + TICK + '</i><span>Sunt de acord să fiu contactat/ă telefonic sau pe WhatsApp de Centrul360 pentru card.</span></label>' +
       '</form></div>' +
-      '<div class="csb-ft"><p class="csb-wait" data-csb-wait hidden></p><p class="csb-sum" data-csb-buyonly><span class="p">Plătești <b data-csb-pay></b> <small class="cur">lei (RON)</small></span><span class="g">primești <b data-csb-get></b> în tratamente</span></p><p class="csb-bonus" data-csb-bonus data-csb-buyonly></p><p class="csb-err" role="alert"></p>' +
+      '<div class="csb-ft"><p class="csb-sum"><span class="p">Plătești <b data-csb-pay></b> <small class="cur">lei (RON)</small></span><span class="g">primești <b data-csb-get></b> în tratamente</span></p><p class="csb-bonus" data-csb-bonus></p><p class="csb-err" role="alert"></p>' +
         '<button type="button" class="btn book csb-go"></button><button type="button" class="btn ghost csb-alt" data-csb-switch></button><p class="csb-note"></p></div>' +
       '<div class="csb-done" aria-live="polite"></div>' +
     '</div></div>';
@@ -89,13 +84,8 @@
     for (var i = have; i < MAXQ; i++) { var inp = document.createElement('input'); inp.type = 'text'; inp.name = 'n' + i; inp.autocomplete = 'off'; box.appendChild(inp); }
     box.hidden = !st.gift;
     [].slice.call(box.querySelectorAll('input')).forEach(function (inp, k) { inp.hidden = k >= st.qty; inp.placeholder = st.qty > 1 ? 'Cardul ' + (k + 1) + ' pe numele' : 'Numele ei, pe card'; });
-    var waiting = !!(st.wave && st.wave.waiting), notify = st.mode === 'notify';
-    var hasLink = !!(st.links && st.links[st.tier]) && !waiting;
+    var hasLink = !!(st.links && st.links[st.tier]);
     if (st.mode === 'online' && !hasLink) st.mode = 'clinica';
-    [].slice.call(root.querySelectorAll('[data-csb-buyonly]')).forEach(function (el) { el.hidden = notify; });
-    var wn = root.querySelector('[data-csb-wait]');
-    wn.hidden = !waiting;
-    if (waiting) wn.innerHTML = '<b>Valul de azi s-a epuizat.</b> Următoarele carduri se deschid ' + esc(whenTxt(st.wave.opensAt)) + '. ' + (notify ? 'Te anunțăm pe WhatsApp.' : 'Rezervarea de acum intră prima în valul următor.');
     var online = st.mode === 'online', city = (form.querySelector('input[name="city"]:checked') || {}).value || '';
     if (online && st.qty !== 1) { st.qty = 1; root.querySelector('.csb-st output').textContent = 1; }
     root.querySelector('[data-csb-clin]').hidden = online;
@@ -106,11 +96,10 @@
     root.querySelector('[data-csb-bonus]').classList.toggle('off', !online);
     var go = root.querySelector('.csb-go');
     var t2 = TIERS.filter(function (x) { return x[0] === st.tier; })[0];
-    if (!busy) go.innerHTML = (notify ? 'Anunță-mă' : online ? 'Continuă la plată (' + lei(t2[0]) + ')' : waiting ? 'Rezervă pentru valul următor' : 'Rezervă cardul, plătești în clinică') + ARROW;
+    if (!busy) go.innerHTML = (online ? 'Continuă la plată (' + lei(t2[0]) + ')' : 'Rezervă cardul, plătești în clinică') + ARROW;
     var sw = root.querySelector('[data-csb-switch]');
-    root.querySelector('[data-csb-clin]').hidden = online || notify;
-    sw.hidden = !hasLink || notify; sw.textContent = online ? 'Rezervă cardul, plătești în clinică' : 'Plătește online acum (' + lei(t2[0]) + ')';
-    root.querySelector('.csb-note').textContent = notify ? 'Îți scriem pe WhatsApp când se deschide valul următor.' : online ? 'Plata se face pe pagina securizată myPOS. Cardul vine pe WhatsApp imediat ce se confirmă plata.' : 'Nu plătești nimic acum: te sună recepția și plătești în clinică. Cardul se emite la plată.';
+    sw.hidden = !hasLink; sw.textContent = online ? 'Rezervă cardul, plătești în clinică' : 'Plătește online acum (' + lei(t2[0]) + ')';
+    root.querySelector('.csb-note').textContent = online ? 'Plata se face pe pagina securizată myPOS. Cardul vine pe WhatsApp imediat ce se confirmă plata.' : 'Nu plătești nimic acum: te sună recepția și plătești în clinică. Cardul se emite la plată.';
   }
 
   // grows out of the button, goes back into it (transform only)
@@ -125,7 +114,7 @@
   function open(btn, mode) {
     if (!root) build();
     from = btn || null;
-    st.mode = mode === 'clinica' || mode === 'notify' ? mode : 'online';
+    st.mode = mode === 'clinica' ? 'clinica' : 'online';
     var t = Number(btn && btn.getAttribute('data-cs-tier'));
     if (!t) { try { t = Number(localStorage.getItem('c360_cs_tier')); } catch (e) {} } // the card chosen on another page
     st.tier = TIERS.some(function (x) { return x[0] === t; }) ? t : 990;
@@ -135,8 +124,7 @@
     fly(true).then(function () { root.classList.add('shown'); });
     panel.focus({ preventScroll: true });
     (st.loaded ? Promise.resolve() : load()).then(function () {
-      if (!st.open && !(st.wave && st.wave.waiting && st.reserve)) { gone(st.left <= 0 ? 'sold_out' : 'closed'); return; }
-      if (st.wave && st.wave.waiting && st.mode === 'online') st.mode = 'clinica';
+      if (!st.open) { gone(st.left <= 0 ? 'sold_out' : 'closed'); return; }
       paint();
     });
   }
@@ -167,20 +155,6 @@
     var city = (form.querySelector('input[name="city"]:checked') || {}).value || '';
     var names = []; for (var i = 0; i < st.qty; i++) names.push(st.gift ? v('n' + i) : v('name'));
     var online = st.mode === 'online';
-    if (st.mode === 'notify') {
-      var nb = { action: 'notify', name: v('name'), phone: v('phone'), city: city, consent: form.consent.checked, website: v('website') };
-      if (nb.name.length < 2) { err.textContent = MSG.missing_name; return; }
-      if (nb.phone.replace(/\D/g, '').length < 9) { err.textContent = MSG.bad_phone; return; }
-      if (!nb.consent) { err.textContent = MSG.missing_consent; return; }
-      setBusy(true, 'Se trimite…');
-      post(nb).then(function (d) {
-        busy = false;
-        if (!d.ok) throw new Error(MSG[d.error] || 'Nu am putut trimite. Încearcă din nou.');
-        root.querySelector('.csb-done').innerHTML = '<span class="csb-tick">' + TICK + '</span><h3>Te anunțăm.</h3><p class="lead" style="font-size:16px">Îți scriem pe WhatsApp când se deschide valul următor' + (d.opensAt ? ', ' + esc(whenTxt(d.opensAt)) : '') + '.</p><button type="button" class="btn ghost" data-csb-close>Gata</button>';
-        root.classList.add('sent'); form.reset(); paint();
-      }).catch(function (x) { setBusy(false); err.textContent = x && x.message && !/^(Failed|NetworkError|Load)/.test(x.message) ? x.message : 'Nu am putut trimite. Încearcă din nou.'; });
-      return;
-    }
     var body = { tier: st.tier, qty: online ? 1 : st.qty, names: online ? names.slice(0, 1) : names, forWho: st.gift ? 'cadou' : 'eu', recipient: st.gift ? v('n0') : '', name: v('name'), phone: v('phone'), city: city, pay: online ? 'online' : 'clinica', consent: form.consent.checked, website: v('website'), page: location.href };
     if (online && st.gift && body.recipient.length < 2) { err.textContent = MSG.missing_recipient; return; }
     if (body.name.length < 2) { err.textContent = MSG.missing_name; return; }
@@ -191,7 +165,6 @@
     setBusy(true, online ? 'Spre plata securizată…' : 'Se trimite…');
     post(body).then(function (d) {
       if (d.error === 'sold_out' || d.error === 'closed') { busy = false; gone(d.error); return; }
-      if (d.error === 'wave_wait') { busy = false; st.wave = { waiting: true, opensAt: d.opensAt }; st.mode = 'clinica'; paint(); return; }
       if (d.error === 'no_link') { busy = false; st.links[st.tier] = null; st.mode = 'clinica'; paint(); err.textContent = 'Plata online nu e disponibilă acum pentru acest card. Îl poți rezerva și plăti în clinică.'; return; }
       if (online && d.ok && d.link) { try { sessionStorage.setItem('c360_cs_order', d.id || ''); } catch (x) {} location.href = d.link; return; }
       if (d.error === 'not_enough') throw new Error('Mai sunt doar ' + d.left + ' carduri. Alege mai puține.');
@@ -218,11 +191,10 @@
   }
 
   document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-cs-buy], [data-cs-reserve], [data-cs-notify]');
+    var b = e.target.closest && e.target.closest('[data-cs-buy], [data-cs-reserve]');
     if (!b) return;
     e.preventDefault();
     if (b.hasAttribute('data-cs-reserve')) { (st.loaded ? Promise.resolve() : load()).then(function () { open(b, 'clinica'); }); return; }
-    if (b.hasAttribute('data-cs-notify')) { (st.loaded ? Promise.resolve() : load()).then(function () { open(b, 'notify'); }); return; }
     (st.loaded ? Promise.resolve() : load()).then(function () { open(b, 'online'); });
   });
   // a link with #cumpara opens it at once (from a post or a message)

@@ -1,7 +1,7 @@
 // /api/card-sarbatori: the Card de Sărbători (the owner, 20-21.11). The rules, the payment, the picture and the messages:
 // api/_lib/card-sarbatori.js. Public calls only from our own pages (Origin), with a hidden trap field, the consent box and a
 // few tries per address.
-//   GET                → { total: 10, left, deadline, open, tiers, links }   links: the myPOS PayLink of each card (or null)
+//   GET                → { total, left, deadline, open, tiers, links }   left: what is left of the wave of now; nothing else about the waves   links: the myPOS PayLink of each card (or null)
 //   POST { pay: 'online', tier, forWho: 'eu' | 'cadou', recipient, name, phone, city, consent, website, page, event_id }
 //        → { ok, id, link, amount }: the order waits for its payment ('asteptare', its cards held 2 h on the counter) and the
 //        page sends her to that card's PayLink. One card per online order (a PayLink is one sum).
@@ -17,8 +17,7 @@
 //   POST { action: 'undo', code }  the last use undone (admin only)
 //   POST { action: 'resend', code }   her card on WhatsApp again;   POST { action: 'rename', code, recipient }
 //   POST { action: 'stock', wave, max }   the waves: how many cards in a wave (10) and in all (70) (admin only; Activitate notes it)
-//   POST { action: 'open_wave' }   the next wave opens now instead of tomorrow at 10:00 (admin only)
-//   POST { action: 'notify', name, phone, consent }   „Anunță-mă” when the next wave opens (public)
+//   POST { action: 'open_wave' }   the wave of now ends early, the next one starts now (admin only)
 //   POST { action: 'scan' }        look in myPOS for the payments now
 //   GET ?img=<code>                the card's picture (the team, a portal session)
 
@@ -93,7 +92,7 @@ module.exports = async (req, res) => {
       }
       const [list, links] = await Promise.all([readJSON(C.KEY, []), C.links()]);
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=10, stale-while-revalidate=30');
-      res.status(200).json(Object.assign(await C.count(list), { links }));
+      res.status(200).json(Object.assign(C.publicCount(await C.count(list)), { links }));
       return;
     }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
@@ -102,7 +101,7 @@ module.exports = async (req, res) => {
     const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
 
     // ---- the team
-    const TEAM = ['stock', 'open_wave', 'notify_done', 'list', 'confirm', 'add', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set'];
+    const TEAM = ['stock', 'open_wave', 'list', 'confirm', 'add', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set'];
     if (TEAM.includes(b.action)) {
       const session = await require('./_lib/auth').requireRole(req, res, b.action === 'undo' ? ['admin'] : ['admin', 'manager', 'receptie']);
       if (!session) return;
@@ -126,7 +125,7 @@ module.exports = async (req, res) => {
         const WT = require('./_lib/wa-templates');
         const tpl = Object.fromEntries(Object.entries(T.t || {}).map(([k, t]) => [k, t ? WT.overall(t) : 'LIPSĂ']));
         res.status(200).json(Object.assign({ cards: cards.filter((c) => c.code).reverse(), orders, totals, templates: tpl, scan, treatments: await treatments(), team: emps.filter((e) => e.active !== false && ['cosmetician', 'manager'].includes(e.role)).map((e) => ({ id: e.id, name: e.name, city: e.location || '' })),
-          notify: (await readJSON('data/card-sarbatori-notify.json', [])).filter((x) => !x.done).slice(-50).reverse(), role: session.role, links: await C.links(), gift: { 'Timișoara': C.giftShort('Timișoara'), Arad: C.giftShort('Arad') } }, await C.count(list, now)));
+          role: session.role, links: await C.links(), gift: { 'Timișoara': C.giftShort('Timișoara'), Arad: C.giftShort('Arad') } }, await C.count(list, now)));
         return;
       }
       if (b.action === 'stock') {
@@ -134,16 +133,6 @@ module.exports = async (req, res) => {
         const x = await C.setStock({ wave: b.wave, max: b.max == null ? b.total : b.max }, session.employeeId || '');
         if (x.error) { res.status(400).json(x); return; }
         res.status(200).json(Object.assign({ ok: true }, await C.count(await readJSON(C.KEY, []))));
-        return;
-      }
-      if (b.action === 'notify_done') {
-        const NK = 'data/card-sarbatori-notify.json';
-        const nl = await readJSON(NK, []);
-        const x = nl.find((r) => r.id === clip(b.id, 20));
-        if (!x) { res.status(404).json({ error: 'not_found' }); return; }
-        x.done = { at: new Date().toISOString(), by: session.employeeId || '' };
-        await writeJSON(NK, nl);
-        res.status(200).json({ ok: true });
         return;
       }
       if (b.action === 'open_wave') {
@@ -232,21 +221,6 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, paid: row.status === 'platit', order: orderOf(row) });
       return;
     }
-    // „Anunță-mă”: her name and phone, for the next wave (the desk sees the list in the portal and writes her when it opens)
-    if (b.action === 'notify') {
-      if (limited('notify', ip, 8)) { res.status(429).json({ error: 'too_many' }); return; }
-      if (b.website) { res.status(200).json({ ok: true }); return; }
-      const name = clean(b.name, 100), phone = phoneOf(b.phone);
-      if (name.length < 2) { res.status(400).json({ error: 'missing_name' }); return; }
-      if (!phoneOk(phone)) { res.status(400).json({ error: 'bad_phone' }); return; }
-      if (!(b.consent === true || b.consent === 'true' || b.consent === 'on')) { res.status(400).json({ error: 'missing_consent' }); return; }
-      const NK = 'data/card-sarbatori-notify.json';
-      const nl = await readJSON(NK, []);
-      const w = (await C.count(await readJSON(C.KEY, []))).wave;
-      if (!nl.some((x) => d9(x.phone) === d9(phone) && !x.done)) { nl.push({ id: crypto.randomUUID().slice(0, 12), at: new Date().toISOString(), name, phone, city: cityOf(b.city), wave: w.n }); await writeJSON(NK, nl); }
-      res.status(200).json({ ok: true, opensAt: w.opensAt });
-      return;
-    }
     if (b.action) { res.status(401).json({ error: 'unauthorized' }); return; }
 
     // ---- an order from the site: online (to the PayLink) or reserved (paid in the clinic)
@@ -273,8 +247,7 @@ module.exports = async (req, res) => {
     if (online && !lk) { res.status(409).json({ error: 'no_link' }); return; }
     let list = await readJSON(C.KEY, []);
     const cnt0 = await C.count(list, now);
-    // a wave sold out and the next not open yet: online waits for it; a reservation in the clinic goes first into it
-    const left0 = cnt0.wave.left;
+    const left0 = cnt0.left; // what is left of the wave of now (the next opens at once)
     const hers = list.filter((r) => C.live(r, now) && d9(r.phone) === d9(phone));
     // the same order again within 10 minutes (a second tap, back from the PayLink): the one she has
     const same = hers.find((r) => C.norm(r).tier === tier && r.qty === qty && r.pay === (online ? 'online' : 'clinica') && ['rezervat', 'asteptare'].includes(r.status) && now - Date.parse(r.created) < 10 * 60e3 &&
@@ -282,7 +255,6 @@ module.exports = async (req, res) => {
     if (same) { res.status(200).json(online ? { ok: true, again: true, id: same.id, link: lk, amount: same.amount } : { ok: true, again: true, reservation: publicOf(same), left: left0 }); return; }
     if (hers.reduce((n, r) => n + C.qtyOf(r), 0) + qty > 10) { res.status(409).json({ error: 'too_many_cards' }); return; }
     if (cnt0.wave.soldOut || left0 <= 0) { res.status(409).json({ error: 'sold_out' }); return; }
-    if (online && cnt0.wave.waiting) { res.status(409).json({ error: 'wave_wait', opensAt: cnt0.wave.opensAt }); return; }
     if (left0 < qty) { res.status(409).json({ error: 'not_enough', left: left0 }); return; }
 
     // nothing is issued now: the codes come when the payment is confirmed (the owner, 21.11)

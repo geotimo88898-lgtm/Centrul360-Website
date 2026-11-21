@@ -184,17 +184,3 @@ main [hidden]{ display:none !important; }
 .csc-left .dot, .csc-left .dot::after{ background:#d9497f; }
 .csc-live{ color:var(--ink2); font-weight:500; }
 
-/* the waves (the owner, 21.11): a wave sold out, the next one opens the next day at 10:00; until then the place of the buttons
-   says so, with the time left, and takes a reservation for the next wave or „Anunță-mă” (cs-card.js, html.cs-waiting) */
-.cst-wait{ display:grid; gap:10px; padding:16px 18px; border-radius:18px; background:linear-gradient(180deg,#fff6f8,#fff); box-shadow:0 0 0 1px rgba(176,23,90,.18) inset; }
-.cst-wait[hidden]{ display:none; }
-.cst-wait p{ margin:0; font-size:15px; line-height:1.45; color:var(--ink2); }
-.cst-wait p b{ color:#8e0f46; }
-.cst-wait .cst-wcd{ font-size:14px; color:var(--mute); }
-.cst-wait .cst-wcd b{ color:var(--ink); font-variant-numeric:tabular-nums; }
-.cst-wbtns{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.cst-wbtns .btn{ width:100%; white-space:normal; height:auto; min-height:54px; padding:10px 16px; }
-.cst-wait .cst-wsub{ font-size:13px; color:var(--mute); }
-html.cs-waiting .cst-go:has(> [data-cs-wait]) > .btn, html.cs-waiting .cst-go:has(> [data-cs-wait]) > .cst-urg, html.cs-waiting .cst-go:has(> [data-cs-wait]) > .cst-sub{ display:none; } /* the pages live before the swap have no wait block: their buttons stay (the window explains the wave) */
-@media (max-width:640px){ .cst-wbtns{ grid-template-columns:1fr; } }
-html.cs-waiting .csc-live .csc-left{ display:none; }

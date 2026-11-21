@@ -43,7 +43,6 @@
   CSC.on = function (fn) { CSC.subs.push(fn); if (CSC.state) fn(CSC.state); };
   CSC.set = function (s) {
     CSC.state = s;
-    wave(s);
     $$('[data-cs-left]').forEach(function (el) { el.textContent = String(s.left); });
     $$('[data-cs-bar]').forEach(function (el) { el.style.setProperty('--k', (s.left / s.total).toFixed(3)); });
     $$('[data-cs-live]').forEach(function (el) { el.hidden = false; });
@@ -102,20 +101,6 @@
   document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-cs-buy][data-cs-tier]:not([data-cs-follow])'); if (b) CSC.tier(b.getAttribute('data-cs-tier')); }, true);
   CSC.tier(saved, true);
 
-  // ---- the waves (the owner, 21.11): a wave sold out, the next one opens the next day at 10:00 (the server says when)
-  var WAIT = 0;
-  function wave(s) {
-    var w = s && s.wave, on = !!(w && w.waiting && w.opensAt);
-    WAIT = on ? Date.parse(w.opensAt) : 0;
-    document.documentElement.classList.toggle('cs-waiting', on);
-    $$('[data-cs-wait]').forEach(function (el) { el.hidden = !on; });
-    if (!on) return;
-    var d = new Date(WAIT), ro = function (x) { return x.toLocaleDateString('sv-SE', { timeZone: 'Europe/Bucharest' }); };
-    var hm = d.toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' });
-    var day = ro(d) === ro(new Date()) ? 'azi' : ro(d) === ro(new Date(Date.now() + 864e5)) ? 'mâine' : 'pe ' + d.toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', day: 'numeric', month: 'long' });
-    $$('[data-cs-wwhen]').forEach(function (el) { el.textContent = day + ' la ' + hm; });
-    $$('[data-cs-wsize]').forEach(function (el) { el.textContent = String(w.left || w.size); });
-  }
   // ---- the time left
   var two = function (n) { return (n < 10 ? '0' : '') + n; };
   function clock() {
@@ -127,11 +112,6 @@
       put('d', String(d)); put('h', two(h)); put('m', two(m)); put('s', two(x));
     });
     CSC.ended = !ms;
-    if (WAIT) {
-      var wl = Math.max(0, WAIT - Date.now()), ws = Math.floor(wl / 1000);
-      $$('[data-cs-wcd]').forEach(function (el) { el.textContent = Math.floor(ws / 3600) + 'h ' + two(Math.floor(ws % 3600 / 60)) + 'm ' + two(ws % 60) + 's'; });
-      if (!wl) { WAIT = 0; fetch('/api/card-sarbatori').then(function (r) { return r.json(); }).then(function (d) { if (d && typeof d.left === 'number') CSC.set(d); }).catch(function () {}); }
-    }
   }
   clock(); setInterval(clock, 1000);
 })();
