@@ -12,6 +12,13 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 21.11 ~14:30: the lead filter's door for gușă: the proven HIFU gușă 190 ads of the old account, now into a lead-filter
+  // form (14.900 / 4.990 / 990 / 190, no review screen). AR's door takes the budget of „Căutăm 8 doamne din Arad” (0 leads)
+  { id: 'lf-door-190-2026-11-21', why: 'Ușa de 190 în lead filter: HIFU gușă, reclama dovedită, în formularul cu pachete', actions: [
+    { campaignId: '120260591756890112', name: 'LF · AR · P1 · Căutăm 8 doamne din Arad', status: 'PAUSED', why: '16 lei, 0 leaduri: banii merg la ușa de 190 din Arad' },
+    { campaignId: '120260597253050112', name: 'LF · AR · HIFU G 190 · ușa', daily: 40, why: 'reclama HIFU gușă câștigătoare din Arad, în lead filter' },
+    { campaignId: '120260597251670112', name: 'LF · TM · HIFU G 190 · ușa', daily: 30, why: 'a doua reclamă HIFU gușă câștigătoare din Timișoara, în lead filter' },
+  ] },
   // 21.11 ~14:15, George: „de ce avem buget așa de mic pe astea, așa nu o să fie leaduri”: the TM HIFU gușă backup is the
   // account's best (2 leads, 2 bookings, ~3.5 lei a lead) and gets the money; per city the total stays the same
   { id: 'bk-up-2026-11-21', why: 'Rezervele primesc banii: HIFU gușă TM programează la 3,5 lei pe lead', actions: [
