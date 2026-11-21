@@ -171,3 +171,12 @@ main [hidden]{ display:none !important; }
 .cst-or{ display:flex; align-items:center; gap:12px; color:var(--mute); font-size:13px; }
 .cst-or::before, .cst-or::after{ content:''; flex:1; height:1px; background:rgba(11,11,13,.12); }
 .cst-go .cst-cash{ width:100%; }
+
+/* scarcity, right above the buttons: the real cards left and the real deadline (the owner, 21.11) */
+.cst-urg{ display:flex; align-items:center; justify-content:center; gap:9px; margin:0; padding:10px 14px; border-radius:14px; background:#fdeef3; color:#8e0f46; font-size:14px; font-weight:600; text-align:center; box-shadow:0 0 0 1px rgba(176,23,90,.18) inset; }
+.cst-urg[hidden]{ display:none; }
+.cst-urg b{ font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.cst-urg .dot{ position:relative; width:8px; height:8px; border-radius:50%; background:#d9497f; flex:none; }
+.cst-urg .dot::after{ content:''; position:absolute; inset:0; border-radius:50%; background:#d9497f; animation:ping 2s var(--e) infinite; }
+.csc-left .dot, .csc-left .dot::after{ background:#d9497f; }
+.csc-live{ color:var(--ink2); font-weight:500; }
