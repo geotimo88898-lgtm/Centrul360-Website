@@ -244,6 +244,20 @@ async function audienceList(conn) {
 }
 
 // The whole publish. image = { base64, name }. Returns ids or { error }.
+// who the ad is for and who pays for it (Meta asks every ad set shown in the EU, the DSA): the connected account's own
+// defaults; an account without them (the CAD account Centrul360 uses since 21.11, another business's) takes the old
+// Centrul360 account's, else the Page's name. Read once per run.
+let DSA = null;
+async function dsaOf(conn) {
+  if (DSA) return DSA;
+  const read = async (act) => { const r = await call('GET', '/' + act, conn.userToken, { fields: 'default_dsa_beneficiary,default_dsa_payor' }); return r.ok ? r.j : {}; };
+  const a = await read(conn.adAccountId);
+  const b = a.default_dsa_beneficiary && a.default_dsa_payor ? a : await read('act_4502494523405059');
+  const name = conn.pageName || 'Centrul360';
+  DSA = { dsa_beneficiary: a.default_dsa_beneficiary || b.default_dsa_beneficiary || name, dsa_payor: a.default_dsa_payor || b.default_dsa_payor || name };
+  return DSA;
+}
+
 async function publish(conn, image, s) {
   const tok = conn.userToken;
   const act = conn.adAccountId;
@@ -269,7 +283,7 @@ async function publish(conn, image, s) {
       const adset = await call('POST', '/' + act + '/adsets', tok, {
         name: s.adsetName, campaign_id: campaignId, daily_budget: String(Math.round(s.budget * 100)), billing_event: 'IMPRESSIONS',
         optimization_goal: s.quality ? 'QUALITY_LEAD' : 'LEAD_GENERATION', bid_strategy: 'LOWEST_COST_WITHOUT_CAP', destination_type: 'ON_AD',
-        promoted_object: { page_id: conn.pageId }, targeting: targeting(s), status: 'PAUSED',
+        promoted_object: { page_id: conn.pageId }, targeting: targeting(s), status: 'PAUSED', ...(await dsaOf(conn)),
       });
       if (!adset.ok) { await undo(); return { error: metaError(adset.j, 'Setul de reclame') }; }
       adsetId = adset.j.id;
@@ -358,7 +372,7 @@ async function port(conn, oldId, o) {
   const formId = String((cta.value && cta.value.lead_gen_form_id) || (o && o.formId) || '');
   const plan = { oldName: r.j.name, kind: vd ? 'video' : 'image', formId, targeting: t, cta: cta.type || '', text: ((ld && ld.message) || (vd && vd.message) || '').slice(0, 120), feed: !!feed };
   if (!formId) return Object.assign({ error: 'formularul vechi nu se vede' }, { plan });
-  if (o && o.dry) return { ok: true, dry: true, plan, creative: ad.creative };
+  if (o && o.dry) return { ok: true, dry: true, plan, dsa: await dsaOf(conn), creative: ad.creative };
 
   // the picture or the video, into the connected account
   let mediaSpec = {};
@@ -410,7 +424,7 @@ async function port(conn, oldId, o) {
     if (!camp.ok) return { error: metaError(camp.j, 'Campania') };
     made.push(camp.j.id);
     const adset = await call('POST', '/' + act + '/adsets', tok, { name, campaign_id: camp.j.id, daily_budget: String(Math.round(budget * 100)), billing_event: 'IMPRESSIONS',
-      optimization_goal: 'LEAD_GENERATION', bid_strategy: 'LOWEST_COST_WITHOUT_CAP', destination_type: 'ON_AD', promoted_object: { page_id: conn.pageId }, targeting: t, status: 'PAUSED' });
+      optimization_goal: 'LEAD_GENERATION', bid_strategy: 'LOWEST_COST_WITHOUT_CAP', destination_type: 'ON_AD', promoted_object: { page_id: conn.pageId }, targeting: t, status: 'PAUSED', ...(await dsaOf(conn)) });
     if (!adset.ok) { await undo(); return { error: metaError(adset.j, 'Setul de reclame') }; }
     const spec = Object.assign({ page_id: conn.pageId }, mediaSpec);
     const ig = await call('GET', '/' + conn.pageId, conn.pageAccessToken, { fields: 'instagram_business_account' });
