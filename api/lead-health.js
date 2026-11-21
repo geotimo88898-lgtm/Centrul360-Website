@@ -147,7 +147,8 @@ module.exports = async (req, res) => {
     const CB = require('./_lib/card-blast');
     const op = String(req.query.cardblast);
     const r = req.method === 'POST' && op === 'pick' ? await CB.pick(req.query.n) : req.method === 'POST' && op === 'go' ? await CB.go()
-      : req.method === 'POST' && op === 'stop' ? await CB.stop() : req.method === 'POST' && op === 'chats' ? await CB.backfillChats() : await CB.status();
+      : req.method === 'POST' && op === 'stop' ? await CB.stop() : req.method === 'POST' && op === 'chats' ? await CB.backfillChats() : req.method === 'POST' && op === 'more' ? await CB.pickMore(req.query.n)
+      : req.method === 'POST' && op === 'unpick' ? await CB.unpick(req.query.batch) : await CB.status();
     res.status(200).json(r); return;
   }
   if (req.query && req.query.fcaudience) {
