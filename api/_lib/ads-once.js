@@ -12,6 +12,16 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 21.11 ~13:00, George: „dacă mai văd leaduri la lead filter îi plătesc cu mare drag; dacă nu, ne mutăm pe alt cont”: the
+  // ~170 lei left before the threshold go mostly to the lead filter (its 4 best at 40 lei), the backups kept small
+  { id: 'lf-first-2026-11-21', why: 'Banii rămași până la prag merg întâi pe lead filter', actions: [
+    { campaignId: '120260591751460112', name: 'LF · TM · A2 · Talie definită. Fără efort', daily: 40, why: 'lead filter: a adus un 990' },
+    { campaignId: '120260591748260112', name: 'LF · TM · P2 · O singură ședință', daily: 40, why: 'lead filter: a adus un 990' },
+    { campaignId: '120260591767590112', name: 'LF · AR · C2 · Corp sau față?', daily: 40, why: 'lead filter: a adus un lead' },
+    { campaignId: '120260591756890112', name: 'LF · AR · P1 · Căutăm 8 doamne din Arad', daily: 40, why: 'lead filter: cele mai multe clicuri la Arad' },
+    { campaignId: '120260595784720112', name: 'BK · TM · HIFU G · sezon (contul vechi)', daily: 20, why: 'rezerva: a dovedit contul (lead la 2,5 lei), restul banilor la lead filter' },
+    { campaignId: '120260595786020112', name: 'BK · AR · VIDEO · HIFU abdomen · vid 8 (contul vechi)', daily: 15, why: 'rezerva, mică: banii la lead filter' },
+  ] },
   // 21.11 ~12:10: 250 lei, 3 leads; ~180 lei (~55 CAD) left before George's ~131 CAD threshold. Many clicks and few forms
   // sent on the long lead-filter forms, so the money tilts to what has proven cheap leads: the two backups from the old
   // account to 50 lei a day, the lead filter on its 4 best (the 3 with a lead + Căutăm 8 doamne Arad, the most clicks)
