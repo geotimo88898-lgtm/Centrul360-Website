@@ -197,22 +197,11 @@ a.home-li:hover{ color:var(--ink); }
 <style>
 .home-lfh{ display:none; padding:calc(84px + 28px) 0 clamp(40px,6vw,72px); }
 html.hero-lf .home-lfh{ display:block; }
-html.hero-lf .home-cs,html.hero-lf .xm-band{ display:none !important; }
+html.hero-lf .home-cs,html.hero-lf .xm-band,html.hero-lf .lfs-sec{ display:none !important; }
 .lfh{ display:grid; gap:18px; max-width:760px; }
 .lfh h1{ font-size:clamp(2.4rem,7vw,4.4rem); line-height:1.02; letter-spacing:-.05em; }
 .lfh .lead{ max-width:34rem; }
-.lfh-z{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:4px; }
-.lfh-b{ display:grid; grid-template-columns:1fr auto; align-items:center; gap:2px 10px; min-height:78px; padding:14px 16px 14px 18px; border:0; border-radius:20px; text-align:left;
-  font:inherit; color:var(--ink); background:#fff; box-shadow:0 0 0 1px var(--line2) inset, 0 16px 32px -28px rgba(11,40,38,.5); cursor:pointer; -webkit-tap-highlight-color:transparent;
-  transition:transform .5s var(--e), box-shadow .5s var(--e); }
-.lfh-b:hover{ box-shadow:0 0 0 1.5px var(--teal) inset, 0 18px 34px -26px rgba(11,127,116,.55); }
-.lfh-b:active{ transform:scale(.985); }
-.lfh-b b{ font-size:1.05rem; font-weight:700; letter-spacing:-.02em; line-height:1.25; }
-.lfh-b small{ grid-column:1; font-size:13px; color:var(--teal2); font-weight:600; min-height:1.2em; }
-.lfh-b .ar{ grid-row:1 / span 2; grid-column:2; width:18px; height:18px; color:var(--mute2); transition:transform .5s var(--e); }
-.lfh-b:hover .ar{ transform:translateX(3px); color:var(--teal2); }
-@media (min-width:900px){ .lfh-z{ grid-template-columns:repeat(3,1fr); } }
-@media (max-width:720px){ .home-lfh{ padding-top:calc(84px + 10px); } .lfh{ gap:14px; } .lfh-b{ min-height:74px; padding:12px 12px 12px 14px; border-radius:18px; } .lfh-b b{ font-size:.98rem; } }
+@media (max-width:720px){ .home-lfh{ padding-top:calc(84px + 10px); } .lfh{ gap:14px; } }
 </style>
 <script>(function(){try{var q=new URLSearchParams(location.search).get('erou'),h=document.documentElement;
 if(q==='lf'||(q!=='card'&&Date.now()>Date.parse('2026-12-24T21:59:59Z')))h.classList.add('hero-lf');
@@ -240,6 +229,14 @@ else if(q!=='card')fetch('/api/card-sarbatori').then(function(r){return r.json()
   </a>
 </div></section>
 <script src="/v2/cs-card.js" defer></script>
+
+<!-- the lead filter, its own section right after the card (the owner, 21.11 evening): for the ones who want a treatment for
+     themselves, not a gift; on the home page it hides after the card sale, when the hero itself is the lead filter -->
+<section class="lfs-sec" id="pentru-tine" aria-labelledby="lfs-sec-t"><div class="wrap"><div class="lfs-sec-in">
+  <div class="head rv"><h2 id="lfs-sec-t">Soluție personalizată <em>pentru tine.</em></h2><p class="lead"><b>4 întrebări, 30 de secunde.</b> Alegi zona și vezi ce primești și cât costă.</p></div>
+  <div class="lfh-z rv"><button type="button" class="lfh-b" data-lf data-lf-zone="abdomen-talie"><b>Abdomen și talie</b><small><span data-lf-from="abdomen-talie" data-lf-fmt="de la {n}"></span></small>{{arrow}}</button><button type="button" class="lfh-b" data-lf data-lf-zone="coapse-fese"><b>Coapse și fese</b><small><span data-lf-from="coapse-fese" data-lf-fmt="de la {n}"></span></small>{{arrow}}</button><button type="button" class="lfh-b" data-lf data-lf-zone="brate"><b>Brațe</b><small><span data-lf-from="brate" data-lf-fmt="de la {n}"></span></small>{{arrow}}</button><button type="button" class="lfh-b" data-lf data-lf-zone="gusa-contur"><b>Gușă și bărbie dublă</b><small><span data-lf-from="gusa-contur" data-lf-fmt="de la {n}"></span></small>{{arrow}}</button><button type="button" class="lfh-b" data-lf data-lf-zone="fata"><b>Față</b><small><span data-lf-from="fata" data-lf-fmt="de la {n}"></span></small>{{arrow}}</button><button type="button" class="lfh-b" data-lf data-lf-zone="par-nedorit" data-lf-city="Timișoara"><b>Epilare laser</b><small>doar Timișoara · <span data-lf-from="par-nedorit" data-lf-fmt="de la {n}"></span></small>{{arrow}}</button></div>
+  <p class="lfs-sec-n rv">Consultația e gratuită. Plătești doar la clinică, după consultație.</p>
+</div></div></section>
 
 <section class="s film-s" id="video"><div class="wrap film">
   <div class="film-t rv"><span class="eye">Video · 78 de secunde</span><h2>Centrul360, <em>pe scurt.</em></h2><p class="lead">Ce facem, cum arată consultația gratuită și rezultate reale ale clientelor noastre, spuse de Nuki.</p><div class="ctas"><button type="button" class="btn book" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button></div></div>
