@@ -143,6 +143,13 @@ module.exports = async (req, res) => {
   }
   // ?cardblast=status (GET): the Cardul de Sărbători to the warmest people of the Transformarea list (api/_lib/card-blast.js),
   // counts only; POST ?cardblast=pick&n=250 makes the list (and takes them out of Transformarea), =go sends, =stop stops
+  // ?cardkpi=1: Admin → Campanii's „Cardul de Sărbători” view, computed here (counts only in the answer's summary) to see
+  // why it fails; the error message, never the data of a person
+  if (req.query && req.query.cardkpi) {
+    try { const v = await require('./_lib/card-kpi').view({ fresh: true }); res.status(200).json({ ok: true, keys: Object.keys(v || {}), size: JSON.stringify(v).length }); }
+    catch (e) { res.status(200).json({ ok: false, error: String(e && e.message || e), stack: String(e && e.stack || '').split('\n').slice(0, 6) }); }
+    return;
+  }
   if (req.query && req.query.cardblast) {
     const CB = require('./_lib/card-blast');
     const op = String(req.query.cardblast);
