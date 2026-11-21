@@ -330,7 +330,12 @@ async function templates(b) {
   const keep = new Map();
   w.templates.filter((t) => t.leadfilter).forEach((t) => { const k = keep.get(t.label); if (!k || rank(t) < rank(k)) keep.set(t.label, t); });
   const drop = w.templates.filter((t) => t.leadfilter && keep.get(t.label) !== t);
-  for (const t of drop) { if (Object.keys(t.meta || {}).length) await WT.remove(w, t.id).catch(() => null); else w.templates = w.templates.filter((x) => x !== t); }
+  // a copy that points to the same template at Meta as the one kept goes only from here (deleting it would delete both)
+  const metaIds = (t) => Object.values(t.meta || {}).map((m) => m && m.id).filter(Boolean);
+  for (const t of drop) {
+    const kept = metaIds(keep.get(t.label));
+    if (metaIds(t).length && !metaIds(t).some((id) => kept.includes(id))) await WT.remove(w, t.id).catch(() => null); else w.templates = w.templates.filter((x) => x !== t);
+  }
   if (drop.length) await WT.save(w);
   const out = [];
   const upsert = async (label, city, m, pic) => {
