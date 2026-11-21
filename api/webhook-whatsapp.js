@@ -271,27 +271,29 @@ const WHY = {
 };
 function handleStatusUpdate(conversations, status, failed) {
   const id = status && status.id;
-  if (!id) return;
+  if (!id) return false;
   const st = String((status && status.status) || '');
   const at = status.timestamp ? new Date(Number(status.timestamp) * 1000).toISOString() : new Date().toISOString();
   for (const convo of conversations) {
     const msg = convo.messages.find((m) => m.id === id);
     if (!msg) continue;
-    if (msg.status === 'failed') return;
+    if (msg.status === 'failed') return true;
     if (st === 'failed') {
       const e = (status.errors || [])[0] || {};
       msg.status = 'failed'; msg.failedAt = at; msg.errorCode = e.code || '';
       msg.error = WHY[e.code] || ('Meta nu l-a livrat' + (e.code ? ' (cod ' + e.code + ')' : ''));
       if (!WHY[e.code]) console.error('webhook-whatsapp: delivery failed', e.code, (e.error_data && e.error_data.details) || e.title || e.message || '');
       if (failed) failed.push({ convo, msg });
-      return;
+      return true;
     }
     if ((RANK[st] || 0) > (RANK[msg.status] || 0)) msg.status = st;
     if (st === 'delivered' && !msg.deliveredAt) msg.deliveredAt = at;
     if (st === 'read') { if (!msg.readAt) msg.readAt = at; if (!msg.deliveredAt) msg.deliveredAt = at; }
-    return;
+    return true;
   }
-  // No matching outbound message found (e.g. sent before this feature existed), nothing to update.
+  // No matching outbound message found (e.g. sent before this feature existed, or a „Transformarea 360” campaign message,
+  // which isn't in the chats: api/_lib/fc-campaign.js onStatus keeps its own mark), nothing to update here.
+  return false;
 }
 
 // a message that didn't reach her: reception and her clinic's manager hear it at once (bell + phone); the owner only for a
@@ -345,6 +347,8 @@ module.exports = async (req, res) => {
   const noteDelivery = async (taken) => {
     try {
       const k = 'data/whatsapp-hook.json', h = (await readJSON(k, null)) || {}, now = nowISO();
+      // a burst (a campaign's thousands of statuses in minutes) writes the note once a minute, not once per delivery
+      if (taken && h.signed === signed && h.okAt && Date.now() - Date.parse(h.okAt) < 60e3) return;
       Object.assign(h, { at: now, signed }, taken ? { okAt: now } : { refusedAt: now });
       await writeJSON(k, h);
     } catch (e) { /* only a note */ }
@@ -372,6 +376,8 @@ module.exports = async (req, res) => {
     const failed = []; // messages Meta couldn't deliver, for the UNDELIVERED alert
     const taps = []; // buttons tapped on a reminder
     const heard = []; // her new voice notes and videos, for the transcripts
+    const fc = []; // answers to the „Transformarea 360” campaign (api/_lib/fc-campaign.js)
+    const FC = require('./_lib/fc-campaign');
 
     const entries = payload.entry || [];
     for (const entry of entries) {
@@ -384,6 +390,7 @@ module.exports = async (req, res) => {
           try {
             const m = await handleInboundMessage(conversations, message, phoneNumberId, value.contacts, heard);
             if (m) fresh.set(m.phone, m);
+            if (m) { const hit = await FC.onInbound(conversations, message, textFor(message)); if (hit) fc.push({ hit, m }); }
             if (m && m.tap) taps.push(m);
             changed = true;
           } catch (err) {
@@ -419,8 +426,9 @@ module.exports = async (req, res) => {
 
         for (const status of value.statuses || []) {
           try {
-            handleStatusUpdate(conversations, status, failed);
-            changed = true;
+            // only a status of a message in the chats changes them (a campaign's statuses would rewrite the whole file thousands of times)
+            if (handleStatusUpdate(conversations, status, failed)) changed = true;
+            await FC.onStatus(status);
           } catch (err) {
             console.error('webhook-whatsapp: error processing status', err.message);
           }
@@ -435,6 +443,10 @@ module.exports = async (req, res) => {
     // „Da, ajung” confirms the appointment, „Nu ajung” cancels it; the desk hears that instead of the plain message
     for (const m of taps) {
       try { if (await require('./_lib/reminders').reply(m.tap) && fresh.get(m.phone) === m) fresh.delete(m.phone); } catch (err) { console.error('webhook-whatsapp: reminder answer', err.message); }
+    }
+    // a yes (or a question) to the campaign: reception hears it as „call her for the consultation”, instead of the plain ring
+    for (const { hit, m } of fc) {
+      try { if (await FC.tellDesk(hit) && fresh.get(m.phone) === m) fresh.delete(m.phone); } catch (err) { console.error('webhook-whatsapp: campaign answer', err.message); }
     }
     // before answering Meta: once the response is sent the function may be stopped
     try { await pushMessages([...fresh.values()]); } catch (err) { console.error('webhook-whatsapp: push failed', err.message); }

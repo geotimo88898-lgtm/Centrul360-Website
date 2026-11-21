@@ -256,9 +256,13 @@ export default {
     await loadSecrets(env, SHARED);
     const hour = new Date(event.scheduledTime).getUTCHours();
     const paths = [];
-    if (hour === 5) paths.push("/creative/api/cron/auto");
-    paths.push(hour === 6 ? "/api/automation-tick" : "/api/automation-tick?light=1");
-    if (hour === 19) paths.push("/api/daily-report");
+    // the minute clock: only the „Transformarea 360” campaign (api/fastcash-tick.js; nothing while it is off)
+    if (event.cron === "* * * * *") paths.push("/api/fastcash-tick");
+    else if (hour === 5) paths.push("/creative/api/cron/auto");
+    if (event.cron !== "* * * * *") {
+      paths.push(hour === 6 ? "/api/automation-tick" : "/api/automation-tick?light=1");
+      if (hour === 19) paths.push("/api/daily-report");
+    }
     for (const path of paths) {
       if (path.startsWith("/creative") && !creative) { console.log("cron: mașina de creative nu e în build"); continue; }
       // a random key for this run only, known to nothing on the internet (api/_lib/cron-auth.js), so the clock works
@@ -266,7 +270,7 @@ export default {
       if (!globalThis.__C360_CRON_TOKEN) globalThis.__C360_CRON_TOKEN = crypto.randomUUID() + crypto.randomUUID();
       const req = new Request("https://admin.centrul360.com" + path, { headers: { authorization: "Bearer " + (path.startsWith("/creative") ? (env.CRON_SECRET || "") : globalThis.__C360_CRON_TOKEN), "user-agent": "vercel-cron/1.0" } });
       const r = await als.run({ ctx }, () => route(req, env, ctx)).catch((e) => ({ status: "eroare " + e.message }));
-      console.log("cron", path, r.status);
+      if (path !== "/api/fastcash-tick") console.log("cron", path, r.status);
     }
   }
 };

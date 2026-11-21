@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
   // POST ?regulament=1 { name, dataUrl }: a new version of the internal regulation, uploaded for the owner when he asks
   // (18.11); the same path as Meniu → Regulament intern → Versiune nouă (api/portal-regulament.js)
   // POST ?fastcash=templates { campaign, steps }: the owner's Fast Cash WhatsApp campaign made into templates and sent to Meta
-  // (api/_lib/fastcash.js); GET ?fastcash=status: Meta's answers. Nothing is sent to clients from here.
+  // (api/_lib/fastcash.js); GET ?fastcash=status: Meta's answers; GET ?fastcash=kpi: the campaign's numbers (counts only).
   if (req.query && req.query.fastcash) {
     const FC = require('./_lib/fastcash');
     // ?fastcash=pic&label=<template label>: the picture an existing template sends (to match the campaign's look to it)
@@ -45,6 +45,13 @@ module.exports = async (req, res) => {
       const path = WT.imageOf(t); const buf = path ? await require('./_lib/store').readBinary(path) : null;
       if (!buf) { res.status(404).json({ error: 'no_picture', labels: d.templates.filter((x) => WT.imageOf(x)).map((x) => x.label) }); return; }
       res.setHeader('Content-Type', 'image/jpeg'); res.status(200).send(buf); return;
+    }
+    // ?fastcash=kpi: the campaign's numbers (api/_lib/fc-campaign.js), counts only, never a name or a phone
+    if (req.query.fastcash === 'kpi') {
+      const C = require('./_lib/fc-campaign');
+      const agg = await C.kpi(req.query.fresh ? 0 : 120e3);
+      const seats = {}; Object.keys(agg.seats || {}).forEach((c) => { const x = agg.seats[c]; seats[c] = { paid: x.paid, left: x.left, bonusGiven: (x.bonus || []).length }; });
+      res.status(200).json(Object.assign({ ok: true, name: C.NAME, now: new Date().toISOString() }, agg, { seats })); return;
     }
     const r = req.method === 'POST' && req.query.fastcash === 'templates' ? await FC.templates(req.body || {}) : await FC.status();
     res.status(r.error ? 400 : 200).json(r);
