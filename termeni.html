@@ -31,6 +31,7 @@
 <link rel="stylesheet" href="/v2/book-light.css">
 <link rel="stylesheet" href="/v2/xmas.css">
 <link rel="stylesheet" href="/v2/cs-buy.css">
+<link rel="stylesheet" href="/v2/lf.css">
 <script>/* Christmas on the site (v2/xmas.css, v2/xmas.js): on until XMAS_UNTIL, 7 January 2027 00:00 in Romania; then the site is as before */var XMAS_UNTIL='2027-01-06T22:00:00Z';if(Date.now()<Date.parse(XMAS_UNTIL))document.documentElement.classList.add('xmas');</script>
 <script>
 /* tracking waits for consent (the owner, 7.11): the Meta pixel only queues until „Accept” loads it; Google Consent Mode v2, denied by default */
@@ -136,6 +137,7 @@ document.addEventListener('click',function(e){if(e.target.closest('[data-cookies
 <script src="/v2/kit.js" defer></script>
 <script src="/v2/xmas.js" defer></script>
 <script src="/v2/cs-buy.js" defer></script>
+<script src="/v2/lf.js" defer></script>
 <script>/* the before/after pictures in the moving rows load at once (lazy ones never started on phones) */addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.cases img').forEach(function(i){i.loading='eager'});/* an offer's title never starts a line with its dot (Epilare laser · Full Body) */var nb=function(){document.querySelectorAll('.slip h3').forEach(function(h){if(h.textContent.indexOf(' · ')>-1)h.textContent=h.textContent.split(' · ').join(' · ')})};nb();document.querySelectorAll('.offers').forEach(function(o){new MutationObserver(nb).observe(o,{childList:true})})});</script>
 <script src="/site-pulse.js" defer></script>
 <script src="/c360-book.js" defer></script>
