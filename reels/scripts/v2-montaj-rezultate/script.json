@@ -175,29 +175,19 @@
      ]
     },
     {
-     "n": 22,
-     "img": "cazul-22-hifu-periocular-arad.webp",
+     "n": 23,
+     "img": "cazul-23-hifu-periocular-tm.webp",
      "title": "HIFU periocular",
-     "meta": "Arad · 1 ședință",
+     "meta": "Timișoara · 1 ședință",
      "focus": [
       0.5,
       0.5
      ]
     },
     {
-     "n": 33,
-     "img": "cazul-33-hifu-gusa-tm-7.webp",
+     "n": 16,
+     "img": "cazul-16-hifu-gusa-tm-4.webp",
      "title": "HIFU gușă",
-     "meta": "Timișoara · 2 ședințe",
-     "focus": [
-      0.5,
-      0.5
-     ]
-    },
-    {
-     "n": 20,
-     "img": "cazul-20-liposonix-abdomen-tm-2.webp",
-     "title": "Liposonix abdomen",
      "meta": "Timișoara · 1 ședință",
      "focus": [
       0.5,
@@ -205,43 +195,53 @@
      ]
     },
     {
-     "n": 38,
-     "img": "cazul-38-hifu-abdomen-arad-3.webp",
-     "title": "HIFU abdomen",
-     "meta": "Arad · 1 ședință",
-     "focus": [
-      0.5,
-      0.52
-     ]
-    },
-    {
-     "n": 29,
-     "img": "cazul-29-hifu-gusa-contur-tm.webp",
-     "title": "HIFU gușă și contur",
-     "meta": "Timișoara · 1 ședință",
+     "n": 8,
+     "img": "cazul-08-pachet-mini-belly.webp",
+     "title": "Pachet Mini Belly",
+     "meta": "Timișoara · Liposonix + EMS",
      "focus": [
       0.5,
       0.5
      ]
     },
     {
-     "n": 26,
-     "img": "cazul-26-hifu-abdomen-inferior-tm.webp",
-     "title": "HIFU abdomen inferior",
-     "meta": "Timișoara · 1 ședință",
-     "focus": [
-      0.5,
-      0.55
-     ]
-    },
-    {
-     "n": 34,
-     "img": "cazul-34-rf-sculpt-arad.webp",
+     "n": 35,
+     "img": "cazul-35-rf-sculpt-tm.webp",
      "title": "RF Sculpt",
-     "meta": "Arad · 1 ședință",
+     "meta": "Timișoara · 6 ședințe",
      "focus": [
       0.5,
       0.55
+     ]
+    },
+    {
+     "n": 24,
+     "img": "cazul-24-hifu-gat-arad.webp",
+     "title": "HIFU gât",
+     "meta": "Arad · 1 ședință",
+     "focus": [
+      0.5,
+      0.5
+     ]
+    },
+    {
+     "n": 5,
+     "img": "cazul-05-liposonix-solduri.webp",
+     "title": "Liposonix șolduri",
+     "meta": "Timișoara · 1 ședință",
+     "focus": [
+      0.5,
+      0.55
+     ]
+    },
+    {
+     "n": 11,
+     "img": "cazul-11-facial-restart-arad.webp",
+     "title": "Facial Restart",
+     "meta": "Arad · 1 ședință",
+     "focus": [
+      0.5,
+      0.5
      ]
     }
    ],
@@ -261,13 +261,14 @@
    "consent": "Fotografii publicate cu acordul clientelor. Rezultatele pot varia de la o persoană la alta.",
    "trioNote": [
     "3 cazuri, câte 1 ședință",
-    "HIFU și RF Sculpt · Timișoara și Arad"
+    "HIFU, Liposonix și Restart · Timișoara și Arad"
    ],
-   "_note": "Ecranul în trei (cazurile 29, 26, 34) nu mai are câte o etichetă pe fiecare bandă (ar fi fost sub 40 px); sub benzi stă o singură notă, cu fapte adevărate pentru toate trei: câte 1 ședință, HIFU și RF Sculpt, Timișoara și Arad."
+   "_note": "21.11: doar cazurile de pe prima pagină (02, 05, 08, 11, 16, 23, 24, 35, 39); ecranul în trei: 24, 05, 11, toate cu câte 1 ședință."
   }
  },
  "end": {
   "type": "save",
   "hold": 10.664
- }
+ },
+ "casesNote": "21.11: doar cazurile din secțiunea de rezultate de pe prima pagină (02, 05, 08, 11, 16, 23, 24, 35, 37, 39)."
 }

@@ -94,6 +94,11 @@ postare obișnuită, 2 e de două ori mai bună. Doar postările de cel puțin 3
 ## Cum scrii un reel (v2, din 12.11)
 **Înainte de orice reel: `GUST.md`** (verdictele proprietarului și principiile; se completează după fiecare verdict).
 
+**Cazurile înainte/după (regula proprietarului, 21.11): doar pozele din secțiunea de rezultate de pe prima pagină**
+(`index.html`, `#rezultate`; acum 02, 05, 08, 11, 16, 23, 24, 35, 37, 39), în reels, carusele și story-uri. Etichetele
+spun exact ce scrie în catalog la acel caz (tratament, oraș, ședințe). `render.cjs` se oprește dacă scriptul folosește
+alt caz. Paginile de site arătate în reel (`site`) se aleg tot fără alte cazuri în cadru.
+
 Schema și biblioteca de scene: `README.md` („Cum se face un reel v2”). Tonul: `README.md` („Vocea”): o femeie care
 îi povestește ceva unei prietene, nu o reclamă. Pe scurt:
 0. **Gândește înainte** (14.11, regula proprietarului: „Vreau să te gândești foarte bine înainte să compui un reel, să

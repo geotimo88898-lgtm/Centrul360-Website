@@ -108,20 +108,8 @@
      "meta": "Timișoara · 1 ședință"
     },
     {
-     "n": 27,
-     "img": "cazul-27-hifu-gusa-tm-6.webp",
-     "title": "HIFU gușă",
-     "meta": "Timișoara · 1 ședință"
-    },
-    {
-     "n": 21,
-     "img": "cazul-21-hifu-abdomen-arad-2.webp",
-     "title": "HIFU abdomen",
-     "meta": "Arad · 1 ședință"
-    },
-    {
-     "n": 18,
-     "img": "cazul-18-hifu-gusa-tm-5.webp",
+     "n": 2,
+     "img": "cazul-02-hifu-gusa.webp",
      "title": "HIFU gușă",
      "meta": "Timișoara · 1 ședință"
     },
@@ -138,129 +126,15 @@
      "meta": "Arad · 1 ședință"
     },
     {
-     "n": 12,
-     "img": "cazul-12-hifu-abdomen-inferior-arad.webp",
-     "title": "HIFU abdomen inferior",
-     "meta": "Arad · 1 ședință"
-    },
-    {
-     "n": 36,
-     "img": "cazul-36-hifu-gusa-contur-arad.webp",
-     "title": "HIFU gușă și contur",
-     "meta": "Arad · 1 ședință"
-    },
-    {
-     "n": 9,
-     "img": "cazul-09-hifu-laxitate-abdomen-tm.webp",
-     "title": "HIFU laxitate abdomen",
-     "meta": "Timișoara · 1 ședință"
-    },
-    {
-     "n": 33,
-     "img": "cazul-33-hifu-gusa-tm-7.webp",
-     "title": "HIFU gușă",
-     "meta": "Timișoara · 2 ședințe"
-    },
-    {
-     "n": 26,
-     "img": "cazul-26-hifu-abdomen-inferior-tm.webp",
-     "title": "HIFU abdomen inferior",
-     "meta": "Timișoara · 1 ședință"
-    },
-    {
-     "n": 22,
-     "img": "cazul-22-hifu-periocular-arad.webp",
-     "title": "HIFU periocular",
-     "meta": "Arad · 1 ședință"
-    },
-    {
-     "n": 1,
-     "img": "cazul-01-hifu-abdomen-total.webp",
-     "title": "HIFU abdomen total",
-     "meta": "Arad · 1 ședință"
-    },
-    {
-     "n": 29,
-     "img": "cazul-29-hifu-gusa-contur-tm.webp",
-     "title": "HIFU gușă și contur",
-     "meta": "Timișoara · 1 ședință"
-    },
-    {
-     "n": 38,
-     "img": "cazul-38-hifu-abdomen-arad-3.webp",
-     "title": "HIFU abdomen",
-     "meta": "Arad · 1 ședință"
-    },
-    {
-     "n": 37,
-     "img": "cazul-37-rf-sculpt-tm-2.webp",
-     "title": "RF Sculpt",
-     "meta": "Timișoara · 3 ședințe"
-    },
-    {
-     "n": 19,
-     "img": "cazul-19-hifu-abdomen-arad.webp",
-     "title": "HIFU abdomen",
-     "meta": "Arad · 1 ședință"
+     "n": 8,
+     "img": "cazul-08-pachet-mini-belly.webp",
+     "title": "Pachet Mini Belly",
+     "meta": "Timișoara · Liposonix + EMS"
     },
     {
      "n": 23,
      "img": "cazul-23-hifu-periocular-tm.webp",
      "title": "HIFU periocular",
-     "meta": "Timișoara · 1 ședință"
-    },
-    {
-     "n": 17,
-     "img": "cazul-17-pachet-mini-belly-2.webp",
-     "title": "Pachet Mini Belly",
-     "meta": "Timișoara · 1 ș. Liposonix + 4 ș. EMS"
-    },
-    {
-     "n": 2,
-     "img": "cazul-02-hifu-gusa.webp",
-     "title": "HIFU gușă",
-     "meta": "Timișoara · 1 ședință"
-    },
-    {
-     "n": 34,
-     "img": "cazul-34-rf-sculpt-arad.webp",
-     "title": "RF Sculpt",
-     "meta": "Arad · 1 ședință"
-    },
-    {
-     "n": 28,
-     "img": "cazul-28-hifu-periocular-tm-2.webp",
-     "title": "HIFU periocular",
-     "meta": "Timișoara · 1 ședință"
-    },
-    {
-     "n": 10,
-     "img": "cazul-10-liposonix-abdomen-profil.webp",
-     "title": "Liposonix abdomen",
-     "meta": "Timișoara · 1 ședință"
-    },
-    {
-     "n": 15,
-     "img": "cazul-15-hifu-gusa-tm-3.webp",
-     "title": "HIFU gușă",
-     "meta": "Timișoara · 1 ședință"
-    },
-    {
-     "n": 25,
-     "img": "cazul-25-liposonix-ems-tm-2.webp",
-     "title": "Liposonix + EMS",
-     "meta": "Timișoara · Liposonix + EMS"
-    },
-    {
-     "n": 30,
-     "img": "cazul-30-facial-restart-arad-2.webp",
-     "title": "Facial Restart",
-     "meta": "Arad · 1 ședință"
-    },
-    {
-     "n": 4,
-     "img": "cazul-04-liposonix-abdomen.webp",
-     "title": "Liposonix abdomen",
      "meta": "Timișoara · 1 ședință"
     },
     {
@@ -270,34 +144,162 @@
      "meta": "Timișoara · 6 ședințe"
     },
     {
-     "n": 20,
-     "img": "cazul-20-liposonix-abdomen-tm-2.webp",
-     "title": "Liposonix abdomen",
-     "meta": "Timișoara · 1 ședință"
-    },
-    {
-     "n": 31,
-     "img": "cazul-31-facial-restart-arad-3.webp",
+     "n": 11,
+     "img": "cazul-11-facial-restart-arad.webp",
      "title": "Facial Restart",
      "meta": "Arad · 1 ședință"
     },
     {
-     "n": 14,
-     "img": "cazul-14-liposonix-abdomen-total-arad.webp",
-     "title": "Liposonix abdomen total",
+     "n": 37,
+     "img": "cazul-37-rf-sculpt-tm-2.webp",
+     "title": "RF Sculpt",
+     "meta": "Timișoara · 3 ședințe"
+    },
+    {
+     "n": 5,
+     "img": "cazul-05-liposonix-solduri.webp",
+     "title": "Liposonix șolduri",
+     "meta": "Timișoara · 1 ședință"
+    },
+    {
+     "n": 2,
+     "img": "cazul-02-hifu-gusa.webp",
+     "title": "HIFU gușă",
+     "meta": "Timișoara · 1 ședință"
+    },
+    {
+     "n": 39,
+     "img": "cazul-39-hifu-abdomen-tm.webp",
+     "title": "HIFU abdomen",
+     "meta": "Timișoara · 1 ședință"
+    },
+    {
+     "n": 24,
+     "img": "cazul-24-hifu-gat-arad.webp",
+     "title": "HIFU gât",
      "meta": "Arad · 1 ședință"
     },
     {
-     "n": 40,
-     "img": "cazul-40-rf-sculpt-tm-3.webp",
+     "n": 8,
+     "img": "cazul-08-pachet-mini-belly.webp",
+     "title": "Pachet Mini Belly",
+     "meta": "Timișoara · Liposonix + EMS"
+    },
+    {
+     "n": 23,
+     "img": "cazul-23-hifu-periocular-tm.webp",
+     "title": "HIFU periocular",
+     "meta": "Timișoara · 1 ședință"
+    },
+    {
+     "n": 35,
+     "img": "cazul-35-rf-sculpt-tm.webp",
      "title": "RF Sculpt",
      "meta": "Timișoara · 6 ședințe"
+    },
+    {
+     "n": 11,
+     "img": "cazul-11-facial-restart-arad.webp",
+     "title": "Facial Restart",
+     "meta": "Arad · 1 ședință"
+    },
+    {
+     "n": 37,
+     "img": "cazul-37-rf-sculpt-tm-2.webp",
+     "title": "RF Sculpt",
+     "meta": "Timișoara · 3 ședințe"
+    },
+    {
+     "n": 5,
+     "img": "cazul-05-liposonix-solduri.webp",
+     "title": "Liposonix șolduri",
+     "meta": "Timișoara · 1 ședință"
+    },
+    {
+     "n": 2,
+     "img": "cazul-02-hifu-gusa.webp",
+     "title": "HIFU gușă",
+     "meta": "Timișoara · 1 ședință"
+    },
+    {
+     "n": 39,
+     "img": "cazul-39-hifu-abdomen-tm.webp",
+     "title": "HIFU abdomen",
+     "meta": "Timișoara · 1 ședință"
+    },
+    {
+     "n": 24,
+     "img": "cazul-24-hifu-gat-arad.webp",
+     "title": "HIFU gât",
+     "meta": "Arad · 1 ședință"
+    },
+    {
+     "n": 8,
+     "img": "cazul-08-pachet-mini-belly.webp",
+     "title": "Pachet Mini Belly",
+     "meta": "Timișoara · Liposonix + EMS"
+    },
+    {
+     "n": 23,
+     "img": "cazul-23-hifu-periocular-tm.webp",
+     "title": "HIFU periocular",
+     "meta": "Timișoara · 1 ședință"
+    },
+    {
+     "n": 35,
+     "img": "cazul-35-rf-sculpt-tm.webp",
+     "title": "RF Sculpt",
+     "meta": "Timișoara · 6 ședințe"
+    },
+    {
+     "n": 11,
+     "img": "cazul-11-facial-restart-arad.webp",
+     "title": "Facial Restart",
+     "meta": "Arad · 1 ședință"
+    },
+    {
+     "n": 37,
+     "img": "cazul-37-rf-sculpt-tm-2.webp",
+     "title": "RF Sculpt",
+     "meta": "Timișoara · 3 ședințe"
+    },
+    {
+     "n": 5,
+     "img": "cazul-05-liposonix-solduri.webp",
+     "title": "Liposonix șolduri",
+     "meta": "Timișoara · 1 ședință"
+    },
+    {
+     "n": 2,
+     "img": "cazul-02-hifu-gusa.webp",
+     "title": "HIFU gușă",
+     "meta": "Timișoara · 1 ședință"
+    },
+    {
+     "n": 39,
+     "img": "cazul-39-hifu-abdomen-tm.webp",
+     "title": "HIFU abdomen",
+     "meta": "Timișoara · 1 ședință"
+    },
+    {
+     "n": 24,
+     "img": "cazul-24-hifu-gat-arad.webp",
+     "title": "HIFU gât",
+     "meta": "Arad · 1 ședință"
+    },
+    {
+     "n": 8,
+     "img": "cazul-08-pachet-mini-belly.webp",
+     "title": "Pachet Mini Belly",
+     "meta": "Timișoara · Liposonix + EMS"
     }
-   ]
+   ],
+   "_note21": "21.11: doar cazurile de pe prima pagină; coridorul le repetă pe cele 9 (fără 16, care e cazul ales)."
   }
  },
  "end": {
   "type": "save",
   "hold": 14.76
- }
+ },
+ "casesNote": "21.11: doar cazurile din secțiunea de rezultate de pe prima pagină (02, 05, 08, 11, 16, 23, 24, 35, 37, 39)."
 }

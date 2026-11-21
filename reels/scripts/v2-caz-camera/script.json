@@ -9,9 +9,9 @@
  "captions": false,
  "nuki": false,
  "title": "Urmărește linia",
- "topic": "Un singur caz real (cazul 27, HIFU gușă, Timișoara, 1 ședință) filmat doar cu camera: retragere, dolly zoom, macara pe detaliu, zoom prin lumină",
- "post": "Urmărește linia. Cazul 27 din catalogul nostru: HIFU gușă, Timișoara, 1 ședință. Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta. #hifu #gusa #timisoara #centrul360",
- "case": "cazul-27",
+ "topic": "Un singur caz real (cazul 16, HIFU gușă, Timișoara, 1 ședință) filmat doar cu camera: retragere, dolly zoom, macara pe detaliu, zoom prin lumină",
+ "post": "Urmărește linia. Cazul 16 din catalogul nostru: HIFU gușă, Timișoara, 1 ședință. Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta. #hifu #gusa #timisoara #centrul360",
+ "case": "cazul-16",
  "ctaType": "none",
  "sources": "v2/src/catalog-rezultate.html, Cazul 27: „HIFU gușă”, „Timișoara · 1 ședință”, „Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta.”. Poza: brand_asset/catalog/cazul-27-hifu-gusa-tm-6.webp, tăiată doar în cele două jumătăți ale ei (fără pastilele ÎNAINTE / DUPĂ din colțul de jos), neretușată; în film amândouă jumătățile sunt alb-negru, la aceeași scară, iar la final amândouă revin în culorile lor, în același timp.",
  "concept": {
@@ -116,30 +116,30 @@
   "visual": {
    "type": "cazcam",
    "cam": "none",
-   "img": "cazul-27-hifu-gusa-tm-6.webp",
+   "img": "cazul-16-hifu-gusa-tm-4.webp",
    "before": [
-    8,
-    8,
-    680,
-    872
+    330,
+    98,
+    463,
+    594
    ],
    "after": [
-    714,
-    8,
-    680,
-    872
+    316,
+    712,
+    463,
+    594
    ],
    "macro": [
-    215,
-    445
+    165,
+    272
    ],
    "detail": [
-    297,
-    497
+    245,
+    328
    ],
    "face": [
-    150,
-    200
+    95,
+    90
    ],
    "hits": {
     "w": [
@@ -169,13 +169,14 @@
    "meta": "Timișoara · 1 ședință",
    "consent": "Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta.",
    "macro2": [
-    300,
-    515
+    255,
+    342
    ]
   }
  },
  "end": {
   "type": "save",
   "hold": 12.61
- }
+ },
+ "casesNote": "21.11: doar cazurile din secțiunea de rezultate de pe prima pagină (02, 05, 08, 11, 16, 23, 24, 35, 37, 39)."
 }

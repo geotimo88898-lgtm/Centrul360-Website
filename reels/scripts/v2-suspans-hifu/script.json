@@ -9,8 +9,8 @@
  "captions": false,
  "title": "Apoi, liniște",
  "topic": "După o ședință de HIFU aproape nimic nu se vede; săptămâni la rând colagenul lucrează în liniște, apoi rezultatul apare",
- "post": "O ședință de HIFU. Apoi, liniște. Sub piele se formează colagen nou, iar rezultatul apare treptat, în săptămânile de după. Cazul 36 din catalog: HIFU gușă și contur, Arad, 1 ședință. Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta. #hifu #colagen #gusa #arad #timisoara",
- "case": "cazul-36",
+ "post": "O ședință de HIFU. Apoi, liniște. Sub piele se formează colagen nou, iar rezultatul apare treptat, în săptămânile de după. Cazul 24 din catalog: HIFU gât, Arad, 1 ședință. Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta. #hifu #colagen #gusa #arad #timisoara",
+ "case": "cazul-24",
  "sources": "Cuvintele: v2/src/riduri-linii-fine.html („rezultatul real apare treptat, pe măsură ce se formează colagen nou, maxim la 8-12 săptămâni de la ședință”; „Colagenul are nevoie de timp. Merită așteptarea.”; „Săptămânile 2-8: Colagenul nou se formează”), v2/src/gusa-barbie-dubla.html („O ședință HIFU”; „rezultat care se construiește pe măsură ce se formează colagen nou”). Cazul: v2/src/catalog-rezultate.html, Cazul 36: HIFU gușă și contur, Arad, 1 ședință („Rezultatul de alături este după o singură ședință.”; „Reducerea devine vizibilă în general la 6-8 săptămâni de la ședință.”; „Fotografie publicată cu acordul clientei. Rezultatele pot varia de la o persoană la alta.”). Poza: brand_asset/catalog/cazul-36-hifu-gusa-contur-arad.webp, tăiată în cele două jumătăți ale ei, neretușată.",
  "concept": {
   "who": "Femeia din Timișoara sau Arad care se gândește la HIFU și se teme de un singur lucru: că plătește o ședință și a doua zi nu vede nimic. Și cea care a făcut deja o ședință și așteaptă.",
@@ -84,21 +84,21 @@
    "type": "suspans",
    "hit": 14.0,
    "total": 21.2,
-   "img": "brand_asset/catalog/cazul-36-hifu-gusa-contur-arad.webp",
+   "img": "brand_asset/catalog/cazul-24-hifu-gat-arad.webp",
    "before": [
     6,
     6,
     682,
-    933
+    934
    ],
    "after": [
-    711,
+    712,
     6,
     682,
-    933
+    934
    ],
-   "caseNo": "Cazul 36",
-   "caseTitle": "HIFU gușă și contur",
+   "caseNo": "Cazul 24",
+   "caseTitle": "HIFU gât",
    "caseSub": "Arad · 1 ședință",
    "caseFine": [
     "Fotografie publicată cu acordul clientei.",
@@ -149,5 +149,6 @@
     19.333
    ]
   ]
- }
+ },
+ "casesNote": "21.11: doar cazurile din secțiunea de rezultate de pe prima pagină (02, 05, 08, 11, 16, 23, 24, 35, 37, 39)."
 }

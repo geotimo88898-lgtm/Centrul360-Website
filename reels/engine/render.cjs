@@ -36,6 +36,17 @@ async function segment(srv, id, a, z, out, tag, SUB) {
 }
 (async () => {
   const id = process.argv[2], workers = +process.argv[3] || 3;
+  // only the before/after photos of the homepage results section (George, 21.11): any other catalog case stops the render
+  try {
+    const home = fs.readFileSync(path.join(__dirname, '..', '..', 'index.html'), 'utf8');
+    const sec = (home.split('id="rezultate"')[1] || '').split('<section')[0];
+    const ok = new Set((sec.match(/cazul-\d\d/g) || []));
+    const used = new Set();
+    (function walk(o) { if (typeof o === 'string') { const m = o.match(/^(?:brand_asset\/catalog\/)?(cazul-\d\d)[^ ]*\.webp$/); if (m) used.add(m[1]); }
+      else if (o && typeof o === 'object') Object.values(o).forEach(walk); })(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'scripts', id, 'script.json'), 'utf8')));
+    const bad = [...used].filter((c) => !ok.has(c));
+    if (ok.size && bad.length) { console.error('cases not on the homepage results section: ' + bad.join(', ') + ' (allowed: ' + [...ok].sort().join(', ') + ')'); process.exit(2); }
+  } catch (e) { if (e && e.code !== 'ENOENT') throw e; }
   const build = path.join(__dirname, '..', 'scripts', id, 'build');
   fs.mkdirSync(build, { recursive: true });
   const srv = await start();

@@ -430,7 +430,7 @@
     const st = ctx.stage();
     const when = (a, d) => (typeof a === 'string' ? ctx.wordAt(0, a, -0.05) : a != null ? T(ctx, a) : d);
     const fr = h('div', 'abs', null, st); fr.style.cssText += ';border-radius:34px;overflow:hidden;background:#fff;box-shadow:0 50px 90px -40px rgba(0,0,0,.45);border:8px solid #fff';
-    const half = (side) => { const d = h('div', 'abs', null, fr); d.style.cssText += ';left:0;top:0;width:100%;height:100%;background-image:url(' + R.ROOT + '/' + p.img + ');background-size:200% 100%;background-position:' + (side ? '100%' : '0%') + ' 0'; return d; };
+    const half = (side) => { const d = h('div', 'abs', null, fr); d.style.cssText += ';left:0;top:0;width:100%;height:100%;background-image:url(' + R.ROOT + '/' + p.img + ');background-size:' + (p.stack ? '100% 200%' : '200% 100%') + ';background-position:' + (p.stack ? '0 ' + (side ? '100%' : '0%') : (side ? '100%' : '0%') + ' 0'); return d; };
     const B = half(0), A = half(1);
     const pre = h('img', null, null, fr); pre.src = R.ROOT + '/' + p.img; pre.style.display = 'none'; // so the page waits for it
     const line = h('div', 'abs', '<i style="position:absolute;left:-1.5px;top:0;bottom:0;width:3px;background:#fff;box-shadow:0 0 12px rgba(0,0,0,.25)"></i><i style="position:absolute;left:-17px;top:50%;margin-top:-17px;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffffff 0%,#fbe3d9 35%,#eab5a5 72%,#cf8f7d 100%);box-shadow:0 6px 14px -4px rgba(8,40,36,.45),0 0 0 3px #fff"></i>', fr);
@@ -444,7 +444,7 @@
     if (lab) ctx.anim(lab, 'pop', ctx.t0 + 0.3, { gain: 0.35 });
     if (note) ctx.anim(note, 'fade', ctx.t0 + 0.4, { sfx: null });
     ctx.shot.after = () => {
-      const iw = (p.iw || 1400) / 2, ih = p.ih || 944; // one half of the composite
+      const iw = p.stack ? (p.iw || 1400) : (p.iw || 1400) / 2, ih = p.stack ? (p.ih || 1400) / 2 : p.ih || 944; // one half of the composite (p.stack: before above, after below)
       const maxW = p.w || 540, maxH = 930 - (note ? 76 : 0) - (lab ? 80 : 0) - 16;
       const k = Math.min(maxW / iw, maxH / ih), w = iw * k, hh = ih * k, y0 = Math.max(0, (maxH - hh) / 2) + 6;
       place(fr, (860 - w - 16) / 2, y0, w + 16, hh + 16);
