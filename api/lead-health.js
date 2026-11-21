@@ -146,6 +146,21 @@ module.exports = async (req, res) => {
   // counts only; POST ?cardblast=pick&n=250 makes the list (and takes them out of Transformarea), =go sends, =stop stops
   // ?cardkpi=1: Admin → Campanii's „Cardul de Sărbători” view, computed here (counts only in the answer's summary) to see
   // why it fails; the error message, never the data of a person
+  // ?pixelstats=1: what the site's pixel (2276074362800484) received per event, per hour, the last ?h hours (counts only),
+  // straight from Meta, so the card's funnel (PageView → InitiateCheckout → Purchase) can be checked on Meta's side
+  if (req.query && req.query.pixelstats) {
+    const { loadConnection } = require('./_lib/facebook');
+    const conn = await loadConnection(readJSON);
+    const h = Math.min(168, Math.max(1, Number(req.query.h) || 24));
+    const since = Math.floor(Date.now() / 1000) - h * 3600;
+    const p = new URLSearchParams({ aggregation: 'event', start_time: String(since), access_token: conn.userToken || '' });
+    const r = await fetch('https://graph.facebook.com/v25.0/2276074362800484/stats?' + p.toString()).then((x) => x.json()).catch((e) => ({ error: { message: e.message } }));
+    if (r.error) { res.status(200).json({ ok: false, error: String(r.error.message || '').slice(0, 200) }); return; }
+    const tot = {};
+    (r.data || []).forEach((row) => (row.data || []).forEach((d) => { tot[d.value] = (tot[d.value] || 0) + (Number(d.count) || 0); }));
+    res.status(200).json({ ok: true, hours: h, events: tot, byHour: (r.data || []).slice(0, 48).map((row) => ({ at: row.start_time, ev: Object.fromEntries((row.data || []).map((d) => [d.value, d.count])) })) });
+    return;
+  }
   if (req.query && req.query.cardkpi) {
     try {
       const v = await require('./_lib/card-kpi').view({ fresh: true });
