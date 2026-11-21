@@ -154,8 +154,8 @@ module.exports = async (req, res) => {
   try {
     if (req.method === 'POST') return await hit(req, res);
     if (req.method !== 'GET') { res.status(405).json({ error: 'method_not_allowed' }); return; }
-    const session = await requireAdmin(req, res);
-    if (!session) return;
+    // the admin, or Claude's key (server to server, the same one the content intake reads): the funnel audit
+    if (!require('./_lib/content').fromProducer(req)) { const session = await requireAdmin(req, res); if (!session) return; }
     if ((req.query || {}).view === 'health') return await health(req, res);
     return await stats(res);
   } catch (err) {
