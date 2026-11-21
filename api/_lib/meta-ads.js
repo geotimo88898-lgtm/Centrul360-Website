@@ -34,7 +34,7 @@ const PLACEMENTS = {
   fb_feed: ['facebook', 'feed'], fb_story: ['facebook', 'story'], fb_reels: ['facebook', 'facebook_reels'],
   ig_feed: ['instagram', 'stream'], ig_story: ['instagram', 'story'], ig_reels: ['instagram', 'reels'],
 };
-const CTAS = ['LEARN_MORE', 'SIGN_UP', 'BOOK_NOW', 'GET_OFFER', 'APPLY_NOW', 'GET_QUOTE'];
+const CTAS = ['LEARN_MORE', 'SIGN_UP', 'BOOK_NOW', 'GET_OFFER', 'APPLY_NOW', 'GET_QUOTE', 'SHOP_NOW', 'BUY_NOW', 'ORDER_NOW'];
 const PERIODS = { today: 'today', yesterday: 'yesterday', '7d': 'last_7d', '30d': 'last_30d', max: 'maximum' };
 // a lead from an instant form, as Meta counts it in the results (first one found)
 // everything that is not deleted or archived (the edges' own effective_status filter)
@@ -193,8 +193,18 @@ function cleanSettings(x) {
   // „Conversion leads” (20.11): the ad set looks for leads who become clients (Meta reads the CRM steps the portal sends,
   // _lib/meta-capi.js), not the cheapest leads
   s.quality = x.quality === true;
+  // an ad to a page of the site instead of a lead form (21.11: the Card de Sărbători, bought online): the page's address
+  // (centrul360.com only), and what the ad set looks for: the pixel's Purchase (OUTCOME_SALES) or the page's views
+  // (OUTCOME_TRAFFIC, until the pixel has sales to learn from); the UTM tags name the campaign and the ad on every visit
+  s.link = /^https:\/\/(www\.)?centrul360\.com\/[\w\-\/.?=&%]*$/.test(String(x.link || '')) ? String(x.link).slice(0, 500) : '';
+  s.goal = x.goal === 'purchase' ? 'purchase' : 'views';
+  s.pixelId = /^\d{10,20}$/.test(String(x.pixelId || '')) ? String(x.pixelId) : '';
+  // several cities in one ad set (the card: Timișoara and Arad together)
+  s.cities = (Array.isArray(x.cities) ? x.cities : []).filter((c) => CITIES[c]);
+  if (s.cities.length && !s.city) s.city = s.cities[0];
   if (!s.adName) return { error: 'missing_names' };
-  if (!s.formId) return { error: 'missing_form' };
+  if (!s.formId && !s.link) return { error: 'missing_form' };
+  if (s.link && s.goal === 'purchase' && !s.pixelId) return { error: 'missing_pixel' };
   if (!s.primaryText) return { error: 'missing_text' };
   if (s.adsetId) return { s }; // the audience, budget and placements are the ad set's own
   if (!s.campaignName || !s.adsetName) return { error: 'missing_names' };
@@ -205,11 +215,10 @@ function cleanSettings(x) {
 }
 
 function targeting(s) {
-  const c = CITIES[s.city];
   const fb = s.placements.filter((p) => PLACEMENTS[p][0] === 'facebook').map((p) => PLACEMENTS[p][1]);
   const ig = s.placements.filter((p) => PLACEMENTS[p][0] === 'instagram').map((p) => PLACEMENTS[p][1]);
   const t = {
-    geo_locations: { custom_locations: [{ latitude: c.lat, longitude: c.lng, radius: s.radiusKm, distance_unit: 'kilometer' }], location_types: ['home', 'recent'] },
+    geo_locations: { custom_locations: (s.cities && s.cities.length ? s.cities : [s.city]).map((k) => ({ latitude: CITIES[k].lat, longitude: CITIES[k].lng, radius: s.radiusKm, distance_unit: 'kilometer' })), location_types: ['home', 'recent'] },
     age_min: s.ageMin, age_max: s.ageMax,
     publisher_platforms: [fb.length ? 'facebook' : '', ig.length ? 'instagram' : ''].filter(Boolean),
     device_platforms: ['mobile', 'desktop'],
@@ -218,7 +227,7 @@ function targeting(s) {
   };
   if (s.women && !s.employment) t.genders = [2];
   // a job ad: Meta's rules for employment (everyone 18-65, at least 15 miles / 25 km around, no detailed targeting)
-  if (s.employment) { t.age_min = 18; t.age_max = 65; t.geo_locations.custom_locations[0].radius = Math.max(25, s.radiusKm); delete t.targeting_automation; }
+  if (s.employment) { t.age_min = 18; t.age_max = 65; t.geo_locations.custom_locations.forEach((g) => { g.radius = Math.max(25, s.radiusKm); }); delete t.targeting_automation; }
   if (s.audiences && s.audiences.length) t.custom_audiences = s.audiences.map((id) => ({ id }));
   if (s.excludeAudiences && s.excludeAudiences.length) t.excluded_custom_audiences = s.excludeAudiences.map((id) => ({ id }));
   if (fb.length) t.facebook_positions = fb;
@@ -237,6 +246,12 @@ async function audienceCreate(conn, kind, days, igId) {
     page_engaged: { name: 'Retargeting · a interacționat cu pagina · ' + days + 'z', rule: { inclusions: { operator: 'or', rules: [{ event_sources: [page], retention_seconds: sec, filter: { operator: 'and', filters: [{ field: 'event', operator: 'eq', value: 'page_engaged' }] } }] } } },
     ig_engaged: { name: 'Retargeting · a interacționat pe Instagram · ' + days + 'z', rule: { inclusions: { operator: 'or', rules: [{ event_sources: [{ id: igId, type: 'ig_business' }], retention_seconds: sec, filter: { operator: 'and', filters: [{ field: 'event', operator: 'eq', value: 'ig_business_profile_all' }] } }] } } },
   };
+  // the site's visitors through its pixel (21.11): all pages, or only the Card de Sărbători's
+  const pixel = await require('./meta-capi').loadConfig().then((c) => c.pixelId).catch(() => '') || require('./meta-capi').DEFAULT_PIXEL;
+  const visit = (label, part) => ({ name: 'Retargeting · ' + label + ' · ' + days + 'z', rule: { inclusions: { operator: 'or', rules: [{ event_sources: [{ id: pixel, type: 'pixel' }], retention_seconds: sec,
+    filter: { operator: 'and', filters: [{ field: 'url', operator: 'i_contains', value: part }] } }] } } });
+  rules.site_visitors = visit('vizitatori site', 'centrul360.com');
+  rules.card_visitors = visit('vizitatori Cardul de Sărbători', 'card-sarbatori');
   const r = rules[kind];
   if (!r || (kind === 'ig_engaged' && !igId)) return { error: 'invalid_kind' };
   const x = await call('POST', '/' + act + '/customaudiences', tok, { name: r.name, rule: JSON.stringify(r.rule), prefill: 'true' });
@@ -281,7 +296,7 @@ async function publish(conn, image, s) {
     if (!adsetId) {
       // a job ad names its country too (sent empty, Meta refuses every campaign)
       const camp = await call('POST', '/' + act + '/campaigns', tok, Object.assign({
-        name: s.campaignName, objective: 'OUTCOME_LEADS', status: 'PAUSED', special_ad_categories: s.employment ? ['EMPLOYMENT'] : [], buying_type: 'AUCTION',
+        name: s.campaignName, objective: s.link ? (s.goal === 'purchase' ? 'OUTCOME_SALES' : 'OUTCOME_TRAFFIC') : 'OUTCOME_LEADS', status: 'PAUSED', special_ad_categories: s.employment ? ['EMPLOYMENT'] : [], buying_type: 'AUCTION',
         is_adset_budget_sharing_enabled: false,
       }, s.employment ? { special_ad_category_country: ['RO'] } : {}));
       if (!camp.ok) return { error: metaError(camp.j, 'Campania') };
@@ -289,8 +304,12 @@ async function publish(conn, image, s) {
       made.push(campaignId);
       const adset = await call('POST', '/' + act + '/adsets', tok, {
         name: s.adsetName, campaign_id: campaignId, daily_budget: cents(conn, s.budget), billing_event: 'IMPRESSIONS',
-        optimization_goal: s.quality ? 'QUALITY_LEAD' : 'LEAD_GENERATION', bid_strategy: 'LOWEST_COST_WITHOUT_CAP', destination_type: 'ON_AD',
-        promoted_object: { page_id: conn.pageId }, targeting: targeting(s), status: 'PAUSED', ...(await dsaOf(conn)),
+        bid_strategy: 'LOWEST_COST_WITHOUT_CAP', targeting: targeting(s), status: 'PAUSED', ...(await dsaOf(conn)),
+        ...(s.link
+          ? (s.goal === 'purchase'
+            ? { optimization_goal: 'OFFSITE_CONVERSIONS', destination_type: 'WEBSITE', promoted_object: { pixel_id: s.pixelId, custom_event_type: 'PURCHASE' } }
+            : { optimization_goal: 'LANDING_PAGE_VIEWS', destination_type: 'WEBSITE' })
+          : { optimization_goal: s.quality ? 'QUALITY_LEAD' : 'LEAD_GENERATION', destination_type: 'ON_AD', promoted_object: { page_id: conn.pageId } }),
       });
       if (!adset.ok) { await undo(); return { error: metaError(adset.j, 'Setul de reclame') }; }
       adsetId = adset.j.id;
@@ -304,9 +323,9 @@ async function publish(conn, image, s) {
     const spec = {
       page_id: conn.pageId,
       link_data: {
-        image_hash: hash, link: 'https://fb.me/', message: s.primaryText,
+        image_hash: hash, link: s.link || 'https://fb.me/', message: s.primaryText,
         name: s.headline || undefined, description: s.description || undefined,
-        call_to_action: { type: s.cta, value: { lead_gen_form_id: s.formId } },
+        call_to_action: s.link ? { type: s.cta, value: { link: s.link } } : { type: s.cta, value: { lead_gen_form_id: s.formId } },
       },
     };
     // the Instagram account linked to the Page signs the ad on Instagram (without one, Meta uses the Page)
@@ -317,12 +336,13 @@ async function publish(conn, image, s) {
     const titles = [s.headline, s.headline2, s.headline3].filter(Boolean);
     const multi = bodies.length > 1 || titles.length > 1;
     const feed = multi ? { bodies: bodies.map((text) => ({ text })), titles: titles.map((text) => ({ text })), descriptions: s.description ? [{ text: s.description }] : undefined, optimization_type: 'DEGREES_OF_FREEDOM' } : null;
-    let creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name: s.adName, object_story_spec: spec }, feed ? { asset_feed_spec: feed } : {}));
+    const tags = s.link ? { url_tags: 'utm_source=meta&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}' } : {};
+    let creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name: s.adName, object_story_spec: spec }, tags, feed ? { asset_feed_spec: feed } : {}));
     let textNote = '';
     // Meta refusing the second text: the ad goes with the first one, and says so
     if (!creative.ok && feed) {
       const why = metaError(creative.j, '');
-      creative = await call('POST', '/' + act + '/adcreatives', tok, { name: s.adName, object_story_spec: spec });
+      creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name: s.adName, object_story_spec: spec }, tags));
       if (creative.ok) textNote = 'Meta n-a primit al doilea text / titlu (' + why + '), reclama are doar primul.';
     }
     if (!creative.ok) { await undo(); return { error: metaError(creative.j, 'Reclama (textele și imaginea)') }; }

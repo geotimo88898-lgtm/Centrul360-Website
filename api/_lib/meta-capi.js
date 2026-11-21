@@ -464,6 +464,27 @@ async function siteEvent(req, opts) {
   }
 }
 
+// A site event the server learns of later, without her browser (21.11: a Card de Sărbători paid in myPOS → Purchase):
+// what her browser told us when she ordered (rq: ip, ua, fbp, fbc, url, kept on the order) stands in for the request.
+// o: { name, eventId, phone, leadId, url, custom: { value }, time (ms) }
+async function laterEvent(o, rq) {
+  try {
+    if (!o || !/^[A-Za-z]{3,40}$/.test(String(o.name || ''))) return { skipped: 'name' };
+    if (!EID_RE.test(String(o.eventId || ''))) return { skipped: 'no_event_id' };
+    const cfg = await loadConfig();
+    const mode = modeOf(cfg);
+    if (!SENDS.includes(mode)) return { skipped: mode };
+    const r = rq || {};
+    const ev = sitePayload(o, { ip: r.ip || '', ua: r.ua || '', fbp: r.fbp || '', fbc: r.fbc || '', url: siteUrl(r.url || o.url) }, o.time);
+    if (!ev.user_data.client_user_agent) ev.action_source = 'system_generated';
+    const res = await deliver(cfg, mode, [ev], 'site');
+    return { sent: res.sent.length, mode };
+  } catch (err) {
+    console.error('meta-capi later:', short(err));
+    return { error: true };
+  }
+}
+
 // ---------------------------------------------------------------- after the answer
 // The work runs after the answer when the platform keeps the request alive for it (Cloudflare / Vercel waitUntil);
 // otherwise it is awaited. Either way it never throws.
@@ -518,5 +539,5 @@ module.exports = {
   normPhone, normEmail, sha, userData, dataJson, cookies, fromRequest, siteUrl,
   cleanConfig, cleanMap, loadConfig, modeOf, defaultEvent, stageEvents, loadStages,
   leadgenOf, crmReached, crmPayload, sitePayload, targetsOf,
-  crmSync, sweep, siteEvent, soon, checkPixel, testEvent, loadStatus,
+  crmSync, sweep, siteEvent, laterEvent, soon, checkPixel, testEvent, loadStatus,
 };

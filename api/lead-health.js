@@ -122,6 +122,8 @@ module.exports = async (req, res) => {
   // with a phone, without a test name. Never a name or a number. Read only.
   // POST ?customers=sync: the clinic's own people (clients + the Transformarea 360 list) as a Meta custom audience,
   // hashed (api/_lib/meta-customers.js), to leave them out of the lead filter ads and reach them with the card
+  // POST ?pixelshare=1: the site's pixel shared with the connected ad account (api/_lib/pixel-share-new.js); ids only
+  if (req.method === 'POST' && req.query && req.query.pixelshare) { res.status(200).json(await require('./_lib/pixel-share-new').run()); return; }
   if (req.query && req.query.customers) {
     const MC = require('./_lib/meta-customers');
     const r = req.method === 'POST' && req.query.customers === 'sync' ? await MC.sync() : { ok: true, audience: await MC.current() };

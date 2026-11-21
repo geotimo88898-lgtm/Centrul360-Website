@@ -59,6 +59,19 @@ async function treatments() {
   }
   return out.slice(0, 80);
 }
+// where she came from (the owner, 21.11: „tracking cu absolut totul”): the ad's UTM tags and click id from the page's
+// address, and what her browser told Meta (fbp, fbc, ip, ua), kept on the order so the payment, confirmed later
+// in myPOS, goes back to Meta as a Purchase of that very click (_lib/card-sarbatori.js confirm)
+function trackOf(req, page) {
+  const rq = capi.fromRequest(req, page);
+  const t = { fbp: rq.fbp, fbc: rq.fbc, ip: rq.ip, ua: rq.ua, url: rq.url };
+  try {
+    const q = new URL(String(page || '')).searchParams;
+    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid'].forEach((k) => { const v = q.get(k); if (v) t[k] = String(v).slice(0, 200); });
+  } catch (e) { /* no address */ }
+  Object.keys(t).forEach((k) => { if (!t[k]) delete t[k]; });
+  return t;
+}
 async function lead(r, b, req, note) {
   try {
     const L = await require('./portal-leads').createLead({ name: r.name, phone: r.phone, source: 'site', location: r.city, createdBy: 'site-form', interest: 'Card de Sărbători', note, authorLabel: 'Site · Card de Sărbători', welcome: false });
@@ -259,7 +272,7 @@ module.exports = async (req, res) => {
 
     // nothing is issued now: the codes come when the payment is confirmed (the owner, 21.11)
     const entry = { id: crypto.randomUUID(), created: new Date().toISOString(), name, phone, city, tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty, forWho: gift ? 'cadou' : 'eu',
-      cards: names.map((n) => ({ code: '', recipient: n })), recipient: names[0] || '', status: online ? 'asteptare' : 'rezervat', via: 'site', pay: online ? 'online' : 'clinica', page: clip(b.page, 200) };
+      cards: names.map((n) => ({ code: '', recipient: n })), recipient: names[0] || '', status: online ? 'asteptare' : 'rezervat', via: 'site', pay: online ? 'online' : 'clinica', page: clip(b.page, 200), track: trackOf(req, b.page) };
     list.push(entry);
     await writeJSON(C.KEY, list);
     // two at the same second for the last cards: the later one gives way

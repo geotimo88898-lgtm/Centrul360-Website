@@ -322,6 +322,14 @@ async function confirm(id, via, o) {
   });
   await writeJSON(KEY, list);
 
+  // the sale goes back to Meta (Conversions API), with what her browser told us when she ordered: Purchase, in RON
+  try {
+    const capi = require('./meta-capi');
+    const t = r.track || {};
+    await capi.soon(() => capi.laterEvent({ name: 'Purchase', eventId: 'purchase.' + r.id, phone: r.phone, leadId: r.leadId, url: t.url || r.page,
+      custom: { value: r.paidAmount } }, t));
+  } catch (e) { console.error('card purchase capi:', e.message); }
+
   // the Club's waiting list (online only), her lead and her client file
   if (r.bonus) await clubAdd({ name: r.name, phone: r.phone, city: r.city, code: r.cards[0].code, source: 'card' }).catch((e) => console.error('card club:', e.message));
   try {
