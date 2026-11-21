@@ -99,9 +99,10 @@ async function buildAudience(opts) {
     add(l.phone, l.name, C.clinicOf(l.location), 'lead');
   });
   // the ones who got the Cardul de Sărbători instead (api/_lib/card-blast.js, the owner 21.11): out of this list
-  if (opts && opts.all) return out;
+  const off = await require('./optout').set().catch(() => new Set()); // asked for no more offers (the owner, 21.11)
+  if (opts && opts.all) return off.size ? out.filter((p) => !off.has(p.k)) : out;
   const ex = await require('./card-blast').excluded().catch(() => new Set());
-  return ex.size ? out.filter((p) => !ex.has(p.k)) : out;
+  return out.filter((p) => !ex.has(p.k) && !off.has(p.k));
 }
 async function audience(st) {
   if (st && st.frozenAt) return readJSON(AUD, []);
@@ -364,7 +365,7 @@ async function onInbound(conversations, message, text) {
     if ((x.replies || []).some((r) => r.id === message.id)) return null;
     x.replies = (x.replies || []).concat({ id: message.id || '', at: nowISO(), step, kind, text: String(text || '').slice(0, 300) }).slice(-20);
     if (kind === 'yes') x.interested = true;
-    if (kind === 'stop') x.optout = true;
+    if (kind === 'stop') { x.optout = true; await require('./optout').add(k, 'Transformarea 360: a cerut stop').catch(() => {}); }
     if (kind === 'list') x.list = true;
     if ((kind === 'yes' || kind === 'text') && !x.status) x.status = 'call';
     // her first yes gets one fixed answer at once (the owner, 21.11: no AI answering, a person calls her), from the number

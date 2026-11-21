@@ -150,6 +150,30 @@ module.exports = async (req, res) => {
     catch (e) { res.status(200).json({ ok: false, error: String(e && e.message || e), stack: String(e && e.stack || '').split('\n').slice(0, 6) }); }
     return;
   }
+  // ?optouts=scan: who wrote on WhatsApp since ?since (default the day before) something that reads as „no more offers”
+  // (name, the phone's last 3 digits, the words); ?optouts=find&q=Magda: the people by that name who got a campaign message;
+  // POST ?optouts=add&phones=07..,07.. : on the no-offers list (api/_lib/optout.js). For the owner, never logged.
+  if (req.query && req.query.optouts) {
+    const O = require('./_lib/optout');
+    const op = String(req.query.optouts);
+    if (req.method === 'POST' && op === 'add') { res.status(200).json(await O.add(String(req.query.phones || '').split(','), String(req.query.why || 'la cererea ei'))); return; }
+    const convos = await readJSON('data/whatsapp-conversations.json', []);
+    const off = await O.set();
+    const mask = (p) => '…' + O.d9(p).slice(-3);
+    if (op === 'find') {
+      const q = String(req.query.q || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+      const out = convos.filter((c) => String(c.clientName || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().includes(q)).slice(0, 30)
+        .map((c) => ({ name: c.clientName, phone: mask(c.phone), full: c.phone, off: off.has(O.d9(c.phone)), last: ((c.messages || []).filter((m) => m.direction === 'in').slice(-2).map((m) => String(m.text || '').slice(0, 120))) }));
+      res.status(200).json({ ok: true, found: out }); return;
+    }
+    const since = String(req.query.since || new Date(Date.now() - 864e5).toISOString());
+    const hits = [];
+    convos.forEach((c) => (c.messages || []).forEach((m) => {
+      if (m.direction !== 'in' || String(m.timestamp || '') < since) return;
+      if (O.isStop(m.text)) hits.push({ name: c.clientName, phone: mask(c.phone), full: c.phone, at: m.timestamp, text: String(m.text || '').slice(0, 160), off: off.has(O.d9(c.phone)) });
+    }));
+    res.status(200).json({ ok: true, since, hits }); return;
+  }
   if (req.query && req.query.cardblast) {
     const CB = require('./_lib/card-blast');
     const op = String(req.query.cardblast);

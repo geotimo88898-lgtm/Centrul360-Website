@@ -124,6 +124,8 @@ async function tick(opts) {
     media[k] = up.id; st.media = Object.assign({}, st.media, { [mk]: { id: up.id, at: nowISO() } });
   }
   const tk = (p) => keyOf(p.pre || st.pre || '', p.city);
+  const off = await require('./optout').set();
+  st.list.filter((p) => !sent[p.k] && off.has(p.k)).forEach((p) => { sent[p.k] = { e: 'nu mai vrea oferte', code: 'optout', at: nowISO(), c: p.city }; });
   const queue = st.list.filter((p) => !sent[p.k] && tpl[tk(p)]).slice(0, BATCH);
   const one = async (p) => {
     if (halt || Date.now() - t0 > budget) return;
@@ -234,8 +236,9 @@ async function pickMore(n, opt) {
   const [trans, clients, appts, sales, orders, emps, sentMap] = await Promise.all([FC.buildAudience(), readJSON('data/clients.json', []), readJSON('data/appointments.json', []),
     readJSON('data/sales.json', []), readJSON('data/card-sarbatori.json', []), readJSON('data/employees.json', []), readJSON(SENT, null)]);
   const sent = sentMap || {};
+  const off = await require('./optout').set();
   const inTrans = new Set(trans.map((p) => p.k));
-  const already = new Set(st.list.map((p) => p.k).concat(Object.keys(sent)));
+  const already = new Set(st.list.map((p) => p.k).concat(Object.keys(sent)).concat([...off]));
   const bought = new Set(orders.map((o) => d9(o && o.phone)).filter((k) => k.length === 9));
   const staff = new Set(emps.map((e) => d9(e && e.phone)).filter((x) => x.length === 9));
   const now = Date.now(), iso = (d) => new Date(now - d * 864e5).toISOString().slice(0, 10);
@@ -372,6 +375,7 @@ async function noteAnswer(message, text) {
     const kind = kindOf(message, text);
     const rec = { k, kind, text: String(text || '').slice(0, 300), at: message.timestamp ? new Date(Number(message.timestamp) * 1000).toISOString() : nowISO(), ctx: (message.context && message.context.id) === m.byK.get(k).w ? 1 : 0 };
     await createOnce(P + 'in/' + safeId(message.id), JSON.stringify(rec)).catch(() => {});
+    if (kind === 'stop' || require('./optout').isStop(text)) await require('./optout').add(k, 'a cerut pe WhatsApp: ' + String(text || '').slice(0, 60)).catch(() => {});
     return kind;
   } catch (err) { console.error('cardblast noteAnswer', err.message); return null; }
 }
