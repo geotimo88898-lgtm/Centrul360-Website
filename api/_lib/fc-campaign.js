@@ -364,6 +364,18 @@ async function onInbound(conversations, message, text) {
     if (kind === 'stop') x.optout = true;
     if (kind === 'list') x.list = true;
     if ((kind === 'yes' || kind === 'text') && !x.status) x.status = 'call';
+    // her first yes gets one fixed answer at once (the owner, 21.11: no AI answering, a person calls her), from the number
+    // she wrote to, in her chat too, so the desk sees what she was told
+    if (kind === 'yes' && !x.ackAt) {
+      const fn = p.fn || firstName(p.name); const ack = 'Mulțumim' + (fn ? ', ' + fn : '') + '! 🤍 Ți-am rezervat prețul și bonusurile. Te sunăm în cel mai scurt timp ca să-ți găsim o oră pentru consultație.';
+      const r = await WA.sendWhatsApp({ phone: p.phone, text: ack, from: p.city }).catch((e) => ({ sent: false, error: e.message }));
+      if (r.sent) {
+        x.ackAt = nowISO();
+        const { normalizePhone } = require('./clients');
+        const convo = conversations.find((c) => c.phone === (normalizePhone(message.from) || message.from));
+        if (convo) convo.messages.push({ id: r.id || crypto.randomUUID(), direction: 'out', type: 'text', text: ack, status: 'sent', timestamp: nowISO(), sentBy: null, sentByName: NAME, auto: true });
+      } else console.error('fc ack', r.error);
+    }
     x.updatedAt = nowISO();
     await savePeople(d);
     return { kind, person: x, step };
