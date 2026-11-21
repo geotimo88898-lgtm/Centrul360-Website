@@ -12,6 +12,14 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 21.11 ~18:00, George: „reclamele cu cardul sunt cu obiectiv de achiziție?”: the card page campaign was optimised for
+  // page views; it's replaced by the same ad optimised for the pixel's Purchase (the card paid in myPOS goes back to Meta)
+  { id: 'card-sales-2026-11-21', why: 'Reclama cardului pe site caută acum cumpărători (Purchase), nu vizite', actions: [
+    { campaignId: '120260599182800112', name: 'CARD · SITE · Plătești 290 lei (vizite)', status: 'PAUSED', why: 'optimizată pe vizite, înlocuită de cea pe cumpărare' },
+    { campaignId: '120260600034500112', name: 'CARD · VÂNZARE (setul)', status: 'ACTIVE', why: 'pornit cu campania' },
+    { campaignId: '120260600035920112', name: 'CARD · VÂNZARE (reclama)', status: 'ACTIVE', why: 'pornit cu campania' },
+    { campaignId: '120260600033830112', name: 'CARD · VÂNZARE · Plătești 290 lei. Ea primește 500 lei', status: 'ACTIVE', why: 'cardul pe site, optimizat pe cumpărare' },
+  ] },
   // 21.11 ~17:20, George: „da, pornește-le”: the Card de Sărbători gets the money (two destinations side by side: the
   // reservation form and the card page); the lead filter ads without cheap leads stop; per day the total stays the same
   { id: 'card-on-2026-11-21', why: 'Cardul de Sărbători primește banii (formular și pagina cardului), totalul pe zi rămâne același', actions: [
