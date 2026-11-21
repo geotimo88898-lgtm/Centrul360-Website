@@ -49,6 +49,14 @@ module.exports = async (req, res) => {
   const action = String(q.action || body.action || (req.method === 'GET' ? 'status' : ''));
   try {
     if (req.method === 'GET' && action === 'status') { res.status(200).json(await C.status()); return; }
+    // what is waiting for a look (Claude reviews it, the owner 21.11): each ready item with its texts and its files' links
+    if (req.method === 'GET' && action === 'items') {
+      const want = String(q.review || 'pending');
+      const list = (await C.items()).filter((it) => !it.removed && !it.dropped && it.state === 'ready' && (want === 'all' || (it.review || 'pending') === want));
+      res.status(200).json({ ok: true, items: list.map((it) => ({ id: it.id, kind: it.kind, week: it.week, rubric: it.rubric, topic: it.topic, hook: it.hook, review: it.review || 'pending',
+        captions: it.captions || {}, caption: it.caption || '', files: (it.files || []).map((f) => ({ name: f.name, role: f.role || '', mime: f.mime, dur: f.dur, w: f.w, h: f.h, url: C.fileUrl(it.id, f.name, f.v) })) })) });
+      return;
+    }
     if (action === 'file' && (req.method === 'PUT' || req.method === 'POST')) {
       const len = Number((req.headers && req.headers['content-length']) || 0);
       if (len > C.MAX_BYTES) { res.status(413).json({ error: 'too_large' }); return; }
@@ -60,8 +68,18 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
     if (action === 'create') { const it = await C.create(body.item); res.status(200).json({ ok: true, id: it.id, week: it.week }); return; }
     if (action === 'replace') { res.status(200).json(Object.assign({ ok: true }, await C.replace(String(body.id || ''), body))); return; }
-    // the global switch: { action:'settings', on }
-    if (action === 'settings' && req.method === 'POST') { res.status(200).json(Object.assign({ ok: true }, await C.saveSettings({ on: body.on !== false }))); return; }
+    // the settings: { action:'settings', on, quotas?, times?, photoTime?, modes?, nets? } (the owner, 21.11: „încredere maximă,
+    // organice hardcore”: Claude sets the volume and the posting itself; saveSettings merges and checks every part)
+    if (action === 'settings' && req.method === 'POST') {
+      const patch = { on: body.on !== false };
+      ['quotas', 'times', 'photoTime', 'modes', 'nets'].forEach((k) => { if (body[k] && typeof body[k] === 'object') patch[k] = body[k]; });
+      res.status(200).json(Object.assign({ ok: true }, await C.saveSettings(patch)));
+      return;
+    }
+    // the look, by Claude (the owner, 21.11: he leaves the approval to Claude): { action:'approve', ids } approves those
+    // still waiting; { action:'redo', id, note } sends one back to the producer
+    if (action === 'approve') { res.status(200).json({ ok: true, approved: await C.approveAll(Array.isArray(body.ids) ? body.ids : []) }); return; }
+    if (action === 'redo') { res.status(200).json({ ok: true, item: await C.setReview(String(body.id || ''), 'redo', String(body.note || '').slice(0, 1000), {}) }); return; }
     if (action === 'ready') {
       const r = await C.ready(String(body.id || ''));
       // the owner hears at once when next week's batch is complete
