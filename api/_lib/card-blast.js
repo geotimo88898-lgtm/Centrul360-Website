@@ -145,4 +145,60 @@ async function status() {
   return { ok: true, armed: st.armed, pickedAt: st.pickedAt, doneAt: st.doneAt, note: st.note, excluded: ex.size, byCity: by, failReasons: reasons };
 }
 
-module.exports = { pick, go, stop, tick, status, excluded, EXCLUDE };
+// ---- the message she got, in her chat (Mesaje): when she answers (the webhook calls onInbound) and, once, for the chats
+// that already exist (backfill): the team sees what she is answering. Put in by time, never twice.
+function msgFor(rec, p, tpl) {
+  const v = { prenume: (p && p.fn) || 'dragă' };
+  const text = String(tpl.body || '').replace(/\{\{(\d+)\}\}/g, (m, i) => { const key = (tpl.map || [])[i - 1]; return key && v[key] != null ? String(v[key]) : m; });
+  const img = WT.imageOf(tpl);
+  return Object.assign({ id: rec.w, direction: 'out', type: 'template', templateId: tpl.id, text, status: 'delivered', timestamp: rec.at, sentBy: null, sentByName: 'Cardul de Sărbători', auto: true },
+    img ? { media: { kind: 'image', mime: 'image/jpeg', filename: 'card-sarbatori.jpg', path: img } } : {});
+}
+function putIn(convo, msg) {
+  const msgs = convo.messages = convo.messages || [];
+  if (msgs.some((x) => x.id === msg.id)) return false;
+  let i = msgs.length;
+  while (i > 0 && String(msgs[i - 1].timestamp) > msg.timestamp) i--;
+  msgs.splice(i, 0, msg);
+  return true;
+}
+let cache = { at: 0, sent: null, list: null, tpls: null };
+async function fresh() {
+  if (Date.now() - cache.at < 60e3 && cache.sent) return cache;
+  const [st, sent, tpls] = [await loadState(), (await readJSON(SENT, null)) || {}, (await WT.load()).templates];
+  cache = { at: Date.now(), sent, list: new Map(st.list.map((p) => [p.k, p])), tpls };
+  return cache;
+}
+const tplOfSent = (tpls, city) => tpls.filter((t) => t.fastcash === 'card_sarbatori_' + TAG[city]).sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))[0] || null;
+async function onInbound(conversations, message) {
+  const k = d9(message && message.from);
+  if (k.length !== 9) return false;
+  const c = await fresh();
+  const rec = c.sent[k];
+  if (!rec || !rec.w || rec.e) return false;
+  const { normalizePhone } = require('./clients');
+  const convo = conversations.find((x) => x.phone === (normalizePhone(message.from) || message.from));
+  const tpl = tplOfSent(c.tpls, rec.c);
+  if (!convo || !tpl) return false;
+  return putIn(convo, msgFor(rec, c.list.get(k), tpl));
+}
+async function backfillChats() {
+  cache.at = 0;
+  const c = await fresh();
+  const { normalizePhone } = require('./clients');
+  const KC = 'data/whatsapp-conversations.json';
+  const conversations = await readJSON(KC, []);
+  let added = 0;
+  for (const [k, rec] of Object.entries(c.sent)) {
+    if (!rec.w || rec.e) continue;
+    const p = c.list.get(k);
+    const convo = conversations.find((x) => d9(x.phone) === k);
+    const tpl = tplOfSent(c.tpls, rec.c);
+    if (!convo || !tpl) continue;
+    if (putIn(convo, msgFor(rec, p, tpl))) added++;
+  }
+  if (added) await require('./wa-convos').saveConversations(conversations);
+  return { ok: true, added };
+}
+
+module.exports = { pick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats };

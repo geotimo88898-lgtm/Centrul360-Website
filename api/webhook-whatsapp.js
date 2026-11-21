@@ -391,6 +391,7 @@ module.exports = async (req, res) => {
             const m = await handleInboundMessage(conversations, message, phoneNumberId, value.contacts, heard);
             if (m) fresh.set(m.phone, m);
             if (m) { const hit = await FC.onInbound(conversations, message, textFor(message)); if (hit) fc.push({ hit, m }); }
+            if (m) await require('./_lib/card-blast').onInbound(conversations, message).catch((e) => console.error('card blast chat', e.message)); // the Cardul de Sărbători she answers, in her chat
             if (m && m.tap) taps.push(m);
             changed = true;
           } catch (err) {
