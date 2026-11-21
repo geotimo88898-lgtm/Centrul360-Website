@@ -71,7 +71,7 @@ function firstName(name) {
 }
 
 // ---------------------------------------------------------------- who (the same rule as ?fcaudience)
-async function buildAudience() {
+async function buildAudience(opts) {
   const [clients, appts, leads, emps] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/appointments.json', []), readJSON('data/leads.json', []), readJSON('data/employees.json', [])]);
   const { normalizePhone } = require('./clients');
   const C = require('./clinic');
@@ -98,7 +98,10 @@ async function buildAudience() {
     seen.add(d9(ph));
     add(l.phone, l.name, C.clinicOf(l.location), 'lead');
   });
-  return out;
+  // the ones who got the Cardul de Sărbători instead (api/_lib/card-blast.js, the owner 21.11): out of this list
+  if (opts && opts.all) return out;
+  const ex = await require('./card-blast').excluded().catch(() => new Set());
+  return ex.size ? out.filter((p) => !ex.has(p.k)) : out;
 }
 async function audience(st) {
   if (st && st.frozenAt) return readJSON(AUD, []);
