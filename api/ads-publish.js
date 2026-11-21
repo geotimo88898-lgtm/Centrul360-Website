@@ -233,6 +233,33 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, form: { id: r.form.id, name: r.form.name, lastAt: '', created: new Date().toISOString(), offer: offer ? offer.title : '', location: r.form.location } });
       return;
     }
+    // the Card de Sărbători lead form (21.11, api/_lib/card-lead.js): one form for both clinics (the clinic is a question),
+    // no review screen, the ending sends her to the card page; registered as kind 'card' so fb-leads.js routes its leads.
+    // Made once: a second call returns the one already made.
+    if (body.action === 'card_form_create') {
+      const store = { readJSON, writeJSON };
+      const doc = await readJSON('data/fb-forms.json', {});
+      const have = Object.keys(doc.forms || {}).find((id) => (doc.forms[id] || {}).kind === 'card' && !(doc.forms[id] || {}).archived);
+      if (have && body.again !== true) { res.status(200).json({ ok: true, already: true, form: { id: have, name: doc.forms[have].name } }); return; }
+      const CL = require('./_lib/card-lead'), FC = require('./_lib/fb-form-create'), FT = require('./_lib/fb-form-template');
+      const input = CL.formInput();
+      const c = FC.clean(input, await FT.getTemplate(store));
+      if (c.error) { res.status(400).json({ error: 'invalid_form', message: c.error }); return; }
+      c.params.thank_you_page = CL.thankYou(input.ending);
+      const r = await FC.postForm(store, c.params);
+      if (r.error) { ME.log('ads-publish', r.error); res.status(400).json({ error: 'meta_refused', message: ME.action(r.error) }); return; }
+      const now = new Date().toISOString();
+      const d2 = await readJSON('data/fb-forms.json', {});
+      d2.forms = d2.forms || {};
+      d2.forms[r.id] = { name: c.params.name, kind: 'card', location: '', leads: 0, createdHere: now,
+        questions: c.params.questions.map((q) => ({ key: q.key || q.type.toLowerCase(), label: q.label || '', type: q.type, options: q.options || [] })) };
+      await writeJSON('data/fb-forms.json', d2);
+      const poll = await readJSON('data/fb-poll.json', {});
+      poll.forms = [{ id: r.id, name: c.params.name, status: 'ACTIVE', count: 0, created: now, lastAt: 0 }].concat((poll.forms || []).filter((f) => f.id !== r.id));
+      await writeJSON('data/fb-poll.json', poll);
+      res.status(200).json({ ok: true, form: { id: r.id, name: c.params.name } });
+      return;
+    }
     // the move to another ad account (21.11): a campaign of the old account remade in the connected one (meta-ads port)
     if (body.action === 'port') {
       const conn = await loadConnection(readJSON);
