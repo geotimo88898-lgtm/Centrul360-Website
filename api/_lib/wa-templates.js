@@ -27,7 +27,9 @@ const SAMPLE = { prenume: 'Andreea', nume: 'Andreea Popescu', telefon: '0722 123
   credit: '2.500', cod: 'C360-AB2C-DE3F', cadou: 'Cadou: o ședință de EMS cadou. Locul tău în Clubul 360 e rezervat: https://www.centrul360.com/club-360', folosit: '450', sold: '2.050',
   // reserved, to pay in the clinic (rezervat: the sum she pays; locatie above is the clinic); the payment not finished
   // (rec1, rec2: the cards left, as the page says them) and the name asked after the payment (name)
-  carduri: '6 carduri', suma: '990' };
+  carduri: '6 carduri', suma: '990',
+  // a lead from the ads' form (lead): the gift of the online payment, by clinic (card-sarbatori.js giftOf)
+  cadoul: 'o ședință de EMS cadou' };
 const CATEGORIES = ['UTILITY', 'MARKETING'];
 
 const clip = (s, n) => String(s == null ? '' : s).slice(0, n);

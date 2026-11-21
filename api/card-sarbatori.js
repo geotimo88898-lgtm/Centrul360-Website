@@ -149,9 +149,9 @@ module.exports = async (req, res) => {
         // the orders waiting for a payment or a reservation, as one row each (their cards are not issued yet)
         // and, 3 days, the online ones she gave up herself (what happened stays readable)
         const gaveUp = (r) => r.status === 'anulat' && r.cancelledBy === 'ea' && now - Date.parse(r.cancelledAt || r.created) < 3 * 86400e3;
-        const orders = list.filter((r) => r.status === 'asteptare' || r.status === 'rezervat' || gaveUp(r)).map((r) => ({ id: r.id, created: r.created, name: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit,
-          pay: r.pay, status: r.status, forWho: r.forWho || '', names: r.cards.map((c) => c.recipient), held: C.live(r, now), heldUntil: r.status === 'asteptare' ? new Date(C.heldFrom(r) + C.HOLD_MS).toISOString() : '',
-          online: r.via === 'site' && (r.pay === 'online' || !!r.convertedAt), converted: r.convertedAt || '', byHer: gaveUp(r), nameFrom: r.nameFrom || '', trail: trailOf(r), rec: recView(r) })).reverse();
+        const orders = list.filter((r) => r.status === 'asteptare' || r.status === 'rezervat' || r.status === 'lead' || gaveUp(r)).map((r) => ({ id: r.id, created: r.created, name: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit,
+          pay: r.pay, status: r.status, forWho: r.forWho || '', names: r.cards.map((c) => c.recipient), held: C.live(r, now), heldUntil: r.status === 'asteptare' || r.status === 'lead' ? new Date(C.heldFrom(r) + C.HOLD_MS).toISOString() : '',
+          online: r.via === 'site' && (r.pay === 'online' || !!r.convertedAt), converted: r.convertedAt || '', byHer: gaveUp(r), nameFrom: r.nameFrom || '', via: r.via || '', leadCall: r.leadCall ? r.leadCall.at : '', trail: trailOf(r), rec: recView(r) })).reverse();
         const paid = list.filter((r) => r.status === 'platit');
         const totals = { cards: paid.reduce((n, r) => n + C.qtyOf(r), 0), money: paid.reduce((n, r) => n + (Number(r.paidAmount) || Number(r.amount) || 0), 0), online: paid.filter((r) => r.paidVia === 'online').reduce((n, r) => n + (Number(r.paidAmount) || r.amount), 0),
           credit: paid.reduce((n, r) => n + r.cards.reduce((m, c) => m + (Number(c.value) || 0), 0), 0), used: paid.reduce((n, r) => n + r.cards.reduce((m, c) => m + C.usedOf(c), 0), 0) };
