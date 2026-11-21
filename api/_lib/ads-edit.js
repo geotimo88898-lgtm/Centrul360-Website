@@ -104,13 +104,13 @@ async function details(conn, campaignId) {
     if (plats.includes('facebook')) { if (!fb.length || fb.includes('feed')) pl.push('fb_feed'); if (!fb.length || fb.includes('story')) pl.push('fb_story'); if (!fb.length || fb.includes('facebook_reels')) pl.push('fb_reels'); }
     if (plats.includes('instagram')) { if (!ig.length || ig.includes('stream')) pl.push('ig_feed'); if (!ig.length || ig.includes('story')) pl.push('ig_story'); if (!ig.length || ig.includes('reels')) pl.push('ig_reels'); }
     return {
-      id: s.id, name: s.name, status: s.status, budget: s.daily_budget ? Number(s.daily_budget) / 100 : 0,
+      id: s.id, name: s.name, status: s.status, budget: require('./meta-ads').budLei(conn, s.daily_budget),
       ageMin: t.age_min || 18, ageMax: t.age_max || 65, women: Array.isArray(t.genders) && t.genders.length === 1 && t.genders[0] === 2,
       radiusKm: loc ? (loc.distance_unit === 'mile' ? Math.round(loc.radius * 1.609) : Number(loc.radius)) : 0, hasPin: !!loc,
       placements: plats.length ? pl : [], automatic: !plats.length,
     };
   });
-  return { ok: true, campaign: { id: campaignId, name: own.j.name, cbo: !!own.j.daily_budget, budget: own.j.daily_budget ? Number(own.j.daily_budget) / 100 : 0 }, adsets, ads: list };
+  return { ok: true, campaign: { id: campaignId, name: own.j.name, cbo: !!own.j.daily_budget, budget: require('./meta-ads').budLei(conn, own.j.daily_budget) }, adsets, ads: list };
 }
 
 // Editează → the ad: new words on a copy of its creative, then the ad uses the copy
@@ -220,7 +220,7 @@ async function editAdset(conn, a) {
   }
   const params = { targeting: t };
   const lei = Math.round((Number(a.budget) || 0) * 100) / 100;
-  if (s.j.daily_budget && lei) { if (lei < 5) return { error: 'Bugetul minim e 5 lei pe zi.' }; params.daily_budget = String(Math.round(lei * 100)); }
+  if (s.j.daily_budget && lei) { if (lei < 5) return { error: 'Bugetul minim e 5 lei pe zi.' }; params.daily_budget = require('./meta-ads').cents(conn, lei); }
   const r = await call('POST', '/' + a.adsetId, tok, params);
   return r.ok ? { ok: true } : { error: err(r.j, 'Setul de reclame') };
 }

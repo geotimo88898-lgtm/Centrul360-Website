@@ -13,6 +13,13 @@
 
 const ADS_GRAPH = 'https://graph.facebook.com/v25.0';
 const SCOPE = require('./ads-scope');
+// the ad account's money in lei (api/_lib/ads-fx.js; conn.fx set by loadConnection, 1 on RON): what Meta gives (spend,
+// budgets in the account's currency) is turned into lei on the way in, a budget in lei into the account's cents on the way out
+// a copy of the connection without fx (it isn't enumerable): the known account's cautious rate, never 1 for CAD
+const FX = (conn) => { if (conn && conn.fx > 0) return conn.fx; const F = require('./ads-fx'); return (conn && F.FALLBACK[F.KNOWN[conn.adAccountId]]) || 1; };
+const inLei = (conn, v) => Math.round((Number(v) || 0) * FX(conn) * 100) / 100;
+const budLei = (conn, v) => (Number(v) > 0 ? inLei(conn, Number(v) / 100) : 0); // Meta's daily_budget (cents) → lei
+const cents = (conn, lei) => String(Math.max(1, Math.round((Number(lei) || 0) / FX(conn) * 100))); // lei → the account's cents
 // only this business's campaigns of the shared ad account (conn.scope, set by loadConnection; the default otherwise)
 const scopeOf = (conn) => (conn && conn.scope) || SCOPE.forAccount(SCOPE.DEFAULT, conn && conn.adAccountId);
 const ours = (conn, name) => SCOPE.keep(scopeOf(conn), name);
@@ -147,7 +154,7 @@ async function listAdsets(conn) {
   if (r.error) return [];
   return r.data.filter((a) => (!a.campaign || !a.campaign.objective || /LEAD/.test(a.campaign.objective)) && (!a.campaign || ours(conn, a.campaign.name)))
     .sort((a, b) => (a.created_time < b.created_time ? 1 : -1)).slice(0, 60)
-    .map((a) => ({ id: a.id, name: a.name, status: a.effective_status, campaign: (a.campaign && a.campaign.name) || '', budget: a.daily_budget ? Number(a.daily_budget) / 100 : 0 }));
+    .map((a) => ({ id: a.id, name: a.name, status: a.effective_status, campaign: (a.campaign && a.campaign.name) || '', budget: budLei(conn, a.daily_budget) }));
 }
 
 // ---------------------------------------------------------------- publishing
@@ -281,7 +288,7 @@ async function publish(conn, image, s) {
       campaignId = camp.j.id;
       made.push(campaignId);
       const adset = await call('POST', '/' + act + '/adsets', tok, {
-        name: s.adsetName, campaign_id: campaignId, daily_budget: String(Math.round(s.budget * 100)), billing_event: 'IMPRESSIONS',
+        name: s.adsetName, campaign_id: campaignId, daily_budget: cents(conn, s.budget), billing_event: 'IMPRESSIONS',
         optimization_goal: s.quality ? 'QUALITY_LEAD' : 'LEAD_GENERATION', bid_strategy: 'LOWEST_COST_WITHOUT_CAP', destination_type: 'ON_AD',
         promoted_object: { page_id: conn.pageId }, targeting: targeting(s), status: 'PAUSED', ...(await dsaOf(conn)),
       });
@@ -425,7 +432,7 @@ async function port(conn, oldId, o) {
     const camp = await call('POST', '/' + act + '/campaigns', tok, { name, objective: 'OUTCOME_LEADS', status: 'PAUSED', special_ad_categories: [], buying_type: 'AUCTION', is_adset_budget_sharing_enabled: false });
     if (!camp.ok) return { error: metaError(camp.j, 'Campania') };
     made.push(camp.j.id);
-    const adset = await call('POST', '/' + act + '/adsets', tok, { name, campaign_id: camp.j.id, daily_budget: String(Math.round(budget * 100)), billing_event: 'IMPRESSIONS',
+    const adset = await call('POST', '/' + act + '/adsets', tok, { name, campaign_id: camp.j.id, daily_budget: cents(conn, budget), billing_event: 'IMPRESSIONS',
       optimization_goal: 'LEAD_GENERATION', bid_strategy: 'LOWEST_COST_WITHOUT_CAP', destination_type: 'ON_AD', promoted_object: { page_id: conn.pageId }, targeting: t, status: 'PAUSED', ...(await dsaOf(conn)) });
     if (!adset.ok) { await undo(); return { error: metaError(adset.j, 'Setul de reclame') }; }
     const spec = Object.assign({ page_id: conn.pageId }, mediaSpec);
@@ -532,13 +539,13 @@ async function overview(conn, period, range, recentIds) {
   // (the same for the ad sets' or the ads' numbers: zeros under real campaign numbers would read as real)
   if (sets.error || ads.error || iS.error || iA.error) return { error: sets.error || ads.error || iS.error || iA.error };
   const res = (rows, key) => new Map((rows.data || []).map((r) => [r[key], {
-    spend: Number(r.spend) || 0, leads: leadsOf(r), impressions: Number(r.impressions) || 0, reach: Number(r.reach) || 0,
+    spend: inLei(conn, r.spend), leads: leadsOf(r), impressions: Number(r.impressions) || 0, reach: Number(r.reach) || 0,
     clicks: Number(r.clicks) || 0, linkClicks: Number(r.inline_link_clicks) || 0,
   }]));
   const rC = res(iC, 'campaign_id'), rS = res(iS, 'adset_id'), rA = res(iA, 'ad_id');
   const zero = { spend: 0, leads: 0, impressions: 0, reach: 0, clicks: 0, linkClicks: 0 };
   const results = (r) => ({ spend: r.spend, leads: r.leads, impressions: r.impressions, reach: r.reach, clicks: r.clicks, linkClicks: r.linkClicks });
-  const money = (v) => (v ? Number(v) / 100 : 0);
+  const money = (v) => budLei(conn, v);
   const adsBySet = new Map();
   (ads.data || []).forEach((a) => {
     const r = rA.get(a.id) || zero;
@@ -589,7 +596,7 @@ async function act(conn, a) {
   } else if (a.action === 'budget') {
     const lei = Math.round((Number(a.daily) || 0) * 100) / 100;
     if (!(lei >= 5)) return { error: 'Bugetul minim e 5 lei pe zi.' };
-    r = await call('POST', '/' + id, tok, { daily_budget: String(Math.round(lei * 100)) });
+    r = await call('POST', '/' + id, tok, { daily_budget: cents(conn, lei) });
   } else if (a.action === 'rename') {
     const name = String(a.name || '').trim().slice(0, 200);
     if (!name) return { error: 'Numele lipsește.' };
@@ -618,7 +625,7 @@ async function adSpend(conn, period, range) {
   const r = await all('/' + conn.adAccountId + '/insights', conn.userToken, Object.assign({ level: 'ad', fields: 'ad_id,ad_name,campaign_id,campaign_name,spend', limit: '500',
     filtering: JSON.stringify([{ field: 'ad.effective_status', operator: 'IN', value: every }]) }, when), 20);
   if (r.error) return { error: r.error };
-  return { rows: r.data.filter((x) => ours(conn, x.campaign_name)).map((x) => ({ adId: String(x.ad_id || ''), adName: x.ad_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', spend: Number(x.spend) || 0 })) };
+  return { rows: r.data.filter((x) => ours(conn, x.campaign_name)).map((x) => ({ adId: String(x.ad_id || ''), adName: x.ad_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', spend: inLei(conn, x.spend) })) };
 }
 
 // Every ad of a period for Panou → KPI: what Meta counted (spend, impressions, reach, link clicks, its own leads) with the
@@ -633,7 +640,7 @@ async function adStats(conn, range) {
     all(act + '/ads', tok, { fields: 'id,effective_status,creative{thumbnail_url,image_url}', limit: '200', effective_status: JSON.stringify(LIVE) }, 3),
     // day by day: the account's, or (the account shared with other businesses) the sum of our campaigns' days
     scoped(conn) ? all(act + '/insights', tok, Object.assign({ level: 'campaign', fields: 'campaign_name,spend', time_increment: '1', limit: '500', filtering: JSON.stringify([{ field: 'campaign.effective_status', operator: 'IN', value: LIVE.concat(['ARCHIVED', 'DELETED']) }]) }, when), 20)
-      .then((d) => (d.error ? d : { data: Object.values(d.data.filter((x) => ours(conn, x.campaign_name)).reduce((m, x) => { const k = x.date_start; m[k] = m[k] || { date_start: k, spend: 0 }; m[k].spend += Number(x.spend) || 0; return m; }, {})).sort((a, b) => (a.date_start < b.date_start ? -1 : 1)) }))
+      .then((d) => (d.error ? d : { data: Object.values(d.data.filter((x) => ours(conn, x.campaign_name)).reduce((m, x) => { const k = x.date_start; m[k] = m[k] || { date_start: k, spend: 0 }; m[k].spend += inLei(conn, x.spend); return m; }, {})).sort((a, b) => (a.date_start < b.date_start ? -1 : 1)) }))
       : all(act + '/insights', tok, Object.assign({ level: 'account', fields: 'spend', time_increment: '1', limit: '120' }, when), 2),
   ]);
   if (ins.error) return { error: ins.error };
@@ -643,10 +650,10 @@ async function adStats(conn, range) {
     rows: ins.data.filter((x) => ours(conn, x.campaign_name)).map((x) => {
       const a = meta.get(String(x.ad_id)) || {};
       return { adId: String(x.ad_id || ''), adName: x.ad_name || '', adsetId: String(x.adset_id || ''), adsetName: x.adset_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '',
-        spend: Number(x.spend) || 0, impressions: Number(x.impressions) || 0, reach: Number(x.reach) || 0, linkClicks: Number(x.inline_link_clicks) || 0, metaLeads: leadsOf(x),
+        spend: inLei(conn, x.spend), impressions: Number(x.impressions) || 0, reach: Number(x.reach) || 0, linkClicks: Number(x.inline_link_clicks) || 0, metaLeads: leadsOf(x),
         status: a.effective_status || 'ARCHIVED', thumb: (a.creative && (a.creative.thumbnail_url || a.creative.image_url)) || '' };
     }),
-    daily: (daily.data || []).map((d) => ({ day: d.date_start, spend: Number(d.spend) || 0 })),
+    daily: (daily.data || []).map((d) => ({ day: d.date_start, spend: inLei(conn, d.spend) })),
     dailyError: daily.error || null, // the day by day spend did not come back (the totals per ad did)
   };
 }
@@ -667,7 +674,7 @@ async function adStatsDaily(conn, range) {
   (ads.data || []).forEach((a) => { meta[String(a.id)] = { status: a.effective_status || '', thumb: (a.creative && (a.creative.thumbnail_url || a.creative.image_url)) || '' }; });
   return {
     rows: ins.data.filter((x) => ours(conn, x.campaign_name)).map((x) => ({ day: x.date_start, adId: String(x.ad_id || ''), adName: x.ad_name || '', adsetId: String(x.adset_id || ''), adsetName: x.adset_name || '',
-      campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', spend: Number(x.spend) || 0, impressions: Number(x.impressions) || 0, linkClicks: Number(x.inline_link_clicks) || 0, metaLeads: leadsOf(x) }))
+      campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', spend: inLei(conn, x.spend), impressions: Number(x.impressions) || 0, linkClicks: Number(x.inline_link_clicks) || 0, metaLeads: leadsOf(x) }))
       .filter((x) => x.adId && x.day),
     meta,
   };
@@ -686,14 +693,14 @@ async function adResults(conn, range) {
   const r = await all('/' + conn.adAccountId + '/insights', conn.userToken, { level: 'ad', fields: 'ad_id,ad_name,campaign_id,campaign_name,spend,actions', limit: '500',
     time_range: JSON.stringify({ since: range.since, until: range.until }), filtering: JSON.stringify([{ field: 'ad.effective_status', operator: 'IN', value: ['ACTIVE'] }]) }, 5);
   if (r.error) return { error: r.error };
-  return { rows: r.data.filter((x) => ours(conn, x.campaign_name)).map((x) => ({ adId: String(x.ad_id || ''), adName: x.ad_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', spend: Number(x.spend) || 0, metaLeads: leadsOf(x) })).filter((x) => x.adId) };
+  return { rows: r.data.filter((x) => ours(conn, x.campaign_name)).map((x) => ({ adId: String(x.ad_id || ''), adName: x.ad_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', spend: inLei(conn, x.spend), metaLeads: leadsOf(x) })).filter((x) => x.adId) };
 }
 // and each running campaign's days (spend, Meta's leads), to see if it still does well and uses its budget
 async function campaignDays(conn, range) {
   const r = await all('/' + conn.adAccountId + '/insights', conn.userToken, { level: 'campaign', fields: 'campaign_id,campaign_name,spend,actions', time_increment: '1', limit: '500',
     time_range: JSON.stringify({ since: range.since, until: range.until }), filtering: JSON.stringify([{ field: 'campaign.effective_status', operator: 'IN', value: ['ACTIVE'] }]) }, 5);
   if (r.error) return { error: r.error };
-  return { rows: r.data.filter((x) => ours(conn, x.campaign_name)).map((x) => ({ campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', day: x.date_start, spend: Number(x.spend) || 0, metaLeads: leadsOf(x) })).filter((x) => x.campaignId) };
+  return { rows: r.data.filter((x) => ours(conn, x.campaign_name)).map((x) => ({ campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', day: x.date_start, spend: inLei(conn, x.spend), metaLeads: leadsOf(x) })).filter((x) => x.campaignId) };
 }
 // every ad's days (spend, Meta's leads, link clicks), paused and deleted ones too: when each last ran and what a lead
 // cost on its days (read only; Claude's /api/ads-publish?action=daily)
@@ -702,7 +709,7 @@ async function adDays(conn, range) {
   const r = await all('/' + conn.adAccountId + '/insights', conn.userToken, { level: 'ad', fields: 'ad_id,ad_name,campaign_id,campaign_name,spend,actions,inline_link_clicks', time_increment: '1', limit: '500',
     time_range: JSON.stringify({ since: range.since, until: range.until }), filtering: JSON.stringify([{ field: 'ad.effective_status', operator: 'IN', value: every }]) }, 30);
   if (r.error) return { error: r.error };
-  return { rows: r.data.filter((x) => ours(conn, x.campaign_name)).map((x) => ({ adId: String(x.ad_id || ''), adName: x.ad_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', day: x.date_start, spend: Number(x.spend) || 0, metaLeads: leadsOf(x), clicks: Number(x.inline_link_clicks) || 0 })).filter((x) => x.adId && (x.spend || x.metaLeads)) };
+  return { rows: r.data.filter((x) => ours(conn, x.campaign_name)).map((x) => ({ adId: String(x.ad_id || ''), adName: x.ad_name || '', campaignId: String(x.campaign_id || ''), campaignName: x.campaign_name || '', day: x.date_start, spend: inLei(conn, x.spend), metaLeads: leadsOf(x), clicks: Number(x.inline_link_clicks) || 0 })).filter((x) => x.adId && (x.spend || x.metaLeads)) };
 }
 // how often the same women saw some campaigns over some days (frequency doesn't add up day by day: read whole)
 async function campaignReach(conn, range, ids) {
@@ -719,13 +726,13 @@ async function budgetOf(conn, campaignId) {
   if (!r.ok) return { error: metaError(r.j) };
   if ('act_' + r.j.account_id !== conn.adAccountId) return { error: 'Nu e în contul de reclame conectat.' };
   if (r.j.name !== undefined && !ours(conn, r.j.name)) return { error: 'campania e a altei afaceri' };
-  if (Number(r.j.daily_budget) > 0) return { id: String(campaignId), level: 'campaign', daily: Number(r.j.daily_budget) / 100 };
+  if (Number(r.j.daily_budget) > 0) return { id: String(campaignId), level: 'campaign', daily: budLei(conn, r.j.daily_budget) };
   if (Number(r.j.lifetime_budget) > 0) return { error: 'buget pe toată durata' };
   const sets = ((r.j.adsets && r.j.adsets.data) || []).filter((s) => !['DELETED', 'ARCHIVED'].includes(s.effective_status));
   const on = sets.filter((s) => RUNNING.includes(s.effective_status));
   // the running one; a paused campaign (nothing runs) with one ad set: that one, so a budget can be set before it goes on
   const pool = on.length ? on : sets;
-  if (pool.length === 1 && Number(pool[0].daily_budget) > 0) return { id: String(pool[0].id), level: 'adset', daily: Number(pool[0].daily_budget) / 100, off: !on.length };
+  if (pool.length === 1 && Number(pool[0].daily_budget) > 0) return { id: String(pool[0].id), level: 'adset', daily: budLei(conn, pool[0].daily_budget), off: !on.length };
   if (pool.length === 1 && Number(pool[0].lifetime_budget) > 0) return { error: 'setul are buget pe toată durata' };
   return { error: pool.length > 1 ? 'mai multe seturi pornite' : pool.length ? 'setul n-are buget zilnic' : 'niciun set' };
 }
@@ -751,4 +758,4 @@ async function delivery(conn, id) {
 }
 // whether the account is shared (some campaigns are left out), so its own totals can't be used as ours
 const scoped = (conn) => { const s = scopeOf(conn); return !!(s.include || (s.exclude || []).length); };
-module.exports = { port, audienceCreate, audienceList, ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };
+module.exports = { inLei, budLei, cents, FX, port, audienceCreate, audienceList, ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };

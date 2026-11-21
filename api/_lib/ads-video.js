@@ -69,7 +69,7 @@ async function plan(conn, job) {
   const here = near && Math.abs(near.latitude - c.lat) < 0.08 && Math.abs(near.longitude - c.lng) < 0.1;
   t.geo_locations = { custom_locations: [{ latitude: here ? near.latitude : c.lat, longitude: here ? near.longitude : c.lng, radius: near ? Number(near.radius) : 7, distance_unit: near ? near.distance_unit || 'kilometer' : 'kilometer' }],
     location_types: geo.location_types || ['home', 'recent'] };
-  const adset = { name: j.adsetName, daily_budget: String(j.daily * 100), billing_event: set.billing_event || 'IMPRESSIONS', optimization_goal: set.optimization_goal || 'LEAD_GENERATION',
+  const adset = { name: j.adsetName, daily_budget: ads.cents(conn, j.daily), billing_event: set.billing_event || 'IMPRESSIONS', optimization_goal: set.optimization_goal || 'LEAD_GENERATION',
     bid_strategy: set.bid_strategy || 'LOWEST_COST_WITHOUT_CAP', destination_type: set.destination_type || 'ON_AD', promoted_object: set.promoted_object || { page_id: conn.pageId }, targeting: t, status: 'PAUSED' };
   if (set.bid_amount) adset.bid_amount = set.bid_amount;
   if (set.attribution_spec) adset.attribution_spec = set.attribution_spec;

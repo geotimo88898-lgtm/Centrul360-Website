@@ -259,7 +259,7 @@ async function make(conn, it, net, e, x, o) {
       if (i) made.push(cr.id);
       // the campaign is the one switch: the ad set and the ad are on under it, nothing runs while it is paused
       const set = await ads.call('POST', '/' + act + '/adsets', tok, {
-        name: x.adsetName(city), campaign_id: campaignId, daily_budget: String(Math.round(x.daily * 100)), billing_event: 'IMPRESSIONS',
+        name: x.adsetName(city), campaign_id: campaignId, daily_budget: ads.cents(conn, x.daily), billing_event: 'IMPRESSIONS',
         optimization_goal: 'LEAD_GENERATION', bid_strategy: 'LOWEST_COST_WITHOUT_CAP', destination_type: 'ON_AD',
         promoted_object: { page_id: conn.pageId }, targeting: targeting(city, x.d, x.ages, placements), status: 'ACTIVE',
       });

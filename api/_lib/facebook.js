@@ -46,6 +46,10 @@ async function loadConnection(readJSON) {
   // which campaigns of the shared ad account are ours (_lib/ads-scope.js); not enumerable, so it is never saved
   // back with the connection (a copy without it falls back to the default in meta-ads.js)
   Object.defineProperty(conn, 'scope', { value: require('./ads-scope').forAccount(await require('./ads-scope').load(readJSON), conn.adAccountId), enumerable: false, configurable: true });
+  // lei for 1 unit of the ad account's money (CAD since 21.11; 1 on RON): meta-ads.js turns Meta's money into lei with it
+  let fx = 1;
+  if (conn.adAccountId) { try { fx = await require('./ads-fx').factor(conn, require('./meta-ads').call); } catch (e) { fx = require('./ads-fx').FALLBACK[require('./ads-fx').KNOWN[conn.adAccountId]] || 1; } }
+  Object.defineProperty(conn, 'fx', { value: fx, enumerable: false, configurable: true });
   return conn;
 }
 
