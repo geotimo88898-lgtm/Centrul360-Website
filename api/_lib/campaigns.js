@@ -7,5 +7,7 @@ const LIST = [
 ];
 const find = (key) => LIST.find((c) => c.key === key) || LIST[0];
 const names = () => LIST.map((c) => ({ key: c.key, name: c.name }));
-const lib = (c) => require(c.lib); // resolved from here
+// static requires: the Worker's bundle can't follow a require with a computed path (it failed in the portal, 21.11)
+const LIBS = { './fc-campaign': () => require('./fc-campaign'), './card-kpi': () => require('./card-kpi') };
+const lib = (c) => LIBS[c.lib]();
 module.exports = { LIST, find, names, lib };

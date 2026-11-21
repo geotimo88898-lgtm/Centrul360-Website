@@ -463,7 +463,8 @@ async function alertTeam(lead, returning, fromSite, alertWhat) {
   await notifyMany({ readJSON, writeJSON }, ids, {
     kind: 'lead', tone: 'info', go: 'pipeline', tag: 'lead-' + lead.id + (returning ? ':again' : ''),
     // the city, short, right after the kind (the owner, 19.10; „LEAD TM”, not „LEAD NOU TM”, 21.11): LEAD TM 🔥 - Lipo 640
-    title: (fromSite ? (returning ? 'LEAD SITE REVENIT' + city + ' 🔁' : 'LEAD SITE' + city + ' 🌐') : returning ? 'LEAD REVENIT' + city + ' 🔁' : 'LEAD' + city + ' 🔥') + (what ? ' - ' + what : ''),
+    // a title of its own (the Card de Sărbători: „CARD 🎄 490 lei · CERERE TM”, told apart from the leads, the owner 21.11)
+    title: alertWhat && alertWhat.full ? alertWhat.full + city : (fromSite ? (returning ? 'LEAD SITE REVENIT' + city + ' 🔁' : 'LEAD SITE' + city + ' 🌐') : returning ? 'LEAD REVENIT' + city + ' 🔁' : 'LEAD' + city + ' 🔥') + (what ? ' - ' + what : ''),
     text: lead.name + (alertWhat && alertWhat.text ? ' · ' + alertWhat.text : ''),
   });
 }

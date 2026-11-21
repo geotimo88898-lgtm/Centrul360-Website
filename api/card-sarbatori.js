@@ -91,7 +91,7 @@ function trackOf(req, page, ct) {
 }
 async function lead(r, b, req, note) {
   try {
-    const L = await require('./portal-leads').createLead({ name: r.name || r.hint || C.NONAME, phone: r.phone, source: 'site', location: r.city, createdBy: 'site-form', interest: 'Card de Sărbători', note, authorLabel: 'Site · Card de Sărbători', welcome: false });
+    const L = await require('./portal-leads').createLead({ name: r.name || r.hint || C.NONAME, phone: r.phone, source: 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: 'Site · Card de Sărbători', welcome: false });
     if (L && L.lead) {
       const l2 = await readJSON(C.KEY, []);
       const row = l2.find((x) => x.id === r.id);
@@ -398,11 +398,18 @@ module.exports = async (req, res) => {
       try {
         const N = require('./_lib/notify');
         await N.notifyMany({ readJSON, writeJSON }, await N.deskIds({ readJSON, writeJSON }, city), { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-wait-' + entry.id,
-          title: 'CARD DE SĂRBĂTORI' + N.cityTag(city) + ' - la plată online', text: (name || entry.hint || 'fără nume') + ' · ' + tier + ' lei · se confirmă singur când plata apare în myPOS; altfel „Confirmă plata” în Carduri' });
+          title: 'CARD 🎄 ' + tier + ' lei · LA PLATĂ ONLINE' + N.cityTag(city), text: (name || entry.hint || 'fără nume') + ' · se confirmă singur când plata apare în myPOS' });
       } catch (e) { /* the order stands */ }
       return;
     }
     await lead(entry, b, req, note);
+    // the desk and the owner: a card reserved on the site, told apart from the leads (the owner, 21.11)
+    try {
+      const N = require('./_lib/notify');
+      const ids = [...new Set((await N.deskIds({ readJSON, writeJSON }, city)).concat(await N.adminIds({ readJSON, writeJSON })))];
+      await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-res-' + entry.id,
+        title: 'CARD 🎄 ' + N.leiTxt(entry.amount) + ' · REZERVAT' + N.cityTag(city), text: (name || entry.hint || 'fără nume') + ' · plătește în clinică' });
+    } catch (e) { /* the order stands */ }
     res.status(200).json({ ok: true, reservation: publicOf(entry), left: (await C.count(await readJSON(C.KEY, []))).left });
     // after the answer: her WhatsApp „Ți-am rezervat Cardul de Sărbători…” with the card's picture (once; only the approved template)
     try { await C.reservedMsg(entry.id); } catch (e) { console.error('card reserved msg:', e.message); }

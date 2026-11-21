@@ -118,7 +118,7 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
     // a lead-filter lead gets its own message (its zone × package), not an offer's welcome
     welcome: lf || card ? false : undefined,
     // the push says what she chose (the owner, 21.11: „să văd direct din notificare la ce se înscriu”)
-    alertWhat: card ? { title: 'Cardul de Sărbători' + (card.tier ? ' · ' + card.tier + ' lei' : ''), text: require('./card-lead').summary(card) } : lf ? { title: [lf.tier ? Number(lf.tier).toLocaleString('ro-RO') + ' lei' : '', lf.zoneLabel].filter(Boolean).join(' · '), text: require('./leadfilter').summary(lf) } : undefined,
+    alertWhat: card ? { title: 'Cardul de Sărbători' + (card.tier ? ' · ' + card.tier + ' lei' : ''), full: 'CARD 🎄 ' + (card.tier ? card.tier + ' lei · ' : '') + 'CERERE', text: require('./card-lead').summary(card) } : lf ? { title: [lf.tier ? Number(lf.tier).toLocaleString('ro-RO') + ' lei' : '', lf.zoneLabel].filter(Boolean).join(' · '), text: require('./leadfilter').summary(lf) } : undefined,
     // leadgenId: Facebook's id of this lead, for the CRM steps sent back to Meta (_lib/meta-capi.js)
     form: { id: formId, leadgenId, name: form.name, ad: lead.ad_name || '', campaign: lead.campaign_name || '', adId: lead.ad_id || '', adsetId: lead.adset_id || '', campaignId: lead.campaign_id || '', sentAt: lead.created_time && !isNaN(Date.parse(lead.created_time)) ? new Date(Date.parse(lead.created_time)).toISOString() : '', answers: answerPairs(lead.field_data, form.questions) },
     });
