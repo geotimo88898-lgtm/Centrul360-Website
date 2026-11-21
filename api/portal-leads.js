@@ -462,8 +462,8 @@ async function alertTeam(lead, returning, fromSite, alertWhat) {
   const city = ({ 'Timișoara': ' TM', Arad: ' AR' })[lead.location] || '';
   await notifyMany({ readJSON, writeJSON }, ids, {
     kind: 'lead', tone: 'info', go: 'pipeline', tag: 'lead-' + lead.id + (returning ? ':again' : ''),
-    // the city, short, right after the kind (the owner, 19.10): LEAD NOU TM 🔥 - Lipo 640
-    title: (fromSite ? (returning ? 'LEAD SITE REVENIT' + city + ' 🔁' : 'LEAD SITE' + city + ' 🌐') : returning ? 'LEAD REVENIT' + city + ' 🔁' : 'LEAD NOU' + city + ' 🔥') + (what ? ' - ' + what : ''),
+    // the city, short, right after the kind (the owner, 19.10; „LEAD TM”, not „LEAD NOU TM”, 21.11): LEAD TM 🔥 - Lipo 640
+    title: (fromSite ? (returning ? 'LEAD SITE REVENIT' + city + ' 🔁' : 'LEAD SITE' + city + ' 🌐') : returning ? 'LEAD REVENIT' + city + ' 🔁' : 'LEAD' + city + ' 🔥') + (what ? ' - ' + what : ''),
     text: lead.name + (alertWhat && alertWhat.text ? ' · ' + alertWhat.text : ''),
   });
 }
