@@ -9,7 +9,7 @@ const { readJSON } = require('./store');
 const F = require('./site-funnel');
 
 const NETS = ['instagram', 'facebook', 'tiktok', 'youtube'];
-const MEDIUMS = ['bio', 'story', 'dm', 'reel', 'post'];
+const MEDIUMS = ['bio', 'profil', 'story', 'dm', 'reel', 'post'];
 const ro = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 
 // an organic source: a network, with how she came when the link said it; „instagram” alone = the app's browser without
