@@ -23,9 +23,11 @@
 // Once paid: the card is active, the counter keeps it, her lead and her client file know it, the desk and the owner hear
 // it, and she gets her card on WhatsApp (the picture, api/_lib/card-image.js, and a short message).
 //
-// Card money and Încasări (the choice, 21.11): the money comes in once, when the card is paid: it is the card's total here
-// (the section's „Încasat”). Using the credit later is not new money: a claim never writes a payment in Încasări, so
-// nothing is counted twice. A card paid in the clinic on the POS is recorded here (Confirmă plata), not as a payment.
+// Card money and Încasări (the owner, 21.11: „pune și vânzările de carduri în Încasări”): the money comes in once, the day
+// the card is paid, as one payment in Încasări (data/sales.json, like a payment with no visit: nobody's day, nobody's
+// commission; method card for online, the one chosen for the clinic), tied to the order (cardOrderId). Using the credit
+// later is not new money: a claim never writes a payment, so nothing is counted twice. A paid order cancelled by the
+// owner: a refund row in Încasări, dated that day (the month's reports stay as they were).
 
 const crypto = require('crypto');
 const { readJSON, writeJSON, readBinary, writeBinary } = require('./store');
@@ -300,6 +302,62 @@ async function deliver(r, c) {
   return c.sent;
 }
 
+// ---- the payment in Încasări: once per order (a second call finds it); a refund row when a paid order is cancelled
+const PAY_METHODS = ['card', 'cash', 'transfer'];
+const saleOf = (sales, id) => (sales || []).find((x) => x && x.source === 'incasare' && x.cardOrderId === id && x.kind !== 'refund') || null;
+async function recordSale(r, by) {
+  const sales = await readJSON('data/sales.json', []);
+  if (saleOf(sales, r.id)) return saleOf(sales, r.id);
+  const amount = r2(Number(r.paidAmount) || Number(r.amount) || 0);
+  if (!(amount > 0)) return null;
+  const method = r.paidVia === 'online' ? 'card' : PAY_METHODS.includes(r.payMethod) ? r.payMethod : 'card';
+  const entry = {
+    id: crypto.randomUUID(), source: 'incasare', cardSale: true, label: 'Card de Sărbători', cardOrderId: r.id, online: r.paidVia === 'online', // online: a PayLink, never a POS terminal's
+    employeeId: by || r.paidBy || 'card-sarbatori', performedBy: '', appointmentId: '', clientId: r.clientId || '', client: r.name || '',
+    date: roDay(Date.parse(r.paidAt) || Date.now()), location: r.city || '', categories: [], category: '',
+    treatment: 'Card de Sărbători · plătești ' + (r.qty > 1 ? r.qty + ' × ' : '') + lei(r.tier) + ' lei, credit ' + (r.qty > 1 ? r.qty + ' × ' : '') + lei(TIERS[r.tier]) + ' lei',
+    amount, bookedAmount: 0, upsell: 0, method, split: null, status: 'recorded', commission: 0,
+    note: (r.paidVia === 'online' ? 'Online (myPOS)' : 'În clinică') + ' · ' + r.cards.map((c) => c.code).filter(Boolean).join(', '),
+    createdAt: nowISO(), decidedAt: null,
+  };
+  sales.push(entry);
+  await writeJSON('data/sales.json', sales);
+  return entry;
+}
+// a paid order cancelled (the owner): its cards go, the money goes back as a refund row in Încasări (never when a card was used)
+async function voidPaid(id, session, reason) {
+  const list = await readJSON(KEY, []);
+  const r = list.find((x) => x.id === id);
+  if (!r) return { error: 'not_found' };
+  norm(r);
+  if (r.status !== 'platit') return { error: 'not_paid' };
+  if (r.cards.some((c) => usedOf(c) > 0 || (c.gift && c.gift.state === 'used'))) return { error: 'used' };
+  const sales = await readJSON('data/sales.json', []);
+  const sale = saleOf(sales, r.id);
+  let refund = null;
+  if (sale && !sales.some((x) => x.kind === 'refund' && x.refundOf === sale.id)) {
+    refund = { id: crypto.randomUUID(), source: 'incasare', kind: 'refund', refundOf: sale.id, scope: 'payment', cardOrderId: r.id, cardSale: true, label: 'Card de Sărbători',
+      employeeId: session.employeeId || '', performedBy: '', appointmentId: '', clientId: sale.clientId || '', client: sale.client || '',
+      date: roDay(Date.now()), location: sale.location || '', categories: [], category: '', treatment: 'Rambursare · ' + sale.treatment,
+      amount: -Number(sale.amount), upsell: 0, method: sale.method === 'cash' || sale.method === 'transfer' ? sale.method : 'card', split: null, status: 'recorded', commission: 0,
+      reason: String(reason || 'Card de Sărbători anulat').slice(0, 300), note: '', whole: true, from: [{ saleId: sale.id, key: 's', dueId: '', upsellId: '', lei: Number(sale.amount) }], dues: [], restCut: [],
+      createdAt: nowISO(), decidedAt: null };
+    sales.push(refund);
+    await writeJSON('data/sales.json', sales);
+  }
+  Object.assign(r, { status: 'anulat', cancelledAt: nowISO(), cancelledBy: session.employeeId || '', voidedPaid: true, refundId: refund ? refund.id : '' });
+  await writeJSON(KEY, list);
+  return { ok: true, refund };
+}
+// the cards paid before their payments went to Încasări (21.11): each gets its payment once
+async function backfillSales() {
+  const list = await readJSON(KEY, []);
+  const sales = await readJSON('data/sales.json', []);
+  let n = 0;
+  for (const r of list.filter((x) => x.status === 'platit' && !saleOf(sales, x.id))) { norm(r); if (await recordSale(r)) n++; }
+  return n;
+}
+
 // ---- paid: the card is issued (once), the gift and the Club when online, her lead and file, the team, her WhatsApp
 // via: 'online' | 'clinica'; o: { by (employee id), byName, match: { src, ref, at }, amount }
 async function confirm(id, via, o) {
@@ -312,6 +370,7 @@ async function confirm(id, via, o) {
   r.status = 'platit'; r.paidAt = nowISO(); r.paidVia = via === 'online' ? 'online' : 'clinica';
   r.paidBy = o.by || ''; if (o.byName) r.paidByName = o.byName;
   r.paidAmount = Number(o.amount) > 0 ? r2(o.amount) : r.amount;
+  r.payMethod = r.paidVia === 'online' ? 'card' : PAY_METHODS.includes(o.method) ? o.method : 'card';
   if (o.match) r.match = o.match;
   r.bonus = r.paidVia === 'online';
   delete r.bonusRestart; delete r.cancelledAt; delete r.cancelledBy;
@@ -321,6 +380,8 @@ async function confirm(id, via, o) {
     c.gift = r.bonus ? { what: giftShort(r.city), state: 'open' } : null;
   });
   await writeJSON(KEY, list);
+  // the money in Încasări, once (its own line there; the notice below is the only one)
+  try { await recordSale(r, o.by && o.by !== 'myPOS' ? o.by : ''); } catch (e) { console.error('card sale:', e.message); }
 
   // the sale goes back to Meta (Conversions API), with what her browser told us when she ordered: Purchase, in RON
   try {
@@ -343,8 +404,9 @@ async function confirm(id, via, o) {
   // the desk (her clinic) and the owner
   try {
     const ids = [...new Set((await N.deskIds(store, r.city)).concat(await N.adminIds(store)))];
+    const posPaid = r.paidVia === 'clinica' && r.payMethod === 'card' ? await N.claim(store, N.payRef('pos', r.paidAmount), true) : null;
     await N.notifyMany(store, ids, {
-      kind: 'money', tone: 'good', go: 'carduri', tag: 'card-paid-' + r.id,
+      kind: 'money', tone: 'good', go: 'carduri', tag: posPaid ? posPaid.tag : 'card-paid-' + r.id, quiet: !!posPaid, ref: r.paidVia === 'clinica' && r.payMethod === 'card' ? N.payRef('desk', r.paidAmount) : '',
       title: 'CARD DE SĂRBĂTORI PLĂTIT' + N.cityTag(r.city) + (r.paidVia === 'online' ? ' ONLINE 💳' : ' 🎁') + ' - ' + N.leiTxt(r.amount),
       text: r.qty + ' × ' + r.tier + ' lei (credit ' + lei(r.credit) + ') · ' + r.name + ' · ' + r.cards.map((c) => c.code).join(', ') + (r.bonus ? ' · + ' + giftShort(r.city) + ' și Clubul 360' : '') +
         (o.match ? ' · găsit automat în myPOS' : ''),
@@ -576,6 +638,7 @@ async function tick() {
     }
   }
   out.match = await autoMatch().catch((e) => ({ error: e.message }));
+  out.sales = await backfillSales().catch((e) => ({ error: e.message }));
   const pr = await readJSON(PROBE, null).catch(() => null);
   if (!pr || Date.now() - Date.parse(pr.at) > 7 * 86400e3) out.probe = await scanMypos(3, { events: true }).then((s) => (s.ok ? { read: s.probe.read, online: s.probe.online } : s)).catch((e) => ({ error: e.message }));
   out.remind = await reminders().catch((e) => ({ error: e.message }));
@@ -587,7 +650,7 @@ function cardView(r, c, now) {
   const used = usedOf(c);
   return {
     order: r.id, code: c.code, recipient: c.recipient || '', buyer: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, value: c.value,
-    used, left: leftOf(c), state: stateOf(r, c, now), pay: r.pay, paidVia: r.paidVia || '', paidAt: r.paidAt || '', created: r.created, forWho: r.forWho || '',
+    used, left: leftOf(c), state: stateOf(r, c, now), pay: r.pay, paidVia: r.paidVia || '', payMethod: r.payMethod || '', paidAt: r.paidAt || '', created: r.created, forWho: r.forWho || '',
     gift: c.gift || null, club: !!r.bonus, sent: c.sent || null, match: r.match || null, paidByName: r.paidByName || '',
     claims: (c.claims || []).map((x) => ({ id: x.id, at: x.at, date: x.date, city: x.city, byName: x.byName, performerName: x.performerName, items: x.items, applied: x.applied, rest: x.rest, undone: !!x.undone, msg: x.msg || null })),
   };
@@ -596,5 +659,5 @@ function cardView(r, c, now) {
 module.exports = {
   KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
   norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
-  image, deliver, cardText, confirm, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
+  image, deliver, cardText, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
 };

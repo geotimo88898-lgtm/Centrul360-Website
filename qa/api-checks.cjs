@@ -1875,7 +1875,7 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
 
     // 5. confirmed by the team: paid in the clinic (no gift, no Club), one tap
     const club0 = rd(CLK, []).length;
-    const c3 = await cs('receptie', { action: 'confirm', id: o3.id, via: 'clinica' });
+    const c3 = await cs('receptie', { action: 'confirm', id: o3.id, via: 'clinica', method: 'cash' });
     const p3 = ord(o3.id);
     check('CS', 'reception confirms the clinic payment: 3 cards issued, each its code and name, no gift, not on the Club\'s list', c3.ok && p3.status === 'platit' && p3.paidVia === 'clinica' && !p3.bonus && p3.cards.every((c) => /^C360-/.test(c.code) && !c.gift) && new Set(p3.cards.map((c) => c.code)).size === 3 && rd(CLK, []).length === club0, { s: p3.status, b: p3.bonus });
     const c3b = await cs('receptie', { action: 'confirm', id: o3.id, via: 'clinica' });
@@ -1889,12 +1889,31 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const leftAfter = (await pub()).left;
     const mOld = await CL.matchPayments([{ ref: 'mypos-3', amount: 290, at: new Date().toISOString() }]);
     check('CS', 'a PayLink order not paid in 2 hours frees its card on the counter; paid later (within 48 h) it is still matched', leftAfter === leftBefore && mOld.length === 1 && ord('old-wait').status === 'platit', { leftBefore, leftAfter, mOld });
-    const add = await cs('receptie', { action: 'add', tier: 290, qty: 1, name: 'Proba Adaugata', phone: '0755000666', city: 'Arad', via: 'clinica' });
+    const add = await cs('receptie', { action: 'add', tier: 290, qty: 1, name: 'Proba Adaugata', phone: '0755000666', city: 'Arad', via: 'clinica', method: 'transfer' });
     check('CS', '„Adaugă card plătit”: issued at once, paid in the clinic, the counter keeps it', add.ok && add.reservation.status === 'platit' && /^C360-/.test(add.cards[0].code) && add.reservation.via === 'portal', add.reservation && add.reservation.status);
     const resX = await pub({ tier: 290, qty: 1, name: 'Proba Anulare', phone: '0755000777', city: 'Arad', consent: true, pay: 'clinica' });
     const l1 = (await pub()).left;
     const cut = await cs('receptie', { action: 'cancel', id: resX.reservation.id });
     check('CS', 'a reservation cancelled: its card back on the counter', cut.ok && cut.left === l1 + 1, { l1, cut: cut.left });
+
+    // 5b. the card's money in Încasări (21.11): one payment per order, the day it was paid, nobody's day or commission; the method
+    // (online: card; the clinic: the one chosen); the credit used later is not money in
+    const csales = () => rd('data/sales.json', []).filter((x) => x && x.cardOrderId);
+    const sOn = csales().filter((x) => x.cardOrderId === on1.id);
+    const s3 = csales().filter((x) => x.cardOrderId === o3.id);
+    const sAdd = csales().filter((x) => x.cardOrderId === add.reservation.id);
+    check('CS', 'Încasări: the online card (990, card, Timișoara, today, no one\'s day, no commission, „Card de Sărbători”), the clinic one (1.470 as chosen), the one added (290); once each, even confirmed twice or matched again', sOn.length === 1 && sOn[0].source === 'incasare' && sOn[0].amount === 990 && sOn[0].method === 'card' && sOn[0].location === 'Timișoara' && sOn[0].date === day(0) && sOn[0].performedBy === '' && sOn[0].commission === 0 && /^Card de Sărbători/.test(sOn[0].treatment) && sOn[0].label === 'Card de Sărbători' &&
+      s3.length === 1 && s3[0].amount === 1470 && s3[0].method === 'cash' && sAdd.length === 1 && sAdd[0].amount === 290 && sAdd[0].method === 'transfer' && !rd('data/sales.json', []).some((x) => x.source === 'comision' && x.cardOrderId), { sOn, s3: s3.map((x) => [x.amount, x.method]), sAdd: sAdd.map((x) => [x.amount, x.method]) });
+    const nInc = rd('data/notifications.json', []).filter((n) => /ÎNCASARE/.test(n.title) && /Card de Sărbători/.test(n.text || ''));
+    check('CS', 'one notice per card paid (no second „ÎNCASARE” line for it)', nInc.length === 0, nInc.map((n) => n.title));
+    const MON = require('../api/_lib/money');
+    check('CS', 'the totals that read Încasări count the cards once: 990 + 1.470 + 290 + 490 + 290', MON.net(csales()) === 990 + 1470 + 290 + 490 + 290, MON.net(csales()));
+    const bf = rd(CSK, []);
+    bf.push({ id: 'paid-before', created: new Date().toISOString(), name: 'Proba Veche Platita', phone: '0755000901', city: 'Arad', tier: 290, qty: 1, amount: 290, credit: 500, cards: [{ code: 'C360-BACK-FILL', recipient: '' }], status: 'platit', paidAt: new Date().toISOString(), paidVia: 'clinica', via: 'portal', pay: 'clinica' });
+    wr(CSK, bf);
+    const bf1 = await CL.backfillSales(), bf2 = await CL.backfillSales();
+    check('CS', 'a card paid before this: its payment written once (a second pass adds nothing)', bf1 === 1 && bf2 === 0 && csales().filter((x) => x.cardOrderId === 'paid-before').length === 1, { bf1, bf2 });
+    wr(CSK, rd(CSK, []).filter((r) => r.id !== 'paid-before')); wr('data/sales.json', rd('data/sales.json', []).filter((x) => x.cardOrderId !== 'paid-before'));
 
     // 6. the credit used
     const code1 = p1.cards[0].code;
@@ -1919,6 +1938,15 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const lsX = await cs('admin', { action: 'list', scan: false });
     Date.now = realNow;
     check('CS', 'after 30.06.2027: „expirat”, cannot be used', rX.error === 'expired' && (lsX.cards.find((c) => c.code === code1) || {}).state === 'expirat', { rX, st: (lsX.cards.find((c) => c.code === code1) || {}).state });
+
+    // a paid card cancelled by the owner (never one used): a refund row in Încasări, dated today; the totals go down by it
+    const vR = await cs('receptie', { action: 'void', id: add.reservation.id });
+    const vUsed = await cs('admin', { action: 'void', id: on1.id });
+    const vOk = await cs('admin', { action: 'void', id: add.reservation.id, reason: 'proba' });
+    const vAgain = await cs('admin', { action: 'void', id: add.reservation.id });
+    const refRow = rd('data/sales.json', []).find((x) => x.kind === 'refund' && x.cardOrderId === add.reservation.id);
+    check('CS', 'a paid card cancelled: the owner only, not once used; a refund of -290 in Încasări today (refundOf the payment), the order cancelled, a second time 409', vR._status === 403 && vUsed._status === 409 && vUsed.error === 'used' && vOk.ok && refRow && refRow.amount === -290 && refRow.refundOf === sAdd[0].id && refRow.date === day(0) &&
+      ord(add.reservation.id).status === 'anulat' && vAgain._status === 409 && MON.net(csales().filter((x) => x.cardOrderId === add.reservation.id)) === 0, { vR: vR._status, vUsed, vOk, refRow });
 
     // 7. her card's picture (the team) and Clubul 360's page
     const img = await fetch('http://127.0.0.1:' + PORT + '/api/card-sarbatori?img=' + code1, { headers: { cookie: cookieFor('e-rec', 'receptie') } });
@@ -1950,6 +1978,7 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const rmE = await CL.reminders(Date.parse('2027-05-02T08:00:00Z'));
     check('CS', 'before the end: 60 days left → the 60-day reminder to every card with credit', rmE.due >= 4 && rd(CSK, []).some((r) => r.cards.some((c) => c.remind && c.remind.e60)), rmE);
     wr(CSK, []); wr(CLK, []); wr('data/card-sarbatori-links.json', {}); wr('data/card-sarbatori-stock.json', {});
+    wr('data/sales.json', rd('data/sales.json', []).filter((x) => !x.cardOrderId));
   }
 
   // the independent second reading agrees with production on the harness's data

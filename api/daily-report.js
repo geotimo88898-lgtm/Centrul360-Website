@@ -46,7 +46,7 @@ async function idlePos(store, day, posList, devices) {
 
 function unrecorded(day, sales, posList, devices) {
   const cityOf = (tid) => ((devices || []).find((d) => d.tid === tid) || {}).city || '';
-  const cards = sales.filter((s) => s.source === 'incasare' && s.date === day && cardPart(s) > 0)
+  const cards = sales.filter((s) => s.source === 'incasare' && s.date === day && cardPart(s) > 0 && !(s.cardSale && s.online)) // a card paid online (PayLink) is not on a POS
     .map((s) => ({ id: s.id, amt: cardPart(s), city: s.location || '', t: Date.parse(s.createdAt) || Date.parse(day + 'T12:00:00') }));
   const used = new Set();
   const out = [];

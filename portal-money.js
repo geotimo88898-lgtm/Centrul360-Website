@@ -316,7 +316,7 @@
     const unknown = live.filter((p) => !cityOfTid(p.tid)).length;
     const pays = live.filter((p) => S.loc === 'all' || cityOfTid(p.tid) === S.loc);
     const pos = pays.filter((p) => p.amount > 0), refunds = pays.filter((p) => p.amount < 0);
-    const sales = rows.filter((s) => cardPart(s) > 0 && (!cover || s.date >= cover))
+    const sales = rows.filter((s) => cardPart(s) > 0 && !(s.cardSale && s.online) && (!cover || s.date >= cover)) // a Card de Sărbători paid online (PayLink) is never on a POS
       .map((s) => ({ s, amt: cardPart(s), t: Date.parse(s.createdAt) || Date.parse(s.date + 'T12:00:00') }));
     const used = new Set(), matched = new Map(), posOnly = [];
     pos.slice().sort((a, b) => (a.at < b.at ? -1 : 1)).forEach((p) => {
@@ -402,6 +402,7 @@
   // the owner sees on each card payment whether it is on the POS too
   function posTag(s) {
     const r = POS.r;
+    if (s.cardSale && s.online) return '<span class="k-tag is-good">myPOS online</span>';
     if (!r || !cardPart(s) || (r.cover && s.date < r.cover)) return '';
     return r.matched.has(s.id) ? '<span class="k-tag is-good">' + icon('check') + 'POS</span>' : '<span class="k-tag is-warn">fără POS</span>';
   }

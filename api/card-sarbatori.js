@@ -10,7 +10,9 @@
 //   POST { action: 'order', id }   what she ordered (her phone masked), paid or not
 //   The team (admin, manager, reception; reception records payments):
 //   POST { action: 'list' }        every card (pending first), the counter, the totals, the treatments of the price list
-//   POST { action: 'confirm', id, via: 'online' | 'clinica' }   paid: the card is issued and sent
+//   POST { action: 'confirm', id, via: 'online' | 'clinica', method: 'card' | 'cash' | 'transfer' }   paid: the card is issued
+//        and sent, the payment goes in Încasări once (method card for online)
+//   POST { action: 'void', id, reason }   a paid order cancelled (admin only, no card used): a refund row in Încasări
 //   POST { action: 'add', tier, qty, names, name, phone, city, via }   a card already paid (seen in myPOS or in the clinic)
 //   POST { action: 'cancel', id }  an order not paid: its cards go back on the counter
 //   POST { action: 'redeem', code, items: [{ name, amount, kind }], date, performer, city }   the credit used
@@ -114,7 +116,7 @@ module.exports = async (req, res) => {
     const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
 
     // ---- the team
-    const TEAM = ['stock', 'open_wave', 'list', 'confirm', 'add', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set'];
+    const TEAM = ['void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set'];
     if (TEAM.includes(b.action)) {
       const session = await require('./_lib/auth').requireRole(req, res, b.action === 'undo' ? ['admin'] : ['admin', 'manager', 'receptie']);
       if (!session) return;
@@ -124,6 +126,7 @@ module.exports = async (req, res) => {
       const byName = me.name || (session.employeeId === 'admin' ? 'Admin' : '');
       if (b.action === 'list') {
         const scan = b.scan === false ? null : await C.autoMatch().catch((e) => ({ error: e.message }));
+        if (b.scan !== false) await C.backfillSales().catch((e) => console.error('card sales backfill:', e.message));
         const list = await readJSON(C.KEY, []);
         const now = Date.now();
         const cards = [];
@@ -148,6 +151,13 @@ module.exports = async (req, res) => {
         res.status(200).json(Object.assign({ ok: true }, await C.count(await readJSON(C.KEY, []))));
         return;
       }
+      if (b.action === 'void') {
+        if (session.role !== 'admin') { res.status(403).json({ error: 'forbidden' }); return; }
+        const x = await C.voidPaid(clip(b.id, 60), session, clip(b.reason, 200));
+        if (x.error) { res.status(x.error === 'not_found' ? 404 : 409).json(x); return; }
+        res.status(200).json(Object.assign({ ok: true, refund: x.refund }, await C.count(await readJSON(C.KEY, []))));
+        return;
+      }
       if (b.action === 'open_wave') {
         if (session.role !== 'admin') { res.status(403).json({ error: 'forbidden' }); return; }
         const list = await readJSON(C.KEY, []);
@@ -163,7 +173,7 @@ module.exports = async (req, res) => {
         if (!r) { res.status(404).json({ error: 'not_found' }); return; }
         if (r.status === 'anulat' && b.action === 'set') { res.status(409).json({ error: 'cancelled' }); return; }
         const via = b.via === 'online' || (b.via !== 'clinica' && r.pay === 'online') ? 'online' : 'clinica';
-        const x = await C.confirm(r.id, via, { by: session.employeeId || '', byName });
+        const x = await C.confirm(r.id, via, { by: session.employeeId || '', byName, method: b.method });
         if (x.error) { res.status(400).json(x); return; }
         res.status(200).json(Object.assign({ ok: true, again: !!x.again, reservation: x.row, cards: x.row.cards.map((c) => C.cardView(x.row, c)) }, await C.count(await readJSON(C.KEY, []))));
         return;
@@ -201,7 +211,7 @@ module.exports = async (req, res) => {
           cards: names.map((n) => ({ code: '', recipient: n })), recipient: names[0] || '', status: 'rezervat', via: 'portal', pay: b.via === 'online' ? 'online' : 'clinica', addedBy: session.employeeId || '' };
         list.push(row);
         await writeJSON(C.KEY, list);
-        const x = await C.confirm(row.id, row.pay, { by: session.employeeId || '', byName });
+        const x = await C.confirm(row.id, row.pay, { by: session.employeeId || '', byName, method: b.method });
         res.status(200).json(Object.assign({ ok: true, reservation: x.row, cards: x.row.cards.map((c) => C.cardView(x.row, c)) }, await C.count(await readJSON(C.KEY, []))));
         return;
       }

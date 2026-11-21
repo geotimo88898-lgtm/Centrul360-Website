@@ -97,21 +97,42 @@
     if (b.dataset.cdOpen) { cardDrawer(b.dataset.cdOpen, b); return; }
     if (b.dataset.cdConfirm) {
       const o = (S.d.orders || []).find((x) => x.id === b.dataset.cdConfirm);
-      if (!o || !(await K.ui().confirm({ title: 'Confirmi plata?', message: o.name + ': ' + o.qty + ' × ' + o.tier + ' lei = ' + lei(o.amount) + (o.pay === 'online' ? ', plătit online (verificat în myPOS).' : ', încasat în clinică.') + ' Cardul se emite și pleacă pe WhatsApp.', confirmText: 'Confirmă plata' }))) return;
-      await K.busy(b, async () => {
-        try {
-          const r = await api({ action: 'confirm', id: o.id, via: b.dataset.via });
-          const sent = (r.cards || []).filter((c) => c.sent && c.sent.how).length;
-          K.ui().toast(r.again ? 'Era deja confirmată.' : 'Card emis' + (sent ? ' și trimis pe WhatsApp.' : '. WhatsApp: de trimis manual (din card).'), 'success');
-          await load(true);
-        } catch (err) { K.ui().toast(K.errText(err), 'error'); }
-      });
+      if (!o) return;
+      if (b.dataset.via !== 'online') { payDrawer(o, b); return; }
+      if (!(await K.ui().confirm({ title: 'Confirmi plata?', message: o.name + ': ' + o.qty + ' × ' + o.tier + ' lei = ' + lei(o.amount) + ', plătit online (verificat în myPOS). Cardul se emite, pleacă pe WhatsApp și plata intră în Încasări.', confirmText: 'Confirmă plata' }))) return;
+      await K.busy(b, () => doConfirm(o, 'online', 'card'));
       return;
     }
     if (b.dataset.cdCancel) {
       if (!(await K.ui().confirm({ title: 'Anulezi comanda?', message: 'Cardurile ei se întorc în stoc.', confirmText: 'Anulează', danger: true }))) return;
       await K.busy(b, async () => { try { await api({ action: 'cancel', id: b.dataset.cdCancel }); await load(true); } catch (err) { K.ui().toast(K.errText(err), 'error'); } });
     }
+  }
+
+  async function doConfirm(o, via, method) {
+    try {
+      const r = await api({ action: 'confirm', id: o.id, via, method });
+      const sent = (r.cards || []).filter((c) => c.sent && c.sent.how).length;
+      K.ui().toast(r.again ? 'Era deja confirmată.' : 'Card emis, plata în Încasări' + (sent ? ', trimis pe WhatsApp.' : '. WhatsApp: de trimis manual (din card).'), 'success');
+      await load(true);
+      return true;
+    } catch (err) { K.ui().toast(K.errText(err), 'error'); return false; }
+  }
+  // paid in the clinic: how (card on the POS, cash, transfer); the payment goes in Încasări with it
+  function payDrawer(o, from) {
+    K.drawer({
+      from, title: 'Confirmă plata în clinică', icon: 'wallet', width: 460,
+      subtitle: esc(o.name) + ' · ' + o.qty + ' × ' + o.tier + ' lei = ' + lei(o.amount) + '. Cardul se emite, pleacă pe WhatsApp și plata intră în Încasări.',
+      body: '<form class="k-form cd-waves" data-f>' + K.field('Cum a plătit', K.seg('method', [['card', 'Card (POS)'], ['cash', 'Cash'], ['transfer', 'Transfer']], 'card')) + '</form>',
+      footer: '<button type="button" class="k-btn" data-cancel>Renunță</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Confirmă plata (' + lei(o.amount) + ')</button>',
+      onMount(root, h) {
+        root.querySelector('[data-cancel]').addEventListener('click', () => h.close());
+        root.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          const v = K.formValues(root.querySelector('[data-f]'));
+          if (await doConfirm(o, 'clinica', v.method)) h.close();
+        }));
+      },
+    });
   }
 
   // the waves (the owner only): how many cards in a wave, how many in all, and the next wave opened now
@@ -151,14 +172,15 @@
         K.field('Plătit', K.seg('via', [['clinica', 'În clinică'], ['online', 'Online (PayLink)']], 'clinica'), '', 'Plata online aduce și cadoul (EMS la Timișoara, Restart la Arad) și Clubul 360.') +
         '<div class="k-grid c2">' + K.field('Numele ei', '<input name="name" autocomplete="off" required>') + K.field('Telefon (WhatsApp)', '<input name="phone" inputmode="tel" autocomplete="off" required>') + '</div>' +
         K.field('Pe numele (dacă e cadou)', '<input name="recipient" autocomplete="off" placeholder="gol = pe numele ei">') +
-        K.field('Clinica', K.seg('city', [['Timișoara', 'Timișoara'], ['Arad', 'Arad']], 'Timișoara')) + '</form>',
+        K.field('Clinica', K.seg('city', [['Timișoara', 'Timișoara'], ['Arad', 'Arad']], 'Timișoara')) +
+        K.field('Cum a plătit (în clinică)', K.seg('method', [['card', 'Card (POS)'], ['cash', 'Cash'], ['transfer', 'Transfer']], 'card'), '', 'Plata intră în Încasări; online e mereu card.') + '</form>',
       footer: '<button type="button" class="k-btn" data-cancel>Renunță</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Emite cardul</button>',
       onMount(root, h) {
         root.querySelector('[data-cancel]').addEventListener('click', () => h.close());
         root.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
           const v = K.formValues(root.querySelector('[data-f]'));
           try {
-            const r = await api({ action: 'add', tier: Number(v.tier), qty: 1, names: [v.recipient || ''], name: v.name, phone: v.phone, city: v.city, via: v.via });
+            const r = await api({ action: 'add', tier: Number(v.tier), qty: 1, names: [v.recipient || ''], name: v.name, phone: v.phone, city: v.city, via: v.via, method: v.via === 'online' ? 'card' : v.method });
             h.close(); K.ui().toast('Card emis: ' + ((r.cards || [])[0] || {}).code, 'success'); await load(true);
           } catch (err) { K.ui().toast(err.code === 'bad_phone' ? 'Telefon invalid.' : err.code === 'missing_name' ? 'Scrie numele.' : K.errText(err), 'error'); }
         }));
@@ -204,6 +226,7 @@
           '<p class="cd-total" data-total></p><button type="button" class="k-btn is-primary" data-use-go>' + icon('check') + 'Scade din credit</button></form>'
           : '<p class="k-muted">' + (c.state === 'expirat' ? 'Cardul a expirat pe 30.06.2027 și nu mai poate fi folosit.' : c.state === 'folosit' ? 'Creditul e folosit în întregime.' : '') + '</p>') +
         '<h4 class="cd-h4">Istoric</h4>' + hist +
+        (admin && c.state !== 'anulat' && !c.used && !(c.gift && c.gift.state === 'used') ? '<p class="cd-void"><button type="button" class="k-btn is-ghost is-sm" data-void>' + icon('ban') + 'Anulează cardul plătit</button><small>Se face rambursare în Încasări, cu data de azi.</small></p>' : '') +
         '<details class="cd-ren"><summary>Schimbă numele de pe card</summary><div class="cd-pick"><input name="recipient" value="' + esc(c.recipient) + '" placeholder="Numele de pe card"><button type="button" class="k-btn is-outline is-sm" data-rename>Salvează</button></div></details>',
       onMount(root, h) {
         const lines = root.querySelector('[data-lines]');
@@ -248,6 +271,12 @@
         if (und) und.addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
           if (!(await K.ui().confirm({ title: 'Anulezi ultima folosire?', message: 'Creditul (și cadoul, dacă a fost) revin pe card.', confirmText: 'Anulează', danger: true }))) return;
           try { await api({ action: 'undo', code: c.code }); h.close(); await load(true); } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+        }));
+        const vd = root.querySelector('[data-void]');
+        if (vd) vd.addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          if (!(await K.ui().confirm({ title: 'Anulezi cardul plătit?', message: 'Comanda ' + c.qty + ' × ' + c.tier + ' lei se anulează, cardurile ei nu mai pot fi folosite, iar banii apar ca rambursare în Încasări, azi.', confirmText: 'Anulează cardul', danger: true }))) return;
+          try { await api({ action: 'void', id: c.order }); h.close(); K.ui().toast('Card anulat, rambursarea e în Încasări.', 'success'); await load(true); }
+          catch (err) { K.ui().toast(err.code === 'used' ? 'Cardul a fost deja folosit: nu se mai anulează.' : K.errText(err), 'error'); }
         }));
         root.querySelector('[data-rename]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
           try { await api({ action: 'rename', code: c.code, recipient: root.querySelector('input[name=recipient]').value }); K.ui().toast('Salvat. Trimite-i din nou cardul, cu numele nou.', 'success'); h.close(); await load(true); }
