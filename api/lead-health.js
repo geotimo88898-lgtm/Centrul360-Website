@@ -156,6 +156,7 @@ module.exports = async (req, res) => {
   if (req.query && req.query.optouts) {
     const O = require('./_lib/optout');
     const op = String(req.query.optouts);
+    if (req.method === 'POST' && op === 'forget') { res.status(200).json(await O.forget(String(req.query.phone || ''), req.query.dry === '1')); return; }
     if (req.method === 'POST' && op === 'add') { res.status(200).json(await O.add(String(req.query.phones || '').split(','), String(req.query.why || 'la cererea ei'))); return; }
     const convos = await readJSON('data/whatsapp-conversations.json', []);
     const off = await O.set();
