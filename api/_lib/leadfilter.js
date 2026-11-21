@@ -174,7 +174,7 @@ const summary = (x) => [x.zoneLabel, x.problemLabel && x.problemLabel.toLowerCas
 // what the template's variables say for her
 function varsFor(lead, x) {
   const W = require('./workflows');
-  return { prenume: W.firstName(lead.name) || 'dragă', problema: (x.problemLabel || x.zoneLabel || 'zona ta').toLowerCase(), locatie: lead.location || '', nume: lead.name || '', telefon: lead.phone || '' };
+  return { prenume: W.firstName(lead.name) || 'dragă', problema: (x.problemLabel || x.zoneLabel || 'zona ta').replace(/\s*\(([^)]*)\)/g, ', $1').toLowerCase(), locatie: lead.location || '', nume: lead.name || '', telefon: lead.phone || '' };
 }
 // the template of a label: an approved one first (two runs at once may have left a second copy of a label)
 function tplFor(tpls, label) { const l = tpls.filter((t) => t.label === label); return l.find((t) => WT.overall(t) === 'APPROVED') || l.find((t) => WT.overall(t) === 'PENDING') || l[0] || null; }
