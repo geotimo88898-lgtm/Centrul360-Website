@@ -439,9 +439,10 @@ const needsName = (r) => r.via === 'site' && !r.name && !(r.cards || []).some((c
 async function knownName(phone) {
   const k = d9(phone);
   if (k.length < 9) return '';
-  const cl = (await readJSON('data/clients.json', []).catch(() => [])).find((c) => d9(c.phone) === k && c.name);
+  const real = (n) => /\p{L}{2}/u.test(String(n || '')) && n !== NONAME; // a name, never a number or the placeholder
+  const cl = (await readJSON('data/clients.json', []).catch(() => [])).find((c) => d9(c.phone) === k && real(c.name));
   if (cl) return String(cl.name).trim();
-  const ld = (await readJSON('data/leads.json', []).catch(() => [])).filter((l) => d9(l.phone) === k && l.name && l.name !== NONAME).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+  const ld = (await readJSON('data/leads.json', []).catch(() => [])).filter((l) => d9(l.phone) === k && real(l.name)).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
   return ld ? String(ld.name).trim() : '';
 }
 // her lead made with NONAME gets her name once she says it
@@ -483,6 +484,8 @@ async function confirm(id, via, o) {
   norm(r);
   if (r.status === 'platit') return { row: r, again: true };
   mark(r, 'paid', o.match ? 'auto' : 'manual'); recOf(r).stop = recOf(r).stop || 'paid';
+  // no name yet: hers from our files (clients, then leads) when we have one; never asked on WhatsApp then
+  if (needsName(r)) { const k = await knownName(r.phone).catch(() => ''); if (k) { r.name = k; r.nameFrom = 'fisa'; mark(r, 'named', 'fisa'); } }
   const nameless = needsName(r);
   if (!r.name && !r.hint) r.hint = await knownName(r.phone).catch(() => '');
   r.status = 'platit'; r.paidAt = nowISO(); r.paidVia = via === 'online' ? 'online' : 'clinica';
@@ -1083,6 +1086,7 @@ async function named(r, m) {
       if (nm.for === 'me') { r.name = name; r.cards.forEach((c) => { c.recipient = ''; }); r.recipient = ''; r.forWho = 'eu'; }
       else { r.cards[0].recipient = name; r.recipient = name; r.forWho = 'cadou'; }
       Object.assign(nm, { state: 'done', how: nm.for, doneAt: nowISO() });
+      r.nameFrom = 'whatsapp';
       mark(r, 'named', nm.for);
       await sendCards(r, nm.for === 'me' ? 'pe numele ei' : 'cadou');
       if (nm.for === 'me') await nameLead(r);
@@ -1148,7 +1152,7 @@ function cardView(r, c, now) {
   return {
     order: r.id, code: c.code, recipient: c.recipient || '', buyer: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, value: c.value,
     used, left: leftOf(c), state: stateOf(r, c, now), pay: r.pay, paidVia: r.paidVia || '', payMethod: r.payMethod || '', paidAt: r.paidAt || '', created: r.created, forWho: r.forWho || '',
-    gift: c.gift || null, club: !!r.bonus, sent: c.sent || null, match: r.match || null, paidByName: r.paidByName || '',
+    gift: c.gift || null, club: !!r.bonus, sent: c.sent || null, match: r.match || null, paidByName: r.paidByName || '', nameFrom: r.nameFrom || (r.via === 'portal' ? 'receptie' : ''),
     naming: r.naming ? (r.naming.state === 'done' ? (r.naming.how === 'none' || r.naming.how === 'timeout' ? 'none' : 'done') : r.naming.for ? 'typing' : 'asked') : '',
     claims: (c.claims || []).map((x) => ({ id: x.id, at: x.at, date: x.date, city: x.city, byName: x.byName, performerName: x.performerName, items: x.items, applied: x.applied, rest: x.rest, undone: !!x.undone, msg: x.msg || null })),
   };

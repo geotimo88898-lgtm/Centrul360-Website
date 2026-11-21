@@ -45,11 +45,48 @@
   }
 
   // ------------------------------------------------------------------ her phone in the card block
-  // the field, put in by this file when a page does not have it in its markup
+  // The block's own parts, written here once and put in by shape() on any page whose markup is older (the live pages
+  // until a swap), so every page has the same block: her phone and the clinic, the buttons, a few short lines with a tick.
+  var TK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
+  // under the buttons: short lines with a tick, nothing that reads like a warning (the saving follows the card chosen)
+  var POINTS = '<ul class="cst-pts" data-cs-pts><li><i>' + TK + '</i><span>Economisești <b data-cs-v="save">1.510 lei</b></span></li>' +
+    '<li><i>' + TK + '</i><span>La plata online: acces în Clubul 360 și un tratament cadou (EMS la Timișoara, Restart la Arad)</span></li>' +
+    '<li><i>' + TK + '</i><span>Plătești cu cardul pe pagina securizată myPOS</span></li></ul>';
+  // the phone and the clinic, put in when a page does not have them
   var FIELD = '<div class="cst-ph" data-cs-ph><label class="cst-pl" for="cst-tel">Telefonul tău · îți trimitem cardul pe WhatsApp</label>' +
     '<div class="cst-pr"><input id="cst-tel" class="cst-in" type="tel" inputmode="numeric" autocomplete="tel" placeholder="07xx xxx xxx" maxlength="16" data-cs-phone>' +
     '<div class="cst-city" role="radiogroup" aria-label="Clinica" data-cs-city><label><input type="radio" name="cst-city" value="Timișoara">Timișoara</label><label><input type="radio" name="cst-city" value="Arad">Arad</label></div></div>' +
     '<p class="cst-msg" data-cs-phmsg role="alert"></p><p class="cst-note">Îți scriem pe WhatsApp doar pentru card.</p></div>';
+  // any block brought to that shape (nothing changes when it already has it)
+  function shape() {
+    var g = document.querySelector('.cst-go'), pb0 = g && g.querySelector('[data-cs-buy]');
+    if (!g || !pb0) return;
+    if (!g.querySelector('[data-cs-ph]')) pb0.insertAdjacentHTML('beforebegin', FIELD);
+    var ph = g.querySelector('[data-cs-ph]');
+    // no name field on the page (the owner, 21.11): an older one goes (her name comes from our files or on WhatsApp)
+    [].slice.call(ph.querySelectorAll('[data-cs-nmw], [data-cs-nm1]')).forEach(function (el) { el.parentNode.removeChild(el); });
+    // the long paragraph under the buttons gives its place to the short lines (in the same spot); a clinic link it held
+    // stays, on its own short line under them
+    var sub = g.querySelector('.cst-sub');
+    if (!g.parentNode.querySelector('[data-cs-pts]')) {
+      if (sub) sub.insertAdjacentHTML('beforebegin', POINTS);
+      else ([].slice.call(g.children).filter(function (x) { return x.classList.contains('btn') && (x.hasAttribute('data-cs-buy') || x.hasAttribute('data-cs-reserve')); }).pop() || pb0).insertAdjacentHTML('afterend', POINTS);
+    }
+    if (sub) {
+      var res = sub.querySelector('[data-cs-reserve]');
+      if (res) { var alt = document.createElement('p'); alt.className = 'cst-alt'; alt.appendChild(document.createTextNode('Preferi la clinică? ')); alt.appendChild(res); g.parentNode.querySelector('[data-cs-pts]').insertAdjacentElement('afterend', alt); }
+      sub.parentNode.removeChild(sub);
+    }
+    // the Google rating first, right under the buttons, then the short lines (the owner, 21.11): they go under it, in its
+    // line of the hero (.meta), the clinic link with them
+    var meta = [].slice.call(g.parentNode.children).filter(function (c) { return c.classList.contains('meta'); })[0];
+    var pts = g.parentNode.querySelector('[data-cs-pts]');
+    if (meta && pts && pts.parentNode !== meta) { var alt2 = g.querySelector('.cst-alt'); meta.appendChild(pts); if (alt2) meta.appendChild(alt2); }
+    // one „Au mai rămas” line: the one above the phone (the second, under the block, goes)
+    var txt = g.parentNode;
+    [].slice.call(txt.querySelectorAll('.meta [data-cs-live]')).forEach(function (el) { el.parentNode.removeChild(el); });
+    if (window.CSC && window.CSC.tier && window.CSC.current) window.CSC.tier(window.CSC.current, true); // the saving of the card chosen
+  }
   var blk = function () { return document.querySelector('[data-cs-ph]'); };
   var goBox = function () { var b = blk(); return b ? b.closest('.cst-go') : null; };
   var payBtn = function () { var g = goBox(); return g ? g.querySelector('[data-cs-buy]') : null; };
@@ -60,8 +97,7 @@
     b.querySelector('[data-cs-city]').classList.toggle('bad', el === 'city');
   }
   function initBlock() {
-    var pb0 = document.querySelector('.cst-go [data-cs-buy]');
-    if (!blk() && pb0) pb0.insertAdjacentHTML('beforebegin', FIELD);
+    shape();
     var b = blk(); if (!b) return;
     var inp = b.querySelector('[data-cs-phone]');
     var ph = get(localStorage, K_PHONE), city = get(localStorage, K_CITY);
@@ -263,7 +299,7 @@
     if (!b) return;
     e.preventDefault();
     var clinic = b.hasAttribute('data-cs-reserve'), g = goBox();
-    if (g && g.contains(b)) order(b, clinic);
+    if (g && (g.contains(b) || b.closest('.cst-alt'))) order(b, clinic); // the block's buttons, and its clinic link under the rating
     else carry(Number(b.getAttribute('data-cs-tier')) || 0, clinic);
   });
   initBlock();

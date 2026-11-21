@@ -59,6 +59,8 @@
   const REASON = { retry: 'încearcă din nou', declined: 'cardul a fost refuzat', nocard: 'n-avea cardul la ea', confusing: 'n-a înțeles pagina de plată', clinic: 'preferă să plătească în clinică', no: 's-a răzgândit' };
   const BTN = { pay: '„Finalizez plata” (i-a plecat linkul)', clinic: '„Plătesc în clinică”', no: '„Nu mai vreau”', text: 'a scris (vezi Mesaje)' };
   const NAMEFOR = { me: 'e pentru ea', gift: 'e cadou' };
+  // where the name on the card came from
+  const NAMEFROM = { site: 'scris pe site', fisa: 'din fișa clientei', whatsapp: 'întrebat pe WhatsApp', receptie: 'pus de recepție' };
   function trailLine(e, o) {
     const n = e.note || '', failed = /^netrimis/.test(n), why = n.replace(/^netrimis:?\s*/, '');
     switch (e.ev) {
@@ -75,7 +77,7 @@
       case 'paid': return n === 'auto' ? 'plătită (găsită în myPOS)' : 'plată confirmată în portal';
       case 'ask_name': return failed ? 'întrebarea numelui n-a plecat: cardul a plecat fără nume' : 'întrebată pe WhatsApp pe ce nume să fie cardul';
       case 'name_for': return 'a răspuns: ' + (NAMEFOR[n] || n) + ', așteptăm numele';
-      case 'named': return n === 'none' ? 'n-a răspuns în 6 ore: cardul pleacă fără nume' : 'a scris numele de pe card';
+      case 'named': return n === 'none' ? 'n-a răspuns în 6 ore: cardul pleacă fără nume' : n === 'fisa' ? 'numele luat din fișa clientei' : 'a scris numele de pe card';
       case 'renamed': return 'numele de pe card schimbat' + (n ? ' ' + n : '');
       case 'card_sent': return /^ok/.test(n) ? 'cardul i-a plecat pe WhatsApp' + (/fără nume/.test(n) ? ', fără nume' : '') : 'cardul n-a plecat pe WhatsApp: de trimis manual';
       case 'cancelled': return n === 'ea' ? 'a renunțat' : 'anulată';
@@ -111,7 +113,7 @@
         const stateTag = o.byHer ? '<span class="k-tag is-bad">A renunțat</span>' : unpaid ? '<span class="k-tag is-warn">Neplătită</span>' : tag(o.status);
         return '<div class="k-row cd-order' + (o.byHer ? ' is-off' : '') + '"><div class="k-row-main"><div class="k-row-title">' + esc(o.name || 'Fără nume') + ' · ' + o.qty + ' × ' + o.tier + ' lei</div>' +
           '<div class="k-row-sub">' + what + ' · ' + esc(o.city) + ' · ' + esc(when(o.created)) +
-          (o.names.some(Boolean) ? ' · pe numele: ' + esc(o.names.map((n) => n || 'ea').join(', ')) : '') + ' · <a href="' + K.tel(o.phone) + '">' + esc(o.phone) + '</a></div>' +
+          (o.names.some(Boolean) ? ' · pe numele: ' + esc(o.names.map((n) => n || 'ea').join(', ')) : '') + (NAMEFROM[o.nameFrom] ? ' (numele ' + NAMEFROM[o.nameFrom] + ')' : '') + ' · <a href="' + K.tel(o.phone) + '">' + esc(o.phone) + '</a></div>' +
           trailHtml(o) + (over && !o.byHer ? '<p class="cd-call">' + icon('phone') + 'Sun-o: plata n-a venit.</p>' : '') + '</div>' +
           '<div class="k-row-end">' + stateTag + (o.byHer ? '' : '<button type="button" class="k-btn is-primary is-sm" data-cd-confirm="' + esc(o.id) + '" data-via="' + (o.pay === 'online' ? 'online' : 'clinica') + '">' + icon('check') +
             (o.pay === 'online' ? 'Confirmă plata (doar dacă e în myPOS)' : 'Confirmă plata (' + lei(o.amount) + ')') + '</button>' +
@@ -275,7 +277,7 @@
         '<a class="k-btn is-ghost is-sm" href="' + K.wa(c.phone, msg) + '" target="_blank" rel="noopener">' + icon('link') + 'Scrie din WhatsApp</a></div>' + sentLine +
         '<div class="cd-kv"><div><small>Credit</small><b>' + lei(c.value) + '</b></div><div><small>Folosit</small><b>' + lei(c.used) + '</b></div><div><small>Rămas</small><b class="cd-big">' + lei(c.left) + '</b></div></div>' +
         '<p class="k-muted cd-meta">Cumpărat de ' + esc(c.buyer) + ' · <a href="' + K.tel(c.phone) + '">' + esc(c.phone) + '</a> · ' + esc(c.city) + ' · ' + c.tier + ' lei ' + (c.paidVia === 'online' ? 'online' : 'în clinică') + ', ' + esc(dayOf(c.paidAt)) +
-        (c.paidByName ? ' (' + esc(c.paidByName) + ')' : '') + (c.gift ? ' · Cadou: ' + esc(c.gift.what) + (c.gift.state === 'open' ? '' : ', folosit') : '') + (c.club ? ' · Clubul 360' : '') + '</p>' +
+        (c.paidByName ? ' (' + esc(c.paidByName) + ')' : '') + (NAMEFROM[c.nameFrom] ? ' · Numele ' + NAMEFROM[c.nameFrom] : '') + (c.gift ? ' · Cadou: ' + esc(c.gift.what) + (c.gift.state === 'open' ? '' : ', folosit') : '') + (c.club ? ' · Clubul 360' : '') + '</p>' +
         (canUse ? '<form class="k-form cd-use" data-use><h4>Folosește creditul</h4>' +
           '<div class="cd-pick"><select data-pick><option value="">Alege din lista de prețuri…</option>' + tr.map((t, i) => '<option value="' + i + '">' + esc(t.name) + ' · ' + lei(t.price) + (t.city ? ' · ' + esc(t.city) : '') + '</option>').join('') + '</select>' +
           '<button type="button" class="k-btn is-outline is-sm" data-line>' + icon('plus') + 'Alt tratament</button></div>' +

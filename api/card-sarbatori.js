@@ -148,7 +148,7 @@ module.exports = async (req, res) => {
         const gaveUp = (r) => r.status === 'anulat' && r.cancelledBy === 'ea' && now - Date.parse(r.cancelledAt || r.created) < 3 * 86400e3;
         const orders = list.filter((r) => r.status === 'asteptare' || r.status === 'rezervat' || gaveUp(r)).map((r) => ({ id: r.id, created: r.created, name: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit,
           pay: r.pay, status: r.status, forWho: r.forWho || '', names: r.cards.map((c) => c.recipient), held: C.live(r, now), heldUntil: r.status === 'asteptare' ? new Date(C.heldFrom(r) + C.HOLD_MS).toISOString() : '',
-          online: r.via === 'site' && (r.pay === 'online' || !!r.convertedAt), converted: r.convertedAt || '', byHer: gaveUp(r), trail: trailOf(r), rec: recView(r) })).reverse();
+          online: r.via === 'site' && (r.pay === 'online' || !!r.convertedAt), converted: r.convertedAt || '', byHer: gaveUp(r), nameFrom: r.nameFrom || '', trail: trailOf(r), rec: recView(r) })).reverse();
         const paid = list.filter((r) => r.status === 'platit');
         const totals = { cards: paid.reduce((n, r) => n + C.qtyOf(r), 0), money: paid.reduce((n, r) => n + (Number(r.paidAmount) || Number(r.amount) || 0), 0), online: paid.filter((r) => r.paidVia === 'online').reduce((n, r) => n + (Number(r.paidAmount) || r.amount), 0),
           credit: paid.reduce((n, r) => n + r.cards.reduce((m, c) => m + (Number(c.value) || 0), 0), 0), used: paid.reduce((n, r) => n + r.cards.reduce((m, c) => m + C.usedOf(c), 0), 0) };
@@ -261,6 +261,7 @@ module.exports = async (req, res) => {
           // waiting for her answer stops waiting
           f.c.recipient = clean(b.recipient, 80); if (f.r.cards[0] === f.c) f.r.recipient = f.c.recipient;
           if (f.r.naming && f.r.naming.state !== 'done') Object.assign(f.r.naming, { state: 'done', how: 'portal', doneAt: new Date().toISOString() });
+          f.r.nameFrom = 'receptie';
           C.mark(f.r, 'renamed', byName ? 'de ' + byName : '');
           await writeJSON(C.KEY, list);
           if (b.send === false) { res.status(200).json({ ok: true, card: C.cardView(f.r, f.c) }); return; }
@@ -316,6 +317,9 @@ module.exports = async (req, res) => {
     if (!Number.isInteger(qty) || qty < 1 || qty > C.MAXQ) { res.status(400).json({ error: 'bad_qty' }); return; }
     const gift = b.forWho === 'cadou' || (b.forWho == null && Array.isArray(b.names) && b.names.some((x) => clean(x, 80)));
     const names = online ? [gift ? clean(b.recipient || (b.names || [])[0], 80) : ''] : Array.from({ length: qty }, (_, i) => clean((Array.isArray(b.names) ? b.names : [])[i], 80));
+    // the name on the card typed in the card block (optional, the owner 21.11): what is printed on it
+    const cardName = clean(String(b.cardName == null ? '' : b.cardName).replace(/<[^>]*>/g, '').replace(/[\u0000-\u001f\u007f]/g, ''), 24);
+    if (cardName && !names[0]) names[0] = cardName;
     // only her phone and the clinic (the card block's field, both ways: the owner, 21.11); the name on the card comes on
     // WhatsApp after the payment
     if (!phoneOk(phone)) { res.status(400).json({ error: 'bad_phone' }); return; }
@@ -345,7 +349,13 @@ module.exports = async (req, res) => {
     // nothing is issued now: the codes come when the payment is confirmed (the owner, 21.11)
     const entry = { id: newId, created: new Date().toISOString(), name, phone, city, tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty, forWho: gift ? 'cadou' : 'eu',
       cards: names.map((n) => ({ code: '', recipient: n })), recipient: names[0] || '', status: online ? 'asteptare' : 'rezervat', via: 'site', pay: online ? 'online' : 'clinica', page: clip(b.page, 200), track: trackOf(req, b.page) };
-    if (!name) entry.hint = await C.knownName(phone).catch(() => '');
+    // where the name on the card comes from (the portal says it): typed on the site; else hers in our files (clients, then
+    // leads, the newest first): her greeting and her card's name, nothing asked on WhatsApp; else asked once paid
+    if (cardName) entry.nameFrom = 'site';
+    if (!name) {
+      const known = await C.knownName(phone).catch(() => '');
+      if (known) { entry.hint = known; if (!cardName && !names.some(Boolean)) { entry.name = known; entry.nameFrom = 'fisa'; } }
+    }
     C.mark(entry, 'created');
     if (online) C.mark(entry, 'to_paylink');
     list.push(entry);
