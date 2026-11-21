@@ -390,6 +390,7 @@ module.exports = async (req, res) => {
     const heard = []; // her new voice notes and videos, for the transcripts
     const fc = []; // answers to the „Transformarea 360” campaign (api/_lib/fc-campaign.js)
     const FC = require('./_lib/fc-campaign');
+    const CB = require('./_lib/card-blast'); // „Cardul de Sărbători” to the 250: its statuses and answers (Admin → Campanii)
 
     const entries = payload.entry || [];
     for (const entry of entries) {
@@ -403,7 +404,8 @@ module.exports = async (req, res) => {
             const m = await handleInboundMessage(conversations, message, phoneNumberId, value.contacts, heard);
             if (m) fresh.set(m.phone, m);
             if (m) { const hit = await FC.onInbound(conversations, message, textFor(message)); if (hit) fc.push({ hit, m }); }
-            if (m) await require('./_lib/card-blast').onInbound(conversations, message).catch((e) => console.error('card blast chat', e.message)); // the Cardul de Sărbători she answers, in her chat
+            if (m) await CB.onInbound(conversations, message).catch((e) => console.error('card blast chat', e.message)); // the Cardul de Sărbători she answers, in her chat
+            if (m) await CB.noteAnswer(message, textFor(message)); // counted for Admin → Campanii
             if (m && m.tap && !(m.card && m.card.button)) taps.push(m);
             if (m && m.card) cards.push(m);
             changed = true;
@@ -442,6 +444,7 @@ module.exports = async (req, res) => {
           try {
             // only a status of a message in the chats changes them (a campaign's statuses would rewrite the whole file thousands of times)
             if (handleStatusUpdate(conversations, status, failed)) changed = true;
+            else await CB.onStatus(status); // not in the chats: maybe a message of the card's campaign
             await FC.onStatus(status);
           } catch (err) {
             console.error('webhook-whatsapp: error processing status', err.message);

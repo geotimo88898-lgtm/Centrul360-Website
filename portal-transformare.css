@@ -1,4 +1,4 @@
-/* Admin → Campanie TRANSFORMARE (portal-transformare.js) */
+/* Admin → Campanii (portal-transformare.js); the section key stays transformare */
 .tf .tf-state{ font-size:.78rem; padding:.35rem .65rem; }
 .tf .tf-top{ margin-bottom:.9rem; }
 .tf .tf-top .k-stat-value small{ font-size:.55em; color:var(--muted); font-weight:600; margin-left:.1em; }
@@ -50,3 +50,60 @@
   .tf .tf-person .k-row-end .k-tag{ max-width:100%; overflow:hidden; text-overflow:ellipsis; }
 }
 @media (max-width:420px){ .tf .tf-nums{ grid-template-columns:repeat(3,minmax(0,1fr)); } .tf .tf-fun-row{ grid-template-columns:minmax(0,6rem) minmax(0,1fr) 2.8rem 2.3rem; } }
+
+/* Admin → Campanii: the picker and „Cardul de Sărbători” (portal-transformare.js) */
+.tf .cp-pick{ margin:-.2rem 0 1rem; }
+.tf .cp-pick .k-seg{ max-width:100%; }
+.tf .cp-pick .k-seg button{ padding:.55rem .95rem; font-size:.86rem; }
+.tf .cp-pick .k-seg button span{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tf .cp-segs{ display:flex; flex-wrap:wrap; gap:.4rem; justify-content:flex-end; min-width:0; }
+.tf .cp-na{ color:var(--muted-2); font-weight:600; }
+.tf .cp-branch{ margin:.7rem 0 .2rem; padding-top:.6rem; border-top:1px dashed var(--line); font-size:.72rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted-2); }
+.tf .tf-fun-row.is-leak .tf-fun-p{ color:var(--bad); font-weight:700; }
+.tf .tf-fun-row.is-leak .tf-fun-bar i{ background:var(--bad); }
+.tf .cp-leak{ display:flex; align-items:flex-start; gap:.4rem; margin:.7rem 0 0; font-size:.8rem; color:var(--bad); font-weight:600; min-width:0; overflow-wrap:anywhere; }
+.tf .cp-leak .k-ic{ width:14px; height:14px; flex:none; margin-top:.1rem; }
+.tf .cp-t{ display:flex; flex-direction:column; font-size:.84rem; }
+.tf .cp-tr{ display:grid; grid-template-columns:minmax(0,1fr) repeat(3,minmax(3.4rem,6.5rem)); gap:.6rem; align-items:center; padding:.38rem 0; border-top:1px solid var(--line); }
+.tf .cp-tr:first-child{ border-top:0; }
+.tf .cp-tr > span{ color:var(--muted); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tf .cp-tr > b{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.tf .cp-th > b{ font-size:.72rem; color:var(--muted-2); font-weight:700; }
+.tf .cp-tr.is-good > b:last-child{ color:var(--good); }
+.tf .cp-tr.is-bad > b{ color:var(--bad); }
+.tf .cp-h{ margin:1.1rem 0 .45rem; font-size:.82rem; }
+.tf .cp-why, .tf .cp-meta{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.4rem; font-size:.8rem; }
+.tf .cp-why li, .tf .cp-meta li{ display:flex; gap:.6rem; align-items:baseline; min-width:0; }
+.tf .cp-why li span, .tf .cp-meta li span{ flex:1; min-width:0; overflow-wrap:anywhere; }
+.tf .cp-why li b, .tf .cp-meta li b{ flex:none; min-width:1.8rem; font-variant-numeric:tabular-nums; }
+.tf .cp-why li em{ font-style:normal; color:var(--muted-2); font-size:.74rem; flex:none; }
+.tf .cp-why small{ color:var(--muted-2); }
+.tf .cp-legend{ display:flex; flex-wrap:wrap; gap:.35rem .9rem; margin:0 0 .5rem; font-size:.76rem; color:var(--muted); }
+.tf .cp-legend span{ display:inline-flex; align-items:center; gap:.35rem; }
+.tf .cp-legend i{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+@media (max-width:720px){
+  .tf .cp-tr{ grid-template-columns:minmax(0,1fr) repeat(3,minmax(2.6rem,4.2rem)); gap:.4rem; font-size:.8rem; }
+  .tf .cp-segs{ justify-content:flex-start; }
+  .tf .cp-pick .k-seg{ display:flex; width:100%; }
+  .tf .cp-pick .k-seg button{ flex:1 1 0; justify-content:center; min-width:0; }
+}
+.tf .cp-fun .tf-fun-l{ white-space:normal; line-height:1.25; }
+@media (max-width:720px){
+  .tf .cp-fun{ grid-template-columns:minmax(0,8.2rem) minmax(0,1fr) 2.6rem 2.6rem; }
+  .tf .cp-tr > span{ white-space:normal; line-height:1.25; overflow-wrap:anywhere; }
+}
+/* each person of the card's list: her steps as chips, in order */
+.tf .cp-person .k-row-main{ gap:.3rem; }
+.tf .cp-chips{ display:flex; flex-wrap:wrap; align-items:center; gap:.3rem .25rem; min-width:0; }
+.tf .cp-chip{ display:inline-flex; align-items:baseline; gap:.3rem; max-width:100%; padding:.18rem .5rem; border-radius:999px; background:var(--glass); color:var(--fg); font-size:.72rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tf .cp-chip small{ color:var(--muted-2); font-weight:500; font-size:.66rem; font-variant-numeric:tabular-nums; }
+.tf .cp-chip.is-good{ background:var(--good-soft); color:var(--good); }
+.tf .cp-chip.is-info{ background:var(--info-soft); color:var(--info); }
+.tf .cp-chip.is-warn{ background:var(--warn-soft); color:var(--warn); }
+.tf .cp-chip.is-bad{ background:var(--bad-soft); color:var(--bad); }
+.tf .cp-chip.is-off{ background:transparent; color:var(--muted-2); border:1px dashed var(--line); }
+.tf .cp-arr{ font-style:normal; color:var(--muted-2); font-size:.75rem; }
+.tf .cp-more{ width:100%; margin-top:.7rem; justify-content:center; }
+.cp-tlist li.is-good{ color:var(--good); } .cp-tlist li.is-bad{ color:var(--bad); } .cp-tlist li.is-off{ color:var(--muted-2); }
+.tf .cp-chip.is-wrap{ white-space:normal; border-radius:10px; }
+.tf .cp-batch{ margin:0 0 .9rem; } .tf .cp-batch .k-seg{ max-width:100%; }

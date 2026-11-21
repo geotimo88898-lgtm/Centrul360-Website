@@ -2,7 +2,8 @@
    nothing that names anyone: the page, where the visit came from, phone or computer, how fast the page loaded.
    And the funnel (21.11): which source she came from (the link's utm, else the app she reads in, else the referrer) and the
    steps she took (a main button, the buying window, a lead, the payment page): window.C360P.ev('cta' | 'open' | 'start' |
-   'lead' | 'pay'), counted once per visit on the server (api/_lib/site-funnel.js). */
+   'lead' | 'pay'), counted once per visit on the server (api/_lib/site-funnel.js). The card's own steps ('cs-seen', 'cs-buy',
+   'cs-res', 'cs-sent', from v2/cs-buy.js) go with the link's utm_campaign and phone or computer, for Admin → Campanii. */
 (function () {
   try {
     if (navigator.webdriver || /^\/(portal|login|creative)/.test(location.pathname)) return;
@@ -22,7 +23,12 @@
       }
     } catch (e) {}
     var q = {}; try { new URLSearchParams(location.search).forEach(function (v, k) { q[k] = v; }); } catch (e) {}
-    var utm = q.utm_source || '';
+    var utm = q.utm_source || '', camp = String(q.utm_campaign || '').slice(0, 40);
+    var dev = matchMedia('(max-width:720px)').matches ? 'm' : 'd';
+    // her personal link's token (?c=..., short and opaque, never a phone or a name): kept for this visit (sessionStorage),
+    // sent with every step and with a card order, so a message with a link per person ties her visit to her (Admin → Campanii)
+    var tok = /^[A-Za-z0-9_-]{6,24}$/.test(q.c || '') ? q.c : '';
+    try { if (tok) sessionStorage.setItem('c360_ct', tok); else tok = sessionStorage.getItem('c360_ct') || ''; } catch (e) {}
     var ua = navigator.userAgent || '';
     // the source: the link's own words first (utm_source[:utm_medium]), then the app she reads in, then the site before
     var src = (function () {
@@ -47,11 +53,11 @@
     };
     var send = function (beat) {
       var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
-      post({ p: location.pathname, r: ref, u: utm, s: src, d: matchMedia('(max-width:720px)').matches ? 'm' : 'd', t: nav ? Math.round(nav.loadEventEnd || nav.domContentLoadedEventEnd || 0) : 0, h: beat ? 1 : 0 });
+      post({ p: location.pathname, r: ref, u: utm, c: camp, k: tok, s: src, d: dev, t: nav ? Math.round(nav.loadEventEnd || nav.domContentLoadedEventEnd || 0) : 0, h: beat ? 1 : 0 });
     };
     var sent = {};
-    var ev = function (name) { if (!name || sent[name]) return; sent[name] = 1; post({ p: location.pathname, s: src, e: String(name) }); };
-    window.C360P = { ev: ev, src: src };
+    var ev = function (name) { if (!name || sent[name]) return; sent[name] = 1; post({ p: location.pathname, s: src, c: camp, k: tok, d: dev, e: String(name) }); };
+    window.C360P = { ev: ev, src: src, tok: tok };
     // a main button: the card (buy, reserve), the lead filter, a booking
     document.addEventListener('click', function (e) { if (e.target && e.target.closest && e.target.closest('[data-cs-buy],[data-cs-reserve],[data-lf],[data-book]')) ev('cta'); }, true);
     var go = function () { setTimeout(function () { send(false); }, 0); };

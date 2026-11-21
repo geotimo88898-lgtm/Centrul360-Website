@@ -7,8 +7,12 @@
 // ahead counts too; the N split between the clinics as their clients are. Nobody who already ordered a card.
 //   pick(n): the list made and saved (counts back, never a name or phone); go(): sending on; tick(): the minute clock
 //   sends a small batch (api/fastcash-tick.js); status(): counts.
+// Followed (Admin → Campanii → Cardul de Sărbători, api/_lib/card-kpi.js): the messages aren't in the chats, so Meta's
+// statuses of them come here from api/webhook-whatsapp.js as one tiny mark each, cardblast/ev/<status>/<message id>
+// (createOnce: never two writers on one file in a burst), and what a person of the list writes back (a button, a text)
+// as cardblast/in/<message id>. The first mark notes when the following began (cardblast/ev-since.txt).
 
-const { readJSON, writeJSON, readBinary } = require('./store');
+const { readJSON, writeJSON, readBinary, createOnce } = require('./store');
 const WA = require('./whatsapp');
 const WT = require('./wa-templates');
 
@@ -20,6 +24,12 @@ const BATCH = 60, PARALLEL = 6;
 const nowISO = () => new Date().toISOString();
 const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
 const OURS = new Set([131042, 132000, 132001, 132005, 132007, 132012, 132015, 132016, 190, 10, 200, 100, 80007, 130429, 131048, 131000, 131016, 368, 131031]);
+// her personal link's token (the owner, 21.11): short, opaque, the same for her every time, never her phone; a template
+// whose link button ends in a variable (…?utm_campaign=card-sarbatori&c={{1}}) gets it, so the site ties her visit, her
+// taps and her order to her (site-pulse.js, api/_lib/site-funnel.js, Admin → Campanii). The current template has a fixed
+// link: nothing changes until one with a variable is approved.
+const tokenOf = (k) => require('crypto').createHmac('sha256', String(process.env.PORTAL_SECRET || 'c360') + '|cs-link').update(String(k)).digest('base64url').slice(0, 10);
+const linkVar = (t) => { const i = (t.buttons || []).findIndex((b) => b.type === 'URL' && /\{\{1\}\}/.test(b.url || '')); return i < 0 ? null : i; };
 const codeOf = (err) => { const m = /cod (\d+)/.exec(String(err || '')); return m ? Number(m[1]) : 0; };
 
 async function loadState() { return Object.assign({ armed: false, list: [], pickedAt: '', doneAt: '', media: {}, note: '' }, (await readJSON(STATE, null)) || {}); }
@@ -113,7 +123,9 @@ async function tick(opts) {
     if (halt || Date.now() - t0 > budget) return;
     const t = tpl[p.city], n = cfg.numbers[p.city];
     const v = { prenume: p.fn || 'dragă' };
-    const r = await WA.sendWhatsApp({ phone: p.to, template: (t.meta[n.wabaId] || {}).name || t.name, language: t.language || 'ro', params: (t.map || []).map((key) => v[key] || '-'), from: p.city, headerImageId: media[p.city] || undefined });
+    const bi = linkVar(t);
+    const r = await WA.sendWhatsApp({ phone: p.to, template: (t.meta[n.wabaId] || {}).name || t.name, language: t.language || 'ro', params: (t.map || []).map((key) => v[key] || '-'), from: p.city, headerImageId: media[p.city] || undefined,
+      buttonUrl: bi == null ? undefined : { index: bi, text: tokenOf(p.k) } });
     if (r.sent) { sent[p.k] = { w: r.id || '', at: nowISO(), c: p.city }; count++; return; }
     const code = codeOf(r.error);
     if (r.error === 'not_configured' || OURS.has(code) || r.error === 'rețea') { halt = p.city + ': ' + r.error; return; }
@@ -267,4 +279,67 @@ async function unpick(batch) {
   return { ok: true, removed: before - st.list.length };
 }
 
-module.exports = { pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats };
+
+// ---------------------------------------------------------------- Meta's statuses and her answers (from the webhook)
+const safeId = (id) => String(id || '').replace(/[^\w.-]/g, '_').slice(0, 160);
+const fold = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+let memo = { at: 0, st: null, ids: null, byK: null, since: false };
+async function marks(force) {
+  if (!force && memo.st && Date.now() - memo.at < 30e3) return memo;
+  const st = await loadState();
+  const sent = (await readJSON(SENT, null)) || {};
+  const ids = new Set(), byK = new Map();
+  Object.keys(sent).forEach((k) => { if (sent[k] && sent[k].w) { ids.add(sent[k].w); byK.set(k, sent[k]); } });
+  memo = { at: Date.now(), st, ids, byK, since: memo.since };
+  return memo;
+}
+// the campaign lives while it sends and 30 days after its first message
+const alive = (m) => !!(m.st.list.length && (m.st.armed || m.byK.size) && (!m.st.doneAt || Date.now() - Date.parse(m.st.doneAt) < 30 * 864e5));
+async function since() {
+  if (memo.since) return;
+  memo.since = true;
+  await createOnce(P + 'ev-since.txt', nowISO()).catch(() => {});
+}
+// a status no chat knows (api/webhook-whatsapp.js): a mark when the message is one of ours; while sending, a status can
+// come before its message id is written (the batch saves at its end), so then any unknown one is marked (the numbers join
+// them by id)
+async function onStatus(status) {
+  try {
+    const id = status && status.id, s = String((status && status.status) || '');
+    if (!id || !['delivered', 'read', 'failed'].includes(s)) return false;
+    let m = await marks();
+    if (!m.ids.has(id) && Date.now() - m.at > 3e3) m = await marks(true);
+    const sending = !!(m.st.armed && !m.st.doneAt);
+    if (!alive(m) || (!m.ids.has(id) && !sending)) return false;
+    const e = s === 'failed' ? ((status.errors || [])[0] || {}) : null;
+    const ts = status.timestamp ? new Date(Number(status.timestamp) * 1000).toISOString() : nowISO();
+    await createOnce(P + 'ev/' + s + '/' + safeId(id), d9(status.recipient_id) + '|' + (e ? (e.code || '') : '') + '|' + ts).catch(() => {});
+    await since();
+    return true;
+  } catch (err) { console.error('cardblast onStatus', err.message); return false; }
+}
+// what she sent: a button of the card's message („Rezerv în clinică”), a „stop”, or words
+function kindOf(message, text) {
+  const t = fold(text).replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  const tapped = message.type === 'button' || (message.type === 'interactive' && !!(message.interactive || {}).button_reply);
+  if (/^(stop|dezabonare|dezabonez|unsubscribe)\b/.test(t) || /nu ma intereseaza|nu mai (trimiteti|trimite|vreau mesaje)|sterge(ti)? ma/.test(t)) return 'stop';
+  if (tapped) return 'tap';
+  return 'text';
+}
+// called for each message she sends (api/webhook-whatsapp.js, after onInbound puts the card in her chat): counted for
+// Admin → Campanii when she is a person of the list who got the card's message
+async function noteAnswer(message, text) {
+  try {
+    if (!message || !message.id || message.type === 'reaction') return null;
+    let m = await marks();
+    const k = d9(message.from);
+    if (!alive(m) || !m.st.list.some((p) => p.k === k)) return null;
+    if (!m.byK.has(k)) { m = await marks(true); if (!m.byK.has(k)) return null; }
+    const kind = kindOf(message, text);
+    const rec = { k, kind, text: String(text || '').slice(0, 300), at: message.timestamp ? new Date(Number(message.timestamp) * 1000).toISOString() : nowISO(), ctx: (message.context && message.context.id) === m.byK.get(k).w ? 1 : 0 };
+    await createOnce(P + 'in/' + safeId(message.id), JSON.stringify(rec)).catch(() => {});
+    return kind;
+  } catch (err) { console.error('cardblast noteAnswer', err.message); return null; }
+}
+
+module.exports = { pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };

@@ -84,7 +84,8 @@ const CLINICS = {
 
 // from: 'Timișoara' | 'Arad' (the number it leaves from); when that one isn't connected, the other
 // connected number sends it and the answer says so (fromCity). headerLocation: the pin of that city's clinic.
-async function sendWhatsApp({ phone, text, template, params, language, from, headerImageId, headerImagePath, headerLocation }) {
+// buttonUrl { index, text }: the variable end of a template's link button (a per-person link, api/_lib/card-blast.js)
+async function sendWhatsApp({ phone, text, template, params, language, from, headerImageId, headerImagePath, headerLocation, buttonUrl }) {
   const cfg = await loadConfig();
   const ready = readyNumbers(cfg);
   if (!ready.length) return { sent: false, error: 'not_configured' };
@@ -104,7 +105,8 @@ async function sendWhatsApp({ phone, text, template, params, language, from, hea
     ? { messaging_product: 'whatsapp', to, type: 'template', template: { name: template, language: { code: language || 'ro' },
         components: [].concat(headerImageId ? [{ type: 'header', parameters: [{ type: 'image', image: { id: String(headerImageId) } }] }] : [],
           headerLocation && CLINICS[city] ? [{ type: 'header', parameters: [{ type: 'location', location: CLINICS[city] }] }] : [],
-          params && params.length ? [{ type: 'body', parameters: params.map((p) => ({ type: 'text', text: String(p).slice(0, 1000) })) }] : []) } }
+          params && params.length ? [{ type: 'body', parameters: params.map((p) => ({ type: 'text', text: String(p).slice(0, 1000) })) }] : [],
+          buttonUrl && buttonUrl.text ? [{ type: 'button', sub_type: 'url', index: String(buttonUrl.index || 0), parameters: [{ type: 'text', text: String(buttonUrl.text).slice(0, 200) }] }] : []) } }
     : { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(text || '').slice(0, 4000) } };
   try {
     const r = await fetch(`${GRAPH}/${encodeURIComponent(n.phoneId)}/messages`, {
