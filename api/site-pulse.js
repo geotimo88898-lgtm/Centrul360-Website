@@ -48,6 +48,11 @@ async function hit(req, res) {
   const geo = gp[0] ? [clip(gp[0], 2), clip(gp[1], 40), Math.round(Number(gp[2]) * 10) / 10 || 0, Math.round(Number(gp[3]) * 10) / 10 || 0] : null;
   const path = clip(String(b.p || '/').split('?')[0].split('#')[0], 120) || '/';
   if (!sid || /^\/(api|portal|login|creative|fise)\b/.test(path)) { res.status(204).end(); return; }
+  // the funnel (api/_lib/site-funnel.js): a step of the visit (b.e), or the visit itself; the preview (/v2/) on its own line
+  const F = require('./_lib/site-funnel');
+  const fsrc = /^\/v2(\/|$)/.test(path) ? 'preview' : b.s;
+  if (b.e) { await F.record(sid, fsrc, String(b.e).slice(0, 12)); res.status(204).end(); return; }
+  if (!beat) await F.record(sid, fsrc, 'visit');
   let ref = clip(b.r, 80).toLowerCase().replace(/^www\./, '');
   if (/centrul360\.com$/.test(ref)) ref = '';
   const utm = clip(b.u, 40).toLowerCase().replace(/[^\w.-]/g, '');
@@ -157,6 +162,7 @@ module.exports = async (req, res) => {
     // the admin, or Claude's key (server to server, the same one the content intake reads): the funnel audit
     if (!require('./_lib/content').fromProducer(req)) { const session = await requireAdmin(req, res); if (!session) return; }
     if ((req.query || {}).view === 'health') return await health(req, res);
+    if ((req.query || {}).view === 'funnel') { res.setHeader('Cache-Control', 'no-store'); res.status(200).json(await require('./_lib/site-funnel').view(req.query.days)); return; }
     return await stats(res);
   } catch (err) {
     console.error('site-pulse error:', err.message);

@@ -18,6 +18,8 @@
   // the Lead's event id is the one the server's Conversions API copy carries, so Meta counts it once
   var px = function (name, data, eid) { try { if (window.fbq) window.fbq('track', name, data || {}, eid ? { eventID: eid } : undefined); } catch (e) {} };
   var item = function (tier) { return { content_name: 'Card de Sărbători ' + tier + ' lei', content_ids: ['card-' + tier], content_type: 'product', value: Number(tier) || 0, currency: 'RON' }; };
+  // the site's funnel (site-pulse.js): the window opened, the form sent, the way to pay / the reservation
+  var fev = function (n) { try { if (window.C360P) window.C360P.ev(n); } catch (e) {} };
   var post = function (b) { return fetch('/api/card-sarbatori', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json(); }); };
 
   function load() {
@@ -124,7 +126,7 @@
     st.tier = TIERS.some(function (x) { return x[0] === t; }) ? t : 990;
     root.classList.remove('sent', 'shown');
     paint();
-    px('ViewContent', item(st.tier));
+    px('ViewContent', item(st.tier)); fev('open');
     root.classList.add('open'); root.setAttribute('aria-hidden', 'false'); document.documentElement.classList.add('csb-lock');
     fly(true).then(function () { root.classList.add('shown'); });
     panel.focus({ preventScroll: true });
@@ -168,17 +170,17 @@
     if (!body.consent) { err.textContent = MSG.missing_consent; return; }
     if (window.C360_CONSENT === true) body.event_id = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
     var val = Object.assign(item(st.tier), { value: (Number(st.tier) || 0) * (body.qty || 1), num_items: body.qty || 1 });
-    px(online ? 'InitiateCheckout' : 'AddToCart', val);
+    px(online ? 'InitiateCheckout' : 'AddToCart', val); fev('start');
     setBusy(true, online ? 'Spre plata securizată…' : 'Se trimite…');
     post(body).then(function (d) {
       if (d.error === 'sold_out' || d.error === 'closed') { busy = false; gone(d.error); return; }
       if (d.error === 'no_link') { busy = false; st.links[st.tier] = null; st.mode = 'clinica'; paint(); err.textContent = 'Plata online nu e disponibilă acum pentru acest card. Îl poți rezerva și plăti în clinică.'; return; }
       if (d.ok && (d.link || d.reservation)) px('Lead', val, body.event_id);
-      if (online && d.ok && d.link) { try { sessionStorage.setItem('c360_cs_order', d.id || ''); } catch (x) {} location.href = d.link; return; }
+      if (online && d.ok && d.link) { fev('pay'); try { sessionStorage.setItem('c360_cs_order', d.id || ''); } catch (x) {} location.href = d.link; return; }
       if (d.error === 'not_enough') throw new Error('Mai sunt doar ' + d.left + ' carduri. Alege mai puține.');
       if (!d.ok || !d.reservation) throw new Error(MSG[d.error] || 'Nu am putut trimite. Încearcă din nou.');
       if (typeof d.left === 'number') { st.left = d.left; if (window.CSC && window.CSC.state) window.CSC.set(Object.assign({}, window.CSC.state, { left: d.left })); }
-      done(d.reservation);
+      fev('lead'); done(d.reservation);
     }).catch(function (x) {
       setBusy(false);
       err.textContent = x && x.message && !/^(Failed|NetworkError|Load)/.test(x.message) ? x.message : 'Nu am putut trimite. Încearcă din nou.';
