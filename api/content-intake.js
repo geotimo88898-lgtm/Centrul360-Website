@@ -105,7 +105,10 @@ module.exports = async (req, res) => {
       const e = it && (it.plan || []).concat(it.reposts || []).find((x) => x.net === net && x.state === 'posted' && x.postId);
       if (!it || it.kind !== 'story' || !e) { res.status(404).json({ error: 'not_found' }); return; }
       const a = await require('./_lib/content-post').access(true);
-      const r = await require('./_lib/meta-ads').call('DELETE', '/' + e.postId, a.token, {});
+      const M = require('./_lib/meta-ads');
+      // a Facebook Page story answers to its own id or to <page>_<id>
+      let r = await M.call('DELETE', '/' + e.postId, a.token, {});
+      if (!(r.ok && r.j && r.j.success) && net === 'fb' && a.pageId) r = await M.call('DELETE', '/' + a.pageId + '_' + e.postId, a.token, {});
       if (r.ok && r.j && r.j.success) await C.update((list) => { const x = C.findItem(list, id); const y = x && (x.plan || []).concat(x.reposts || []).find((q) => q.net === net && q.postId === e.postId); if (!y) return false; y.deletedAt = new Date().toISOString(); });
       res.status(200).json({ ok: !!(r.ok && r.j && r.j.success), net, postId: e.postId, meta: r.j });
       return;
