@@ -12,6 +12,14 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 21.11 ~19:00, George: the card ads' destination is the home page: the 4 sales ads to /card-sarbatori go off, the same
+  // 4 to the home page (already live in the same ad set) take their place
+  { id: 'card-home-2026-11-21', why: 'Reclamele de vânzare ale cardului duc pe prima pagină', actions: [
+    { campaignId: '120260600035920112', name: 'CARD · VÂNZARE · A3 prietena (pagina cardului)', status: 'PAUSED', why: 'înlocuită de aceeași reclamă spre prima pagină' },
+    { campaignId: '120260600119500112', name: 'CARD · VÂNZARE · A4 tine (pagina cardului)', status: 'PAUSED', why: 'înlocuită de aceeași reclamă spre prima pagină' },
+    { campaignId: '120260600120440112', name: 'CARD · VÂNZARE · A2 mama (pagina cardului)', status: 'PAUSED', why: 'înlocuită de aceeași reclamă spre prima pagină' },
+    { campaignId: '120260600120910112', name: 'CARD · VÂNZARE · A6 valoare (pagina cardului)', status: 'PAUSED', why: 'înlocuită de aceeași reclamă spre prima pagină' },
+  ] },
   // 21.11 ~18:30, George: HIFU gușă TM at 50, the two 190 doors at 30 each; the card in 3 campaigns of 4 creatives,
   // 50 lei each, Timișoara and Arad together, women only (Meta picks the creative); the old card ad off
   { id: 'george-budgets-2026-11-21', why: 'Bugetele lui George: gușă 50, ușile 30, cardul 3 campanii x 50 lei', actions: [
