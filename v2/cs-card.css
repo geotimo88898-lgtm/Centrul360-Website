@@ -184,3 +184,29 @@ main [hidden]{ display:none !important; }
 .csc-left .dot, .csc-left .dot::after{ background:#d9497f; }
 .csc-live{ color:var(--ink2); font-weight:500; }
 
+
+/* her phone, right in the card block (the owner, 21.11): the online payment with no window and no form; the clinic, a small
+   toggle beside it; the name on the card is asked on WhatsApp after the payment (v2/cs-buy.js) */
+.cst-ph{ display:grid; gap:7px; text-align:left; }
+.cst-pl{ font-size:13.5px; font-weight:600; color:var(--ink2); }
+.cst-pr{ display:flex; gap:8px; align-items:stretch; min-width:0; }
+.cst-in{ flex:1; min-width:0; height:54px; padding:0 16px; border:0; border-radius:15px; font:inherit; font-size:17px; letter-spacing:.02em; color:var(--ink); background:#fff;
+  box-shadow:0 0 0 1px var(--line2) inset; transition:box-shadow .4s var(--e); -webkit-appearance:none; appearance:none; font-variant-numeric:tabular-nums; }
+.cst-in::placeholder{ color:var(--mute2); letter-spacing:0; }
+.cst-in:focus{ outline:none; box-shadow:0 0 0 1.5px var(--teal) inset, 0 0 0 4px rgba(20,165,150,.12); }
+.cst-in.bad{ box-shadow:0 0 0 1.5px #c2185b inset, 0 0 0 4px rgba(194,24,91,.1); }
+.cst-city{ flex:none; display:grid; grid-template-columns:auto auto; gap:4px; padding:4px; border-radius:15px; background:rgba(11,11,13,.045); transition:box-shadow .4s var(--e); }
+.cst-city.bad{ box-shadow:0 0 0 1.5px #c2185b inset; }
+.cst-city label{ position:relative; display:grid; place-items:center; padding:0 13px; border-radius:11px; font-size:14px; font-weight:600; color:var(--mute); cursor:pointer; white-space:nowrap;
+  transition:color .3s, background-color .4s var(--e), box-shadow .4s var(--e); -webkit-tap-highlight-color:transparent; }
+.cst-city input{ position:absolute; opacity:0; width:1px; height:1px; margin:0; }
+.cst-city label:has(input:checked){ color:var(--ink); background:#fff; box-shadow:0 6px 14px -8px rgba(11,40,38,.35); }
+.cst-city label:has(input:focus-visible){ outline:2px solid var(--teal); outline-offset:2px; }
+.cst-msg{ margin:0; font-size:13.5px; font-weight:600; color:#9c0f4a; animation:cstIn .45s var(--e); }
+.cst-msg:empty{ display:none; }
+@keyframes cstIn{ from{ opacity:0; transform:translateY(-4px); } }
+.cst-note{ margin:0; font-size:12.5px; line-height:1.45; color:var(--mute2); }
+.cst-go .btn[aria-busy="true"]{ opacity:.8; cursor:default; }
+.cst-go .btn .csb-spin, .cs-c .btn .csb-spin, .cs-dock .btn .csb-spin{ margin-right:2px; }
+@media (max-width:400px){ .cst-city label{ padding:0 10px; font-size:13.5px; } .cst-in{ padding:0 13px; font-size:16.5px; } }
+@media (prefers-reduced-motion:reduce){ .cst-msg{ animation:none; } }

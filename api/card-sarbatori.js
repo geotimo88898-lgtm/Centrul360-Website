@@ -2,7 +2,8 @@
 // api/_lib/card-sarbatori.js. Public calls only from our own pages (Origin), with a hidden trap field, the consent box and a
 // few tries per address.
 //   GET                → { total, left, deadline, open, tiers, links }   left: what is left of the wave of now; nothing else about the waves   links: the myPOS PayLink of each card (or null)
-//   POST { pay: 'online', tier, forWho: 'eu' | 'cadou', recipient, name, phone, city, consent, website, page, event_id }
+//   POST { pay: 'online', tier, phone, city, consent, website, page, event_id }   (the card block's own field, no form: the
+//        owner, 21.11; name / recipient optional: the card goes out with a neutral name until she gives one)
 //        → { ok, id, link, amount }: the order waits for its payment ('asteptare', its cards held 2 h on the counter) and the
 //        page sends her to that card's PayLink. One card per online order (a PayLink is one sum).
 //   POST { pay: 'clinica', tier, qty 1-5, names: [..], name, phone, city, consent, ... }
@@ -76,7 +77,7 @@ function trackOf(req, page) {
 }
 async function lead(r, b, req, note) {
   try {
-    const L = await require('./portal-leads').createLead({ name: r.name, phone: r.phone, source: 'site', location: r.city, createdBy: 'site-form', interest: 'Card de Sărbători', note, authorLabel: 'Site · Card de Sărbători', welcome: false });
+    const L = await require('./portal-leads').createLead({ name: r.name || C.NONAME, phone: r.phone, source: 'site', location: r.city, createdBy: 'site-form', interest: 'Card de Sărbători', note, authorLabel: 'Site · Card de Sărbători', welcome: false });
     if (L && L.lead) {
       const l2 = await readJSON(C.KEY, []);
       const row = l2.find((x) => x.id === r.id);
@@ -258,10 +259,10 @@ module.exports = async (req, res) => {
     if (!Number.isInteger(qty) || qty < 1 || qty > C.MAXQ) { res.status(400).json({ error: 'bad_qty' }); return; }
     const gift = b.forWho === 'cadou' || (b.forWho == null && Array.isArray(b.names) && b.names.some((x) => clean(x, 80)));
     const names = online ? [gift ? clean(b.recipient || (b.names || [])[0], 80) : ''] : Array.from({ length: qty }, (_, i) => clean((Array.isArray(b.names) ? b.names : [])[i], 80));
-    if (name.length < 2) { res.status(400).json({ error: 'missing_name' }); return; }
+    // online: only her phone and the clinic (the card block's field); the clinic form keeps her name
+    if (!online && name.length < 2) { res.status(400).json({ error: 'missing_name' }); return; }
     if (!phoneOk(phone)) { res.status(400).json({ error: 'bad_phone' }); return; }
     if (!city) { res.status(400).json({ error: 'missing_city' }); return; }
-    if (online && gift && names[0].length < 2) { res.status(400).json({ error: 'missing_recipient' }); return; }
     if (!(b.consent === true || b.consent === 'true' || b.consent === 'on')) { res.status(400).json({ error: 'missing_consent' }); return; }
 
     const now = Date.now();
@@ -299,7 +300,7 @@ module.exports = async (req, res) => {
       try {
         const N = require('./_lib/notify');
         await N.notifyMany({ readJSON, writeJSON }, await N.deskIds({ readJSON, writeJSON }, city), { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-wait-' + entry.id,
-          title: 'CARD DE SĂRBĂTORI' + N.cityTag(city) + ' - la plată online', text: name + ' · ' + tier + ' lei · se confirmă singur când plata apare în myPOS; altfel „Confirmă plata” în Carduri' });
+          title: 'CARD DE SĂRBĂTORI' + N.cityTag(city) + ' - la plată online', text: (name || 'fără nume') + ' · ' + tier + ' lei · se confirmă singur când plata apare în myPOS; altfel „Confirmă plata” în Carduri' });
       } catch (e) { /* the order stands */ }
       return;
     }

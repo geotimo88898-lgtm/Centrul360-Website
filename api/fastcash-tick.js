@@ -9,6 +9,8 @@ module.exports = async (req, res) => {
   if (!isCron(req)) { res.status(401).json({ error: 'unauthorized' }); return; }
   try {
     const r = await require('./_lib/fc-campaign').tick({ budgetMs: 40e3 });
+    // the Cardul de Sărbători to the warmest 250 (api/_lib/card-blast.js), a small batch a minute while it is on
+    r.cardBlast = await require('./_lib/card-blast').tick({ budgetMs: 12e3 }).catch((e) => ({ error: e.message }));
     res.status(200).json(Object.assign({ ok: true }, r));
   } catch (err) {
     console.error('fastcash-tick', err.message);

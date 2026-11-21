@@ -126,3 +126,26 @@ html.csb-lock{ overflow:hidden; }
 .csb-bonus.off{ color:var(--mute2); }
 .csb-ft .csb-alt{ margin-top:8px; min-height:52px; }
 .csb-ft .csb-alt[hidden]{ display:none; }
+/* back from the PayLink without paying (the owner, 21.11): „Plata nu s-a finalizat?”, in the same window, grown out of
+   the button she paid with; her answer in one tap */
+.csb-ret{ display:none; flex-direction:column; padding:2px 24px calc(22px + env(safe-area-inset-bottom)); overflow-y:auto; }
+.csb.ret .csb-sc,.csb.ret .csb-ft,.csb.ret .csb-done{ display:none; }
+.csb.ret .csb-ret{ display:flex; }
+.csb-rs{ display:flex; flex-direction:column; gap:14px; animation:csbIn .6s var(--e); }
+.csb-rl{ font-size:15px; line-height:1.5; color:var(--ink2); }
+.csb-rl b{ color:var(--ink); }
+.csb-ch{ display:grid; gap:8px; }
+.csb-ch .btn{ width:100%; min-height:56px; height:auto; padding:12px 22px; white-space:normal; text-align:center; }
+.csb-o{ display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:52px; padding:12px 16px; border:0; border-radius:15px; background:rgba(11,11,13,.045);
+  font:inherit; font-size:15px; font-weight:600; color:var(--ink); text-align:left; cursor:pointer; transition:background-color .3s var(--e), transform .3s var(--e); -webkit-tap-highlight-color:transparent; }
+.csb-o:hover{ background:rgba(11,11,13,.075); }
+.csb-o:active{ transform:scale(.985); }
+.csb-o svg{ width:16px; height:16px; flex:none; color:var(--mute2); }
+.csb-o[disabled],.csb-ch .btn[disabled]{ opacity:.6; cursor:default; }
+.csb-rs h3{ font-size:1.35rem; letter-spacing:-.03em; line-height:1.25; }
+.csb-rs .csb-note{ margin-top:0; }
+.csb-rs .csb-err{ margin:0; }
+.csb-rs .csb-spin{ border-color:rgba(255,255,255,.45); border-top-color:#fff; }
+.csb-o .csb-spin{ border-color:rgba(11,11,13,.15); border-top-color:var(--ink); }
+@media (max-width:640px){ .csb-ret{ padding:2px 20px calc(20px + env(safe-area-inset-bottom)); } .csb-rl{ font-size:14.5px; } }
+@media (prefers-reduced-motion:reduce){ .csb-rs{ animation:none; } }

@@ -141,6 +141,15 @@ module.exports = async (req, res) => {
     res.status(r.error ? 400 : 200).json(r);
     return;
   }
+  // ?cardblast=status (GET): the Cardul de Sărbători to the warmest people of the Transformarea list (api/_lib/card-blast.js),
+  // counts only; POST ?cardblast=pick&n=250 makes the list (and takes them out of Transformarea), =go sends, =stop stops
+  if (req.query && req.query.cardblast) {
+    const CB = require('./_lib/card-blast');
+    const op = String(req.query.cardblast);
+    const r = req.method === 'POST' && op === 'pick' ? await CB.pick(req.query.n) : req.method === 'POST' && op === 'go' ? await CB.go()
+      : req.method === 'POST' && op === 'stop' ? await CB.stop() : await CB.status();
+    res.status(200).json(r); return;
+  }
   if (req.query && req.query.fcaudience) {
     const [clients, appts, leads] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/appointments.json', []), readJSON('data/leads.json', [])]);
     const { normalizePhone } = require('./_lib/clients');
