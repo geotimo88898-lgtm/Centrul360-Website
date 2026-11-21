@@ -57,6 +57,18 @@ module.exports = async (req, res) => {
         captions: it.captions || {}, caption: it.caption || '', files: (it.files || []).map((f) => ({ name: f.name, role: f.role || '', mime: f.mime, dur: f.dur, w: f.w, h: f.h, url: C.fileUrl(it.id, f.name, f.v) })) })) });
       return;
     }
+    // what went out (or failed) on each network, by day: ?action=posts&day=YYYY-MM-DD
+    if (req.method === 'GET' && action === 'posts') {
+      const day = String(q.day || new Date().toISOString().slice(0, 10)).slice(0, 10);
+      const out = [];
+      (await C.items()).forEach((it) => (it.plan || []).forEach((e) => {
+        const t = String(e.postedAt || e.at || e.todoAt || '');
+        if (t.slice(0, 10) === day) out.push({ net: e.net, at: e.at || '', postedAt: e.postedAt || '', state: e.state || '', manual: !!e.manual, error: String(e.error || '').slice(0, 160), kind: it.kind, topic: it.topic, review: it.review || '' });
+      }));
+      out.sort((a, b) => String(a.at).localeCompare(String(b.at)));
+      res.status(200).json({ ok: true, day, posts: out });
+      return;
+    }
     if (action === 'file' && (req.method === 'PUT' || req.method === 'POST')) {
       const len = Number((req.headers && req.headers['content-length']) || 0);
       if (len > C.MAX_BYTES) { res.status(413).json({ error: 'too_large' }); return; }
