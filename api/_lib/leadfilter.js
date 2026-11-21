@@ -31,7 +31,7 @@ const TAG = { 'Timișoara': 'tm', Arad: 'ar' };
 const CTAG = { 'Timișoara': 'TM', Arad: 'AR' };
 const TIERS = ['14900', '4990', '990', '390'];
 const HOT = ['14900', '4990'];
-const FOLLOW = [{ k: 'f1', after: 24 * 3600e3, msg: 'follow1' }, { k: 'f2', after: 72 * 3600e3, msg: 'follow2' }];
+const FOLLOW = [{ k: 'f1', after: 24 * 3600e3, msg: ['follow1', 'fu_24h'] }, { k: 'f2', after: 72 * 3600e3, msg: ['follow2', 'fu_3z'] }];
 const Q = { problem: 'Ce te deranjează cel mai mult?', when: 'Când vrei să vezi rezultatul?', pack: 'Ce variantă ți se potrivește?', zone: 'Ce zonă vrei să schimbi cel mai mult?' };
 const DAY_FROM = 9, DAY_TO = 20; // follow-ups leave between 9 and 20, Romania time
 
@@ -57,8 +57,8 @@ function msgFor(d, zone, tier, city) {
   if (!x) return null;
   return typeof x === 'string' ? { body: x } : x;
 }
-function followFor(d, key, city) {
-  const m = (d.messages || {})[key];
+function followFor(d, keys, city) {
+  const m = [].concat(keys).map((k) => (d.messages || {})[k]).find(Boolean);
   if (!m) return null;
   const x = typeof m === 'string' ? m : m[CTAG[city]] || m[TAG[city]] || m[city] || m.body || null;
   return x ? (typeof x === 'string' ? { body: x } : x) : null;
@@ -303,7 +303,9 @@ async function templates(b) {
   const out = [];
   const upsert = async (label, city, m, pic) => {
     const prev = w.templates.find((t) => t.label === label);
-    const c = WT.clean({ label, category: 'MARKETING', headerType: pic ? 'IMAGE' : '', body: m.body, footer: m.footer || 'Centrul360', only: [city],
+    // Meta refuses a message that ends with a variable („… la clinica din {locatie}.”): the signature goes after it
+    const body = /\{\w+\}[\s.!?…]*$/.test(String(m.body || '').trim()) ? String(m.body).trim() + '\n\nEchipa Centrul360' : m.body;
+    const c = WT.clean({ label, category: 'MARKETING', headerType: pic ? 'IMAGE' : '', body, footer: m.footer || 'Centrul360', only: [city],
       buttons: (m.buttons || ['Vreau o programare', 'Am o întrebare']).map((x) => (typeof x === 'string' ? { type: 'QUICK_REPLY', text: x } : x)) }, prev);
     if (c.error) { out.push({ label, error: c.error }); return; }
     const t = c.t;
