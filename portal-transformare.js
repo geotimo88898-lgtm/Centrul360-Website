@@ -88,6 +88,8 @@
       return '<span class="k-tag ' + (low ? 'is-bad' : 'is-good') + '">' + SHORT[c] + ': ' + (cap >= 1e9 ? 'fără limită' : esc(K.num(cap)) + ' pe zi') + (x.quality ? ' · calitate ' + esc(String(x.quality).toLowerCase()) : '') + '</span>' +
         (low ? '<span class="tf-warn">' + icon('alert') + 'Lista din ' + esc(c) + ' are ' + esc(K.num(need)) + ' persoane: peste limita zilnică a numărului.</span>' : '');
     });
+    const clock = (S.d.agg || {}).clockAt;
+    if (!clock || Date.now() - Date.parse(clock) > 5 * 60e3) bits.push('<span class="k-tag is-bad">ceasul de trimitere nu merge' + (clock ? ' din ' + esc(dayHour(clock)) : '') + '</span>');
     const frozen = S.d.state.frozenAt ? 'Lista e fixată din ' + esc(dayHour(S.d.state.frozenAt)) + '.' : 'Lista se fixează la primul mesaj trimis.';
     return '<p class="tf-limits">' + bits.join('') + '<span class="k-muted">' + frozen + ((S.d.agg || {}).at ? ' Actualizat ' + esc(K.ago(S.d.agg.at)) + '.' : '') + '</span>' +
       '<button type="button" class="k-icon-btn" data-tf="refresh" aria-label="Actualizează">' + icon('refresh') + '</button></p>';

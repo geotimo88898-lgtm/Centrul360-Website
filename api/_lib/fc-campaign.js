@@ -17,12 +17,12 @@
 // Spots: 10 per clinic; a spot is hers when she has paid at the clinic (status 'paid' here, set in the section).
 
 const crypto = require('crypto');
-const { readJSON, writeJSON, readBinary, createOnce, removeBinary } = require('./store');
+const { readJSON, writeJSON, readBinary, writeBinary, createOnce, removeBinary } = require('./store');
 const WA = require('./whatsapp');
 const WT = require('./wa-templates');
 
 const P = 'fc360/';
-const STATE = P + 'state.json', AUD = P + 'audience.json', PEOPLE = P + 'people.json', AGG = P + 'agg.json', LOCK = P + 'lock.txt';
+const STATE = P + 'state.json', AUD = P + 'audience.json', PEOPLE = P + 'people.json', AGG = P + 'agg.json', LOCK = P + 'lock.txt', TICK = P + 'tick.txt';
 const sentKey = (k) => P + 'sent/' + k + '.json';
 const NAME = 'Transformarea 360';
 const SEATS = 10, FULL = 9900, MONTHLY = 1500, BONUS_FIRST = 3;
@@ -180,6 +180,7 @@ async function tick(opts) {
   const t0 = Date.now(), budget = o.budgetMs || 40e3;
   let st = await loadState();
   const out = { armed: st.armed, paused: st.paused };
+  await writeBinary(TICK, nowISO(), 'text/plain').catch(() => {}); // the clock's heartbeat (?fastcash=kpi shows it)
   if (!st.armed || st.paused) {
     if (st.frozenAt && Date.now() < Date.parse(CLOSE_AT) + 3 * 864e5 && Date.now() - Date.parse((await readJSON(AGG, {})).at || 0) > AGG_EVERY_MS * 3) await aggregate().catch(() => null);
     return Object.assign(out, { idle: true });
@@ -400,9 +401,11 @@ async function numberLimits() {
     const n = cfg.numbers[c];
     if (!n.phoneId || !n.token) { out[c] = { connected: false }; continue; }
     try {
-      const r = await fetch(WA.GRAPH + '/' + encodeURIComponent(n.phoneId) + '?fields=messaging_limit_tier,quality_rating,throughput', { headers: { Authorization: 'Bearer ' + n.token } });
-      const j = await r.json().catch(() => ({}));
-      out[c] = r.ok ? { connected: true, tier: j.messaging_limit_tier || '', quality: j.quality_rating || '', throughput: (j.throughput && j.throughput.level) || '' } : { connected: true, error: ((j && j.error) || {}).message || String(r.status) };
+      // the limit moved to the business portfolio (whatsapp_business_manager_messaging_limit); the number's old field as a fallback
+      const get = (f) => fetch(WA.GRAPH + '/' + encodeURIComponent(n.phoneId) + '?fields=' + f, { headers: { Authorization: 'Bearer ' + n.token } }).then(async (r) => ({ r, j: await r.json().catch(() => ({})) }));
+      let { r, j } = await get('whatsapp_business_manager_messaging_limit,messaging_limit_tier,quality_rating,throughput');
+      if (!r.ok) ({ r, j } = await get('messaging_limit_tier,quality_rating,throughput'));
+      out[c] = r.ok ? { connected: true, tier: j.whatsapp_business_manager_messaging_limit || j.messaging_limit_tier || '', quality: j.quality_rating || '', throughput: (j.throughput && j.throughput.level) || '' } : { connected: true, error: ((j && j.error) || {}).message || String(r.status) };
     } catch (e) { out[c] = { connected: true, error: 'rețea' }; }
   }
   return out;
@@ -495,9 +498,10 @@ async function aggregate(opts) {
   return agg;
 }
 async function kpi(maxAgeMs) {
-  const agg = await readJSON(AGG, null);
-  if (agg && Date.now() - Date.parse(agg.at) < (maxAgeMs == null ? 120e3 : maxAgeMs)) return agg;
-  return aggregate();
+  let agg = await readJSON(AGG, null);
+  if (!(agg && Date.now() - Date.parse(agg.at) < (maxAgeMs == null ? 120e3 : maxAgeMs))) agg = await aggregate();
+  const t = await readBinary(TICK).catch(() => null);
+  return Object.assign({}, agg, { clockAt: t ? t.toString('utf8') : '' });
 }
 
 // ---------------------------------------------------------------- the section's actions
