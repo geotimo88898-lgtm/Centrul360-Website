@@ -68,7 +68,7 @@ module.exports = async (req, res) => {
       const all = await readJSON('data/leads.json', []);
       const rows = (all || []).filter((l) => l && l.lf).sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt))).slice(0, Math.min(200, Number(req.query.n) || 50))
         .map((l) => ({ at: l.createdAt, city: l.location, zone: l.lf.zoneLabel || l.lf.zone, problem: l.lf.problemLabel, when: l.lf.whenLabel, tier: l.lf.tier, pack: l.lf.packName,
-          ad: (((l.forms || []).slice(-1)[0]) || {}).ad || '', stage: l.stageId || '', messaged: !!(l.lfSent || (l.lf && l.lf.sentAt)), test: /test/i.test(String(l.name || '')) }));
+          ad: (((l.forms || []).slice(-1)[0]) || {}).ad || '', stage: l.stageId || '', messaged: !!(l.lfSent || (l.lf && l.lf.sentAt)), waNote: String((((l.activities || []).filter((y) => y && y.author === 'WhatsApp automat').slice(-1)[0]) || {}).text || '').replace(/\d{6,}/g, '…').slice(0, 200), test: /test/i.test(String(l.name || '')) }));
       res.status(200).json({ ok: true, n: rows.length, leads: rows });
       return;
     }
