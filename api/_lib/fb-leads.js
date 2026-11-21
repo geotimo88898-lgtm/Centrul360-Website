@@ -84,6 +84,13 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
     const d = await LF.load();
     if (d.packages) lf = LF.parse(d.packages, form, answerPairs(lead.field_data, form.questions));
   }
+  // a test lead sent to a lead-filter form by the check (api/_lib/leadfilter.js testForms): read, decided, written down,
+  // and nothing else (no Pipeline lead, no alert, no message)
+  if (lf && isTest && form.quietTests && Date.parse(form.quietTests) > Date.now()) {
+    doc.seen = doc.seen.concat(leadgenId).slice(-1000);
+    await writeJSON(FORMS_KEY, doc);
+    return require('./leadfilter').testResult(formId, form, lf, answerPairs(lead.field_data, form.questions));
+  }
   const offers = (await loadOffers(readJSON, writeJSON)).filter((o) => o.active !== false);
   // what the person answered ("Oraș: Arad") says the city better than the form's name
   const city = form.location || detectCity(answers.join(" · ")) || detectCity(text);

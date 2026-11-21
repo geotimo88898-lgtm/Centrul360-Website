@@ -66,6 +66,8 @@ module.exports = async (req, res) => {
     let r;
     if (req.method === 'GET' && a === 'kpi') r = Object.assign({ ok: true }, await LF.kpi());
     else if (req.method === 'GET' && a === 'dryrun') r = await LF.dryRun();
+    else if (req.method === 'GET' && a === 'tests') r = await LF.tests();
+    else if (req.method === 'POST' && a === 'test') r = await LF.testForms();
     else if (req.method === 'GET' && a === 'status') {
       const d = await WT.load(); await WT.sync(d).catch(() => null); await WT.save(d);
       r = { ok: true, templates: d.templates.filter((t) => t.leadfilter).map((t) => ({ label: t.label, name: t.name, status: WT.overall(t), reason: Object.values(t.meta || {}).map((m) => m.reason).filter(Boolean)[0] || '' })) };

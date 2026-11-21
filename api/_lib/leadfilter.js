@@ -213,6 +213,8 @@ async function note(leadId, text, patch) {
 }
 async function sendFirst(lead, x, city) {
   if (!x.zone || !x.tier) return note(lead.id, 'Mesajul lead filter n-a plecat: nu se știe zona sau pachetul ales.', { tried: true });
+  // Meta's test leads carry a pretend number: never a message to it
+  if (/700000000$/.test(String(lead.phone || '').replace(/\D/g, '')) || /test lead/i.test(String(lead.name || ''))) return note(lead.id, 'Lead de test: mesajul lead filter nu pleacă.', { tried: true });
   const W = require('./workflows');
   const wa = { tpls: (await WT.load()).templates, cfg: await WA.loadConfig() };
   const t = tplFor(wa.tpls, tplLabel(x.zone, x.tier, city));
@@ -370,4 +372,56 @@ async function kpi(now) {
   return out;
 }
 
-module.exports = { KEY, TIERS, HOT, Q, load, save, zonesOf, formInput, dryRun, makeForms, parse, summary, afterLead, followups, saveContent, saveImages, templates, kpi, tplLabel, msgFor };
+// ---------------------------------------------------------------- the check with Meta's test leads
+// A test lead on every lead-filter form (Meta's /{form}/test_leads, the same path as a real one: webhook or the forms'
+// reading), each with a different problem, timing and package; while form.quietTests holds, fb-leads reads it, decides
+// it and writes the result here (no Pipeline lead, no alert, no WhatsApp). GET ?leadfilter=tests shows the results.
+const TESTS_KEY = 'data/leadfilter-tests.json';
+async function testResult(formId, form, x, pairs) {
+  const d = await load();
+  const city = form.location || '';
+  const label = x.zone && x.tier ? tplLabel(x.zone, x.tier, city) : '';
+  const tpls = (await WT.load()).templates;
+  const t = label ? tplFor(tpls, label) : null;
+  const m = x.zone && x.tier ? msgFor(d, x.zone, x.tier, city) : null;
+  const list = await readJSON(TESTS_KEY, []);
+  const r = { at: nowISO(), formId, city, form: form.name, answers: pairs, parsed: summary(x), zone: x.zone, problem: x.problem, when: x.when, tier: x.tier,
+    template: label, templateStatus: t ? WT.overall(t) : 'lipsește', picture: !!(t && WT.imageOf(t)), message: m ? String(m.body || '').slice(0, 160) : '',
+    hot: HOT.includes(x.tier), wouldSend: !!(t && WT.overall(t) === 'APPROVED') };
+  list.unshift(r);
+  await writeJSON(TESTS_KEY, list.slice(0, 60));
+  return 'test lead filter: ' + r.parsed + ' → ' + (r.wouldSend ? 'ar pleca ' + label : 'n-ar pleca (' + r.templateStatus + ')');
+}
+async function testForms() {
+  const { loadConnection, GRAPH_BASE } = require('./facebook');
+  const conn = await loadConnection(readJSON);
+  if (!conn.pageAccessToken) return { error: 'Facebook nu e conectat' };
+  const doc = await readJSON('data/fb-forms.json', {});
+  const ids = Object.keys(doc.forms || {}).filter((id) => doc.forms[id].kind === 'leadfilter');
+  const until = new Date(Date.now() + 20 * 60e3).toISOString();
+  ids.forEach((id) => { doc.forms[id].quietTests = until; });
+  await writeJSON('data/fb-forms.json', doc);
+  const out = [];
+  let k = 0;
+  for (const id of ids) {
+    const f = doc.forms[id];
+    const qs = (f.questions || []).filter((q) => q.type === 'CUSTOM');
+    const field_data = [{ name: 'full_name', values: ['Test lead Centrul360'] }, { name: 'phone_number', values: ['+40700000000'] }]
+      .concat(qs.map((q, i) => ({ name: q.key, values: [String((q.options[(i === 2 ? k : k + i) % q.options.length] || {}).value || '')] })));
+    const call = async (method, body) => {
+      const r = await fetch(GRAPH_BASE + '/' + id + '/test_leads' + (method === 'GET' ? '?access_token=' + encodeURIComponent(conn.pageAccessToken) : ''), method === 'GET' ? {} :
+        { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ access_token: conn.pageAccessToken }, body || {})) });
+      return { ok: r.ok, j: await r.json().catch(() => ({})) };
+    };
+    // one test lead per form at Meta: an older one goes first
+    const old = await call('GET');
+    for (const l of ((old.j && old.j.data) || [])) await fetch(GRAPH_BASE + '/' + l.id + '?access_token=' + encodeURIComponent(conn.pageAccessToken), { method: 'DELETE' }).catch(() => null);
+    const r = await call('POST', { field_data });
+    out.push({ formId: id, city: f.location, zone: f.zone, ok: r.ok, lead: r.j.id || '', error: r.ok ? '' : ((r.j.error && (r.j.error.error_user_msg || r.j.error.message)) || 'eroare') });
+    k++;
+  }
+  return { ok: true, until, tests: out };
+}
+async function tests() { return { ok: true, results: await readJSON(TESTS_KEY, []) }; }
+
+module.exports = { testResult, testForms, tests, KEY, TIERS, HOT, Q, load, save, zonesOf, formInput, dryRun, makeForms, parse, summary, afterLead, followups, saveContent, saveImages, templates, kpi, tplLabel, msgFor };
