@@ -91,3 +91,7 @@
   /* „Confirmă plata (doar dacă e în myPOS)”: on its own line, the words wrap inside it */
   .cd-order .k-row-end .k-btn.is-primary{ flex:1 1 100%; max-width:100%; min-width:0; height:auto; min-height:2.25rem; white-space:normal; text-align:left; }
 }
+/* „Adaugă cerere”: her open order, shown instead of a second one */
+.cd-exists{ display:flex; gap:.5rem; align-items:flex-start; padding:.65rem .8rem; border-radius:12px; font-size:.85rem; background:var(--warn-soft); color:var(--warn); }
+.cd-exists[hidden]{ display:none; }
+.cd-exists svg{ flex:none; width:16px; height:16px; margin-top:.1rem; }

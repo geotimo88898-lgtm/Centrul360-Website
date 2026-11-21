@@ -556,7 +556,8 @@ async function confirm(id, via, o) {
 // sent to its PayLink, within 48 h after the order (the oldest order first, each payment once)
 // pays = [{ ref, amount, at, src }]
 // an order waiting for its money: sent to the PayLink, or one she gave up herself (a payment that comes anyway is hers)
-const waits = (x) => x.status === 'asteptare' || (x.status === 'anulat' && x.cancelledBy === 'ea' && x.pay === 'online');
+// (an online order closed by a clinic reservation too: a payment that comes anyway is not lost)
+const waits = (x) => x.status === 'asteptare' || (x.status === 'anulat' && (x.cancelledBy === 'ea' || x.cancelledBy === 'rezervare') && x.pay === 'online');
 // Two orders or more of that sum waiting when a payment comes (the owner, 21.11): nothing is confirmed by itself, the
 // payment waits in „De verificat” with the orders it could be (the desk looks at who paid in myPOS and taps the right one:
 // pick). Once only one of them still waits (the others paid or cancelled), it is hers.
@@ -888,6 +889,118 @@ async function answer(id, reason) {
   await writeJSON(KEY, list);
   return { ok: true };
 }
+// ---- one card, not two (the owner, 21.11): a clinic reservation made while the same phone has an open online order of the
+// same card, not paid: that online order is closed (its card back on the counter, no more recovery messages), the line
+// „înlocuită de rezervarea în clinică” on it. A payment that comes for it anyway is still found (waits).
+const replaceable = (x, r) => x !== r && x.id !== r.id && x.status === 'asteptare' && x.pay === 'online' && d9(x.phone) === d9(r.phone) && Number(x.tier) === Number(r.tier);
+function supersede(list, r) {
+  let n = 0;
+  (list || []).filter((x) => replaceable(x, r)).forEach((x) => {
+    Object.assign(x, { status: 'anulat', cancelledAt: nowISO(), cancelledBy: 'rezervare', replacedBy: r.id });
+    recOf(x).stop = 'replaced';
+    mark(x, 'cancelled', 'înlocuită de rezervarea în clinică');
+    n++;
+  });
+  if (n) mark(r, 'replaced', String(n));
+  return n;
+}
+// once, on the clock: the orders already like that (an online order, then a clinic reservation of the same card from the
+// same phone, both open); data/card-sarbatori-supersede.json { at, n } says it ran
+const SUPERSEDE = 'data/card-sarbatori-supersede.json';
+async function supersedeOnce() {
+  const done = await readJSON(SUPERSEDE, null).catch(() => null);
+  if (done && done.at) return { done: done.at };
+  const list = await readJSON(KEY, []);
+  let n = 0;
+  list.filter((r) => r.status === 'rezervat' && r.pay === 'clinica').forEach((r) => {
+    const older = list.filter((x) => replaceable(x, r) && Date.parse(x.created) < Date.parse(r.created));
+    if (older.length) n += supersede(older.concat([r]), r);
+  });
+  if (n) await writeJSON(KEY, list);
+  await writeJSON(SUPERSEDE, { at: nowISO(), n }, { quiet: true });
+  return { n };
+}
+
+// ---- „Adaugă cerere” in the portal (the owner, 21.11): a request taken by the desk, like a clinic reservation from the site
+// (status rezervat, paid in the clinic, via 'portal', who added it on its trail); no card, no code, nothing paid, its cards
+// held like a reservation; „Confirmă plata” issues them later. input: { name, phone, city, tier, qty, forWho, names, note,
+// send (the „rezervat” WhatsApp, default on) } → { ok, reservation, msg } | { error, order? } (exists: her open order)
+async function request(input, session, byName) {
+  const i = input || {};
+  const { normalizePhone } = require('./clients');
+  const name = cleanText(i.name, 100);
+  let phone = normalizePhone(cleanText(i.phone, 30)) || '';
+  if (/^7\d{8}$/.test(phone)) phone = '0' + phone;
+  const city = ['Timișoara', 'Arad'].find((c) => fold(c) === fold(i.city)) || '';
+  const tier = Number(i.tier), qty = Number(i.qty) || 1;
+  if (name.length < 2) return { error: 'missing_name' };
+  if (!(/^07\d{8}$/.test(phone) || /^[1-9]\d{10,14}$/.test(phone))) return { error: 'bad_phone' };
+  if (!city) return { error: 'missing_city' };
+  if (!TIERS[tier]) return { error: 'bad_tier' };
+  if (!Number.isInteger(qty) || qty < 1 || qty > MAXQ) return { error: 'bad_qty' };
+  const now = Date.now();
+  if (now >= Date.parse(DEADLINE)) return { error: 'closed' };
+  const gift = i.forWho === 'cadou';
+  const names = Array.from({ length: qty }, (_, k) => (gift ? cleanText((Array.isArray(i.names) ? i.names : [])[k], 80) : ''));
+  const list = await readJSON(KEY, []);
+  // her open order: shown, not a second one (an online one of the same card, not paid, is replaced instead)
+  const k9 = d9(phone);
+  const open = list.filter((r) => d9(r.phone) === k9 && (r.status === 'rezervat' || r.status === 'lead' || (r.status === 'asteptare' && live(r, now) && Number(r.tier) !== tier)))
+    .sort((a, b) => Date.parse(b.created) - Date.parse(a.created))[0];
+  if (open) return { error: 'exists', order: { id: open.id, created: open.created, status: open.status, pay: open.pay, tier: open.tier, qty: qtyOf(open), amount: open.amount, city: open.city, name: open.name || '' } };
+  const entry = { id: crypto.randomUUID(), created: nowISO(), name, phone, city, tier, qty, amount: tier * qty, credit: TIERS[tier] * qty, forWho: gift ? 'cadou' : 'eu',
+    cards: names.map((n) => ({ code: '', recipient: n })), recipient: names[0] || '', status: 'rezervat', via: 'portal', pay: 'clinica', addedBy: (session && session.employeeId) || '', nameFrom: 'receptie',
+    note: cleanText(i.note, 300) };
+  mark(entry, 'created', 'portal' + (byName ? ': ' + byName : ''));
+  const replaced = supersede(list, entry);
+  const c0 = await count(list, now);
+  if (!c0.open || c0.left < qty) return { error: c0.left > 0 ? 'not_enough' : 'sold_out', left: c0.left };
+  list.push(entry);
+  await writeJSON(KEY, list);
+  try {
+    const note = 'Card de Sărbători rezervat din portal' + (byName ? ' (' + byName + ')' : '') + ', plata în clinică: ' + qty + ' × ' + tier + ' lei (credit ' + TIERS[tier] + ' lei fiecare), de plată ' + (tier * qty) + ' lei' +
+      (names.some(Boolean) ? ' · pe numele: ' + names.map((n) => n || '(al ei)').join(', ') : '') + (entry.note ? ' · ' + entry.note : '');
+    const L = await require('../portal-leads').createLead({ name, phone, source: 'telefon', location: city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: 'Portal · Card de Sărbători', welcome: false });
+    if (L && L.lead) { const l2 = await readJSON(KEY, []); const x = l2.find((y) => y.id === entry.id); if (x) { x.leadId = L.lead.id; await writeJSON(KEY, l2); } }
+  } catch (e) { console.error('card request lead:', e.message); }
+  const msg = i.send === false ? null : await reservedMsg(entry.id).catch((e) => ({ skipped: e.message }));
+  return { ok: true, reservation: pubRes(entry), replaced, msg };
+}
+
+// „Editează” in the portal (the owner, 21.11): an open order (reserved, waiting for its online payment, a lead) changed by the
+// desk: name, phone, clinic, the card and how many (only while unpaid; the cards left checked again), for her or a gift, the
+// names on the cards, the note; a trail line „modificată de …”. A paid card keeps only its rename.
+async function editOrder(id, input, byName) {
+  const i = input || {};
+  const list = await readJSON(KEY, []);
+  const r = list.find((x) => x.id === id);
+  if (!r) return { error: 'not_found' };
+  norm(r);
+  if (!['rezervat', 'asteptare', 'lead'].includes(r.status)) return { error: 'not_open' };
+  const { normalizePhone } = require('./clients');
+  const name = cleanText(i.name == null ? r.name : i.name, 100);
+  let phone = normalizePhone(cleanText(i.phone == null ? r.phone : i.phone, 30)) || '';
+  if (/^7\d{8}$/.test(phone)) phone = '0' + phone;
+  const city = ['Timișoara', 'Arad'].find((c) => fold(c) === fold(i.city == null ? r.city : i.city)) || '';
+  const tier = Number(i.tier == null ? r.tier : i.tier), qty = Number(i.qty == null ? r.qty : i.qty);
+  if (name && name.length < 2) return { error: 'missing_name' };
+  if (!(/^07\d{8}$/.test(phone) || /^[1-9]\d{10,14}$/.test(phone))) return { error: 'bad_phone' };
+  if (!city) return { error: 'missing_city' };
+  if (!TIERS[tier]) return { error: 'bad_tier' };
+  if (!Number.isInteger(qty) || qty < 1 || qty > MAXQ || (r.pay !== 'clinica' && qty !== 1)) return { error: 'bad_qty' }; // a PayLink is one card
+  // more cards: only when they are left (its own cards counted as hers)
+  if (qty > qtyOf(r)) { const c = await count(list.filter((x) => x !== r)); if (c.left < qty) return { error: c.left > 0 ? 'not_enough' : 'sold_out', left: c.left }; }
+  const gift = i.forWho == null ? r.forWho === 'cadou' : i.forWho === 'cadou';
+  const given = Array.isArray(i.names) ? i.names : r.cards.map((c) => c.recipient);
+  const names = Array.from({ length: qty }, (_, k) => (gift ? cleanText(given[k], 80) : ''));
+  if (name !== r.name) r.nameFrom = 'receptie';
+  Object.assign(r, { name, phone, city, tier, qty, amount: tier * qty, credit: TIERS[tier] * qty, forWho: gift ? 'cadou' : 'eu', recipient: names[0] || '',
+    cards: names.map((n) => ({ code: '', recipient: n })), note: i.note == null ? r.note || '' : cleanText(i.note, 300) });
+  mark(r, 'edited', byName ? 'de ' + byName : '');
+  await writeJSON(KEY, list);
+  return { ok: true, reservation: pubRes(r) };
+}
+
 // an online order she moves to the clinic (how: site, whatsapp, portal): reserved like the site's „Rezerv și plătesc în
 // clinică” (only the credit, no gift), her lead and its alert, and the desk hears it
 async function toClinic(id, how) {
@@ -901,6 +1014,7 @@ async function toClinic(id, how) {
   const h = await rehold(list, r); // a hold that is over takes a card only when one is left
   if (h !== 'ok') { await writeJSON(KEY, list); return { error: h }; }
   Object.assign(r, { status: 'rezervat', pay: 'clinica', convertedAt: nowISO() });
+  supersede(list, r);
   recOf(r).stop = recOf(r).stop || 'converted';
   mark(r, 'converted', how);
   await writeJSON(KEY, list);
@@ -1303,6 +1417,7 @@ async function tick() {
   if (!pr || Date.now() - Date.parse(pr.at) > 7 * 86400e3) out.probe = await scanMypos(3, { events: true }).then((s) => (s.ok ? { read: s.probe.read, online: s.probe.online } : s)).catch((e) => ({ error: e.message }));
   out.remind = await reminders().catch((e) => ({ error: e.message }));
   out.recover = await recoverIfIdle().catch((e) => ({ error: e.message }));
+  out.supersede = await supersedeOnce().catch((e) => ({ error: e.message }));
   return out;
 }
 
@@ -1322,5 +1437,5 @@ module.exports = {
   KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
   norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
-  reserveFromLead, leadMsg, leadCall, leadReply, LEAD_BTN, CORE, REC_BTN, NAME_BTN, NONAME, CHECK, REASONS, needsName, knownName, nameLead, sendCards, askName, cleanName, pick, openCheckOf, openChecks, greetName, mark, recOf, heldFrom, rehold, back, answer, toClinic, recover, recoverIfIdle, onWhatsApp, abandonStats, cardsLeft, quiet, awake,
+  supersede, supersedeOnce, request, editOrder, reserveFromLead, leadMsg, leadCall, leadReply, LEAD_BTN, CORE, REC_BTN, NAME_BTN, NONAME, CHECK, REASONS, needsName, knownName, nameLead, sendCards, askName, cleanName, pick, openCheckOf, openChecks, greetName, mark, recOf, heldFrom, rehold, back, answer, toClinic, recover, recoverIfIdle, onWhatsApp, abandonStats, cardsLeft, quiet, awake,
 };

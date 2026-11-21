@@ -85,6 +85,9 @@
     var meta = [].slice.call(g.parentNode.children).filter(function (c) { return c.classList.contains('meta'); })[0];
     var pts = g.parentNode.querySelector('[data-cs-pts]');
     if (meta && pts && pts.parentNode !== meta) { var alt2 = g.querySelector('.cst-alt'); meta.appendChild(pts); if (alt2) meta.appendChild(alt2); }
+    // under „Plătesc online”, one quiet line for when the payment page does not take her card (the owner, 21.11): WhatsApp to
+    // her clinic for another link (helpLink)
+    if (!g.querySelector('[data-cs-help]')) pb0.insertAdjacentHTML('afterend', '<p class="cst-help" data-cs-help>Nu merge plata? <a href="#" target="_blank" rel="noopener" data-cs-wa>Scrie-ne pe WhatsApp</a> și îți trimitem alt link.</p>');
     // one „Au mai rămas” line: the one above the phone (the second, under the block, goes)
     var txt = g.parentNode;
     [].slice.call(txt.querySelectorAll('.meta [data-cs-live]')).forEach(function (el) { el.parentNode.removeChild(el); });
@@ -99,8 +102,30 @@
     b.querySelector('[data-cs-phone]').classList.toggle('bad', el === 'phone');
     b.querySelector('[data-cs-city]').classList.toggle('bad', el === 'city');
   }
+  // the clinic's WhatsApp, read from the page's own contacts (the footer: „Timișoara … tel:”, „Arad … tel:”), never written here
+  function clinicNumber(city) {
+    var bs = [].slice.call(document.querySelectorAll('.lk b'));
+    for (var i = 0; i < bs.length; i++) {
+      if (bs[i].textContent.trim() !== city) continue;
+      for (var el = bs[i].nextElementSibling; el && el.tagName !== 'B'; el = el.nextElementSibling) if (el.tagName === 'A' && /^tel:/.test(el.getAttribute('href') || '')) return el.getAttribute('href').replace(/\D/g, '');
+    }
+    return '';
+  }
+  // her clinic's (Timișoara's before she chose), with a first line written for her
+  function helpLink() {
+    var a = document.querySelector('[data-cs-wa]'); if (!a) return;
+    var b = blk(), city = (b && (b.querySelector('input[name="cst-city"]:checked') || {}).value) || 'Timișoara';
+    var n = clinicNumber(city) || clinicNumber('Timișoara');
+    var line = a.closest('[data-cs-help]');
+    if (!n) { line.hidden = true; return; }
+    var tier = (window.CSC && window.CSC.current) || 990;
+    a.href = 'https://wa.me/' + n + '?text=' + encodeURIComponent('Bună ziua! Vreau Cardul de Sărbători de ' + tier + ' lei, dar plata online nu merge. Îmi trimiteți alt link?');
+  }
   function initBlock() {
     shape();
+    helpLink();
+    document.addEventListener('change', function (e) { if (e.target && (e.target.name === 'cst-city' || e.target.name === 'cst')) helpLink(); });
+    document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('[data-cs-wa]')) helpLink(); }, true);
     var b = blk(); if (!b) return;
     var inp = b.querySelector('[data-cs-phone]');
     var ph = get(localStorage, K_PHONE), city = get(localStorage, K_CITY);

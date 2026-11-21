@@ -131,7 +131,7 @@ module.exports = async (req, res) => {
     const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
 
     // ---- the team
-    const TEAM = ['void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick'];
+    const TEAM = ['void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'request', 'edit', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick'];
     if (TEAM.includes(b.action)) {
       const session = await require('./_lib/auth').requireRole(req, res, b.action === 'undo' ? ['admin'] : ['admin', 'manager', 'receptie']);
       if (!session) return;
@@ -151,7 +151,7 @@ module.exports = async (req, res) => {
         const gaveUp = (r) => r.status === 'anulat' && r.cancelledBy === 'ea' && now - Date.parse(r.cancelledAt || r.created) < 3 * 86400e3;
         const orders = list.filter((r) => r.status === 'asteptare' || r.status === 'rezervat' || r.status === 'lead' || gaveUp(r)).map((r) => ({ id: r.id, created: r.created, name: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit,
           pay: r.pay, status: r.status, forWho: r.forWho || '', names: r.cards.map((c) => c.recipient), held: C.live(r, now), heldUntil: r.status === 'asteptare' || r.status === 'lead' ? new Date(C.heldFrom(r) + C.HOLD_MS).toISOString() : '',
-          online: r.via === 'site' && (r.pay === 'online' || !!r.convertedAt), converted: r.convertedAt || '', byHer: gaveUp(r), nameFrom: r.nameFrom || '', via: r.via || '', leadCall: r.leadCall ? r.leadCall.at : '', trail: trailOf(r), rec: recView(r) })).reverse();
+          online: r.via === 'site' && (r.pay === 'online' || !!r.convertedAt), converted: r.convertedAt || '', byHer: gaveUp(r), nameFrom: r.nameFrom || '', via: r.via || '', note: r.note || '', leadCall: r.leadCall ? r.leadCall.at : '', trail: trailOf(r), rec: recView(r) })).reverse();
         const paid = list.filter((r) => r.status === 'platit');
         const totals = { cards: paid.reduce((n, r) => n + C.qtyOf(r), 0), money: paid.reduce((n, r) => n + (Number(r.paidAmount) || Number(r.amount) || 0), 0), online: paid.filter((r) => r.paidVia === 'online').reduce((n, r) => n + (Number(r.paidAmount) || r.amount), 0),
           credit: paid.reduce((n, r) => n + r.cards.reduce((m, c) => m + (Number(c.value) || 0), 0), 0), used: paid.reduce((n, r) => n + r.cards.reduce((m, c) => m + C.usedOf(c), 0), 0) };
@@ -229,6 +229,20 @@ module.exports = async (req, res) => {
         Object.assign(r, { status: 'rezervat', pay: 'clinica' }); delete r.cancelledAt;
         await writeJSON(C.KEY, list);
         res.status(200).json(Object.assign({ ok: true, reservation: r }, await C.count(list)));
+        return;
+      }
+      // „Adaugă cerere”: a request taken by the desk, reserved for the clinic, nothing issued (_lib/card-sarbatori.js request)
+      if (b.action === 'request') {
+        const x = await C.request(b, session, byName);
+        if (x.error) { res.status(x.error === 'exists' || x.error === 'sold_out' || x.error === 'not_enough' || x.error === 'closed' ? 409 : 400).json(x); return; }
+        res.status(200).json(Object.assign({ ok: true }, x, await C.count(await readJSON(C.KEY, []))));
+        return;
+      }
+      // „Editează”: an open order changed by the desk (_lib/card-sarbatori.js editOrder)
+      if (b.action === 'edit') {
+        const x = await C.editOrder(clip(b.id, 60), b, byName);
+        if (x.error) { res.status(x.error === 'not_found' ? 404 : x.error === 'not_open' || x.error === 'sold_out' || x.error === 'not_enough' ? 409 : 400).json(x); return; }
+        res.status(200).json(Object.assign({ ok: true }, x, await C.count(await readJSON(C.KEY, []))));
         return;
       }
       if (b.action === 'add') {
@@ -335,6 +349,8 @@ module.exports = async (req, res) => {
     if (online && !lk) { res.status(409).json({ error: 'no_link' }); return; }
     let list = await readJSON(C.KEY, []);
     const newId = crypto.randomUUID();
+    // a clinic reservation closes her open online order of the same card, not paid (one card, not two; _lib supersede)
+    const replaced = online ? 0 : C.supersede(list, { id: newId, phone, tier });
     const cnt0 = await C.count(list, now);
     const left0 = cnt0.left; // what is left of the wave of now (the next opens at once)
     const hers = list.filter((r) => C.live(r, now) && d9(r.phone) === d9(phone));
@@ -360,6 +376,7 @@ module.exports = async (req, res) => {
       if (known) { entry.hint = known; if (!cardName && !names.some(Boolean)) { entry.name = known; entry.nameFrom = 'fisa'; } }
     }
     C.mark(entry, 'created');
+    if (replaced) C.mark(entry, 'replaced', String(replaced));
     if (online) C.mark(entry, 'to_paylink');
     list.push(entry);
     await writeJSON(C.KEY, list);
@@ -368,6 +385,8 @@ module.exports = async (req, res) => {
     const before = list.filter((r) => C.live(r));
     const upTo = before.slice(0, before.findIndex((r) => r.id === entry.id) + 1).reduce((n, r) => n + C.qtyOf(r), 0);
     if (upTo > await C.total() || (await C.count(list.filter((r) => r.id !== entry.id))).wave.left < qty) {
+      // the online order it replaced, back as it was
+      list.filter((r) => r.replacedBy === entry.id).forEach((r) => { Object.assign(r, { status: 'asteptare' }); ['cancelledAt', 'cancelledBy', 'replacedBy'].forEach((k) => delete r[k]); if (r.rec) delete r.rec.stop; });
       await writeJSON(C.KEY, list.filter((r) => r.id !== entry.id)); res.status(409).json({ error: 'sold_out' }); return;
     }
 

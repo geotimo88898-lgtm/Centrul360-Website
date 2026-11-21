@@ -26,7 +26,7 @@
   function mount(p) {
     S.box = p;
     p.classList.add('k-panel', 'cd');
-    p.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Carduri de Sărbători</h2></div><div class="k-head-actions"><button type="button" class="k-btn is-outline admin-only hidden" data-cd-stock>' + icon('sliders') + 'Valuri</button><button type="button" class="k-btn is-primary" data-cd-add>' + icon('plus') + 'Adaugă card plătit</button></div></div>' +
+    p.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Carduri de Sărbători</h2></div><div class="k-head-actions"><button type="button" class="k-btn is-outline admin-only hidden" data-cd-stock>' + icon('sliders') + 'Valuri</button><button type="button" class="k-btn is-outline" data-cd-req>' + icon('plus') + 'Adaugă cerere</button><button type="button" class="k-btn is-primary" data-cd-add>' + icon('plus') + 'Adaugă card plătit</button></div></div>' +
       '<div data-cd-body><div class="k-skel" style="height:110px;border-radius:18px"></div><div class="k-skel" style="height:360px;margin-top:1rem;border-radius:18px"></div></div>';
     p.addEventListener('click', onClick);
     p.addEventListener('input', (e) => { if (e.target.matches('[data-cd-q]')) { S.q = e.target.value; paintList(); } });
@@ -64,7 +64,7 @@
   function trailLine(e, o) {
     const n = e.note || '', failed = /^netrimis/.test(n), why = n.replace(/^netrimis:?\s*/, '');
     switch (e.ev) {
-      case 'created': return n === 'meta-form' ? 'a lăsat datele în formularul din reclamă' : o && o.pay === 'clinica' && !o.converted ? 'a rezervat pe site, plătește în clinică' : '';
+      case 'created': return /^portal/.test(n) ? 'cerere adăugată în portal' + (n.length > 7 ? ' de ' + n.slice(8) : '') : n === 'meta-form' ? 'a lăsat datele în formularul din reclamă' : o && o.pay === 'clinica' && !o.converted ? 'a rezervat pe site, plătește în clinică' : '';
       case 'lead_msg': return failed ? 'WhatsApp-ul cu cardul n-a plecat' + (why ? ' (' + why + ')' : '') : 'WhatsApp trimis: cardul ei, online sau în clinică';
       case 'choice': return 'a ales pe WhatsApp: ' + (n === 'online' ? 'plătește online' : 'plătește în clinică');
       case 'lead_call': return 'de sunat: ' + n;
@@ -83,7 +83,9 @@
       case 'named': return n === 'none' ? 'n-a răspuns în 6 ore: cardul pleacă fără nume' : n === 'fisa' ? 'numele luat din fișa clientei' : 'a scris numele de pe card';
       case 'renamed': return 'numele de pe card schimbat' + (n ? ' ' + n : '');
       case 'card_sent': return /^ok/.test(n) ? 'cardul i-a plecat pe WhatsApp' + (/fără nume/.test(n) ? ', fără nume' : '') : 'cardul n-a plecat pe WhatsApp: de trimis manual';
-      case 'cancelled': return n === 'ea' ? 'a renunțat' : 'anulată';
+      case 'cancelled': return n === 'ea' ? 'a renunțat' : n && n !== 'team' ? n : 'anulată';
+      case 'edited': return 'modificată' + (n ? ' ' + n : '');
+      case 'replaced': return 'a înlocuit comanda ei online neplătită (același card)';
       case 'rez_msg': return failed ? 'WhatsApp „ți-am rezervat cardul” neplecat' + (why ? ' (' + why + ')' : '') : 'WhatsApp trimis: ți-am rezervat cardul';
       default: return '';
     }
@@ -119,11 +121,12 @@
         const stateTag = isLead ? '<span class="k-tag is-info">Lead</span>' : o.byHer ? '<span class="k-tag is-bad">A renunțat</span>' : unpaid ? '<span class="k-tag is-warn">Neplătită</span>' : tag(o.status);
         return '<div class="k-row cd-order' + (o.byHer ? ' is-off' : '') + '"><div class="k-row-main"><div class="k-row-title">' + esc(o.name || 'Fără nume') + ' · ' + o.qty + ' × ' + o.tier + ' lei</div>' +
           '<div class="k-row-sub">' + what + ' · ' + esc(o.city) + ' · ' + esc(when(o.created)) +
-          (o.names.some(Boolean) ? ' · pe numele: ' + esc(o.names.map((n) => n || 'ea').join(', ')) : '') + (NAMEFROM[o.nameFrom] ? ' (numele ' + NAMEFROM[o.nameFrom] + ')' : '') + ' · <a href="' + K.tel(o.phone) + '">' + esc(o.phone) + '</a></div>' +
+          (o.names.some(Boolean) ? ' · pe numele: ' + esc(o.names.map((n) => n || 'ea').join(', ')) : '') + (NAMEFROM[o.nameFrom] && o.via !== 'portal' ? ' (numele ' + NAMEFROM[o.nameFrom] + ')' : '') + ' · <a href="' + K.tel(o.phone) + '">' + esc(o.phone) + '</a>' + (o.note ? ' · ' + esc(o.note) : '') + '</div>' +
           trailHtml(o) + (over && !o.byHer ? '<p class="cd-call">' + icon('phone') + 'Sun-o: plata n-a venit.</p>' : '') +
           (call ? '<p class="cd-call">' + icon('phone') + 'Sun-o: să aleagă online sau în clinică.</p>' : '') + '</div>' +
           '<div class="k-row-end">' + stateTag + (o.byHer ? '' : '<button type="button" class="k-btn is-primary is-sm" data-cd-confirm="' + esc(o.id) + '" data-via="' + (o.pay === 'online' ? 'online' : 'clinica') + '">' + icon('check') +
             (o.pay === 'online' ? 'Confirmă plata (doar dacă e în myPOS)' : 'Confirmă plata (' + lei(o.amount) + ')') + '</button>' +
+          '<button type="button" class="k-btn is-ghost is-sm" data-cd-edit="' + esc(o.id) + '">' + icon('pen') + 'Editează</button>' +
           '<button type="button" class="k-btn is-ghost is-sm" data-cd-cancel="' + esc(o.id) + '">Anulează</button>') + '</div></div>';
       }).join('') + '</div></section>';
   }
@@ -155,6 +158,8 @@
     if (!b || !S.box.contains(b)) return;
     if (b.dataset.cdF) { S.f = b.dataset.cdF; paintList(); return; }
     if (b.hasAttribute('data-cd-add')) { addDrawer(b); return; }
+    if (b.hasAttribute('data-cd-req')) { requestDrawer(b); return; }
+    if (b.dataset.cdEdit) { const o = (S.d.orders || []).find((x) => x.id === b.dataset.cdEdit); if (o) requestDrawer(b, o); return; }
     if (b.hasAttribute('data-cd-stock')) { stockDrawer(b); return; }
     if (b.dataset.cdOpen) { cardDrawer(b.dataset.cdOpen, b); return; }
     if (b.dataset.cdConfirm) {
@@ -226,6 +231,64 @@
         if (op) op.addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
           try { const r = await api({ action: 'open_wave' }); h.close(); K.ui().toast('Valul ' + r.opened + ' e deschis: ' + r.left + ' carduri.', 'success'); await load(true); }
           catch (err) { K.ui().toast(K.errText(err), 'error'); }
+        }));
+      },
+    });
+  }
+
+  // „Adaugă cerere”: a request taken by phone or at the desk, reserved for the clinic like one from the site; nothing issued,
+  // nothing paid; „Confirmă plata” issues the card later (api/_lib/card-sarbatori.js request)
+  const REQERR = { missing_name: 'Scrie numele ei.', bad_phone: 'Telefon invalid.', missing_city: 'Alege clinica.', bad_tier: 'Alege cardul.', bad_qty: 'Câte carduri: 1 până la 5.',
+    sold_out: 'Cardurile s-au terminat.', not_enough: 'Nu mai sunt atâtea carduri.', closed: 'Oferta s-a încheiat.' };
+  // o: an open order to change („Editează”, the same sheet, filled in); none: a new request
+  function requestDrawer(from, o) {
+    const ed = !!o, v0 = o || {}, gift0 = v0.forWho === 'cadou';
+    const one = ed && v0.pay !== 'clinica'; // an online order or a lead: one card (a PayLink is one sum)
+    K.drawer({
+      from, title: ed ? 'Editează comanda' : 'Adaugă cerere', icon: 'gift', width: 520,
+      subtitle: ed ? 'Comanda nu e plătită: se pot schimba datele ei, cardul și câte carduri.' : 'Rezervat, plătește în clinică. Cardul se emite când confirmi plata.',
+      body: '<form class="k-form cd-waves cd-form" data-f>' +
+        '<div class="k-grid c2">' + K.field('Numele ei', '<input name="name" autocomplete="off" required value="' + esc(v0.name || '') + '">') + K.field('Telefon (WhatsApp)', '<input name="phone" inputmode="tel" autocomplete="off" required value="' + esc(v0.phone || '') + '">') + '</div>' +
+        K.field('Clinica', K.seg('city', [['Timișoara', 'Timișoara'], ['Arad', 'Arad']], v0.city || 'Timișoara')) +
+        K.field('Cardul', K.seg('tier', [['290', '290 → 500'], ['490', '490 → 1.000'], ['990', '990 → 2.500']], String(v0.tier || 990))) +
+        '<div class="k-grid c2">' + K.field('Câte carduri', '<input type="number" name="qty" min="1" max="' + (one ? 1 : 5) + '" step="1" inputmode="numeric" value="' + (v0.qty || 1) + '"' + (one ? ' readonly' : '') + '>') + K.field('Pentru', K.seg('forWho', [['eu', 'Ea'], ['cadou', 'Cadou']], gift0 ? 'cadou' : 'eu')) + '</div>' +
+        '<div data-names' + (gift0 ? '' : ' hidden') + '>' + K.field('Pe numele (opțional)', '<input name="names" autocomplete="off" placeholder="ex. Mama; pentru mai multe carduri: Mama, Ana" value="' + esc((v0.names || []).filter(Boolean).join(', ')) + '">') + '</div>' +
+        K.field('Notă', '<textarea name="note" rows="2" maxlength="300" placeholder="opțional">' + esc(v0.note || '') + '</textarea>') +
+        (ed ? '' : K.toggle('send', true, 'Trimite-i confirmarea pe WhatsApp')) +
+        '<div class="cd-exists" data-exists hidden></div></form>',
+      footer: '<button type="button" class="k-btn" data-cancel>Renunță</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + (ed ? 'Salvează' : 'Rezervă cardul') + '</button>',
+      onMount(root, h) {
+        const f = root.querySelector('[data-f]'), names = root.querySelector('[data-names]'), ex = root.querySelector('[data-exists]');
+        f.addEventListener('change', () => { names.hidden = K.formValues(f).forWho !== 'cadou'; });
+        f.addEventListener('input', () => { ex.hidden = true; });
+        root.querySelector('[data-cancel]').addEventListener('click', () => h.close());
+        root.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          const v = K.formValues(f);
+          if (ed) {
+            try {
+              await api({ action: 'edit', id: o.id, name: v.name, phone: v.phone, city: v.city, tier: Number(v.tier), qty: Number(v.qty) || 1, forWho: v.forWho,
+                names: v.forWho === 'cadou' ? String(v.names || '').split(',').map((x) => x.trim()) : [], note: v.note });
+              h.close(); K.ui().toast('Comanda e modificată.', 'success'); await load(true);
+            } catch (err) { K.ui().toast(REQERR[err.code] || (err.code === 'not_open' ? 'Comanda nu mai e deschisă (plătită sau anulată).' : K.errText(err)), 'error'); }
+            return;
+          }
+          try {
+            const r = await api({ action: 'request', name: v.name, phone: v.phone, city: v.city, tier: Number(v.tier), qty: Number(v.qty) || 1, forWho: v.forWho,
+              names: v.forWho === 'cadou' ? String(v.names || '').split(',').map((x) => x.trim()) : [], note: v.note, send: !!v.send });
+            h.close();
+            const m = r.msg ? (r.msg.how ? ' Confirmarea i-a plecat pe WhatsApp.' : ' WhatsApp: ' + (r.msg.skipped || 'neplecat') + '.') : '';
+            K.ui().toast('Cerere adăugată: ' + r.reservation.qty + ' × ' + r.reservation.tier + ' lei, plătește în clinică.' + (r.replaced ? ' Comanda ei online neplătită e închisă.' : '') + m, 'success');
+            await load(true);
+          } catch (err) {
+            // she already has an open order: shown here, not a second one
+            if (err.code === 'exists' && err.data && err.data.order) {
+              const o = err.data.order;
+              ex.innerHTML = icon('alert') + '<span><b>Are deja o comandă deschisă.</b> ' + esc((o.name || 'Fără nume') + ' · ' + o.qty + ' × ' + o.tier + ' lei · ' + (STATE[o.status] || [o.status])[0] + ' · ' + o.city + ' · ' + when(o.created)) + '. O găsești la „De confirmat”.</span>';
+              ex.hidden = false;
+              return;
+            }
+            K.ui().toast(REQERR[err.code] || K.errText(err), 'error');
+          }
         }));
       },
     });
