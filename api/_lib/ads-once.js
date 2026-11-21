@@ -12,6 +12,36 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 21.11 ~11:00, George: 25 campaigns split the money; before the ~131 CAD threshold he wants to see many leads, so the
+  // money goes on 6 angles: the 3 that brought a lead (abdomen: Talie definită TM, O singură ședință TM, Corp sau față AR)
+  // and the strongest proven mechanisms (Căutăm N doamne TM and AR, the Arad waist case), 35 lei a day each; the rest off
+  // (they stay ready to come back); at the card only the real-results ad (the most clicks)
+  { id: 'lf-focus-6-2026-11-21', why: 'Bugetul concentrat pe 6 unghiuri, ca să vedem leaduri multe înainte de prag', actions: [
+    { campaignId: '120260591746950112', name: "LF · TM · P1 · Căutăm 10 doamne din Timișoara", daily: 35, why: 'unul din cele 6 unghiuri păstrate, cu bugetul concentrat' },
+    { campaignId: '120260591748260112', name: "LF · TM · P2 · O singură ședință", daily: 35, why: 'unul din cele 6 unghiuri păstrate, cu bugetul concentrat' },
+    { campaignId: '120260591749750112', name: "LF · TM · P6 · Grăsimea care nu pleacă cu sala", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260591750380112', name: "LF · TM · P3 · Lifting fără bisturiu", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260591751460112', name: "LF · TM · A2 · Talie definită. Fără efort", daily: 35, why: 'unul din cele 6 unghiuri păstrate, cu bugetul concentrat' },
+    { campaignId: '120260591752540112', name: "LF · TM · N2 · Se vede ceva după o singură ședință?", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260591754420112', name: "LF · TM · C2 · Corp sau față?", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260591755990112', name: "LF · TM · P4 · 40 de cazuri. Toate reale", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260591756890112', name: "LF · AR · P1 · Căutăm 8 doamne din Arad", daily: 35, why: 'unul din cele 6 unghiuri păstrate, cu bugetul concentrat' },
+    { campaignId: '120260591759170112', name: "LF · AR · P2 · O singură ședință", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260591760900112', name: "LF · AR · P8 · Talie mai definită", daily: 35, why: 'unul din cele 6 unghiuri păstrate, cu bugetul concentrat' },
+    { campaignId: '120260591763580112', name: "LF · AR · A3 · Conturul feței, redefinit", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260591767590112', name: "LF · AR · C2 · Corp sau față?", daily: 35, why: 'unul din cele 6 unghiuri păstrate, cu bugetul concentrat' },
+    { campaignId: '120260591771370112', name: "LF · AR · P4 · 40 de cazuri. Toate reale", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260593926700112', name: "LF · TM · P9 · Ridurile din jurul ochilor, mai fine", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260593929940112', name: "LF · TM · A6 · Tu stai întinsă. Aparatul lucrează", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260593932270112', name: "LF · TM · P7 · Mămici din Timișoara", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260593935070112', name: "LF · TM · A1 · Rochia de Revelion", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260593937620112', name: "LF · TM · N1 · Ce am învățat după 40 de cazuri:", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260593940630112', name: "LF · AR · P10 · Un ten mai luminos", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260593942970112', name: "LF · AR · A5 · La 50 de ani, fără bisturiu", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260593947280112', name: "LF · AR · N3 · 3 lucruri despre gușă pe care nu le spun", status: 'PAUSED', why: 'bugetul concentrat pe 6 unghiuri (George, 21.11)' },
+    { campaignId: '120260591674640112', name: 'CARD · CALD · Alegi cât plătești (K5)', status: 'PAUSED', why: 'la card rămâne doar reclama cu cazurile reale (cele mai multe clicuri)' },
+    { campaignId: '120260591684390112', name: 'CARD · CALD · Plătești 990 (K1)', status: 'PAUSED', why: 'la card rămâne doar reclama cu cazurile reale (cele mai multe clicuri)' },
+  ] },
   // 21.11 ~11:00, George: „ai grijă la adspent, la 131 CAD se opresc” and he wants a winner on this account first: the test
   // keeps its breadth (22 lead-filter angles) at a pace the money lasts: 10 lei a day each (15 on the three with a lead
   // already), the cold card test off; ~260 lei (~80 CAD) a day instead of ~710
