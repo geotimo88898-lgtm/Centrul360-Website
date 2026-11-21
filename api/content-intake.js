@@ -49,6 +49,14 @@ module.exports = async (req, res) => {
   const action = String(q.action || body.action || (req.method === 'GET' ? 'status' : ''));
   try {
     if (req.method === 'GET' && action === 'status') { res.status(200).json(await C.status()); return; }
+    // what is waiting for a look (Claude reviews it, the owner 21.11): each ready item with its texts and its files' links
+    if (req.method === 'GET' && action === 'items') {
+      const want = String(q.review || 'pending');
+      const list = (await C.items()).filter((it) => !it.removed && !it.dropped && it.state === 'ready' && (want === 'all' || (it.review || 'pending') === want));
+      res.status(200).json({ ok: true, items: list.map((it) => ({ id: it.id, kind: it.kind, week: it.week, rubric: it.rubric, topic: it.topic, hook: it.hook, review: it.review || 'pending',
+        captions: it.captions || {}, caption: it.caption || '', files: (it.files || []).map((f) => ({ name: f.name, role: f.role || '', mime: f.mime, dur: f.dur, w: f.w, h: f.h, url: C.fileUrl(it.id, f.name, f.v) })) })) });
+      return;
+    }
     if (action === 'file' && (req.method === 'PUT' || req.method === 'POST')) {
       const len = Number((req.headers && req.headers['content-length']) || 0);
       if (len > C.MAX_BYTES) { res.status(413).json({ error: 'too_large' }); return; }
