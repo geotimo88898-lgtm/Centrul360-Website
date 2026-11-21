@@ -12,6 +12,17 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 21.11 ~18:30, George: HIFU gușă TM at 50, the two 190 doors at 30 each; the card in 3 campaigns of 4 creatives,
+  // 50 lei each, Timișoara and Arad together, women only (Meta picks the creative); the old card ad off
+  { id: 'george-budgets-2026-11-21', why: 'Bugetele lui George: gușă 50, ușile 30, cardul 3 campanii x 50 lei', actions: [
+    { campaignId: '120260595784720112', name: 'BK · TM · HIFU G · sezon (contul vechi)', daily: 50, why: 'George: 50 lei' },
+    { campaignId: '120260597251670112', name: 'LF · TM · HIFU G 190 · ușa', daily: 30, why: 'George: 30 lei' },
+    { campaignId: '120260597253050112', name: 'LF · AR · HIFU G 190 · ușa', daily: 30, why: 'George: 30 lei' },
+    { campaignId: '120260599181780112', name: 'CARD · FORM · feed (4 creative)', daily: 50, why: 'George: 50 lei pe campanie' },
+    { campaignId: '120260600033830112', name: 'CARD · VÂNZARE · feed (4 creative)', daily: 50, why: 'George: 50 lei pe campanie' },
+    { campaignId: '120260600760170112', name: 'CARD · FORM · STORIES (4 creative 9:16)', daily: 50, why: 'George: 50 lei pe campanie' },
+    { campaignId: '120260591688440112', name: 'CARD · CALD · 2.500 lei în tratamente ca astea', status: 'PAUSED', why: 'cardul rămâne doar în cele 3 campanii noi' },
+  ] },
   // 21.11 ~18:00, George: „reclamele cu cardul sunt cu obiectiv de achiziție?”: the card page campaign was optimised for
   // page views; it's replaced by the same ad optimised for the pixel's Purchase (the card paid in myPOS goes back to Meta)
   { id: 'card-sales-2026-11-21', why: 'Reclama cardului pe site caută acum cumpărători (Purchase), nu vizite', actions: [
