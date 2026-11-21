@@ -176,7 +176,8 @@ function varsFor(lead, x) {
   const W = require('./workflows');
   return { prenume: W.firstName(lead.name) || 'dragă', problema: (x.problemLabel || x.zoneLabel || 'zona ta').toLowerCase(), locatie: lead.location || '', nume: lead.name || '', telefon: lead.phone || '' };
 }
-function tplFor(tpls, label) { return tpls.find((t) => t.label === label) || null; }
+// the template of a label: an approved one first (two runs at once may have left a second copy of a label)
+function tplFor(tpls, label) { const l = tpls.filter((t) => t.label === label); return l.find((t) => WT.overall(t) === 'APPROVED') || l.find((t) => WT.overall(t) === 'PENDING') || l[0] || null; }
 
 // the lead's lead-filter answers, its note, the call for 4.990 / 14.900, and the message: never throws
 async function afterLead(lead, x, city) {
@@ -300,6 +301,13 @@ async function templates(b) {
   if (!d.packages) return { error: 'no_packages' };
   const { readBinary } = require('./store');
   const w = await WT.load();
+  // one template per label: a copy left by two runs at the same time goes (the one Meta took stays)
+  const rank = (t) => ({ APPROVED: 0, PENDING: 1, REJECTED: 2 }[WT.overall(t)] ?? 3);
+  const keep = new Map();
+  w.templates.filter((t) => t.leadfilter).forEach((t) => { const k = keep.get(t.label); if (!k || rank(t) < rank(k)) keep.set(t.label, t); });
+  const drop = w.templates.filter((t) => t.leadfilter && keep.get(t.label) !== t);
+  for (const t of drop) { if (Object.keys(t.meta || {}).length) await WT.remove(w, t.id).catch(() => null); else w.templates = w.templates.filter((x) => x !== t); }
+  if (drop.length) await WT.save(w);
   const out = [];
   const upsert = async (label, city, m, pic) => {
     const prev = w.templates.find((t) => t.label === label);
