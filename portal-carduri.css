@@ -72,3 +72,4 @@
 .cd-stock{ padding:0; border:0; background:none; font:inherit; color:var(--accent); font-weight:600; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
 .cd-stock-left{ font-size:.85rem; color:var(--muted); }
 .cd-stock-left b{ color:var(--fg); }
+.cd-wait{ display:flex; flex-wrap:wrap; align-items:center; gap:.6rem; padding:.7rem .8rem; border-radius:12px; font-size:.85rem; background:var(--warn-soft); color:var(--warn); }

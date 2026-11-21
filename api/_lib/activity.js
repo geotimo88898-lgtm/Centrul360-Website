@@ -74,7 +74,7 @@ const SKIP = ['portal-prefs', 'portal-pulse', 'portal-impersonate', 'portal-crea
 const VERBS = {
   'card-sarbatori:confirm': 'a confirmat plata Cardului de Sărbători', 'card-sarbatori:add': 'a adăugat un Card de Sărbători plătit', 'card-sarbatori:cancel': 'a anulat comanda de Card de Sărbători',
   'card-sarbatori:redeem': 'a folosit creditul cardului', 'card-sarbatori:undo': 'a anulat ultima folosire a cardului', 'card-sarbatori:resend': 'a retrimis pe WhatsApp cardul',
-  'card-sarbatori:rename': 'a schimbat numele de pe cardul', 'card-sarbatori:stock': 'a schimbat stocul Cardurilor de Sărbători',
+  'card-sarbatori:rename': 'a schimbat numele de pe cardul', 'card-sarbatori:stock': 'a schimbat valurile Cardurilor de Sărbători', 'card-sarbatori:open_wave': 'a deschis acum următorul val de Carduri de Sărbători', 'card-sarbatori:notify_done': 'a anunțat clienta de noul val de carduri',
   'portal-appointments:create': 'a programat', 'portal-appointments:update': 'a modificat programarea', 'portal-appointments:delete': 'a șters programarea',
   'portal-schedule:save_week': 'a modificat programul pentru', 'portal-schedule:save_weeks': 'a modificat programul pe săptămâni pentru', 'portal-schedule:save_date': 'a modificat programul dintr-o zi pentru',
   'portal-schedule:break_set': 'a mutat pauza pentru', 'portal-schedule:break_off': 'a scos pauza de azi pentru', 'portal-schedule:break_reset': 'a pus pauza la mijlocul programului pentru',
@@ -195,7 +195,8 @@ function describe(route, action, body, before, after, out) {
   }
   if (route === 'card-sarbatori' && b.code) subject = String(b.code);
   let detail = '';
-  if (route === 'card-sarbatori' && action === 'stock') detail = 'de vânzare: ' + b.total + (out && typeof out.left === 'number' ? ' · au mai rămas ' + out.left : '');
+  if (route === 'card-sarbatori' && action === 'stock') detail = 'val de ' + (out && out.wave ? out.wave.size : b.wave) + ' · maxim ' + (out && out.wave ? out.wave.max : b.max) + (out && out.wave ? ' · valul ' + out.wave.n + ' din ' + out.wave.of : '');
+  if (route === 'card-sarbatori' && action === 'open_wave' && out) detail = 'valul ' + out.opened;
   if (route === 'card-sarbatori' && action === 'redeem' && out && out.claim) detail = (out.claim.items || []).map((i) => i.name).join(', ') + ' · ' + out.claim.applied + ' lei · rămân ' + out.left + ' lei';
   if (detail) { /* said above */ }
   else if (route === 'portal-appointments' && action === 'create') detail = [b.treatment, [pretty('date', b.date), b.time].filter((x) => x && x !== '-').join(' '), b.location].filter(Boolean).join(' · ');

@@ -1,5 +1,5 @@
 // Centrul360 portal, „Carduri de Sărbători” (the owner, 21.11): admin, manager and reception (reception records payments).
-//   on top     the cards left (the stock: the owner sets it, „Stoc”), the money of the cards paid, the credit used, the WhatsApp templates
+//   on top     the wave of now (Valul 2 din 7: left, sold, when the next opens; the owner sets the waves, „valuri”), the money of the cards paid, the credit used, the WhatsApp templates
 //   De confirmat  the orders sent to the PayLink (found in myPOS by themselves, or one tap here) and the reservations to pay
 //              in the clinic: „Confirmă plata (X lei)”, „Anulează”
 //   the cards  code, name on the card, who bought it, phone, the card, credit used / left, state, clinic, bonuses, dates;
@@ -20,19 +20,22 @@
   const when = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? new Date(t).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', day: 'numeric', month: 'short' }) + ', ' + new Date(t).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' }) : ''; };
   const dayOf = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? new Date(t).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', day: 'numeric', month: 'short', year: 'numeric' }) : ''; };
   const api = (b) => K.api('/api/card-sarbatori', b);
+  // when the next wave opens: „azi la 10:00”, „mâine la 10:00”, or the day
+  const opensTxt = (iso) => { const t = Date.parse(iso); if (!Number.isFinite(t)) return ''; const day = new Date(t).toLocaleDateString('sv-SE', { timeZone: 'Europe/Bucharest' }), hm = new Date(t).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' });
+    return (day === K.today() ? 'azi' : day === K.addDays(K.today(), 1) ? 'mâine' : K.dateShort(day)) + ' la ' + hm; };
   const tag = (st) => { const x = STATE[st] || [st, '']; return '<span class="k-tag ' + x[1] + '">' + esc(x[0]) + '</span>'; };
   const img = (code, dl) => '/api/card-sarbatori?img=' + encodeURIComponent(code) + (dl ? '&dl=1' : '') + '&v=' + encodeURIComponent((S.d && S.d.cards.find((c) => c.code === code) || {}).recipient || '');
 
   function mount(p) {
     S.box = p;
     p.classList.add('k-panel', 'cd');
-    p.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Carduri de Sărbători</h2></div><div class="k-head-actions"><button type="button" class="k-btn is-primary" data-cd-add>' + icon('plus') + 'Adaugă card plătit</button></div></div>' +
+    p.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Carduri de Sărbători</h2></div><div class="k-head-actions"><button type="button" class="k-btn is-outline admin-only hidden" data-cd-stock>' + icon('sliders') + 'Valuri</button><button type="button" class="k-btn is-primary" data-cd-add>' + icon('plus') + 'Adaugă card plătit</button></div></div>' +
       '<div data-cd-body><div class="k-skel" style="height:110px;border-radius:18px"></div><div class="k-skel" style="height:360px;margin-top:1rem;border-radius:18px"></div></div>';
     p.addEventListener('click', onClick);
     p.addEventListener('input', (e) => { if (e.target.matches('[data-cd-q]')) { S.q = e.target.value; paintList(); } });
   }
   async function load(quiet) {
-    try { S.d = await api({ action: 'list', scan: !quiet }); paint(); }
+    try { S.d = await api({ action: 'list', scan: !quiet }); const sb = S.box.querySelector('[data-cd-stock]'); if (sb) sb.classList.toggle('hidden', S.d.role !== 'admin'); paint(); }
     catch (err) { const b = S.box && S.box.querySelector('[data-cd-body]'); if (b && !S.d) b.innerHTML = '<section class="k-card">' + K.empty('alert', 'Nu am putut încărca cardurile', esc(K.errText(err))) + '</section>'; }
   }
 
@@ -44,16 +47,26 @@
     const tpl = d.templates || {}, tplOk = Object.values(tpl).length && Object.values(tpl).every((x) => x === 'APPROVED');
     const stat = (ic, cls, label, value, sub) => '<div class="k-stat ' + cls + '"><div class="k-stat-top"><span class="k-stat-ic">' + icon(ic) + '</span><span class="k-stat-l">' + label + '</span></div><div class="k-stat-value">' + value + '</div><div class="k-stat-sub">' + sub + '</div></div>';
     body.innerHTML = '<div class="k-grid c4 cd-stats">' +
-      stat('gift', 'is-accent', 'Carduri rămase', String(d.left), d.role === 'admin' ? '<button type="button" class="cd-stock" data-cd-stock>Stoc ' + d.total + ' · schimbă</button>' : d.open ? 'în vânzare până pe 24 dec.' : 'vânzarea s-a încheiat') +
+      stat('gift', 'is-accent', 'Valul ' + d.wave.n + ' din ' + d.wave.of, d.wave.waiting ? 'Epuizat' : d.wave.left + ' <small>rămase</small>',
+        d.wave.waiting ? 'se deschide ' + esc(opensTxt(d.wave.opensAt)) : d.wave.sold + ' vândute din val · ' + d.sold + ' în total') +
       stat('wallet', 'is-good', 'Încasat din carduri', lei(t.money || 0), (t.cards || 0) + ' carduri plătite · ' + lei(t.online || 0) + ' online') +
       stat('card', '', 'Credit folosit', lei(t.used || 0), 'din ' + lei(t.credit || 0) + ' credit dat') +
       stat('chat', tplOk ? 'is-good' : 'is-warn', 'Mesaje WhatsApp', tplOk ? 'Automate' : 'Manual', tplOk ? 'șabloanele sunt aprobate de Meta' : 'șabloanele așteaptă aprobarea Meta') +
       '</div>' +
-      '<div data-cd-orders></div>' +
+      '<div data-cd-orders></div>' + notifyHtml() +
       '<section class="k-card cd-list"><div class="cd-bar"><label class="k-search">' + icon('search') + '<input data-cd-q type="search" placeholder="Caută după cod sau nume…" autocomplete="off" value="' + esc(S.q) + '"></label>' +
       '<div class="k-chips" data-cd-chips></div></div><div data-cd-rows></div></section>' +
       '<p class="k-muted cd-foot">Folosirea creditului nu e o încasare nouă: banii au intrat o dată, la plata cardului. Cardul se folosește la prețul de listă, nu peste ofertele reduse. Valabil până pe 30.06.2027.</p>';
     paintOrders(); paintList();
+  }
+  // „Anunță-mă”: who wants to hear when the next wave opens (the desk writes them, then ticks them)
+  function notifyHtml() {
+    const l = S.d.notify || [];
+    if (!l.length) return '';
+    return '<section class="k-card cd-orders"><div class="k-card-head"><h3>De anunțat la valul următor</h3><span class="k-muted">' + l.length + '</span></div><div class="k-list">' +
+      l.map((x) => '<div class="k-row cd-order"><div class="k-row-main"><div class="k-row-title">' + esc(x.name) + '</div><div class="k-row-sub">' + esc(when(x.at)) + (x.city ? ' · ' + esc(x.city) : '') + ' · <a href="' + K.tel(x.phone) + '">' + esc(x.phone) + '</a></div></div>' +
+        '<div class="k-row-end"><a class="k-btn is-ghost is-sm" href="' + K.wa(x.phone, 'Bună, ' + String(x.name).split(' ')[0] + '! S-a deschis valul nou de Carduri de Sărbători Centrul360: https://www.centrul360.com/card-sarbatori') + '" target="_blank" rel="noopener">' + icon('chat') + 'Scrie-i</a>' +
+        '<button type="button" class="k-btn is-outline is-sm" data-cd-notified="' + esc(x.id) + '">' + icon('check') + 'Anunțată</button></div></div>').join('') + '</div></section>';
   }
   function paintOrders() {
     const box = S.box.querySelector('[data-cd-orders]'), list = S.d.orders || [];
@@ -94,6 +107,7 @@
     if (b.dataset.cdF) { S.f = b.dataset.cdF; paintList(); return; }
     if (b.hasAttribute('data-cd-add')) { addDrawer(b); return; }
     if (b.hasAttribute('data-cd-stock')) { stockDrawer(b); return; }
+    if (b.dataset.cdNotified) { await K.busy(b, async () => { try { await api({ action: 'notify_done', id: b.dataset.cdNotified }); await load(true); } catch (err) { K.ui().toast(K.errText(err), 'error'); } }); return; }
     if (b.dataset.cdOpen) { cardDrawer(b.dataset.cdOpen, b); return; }
     if (b.dataset.cdConfirm) {
       const o = (S.d.orders || []).find((x) => x.id === b.dataset.cdConfirm);
@@ -114,23 +128,28 @@
     }
   }
 
-  // the stock (the owner only): how many cards are for sale in all; the page and the counter use it at once
+  // the waves (the owner only): how many cards in a wave, how many in all, and the next wave opened now
   function stockDrawer(from) {
-    const sold = S.d.sold || 0;
-    const left = (n) => Math.max(0, n - sold);
+    const w = S.d.wave;
     K.drawer({
-      from, title: 'Stocul cardurilor', icon: 'sliders', width: 460,
-      subtitle: 'Câte carduri sunt de vânzare în total. Pagina și numărătoarea se schimbă imediat.',
-      body: '<form class="k-form" data-f>' + K.field('Carduri de vânzare', '<input type="number" name="total" min="0" max="500" step="1" inputmode="numeric" value="' + S.d.total + '">') +
-        '<p class="cd-stock-left" data-left>Au mai rămas <b>' + left(S.d.total) + '</b> · ' + sold + ' comandate sau plătite</p></form>',
+      from, title: 'Valurile de carduri', icon: 'sliders', width: 480,
+      subtitle: 'Valul ' + w.n + ' din ' + w.of + ' · ' + w.sold + ' vândute din val · ' + S.d.sold + ' în total. Pagina și numărătoarea se schimbă imediat.',
+      body: '<form class="k-form" data-f><div class="k-grid c2">' + K.field('Carduri într-un val', '<input type="number" name="wave" min="1" max="200" step="1" inputmode="numeric" value="' + w.size + '">') +
+        K.field('Total maxim', '<input type="number" name="max" min="0" max="1000" step="1" inputmode="numeric" value="' + w.max + '">') + '</div>' +
+        '<p class="cd-stock-left">Un val epuizat: următorul se deschide singur a doua zi la 10:00.</p>' +
+        (w.waiting ? '<div class="cd-wait"><span>Valul ' + w.n + ' se deschide ' + esc(opensTxt(w.opensAt)) + '.</span><button type="button" class="k-btn is-outline is-sm" data-open>' + icon('sparkles') + 'Deschide acum următorul val</button></div>' : '') + '</form>',
       footer: '<button type="button" class="k-btn" data-cancel>Renunță</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
       onMount(root, h) {
-        const inp = root.querySelector('input[name=total]');
-        inp.addEventListener('input', () => { root.querySelector('[data-left] b').textContent = left(Math.max(0, Math.floor(Number(inp.value) || 0))); });
+        const v = (n) => Math.floor(Number(root.querySelector('input[name=' + n + ']').value));
         root.querySelector('[data-cancel]').addEventListener('click', () => h.close());
         root.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
-          try { const r = await api({ action: 'stock', total: Math.floor(Number(inp.value)) }); h.close(); K.ui().toast('Stoc salvat: au mai rămas ' + r.left + ' carduri.', 'success'); await load(true); }
-          catch (err) { K.ui().toast(err.code === 'bad_stock' ? 'Scrie un număr între 0 și 500.' : K.errText(err), 'error'); }
+          try { const r = await api({ action: 'stock', wave: v('wave'), max: v('max') }); h.close(); K.ui().toast('Salvat: valul ' + r.wave.n + ' din ' + r.wave.of + '.', 'success'); await load(true); }
+          catch (err) { K.ui().toast(err.code === 'bad_stock' ? 'Valul: 1 până la 200, totalul: 0 până la 1.000.' : K.errText(err), 'error'); }
+        }));
+        const op = root.querySelector('[data-open]');
+        if (op) op.addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          try { await api({ action: 'open_wave' }); h.close(); K.ui().toast('Valul ' + w.n + ' e deschis acum.', 'success'); await load(true); }
+          catch (err) { K.ui().toast(K.errText(err), 'error'); }
         }));
       },
     });

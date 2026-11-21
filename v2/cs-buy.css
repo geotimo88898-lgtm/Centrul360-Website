@@ -126,3 +126,6 @@ html.csb-lock{ overflow:hidden; }
 .csb-bonus.off{ color:var(--mute2); }
 .csb-ft .csb-alt{ margin-top:8px; min-height:52px; }
 .csb-ft .csb-alt[hidden]{ display:none; }
+/* the waves: a wave sold out, the next opens tomorrow at 10:00 (the owner, 21.11) */
+.csb-wait{ margin:0 0 12px; padding:10px 12px; border-radius:12px; font-size:13.5px; line-height:1.45; color:#7a1240; background:#fff1f5; }
+.csb-wait[hidden],.csb-in [data-csb-buyonly][hidden],.csb-q[hidden]{ display:none; }
