@@ -267,7 +267,15 @@ async function sendFirst(lead, x, city) {
   };
   if (!t) return once('Mesajul lead filter n-a plecat: lipsește șablonul ' + tplLabel(x.zone, x.tier, city, VER) + '.');
   const r = await W.sendOnce('lf|' + lead.id + '|' + t.id, () => W.sendTemplate(wa, t.id, city, lead.phone, varsFor(lead, x)));
-  if (r.dup) return;
+  if (r.dup) {
+    // sent before, but its note was lost (21.11: two writers on the leads at once): marked sent from the conversation, so
+    // the follow-ups still go
+    const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+    const convo = ((await readJSON('data/whatsapp-conversations.json', [])) || []).find((c) => c && d9(c.phone) === d9(lead.phone));
+    const out = ((convo && convo.messages) || []).find((m) => m && m.direction !== 'in' && String(m.timestamp || '') >= String(lead.createdAt || ''));
+    if (out) await note(lead.id, 'WhatsApp lead filter trimis („' + t.label + '”), găsit în conversație', { sentAt: out.timestamp, tplId: t.id });
+    return;
+  }
   if (!r.sent) return once('Mesajul lead filter n-a plecat: ' + r.why);
   await note(lead.id, 'WhatsApp lead filter trimis („' + t.label + '”, de pe numărul ' + r.city + ')', { sentAt: nowISO(), tplId: t.id });
 }
