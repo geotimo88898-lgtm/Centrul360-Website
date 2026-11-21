@@ -73,7 +73,7 @@
   // ---- the card chosen (290 / 490 / 990): everything that depends on it changes at once, and it is kept from page to page
   var TIERS = { 290: [500, '1,7'], 490: [1000, '2'], 990: [2500, '2,5'] }, KEY = 'c360_cs_tier';
   var fmt = function (n) { return Math.round(n).toLocaleString('ro-RO'); };
-  var saved = 990;
+  var saved = 290; // the owner, 21.11: the 290 lei card is the one chosen at first
   try { var v = Number(localStorage.getItem(KEY)); if (TIERS[v]) saved = v; } catch (e) {}
   function setCredit(el, text) {
     if (el.textContent === text) return;
