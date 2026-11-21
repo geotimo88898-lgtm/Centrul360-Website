@@ -12,6 +12,15 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 21.11 ~12:10: 250 lei, 3 leads; ~180 lei (~55 CAD) left before George's ~131 CAD threshold. Many clicks and few forms
+  // sent on the long lead-filter forms, so the money tilts to what has proven cheap leads: the two backups from the old
+  // account to 50 lei a day, the lead filter on its 4 best (the 3 with a lead + Căutăm 8 doamne Arad, the most clicks)
+  { id: 'focus-before-threshold-2026-11-21', why: 'Înainte de prag: mai mulți bani pe rezervele dovedite, lead filter pe cele 4 bune', actions: [
+    { campaignId: '120260595784720112', name: 'BK · TM · HIFU G · sezon (contul vechi)', daily: 50, why: 'rezerva dovedită: lead ~8 lei pe contul vechi' },
+    { campaignId: '120260595786020112', name: 'BK · AR · VIDEO · HIFU abdomen · vid 8 (contul vechi)', daily: 50, why: 'rezerva dovedită: lead ~16 lei pe contul vechi' },
+    { campaignId: '120260591746950112', name: 'LF · TM · P1 · Căutăm 10 doamne din Timișoara', status: 'PAUSED', why: '12,7 lei, 3 clicuri, niciun lead' },
+    { campaignId: '120260591760900112', name: 'LF · AR · P8 · Talie mai definită', status: 'PAUSED', why: '14 lei, 4 clicuri, niciun lead' },
+  ] },
   // 21.11 ~11:00, George: 25 campaigns split the money; before the ~131 CAD threshold he wants to see many leads, so the
   // money goes on 6 angles: the 3 that brought a lead (abdomen: Talie definită TM, O singură ședință TM, Corp sau față AR)
   // and the strongest proven mechanisms (Căutăm N doamne TM and AR, the Arad waist case), 35 lei a day each; the rest off
