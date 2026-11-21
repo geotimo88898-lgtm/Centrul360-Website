@@ -286,7 +286,7 @@ async function say(kind, r, vars, text, png, code) {
 // the words of the card's message (the same as the template, with the gift and the Club when paid online)
 // her first name for „Bună, …!”, letters only; an online order has none (only her phone): a neutral greeting
 const greetName = (r) => { const f = firstName(r.name).replace(/[^\p{L}-]/gu, ''); return f.length >= 2 ? f.slice(0, 30) : ''; };
-const NONAME = 'Card online, fără nume'; // her lead's name while we do not know hers
+const NONAME = 'Card de Sărbători, fără nume'; // her lead's name while we do not know hers
 function cardText(r, c) {
   const extra = r.bonus ? 'Cadou: ' + giftOf(r.city) + '. Locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code : 'Te așteptăm cu drag.';
   const g = greetName(r);

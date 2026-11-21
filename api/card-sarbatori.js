@@ -6,7 +6,8 @@
 //        owner, 21.11; name / recipient optional: the card goes out with a neutral name until she gives one)
 //        → { ok, id, link, amount }: the order waits for its payment ('asteptare', its cards held 2 h on the counter) and the
 //        page sends her to that card's PayLink. One card per online order (a PayLink is one sum).
-//   POST { pay: 'clinica', tier, qty 1-5, names: [..], name, phone, city, consent, ... }
+//   POST { pay: 'clinica', tier, qty 1-5, names: [..], name, phone, city, consent, ... }   (from the card block: tier, phone,
+//        city, qty 1, no name: reception calls her)
 //        → { ok, reservation }: reserved, paid in the clinic; nothing is issued until the team confirms the payment.
 //   POST { action: 'order', id }   what she ordered (her phone masked), paid or not
 //   The team (admin, manager, reception; reception records payments):
@@ -259,8 +260,7 @@ module.exports = async (req, res) => {
     if (!Number.isInteger(qty) || qty < 1 || qty > C.MAXQ) { res.status(400).json({ error: 'bad_qty' }); return; }
     const gift = b.forWho === 'cadou' || (b.forWho == null && Array.isArray(b.names) && b.names.some((x) => clean(x, 80)));
     const names = online ? [gift ? clean(b.recipient || (b.names || [])[0], 80) : ''] : Array.from({ length: qty }, (_, i) => clean((Array.isArray(b.names) ? b.names : [])[i], 80));
-    // online: only her phone and the clinic (the card block's field); the clinic form keeps her name
-    if (!online && name.length < 2) { res.status(400).json({ error: 'missing_name' }); return; }
+    // only her phone and the clinic (the card block's field, both ways: the owner, 21.11); a name when one is sent
     if (!phoneOk(phone)) { res.status(400).json({ error: 'bad_phone' }); return; }
     if (!city) { res.status(400).json({ error: 'missing_city' }); return; }
     if (!(b.consent === true || b.consent === 'true' || b.consent === 'on')) { res.status(400).json({ error: 'missing_consent' }); return; }
