@@ -676,6 +676,26 @@ async function skip(id, net) {
   return out;
 }
 
+// Another week for an item nothing posted yet (21.11: a week's lighter slots make room for a sale's posts): its entries
+// not posted go, it keeps its review, both weeks are planned again (it takes the free slots of its new week).
+async function move(id, week) {
+  if (!isId(id)) throw fail('invalid_id');
+  const [st, now] = [await settings(), Date.now()];
+  const to = weekFor(week, now);
+  const { out } = await update((list) => {
+    const it = findItem(list, id);
+    if (!it || it.removed || it.dropped) throw fail('not_found', 404);
+    if ((it.plan || []).some((e) => e.state === 'posted' || e.state === 'posting')) throw fail('already_posted', 409);
+    const from = it.week;
+    it.plan = [];
+    it.week = to;
+    if (from && from !== to) P.replanWeek(list, from, st, now);
+    P.replanWeek(list, to, st, now);
+    return { from, week: to, plan: it.plan };
+  });
+  return out;
+}
+
 const readState = async () => Object.assign({ statsDay: '', topWeek: '', holdNote: '', readyWeek: '', remindWeek: '', missWeek: '', monWeek: '' }, (await readJSON(STATE_KEY, null)) || {});
 const writeState = (s) => writeJSON(STATE_KEY, s, { quiet: true });
 
@@ -764,4 +784,4 @@ async function mondayHold(list, st, now) {
 module.exports = { PROMOS, promoOn, KEY, SET_KEY, STATE_KEY, IDEAS_KEY, KINDS, MIMES, MAX_BYTES, CAP_MAX, IN_MAX, RUBRICS, HOOK_TYPES, NET_NAME, ROLES, ORIGIN, fileUrl, isId, isName, isClean, pathOf, items,
   settings, saveSettings, update, updateKey, migrate, create, addFile, problems, fileWarnings, media, qa, qaText, ready, replace, setReview, unreview, approveWeek, approveAll, setFav, setCaptions, captionFor, status, skip, readState,
   AREAS, AREA_NAME, ATT_TYPES, ATT_MAX, isAtt, attPath, attOf, attUrl, noteOf, notesView, fromProducer,
-  writeState, notices, mondayHold, ideas, addIdea, delIdea, useIdea, unuseIdea, findItem, fail, weekFor, plural, range, fold };
+  writeState, notices, mondayHold, move, ideas, addIdea, delIdea, useIdea, unuseIdea, findItem, fail, weekFor, plural, range, fold };
