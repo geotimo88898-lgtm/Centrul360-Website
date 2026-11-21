@@ -12,8 +12,8 @@
 // Counted from the portal's start (16.10.2026): no leads before it, so no days before it either.
 //
 // STOP an ad when any layer says so:
-//   1. it spent at least 40 lei and, even with one more lead right now, a lead would still cost over 20 lei
-//      (40 lei and no lead → off · 70 lei and 2 leads, 35 each → off · 25 lei and 1 lead → stays, the next makes 12.50)
+//   1. it spent at least 25 lei (the owner, 21.11: „dacă cheltuie în gol peste 25, le stingi”) and, even with one more
+//      lead right now, a lead would still cost over 20 lei (25 lei and no lead → off · 70 lei and 2 leads, 35 each → off · 25 lei and 1 lead → stays, the next makes 12.50)
 //   2. 8+ leads and, even with one more booking now, a booking would cost over 30% of the price (at least 60 lei)
 //      (50 leads at 7 lei and 1 booking → off) · or 12+ leads and not one booking
 //   3. 5+ bookings and 100+ lei spent, and less came in than was spent (10 bookings and nothing in after a month → off)
@@ -46,7 +46,7 @@ const { notifyMany, ownerIds } = require('./notify');
 const { funnel } = require('./ads-funnel');
 
 const KEY = 'data/ads-guard.json';
-const RULE = { minSpend: 40, maxCpl: 20, days: 7 };
+const RULE = { minSpend: 25, maxCpl: 20, days: 7 };
 const BOOK = { age: 2, days: 30, killLeads: 8, kill: 0.30, killFloor: 60, junkLeads: 12, raise: 0.15, raiseBooked: 2, ripeLeads: 5, youngRate: 0.15, youngMin: 5 };
 const MONEY = { age: 28, days: 90, booked: 5, spend: 100, kill: 1, raise: 2 };
 const SCALE = { cpl7: 12, leads7: 4, cpl3: 13, leads3: 2, used: 0.7, step: 1.2, cap: 150, gapH: 48, backGapH: 7 * 24, perRun: 3, from: 6, to: 12, maxFreq: 2.5, perCityDay: 2 };
