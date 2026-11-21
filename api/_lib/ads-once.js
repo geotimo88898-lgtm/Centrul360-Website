@@ -12,6 +12,36 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 21.11 ~11:00, George: „ai grijă la adspent, la 131 CAD se opresc” and he wants a winner on this account first: the test
+  // keeps its breadth (22 lead-filter angles) at a pace the money lasts: 10 lei a day each (15 on the three with a lead
+  // already), the cold card test off; ~260 lei (~80 CAD) a day instead of ~710
+  { id: 'lf-test-budget-2026-11-21', why: 'Bugetul de test pe contul nou: mai multe unghiuri, mai puțini bani pe fiecare', actions: [
+    { campaignId: '120260591746950112', name: "LF · TM · P1 · Căutăm 10 doamne din Timișoara", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260591748260112', name: "LF · TM · P2 · O singură ședință", daily: 15, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260591749750112', name: "LF · TM · P6 · Grăsimea care nu pleacă cu sala", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260591750380112', name: "LF · TM · P3 · Lifting fără bisturiu", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260591751460112', name: "LF · TM · A2 · Talie definită. Fără efort", daily: 15, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260591752540112', name: "LF · TM · N2 · Se vede ceva după o singură ședință?", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260591754420112', name: "LF · TM · C2 · Corp sau față?", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260591755990112', name: "LF · TM · P4 · 40 de cazuri. Toate reale", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260591756890112', name: "LF · AR · P1 · Căutăm 8 doamne din Arad", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260591759170112', name: "LF · AR · P2 · O singură ședință", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260591760900112', name: "LF · AR · P8 · Talie mai definită", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260591763580112', name: "LF · AR · A3 · Conturul feței, redefinit", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260591767590112', name: "LF · AR · C2 · Corp sau față?", daily: 15, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260591771370112', name: "LF · AR · P4 · 40 de cazuri. Toate reale", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260593926700112', name: "LF · TM · P9 · Ridurile din jurul ochilor, mai fine", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260593929940112', name: "LF · TM · A6 · Tu stai întinsă. Aparatul lucrează", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260593932270112', name: "LF · TM · P7 · Mămici din Timișoara", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260593935070112', name: "LF · TM · A1 · Rochia de Revelion", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260593937620112', name: "LF · TM · N1 · Ce am învățat după 40 de cazuri:", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260593940630112', name: "LF · AR · P10 · Un ten mai luminos", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260593942970112', name: "LF · AR · A5 · La 50 de ani, fără bisturiu", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260593947280112', name: "LF · AR · N3 · 3 lucruri despre gușă pe care nu le spun", daily: 10, why: 'bugetul de test pe contul nou (George: ~131 CAD)' },
+    { campaignId: '120260591689740112', name: 'CARD · RECE · Cadoul… oglindă (K2)', status: 'PAUSED', why: 'publicul rece la card, cel mai puțin probabil; banii merg pe lead filter' },
+    { campaignId: '120260591690580112', name: 'CARD · RECE · Pentru mama (K3)', status: 'PAUSED', why: 'publicul rece la card, cel mai puțin probabil; banii merg pe lead filter' },
+    { campaignId: '120260591692210112', name: 'CARD · RECE · Moș Crăciun (K4)', status: 'PAUSED', why: 'publicul rece la card, cel mai puțin probabil; banii merg pe lead filter' },
+  ] },
   // 20.11 19:47: TM LipoSonix isn't in the Timișoara plan (laser and HIFU gușă only), and spent 14 lei today with no lead
   { id: 'lipo-off-2026-11-20', why: 'LipoSonix nu e în planul TM', actions: [
     { campaignId: '120252015088300103', name: 'TM LIPO · stai întinsă v2', status: 'PAUSED', why: 'în afara planului TM, 14 lei azi fără lead' },
