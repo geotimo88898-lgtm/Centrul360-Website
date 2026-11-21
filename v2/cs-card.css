@@ -195,6 +195,6 @@ main [hidden]{ display:none !important; }
 .cst-wbtns{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .cst-wbtns .btn{ width:100%; white-space:normal; height:auto; min-height:54px; padding:10px 16px; }
 .cst-wait .cst-wsub{ font-size:13px; color:var(--mute); }
-html.cs-waiting .cst-go > .btn, html.cs-waiting .cst-go > .cst-urg, html.cs-waiting .cst-go > .cst-sub{ display:none; }
+html.cs-waiting .cst-go:has(> [data-cs-wait]) > .btn, html.cs-waiting .cst-go:has(> [data-cs-wait]) > .cst-urg, html.cs-waiting .cst-go:has(> [data-cs-wait]) > .cst-sub{ display:none; } /* the pages live before the swap have no wait block: their buttons stay (the window explains the wave) */
 @media (max-width:640px){ .cst-wbtns{ grid-template-columns:1fr; } }
 html.cs-waiting .csc-live .csc-left{ display:none; }
