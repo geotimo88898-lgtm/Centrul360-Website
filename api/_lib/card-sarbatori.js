@@ -284,10 +284,14 @@ async function say(kind, r, vars, text, png, code) {
   return { sent: false, error: errs.filter(Boolean).join(' · ').slice(0, 300) };
 }
 // the words of the card's message (the same as the template, with the gift and the Club when paid online)
+// her first name for „Bună, …!”, letters only; an online order has none (only her phone): a neutral greeting
+const greetName = (r) => { const f = firstName(r.name).replace(/[^\p{L}-]/gu, ''); return f.length >= 2 ? f.slice(0, 30) : ''; };
+const NONAME = 'Card online, fără nume'; // her lead's name while we do not know hers
 function cardText(r, c) {
   const extra = r.bonus ? 'Cadou: ' + giftOf(r.city) + '. Locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code : 'Te așteptăm cu drag.';
-  return { vars: { prenume: firstName(r.name), credit: lei(c.value), cod: c.code, cadou: extra },
-    text: 'Bună, ' + firstName(r.name) + '! 🎁 Cardul tău de Sărbători Centrul360 este activ' + (c.recipient && c.recipient !== r.name ? ' (pe numele ' + c.recipient + ')' : '') + ':\n' +
+  const g = greetName(r);
+  return { vars: { prenume: g || 'dragă', credit: lei(c.value), cod: c.code, cadou: extra },
+    text: 'Bună' + (g ? ', ' + g : '') + '! 🎁 Cardul tău de Sărbători Centrul360 este activ' + (c.recipient && c.recipient !== r.name ? ' (pe numele ' + c.recipient + ')' : '') + ':\n' +
       '• credit de ' + lei(c.value) + ' lei, pentru orice tratament la prețul de listă\n• cod ' + c.code + '\n• valabil până pe ' + VALID_TXT + '\n' +
       (r.bonus ? '• cadou: ' + giftOf(r.city) + (r.city === 'Arad' ? '' : ' (în clinica din Timișoara)') + '\n• locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code + '\n' : '') +
       '\nPentru programare răspunde la acest mesaj. Mulțumim!' };
@@ -396,10 +400,10 @@ async function confirm(id, via, o) {
   try {
     const note = 'Card de Sărbători plătit ' + (r.paidVia === 'online' ? 'online' : 'în clinică') + ': ' + r.qty + ' × ' + r.tier + ' lei, credit ' + lei(r.credit) + ' lei · ' +
       r.cards.map((c) => c.code + (c.recipient ? ' (' + c.recipient + ')' : '')).join(', ') + (r.bonus ? ' · cadou: ' + giftShort(r.city) + ' · Clubul 360' : '');
-    const L = await require('../portal-leads').createLead({ name: r.name, phone: r.phone, source: 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: 'Card de Sărbători', welcome: false });
+    const L = await require('../portal-leads').createLead({ name: r.name || NONAME, phone: r.phone, source: 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: 'Card de Sărbători', welcome: false });
     if (L && L.lead && !r.leadId) r.leadId = L.lead.id;
   } catch (e) { console.error('card lead:', e.message); }
-  try { const cl = await require('./clients').upsertClient({ name: r.name, phone: r.phone, location: r.city }, store); if (cl) r.clientId = cl.id; } catch (e) { console.error('card client:', e.message); }
+  if (r.name) { try { const cl = await require('./clients').upsertClient({ name: r.name, phone: r.phone, location: r.city }, store); if (cl) r.clientId = cl.id; } catch (e) { console.error('card client:', e.message); } }
 
   // the desk (her clinic) and the owner
   try {
@@ -408,7 +412,7 @@ async function confirm(id, via, o) {
     await N.notifyMany(store, ids, {
       kind: 'money', tone: 'good', go: 'carduri', tag: posPaid ? posPaid.tag : 'card-paid-' + r.id, quiet: !!posPaid, ref: r.paidVia === 'clinica' && r.payMethod === 'card' ? N.payRef('desk', r.paidAmount) : '',
       title: 'CARD DE SĂRBĂTORI PLĂTIT' + N.cityTag(r.city) + (r.paidVia === 'online' ? ' ONLINE 💳' : ' 🎁') + ' - ' + N.leiTxt(r.amount),
-      text: r.qty + ' × ' + r.tier + ' lei (credit ' + lei(r.credit) + ') · ' + r.name + ' · ' + r.cards.map((c) => c.code).join(', ') + (r.bonus ? ' · + ' + giftShort(r.city) + ' și Clubul 360' : '') +
+      text: r.qty + ' × ' + r.tier + ' lei (credit ' + lei(r.credit) + ') · ' + (r.name || 'fără nume') + ' · ' + r.cards.map((c) => c.code).join(', ') + (r.bonus ? ' · + ' + giftShort(r.city) + ' și Clubul 360' : '') +
         (o.match ? ' · găsit automat în myPOS' : ''),
     });
   } catch (e) { console.error('card notify:', e.message); }
@@ -657,7 +661,7 @@ function cardView(r, c, now) {
 }
 
 module.exports = {
-  KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
+  NONAME, greetName, KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
   norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
 };
