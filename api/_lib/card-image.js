@@ -77,7 +77,7 @@ function flake(cx, cy, r, op) {
 }
 const STAR = 'M12 1.5l2.2 8.3 8.3 2.2-8.3 2.2-2.2 8.3-2.2-8.3L1.5 12l8.3-2.2z';
 
-// ---- the card: { credit, name, code, valid } → SVG of the whole picture
+// ---- the card: { credit, name, code, valid, mark } → SVG of the whole picture (mark: „Rezervat” in place of the code)
 function svgOf(o) {
   const credit = lei(o.credit), code = String(o.code || ''), valid = o.valid || '30.06.2027';
   let name = String(o.name || '').trim() || 'Pentru tine';
@@ -135,7 +135,9 @@ function svgOf(o) {
         '<tspan font-size="' + (5 * u) + '" font-weight="700">Credit </tspan><tspan font-size="' + (12.6 * u) + '" letter-spacing="' + (-0.055 * 12.6 * u) + '">' + esc(credit) + '</tspan><tspan font-size="' + (6.6 * u) + '" dx="' + (1.6 * u) + '"> lei</tspan></text></g>' +
       '<text x="' + (6.6 * u) + '" y="' + (42.4 * u) + '" font-family="Inter" font-weight="600" font-size="' + (2.8 * u) + '" fill="#fff3e4">pentru orice tratament</text>' +
       // the code: what the desk types
-      '<text x="' + (7 * u) + '" y="' + (49 * u) + '" font-family="Inter" fill="#fff6ea"><tspan font-weight="600" font-size="' + (2.05 * u) + '" letter-spacing="' + (0.34 * u) + '" fill="#f7dc97" fill-opacity=".85">COD </tspan><tspan dx="' + (0.8 * u) + '" font-weight="700" font-size="' + (2.9 * u) + '" letter-spacing="' + (0.16 * u) + '">' + esc(code) + '</tspan></text>' +
+      // a reserved card (not paid yet: card-sarbatori.js reservedMsg) has no code, only its mark; a card not paid has neither
+      (code ? '<text x="' + (7 * u) + '" y="' + (49 * u) + '" font-family="Inter" fill="#fff6ea"><tspan font-weight="600" font-size="' + (2.05 * u) + '" letter-spacing="' + (0.34 * u) + '" fill="#f7dc97" fill-opacity=".85">COD </tspan><tspan dx="' + (0.8 * u) + '" font-weight="700" font-size="' + (2.9 * u) + '" letter-spacing="' + (0.16 * u) + '">' + esc(code) + '</tspan></text>' : o.mark ? '<g transform="translate(' + (7 * u) + ' ' + (44 * u) + ')"><rect width="' + (String(o.mark).length * (2.2 * u * 0.72 + 0.34 * u) + 3.6 * u) + '" height="' + (4.8 * u) + '" rx="' + (2.4 * u) + '" fill="#fff6ea" fill-opacity=".14" stroke="#f7dc97" stroke-opacity=".75" stroke-width="2"/>' +
+        '<text x="' + (1.8 * u) + '" y="' + (3.27 * u) + '" font-family="Inter" font-weight="700" font-size="' + (2.2 * u) + '" letter-spacing="' + (0.34 * u) + '" fill="#f7dc97">' + esc(String(o.mark).toUpperCase()) + '</text></g>' : '') +
       '<text x="' + (7 * u) + '" y="' + (H - 5 * u - 4.7 * u) + '" font-family="Inter" font-weight="600" font-size="' + (2.05 * u) + '" letter-spacing="' + (0.34 * u) + '" fill="#f7dc97" fill-opacity=".85">PE NUMELE</text>' +
       '<text x="' + (7 * u) + '" y="' + (H - 5 * u) + '" font-family="Inter" font-weight="600" font-size="' + nameSize + '" fill="#fff6ea">' + esc(name) + '</text>' +
       '<text x="' + (74 * u) + '" y="' + (H - 5 * u - 4.7 * u) + '" text-anchor="end" font-family="Inter" font-weight="600" font-size="' + (2.05 * u) + '" letter-spacing="' + (0.34 * u) + '" fill="#f7dc97" fill-opacity=".85">VALABIL PÂNĂ LA</text>' +

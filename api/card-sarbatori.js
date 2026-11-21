@@ -306,6 +306,8 @@ module.exports = async (req, res) => {
     }
     await lead(entry, b, req, note);
     res.status(200).json({ ok: true, reservation: publicOf(entry), left: (await C.count(await readJSON(C.KEY, []))).left });
+    // after the answer: her WhatsApp „Ți-am rezervat Cardul de Sărbători…” with the card's picture (once; only the approved template)
+    try { await C.reservedMsg(entry.id); } catch (e) { console.error('card reserved msg:', e.message); }
   } catch (err) {
     console.error('card-sarbatori error:', err.message);
     if (!res.headersSent) res.status(500).json({ error: 'failed' });

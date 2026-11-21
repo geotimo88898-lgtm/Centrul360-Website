@@ -199,6 +199,10 @@ const TPL = {
     body: 'Bună, {{1}}! Am folosit {{2}} lei din Cardul tău de Sărbători {{3}}. Pe card mai ai {{4}} lei, valabili până pe 30.06.2027. Mulțumim!' },
   remind: { label: 'Card de Sărbători sold', map: ['prenume', 'sold', 'cod'],
     body: 'Bună, {{1}}! Mai ai {{2}} lei pe Cardul de Sărbători {{3}}, valabili până pe 30 iunie 2027, pentru orice tratament la prețul de listă. Pentru programare răspunde la acest mesaj.' },
+  // reserved on the site, paid in the clinic (the owner, 21.11): right after, with the picture of her card marked „Rezervat”
+  // (no code: nothing is issued before the payment; her name only if she gave one): reservedMsg
+  rezervat: { label: 'Card de Sărbători rezervat', headerType: 'IMAGE', map: ['suma', 'credit', 'locatie'], sample: { code: '', mark: 'Rezervat', name: '' },
+    body: 'Bună! Ți-am rezervat Cardul de Sărbători de {{1}} lei, cu {{2}} lei în tratamente. Te sunăm în curând să stabilim când treci să-l plătești în clinica din {{3}}, cash sau card. Mulțumim!' },
 };
 async function templates() {
   const WT = require('./wa-templates');
@@ -220,8 +224,10 @@ async function ensureTemplates() {
       x = { id: 'card-' + k + '-' + crypto.randomUUID().slice(0, 6), purpose: 'card-' + k, label: TPL[k].label, name: '', language: 'ro', category: 'UTILITY',
         headerType: TPL[k].headerType || '', header: '', body: TPL[k].body, map: TPL[k].map, footer: 'Centrul360', buttons: [], meta: {}, updatedAt: nowISO() };
       if (x.headerType === 'IMAGE') {
-        const buf = await require('./card-image').png({ credit: 2500, name: 'Andreea Popescu', code: 'C360-AB2C-DE3F', valid: VALID_TXT });
-        x.samplePath = 'wa-templates/card-sarbatori-exemplu.png';
+        // the example Meta reviews: a sample card (its own when the template's card is another kind, e.g. „Rezervat”)
+        const sm = TPL[k].sample;
+        const buf = await require('./card-image').png(Object.assign({ credit: 2500, name: 'Andreea Popescu', code: 'C360-AB2C-DE3F', valid: VALID_TXT }, sm || {}));
+        x.samplePath = sm ? 'wa-templates/card-sarbatori-' + k + '.png' : 'wa-templates/card-sarbatori-exemplu.png';
         await writeBinary(x.samplePath, buf, 'image/png');
       }
       d.templates.push(x); changed = true;
@@ -237,7 +243,7 @@ async function ensureTemplates() {
   return res;
 }
 // the message in the chat (Mesaje): the team sees what she got, with the picture
-async function logChat(phone, city, name, text, media, id) {
+async function logChat(phone, city, name, text, media, id, extra) {
   try {
     const { normalizePhone } = require('./clients');
     const p = normalizePhone(phone) || String(phone || '');
@@ -247,14 +253,17 @@ async function logChat(phone, city, name, text, media, id) {
     let convo = conversations.find((c) => c.phone === p);
     if (!convo) { convo = { phone: p, clientName: name || p, location: city, lastMessageAt: nowISO(), unreadCount: 0, messages: [] }; conversations.push(convo); }
     convo.messages.push(Object.assign({ id: id || crypto.randomUUID(), direction: 'out', type: media ? 'image' : 'text', text, status: 'sent', timestamp: nowISO(), sentBy: null, sentByName: 'automat', auto: true },
-      media ? { media: { kind: 'image', mime: 'image/png', filename: 'card.png', path: media } } : {}));
+      media ? { media: { kind: 'image', mime: 'image/png', filename: 'card.png', path: media } } : {}, extra || {}));
     convo.lastMessageAt = nowISO();
     await require('./wa-convos').saveConversations(conversations);
   } catch (e) { console.error('card chat log:', e.message); }
 }
 // one message to her: the approved template from her clinic's number, else (inside the 24 h window) a plain message;
-// { sent, how: 'template' | 'direct', error }
-async function say(kind, r, vars, text, png, code) {
+// { sent, how: 'template' | 'direct', error }. opt: { path (the picture in the chat), only: 'template' (never the plain
+// message: she did not write us, Meta would drop it), tag (fields kept on the chat message, e.g. the order it is about) }
+async function say(kind, r, vars, text, png, code, opt) {
+  opt = opt || {};
+  const pic = png ? opt.path || imgPath(code) : '';
   const WA = require('./whatsapp'), WT = require('./wa-templates');
   const cfg = await WA.loadConfig();
   const ready = WA.readyNumbers(cfg);
@@ -272,14 +281,15 @@ async function say(kind, r, vars, text, png, code) {
     }
     if (!(png && tpl.headerType === 'IMAGE') || headerImageId) {
       const x = await WA.sendWhatsApp({ phone: r.phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: 'ro', params: tpl.map.map((k) => vars[k] || '-'), from: city, headerImageId });
-      if (x.sent) { await logChat(r.phone, x.fromCity || city, r.name, text, png ? imgPath(code) : '', x.id); return { sent: true, how: 'template', city: x.fromCity || city }; }
+      if (x.sent) { await logChat(r.phone, x.fromCity || city, r.name, text, pic, x.id, opt.tag); return { sent: true, how: 'template', city: x.fromCity || city }; }
       errs.push(x.error);
     }
   } else errs.push(tpl ? 'șablonul „' + tpl.label + '” nu e aprobat încă de Meta' : 'șablonul nu e făcut încă');
+  if (opt.only === 'template') return { sent: false, error: errs.filter(Boolean).join(' · ').slice(0, 300), tpl: !(tpl && WT.approvedFor(tpl, n.wabaId)) };
   // not approved (or refused): a plain message, which Meta lets through only if she wrote us in the last 24 hours
   const y = png ? await WA.sendMedia({ phone: r.phone, from: city, buf: png, mime: 'image/png', filename: 'Cardul de Sarbatori.png', caption: text })
     : await WA.sendWhatsApp({ phone: r.phone, text, from: city });
-  if (y.sent) { await logChat(r.phone, y.fromCity || city, r.name, text, png ? imgPath(code) : '', y.id); return { sent: true, how: 'direct', city: y.fromCity || city }; }
+  if (y.sent) { await logChat(r.phone, y.fromCity || city, r.name, text, pic, y.id, opt.tag); return { sent: true, how: 'direct', city: y.fromCity || city }; }
   errs.push(y.error);
   return { sent: false, error: errs.filter(Boolean).join(' · ').slice(0, 300) };
 }
@@ -304,6 +314,30 @@ async function deliver(r, c) {
   const x = await say('card', r, m.vars, m.text, png, c.code).catch((e) => ({ sent: false, error: e.message }));
   c.sent = x.sent ? { at: nowISO(), how: x.how } : { at: nowISO(), how: '', error: x.error || 'netrimis' };
   return c.sent;
+}
+
+// ---- reserved on the site, to pay in the clinic (the owner, 21.11): right after, the template „rezervat” with the picture
+// of her card marked „Rezervat” (no code, her name only if she gave one), from her clinic's number, once per order; only
+// as the approved template (she did not write us); not approved yet: nothing goes, the order says why (r.rezMsg)
+const fill = (k, vars) => TPL[k].body.replace(/\{\{(\d+)\}\}/g, (m, n) => vars[TPL[k].map[n - 1]] || '');
+async function reservedMsg(id) {
+  const list = await readJSON(KEY, []);
+  const r = list.find((x) => x.id === id);
+  if (!r || r.status !== 'rezervat' || r.rezMsg) return r ? r.rezMsg || null : null;
+  norm(r);
+  const vars = { suma: lei(r.amount), credit: lei(r.credit), locatie: r.city === 'Arad' ? 'Arad' : 'Timișoara' };
+  let png = null, path = 'wa-out/card-rez-' + String(r.id).replace(/[^\w-]/g, '').slice(0, 36) + '.png';
+  try {
+    png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: (r.cards[0] || {}).recipient || r.name || '', code: '', mark: 'Rezervat', valid: VALID_TXT });
+    await writeBinary(path, png, 'image/png').catch(() => { path = ''; });
+  } catch (e) { console.error('card reserved image:', e.message); }
+  const m = png ? await say('rezervat', r, vars, fill('rezervat', vars), png, '', { path, only: 'template', tag: { cardOrder: r.id, cardStep: 'rezervat' } }).catch((e) => ({ sent: false, error: e.message }))
+    : { sent: false, error: 'poza cardului' };
+  const rez = m.sent ? { at: nowISO(), how: m.how } : { at: nowISO(), skipped: m.tpl ? 'șablonul nu e aprobat încă' : String(m.error || 'netrimis').slice(0, 160) };
+  const l2 = await readJSON(KEY, []);
+  const x = l2.find((y) => y.id === id);
+  if (x && !x.rezMsg) { x.rezMsg = rez; await writeJSON(KEY, l2); }
+  return rez;
 }
 
 // ---- the payment in Încasări: once per order (a second call finds it); a refund row when a paid order is cancelled
@@ -663,5 +697,5 @@ function cardView(r, c, now) {
 module.exports = {
   NONAME, greetName, KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
   norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
-  image, deliver, cardText, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
+  image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
 };
