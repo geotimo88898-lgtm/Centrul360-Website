@@ -166,3 +166,8 @@ main [hidden]{ display:none !important; }
   .cst-best{ right:5px; font-size:9.5px; padding:2px 7px; }
   .cst-sub{ font-size:13px; }
 }
+
+/* paying at the clinic: a real second button, as visible as the online one (the owner, 21.11) */
+.cst-or{ display:flex; align-items:center; gap:12px; color:var(--mute); font-size:13px; }
+.cst-or::before, .cst-or::after{ content:''; flex:1; height:1px; background:rgba(11,11,13,.12); }
+.cst-go .cst-cash{ width:100%; }
