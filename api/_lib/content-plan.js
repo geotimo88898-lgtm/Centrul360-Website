@@ -122,7 +122,8 @@ function settingsOf(s) {
   // the competitors' names the texts never mention (content.js qa)
   const comp = Array.isArray(s.competitors) ? s.competitors : typeof s.competitors === 'string' ? s.competitors.split(/[,;\n]/) : [];
   const competitors = [...new Set(comp.map((x) => String(x || '').replace(/\s+/g, ' ').trim().slice(0, 60)).filter((x) => x.length >= 3))].slice(0, 40);
-  return { on: s.on !== false, nets, modes, startWeek: isDay(s.startWeek) ? mondayOf(s.startWeek) : DEFAULTS.startWeek,
+  // the story coverage guard (content-story.js) posts nothing unless it is switched on (the owner, 21.11: off by default)
+  return { on: s.on !== false, storyGuard: s.storyGuard === true, nets, modes, startWeek: isDay(s.startWeek) ? mondayOf(s.startWeek) : DEFAULTS.startWeek,
     warmWeeks: Number.isFinite(ww) ? clamp(Math.round(ww), 0, 8) : DEFAULTS.warmWeeks, quotas, times, photoTime, storyTimes, competitors };
 }
 // the owner posts this network himself (Din aplicație); its entries go out without the API

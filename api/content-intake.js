@@ -90,12 +90,26 @@ module.exports = async (req, res) => {
     // organice hardcore”: Claude sets the volume and the posting itself; saveSettings merges and checks every part)
     if (action === 'settings' && req.method === 'POST') {
       const patch = { on: body.on !== false };
+      if (typeof body.storyGuard === 'boolean') patch.storyGuard = body.storyGuard;
       ['quotas', 'times', 'photoTime', 'storyTimes', 'modes', 'nets'].forEach((k) => { if (body[k] && typeof body[k] === 'object') patch[k] = body[k]; });
       res.status(200).json(Object.assign({ ok: true }, await C.saveSettings(patch)));
       return;
     }
     // the look, by Claude (the owner, 21.11: he leaves the approval to Claude): { action:'approve', ids } approves those
     // still waiting; { action:'redo', id, note } sends one back to the producer
+    // { action:'unpost', id, net }: asks Meta to delete a story already posted (a Facebook Page story; Instagram's API has
+    // no delete): Meta's answer as it is, the entry noted as deleted when Meta says so
+    if (action === 'unpost') {
+      const id = String(body.id || ''), net = String(body.net || '');
+      const it = C.findItem(await C.items(), id);
+      const e = it && (it.plan || []).concat(it.reposts || []).find((x) => x.net === net && x.state === 'posted' && x.postId);
+      if (!it || it.kind !== 'story' || !e) { res.status(404).json({ error: 'not_found' }); return; }
+      const a = await require('./_lib/content-post').access(true);
+      const r = await require('./_lib/meta-ads').call('DELETE', '/' + e.postId, a.token, {});
+      if (r.ok && r.j && r.j.success) await C.update((list) => { const x = C.findItem(list, id); const y = x && (x.plan || []).concat(x.reposts || []).find((q) => q.net === net && q.postId === e.postId); if (!y) return false; y.deletedAt = new Date().toISOString(); });
+      res.status(200).json({ ok: !!(r.ok && r.j && r.j.success), net, postId: e.postId, meta: r.j });
+      return;
+    }
     // { action:'skip', id, net? }: out of its week (one network, or the whole item); what it posted stays
     if (action === 'skip') { res.status(200).json({ ok: true, n: await C.skip(String(body.id || ''), ['tt', 'yt', 'ig', 'fb'].includes(body.net) ? body.net : '') }); return; }
     // { action:'move', id, week }: an item nothing posted yet goes to another week (its review stays)

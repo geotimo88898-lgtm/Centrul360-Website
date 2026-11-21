@@ -55,7 +55,7 @@ function coverage(list, st, now) {
     const last = shown(list, net)[0];
     const lastAt = last ? last.at : 0, next = nextOf(list, net, now);
     const left = lastAt ? Math.max(0, lastAt + DAY_MS - now) : 0;
-    out[net] = { on: onNet(st, net), lastAt: lastAt ? iso(lastAt) : '', lastTopic: last ? last.it.topic || '' : '', live: left > 0, hoursLeft: Math.round((left / 3600e3) * 10) / 10,
+    out[net] = { on: onNet(st, net), guard: !!st.storyGuard, lastAt: lastAt ? iso(lastAt) : '', lastTopic: last ? last.it.topic || '' : '', live: left > 0, hoursLeft: Math.round((left / 3600e3) * 10) / 10,
       nextAt: next ? iso(next) : '', gap: !!lastAt && !!next && next > lastAt + DAY_MS ? Math.round(((next - lastAt - DAY_MS) / 3600e3) * 10) / 10 : 0, pool: pool(list).length };
   });
   return out;
@@ -103,7 +103,8 @@ async function tick(opts) {
   if (!st.on || !P.STORY_NETS.some((n) => onNet(st, n))) return { off: true };
   let list = await C.items();
   const due = P.due(list, st, now).filter((x) => x.it.kind === 'story');
-  const guard = new Date(now).getUTCMinutes() % 5 === 0 || o.guard;
+  // the guard only when it is switched on (settings.storyGuard, off by default since 21.11)
+  const guard = st.storyGuard && (new Date(now).getUTCMinutes() % 5 === 0 || o.guard);
   if (!due.length && !guard) return { due: 0 };
   const out = { due: due.length, done: [] };
   let a = null;

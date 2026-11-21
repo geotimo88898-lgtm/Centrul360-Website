@@ -126,6 +126,7 @@ async function saveSettings(patch) {
   next.times = Object.assign({}, cur.times, p.times || {});
   next.photoTime = Object.assign({}, cur.photoTime, p.photoTime || {});
   next.storyTimes = Object.assign({}, cur.storyTimes, p.storyTimes || {});
+  if (typeof p.storyGuard === 'boolean') next.storyGuard = p.storyGuard;
   next.quotas = { warm: {}, full: {} };
   ['warm', 'full'].forEach((w) => P.NETS.forEach((n) => { next.quotas[w][n] = Object.assign({}, cur.quotas[w][n], (p.quotas && p.quotas[w] && p.quotas[w][n]) || {}); }));
   const st = P.settingsOf(next);
