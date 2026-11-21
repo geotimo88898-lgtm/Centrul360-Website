@@ -35,7 +35,9 @@ async function offer() {
         const p = (((pk.packages || {})[z.key]) || {})[t];
         if (!p) return;
         const items = ((p.items || {})[city] || []).map((i) => ({ label: clip(i.label, 80), qty: Number(i.qty) || 0 }));
-        packs[t] = { name: clip(p.name, 60), price: Number(p.price) || Number(t), value: Number((p.value || {})[city]) || 0, items,
+        // what it is, in a few words: the form's own label without its price and without „cele mai multe aleg asta”
+        const short = clip(String(p.formLabel || '').replace(/^[\d.\s]+lei\s*·\s*/i, '').replace(/\s*·\s*cele mai multe aleg asta\s*$/i, ''), 70);
+        packs[t] = { name: clip(p.name, 60), short, price: Number(p.price) || Number(t), value: Number((p.value || {})[city]) || 0, items,
           bonuses: (p.bonuses || []).map((x) => clip(x.label, 90)).filter(Boolean),
           guarantee: p.guarantee ? { short: clip(p.guarantee.short, 60), full: clip(p.guarantee.full, 240) } : null,
           scarcity: p.scarcity ? clip(p.scarcity.full || p.scarcity.short, 200) : '',
