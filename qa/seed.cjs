@@ -235,3 +235,54 @@ aud.slice(0, 16).forEach((p, i) => { people[p.k] = { k: p.k, phone: p.phone, nam
 w('fc360/people.json', { people });
 console.log('Transformarea 360 seeded');
 })();
+
+// 7. „Cardul de Sărbători” followed as a campaign (Admin → Campanii → Cardul de Sărbători): a list of 60 sent 6 hours ago,
+// Meta's statuses, answers (a button, words, a stop), the site's campaign funnel, card orders of every kind
+(() => {
+const f = (p) => path.join(DATA, p.replace(/\//g, '__'));
+const w = (p, d) => fs.writeFileSync(f(p), typeof d === 'string' ? d : JSON.stringify(d));
+const now = Date.now(), t0 = now - 6 * 3600e3, iso = (ms) => new Date(ms).toISOString();
+const names = ['Maria-Magdalena Constantinescu-Ionescu', 'Ana Proba', 'Elena Lungu-Teodorescu', 'Ioana Proba', 'Cristina Popa', 'Andreea Marinescu-Vasilescu'];
+const list = []; for (let i = 0; i < 60; i++) { const k = String(733000100 + i); list.push(Object.assign({ k, to: '40' + k, city: i % 3 ? 'Timișoara' : 'Arad', fn: names[i % names.length].split(/[\s-]/)[0], seg: i >= 45 ? 'client2' : i % 5 ? 'client' : 'lead', score: 100, visits: 1 + (i % 4) }, i >= 45 ? { batch: 2, paid: 3400 } : {})); }
+w('cardblast/state.json', { armed: true, list, pickedAt: iso(t0 - 900e3), doneAt: iso(t0 + 20 * 60e3), media: {}, note: '' });
+const sent = {};
+list.forEach((p, i) => { sent[p.k] = i % 17 === 4 ? { e: 'Meta a refuzat (cod 131026)', code: 131026, at: iso(t0 + i * 20e3), c: p.city } : { w: 'wamid.CS' + i, at: iso(t0 + i * 20e3), c: p.city }; });
+w('cardblast/sent.json', sent);
+w('cardblast/ev-since.txt', iso(t0 + 40 * 60e3));
+const touch = (p, ms) => { const t = new Date(ms); fs.utimesSync(f(p), t, t); };
+list.forEach((p, i) => {
+  if (!sent[p.k].w) return;
+  if (i % 11 !== 7) { w('cardblast/ev/delivered/wamid.CS' + i, p.k + '||'); touch('cardblast/ev/delivered/wamid.CS' + i, t0 + i * 20e3 + 4e3); }
+  if (i % 11 === 7 && i % 2) { w('cardblast/ev/failed/wamid.CS' + i, p.k + '|131049|'); }
+  if (i % 3 !== 2 && i % 11 !== 7) { w('cardblast/ev/read/wamid.CS' + i, p.k + '||'); touch('cardblast/ev/read/wamid.CS' + i, t0 + (i % 6) * 3600e3 + 600e3); }
+});
+const said = [['tap', 'Rezerv în clinică'], ['text', 'Bună ziua, cardul de 490 se poate folosi și pentru epilare la Arad sau doar la Timișoara? Mulțumesc!'], ['tap', 'Rezerv în clinică'], ['stop', 'Stop'], ['tap', 'Rezerv în clinică'], ['text', 'Îl iau cadou pentru mama 🤍']];
+said.forEach(([kind, text], j) => { const i = j * 5 + 1; w('cardblast/in/wamid.IN' + j, { k: list[i].k, kind, text, at: iso(t0 + (j + 1) * 1800e3), ctx: 1 }); });
+// the site: today's funnel document gets the campaign's and the card page's segments
+const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date(now));
+const hh = (ms) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', hour: '2-digit', hourCycle: 'h23' }).format(new Date(ms));
+const hours = (n) => { const o = {}; for (let i = 0; i < 6; i++) { const h = hh(t0 + i * 3600e3); o[h] = (o[h] || 0) + Math.max(0, Math.round(n * [0.35, 0.25, 0.15, 0.1, 0.1, 0.05][i])); } return o; };
+w('data/site/funnel-' + day + '.json', { v: 1, s: {}, f: { whatsapp: { visit: 31, cta: 12, open: 11, start: 6, lead: 2, pay: 3 } }, k: {
+  'c:card-sarbatori:m': { visit: 27, seen: 25, buy: 9, pay: 3, res: 5, rsent: 2, h: hours(27) }, 'c:card-sarbatori:d': { visit: 4, seen: 4, buy: 2, pay: 1, res: 0, rsent: 0, h: hours(4) },
+  'p:card:m': { visit: 88, seen: 80, buy: 21, pay: 6, res: 9, rsent: 4, h: hours(88) }, 'p:card:d': { visit: 19, seen: 18, buy: 5, pay: 2, res: 1, rsent: 1, h: hours(19) } },
+  // three people who came with their personal link (api/_lib/card-blast.js tokenOf)
+  t: Object.fromEntries([[1, ['visit', 'seen', 'buy', 'pay']], [10, ['visit', 'seen', 'buy', 'pay']], [2, ['visit', 'seen', 'res']]].map(([i, steps]) => [
+    require('crypto').createHmac('sha256', String(process.env.PORTAL_SECRET) + '|cs-link').update(list[i].k).digest('base64url').slice(0, 10),
+    Object.fromEntries(steps.map((x, j) => [x, t0 + (i + 1) * 1500e3 - (steps.length - j) * 40e3]))])) });
+// card orders: from the list (paid online, paid in the clinic, waiting, expired), from the link with another phone, others
+const ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile', pc = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)';
+const link = 'https://www.centrul360.com/card-sarbatori?utm_source=whatsapp&utm_campaign=card-sarbatori';
+let n = 0;
+const o = (x) => Object.assign({ id: 'cs-seed-' + (++n), qty: 1, via: 'site', forWho: 'eu', recipient: '', name: 'Clienta Proba ' + n, cards: [{ code: '', recipient: '' }] }, x);
+const credit = { 290: 500, 490: 1000, 990: 2500 };
+const ord = (i, tier, pay, status, mins, extra) => o(Object.assign({ created: iso(t0 + (i + 1) * 1500e3), phone: i == null ? '07220009' + String(n).padStart(2, '0') : '0' + list[i].k, city: i == null ? 'Arad' : list[i].city, tier, amount: tier, credit: credit[tier], pay, status,
+  paidVia: status === 'platit' ? (pay === 'online' ? 'online' : 'clinica') : '', paidAt: status === 'platit' ? iso(t0 + ((i || 0) + 1) * 1500e3 + mins * 60e3) : '', page: link, track: { utm_source: 'whatsapp', utm_campaign: 'card-sarbatori', ua } }, extra || {}));
+w('data/card-sarbatori.json', [
+  ord(1, 990, 'online', 'platit', 9, { trail: [['created', 0], ['to_paylink', 0], ['paid', 9, 'auto'], ['ask_name', 10, 'ok'], ['named', 14], ['card_sent', 14, 'ok']].map(([ev, m, note]) => Object.assign({ at: iso(t0 + 2 * 1500e3 + m * 60e3), ev }, note ? { note } : {})) }), ord(4, 490, 'online', 'platit', 23), ord(6, 990, 'clinica', 'platit', 140, { qty: 2, amount: 1980, credit: 5000 }), ord(10, 290, 'online', 'asteptare', 0, { created: iso(now - 25 * 60e3) }),
+  ord(12, 990, 'online', 'asteptare', 0, { trail: [['created', 0], ['to_paylink', 0], ['returned', 3], ['reason', 4, 'declined'], ['wa1', 35, 'ok'], ['expired', 120]].map(([ev, m, note]) => Object.assign({ at: iso(t0 + 13 * 1500e3 + m * 60e3), ev }, note ? { note } : {})) }), ord(16, 490, 'clinica', 'rezervat', 0, { track: { ua: pc } }), ord(21, 290, 'clinica', 'anulat', 0),
+  ord(null, 990, 'online', 'platit', 14, { track: { utm_campaign: 'card-sarbatori', ua: pc } }),
+  o({ created: iso(t0 - 2 * 86400e3), phone: '0722000777', city: 'Timișoara', tier: 990, amount: 990, credit: 2500, pay: 'online', status: 'platit', paidVia: 'online', paidAt: iso(t0 - 2 * 86400e3 + 600e3), page: 'https://www.centrul360.com/card-sarbatori', track: { utm_source: 'instagram', ua } }),
+  o({ created: iso(t0 + 3 * 3600e3), phone: '0722000778', city: 'Arad', tier: 490, amount: 490, credit: 1000, pay: 'online', status: 'platit', paidVia: 'online', paidAt: iso(t0 + 3 * 3600e3 + 300e3), page: 'https://www.centrul360.com/card-sarbatori', track: { ua } }),
+]);
+console.log('Cardul de Sărbători campaign seeded');
+})();

@@ -3613,7 +3613,7 @@ b.is-f, b.is-m{ background:none !important; }
 .cn-st-hot > span{ font-size:1.2rem; }
 .cn-st-hot p{ margin:0; font-size:.84rem; line-height:1.4; }
 .cn-st-hot b{ display:block; font-size:.9rem; }
-.cn-st-w{ overflow-x:auto; margin:0 -.2rem; }
+.cn-st-w{ overflow-x:auto; margin:0; }
 .cn-st{ width:100%; border-collapse:collapse; font-size:.82rem; font-variant-numeric:tabular-nums; }
 .cn-st th, .cn-st td{ padding:.32rem .35rem; text-align:right; white-space:nowrap; }
 .cn-st thead th{ padding-bottom:.45rem; }

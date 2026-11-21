@@ -13,12 +13,23 @@
 // in-app browsers), else the referrer's site, else direct. The page sends its own guess; the server keeps it clean.
 //   data/site/funnel-<YYYY-MM-DD>.json { v: 1, s: { <sid>: [source, mask] }, f: { <source>: { visit, cta, ... } } }
 // The paid cards come from the card's own orders (data/card-sarbatori.json, their track: utm, the app), per day and source.
+//
+// The card's own funnel (the owner, 21.11, Admin → Campanii → Cardul de Sărbători): the same visitor, also counted under
+// a segment, phone (m) or computer (d) apart: „c:<utm_campaign>:<m|d>” (her first link of the day with utm_campaign says
+// it; every step after counts under it, on any page) and „p:card:<m|d>” (only what she does on /card-sarbatori). Its
+// steps (CARD), each once per visitor and day: visit, seen (the card's block came into view), buy („Plătesc online”),
+// pay (sent to myPOS), res („Rezerv în clinică”), rsent (the clinic form sent). Each segment's first visits by hour too.
+//   row  = [source, mask, campaign, { <segment>: mask }, device]     d.k = { <segment>: { visit, seen, ..., h: { HH: n } } }
+// A personal link's token (?c=, opaque, made by api/_lib/card-blast.js tokenOf; never a phone or a name): the card's steps
+// of that visitor under it too, with the time of each, so Admin → Campanii can show what that one person did:
+//   d.t = { <token>: { <step>: ms } }   (at most MAX_TOKENS a day)
 
 const { readJSON, readJSONTagged, writeJSON, writeJSONIf } = require('./store');
 
 const STEPS = ['visit', 'cta', 'open', 'start', 'lead', 'pay'];
 const BIT = STEPS.reduce((o, s, i) => (o[s] = 1 << i, o), {});
 const MAX_SIDS = 8000;
+const MAX_TOKENS = 3000;
 const ro = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 const keyOf = (day) => 'data/site/funnel-' + day + '.json';
 
@@ -43,11 +54,23 @@ function sourceOfTrack(t) {
   return 'necunoscut';
 }
 
-// one step of one visitor; a page view is the step 'visit'. Never throws.
-async function record(sid, source, step, now) {
+// the card's steps and what the page sends for them (site-pulse.js ev, v2/cs-buy.js)
+const CARD = ['visit', 'seen', 'buy', 'pay', 'res', 'rsent'];
+const CBIT = CARD.reduce((o, s, i) => (o[s] = 1 << i, o), {});
+const CARD_EV = { visit: 'visit', 'cs-seen': 'seen', 'cs-buy': 'buy', pay: 'pay', 'cs-res': 'res', 'cs-sent': 'rsent' };
+const cleanCamp = (c) => String(c || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+const CARD_PAGE = /^\/card-sarbatori(\.html)?\/?$/;
+const roHour = (d) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', hour: '2-digit', hourCycle: 'h23' }).format(d);
+
+// one step of one visitor; a page view is the step 'visit'. meta (optional): { camp: utm_campaign, path, dev: 'm' | 'd' }.
+// Never throws.
+async function record(sid, source, step, now, meta) {
   try {
-    if (!sid || !BIT[step]) return;
-    const key = keyOf(ro(new Date(now || Date.now())));
+    const cstep = CARD_EV[step] || '';
+    if (!sid || (!BIT[step] && !cstep)) return;
+    const m = meta || {};
+    const at = new Date(now || Date.now());
+    const key = keyOf(ro(at)), hh = roHour(at);
     for (let i = 0; i < 4; i++) {
       const { data, etag } = await readJSONTagged(key, null);
       const d = data || { v: 1, s: {}, f: {} };
@@ -56,21 +79,78 @@ async function record(sid, source, step, now) {
         if (Object.keys(d.s).length >= MAX_SIDS) return;
         row = d.s[sid] = [cleanSource(source), 0];
       }
-      const src = row[0];
-      // a step counts once a day for her, and a step without a counted visit counts the visit too
       let changed = false;
-      for (const s of step === 'visit' ? ['visit'] : ['visit', step]) {
-        if (row[1] & BIT[s]) continue;
-        row[1] |= BIT[s];
-        const f = d.f[src] = d.f[src] || {};
-        f[s] = (f[s] || 0) + 1;
-        changed = true;
+      // the site's funnel: a step counts once a day for her, and a step without a counted visit counts the visit too
+      if (BIT[step]) {
+        const src = row[0];
+        for (const s of step === 'visit' ? ['visit'] : ['visit', step]) {
+          if (row[1] & BIT[s]) continue;
+          row[1] |= BIT[s];
+          const f = d.f[src] = d.f[src] || {};
+          f[s] = (f[s] || 0) + 1;
+          changed = true;
+        }
+      }
+      // the card's segments (the campaign she came from, the card's page), phone or computer apart
+      if (cstep) {
+        const camp = cleanCamp(m.camp);
+        if (camp && !row[2]) { row[2] = camp; changed = true; }
+        if (!row[4] && (m.dev === 'm' || m.dev === 'd')) { row[4] = m.dev; changed = true; }
+        const dev = row[4] || (m.dev === 'm' ? 'm' : 'd');
+        const segs = [];
+        if (row[2]) segs.push('c:' + row[2] + ':' + dev);
+        if (CARD_PAGE.test(String(m.path || ''))) segs.push('p:card:' + dev);
+        if (segs.length) {
+          const masks = row[3] = row[3] && typeof row[3] === 'object' ? row[3] : {};
+          d.k = d.k || {};
+          for (const g of segs) {
+            for (const s of cstep === 'visit' ? ['visit'] : ['visit', cstep]) {
+              if ((masks[g] || 0) & CBIT[s]) continue;
+              masks[g] = (masks[g] || 0) | CBIT[s];
+              const k = d.k[g] = d.k[g] || { h: {} };
+              k[s] = (k[s] || 0) + 1;
+              if (s === 'visit') k.h[hh] = (k.h[hh] || 0) + 1;
+              changed = true;
+            }
+          }
+        }
+      }
+      // her personal link: the card's steps with their time, under the token
+      if (cstep && m.tok && /^[A-Za-z0-9_-]{6,24}$/.test(m.tok)) {
+        d.t = d.t || {};
+        if (d.t[m.tok] || Object.keys(d.t).length < MAX_TOKENS) {
+          const x = d.t[m.tok] = d.t[m.tok] || {};
+          for (const s of cstep === 'visit' ? ['visit'] : ['visit', cstep]) if (!x[s]) { x[s] = at.getTime(); changed = true; }
+        }
       }
       if (!changed) return;
       const ok = etag ? await writeJSONIf(key, d, etag, { quiet: true }) : (await writeJSON(key, d, { quiet: true }), true);
       if (ok) return;
     }
   } catch (e) { console.error('site-funnel:', e.message); }
+}
+
+// the card's segments from a day on (Admin → Campanii): { days, segs: { <segment>: { visit, seen, ... } },
+// hours: { <segment>: { 'YYYY-MM-DD HH': visits } } }, at most 31 days
+async function segments(fromIso) {
+  const now = Date.now();
+  const from = Math.max(Date.parse(fromIso) || now, now - 30 * 864e5);
+  const list = [];
+  for (let t = from; ro(new Date(t)) <= ro(new Date(now)) && list.length < 32; t += 864e5) { const day = ro(new Date(t)); if (!list.includes(day)) list.push(day); }
+  if (!list.includes(ro(new Date(now)))) list.push(ro(new Date(now)));
+  const docs = await Promise.all(list.map((day) => readJSON(keyOf(day), null).catch(() => null)));
+  const segs = {}, hours = {}, tokens = {};
+  docs.forEach((doc, i) => {
+    Object.entries((doc && doc.t) || {}).forEach(([tok, x]) => { const o = tokens[tok] = tokens[tok] || {}; Object.keys(x).forEach((s) => { if (!o[s] || x[s] < o[s]) o[s] = x[s]; }); });
+    const k = (doc && doc.k) || {};
+    Object.keys(k).forEach((g) => {
+      const o = segs[g] = segs[g] || {};
+      CARD.forEach((s) => { if (k[g][s]) o[s] = (o[s] || 0) + k[g][s]; });
+      const h = hours[g] = hours[g] || {};
+      Object.keys(k[g].h || {}).forEach((hh) => { h[list[i] + ' ' + hh] = (h[list[i] + ' ' + hh] || 0) + k[g].h[hh]; });
+    });
+  });
+  return { days: list, steps: CARD, segs, hours, tokens };
 }
 
 // GET ?view=funnel&days=N: per day and in all, per source, the steps; plus the card orders (sent to pay / reserved / paid)
@@ -115,4 +195,4 @@ async function view(days) {
   return { ok: true, steps: STEPS, days: byDay, total };
 }
 
-module.exports = { STEPS, record, view, cleanSource, sourceOfTrack };
+module.exports = { STEPS, CARD, record, view, segments, cleanSource, cleanCamp, sourceOfTrack };

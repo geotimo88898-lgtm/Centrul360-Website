@@ -7,7 +7,10 @@
    it, to the card page. The name on the card is asked on WhatsApp after the payment (api/_lib/card-sarbatori.js).
    Back from the PayLink without paying (the order of this tab in sessionStorage, not paid): a small window, grown out of
    the button she paid with, asks once „Plata nu s-a finalizat?” (retry, card declined, no card at hand, did not understand
-   the page, the clinic, changed her mind); her answer goes on the order. The sums are made on the server, never here. */
+   the page, the clinic, changed her mind); her answer goes on the order. The sums are made on the server, never here.
+   The card's funnel (site-pulse.js, Admin → Campanii): 'cs-seen' the block came into view, 'cs-buy' / 'cs-res' a tap on
+   „Plătesc online” / „Rezerv în clinică” (even when the phone is still missing), 'pay' sent to myPOS, 'cs-sent' the
+   reservation made; the order carries her personal link's token (site-pulse.js C360P.tok), when she came with one. */
 (function () {
   'use strict';
   var TIERS = [[290, 500], [490, 1000], [990, 2500]];
@@ -132,6 +135,7 @@
   // both buttons of the block: online → the PayLink; clinic → reserved here, said in place
   function order(btn, clinic) {
     var b = blk(); if (!b || busy) return;
+    fev(clinic ? 'cs-res' : 'cs-buy');
     var inp = b.querySelector('[data-cs-phone]');
     var phone = mobile(inp.value), city = (b.querySelector('input[name="cst-city"]:checked') || {}).value || '';
     var tier = (window.CSC && window.CSC.current) || Number(btn.getAttribute('data-cs-tier')) || 990;
@@ -144,13 +148,14 @@
       if (!st.open) { stop(st.left <= 0 ? PMSG.sold_out : PMSG.closed); return; }
       if (!clinic && !(st.links && st.links[tier])) { stop(PMSG.no_link); return; }
       var body = { tier: tier, qty: 1, pay: clinic ? 'clinica' : 'online', forWho: 'eu', phone: phone, city: city, consent: true, website: '', page: location.href };
+      if (window.C360P && window.C360P.tok) body.ct = window.C360P.tok;
       if (window.C360_CONSENT === true) body.event_id = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
       var val = item(tier);
       px(clinic ? 'AddToCart' : 'InitiateCheckout', val); fev('start');
       return post(body).then(function (d) {
         if (!clinic && d.ok && d.link) { px('Lead', val, body.event_id); fev('pay'); put(sessionStorage, K_ORDER, d.id || ''); location.href = d.link; return; }
         if (clinic && d.ok && d.reservation) {
-          px('Lead', val, body.event_id); fev('lead');
+          px('Lead', val, body.event_id); fev('lead'); fev('cs-sent');
           if (typeof d.left === 'number' && window.CSC && window.CSC.state) window.CSC.set(Object.assign({}, window.CSC.state, { left: d.left }));
           busy = false; spin(btn, false); reserved(d.reservation); return;
         }
@@ -252,7 +257,7 @@
       if (k === 'clinic') {
         // the same order, now paid in the clinic (her phone is on it): reception calls her
         if (!(d && d.reservation)) throw new Error(d && d.error === 'sold_out' ? 'Cardurile s-au terminat între timp.' : 'Nu am putut trimite. Încearcă din nou.');
-        fev('lead');
+        fev('lead'); fev('cs-sent');
         retScreen('<span class="csb-tick">' + TICK + '</span><p class="csb-rd">' + reservedText(d.reservation) + '</p><button type="button" class="btn ghost" data-ret="close">Gata</button>', true);
         return;
       }
@@ -303,6 +308,19 @@
     else carry(Number(b.getAttribute('data-cs-tier')) || 0, clinic);
   });
   initBlock();
+  // the card's block came into view (the funnel's „Au văzut cardul”, Admin → Campanii): once; half of it, or (a block
+  // taller than the phone's screen) 40% of the screen filled by it; after the page's scripts (site-pulse.js comes later)
+  var watch = function () {
+    try {
+      var seen = [].slice.call(document.querySelectorAll('[data-cst], .cst-go, .cs-tiers'));
+      if (!seen.length || !('IntersectionObserver' in window)) return;
+      var io = new IntersectionObserver(function (es) {
+        if (es.some(function (x) { return x.isIntersecting && (x.intersectionRatio >= 0.5 || x.intersectionRect.height >= innerHeight * 0.4); })) { fev('cs-seen'); io.disconnect(); }
+      }, { threshold: [0, 0.1, 0.25, 0.5] });
+      seen.forEach(function (el) { io.observe(el); });
+    } catch (e) {}
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
   // a link with #cumpara: to her phone in the card block (from a post or a message)
   if (/#cumpara\b/.test(location.hash)) addEventListener('load', function () { setTimeout(function () { carry(0); }, 300); });
   load();

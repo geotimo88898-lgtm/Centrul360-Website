@@ -50,9 +50,12 @@ async function hit(req, res) {
   if (!sid || /^\/(api|portal|login|creative|fise)\b/.test(path)) { res.status(204).end(); return; }
   // the funnel (api/_lib/site-funnel.js): a step of the visit (b.e), or the visit itself; the preview (/v2/) on its own line
   const F = require('./_lib/site-funnel');
-  const fsrc = /^\/v2(\/|$)/.test(path) ? 'preview' : b.s;
-  if (b.e) { await F.record(sid, fsrc, String(b.e).slice(0, 12)); res.status(204).end(); return; }
-  if (!beat) await F.record(sid, fsrc, 'visit');
+  const preview = /^\/v2(\/|$)/.test(path);
+  const fsrc = preview ? 'preview' : b.s;
+  // the card's campaign funnel (Admin → Campanii): the link's utm_campaign, the page, phone or computer; never the preview
+  const fmeta = preview ? null : { camp: clip(b.c, 40), path, dev: b.d === 'm' ? 'm' : b.d === 'd' ? 'd' : '', tok: /^[A-Za-z0-9_-]{6,24}$/.test(String(b.k || '')) ? String(b.k) : '' };
+  if (b.e) { await F.record(sid, fsrc, String(b.e).slice(0, 12), 0, fmeta); res.status(204).end(); return; }
+  if (!beat) await F.record(sid, fsrc, 'visit', 0, fmeta);
   let ref = clip(b.r, 80).toLowerCase().replace(/^www\./, '');
   if (/centrul360\.com$/.test(ref)) ref = '';
   const utm = clip(b.u, 40).toLowerCase().replace(/[^\w.-]/g, '');

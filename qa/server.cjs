@@ -27,7 +27,13 @@ const blob = {
   },
   async head(p) { const f = fileOf(p); if (!fs.existsSync(f)) throw new BlobNotFoundError(); const buf = fs.readFileSync(f); return { size: buf.length, etag: etagOf(buf), pathname: p }; },
   async del(p) { [].concat(p).forEach((x) => { try { fs.unlinkSync(fileOf(x)); } catch (e) {} }); },
-  async list() { return { blobs: [], hasMore: false }; },
+  // the files under a prefix (the campaigns' marks: fc360/ev/..., cardblast/ev/...), with the file's time as uploadedAt
+  async list(o) {
+    const pre = (o && o.prefix) || '', enc = pre.replace(/\//g, '__');
+    if (!pre) return { blobs: [], hasMore: false };
+    const blobs = fs.readdirSync(DATA).filter((n) => n.startsWith(enc)).map((n) => { const st = fs.statSync(path.join(DATA, n)); return { pathname: pre + n.slice(enc.length), size: st.size, uploadedAt: st.mtime, url: 'http://blob/' + n }; });
+    return { blobs, hasMore: false };
+  },
   BlobNotFoundError, BlobPreconditionFailedError,
 };
 const origLoad = Module._load;

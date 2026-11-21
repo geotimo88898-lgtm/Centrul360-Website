@@ -80,7 +80,7 @@
     integrari: P('Integrări', [A], { tab: 'integrari' }),
     fluxuri: P('Automatizări', [A], { tab: 'fluxuri' }),
     reclame: P('Reclame', [A], { tab: 'reclame' }),
-    transformare: P('Fast Cash', [A], { tab: 'transformare' }),
+    transformare: P('Campanii', [A], { tab: 'transformare' }),
     leadfilter: P('Lead filter', [A], { tab: 'leadfilter' }),
     continut: P('Content', [A], { tab: 'continut' }),
   };
