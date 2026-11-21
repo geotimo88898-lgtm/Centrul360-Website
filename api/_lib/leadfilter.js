@@ -45,7 +45,18 @@ const save = (d) => writeJSON(KEY, Object.assign(d, { updatedAt: nowISO() }));
 
 // ---------------------------------------------------------------- the offer
 function zonesOf(pk, city) { return ((pk && pk.zones) || []).filter((z) => !z.cities || !z.cities.length || z.cities.some((c) => fold(c) === fold(city) || fold(c) === fold(TAG[city]) || fold(c) === fold(CTAG[city]))); }
-function tiersOf(pk) { return (pk && Array.isArray(pk.tiers) && pk.tiers.length ? pk.tiers : TIERS).map(String); }
+// a zone can have its own four (21.11, gușă: the proven 190 lei first HIFU session in place of the 390 first step):
+// zones[].tiers, else the ladder's own, else 14.900 / 4.990 / 990 / 390
+function tiersOf(pk, zone) {
+  const z = zone && ((pk && pk.zones) || []).find((x) => x.key === zone);
+  if (z && Array.isArray(z.tiers) && z.tiers.length) return z.tiers.map(String);
+  return (pk && Array.isArray(pk.tiers) && pk.tiers.length ? pk.tiers : TIERS).map(String);
+}
+// every package a zone's answers may name: its four now, the ones its older forms still show, the ladder's own
+function knownTiers(pk, zone) {
+  const all = tiersOf(pk, zone).concat(Object.keys(((pk && pk.packages) || {})[zone] || {}), tiersOf(pk));
+  return all.map(String).filter((t, i) => all.map(String).indexOf(t) === i);
+}
 function packOf(pk, zone, tier) { return (((pk && pk.packages) || {})[zone] || {})[String(tier)] || null; }
 // what the form shows for a package: its own form label, else „990 lei · Mini pachet”
 function packLabel(p, tier) { return clip((p && p.formLabel) || (lei((p && p.price) || tier) + ' lei · ' + ((p && p.name) || '')), 80); }
@@ -75,8 +86,9 @@ const picPath = (zone, tier, city, v) => 'leadfilter/' + (v > 1 ? 'v' + v + '/' 
 // ---------------------------------------------------------------- the forms
 // The form input for api/_lib/fb-form-create.js createForm (its own checks: 3 screening questions, the clinic's
 // WhatsApp at the end) for one clinic and zone; zone 'general' asks the zone instead of the problem.
-function formInput(pk, city, zone) {
-  const tiers = tiersOf(pk);
+function formInput(pk, city, zone, opts) {
+  const o = opts || {};
+  const tiers = tiersOf(pk, zone === 'general' ? '' : zone);
   const when = ((pk && pk.timeline) || []).map((t) => clip(t.label, 80)).filter(Boolean);
   const z = zone === 'general' ? null : zonesOf(pk, city).find((x) => x.key === zone);
   if (zone !== 'general' && !z) return { error: 'zona ' + zone + ' nu e la ' + city };
@@ -87,13 +99,14 @@ function formInput(pk, city, zone) {
   const pz = z ? z.key : ((pk.packages || {}).general ? 'general' : (zonesOf(pk, city)[0] || {}).key);
   const pack = { label: Q.pack, options: tiers.map((t) => packLabel(packOf(pk, pz, t), t)) };
   return {
-    name: 'Lead filter · ' + (z ? z.label : 'general') + ' · ' + city,
+    name: o.name || ('Lead filter · ' + (z ? z.label : 'general') + ' · ' + city),
     location: city,
     fields: ['FULL_NAME', 'PHONE'],
     questions: [first, { label: Q.when, options: when }, pack],
     headline: clip(z ? (z.headline || z.label) : 'Alege ce vrei să schimbi', 60),
     intro: z && z.intro ? z.intro : null,
-    quality: true,
+    // a door form (o.volume): no review screen, more of them finish it
+    quality: !o.volume,
     ending: { title: 'Mulțumim! 🤍', body: 'Am primit alegerea ta. Te sunăm în cel mai scurt timp ca să-ți găsim o oră pentru consultație, iar pe WhatsApp îți trimitem acum tot ce primești.', button: 'Scrie-ne pe WhatsApp' },
   };
 }
@@ -116,7 +129,7 @@ async function dryRun() {
   // which WhatsApp template each zone × package × clinic would send now (the newest approved version, else the old one)
   const tpls = (await WT.load()).templates;
   const sends = [];
-  for (const city of CITIES) for (const z of zonesOf(d.packages, city)) for (const tier of tiersOf(d.packages)) {
+  for (const city of CITIES) for (const z of zonesOf(d.packages, city)) for (const tier of tiersOf(d.packages, z.key)) {
     const t = pickTpl(tpls, z.key, tier, city);
     const nv = tplFor(tpls, tplLabel(z.key, tier, city, VER));
     sends.push({ city, zone: z.key, tier, sends: t ? t.label : '', status: t ? WT.overall(t) : 'lipsește', newest: nv ? WT.overall(nv) : 'lipsește' });
@@ -134,18 +147,20 @@ async function makeForms(only) {
     if (only && only.city && only.city !== city) continue;
     for (const zone of zonesOf(d.packages, city).map((z) => z.key).concat('general')) {
       if (only && only.zone && only.zone !== zone) continue;
-      if ((d.forms[city] || {})[zone]) { made.push({ city, zone, id: d.forms[city][zone], already: true }); continue; }
-      const input = formInput(d.packages, city, zone);
+      // a second form of the same zone (only.key, e.g. the 190 lei door): its own key in forms, its own name
+      const fk = (only && only.key) || zone;
+      if ((d.forms[city] || {})[fk]) { made.push({ city, zone, key: fk, id: d.forms[city][fk], already: true }); continue; }
+      const input = formInput(d.packages, city, zone, only && only.key ? { name: clip(String(only.name || ('Lead filter · ' + fk + ' · ' + city)).replace(/\{city\}/g, city), 100), volume: !!only.volume } : null);
       if (input.error) { made.push({ city, zone, error: input.error }); continue; }
       const r = await C.createForm(store, input);
       if (r.error) { made.push({ city, zone, error: r.error }); continue; }
       const doc = await readJSON('data/fb-forms.json', {});
       doc.forms = doc.forms || {};
-      doc.forms[r.form.id] = Object.assign(doc.forms[r.form.id] || {}, { kind: 'leadfilter', zone, location: city });
+      doc.forms[r.form.id] = Object.assign(doc.forms[r.form.id] || {}, { kind: 'leadfilter', zone, location: city }, fk !== zone ? { variant: fk } : {});
       await writeJSON('data/fb-forms.json', doc);
-      d.forms[city] = Object.assign({}, d.forms[city], { [zone]: r.form.id });
+      d.forms[city] = Object.assign({}, d.forms[city], { [fk]: r.form.id });
       await save(d);
-      made.push({ city, zone, id: r.form.id });
+      made.push({ city, zone, key: fk, id: r.form.id });
     }
   }
   return { ok: true, forms: made };
@@ -172,9 +187,11 @@ function parse(pk, form, pairs) {
   const ka = find(Q.pack);
   if (ka) {
     const pz = out.zone || 'general';
-    const tier = tiersOf(pk).find((t) => fold(packLabel(packOf(pk, pz, t), t)) === fold(ka.a) || fold(packLabel(packOf(pk, out.zone, t), t)) === fold(ka.a))
-      // a label changed since the form was made: the price in the answer says the tier
-      || tiersOf(pk).find((t) => new RegExp('(^|\\D)' + lei(t).replace('.', '\\.?') + '(\\D|$)').test(ka.a));
+    const known = knownTiers(pk, pz);
+    const tier = known.find((t) => fold(packLabel(packOf(pk, pz, t), t)) === fold(ka.a) || fold(packLabel(packOf(pk, out.zone, t), t)) === fold(ka.a))
+      // a label changed since the form was made: the price at the start of the answer says the tier
+      || known.find((t) => new RegExp('^\\D*' + lei(t).replace('.', '\\.?') + '(\\D|$)').test(ka.a))
+      || known.find((t) => new RegExp('(^|\\D)' + lei(t).replace('.', '\\.?') + '(\\D|$)').test(ka.a));
     out.tier = tier || '';
     const p = tier && (packOf(pk, out.zone, tier) || packOf(pk, 'general', tier));
     out.packName = p ? clip(p.name, 60) : clip(ka.a, 60);
@@ -237,7 +254,17 @@ async function sendFirst(lead, x, city) {
   const W = require('./workflows');
   const wa = { tpls: (await WT.load()).templates, cfg: await WA.loadConfig() };
   const t = pickTpl(wa.tpls, x.zone, x.tier, city);
-  const once = (text) => ((lead.lf && lead.lf.tried) ? note(lead.id, '', null) : note(lead.id, text, { tried: true }));
+  // the first time it can't leave (a new package's template still waiting for Meta, WhatsApp down): a note, and her
+  // clinic's desk is told to call her; it's tried again for 6 hours, never with another package's template
+  const once = async (text) => {
+    if (lead.lf && lead.lf.tried) return note(lead.id, '', null);
+    await note(lead.id, text, { tried: true });
+    if (/test lead/i.test(String(lead.name || ''))) return;
+    const N = require('./notify');
+    const ids = await N.deskIds({ readJSON }, city).catch(() => []);
+    await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'lead', tone: 'warn', go: 'pipeline', tag: 'lf-nomsg-' + lead.id,
+      title: 'Sun-o: ' + (lead.name || 'lead nou') + ' · ' + lei(x.tier) + ' lei', text: summary(x) + ' · ' + (city || '') + '. Mesajul pe WhatsApp n-a plecat încă: sun-o tu.' }).catch((e) => console.error('lf notify:', e.message));
+  };
   if (!t) return once('Mesajul lead filter n-a plecat: lipsește șablonul ' + tplLabel(x.zone, x.tier, city, VER) + '.');
   const r = await W.sendOnce('lf|' + lead.id + '|' + t.id, () => W.sendTemplate(wa, t.id, city, lead.phone, varsFor(lead, x)));
   if (r.dup) return;
@@ -356,7 +383,9 @@ async function templates(b) {
   };
   for (const city of CITIES) {
     for (const z of zonesOf(d.packages, city)) {
-      for (const tier of tiersOf(d.packages)) {
+      for (const tier of tiersOf(d.packages, z.key)) {
+        // { only: { zone, tier } }: just that package's templates (a new one, the approved ones untouched)
+        if (b && b.only && ((b.only.zone && b.only.zone !== z.key) || (b.only.tier && String(b.only.tier) !== tier))) continue;
         const m = msgFor(d, z.key, tier, city);
         if (!m) { out.push({ label: tplLabel(z.key, tier, city, v), error: 'fără mesaj' }); continue; }
         const pic = picPath(z.key, tier, city, v);
@@ -365,7 +394,7 @@ async function templates(b) {
       }
     }
     // the general form's leads get the message of the zone they picked (same templates); the follow-ups
-    if (v === 1 || (b && b.follow)) for (const f of FOLLOW) { const m = followFor(d, f.msg, city); if (m) await upsert(followLabel(f.k, city), city, m, ''); }
+    if (!(b && b.only) && (v === 1 || (b && b.follow))) for (const f of FOLLOW) { const m = followFor(d, f.msg, city); if (m) await upsert(followLabel(f.k, city), city, m, ''); }
   }
   return { ok: true, templates: out };
 }
@@ -451,4 +480,4 @@ async function testForms() {
 }
 async function tests() { return { ok: true, results: await readJSON(TESTS_KEY, []) }; }
 
-module.exports = { testResult, testForms, tests, KEY, TIERS, HOT, Q, load, save, zonesOf, formInput, dryRun, makeForms, parse, summary, afterLead, followups, saveContent, saveImages, templates, kpi, tplLabel, msgFor };
+module.exports = { testResult, testForms, tests, KEY, TIERS, HOT, Q, load, save, zonesOf, tiersOf, knownTiers, formInput, dryRun, makeForms, parse, summary, afterLead, followups, saveContent, saveImages, templates, kpi, tplLabel, msgFor };
