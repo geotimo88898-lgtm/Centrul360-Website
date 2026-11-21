@@ -180,7 +180,10 @@
     });
   }
   var hhmm = function (iso) { var t = Date.parse(iso); return t ? new Date(t).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' }) : ''; };
-  function retScreen(html) { root.querySelector('.csb-ret').innerHTML = '<div class="csb-rs">' + html + '</div>'; }
+  function retScreen(html, done) {
+    root.querySelector('#csb-t').innerHTML = done ? 'Cardul de <em>Sărbători</em>' : 'Plata nu s-a <em>finalizat?</em>';
+    root.querySelector('.csb-ret').innerHTML = '<div class="csb-rs">' + html + '</div>';
+  }
   var opt = function (k, text) { return '<button type="button" class="csb-o" data-ret="' + k + '"><span>' + text + '</span>' + CHEV + '</button>'; };
   var again = function () { return '<button type="button" class="btn book" data-ret="retry">Încerc din nou (' + lei(ret.amount) + ')' + ARROW + '</button>'; };
   function ask() {
@@ -205,7 +208,7 @@
     if (k !== 'no') btn.insertAdjacentHTML('afterbegin', SPIN);
     var err = root.querySelector('.csb-ret .csb-err');
     post({ action: 'answer', id: ret.id, reason: k }).then(function (d) {
-      if (d && d.paid) { retScreen('<span class="csb-tick">' + TICK + '</span><h3>Plata a ajuns.</h3><p class="csb-rl">Cardul îți vine pe WhatsApp în câteva minute.</p><button type="button" class="btn ghost" data-ret="close">Gata</button>'); return; }
+      if (d && d.paid) { retScreen('<span class="csb-tick">' + TICK + '</span><h3>Plata a ajuns.</h3><p class="csb-rl">Cardul îți vine pe WhatsApp în câteva minute.</p><button type="button" class="btn ghost" data-ret="close">Gata</button>', true); return; }
       if (k === 'retry') {
         if (d && d.link) { fev('pay'); location.href = d.link; return; }
         throw new Error(d && d.error === 'sold_out' ? 'Cardurile s-au terminat între timp.' : d && d.error === 'closed' ? 'Oferta s-a încheiat.' : 'Plata online nu merge acum. Îl poți rezerva și plăti în clinică.');
@@ -214,11 +217,11 @@
         // the same order, now paid in the clinic (her phone is on it): reception calls her
         if (!(d && d.reservation)) throw new Error(d && d.error === 'sold_out' ? 'Cardurile s-au terminat între timp.' : 'Nu am putut trimite. Încearcă din nou.');
         fev('lead');
-        retScreen('<span class="csb-tick">' + TICK + '</span><p class="csb-rd">' + reservedText(d.reservation) + '</p><button type="button" class="btn ghost" data-ret="close">Gata</button>');
+        retScreen('<span class="csb-tick">' + TICK + '</span><p class="csb-rd">' + reservedText(d.reservation) + '</p><button type="button" class="btn ghost" data-ret="close">Gata</button>', true);
         return;
       }
       if (d && d.error) throw new Error('Nu am putut trimite. Încearcă din nou.');
-      if (k === 'no') { retScreen('<h3>Am înțeles. Mulțumim!</h3><p class="csb-rl">Dacă te răzgândești, cardul e aici până pe 24 decembrie, cât mai sunt carduri.</p><button type="button" class="btn ghost" data-ret="close">Închide</button>'); return; }
+      if (k === 'no') { retScreen('<h3>Am înțeles. Mulțumim!</h3><p class="csb-rl">Dacă te răzgândești, cardul e aici până pe 24 decembrie, cât mai sunt carduri.</p><button type="button" class="btn ghost" data-ret="close">Închide</button>', true); return; }
       var h = HELP[k] || HELP.nocard;
       retScreen('<h3>' + h[0] + '</h3><p class="csb-rl">' + h[1] + '</p><div class="csb-ch">' + again() + opt('clinic', 'Rezerv și plătesc în clinică') + '</div><p class="csb-err" role="alert"></p>');
     }).catch(function (x) {

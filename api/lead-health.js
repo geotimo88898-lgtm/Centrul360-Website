@@ -338,6 +338,15 @@ module.exports = async (req, res) => {
     const C = require('./_lib/card-sarbatori');
     // ?cardpay=templates: its WhatsApp templates made and sent to Meta now (the clock does it too, every 6 hours until approved)
     if (req.query.cardpay === 'templates') { res.status(200).json(await C.ensureTemplates().catch((e) => ({ error: e.message }))); return; }
+    // ?cardpay=abandon: the orders started on the site and what became of them (the trail, the recovery WhatsApp, her
+    // answers, the name asked after the payment, the payments waiting in „De verificat”): counts only, never a name or a phone
+    if (req.query.cardpay === 'abandon') {
+      const [list, checks, T] = await Promise.all([readJSON(C.KEY, []), readJSON(C.CHECK, []).catch(() => []), C.templates().catch(() => ({ t: {} }))]);
+      res.status(200).json(Object.assign(C.abandonStats(list), {
+        checks: { open: checks.filter((c) => c.state === 'open').length, pickedByDesk: checks.filter((c) => c.state === 'done' && c.by && c.by !== 'auto').length, resolvedAuto: checks.filter((c) => c.by === 'auto').length, noOrder: checks.filter((c) => c.state === 'none').length },
+        templates: Object.fromEntries(Object.entries(T.t || {}).map(([k, t]) => [k, t ? WT.overall(t) : 'LIPSĂ'])) }));
+      return;
+    }
     const s = await C.scanMypos(Number(req.query.days) > 0 ? Math.min(60, Number(req.query.days)) : 14, { events: true }).catch((e) => ({ ok: false, error: e.code || e.message }));
     const list = await readJSON(C.KEY, []);
     const T = await C.templates().catch(() => ({ t: {} }));

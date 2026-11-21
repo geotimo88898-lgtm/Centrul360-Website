@@ -49,21 +49,74 @@
       stat('card', '', 'Credit folosit', lei(t.used || 0), 'din ' + lei(t.credit || 0) + ' credit dat') +
       stat('chat', tplOk ? 'is-good' : 'is-warn', 'Mesaje WhatsApp', tplOk ? 'Automate' : 'Manual', tplOk ? 'șabloanele sunt aprobate de Meta' : 'șabloanele așteaptă aprobarea Meta') +
       '</div>' +
-      '<div data-cd-orders></div>' +
+      '<div data-cd-checks></div><div data-cd-orders></div>' +
       '<section class="k-card cd-list"><div class="cd-bar"><label class="k-search">' + icon('search') + '<input data-cd-q type="search" placeholder="Caută după cod sau nume…" autocomplete="off" value="' + esc(S.q) + '"></label>' +
       '<div class="k-chips" data-cd-chips></div></div><div data-cd-rows></div></section>' +
       '<p class="k-muted cd-foot">Folosirea creditului nu e o încasare nouă: banii au intrat o dată, la plata cardului. Cardul se folosește la prețul de listă, nu peste ofertele reduse. Valabil până pe 30.06.2027.</p>';
     paintOrders(); paintList();
   }
+  // the trail of an order, one short line each (api/_lib/card-sarbatori.js mark): what happened, so nobody guesses
+  const REASON = { retry: 'încearcă din nou', declined: 'cardul a fost refuzat', nocard: 'n-avea cardul la ea', confusing: 'n-a înțeles pagina de plată', clinic: 'preferă să plătească în clinică', no: 's-a răzgândit' };
+  const BTN = { pay: '„Finalizez plata” (i-a plecat linkul)', clinic: '„Plătesc în clinică”', no: '„Nu mai vreau”', text: 'a scris (vezi Mesaje)' };
+  const NAMEFOR = { me: 'e pentru ea', gift: 'e cadou' };
+  function trailLine(e, o) {
+    const n = e.note || '', failed = /^netrimis/.test(n), why = n.replace(/^netrimis:?\s*/, '');
+    switch (e.ev) {
+      case 'created': return o && o.pay === 'clinica' && !o.converted ? 'a rezervat pe site, plătește în clinică' : '';
+      case 'to_paylink': return n === 'whatsapp' ? 'a primit linkul de plată pe WhatsApp' : 'a intrat pe pagina de plată';
+      case 'returned': return 's-a întors pe site fără plată';
+      case 'reason': return 's-a întors: ' + (REASON[n] || n);
+      case 'expired': return 'au trecut 2 ore: cardul nu mai e ținut';
+      case 'wa1': return failed ? 'WhatsApp neplecat' + (why ? ' (' + why + ')' : '') : 'WhatsApp trimis: plata nu s-a finalizat';
+      case 'wa2': return failed ? 'al doilea WhatsApp neplecat' + (why ? ' (' + why + ')' : '') : 'al doilea WhatsApp trimis (mai sunt carduri)';
+      case 'replied': return n === 'text' ? 'a scris pe WhatsApp (vezi Mesaje)' : 'a răspuns pe WhatsApp: ' + (BTN[n] || n);
+      case 'converted': return 'trecută pe plata în clinică' + (n === 'whatsapp' ? ', din WhatsApp' : n === 'portal' ? ', din portal' : ', pe site');
+      case 'check': return 'o plată cu aceeași sumă: de verificat în myPOS';
+      case 'paid': return n === 'auto' ? 'plătită (găsită în myPOS)' : 'plată confirmată în portal';
+      case 'ask_name': return failed ? 'întrebarea numelui n-a plecat: cardul a plecat fără nume' : 'întrebată pe WhatsApp pe ce nume să fie cardul';
+      case 'name_for': return 'a răspuns: ' + (NAMEFOR[n] || n) + ', așteptăm numele';
+      case 'named': return n === 'none' ? 'n-a răspuns în 6 ore: cardul pleacă fără nume' : 'a scris numele de pe card';
+      case 'renamed': return 'numele de pe card schimbat' + (n ? ' ' + n : '');
+      case 'card_sent': return /^ok/.test(n) ? 'cardul i-a plecat pe WhatsApp' + (/fără nume/.test(n) ? ', fără nume' : '') : 'cardul n-a plecat pe WhatsApp: de trimis manual';
+      case 'cancelled': return n === 'ea' ? 'a renunțat' : 'anulată';
+      case 'rez_msg': return failed ? 'WhatsApp „ți-am rezervat cardul” neplecat' + (why ? ' (' + why + ')' : '') : 'WhatsApp trimis: ți-am rezervat cardul';
+      default: return '';
+    }
+  }
+  const hm = (iso, ref) => { const t = Date.parse(iso); if (!Number.isFinite(t)) return ''; const d = (x) => new Date(x).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' });
+    return (ref && d(t) === d(Date.parse(ref)) ? '' : new Date(t).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', day: 'numeric', month: 'short' }) + ', ') + new Date(t).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' }); };
+  const trailHtml = (o) => { const rows = (o.trail || []).map((e) => [e, trailLine(e, o)]).filter((x) => x[1]); return rows.length ? '<ol class="cd-trail">' + rows.map(([e, t]) => '<li><time>' + esc(hm(e.at, o.created)) + '</time>' + esc(t) + '</li>').join('') + '</ol>' : ''; };
+  // „De verificat”: a payment of one sum that could be two orders' (the desk looks at who paid in myPOS, then taps hers)
+  function paintChecks() {
+    const box = S.box.querySelector('[data-cd-checks]'), list = S.d.checks || [];
+    if (!box) return;
+    if (!list.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<section class="k-card cd-orders cd-checks"><div class="k-card-head"><h3>De verificat în myPOS</h3><span class="k-muted">' + list.length + '</span></div>' +
+      list.map((c) => '<div class="cd-check"><p class="cd-check-h">' + icon('alert') + '<span>Plată online de <b>' + lei(c.amount) + '</b>, ' + esc(when(c.at)) + '. Se potrivește cu ' + c.cands.length + ' comenzi: uită-te în myPOS cine a plătit și alege-o pe a ei.</span></p>' +
+        '<div class="k-list">' + c.cands.map((o) => '<div class="k-row cd-order"><div class="k-row-main"><div class="k-row-title">' + esc(o.name || 'Fără nume') + ' · telefon •••' + esc(o.last3) + '</div>' +
+          '<div class="k-row-sub">comandată ' + esc(when(o.created)) + ' · ' + esc(o.city) + ' · ' + o.tier + ' lei</div></div>' +
+          '<div class="k-row-end"><button type="button" class="k-btn is-primary is-sm" data-cd-pick="' + esc(c.id) + '" data-id="' + esc(o.id) + '">' + icon('check') + 'E a ei</button></div></div>').join('') + '</div></div>').join('') + '</section>';
+  }
   function paintOrders() {
+    paintChecks();
     const box = S.box.querySelector('[data-cd-orders]'), list = S.d.orders || [];
     if (!list.length) { box.innerHTML = ''; return; }
-    box.innerHTML = '<section class="k-card cd-orders"><div class="k-card-head"><h3>De confirmat</h3><span class="k-muted">' + list.length + '</span></div><div class="k-list">' +
-      list.map((o) => '<div class="k-row cd-order"><div class="k-row-main"><div class="k-row-title">' + esc(o.name || 'Fără nume') + ' · ' + o.qty + ' × ' + o.tier + ' lei</div>' +
-        '<div class="k-row-sub">' + (o.pay === 'online' ? 'La plata online (myPOS) · se confirmă singură când apare plata' : 'Plătește în clinică') + ' · ' + esc(o.city) + ' · ' + esc(when(o.created)) +
-        (o.names.some(Boolean) ? ' · pe numele: ' + esc(o.names.map((n) => n || 'ea').join(', ')) : '') + ' · <a href="' + K.tel(o.phone) + '">' + esc(o.phone) + '</a></div></div>' +
-        '<div class="k-row-end">' + tag(o.status) + '<button type="button" class="k-btn is-primary is-sm" data-cd-confirm="' + esc(o.id) + '" data-via="' + (o.pay === 'online' ? 'online' : 'clinica') + '">' + icon('check') + 'Confirmă plata (' + lei(o.amount) + ')</button>' +
-        '<button type="button" class="k-btn is-ghost is-sm" data-cd-cancel="' + esc(o.id) + '">Anulează</button></div></div>').join('') + '</div></section>';
+    const now = Date.now();
+    box.innerHTML = '<section class="k-card cd-orders"><div class="k-card-head"><h3>De confirmat</h3><span class="k-muted">' + list.filter((o) => !o.byHer).length + '</span></div><div class="k-list">' +
+      list.map((o) => {
+        const unpaid = o.status === 'asteptare' && o.pay === 'online';
+        const over = unpaid && o.heldUntil && Date.parse(o.heldUntil) < now;
+        const what = o.byHer ? 'A renunțat la plata online' : unpaid ? 'A început plata online · neplătită' + (over ? '' : ' · cardul e ținut până la ' + esc(hm(o.heldUntil, o.created))) :
+          o.pay === 'online' ? 'La plata online (myPOS) · se confirmă singură când apare plata' : o.converted ? 'Plătește în clinică · a început online' : 'Plătește în clinică';
+        const stateTag = o.byHer ? '<span class="k-tag is-bad">A renunțat</span>' : unpaid ? '<span class="k-tag is-warn">Neplătită</span>' : tag(o.status);
+        return '<div class="k-row cd-order' + (o.byHer ? ' is-off' : '') + '"><div class="k-row-main"><div class="k-row-title">' + esc(o.name || 'Fără nume') + ' · ' + o.qty + ' × ' + o.tier + ' lei</div>' +
+          '<div class="k-row-sub">' + what + ' · ' + esc(o.city) + ' · ' + esc(when(o.created)) +
+          (o.names.some(Boolean) ? ' · pe numele: ' + esc(o.names.map((n) => n || 'ea').join(', ')) : '') + ' · <a href="' + K.tel(o.phone) + '">' + esc(o.phone) + '</a></div>' +
+          trailHtml(o) + (over && !o.byHer ? '<p class="cd-call">' + icon('phone') + 'Sun-o: plata n-a venit.</p>' : '') + '</div>' +
+          '<div class="k-row-end">' + stateTag + (o.byHer ? '' : '<button type="button" class="k-btn is-primary is-sm" data-cd-confirm="' + esc(o.id) + '" data-via="' + (o.pay === 'online' ? 'online' : 'clinica') + '">' + icon('check') +
+            (o.pay === 'online' ? 'Confirmă plata (doar dacă e în myPOS)' : 'Confirmă plata (' + lei(o.amount) + ')') + '</button>' +
+          '<button type="button" class="k-btn is-ghost is-sm" data-cd-cancel="' + esc(o.id) + '">Anulează</button>') + '</div></div>';
+      }).join('') + '</div></section>';
   }
   function paintList() {
     const box = S.box && S.box.querySelector('[data-cd-rows]');
@@ -83,7 +136,7 @@
         '<span class="k-row-sub">' + (c.recipient && c.recipient !== c.buyer ? 'Cumpărat de ' + esc(c.buyer) + ' · ' : '') + esc(c.phone) + ' · ' + esc(c.city) + ' · ' + c.tier + ' lei, ' + (c.paidVia === 'online' ? 'online' : 'în clinică') + ' · ' + esc(dayOf(c.paidAt)) +
         (c.gift ? ' · ' + (c.gift.state === 'open' ? 'Cadou: ' : 'Cadou folosit: ') + esc(c.gift.what) : '') + (c.club ? ' · Clubul 360' : '') + '</span>' +
         '<span class="cd-bar2" aria-hidden="true"><i style="width:' + pct + '%"></i></span></span>' +
-        '<span class="k-row-end"><span class="cd-left"><b>' + lei(c.left) + '</b><small>din ' + lei(c.value) + '</small></span>' + tag(c.state) + (c.sent && !c.sent.how ? '<span class="k-tag is-warn">De trimis manual</span>' : '') + '</span></button>';
+        '<span class="k-row-end"><span class="cd-left"><b>' + lei(c.left) + '</b><small>din ' + lei(c.value) + '</small></span>' + tag(c.state) + (c.naming === 'asked' || c.naming === 'typing' ? '<span class="k-tag is-info">Așteaptă numele</span>' : c.sent && !c.sent.how ? '<span class="k-tag is-warn">De trimis manual</span>' : '') + '</span></button>';
     }).join('') + '</div>';
   }
 
@@ -99,8 +152,15 @@
       const o = (S.d.orders || []).find((x) => x.id === b.dataset.cdConfirm);
       if (!o) return;
       if (b.dataset.via !== 'online') { payDrawer(o, b); return; }
-      if (!(await K.ui().confirm({ title: 'Confirmi plata?', message: o.name + ': ' + o.qty + ' × ' + o.tier + ' lei = ' + lei(o.amount) + ', plătit online (verificat în myPOS). Cardul se emite, pleacă pe WhatsApp și plata intră în Încasări.', confirmText: 'Confirmă plata' }))) return;
+      if (!(await K.ui().confirm({ title: 'Ai văzut plata în myPOS?', message: 'Confirmă doar dacă vezi în myPOS plata de ' + lei(o.amount) + ' de la ' + (o.name || 'ea') + ' (•••' + String(o.phone || '').replace(/\D/g, '').slice(-3) + '). Cardul se emite, pleacă pe WhatsApp și plata intră în Încasări.', confirmText: 'Am văzut plata, confirmă' }))) return;
       await K.busy(b, () => doConfirm(o, 'online', 'card'));
+      return;
+    }
+    if (b.dataset.cdPick) {
+      const c = (S.d.checks || []).find((x) => x.id === b.dataset.cdPick), o = c && c.cands.find((x) => x.id === b.dataset.id);
+      if (!o) return;
+      if (!(await K.ui().confirm({ title: 'E plata ei?', message: lei(c.amount) + ' de la ' + (o.name || 'comanda') + ' (•••' + o.last3 + ', comandată ' + when(o.created) + '). Cardul se emite, pleacă pe WhatsApp și plata intră în Încasări.', confirmText: 'Da, e a ei' }))) return;
+      await K.busy(b, async () => { try { await api({ action: 'pick', check: c.id, id: o.id }); K.ui().toast('Plata e a ei: cardul e emis.', 'success'); await load(true); } catch (err) { K.ui().toast(K.errText(err), 'error'); } });
       return;
     }
     if (b.dataset.cdCancel) {
@@ -199,7 +259,8 @@
     const tr = S.d.treatments || [];
     const live = c.claims.filter((x) => !x.undone);
     const lastId = live.length ? live[live.length - 1].id : '';
-    const sentLine = c.sent && c.sent.how ? '<p class="cd-sent ok">' + icon('check') + 'Trimis pe WhatsApp, ' + esc(when(c.sent.at)) + '</p>'
+    const sentLine = c.naming === 'asked' || c.naming === 'typing' ? '<p class="cd-sent">' + icon('chat') + '<span><b>Așteaptă numele.</b> A primit pe WhatsApp întrebarea „pe ce nume să fie cardul?”. Dacă nu răspunde în 6 ore, cardul pleacă fără nume; îl poți scrie tu mai jos.</span></p>'
+      : c.sent && c.sent.how ? '<p class="cd-sent ok">' + icon('check') + 'Trimis pe WhatsApp, ' + esc(when(c.sent.at)) + '</p>'
       : '<p class="cd-sent">' + icon('alert') + '<span><b>De trimis manual.</b> ' + esc((c.sent && c.sent.error) || 'Nu a plecat încă.') + '</span></p>';
     const msg = 'Bună, ' + (c.buyer || '').split(' ')[0] + '! Cardul tău de Sărbători Centrul360: credit ' + lei(c.value) + ', cod ' + c.code + ', valabil până pe 30.06.2027.' + (c.gift ? ' Cadou: ' + c.gift.what + '.' : '') + (c.club ? ' Locul tău în Clubul 360: https://www.centrul360.com/club-360?cod=' + c.code : '');
     const hist = c.claims.length ? '<ol class="cd-hist">' + c.claims.slice().reverse().map((x) => '<li class="' + (x.undone ? 'is-undone' : '') + '"><div><b>' + esc(x.items.map((i) => i.name + (i.kind === 'gift' ? ' (cadou)' : ' ' + lei(i.amount))).join(', ')) + '</b>' +
@@ -279,7 +340,7 @@
           catch (err) { K.ui().toast(err.code === 'used' ? 'Cardul a fost deja folosit: nu se mai anulează.' : K.errText(err), 'error'); }
         }));
         root.querySelector('[data-rename]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
-          try { await api({ action: 'rename', code: c.code, recipient: root.querySelector('input[name=recipient]').value }); K.ui().toast('Salvat. Trimite-i din nou cardul, cu numele nou.', 'success'); h.close(); await load(true); }
+          try { const r = await api({ action: 'rename', code: c.code, recipient: root.querySelector('input[name=recipient]').value }); K.ui().toast(r.sent && r.sent.how ? 'Salvat și trimis pe WhatsApp, cu numele nou.' : 'Salvat. WhatsApp-ul n-a plecat: descarcă poza și trimite-o manual.', r.sent && r.sent.how ? 'success' : 'error'); h.close(); await load(true); }
           catch (err) { K.ui().toast(K.errText(err), 'error'); }
         }));
       },

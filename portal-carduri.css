@@ -77,3 +77,17 @@
 .cd-waves > *{ grid-column:1 / -1; }
 .cd-void{ display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; margin-top:1rem; }
 .cd-void small{ font-size:.75rem; color:var(--muted); }
+/* the trail of an order (what happened: the payment page, her answers, the WhatsApp), the hint to call, the payments to check */
+.cd-trail{ list-style:none; margin:.45rem 0 0; padding:0 0 0 .7rem; border-left:2px solid var(--line, rgba(127,127,127,.25)); display:grid; gap:.15rem; font-size:.8rem; color:var(--muted, inherit); }
+.cd-trail li{ display:flex; gap:.5rem; min-width:0; }
+.cd-trail time{ flex:none; font-variant-numeric:tabular-nums; opacity:.75; }
+.cd-call{ display:inline-flex; align-items:center; gap:.35rem; margin:.45rem 0 0; padding:.25rem .6rem; border-radius:999px; font-size:.8rem; font-weight:600; background:var(--warn-soft); color:var(--warn); }
+.cd-call svg{ width:14px; height:14px; }
+.cd-order.is-off{ opacity:.7; }
+.cd-check + .cd-check{ margin-top:.8rem; }
+.cd-check-h{ display:flex; gap:.5rem; align-items:flex-start; margin:0 0 .4rem; padding:.6rem .75rem; border-radius:12px; font-size:.85rem; background:var(--warn-soft); color:var(--warn); }
+.cd-check-h svg{ flex:none; width:16px; height:16px; margin-top:.1rem; }
+@media (max-width:720px){
+  /* „Confirmă plata (doar dacă e în myPOS)”: on its own line, the words wrap inside it */
+  .cd-order .k-row-end .k-btn.is-primary{ flex:1 1 100%; max-width:100%; min-width:0; height:auto; min-height:2.25rem; white-space:normal; text-align:left; }
+}
