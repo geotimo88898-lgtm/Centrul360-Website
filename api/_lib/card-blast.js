@@ -258,8 +258,10 @@ async function pickMore(n, opt) {
     vis.set(a.clientId, v);
   });
   const seen = new Set(), pool = [];
+  // only the leads who never came (opt.only === 'leads'): their phones still marked seen, so no client slips in as a lead
   clients.forEach((c) => {
     const ph = normalizePhone(c && c.phone); const k = d9(ph);
+    if (opt && opt.only === 'leads') { if (ph && k.length === 9) seen.add(k); return; }
     if (!ph || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(c.name || ''))) return;
     seen.add(k);
     if ((!withTrans && inTrans.has(k)) || already.has(k) || bought.has(k) || staff.has(k) || recentPay.has(c.id)) return;
