@@ -127,6 +127,37 @@ module.exports = async (req, res) => {
   if (!allowed) { res.status(401).json({ error: 'not_authenticated' }); return; }
   res.setHeader('Cache-Control', 'no-store');
   try {
+    // the Facebook Page's own links (21.11, the card's sales from organic): GET ?action=page_links reads the website and
+    // the Page's button; POST { action: 'page_links', website, cta: { type, url } } sets them (only centrul360.com links)
+    if (req.query && req.query.action === 'page_links' || (req.body && req.body.action === 'page_links')) {
+      const { loadConnection } = require('./_lib/facebook');
+      const conn = await loadConnection(readJSON);
+      if (!conn.pageId || !conn.pageAccessToken) { res.status(200).json({ ok: false, reason: 'not_connected' }); return; }
+      const ours = (u) => { try { const x = new URL(String(u || '')); return x.protocol === 'https:' && /(^|\.)centrul360\.com$/.test(x.hostname) ? x.href : ''; } catch (e) { return ''; } };
+      const out = { ok: true };
+      if (req.method === 'POST') {
+        const b = req.body || {};
+        if (b.website) {
+          const w = ours(b.website);
+          if (!w) { res.status(400).json({ error: 'bad_link' }); return; }
+          const r = await ads.call('POST', '/' + conn.pageId, conn.pageAccessToken, { website: w });
+          out.website = r.ok && !(r.j && r.j.error) ? { ok: true } : { error: (r.j && r.j.error && (r.j.error.error_user_msg || r.j.error.message)) || 'meta_error', code: r.j && r.j.error && r.j.error.code };
+        }
+        if (b.cta && b.cta.url) {
+          const u = ours(b.cta.url);
+          if (!u) { res.status(400).json({ error: 'bad_link' }); return; }
+          const type = /^[A-Z_]{3,30}$/.test(String(b.cta.type || '')) ? b.cta.type : 'SHOP_NOW';
+          const r = await ads.call('POST', '/' + conn.pageId + '/call_to_actions', conn.pageAccessToken, { type, web_url: u });
+          out.cta = r.ok && !(r.j && r.j.error) ? { ok: true, id: r.j && r.j.id } : { error: (r.j && r.j.error && (r.j.error.error_user_msg || r.j.error.message)) || 'meta_error', code: r.j && r.j.error && r.j.error.code };
+        }
+      }
+      const pg = await ads.call('GET', '/' + conn.pageId, conn.pageAccessToken, { fields: 'name,website,link' });
+      out.page = pg.ok ? { name: pg.j.name, website: pg.j.website || '' } : { error: (pg.j && pg.j.error && pg.j.error.message) || 'meta_error' };
+      const ct = await ads.call('GET', '/' + conn.pageId + '/call_to_actions', conn.pageAccessToken, { fields: 'id,type,web_url,status' });
+      out.ctas = ct.ok ? (ct.j.data || []) : { error: (ct.j && ct.j.error && ct.j.error.message) || 'meta_error', code: ct.j && ct.j.error && ct.j.error.code };
+      res.status(200).json(out);
+      return;
+    }
     if (req.method === 'GET' && req.query && req.query.action === 'form_setup') {
       const [template, poll, reg, offersAll] = await Promise.all([getTemplate({ readJSON, writeJSON }), readJSON('data/fb-poll.json', {}), readJSON('data/fb-forms.json', {}), loadOffers(readJSON, writeJSON)]);
       const cur = new Map(offerForms(offersAll).map((x) => [x.formId, x]));

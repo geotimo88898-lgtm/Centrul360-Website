@@ -1216,16 +1216,17 @@
     if (!R) return S.rErr ? K.empty('alert', 'Nu am putut încărca insights', esc(S.rErr)) : '<div class="k-skel" style="height:420px"></div>';
     const L = R.learn || {}, T = takes(R, L);
     const any = Object.keys(R.followers || {}).length || (R.last30 && R.last30.total.posts) || (R.month && R.month.total.posts) || R.audience || (R.analysis || []).length || (R.goals && R.goals.set);
+    if (!any && orgBlock(R)) return '<div class="cn-dash"><div class="cn-dw is-w12">' + orgBlock(R) + '</div></div>' + soonBlock({});
     if (!any) return '<div class="cn-ins0"><span class="cn-ins0-ic">' + icon('trend') + '</span><b>Insights apar după primele postări</b><p>Fiecare postare își aduce cifrele aici. Până atunci, ce urmează:</p><button type="button" class="k-btn is-outline" data-ctgoals>' + icon('target') + 'Setează ținte lunare</button></div>' + soonBlock({});
     const w = (cls, html) => (html ? '<div class="cn-dw ' + cls + '">' + html + '</div>' : '');
     const an = analysisBlock(R), gl = take(goalsBlock(R), T.goals);
-    const nc = take(netCards(R), T.nets), fu = take(funnelBlock(R), T.funnel), ho = take(hotBlock(R), T.hot), ml = take(moreLike(L), T.more), tt = take(topTen(R), T.top), rk = take(ranks(L), T.ranks);
+    const og = orgBlock(R), nc = take(netCards(R), T.nets), fu = take(funnelBlock(R), T.funnel), ho = take(hotBlock(R), T.hot), ml = take(moreLike(L), T.more), tt = take(topTen(R), T.top), rk = take(ranks(L), T.ranks);
     const au = take(audienceBlock(R), T.aud), hr = take(hoursBlock(R, L), T.hours);
     const vo = voiceBlock(R), mo = monthCard(R);
     const have = { an, nets: nc, funnel: fu, ranks: rk, top: tt, aud: au, voice: vo };
     return kpis(R) + '<div class="cn-dash">' +
       w(an && gl ? 'is-w7' : 'is-w12', an) + w(an && gl ? 'is-w5' : 'is-w12', gl) +
-      w('is-w12', nc) + w('is-w12', fu) + w('is-w12', ho) + w('is-w12', ml) + w('is-w12', tt) + w('is-w12', rk) +
+      w('is-w12', og) + w('is-w12', nc) + w('is-w12', fu) + w('is-w12', ho) + w('is-w12', ml) + w('is-w12', tt) + w('is-w12', rk) +
       w('is-w12', au) + w('is-w12', hr) + w(vo && mo ? 'is-w7' : 'is-w12', vo) + w(vo && mo ? 'is-w5' : 'is-w12', mo) + '</div>' + soonBlock(have);
   }
   // the moments of the weeks ahead (reels/calendar.json): what the producer makes for them
@@ -1290,6 +1291,26 @@
       [['leads', 'leaduri'], ['booked', 'programări'], ['showed', 'au venit'], ['clients', 'cliente']].map(([k2, l]) => '<span><b>' + full(t[k2] || 0) + '</b>' + l + (p[k2] ? '<small>' + full(p[k2]) + ' din profil</small>' : '') + '</span>').join('') +
       '<span class="is-money"><b>' + lei(t.revenue) + '</b>încasări</span></div>';
     return '<section class="cn-sec"><div class="cn-sh"><h3>Pâlnia organică</h3>' + K.seg('ctfm', [['month', 'Luna asta'], ['prev', 'Luna trecută']], S.fm, 'cn-seg-sm') + '</div><div class="cn-fnw">' + strip(m) + tot + '</div></section>';
+  }
+  // Organic → vânzări (21.11): the last 14 days, per source (network × bio / story / dm / reel): visits, how far they went
+  // on the site, the cards paid and their lei, the site's lead-filter leads; then the keyword messages per network
+  const ORG_NET = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
+  const ORG_MED = { bio: 'bio', story: 'story', dm: 'mesaj privat', reel: 'reel', post: 'postare', altele: 'alt link' };
+  function orgBlock(R) {
+    const O = R.organic;
+    if (!O || !O.ok) return '';
+    const T = O.total || {}, D = O.dm || {};
+    const rows = Object.keys(T).sort((a, b) => (T[b].cardsLei || 0) - (T[a].cardsLei || 0) || (T[b].visit || 0) - (T[a].visit || 0));
+    const dmNets = Object.keys(D);
+    if (!rows.length && !dmNets.length) return '';
+    const name = (src) => { const [n, m] = src.split(':'); return (ORG_NET[n] || n) + (m ? ' · ' + (ORG_MED[m] || m) : ' · fără etichetă'); };
+    const c = (v) => full(v || 0);
+    const table = rows.length ? '<div class="cn-st-w"><table class="cn-st"><thead><tr><th>Sursa</th><th>Vizite</th><th>Au apăsat</th><th>La plată</th><th>Carduri</th><th>Leaduri</th></tr></thead><tbody>' +
+      rows.map((src) => { const t = T[src]; return '<tr><td>' + esc(name(src)) + '</td><td>' + c(t.visit) + '</td><td>' + c(t.cta) + '</td><td>' + c(t.pay) + '</td><td>' + c(t.cardsPaid) + (t.cardsLei ? '<small> · ' + lei(t.cardsLei) + '</small>' : '') + '</td><td>' + c((t.lfLeads || 0) + (t.cardsReserved || 0)) + '</td></tr>'; }).join('') +
+      '</tbody></table></div>' : '';
+    const dmLine = dmNets.length ? '<div class="cn-fn-t"><span class="cn-fn-tl"><b>Mesajele cu cuvântul</b><small>comentarii și răspunsuri la story, cu linkul</small></span>' +
+      dmNets.map((n) => { const x = D[n]; return '<span><b>' + c((x.comments || 0) + (x.stories || 0)) + '</b>' + (n === 'ig' ? 'Instagram' : 'Facebook') + '<small>' + c(x.stories) + ' din story · ' + c(x.replies) + ' au răspuns</small></span>'; }).join('') + '</div>' : '';
+    return '<section class="cn-sec"><div class="cn-sh"><h3>Organic → vânzări</h3><small>ultimele 14 zile</small></div>' + table + dmLine + '</section>';
   }
   // Merge tare 🔥: the posts far above the usual in their first day, an ad one tap away
   function hotBlock(R) {

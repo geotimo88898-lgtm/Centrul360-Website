@@ -158,7 +158,8 @@ module.exports = async (req, res) => {
       if (b.goals && typeof b.goals === 'object') await require('./_lib/content-insights').saveGoals(b.goals, session.username || session.employeeId || '');
     } else if (b.action === 'results') {
       const list = await C.items(), now = Date.now();
-      res.status(200).json(Object.assign(await require('./_lib/content-learn').results(list, now), await require('./_lib/content-insights').extra(list, now)));
+      const organic = await require('./_lib/organic-sales').view(14).catch(() => null);
+      res.status(200).json(Object.assign(await require('./_lib/content-learn').results(list, now), await require('./_lib/content-insights').extra(list, now), { organic }));
       return;
     } else if (b.action === 'apply_hours') {
       const r = await require('./_lib/content-insights').applyHours();
