@@ -31,6 +31,7 @@
 <link rel="stylesheet" href="/v2/book-light.css">
 <link rel="stylesheet" href="/v2/xmas.css">
 <link rel="stylesheet" href="/v2/cs-buy.css">
+<link rel="stylesheet" href="/v2/lf.css">
 <script>/* Christmas on the site (v2/xmas.css, v2/xmas.js): on until XMAS_UNTIL, 7 January 2027 00:00 in Romania; then the site is as before */var XMAS_UNTIL='2027-01-06T22:00:00Z';if(Date.now()<Date.parse(XMAS_UNTIL))document.documentElement.classList.add('xmas');</script>
 
 </head>
@@ -103,7 +104,7 @@
     <span class="pill rv in"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></span>Consultație gratuită + masaj facial cadou</span>
     <h1 data-words>Piele <em>netedă,</em> nu coajă de portocală.</h1>
     <p class="lead rv">Celulită pe coapse, fese sau abdomen? Lucrăm din mai multe direcții: circulație, fermitate și drenaj. Cu radiofrecvență, cavitație, EMS și împachetare.</p>
-    <div class="ctas rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button><a class="btn ghost" href="#cum">Cum funcționează</a></div>
+    <div class="ctas rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button><button type="button" class="btn ghost lf-cta" data-lf data-lf-zone="coapse-fese"><span>Vezi variantele<span data-lf-from="coapse-fese"></span></span></button></div>
     <div class="meta rv">
       <div class="trust"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><b>5,0</b>&nbsp;·&nbsp;300+ recenzii Google</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără obligații</span></div>
       <div class="slot" data-slot></div>
@@ -255,6 +256,7 @@ document.addEventListener('click',function(e){if(e.target.closest('[data-cookies
 <script src="/v2/kit.js" defer></script>
 <script src="/v2/xmas.js" defer></script>
 <script src="/v2/cs-buy.js" defer></script>
+<script src="/v2/lf.js" defer></script>
 <script>/* the before/after pictures in the moving rows load at once (lazy ones never started on phones) */addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.cases img').forEach(function(i){i.loading='eager'});/* an offer's title never starts a line with its dot (Epilare laser · Full Body) */var nb=function(){document.querySelectorAll('.slip h3').forEach(function(h){if(h.textContent.indexOf(' · ')>-1)h.textContent=h.textContent.split(' · ').join(' · ')})};nb();document.querySelectorAll('.offers').forEach(function(o){new MutationObserver(nb).observe(o,{childList:true})})});</script>
 <script src="/site-pulse.js" defer></script>
 <script src="/c360-book.js" defer></script>

@@ -1,0 +1,93 @@
+<!--meta
+title: Centrul360 | Începe aici
+description: Cardul de Sărbători, pachetul potrivit pentru tine în 30 de secunde, rezultate reale și consultația gratuită, în Timișoara și Arad.
+path: start
+robots: noindex,follow
+dock: off
+q: p
+-->
+<style>
+/* ---- the link in bio (the owner, 21.11): who comes from a reel or a story sees in 3 seconds what she can do here, and
+   does it in one tap. The four ways, the biggest first; the topic of the reel she came from (?din=) on top. */
+.st{ padding:calc(var(--top, 84px) + 18px) 0 48px; }
+.st-w{ width:min(560px, calc(100% - 32px)); margin:0 auto; display:grid; gap:14px; }
+.st-hd{ display:grid; gap:8px; margin-bottom:4px; }
+.st-hd h1{ font-size:clamp(2.1rem, 9vw, 2.9rem); line-height:1.05; letter-spacing:-.045em; }
+.st-hd .trust{ font-size:13.5px; gap:6px 16px; }
+.st-b{ position:relative; display:grid; grid-template-columns:1fr auto; align-items:center; gap:4px 14px; width:100%; padding:18px 18px 18px 20px; border:0; border-radius:22px;
+  text-align:left; text-decoration:none; font:inherit; color:var(--ink); background:#fff; box-shadow:0 0 0 1px var(--line2) inset, 0 18px 36px -30px rgba(11,40,38,.5);
+  cursor:pointer; -webkit-tap-highlight-color:transparent; transition:transform .5s var(--e), box-shadow .5s var(--e); }
+.st-b:active{ transform:scale(.985); }
+.st-b b{ font-size:1.12rem; font-weight:700; letter-spacing:-.025em; line-height:1.25; }
+.st-b small{ grid-column:1; font-size:14px; line-height:1.4; color:var(--mute); }
+.st-b .ar{ grid-row:1 / span 2; grid-column:2; width:22px; height:22px; color:var(--mute2); transition:transform .5s var(--e); }
+.st-b:hover .ar{ transform:translateX(3px); }
+.st-k{ grid-column:1; justify-self:start; margin-bottom:4px; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+/* the card: its Christmas colours */
+.st-card{ color:#fff; background:linear-gradient(150deg,#d9497f 0%,#b0175a 55%,#8a0f45 100%); box-shadow:0 22px 44px -26px rgba(140,15,70,.8); }
+.st-card small{ color:rgba(255,255,255,.86); }
+.st-card .ar{ color:#ffe7a6; }
+.st-card .st-k{ color:#7a5a12; background:#ffe7a6; }
+.st-card .st-left{ grid-column:1; display:inline-flex; align-items:center; gap:7px; margin-top:6px; font-size:13px; font-weight:600; color:#fff; }
+.st-card .st-left[hidden]{ display:none; }
+.st-card .st-left i{ width:7px; height:7px; border-radius:50%; background:#ffe7a6; box-shadow:0 0 0 4px rgba(255,231,166,.25); }
+/* the lead filter: the clinic's teal */
+.st-lf{ background:linear-gradient(180deg,#f2fbfa,#fff); box-shadow:0 0 0 2px var(--teal) inset, 0 18px 36px -28px rgba(11,127,116,.6); }
+.st-lf .st-k{ color:#fff; background:var(--teal2); }
+.st-lf .ar{ color:var(--teal2); }
+.st-b[hidden]{ display:none; }
+/* the results: three real cases, small */
+.st-res{ grid-template-columns:1fr auto; }
+.st-th{ grid-column:1; display:flex; gap:6px; margin-top:10px; }
+.st-th img{ width:30%; max-width:96px; aspect-ratio:1; object-fit:cover; border-radius:12px; background:#f2f5f5; }
+.st-foot{ margin-top:10px; font-size:13px; line-height:1.5; color:var(--mute2); text-align:center; }
+.st-foot a{ color:inherit; }
+</style>
+
+<section class="st"><div class="st-w">
+  <div class="st-hd">
+    <h1>Ce vrei să faci <em>azi?</em></h1>
+    <div class="trust"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><b>5,0</b>&nbsp;·&nbsp;300+ recenzii Google</span><span>Timișoara și Arad</span></div>
+  </div>
+
+  <button type="button" class="st-b st-lf st-topic" data-lf data-st-topic hidden><span class="st-k">Pentru tine</span><b data-st-topic-t>Vezi ce ți se potrivește</b><small><span data-st-from></span>4 întrebări, 30 de secunde: vezi pachetul pentru zona ta și ce primești în el.</small>{{arrow}}</button>
+
+  <a class="st-b st-card" href="{{base}}card-sarbatori" data-st-keep><span class="st-k">Nou · până pe 24 decembrie</span><b>Cardul de Sărbători</b><small>Plătești 990 lei, primești 2.500 lei în tratamente. Pentru tine sau cadou.</small><span class="st-left" data-st-left hidden><i></i><span>Au mai rămas doar <b data-st-n></b> carduri</span></span>{{arrow}}</a>
+
+  <button type="button" class="st-b st-lf" data-lf data-st-lf><span class="st-k">30 de secunde</span><b>Află ce ți se potrivește</b><small>Alegi zona și ce te deranjează, vezi pachetul și ce primești în el. Nu plătești nimic acum.</small>{{arrow}}</button>
+
+  <a class="st-b st-res" href="{{base}}rezultate" data-st-keep><b>Rezultate reale</b><small>Clientele noastre, fotografiate la noi, înainte și după.</small><span class="st-th"><img src="/brand_asset/catalog/cazul-02-hifu-gusa.webp" alt="Înainte și după: HIFU gușă" width="96" height="96" loading="lazy"><img src="/brand_asset/catalog/cazul-08-pachet-mini-belly.webp" alt="Înainte și după: Pachet Mini Belly" width="96" height="96" loading="lazy"><img src="/brand_asset/catalog/cazul-16-hifu-gusa-tm-4.webp" alt="Înainte și după: HIFU gușă" width="96" height="96" loading="lazy"></span>{{arrow}}</a>
+
+  <button type="button" class="st-b" data-book data-book-service="consult"><b>Consultație gratuită</b><small>Plus un masaj facial cadou. Îți alegi tu ziua și ora.</small>{{arrow}}</button>
+
+  <p class="st-foot">Timișoara, Str. Bucegi 7 · Arad, Str. Ioan Alexandru 16-18<br><a href="{{base}}">centrul360.com</a></p>
+</div></section>
+
+<script>
+/* the link in bio: the reel's topic on top (?din=gusa), the source kept on the way to the card (its order counts it), the cards left */
+(function () {
+  var q = location.search;
+  document.querySelectorAll('[data-st-keep]').forEach(function (a) { if (q) a.href = a.getAttribute('href') + q; });
+  var LABEL = { 'abdomen-talie': 'abdomen și talie', 'coapse-fese': 'coapse și fese', brate: 'brațe', 'gusa-contur': 'gușă și bărbie dublă', fata: 'față', 'par-nedorit': 'epilare' };
+  function topic() {
+    var z = window.C360LF && window.C360LF.zone;
+    if (!z || !LABEL[z]) return;
+    var b = document.querySelector('[data-st-topic]');
+    b.setAttribute('data-lf-zone', z); b.hidden = false;
+    b.querySelector('[data-st-topic-t]').textContent = 'Ai venit pentru ' + LABEL[z] + '?';
+    document.querySelector('[data-st-lf]').hidden = true;
+    // the smallest real price of that zone's packages (both clinics have the same ladder)
+    window.C360LF.load().then(function (d) {
+      var zs = d && d.cities && (d.cities['Timișoara'] || []).concat(d.cities['Arad'] || []).filter(function (x) { return x.key === z; });
+      var min = Infinity; (zs || []).forEach(function (x) { Object.keys(x.packs || {}).forEach(function (t) { min = Math.min(min, Number(x.packs[t].price) || Infinity); }); });
+      if (isFinite(min)) b.querySelector('[data-st-from]').textContent = 'Variante de la ' + min.toLocaleString('ro-RO') + ' lei. ';
+    });
+  }
+  if (window.C360LF) topic(); else addEventListener('DOMContentLoaded', topic);
+  fetch('/api/card-sarbatori').then(function (r) { return r.json(); }).then(function (d) {
+    if (!d || typeof d.left !== 'number' || !d.open || d.left <= 0) return;
+    document.querySelector('[data-st-n]').textContent = d.left;
+    document.querySelector('[data-st-left]').hidden = false;
+  }).catch(function () {});
+})();
+</script>

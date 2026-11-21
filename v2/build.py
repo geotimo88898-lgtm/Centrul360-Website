@@ -31,6 +31,9 @@ MARK = ('<svg class="mk" viewBox="130 130 550 550" aria-hidden="true" fill="none
 # the open questions for the owner (preview only): each page lists its letters in its meta block (q: a, b)
 QUESTIONS = {
     'h': 'Cookies: politica spune că acordul se dă prin banner, dar site-ul nu are banner. Îl adaug?',
+    'p': 'Propunere (21.11): plata online direct din „Află ce ți se potrivește”, pentru pachetele de 390 și 990 lei (și 190 la gușă), '
+         'ca HIFU gușă plătit cu cardul care a vândut 90 într-o zi. Cine plătește online are locul rezervat pe loc și primește un bonus ales de tine '
+         '(de exemplu un tratament facial Restart). Prețul rămâne cel întreg, nimic redus. Îmi trebuie câte un PayLink myPOS pe pachet. O pornim?',
 }
 def asks(meta):
     qs = [q.strip() for q in meta.get('q', '').split(',') if q.strip() in QUESTIONS]

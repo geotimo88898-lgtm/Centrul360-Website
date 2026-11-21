@@ -66,6 +66,13 @@ Read REDESIGN.md ("Stilul") and the model page source before starting.
   mana-inima, oglinda, prezinta, receptie, salut-pa, spf, stea-google, surprins, telefon. Pick the one that
   fits the section; do not reuse the same pose twice on a page.
 
+- The lead filter on the site (`v2/lf.js`, `v2/lf.css`, loaded by the shell): any `[data-lf]` opens „Ce ți se potrivește?”
+  (`data-lf-zone="gusa-contur|abdomen-talie|coapse-fese|brate|fata|par-nedorit"`, `data-lf-city="Timișoara|Arad"` to skip a
+  question); `<span data-lf-from="<zone>">` becomes „, de la N lei” (the zone's real lowest package). Links: `?lf=1` or
+  `#pachet` open it, `?zona=` / `?din=<topic>` preselect the zone. The link in bio is `/start` (`?din=gusa` puts the reel's
+  topic on top); tag the links with `utm_source` (instagram, tiktok, facebook) and `utm_medium` (bio, story, reel): the funnel
+  (`/api/site-pulse?view=funnel`) counts every step per source.
+
 ## The swap (only on the owner's „da”)
 - `python3 v2/swap.py --out <dir>` builds the live site into a folder to test it (nothing in the repo changes);
   `python3 v2/swap.py --apply` writes it over the old pages in the site root and rewrites `sitemap.xml`.
