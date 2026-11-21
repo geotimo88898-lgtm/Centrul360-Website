@@ -14,7 +14,7 @@
   if (!K) return;
   const { esc, icon } = K;
   const S = { d: null, q: '', f: 'all', box: null, busy: false };
-  const STATE = { activ: ['Activ', 'is-good'], folosit: ['Folosit', 'is-done'], expirat: ['Expirat', 'is-warn'], anulat: ['Anulat', 'is-bad'], rezervat: ['Rezervat', 'is-info'], asteptare: ['În așteptarea plății', 'is-warn'] };
+  const STATE = { activ: ['Activ', 'is-good'], folosit: ['Folosit', 'is-done'], expirat: ['Expirat', 'is-warn'], anulat: ['Anulat', 'is-bad'], rezervat: ['Rezervat', 'is-info'], lead: ['Lead', 'is-info'], asteptare: ['În așteptarea plății', 'is-warn'] };
   const FILTERS = [['all', 'Toate'], ['activ', 'Active'], ['folosit', 'Folosite'], ['expirat', 'Expirate']];
   const lei = (n) => K.lei(n);
   const when = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? new Date(t).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', day: 'numeric', month: 'short' }) + ', ' + new Date(t).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' }) : ''; };
@@ -60,11 +60,14 @@
   const BTN = { pay: '„Finalizez plata” (i-a plecat linkul)', clinic: '„Plătesc în clinică”', no: '„Nu mai vreau”', text: 'a scris (vezi Mesaje)' };
   const NAMEFOR = { me: 'e pentru ea', gift: 'e cadou' };
   // where the name on the card came from
-  const NAMEFROM = { site: 'scris pe site', fisa: 'din fișa clientei', whatsapp: 'întrebat pe WhatsApp', receptie: 'pus de recepție' };
+  const NAMEFROM = { formular: 'din formularul reclamei', site: 'scris pe site', fisa: 'din fișa clientei', whatsapp: 'întrebat pe WhatsApp', receptie: 'pus de recepție' };
   function trailLine(e, o) {
     const n = e.note || '', failed = /^netrimis/.test(n), why = n.replace(/^netrimis:?\s*/, '');
     switch (e.ev) {
-      case 'created': return o && o.pay === 'clinica' && !o.converted ? 'a rezervat pe site, plătește în clinică' : '';
+      case 'created': return n === 'meta-form' ? 'a lăsat datele în formularul din reclamă' : o && o.pay === 'clinica' && !o.converted ? 'a rezervat pe site, plătește în clinică' : '';
+      case 'lead_msg': return failed ? 'WhatsApp-ul cu cardul n-a plecat' + (why ? ' (' + why + ')' : '') : 'WhatsApp trimis: cardul ei, online sau în clinică';
+      case 'choice': return 'a ales pe WhatsApp: ' + (n === 'online' ? 'plătește online' : 'plătește în clinică');
+      case 'lead_call': return 'de sunat: ' + n;
       case 'to_paylink': return n === 'whatsapp' ? 'a primit linkul de plată pe WhatsApp' : 'a intrat pe pagina de plată';
       case 'returned': return 's-a întors pe site fără plată';
       case 'reason': return 's-a întors: ' + (REASON[n] || n);
@@ -72,7 +75,7 @@
       case 'wa1': return failed ? 'WhatsApp neplecat' + (why ? ' (' + why + ')' : '') : 'WhatsApp trimis: plata nu s-a finalizat';
       case 'wa2': return failed ? 'al doilea WhatsApp neplecat' + (why ? ' (' + why + ')' : '') : 'al doilea WhatsApp trimis (mai sunt carduri)';
       case 'replied': return n === 'text' ? 'a scris pe WhatsApp (vezi Mesaje)' : 'a răspuns pe WhatsApp: ' + (BTN[n] || n);
-      case 'converted': return 'trecută pe plata în clinică' + (n === 'whatsapp' ? ', din WhatsApp' : n === 'portal' ? ', din portal' : ', pe site');
+      case 'converted': return n === 'lead' ? 'rezervată, plătește în clinică' : 'trecută pe plata în clinică' + (n === 'whatsapp' ? ', din WhatsApp' : n === 'portal' ? ', din portal' : ', pe site');
       case 'check': return 'o plată cu aceeași sumă: de verificat în myPOS';
       case 'paid': return n === 'auto' ? 'plătită (găsită în myPOS)' : 'plată confirmată în portal';
       case 'ask_name': return failed ? 'întrebarea numelui n-a plecat: cardul a plecat fără nume' : 'întrebată pe WhatsApp pe ce nume să fie cardul';
@@ -108,13 +111,17 @@
       list.map((o) => {
         const unpaid = o.status === 'asteptare' && o.pay === 'online';
         const over = unpaid && o.heldUntil && Date.parse(o.heldUntil) < now;
-        const what = o.byHer ? 'A renunțat la plata online' : unpaid ? 'A început plata online · neplătită' + (over ? '' : ' · cardul e ținut până la ' + esc(hm(o.heldUntil, o.created))) :
+        // a lead from the ads' form, waiting for her choice: after 2 hours (or when the message could not go), call her
+        const isLead = o.status === 'lead';
+        const call = isLead && (o.leadCall || Date.parse(o.created) + 2 * 3600e3 < now);
+        const what = isLead ? 'Lead din reclamă · alege cum plătește' : o.byHer ? 'A renunțat la plata online' : unpaid ? 'A început plata online · neplătită' + (over ? '' : ' · cardul e ținut până la ' + esc(hm(o.heldUntil, o.created))) :
           o.pay === 'online' ? 'La plata online (myPOS) · se confirmă singură când apare plata' : o.converted ? 'Plătește în clinică · a început online' : 'Plătește în clinică';
-        const stateTag = o.byHer ? '<span class="k-tag is-bad">A renunțat</span>' : unpaid ? '<span class="k-tag is-warn">Neplătită</span>' : tag(o.status);
+        const stateTag = isLead ? '<span class="k-tag is-info">Lead</span>' : o.byHer ? '<span class="k-tag is-bad">A renunțat</span>' : unpaid ? '<span class="k-tag is-warn">Neplătită</span>' : tag(o.status);
         return '<div class="k-row cd-order' + (o.byHer ? ' is-off' : '') + '"><div class="k-row-main"><div class="k-row-title">' + esc(o.name || 'Fără nume') + ' · ' + o.qty + ' × ' + o.tier + ' lei</div>' +
           '<div class="k-row-sub">' + what + ' · ' + esc(o.city) + ' · ' + esc(when(o.created)) +
           (o.names.some(Boolean) ? ' · pe numele: ' + esc(o.names.map((n) => n || 'ea').join(', ')) : '') + (NAMEFROM[o.nameFrom] ? ' (numele ' + NAMEFROM[o.nameFrom] + ')' : '') + ' · <a href="' + K.tel(o.phone) + '">' + esc(o.phone) + '</a></div>' +
-          trailHtml(o) + (over && !o.byHer ? '<p class="cd-call">' + icon('phone') + 'Sun-o: plata n-a venit.</p>' : '') + '</div>' +
+          trailHtml(o) + (over && !o.byHer ? '<p class="cd-call">' + icon('phone') + 'Sun-o: plata n-a venit.</p>' : '') +
+          (call ? '<p class="cd-call">' + icon('phone') + 'Sun-o: să aleagă online sau în clinică.</p>' : '') + '</div>' +
           '<div class="k-row-end">' + stateTag + (o.byHer ? '' : '<button type="button" class="k-btn is-primary is-sm" data-cd-confirm="' + esc(o.id) + '" data-via="' + (o.pay === 'online' ? 'online' : 'clinica') + '">' + icon('check') +
             (o.pay === 'online' ? 'Confirmă plata (doar dacă e în myPOS)' : 'Confirmă plata (' + lei(o.amount) + ')') + '</button>' +
           '<button type="button" class="k-btn is-ghost is-sm" data-cd-cancel="' + esc(o.id) + '">Anulează</button>') + '</div></div>';
