@@ -8,7 +8,9 @@
 //             pay: 'online' | 'clinica', status: 'asteptare' (sent to the PayLink, not paid yet) | 'rezervat' (to pay in
 //             the clinic) | 'platit' | 'anulat', leadId, paidAt, paidVia: 'online' | 'clinica', paidBy, paidAmount,
 //             match: { src: 'mypos' | 'ipn' | 'webhook', ref, at } (how the payment was found), bonus (paid online: the gift
-//             and Clubul 360), cancelledAt, cancelledBy }
+//             and Clubul 360), cancelledAt, cancelledBy ('ea' when she said no herself), held (when its 2 h hold started again:
+//             „Încerc din nou”, „Finalizez plata”; else the hold counts from created), convertedAt (an online order she moved
+//             to the clinic), trail: [{ at, ev, note }] (what happened to it, below), rec: { wa1, wa2, stop, replied } }
 //   card  = { code (C360-XXXX-XXXX), recipient (the name on it; '' = hers), value (the credit), claims: [claim],
 //             gift: { what, state: 'open' | 'used', usedAt } (paid online only), sent: { at, how, error }, remind: { … } }
 //   claim = { id, at, date, city, by, byName, performer, performerName, items: [{ name, amount, kind: 'credit' | 'gift' }],
@@ -69,12 +71,29 @@ function norm(r) {
   return r;
 }
 const qtyOf = (r) => Math.max(1, Number(norm(r).qty) || 1);
-// a card counts once it is ordered; an order sent to the PayLink only for its first 2 hours (unless it was paid)
+// a card counts once it is ordered; an order sent to the PayLink only for its first 2 hours (unless it was paid); a hold
+// started again („Încerc din nou”) counts from then
+const heldFrom = (r) => Date.parse(r.held || r.created);
 function live(r, now) {
   if (!r || r.status === 'anulat' || r.status === 'draft') return false;
-  if (r.status === 'asteptare') return (now || Date.now()) - Date.parse(r.created) < HOLD_MS;
+  if (r.status === 'asteptare') return (now || Date.now()) - heldFrom(r) < HOLD_MS;
   return true;
 }
+// ---- the trail of an order (the owner, 21.11: she started the payment and never paid, and nobody knew why): one short
+// line per thing that happened, read in the portal. ev: created, to_paylink, returned (back on the site, unpaid), reason
+// (her answer on the site: retry, declined, nocard, confusing, clinic, no), wa1 / wa2 (the recovery messages, note: ok or
+// why not), replied (on WhatsApp: pay, clinic, no, text), converted (to a clinic reservation: site, whatsapp, portal),
+// expired (the 2 h hold is over), paid (auto, manual), cancelled (team, ea)
+const TRAIL_MAX = 40;
+function mark(r, ev, note) {
+  if (!Array.isArray(r.trail)) r.trail = [];
+  const x = { at: nowISO(), ev: String(ev) };
+  if (note) x.note = String(note).slice(0, 140);
+  r.trail.push(x);
+  if (r.trail.length > TRAIL_MAX) r.trail = r.trail.slice(-TRAIL_MAX);
+  return x;
+}
+const recOf = (r) => (r.rec = r.rec && typeof r.rec === 'object' ? r.rec : {});
 // the waves (the owner, 21.11): the cards sell in waves of 10, up to 70 in all (both set by him in the portal, Carduri de
 // Sărbători → Valuri). Only inside: the page says only „Au mai rămas doar N carduri”, N = what is left of the wave of now,
 // counted from the real orders. A wave sold out: the next opens at once (N is the wave's size again); after the last one
@@ -203,7 +222,22 @@ const TPL = {
   // (no code: nothing is issued before the payment; her name only if she gave one): reservedMsg
   rezervat: { label: 'Card de Sărbători rezervat', headerType: 'IMAGE', map: ['suma', 'credit', 'locatie'], sample: { code: '', mark: 'Rezervat', name: '' },
     body: 'Bună! Ți-am rezervat Cardul de Sărbători de {{1}} lei, cu {{2}} lei în tratamente. Te sunăm în curând să stabilim când treci să-l plătești în clinica din {{3}}, cash sau card. Mulțumim!' },
+  // the payment she started and did not finish (the owner, 21.11): about an hour after, and once more a day later, with the
+  // picture of her card (her name, no code: nothing is issued yet) and three buttons (recover, onWhatsApp below)
+  // (no name in them: an online order is only her phone and her card, 21.11)
+  rec1: { label: 'Card de Sărbători plată neterminată', category: 'MARKETING', headerType: 'IMAGE', map: ['credit'], buttons: 'rec', sample: { code: '', name: '' },
+    body: 'Bună! Am văzut că ai vrut Cardul de Sărbători de {{1}} lei în tratamente, dar plata nu s-a finalizat. S-a blocat ceva? Îl poți plăti online sau îl rezervi și plătești în clinică. Alege mai jos ce preferi.' },
+  rec2: { label: 'Card de Sărbători mai sunt carduri', category: 'MARKETING', headerType: 'IMAGE', map: ['credit', 'carduri'], buttons: 'rec', sample: { code: '', name: '' },
+    body: 'Bună! Încă poți lua Cardul de Sărbători de {{1}} lei în tratamente. Mai avem doar {{2}}, iar oferta se încheie pe 24 decembrie. Îl plătești online sau îl rezervi și plătești în clinică, alege mai jos.' },
+  // paid online, the name comes after (the owner, 21.11): the payment received, „pe ce nume să fie cardul?” (askName)
+  name: { label: 'Card de Sărbători pe ce nume', map: ['suma', 'credit'], buttons: 'name',
+    body: 'Bună! Am primit plata ta de {{1}} lei pentru Cardul de Sărbători Centrul360, cu {{2}} lei în tratamente. Mulțumim! Pe ce nume să fie cardul? Alege mai jos.' },
 };
+// the buttons of the recovery messages (Meta: quick replies, at most 25 letters); what each does: onWhatsApp
+const REC_BTN = { pay: 'Finalizez plata', clinic: 'Plătesc în clinică', no: 'Nu mai vreau' };
+const NAME_BTN = { me: 'Pentru mine', gift: 'E cadou' };
+// the templates the card's own messages need (the portal's „Mesaje WhatsApp: Automate”); the recovery ones apart
+const CORE = ['card', 'sold', 'remind', 'rezervat'];
 async function templates() {
   const WT = require('./wa-templates');
   const d = await WT.load();
@@ -221,8 +255,9 @@ async function ensureTemplates() {
   for (const k of Object.keys(TPL)) {
     let x = t[k];
     if (!x) {
-      x = { id: 'card-' + k + '-' + crypto.randomUUID().slice(0, 6), purpose: 'card-' + k, label: TPL[k].label, name: '', language: 'ro', category: 'UTILITY',
-        headerType: TPL[k].headerType || '', header: '', body: TPL[k].body, map: TPL[k].map, footer: 'Centrul360', buttons: [], meta: {}, updatedAt: nowISO() };
+      x = { id: 'card-' + k + '-' + crypto.randomUUID().slice(0, 6), purpose: 'card-' + k, label: TPL[k].label, name: '', language: 'ro', category: TPL[k].category || 'UTILITY',
+        headerType: TPL[k].headerType || '', header: '', body: TPL[k].body, map: TPL[k].map, footer: 'Centrul360',
+        buttons: TPL[k].buttons ? Object.values(TPL[k].buttons === 'rec' ? REC_BTN : NAME_BTN).map((text) => ({ type: 'QUICK_REPLY', text })) : [], meta: {}, updatedAt: nowISO() };
       if (x.headerType === 'IMAGE') {
         // the example Meta reviews: a sample card (its own when the template's card is another kind, e.g. „Rezervat”)
         const sm = TPL[k].sample;
@@ -294,9 +329,8 @@ async function say(kind, r, vars, text, png, code, opt) {
   return { sent: false, error: errs.filter(Boolean).join(' · ').slice(0, 300) };
 }
 // the words of the card's message (the same as the template, with the gift and the Club when paid online)
-// her first name for „Bună, …!”, letters only; an online order has none (only her phone): a neutral greeting
-const greetName = (r) => { const f = firstName(r.name).replace(/[^\p{L}-]/gu, ''); return f.length >= 2 ? f.slice(0, 30) : ''; };
-const NONAME = 'Card de Sărbători, fără nume'; // her lead's name while we do not know hers
+// her first name for „Bună, …!”: the one on the order, else the one the portal or her WhatsApp knows (r.hint), letters only
+const greetName = (r) => { const f = firstName(r.name || (r.hint !== NONAME ? r.hint : '')).replace(/[^\p{L}-]/gu, ''); return f.length >= 2 ? f.slice(0, 30) : ''; };
 function cardText(r, c) {
   const extra = r.bonus ? 'Cadou: ' + giftOf(r.city) + '. Locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code : 'Te așteptăm cu drag.';
   const g = greetName(r);
@@ -336,7 +370,7 @@ async function reservedMsg(id) {
   const rez = m.sent ? { at: nowISO(), how: m.how } : { at: nowISO(), skipped: m.tpl ? 'șablonul nu e aprobat încă' : String(m.error || 'netrimis').slice(0, 160) };
   const l2 = await readJSON(KEY, []);
   const x = l2.find((y) => y.id === id);
-  if (x && !x.rezMsg) { x.rezMsg = rez; await writeJSON(KEY, l2); }
+  if (x && !x.rezMsg) { x.rezMsg = rez; mark(x, 'rez_msg', rez.how ? 'ok' : 'netrimis: ' + rez.skipped); await writeJSON(KEY, l2); }
   return rez;
 }
 
@@ -396,6 +430,49 @@ async function backfillSales() {
   return n;
 }
 
+// ---- an order from the card block is her phone only (the owner, 21.11): the name on the card is asked once she paid (askName, on
+// WhatsApp: „Pentru mine” / „E cadou”, then the name she writes: onWhatsApp), and after 6 hours with no answer the card
+// goes without a name („Pentru tine” on it, its code), the desk can put one on it later (Schimbă numele, sent again)
+const NONAME = 'Card de Sărbători, fără nume'; // her lead's name while we do not know hers
+// a card ordered from the card block (online or reserved for the clinic) has no name: asked once paid
+const needsName = (r) => r.via === 'site' && !r.name && !(r.cards || []).some((c) => c.recipient) && !r.naming;
+async function knownName(phone) {
+  const k = d9(phone);
+  if (k.length < 9) return '';
+  const cl = (await readJSON('data/clients.json', []).catch(() => [])).find((c) => d9(c.phone) === k && c.name);
+  if (cl) return String(cl.name).trim();
+  const ld = (await readJSON('data/leads.json', []).catch(() => [])).filter((l) => d9(l.phone) === k && l.name && l.name !== NONAME).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+  return ld ? String(ld.name).trim() : '';
+}
+// her lead made with NONAME gets her name once she says it
+async function nameLead(r) {
+  try {
+    if (!r.name) return;
+    const leads = await readJSON('data/leads.json', []);
+    const l = leads.find((x) => (r.leadId && x.id === r.leadId) || (d9(x.phone) === d9(r.phone) && x.name === NONAME));
+    if (l && l.name === NONAME) { l.name = r.name; await writeJSON('data/leads.json', leads); }
+    const cl = await require('./clients').upsertClient({ name: r.name, phone: r.phone, location: r.city }, store);
+    if (cl) r.clientId = cl.id;
+  } catch (e) { console.error('card name lead:', e.message); }
+}
+// the cards out on WhatsApp, with the trail's line (how: the name she gave, or none)
+async function sendCards(r, how) {
+  for (const c of r.cards) await deliver(r, c).catch((e) => { c.sent = { at: nowISO(), how: '', error: e.message }; });
+  const ok = r.cards.every((c) => c.sent && c.sent.how);
+  mark(r, 'card_sent', (ok ? 'ok' : 'netrimis') + (how ? ', ' + how : ''));
+  return ok;
+}
+// „Pe ce nume să fie cardul?” (the template, she did not write us yet); not sent: the card goes at once, with no name
+async function askName(r) {
+  const vars = { suma: lei(r.paidAmount || r.amount), credit: lei(r.credit) };
+  const m = await say('name', r, vars, fill('name', vars), null, '', { only: 'template', tag: { cardOrder: r.id, cardStep: 'ask' } }).catch((e) => ({ sent: false, error: e.message }));
+  if (m.sent) { r.naming = { at: nowISO(), state: 'asked' }; mark(r, 'ask_name', 'ok'); return true; }
+  r.naming = { at: nowISO(), state: 'done', how: 'none', error: String(m.error || '').slice(0, 160) };
+  mark(r, 'ask_name', 'netrimis: ' + String(m.error || '').slice(0, 100));
+  await sendCards(r, 'fără nume');
+  return false;
+}
+
 // ---- paid: the card is issued (once), the gift and the Club when online, her lead and file, the team, her WhatsApp
 // via: 'online' | 'clinica'; o: { by (employee id), byName, match: { src, ref, at }, amount }
 async function confirm(id, via, o) {
@@ -405,6 +482,9 @@ async function confirm(id, via, o) {
   if (!r) return { error: 'not_found' };
   norm(r);
   if (r.status === 'platit') return { row: r, again: true };
+  mark(r, 'paid', o.match ? 'auto' : 'manual'); recOf(r).stop = recOf(r).stop || 'paid';
+  const nameless = needsName(r);
+  if (!r.name && !r.hint) r.hint = await knownName(r.phone).catch(() => '');
   r.status = 'platit'; r.paidAt = nowISO(); r.paidVia = via === 'online' ? 'online' : 'clinica';
   r.paidBy = o.by || ''; if (o.byName) r.paidByName = o.byName;
   r.paidAmount = Number(o.amount) > 0 ? r2(o.amount) : r.amount;
@@ -434,10 +514,11 @@ async function confirm(id, via, o) {
   try {
     const note = 'Card de Sărbători plătit ' + (r.paidVia === 'online' ? 'online' : 'în clinică') + ': ' + r.qty + ' × ' + r.tier + ' lei, credit ' + lei(r.credit) + ' lei · ' +
       r.cards.map((c) => c.code + (c.recipient ? ' (' + c.recipient + ')' : '')).join(', ') + (r.bonus ? ' · cadou: ' + giftShort(r.city) + ' · Clubul 360' : '');
-    const L = await require('../portal-leads').createLead({ name: r.name || NONAME, phone: r.phone, source: 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: 'Card de Sărbători', welcome: false });
+    const L = await require('../portal-leads').createLead({ name: r.name || r.hint || NONAME, phone: r.phone, source: 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: 'Card de Sărbători', welcome: false });
     if (L && L.lead && !r.leadId) r.leadId = L.lead.id;
   } catch (e) { console.error('card lead:', e.message); }
-  if (r.name) { try { const cl = await require('./clients').upsertClient({ name: r.name, phone: r.phone, location: r.city }, store); if (cl) r.clientId = cl.id; } catch (e) { console.error('card client:', e.message); } }
+  // her client file once we know her name (an online order: when she says it, nameLead)
+  if (r.name || r.hint) { try { const cl = await require('./clients').upsertClient({ name: r.name || r.hint, phone: r.phone, location: r.city }, store); if (cl) r.clientId = cl.id; } catch (e) { console.error('card client:', e.message); } }
 
   // the desk (her clinic) and the owner
   try {
@@ -446,13 +527,14 @@ async function confirm(id, via, o) {
     await N.notifyMany(store, ids, {
       kind: 'money', tone: 'good', go: 'carduri', tag: posPaid ? posPaid.tag : 'card-paid-' + r.id, quiet: !!posPaid, ref: r.paidVia === 'clinica' && r.payMethod === 'card' ? N.payRef('desk', r.paidAmount) : '',
       title: 'CARD DE SĂRBĂTORI PLĂTIT' + N.cityTag(r.city) + (r.paidVia === 'online' ? ' ONLINE 💳' : ' 🎁') + ' - ' + N.leiTxt(r.amount),
-      text: r.qty + ' × ' + r.tier + ' lei (credit ' + lei(r.credit) + ') · ' + (r.name || 'fără nume') + ' · ' + r.cards.map((c) => c.code).join(', ') + (r.bonus ? ' · + ' + giftShort(r.city) + ' și Clubul 360' : '') +
+      text: r.qty + ' × ' + r.tier + ' lei (credit ' + lei(r.credit) + ') · ' + (r.name || r.hint || 'numele vine pe WhatsApp') + ' · ' + r.cards.map((c) => c.code).join(', ') + (r.bonus ? ' · + ' + giftShort(r.city) + ' și Clubul 360' : '') +
         (o.match ? ' · găsit automat în myPOS' : ''),
     });
   } catch (e) { console.error('card notify:', e.message); }
 
-  // her cards on WhatsApp
-  for (const c of r.cards) await deliver(r, c).catch((e) => { c.sent = { at: nowISO(), how: '', error: e.message }; });
+  // her cards on WhatsApp; paid online with no name yet: first the question of the name (askName)
+  if (nameless) await askName(r).catch((e) => console.error('card ask name:', e.message));
+  else await sendCards(r, '');
   // written back onto the newest list (another change may have come meanwhile)
   const l2 = await readJSON(KEY, []);
   const i = l2.findIndex((x) => x.id === r.id);
@@ -463,23 +545,75 @@ async function confirm(id, via, o) {
 // ---- finding the payment by itself: a payment of the clinic's account that is not a POS payment, of the sum of an order
 // sent to its PayLink, within 48 h after the order (the oldest order first, each payment once)
 // pays = [{ ref, amount, at, src }]
+// an order waiting for its money: sent to the PayLink, or one she gave up herself (a payment that comes anyway is hers)
+const waits = (x) => x.status === 'asteptare' || (x.status === 'anulat' && x.cancelledBy === 'ea' && x.pay === 'online');
+// Two orders or more of that sum waiting when a payment comes (the owner, 21.11): nothing is confirmed by itself, the
+// payment waits in „De verificat” with the orders it could be (the desk looks at who paid in myPOS and taps the right one:
+// pick). Once only one of them still waits (the others paid or cancelled), it is hers.
+//   data/card-sarbatori-check.json  [{ id, ref, amount, at, src, found, cands: [order id], state: 'open' | 'done' | 'none',
+//                                      order, doneAt, by }]
+const CHECK = 'data/card-sarbatori-check.json';
+const candsOf = (list, amount, t) => list.filter((x) => waits(x) && Math.abs(Number(x.amount) - Number(amount)) < 0.01 && Date.parse(x.created) <= t + 5 * 60e3 && t - heldFrom(x) <= MATCH_MS)
+  .sort((a, b) => Date.parse(a.created) - Date.parse(b.created));
 async function matchPayments(pays) {
   const list = await readJSON(KEY, []);
-  const used = new Set(list.filter((r) => r.match && r.match.ref).map((r) => r.match.ref));
-  const done = [];
+  const checks = await readJSON(CHECK, []).catch(() => []);
+  const used = new Set(list.filter((r) => r.match && r.match.ref).map((r) => r.match.ref).concat(checks.map((c) => c.ref)));
+  const done = [], marks = [];
+  let checksChanged = false;
+  // the payments waiting in „De verificat” whose orders came down to one (or none)
+  for (const c of checks.filter((x) => x.state === 'open')) {
+    const still = c.cands.filter((id) => { const x = list.find((y) => y.id === id); return x && waits(x); });
+    if (still.length > 1) continue;
+    checksChanged = true;
+    if (!still.length) { Object.assign(c, { state: 'none', doneAt: nowISO() }); continue; }
+    const x = await confirm(still[0], 'online', { by: 'myPOS', byName: 'myPOS (automat)', amount: c.amount, match: { src: c.src || 'mypos', ref: c.ref, at: c.at } });
+    if (x.row) { Object.assign(c, { state: 'done', order: still[0], doneAt: nowISO(), by: 'auto' }); done.push({ id: still[0], ref: c.ref }); const y = list.find((z) => z.id === still[0]); if (y) y.status = 'platit'; }
+  }
   for (const p of (pays || []).slice().sort((a, b) => Date.parse(a.at) - Date.parse(b.at))) {
     if (!p.ref || used.has(p.ref) || !(Number(p.amount) > 0)) continue;
     const t = Date.parse(p.at) || Date.now();
-    const r = list.filter((x) => x.status === 'asteptare' && Math.abs(Number(x.amount) - Number(p.amount)) < 0.01 && Date.parse(x.created) <= t + 5 * 60e3 && t - Date.parse(x.created) <= MATCH_MS)
-      .sort((a, b) => Date.parse(a.created) - Date.parse(b.created))[0];
+    const cands = candsOf(list, p.amount, t);
+    const r = cands[0];
     if (!r) continue;
     used.add(p.ref);
+    if (cands.length > 1) {
+      checks.push({ id: crypto.randomUUID().slice(0, 12), ref: p.ref, amount: r2(p.amount), at: p.at, src: p.src || 'mypos', found: nowISO(), cands: cands.map((x) => x.id), state: 'open' });
+      checksChanged = true;
+      cands.forEach((x) => marks.push([x.id, cands.length]));
+      continue;
+    }
     r.status = 'matching'; // taken by this payment (written below by confirm)
     const x = await confirm(r.id, 'online', { by: 'myPOS', byName: 'myPOS (automat)', amount: p.amount, match: { src: p.src || 'mypos', ref: p.ref, at: p.at } });
     if (x.row) done.push({ id: r.id, ref: p.ref });
   }
+  if (checksChanged) await writeJSON(CHECK, checks.slice(-200));
+  if (marks.length) {
+    const l2 = await readJSON(KEY, []);
+    marks.forEach(([id, n]) => { const x = l2.find((y) => y.id === id); if (x) mark(x, 'check', String(n)); });
+    await writeJSON(KEY, l2);
+  }
   return done;
 }
+// the desk's tap in „De verificat”: this payment is hers (after looking at who paid in myPOS)
+async function pick(checkId, orderId, o) {
+  const checks = await readJSON(CHECK, []);
+  const c = checks.find((x) => x.id === checkId);
+  if (!c || c.state !== 'open') return { error: 'not_open' };
+  if (!c.cands.includes(orderId)) return { error: 'not_candidate' };
+  const x = await confirm(orderId, 'online', Object.assign({}, o, { amount: c.amount, match: { src: c.src || 'mypos', ref: c.ref, at: c.at, picked: true } }));
+  if (x.error) return x;
+  const l2 = await readJSON(CHECK, []);
+  const c2 = l2.find((y) => y.id === checkId);
+  if (c2) { Object.assign(c2, { state: 'done', order: orderId, doneAt: nowISO(), by: (o && o.by) || '' }); await writeJSON(CHECK, l2); }
+  return x;
+}
+// an order confirmed by hand that waits in „De verificat”: that payment is taken by it
+async function openCheckOf(orderId) {
+  const checks = await readJSON(CHECK, []).catch(() => []);
+  return checks.filter((x) => x.state === 'open' && x.cands.includes(orderId)).sort((a, b) => Date.parse(a.at) - Date.parse(b.at))[0] || null;
+}
+async function openChecks() { return (await readJSON(CHECK, []).catch(() => [])).filter((x) => x.state === 'open'); }
 // the clinic's myPOS account: the payments that are not a POS terminal's (the PayLinks), the last days; a probe of what
 // myPOS gives (counts and field names only, never a name, a card or a reference) is kept for the check
 async function scanMypos(days, opts) {
@@ -519,7 +653,7 @@ async function scanMypos(days, opts) {
 // on the clock and when the team opens the cards: only while an order waits for its payment
 async function autoMatch(force) {
   const list = await readJSON(KEY, []);
-  const waiting = list.filter((r) => r.status === 'asteptare' && Date.now() - Date.parse(r.created) < MATCH_MS);
+  const waiting = list.filter((r) => waits(r) && Date.now() - heldFrom(r) < MATCH_MS);
   if (!waiting.length && !force) return { waiting: 0 };
   const last = await readJSON('data/card-sarbatori-scan.json', {}).catch(() => ({}));
   if (!force && last.at && Date.now() - Date.parse(last.at) < 3 * 60e3) return { waiting: waiting.length, skipped: 'recent' };
@@ -664,6 +798,330 @@ async function reminders(now) {
   return { sent, due: due.length };
 }
 
+// ---- the payment she started and did not finish (the owner, 21.11)
+// On the site: back on the page unpaid, a small window asks what happened (v2/cs-buy.js → back, answer). On WhatsApp
+// (recover): 30 to 90 minutes after the order „plata nu s-a finalizat” (rec1), and about a day later once more with the
+// cards left and the 24 December deadline (rec2), both with her card's picture and three buttons. Each at most once per
+// order, never from 21:00 to 09:00 in Romania (it waits for 09:00), only as an approved template (she did not write us: a
+// plain message would not reach her). Nothing more goes once she paid, moved it to the clinic, said no, wrote anything,
+// ordered again, the sale is over or no card is left. Her buttons (onWhatsApp): „Finalizez plata” (the PayLink of her
+// card, her hold started again), „Plătesc în clinică” (a reservation, like the site's), „Nu mai vreau” (cancelled, thanks).
+const REASONS = ['retry', 'declined', 'nocard', 'confusing', 'clinic', 'no'];
+const REC_KEY = 'data/card-sarbatori-rec.json'; // { at } the last run, so the hourly clock knows the 5-minute one works
+const roHour = (t) => Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', hour: '2-digit', hourCycle: 'h23' }).format(new Date(t)));
+const quiet = (t) => { const h = roHour(t); return h < 9 || h >= 21; };
+// 09:00 (Romania) when t is at night: in quarters of an hour to the first awake one, then back minute by minute
+const awake = (t) => {
+  if (!quiet(t)) return t;
+  let x = t;
+  for (let i = 0; i < 60 && quiet(x); i++) x += 15 * 60e3;
+  for (let i = 0; i < 15 && !quiet(x - 60e3); i++) x -= 60e3;
+  return x;
+};
+const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+const hasReason = (r) => (r.trail || []).some((x) => x.ev === 'reason');
+// „Mai avem doar 6 carduri” / „un singur card” / „20 de carduri”
+const cardsLeft = (n) => (n === 1 ? 'un singur card' : (n >= 20 && (n % 100 === 0 || n % 100 >= 20) ? n + ' de carduri' : n + ' carduri'));
+const ADDR = { 'Timișoara': 'Str. Bucegi 7, Timișoara', Arad: 'Str. Ioan Alexandru 16-18, Arad' };
+const pubRes = (r) => ({ id: r.id, city: r.city, recipient: r.recipient, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit, names: (r.cards || []).map((c) => c.recipient), pay: r.pay, status: r.status });
+const openOnline = (r) => r.pay === 'online' && (r.status === 'asteptare' || (r.status === 'anulat' && r.cancelledBy === 'ea'));
+
+// her hold started again (2 h) when a card is still there for her: 'ok' | 'sold_out' | 'closed'
+async function rehold(list, r, now) {
+  const t = now || Date.now();
+  if (t >= Date.parse(DEADLINE)) return 'closed';
+  if (r.status === 'asteptare' && live(r, t)) return 'ok';
+  const c = await count(list.filter((x) => x !== r), t);
+  if (!c.open || c.left < qtyOf(r)) return 'sold_out';
+  if (r.status === 'anulat') { delete r.cancelledAt; delete r.cancelledBy; }
+  r.status = 'asteptare'; r.held = new Date(t).toISOString();
+  return 'ok';
+}
+
+// back on the site with the order of this tab, not paid: { ask } says whether to ask her (once: not after an answer)
+async function back(id) {
+  await autoMatch().catch(() => null); // a payment that just came in is found first (at most every 3 minutes)
+  const list = await readJSON(KEY, []);
+  const r = list.find((x) => x.id === id);
+  if (!r) return { error: 'not_found' };
+  norm(r);
+  if (r.status === 'platit') return { ok: true, paid: true };
+  if (r.status !== 'asteptare' || r.pay !== 'online') return { ok: true, gone: true };
+  if ((await openChecks()).some((c) => c.cands.includes(r.id))) return { ok: true, checking: true }; // maybe hers: no question
+  const t = Date.now(), last = (r.trail || []).slice(-1)[0];
+  if (!(last && last.ev === 'returned' && t - Date.parse(last.at) < 10 * 60e3)) { mark(r, 'returned'); await writeJSON(KEY, list); }
+  return { ok: true, ask: !hasReason(r), tier: r.tier, credit: r.credit, amount: r.amount, city: r.city, held: live(r, t), until: live(r, t) ? new Date(heldFrom(r) + HOLD_MS).toISOString() : '' };
+}
+// her answer in that window: retry → { link }; clinic → { reservation }; the others are only written down
+async function answer(id, reason) {
+  if (!REASONS.includes(reason)) return { error: 'bad_reason' };
+  const list = await readJSON(KEY, []);
+  const r = list.find((x) => x.id === id);
+  if (!r) return { error: 'not_found' };
+  norm(r);
+  if (r.status === 'platit') return { ok: true, paid: true };
+  if (r.status === 'rezervat' && reason === 'clinic') return { ok: true, again: true, reservation: pubRes(r) };
+  if (!openOnline(r)) return { error: 'not_open' };
+  const last = (r.trail || []).filter((x) => x.ev === 'reason').slice(-1)[0];
+  const again = !!(last && last.note === reason && Date.now() - Date.parse(last.at) < 60e3); // a second tap: written once
+  if (!again) mark(r, 'reason', reason);
+  // the same order, now paid in the clinic (no form: her phone is on it), the desk hears it
+  if (reason === 'clinic') { await writeJSON(KEY, list); return toClinic(id, 'site'); }
+  if (reason === 'retry') {
+    const h = await rehold(list, r);
+    const link = h === 'ok' ? (await links())[r.tier] : null;
+    if (link && !again) mark(r, 'to_paylink');
+    await writeJSON(KEY, list);
+    return link ? { ok: true, link } : { error: h === 'ok' ? 'no_link' : h };
+  }
+  if (reason === 'no' && r.status === 'asteptare') { Object.assign(r, { status: 'anulat', cancelledAt: nowISO(), cancelledBy: 'ea' }); recOf(r).stop = 'no'; mark(r, 'cancelled', 'ea'); }
+  await writeJSON(KEY, list);
+  return { ok: true };
+}
+// an online order she moves to the clinic (how: site, whatsapp, portal): reserved like the site's „Rezerv și plătesc în
+// clinică” (only the credit, no gift), her lead and its alert, and the desk hears it
+async function toClinic(id, how) {
+  const list = await readJSON(KEY, []);
+  const r = list.find((x) => x.id === id);
+  if (!r) return { error: 'not_found' };
+  norm(r);
+  if (r.status === 'platit') return { ok: true, paid: true };
+  if (r.status === 'rezervat') return { ok: true, again: true, reservation: pubRes(r) };
+  if (!openOnline(r)) return { error: 'not_open' };
+  const h = await rehold(list, r); // a hold that is over takes a card only when one is left
+  if (h !== 'ok') { await writeJSON(KEY, list); return { error: h }; }
+  Object.assign(r, { status: 'rezervat', pay: 'clinica', convertedAt: nowISO() });
+  recOf(r).stop = recOf(r).stop || 'converted';
+  mark(r, 'converted', how);
+  await writeJSON(KEY, list);
+  const st = { readJSON, writeJSON };
+  try {
+    const note = 'Card de Sărbători rezervat, plata în clinică (a început plata online, apoi a ales clinica' + (how === 'whatsapp' ? ', din WhatsApp' : how === 'site' ? ', pe site' : '') + '): ' +
+      r.qty + ' × ' + r.tier + ' lei (credit ' + TIERS[r.tier] + ' lei fiecare), de plată ' + r.amount + ' lei' + (r.cards.some((c) => c.recipient) ? ' · pe numele: ' + r.cards.map((c) => c.recipient || '(al ei)').join(', ') : '');
+    await require('../portal-leads').createLead({ name: r.name || r.hint || NONAME, phone: r.phone, source: 'site', location: r.city, createdBy: 'site-form', interest: 'Card de Sărbători', note, authorLabel: 'Site · Card de Sărbători', welcome: false });
+  } catch (e) { console.error('card clinic lead:', e.message); }
+  try {
+    await N.notifyMany(st, await N.deskIds(st, r.city), { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-clinic-' + r.id,
+      title: 'CARD DE SĂRBĂTORI' + N.cityTag(r.city) + ' - rezervat, plătește în clinică', text: r.name + ' · ' + r.tier + ' lei · a trecut de la plata online' + (how === 'whatsapp' ? ' (din WhatsApp)' : '') + '. Sun-o să stabiliți când vine.' });
+  } catch (e) { console.error('card clinic notify:', e.message); }
+  return { ok: true, reservation: pubRes(r) };
+}
+
+// what this run found, written onto the newest list (a change made meanwhile, e.g. her answer on the site, stays)
+function mergeInto(x, r) {
+  x.rec = Object.assign({}, x.rec || {}, r.rec || {});
+  const seen = new Set((x.trail || []).map((e) => e.at + e.ev + (e.note || '')));
+  x.trail = (x.trail || []).concat((r.trail || []).filter((e) => !seen.has(e.at + e.ev + (e.note || '')))).sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).slice(-TRAIL_MAX);
+}
+async function recover(now) {
+  const t = now || Date.now();
+  const stamp = await readJSON(REC_KEY, {}).catch(() => ({}));
+  if (!now && (!stamp.at || t - Date.parse(stamp.at) > 10 * 60e3)) await writeJSON(REC_KEY, { at: new Date(t).toISOString() }, { quiet: true }).catch(() => 0);
+  const list = await readJSON(KEY, []);
+  const pend = list.filter((r) => r.pay === 'online' && r.via === 'site' && r.status === 'asteptare' && t - Date.parse(r.created) < 4 * 86400e3);
+  const unnamed = list.filter((r) => r.status === 'platit' && r.naming && r.naming.state !== 'done');
+  if (!pend.length && !unnamed.length) return { open: 0 };
+  // paid, the name asked, no name after 6 hours (a night waits for 09:00): the card goes without one
+  let named = 0;
+  for (const r of unnamed.slice(0, 4)) {
+    if (t < awake(Date.parse(r.naming.at) + 6 * 3600e3) || quiet(t)) continue;
+    norm(r);
+    Object.assign(r.naming, { state: 'done', how: 'timeout', doneAt: nowISO() });
+    mark(r, 'named', 'none');
+    await sendCards(r, 'fără nume');
+    const l2 = await readJSON(KEY, []);
+    const i = l2.findIndex((x) => x.id === r.id);
+    if (i >= 0) { l2[i] = r; await writeJSON(KEY, l2); }
+    named++;
+  }
+  if (named) { const fresh = await readJSON(KEY, []); list.length = 0; fresh.forEach((x) => list.push(x)); }
+  if (!pend.length) return { open: 0, named };
+  const checking = new Set((await openChecks()).flatMap((c) => c.cands)); // maybe paid: never „plata nu s-a finalizat”
+  const changed = new Set(), due = [];
+  // the hold is over: its line once
+  pend.forEach((r) => { if (!live(r, t) && !(r.trail || []).some((e) => e.ev === 'expired' && Date.parse(e.at) >= heldFrom(r))) { mark(r, 'expired'); changed.add(r); } });
+  const open = pend.filter((r) => !(r.rec && r.rec.stop) && !checking.has(r.id));
+  let cnt = null, convos = null;
+  const stop = (r, why) => { recOf(r).stop = why; changed.add(r); };
+  for (const r of open) {
+    norm(r);
+    const rc = recOf(r);
+    if (t >= Date.parse(DEADLINE)) { stop(r, 'deadline'); continue; }
+    if (list.some((x) => x.id !== r.id && x.status !== 'draft' && d9(x.phone) === d9(r.phone) && Date.parse(x.created) > Date.parse(r.created))) { stop(r, 'newer'); continue; }
+    // the step due now: rec1 from 30 minutes after the order (until 90, or an hour after 09:00 when that fell at night),
+    // rec2 about 24 h after rec1
+    let step = '', from = 0, end = 0;
+    if (!rc.wa1) { step = 'wa1'; from = awake(Date.parse(r.created) + 30 * 60e3); end = Math.max(Date.parse(r.created) + 90 * 60e3, from + 60 * 60e3); }
+    else if (rc.wa1.ok && !rc.wa2) { step = 'wa2'; from = awake(Date.parse(rc.wa1.at) + 24 * 3600e3 - 10 * 60e3); end = from + 3 * 3600e3; }
+    if (!step) { stop(r, 'done'); continue; }
+    if (t < from || quiet(t)) continue;
+    if (t > end) { rc[step] = { at: new Date(t).toISOString(), ok: false, error: rc[step + 'Wait'] || 'nu a plecat la timp' }; mark(r, step, 'netrimis: ' + rc[step].error); changed.add(r); if (step === 'wa1') stop(r, 'missed'); continue; }
+    if (!cnt) cnt = await count(list, t);
+    if (!live(r, t) && cnt.left < qtyOf(r)) { stop(r, 'stock'); continue; }
+    if (step === 'wa2' && cnt.left < 1) { stop(r, 'stock'); continue; }
+    // she wrote us on WhatsApp since the order: the desk talks to her, nothing automatic
+    if (!convos) convos = await readJSON('data/whatsapp-conversations.json', []).catch(() => []);
+    const c = convos.find((x) => d9(x.phone) === d9(r.phone));
+    if (c && (c.messages || []).some((m) => m.direction === 'in' && Date.parse(m.timestamp) > Date.parse(r.created))) { rc.replied = rc.replied || { at: nowISO(), what: 'text' }; mark(r, 'replied', 'text'); stop(r, 'replied'); continue; }
+    due.push({ r, step });
+  }
+  let sent = 0, failed = 0, waiting = 0;
+  for (const { r, step } of due.slice(0, 6)) {
+    const rc = recOf(r);
+    const k = step === 'wa1' ? 'rec1' : 'rec2';
+    const vars = { credit: lei(r.credit), carduri: cardsLeft(cnt.left) };
+    let png = null, path = 'wa-out/card-rec-' + String(r.id).replace(/[^\w-]/g, '').slice(0, 36) + '.png';
+    try {
+      png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: (r.cards[0] || {}).recipient || r.name, code: '', valid: VALID_TXT });
+      await writeBinary(path, png, 'image/png').catch(() => { path = ''; });
+    } catch (e) { console.error('card rec image:', e.message); }
+    const m = await say(k, r, vars, fill(k, vars), png, '', { path, only: 'template', tag: { cardOrder: r.id, cardStep: step } }).catch((e) => ({ sent: false, error: e.message }));
+    // the template not approved yet: tried again on the next run, inside the step's time
+    if (!m.sent && m.tpl) { rc[step + 'Wait'] = String(m.error || '').slice(0, 160); changed.add(r); waiting++; continue; }
+    rc[step] = m.sent ? { at: nowISO(), ok: true, how: m.how } : { at: nowISO(), ok: false, error: String(m.error || 'netrimis').slice(0, 160) };
+    delete rc[step + 'Wait'];
+    mark(r, step, m.sent ? 'ok' : 'netrimis: ' + rc[step].error);
+    changed.add(r);
+    if (m.sent) sent++; else failed++;
+  }
+  if (changed.size) {
+    const l2 = await readJSON(KEY, []);
+    for (const r of changed) { const x = l2.find((y) => y.id === r.id); if (x) mergeInto(x, r); }
+    await writeJSON(KEY, l2);
+  }
+  return { open: open.length, due: due.length, sent, failed, waiting, named };
+}
+// on the hourly clock too, only when the 5-minute one did not run lately (the Worker's minute clock is off)
+async function recoverIfIdle() {
+  const s = await readJSON(REC_KEY, {}).catch(() => ({}));
+  if (s.at && Date.now() - Date.parse(s.at) < 20 * 60e3) return { skipped: 'minute clock' };
+  return recover();
+}
+
+// her answer on WhatsApp to a recovery message (api/webhook-whatsapp.js): m = { order (the message she answers), phone,
+// city (the number she wrote to), button (the button's words), text, msgId }. Returns { quiet } (true: the desk is told
+// another way, or nothing is needed) or null when it is not about a card order.
+async function onWhatsApp(m) {
+  const list = await readJSON(KEY, []);
+  const k9 = d9(m.phone);
+  let r = m.order ? list.find((x) => x.id === m.order) : null;
+  if (!r && k9.length === 9) r = list.filter((x) => d9(x.phone) === k9 && ((x.rec && x.rec.wa1 && x.rec.wa1.ok) || (x.naming && x.naming.state !== 'done'))).sort((a, b) => Date.parse(b.created) - Date.parse(a.created))[0] || null;
+  if (!r) return null;
+  norm(r);
+  // paid, the name of the card asked: her answer is the name (named)
+  if (r.status === 'platit' && r.naming && r.naming.state !== 'done') return named(r, m);
+  if (r.status === 'platit' && !(r.rec && r.rec.wa1)) return null;
+  const rc = recOf(r);
+  const kind = Object.keys(REC_BTN).find((k) => fold(REC_BTN[k]) === fold(m.button || m.text)) || 'text';
+  if (kind === 'text' && rc.replied) return null; // she talks to the desk now: Mesaje as always
+  if (m.msgId && rc.replied && rc.replied.msg === m.msgId) return { quiet: true }; // Meta sent it twice
+  rc.stop = rc.stop || 'replied';
+  rc.replied = { at: nowISO(), what: kind, msg: String(m.msgId || '').slice(0, 80) };
+  mark(r, 'replied', kind);
+  if (!r.hint && m.waName && m.waName !== NONAME) r.hint = String(m.waName).slice(0, 80);
+  const g = greetName(r), hi = (w) => w + (g ? ', ' + g : '');
+  let reply = '', quietDesk = false;
+  if (kind === 'text') { await writeJSON(KEY, list); return { quiet: false }; }
+  if (r.status === 'platit') { reply = hi('Bună') + '! Plata ta e deja confirmată, iar cardul l-ai primit aici pe WhatsApp. Mulțumim!'; quietDesk = true; }
+  else if (kind === 'pay' && openOnline(r)) {
+    const h = await rehold(list, r);
+    const link = h === 'ok' ? (await links())[r.tier] : null;
+    if (link) {
+      mark(r, 'to_paylink', 'whatsapp');
+      reply = hi('Sigur') + '! Aici plătești Cardul de Sărbători de ' + lei(r.credit) + ' lei în tratamente (' + lei(r.amount) + ' lei), pe pagina securizată myPOS: ' + link + '\nCardul îți vine aici pe WhatsApp imediat ce se confirmă plata.';
+      quietDesk = true;
+    } else if (h !== 'ok') reply = hi('Ne pare rău') + ', ' + (h === 'closed' ? 'oferta Cardului de Sărbători s-a încheiat.' : 'în acest moment nu mai avem carduri disponibile.') + ' Mulțumim!';
+  } else if (kind === 'no') {
+    if (r.status === 'asteptare') { Object.assign(r, { status: 'anulat', cancelledAt: nowISO(), cancelledBy: 'ea' }); mark(r, 'cancelled', 'ea'); }
+    reply = hi('Am înțeles') + '. Mulțumim că ne-ai spus! Dacă te răzgândești, ne scrii aici oricând.';
+    quietDesk = true;
+  }
+  await writeJSON(KEY, list);
+  if (kind === 'clinic' && r.status !== 'platit') {
+    const x = await toClinic(r.id, 'whatsapp');
+    if (x.ok && !x.paid) { reply = hi('Gata') + '! Ți-am rezervat Cardul de Sărbători de ' + lei(r.credit) + ' lei în tratamente. Îl plătești în clinică (' + (ADDR[r.city] || ADDR['Timișoara']) + '), cash sau card. Te sună recepția să stabiliți când treci.'; quietDesk = true; }
+    else if (x.error === 'sold_out' || x.error === 'closed') reply = hi('Ne pare rău') + ', ' + (x.error === 'closed' ? 'oferta Cardului de Sărbători s-a încheiat.' : 'în acest moment nu mai avem carduri disponibile.') + ' Mulțumim!';
+  }
+  // the answer, inside the 24 hours she opened by writing; in her chat like every card message
+  let ok = false;
+  if (reply) {
+    try {
+      const WA = require('./whatsapp');
+      const y = await WA.sendWhatsApp({ phone: r.phone, text: reply, from: m.city || r.city });
+      ok = !!y.sent;
+      if (y.sent) await logChat(r.phone, y.fromCity || r.city, r.name, reply, '', y.id, { cardOrder: r.id, cardStep: 'reply' });
+      else console.error('card rec reply: not sent');
+    } catch (e) { console.error('card rec reply:', e.message); }
+  }
+  return { quiet: quietDesk && ok, kind, replied: ok };
+}
+
+// the name on the card, from her answers: „Pentru mine” / „E cadou” (the buttons, or the same words typed), then the name
+const NOT_NAMES = new Set(['multumesc', 'multumim', 'mersi', 'ok', 'okay', 'da', 'nu', 'buna', 'salut', 'super', 'perfect', 'bine', 'pentru mine', 'cadou', 'e cadou', 'sigur']);
+const cleanName = (s) => {
+  const x = String(s || '').replace(/\s+/g, ' ').replace(/[.!]+$/, '').trim();
+  if (NOT_NAMES.has(fold(x))) return '';
+  return /^[\p{L}][\p{L}' .-]{1,59}$/u.test(x) && x.split(' ').length <= 5 ? x : '';
+};
+async function named(r, m) {
+  const nm = r.naming;
+  if (!r.hint && m.waName && m.waName !== NONAME) r.hint = String(m.waName).slice(0, 80);
+  const k = Object.keys(NAME_BTN).find((x) => fold(NAME_BTN[x]) === fold(m.button || m.text)) || '';
+  let reply = '';
+  if (k) {
+    Object.assign(nm, { for: k, state: 'typing', forAt: nowISO() });
+    mark(r, 'name_for', k);
+    reply = k === 'me' ? 'Cum te numești? Scrie-ne numele și prenumele, așa cum vrei să apară pe card.' : 'Ce frumos! Scrie-ne numele celei care primește cardul, așa cum vrei să apară pe el.';
+  } else {
+    if (!nm.for) return null; // not an answer to the question: Mesaje, as always
+    const name = cleanName(m.text);
+    if (!name) {
+      if (nm.retried) return null;
+      nm.retried = true;
+      reply = 'Scrie-ne doar numele, de exemplu: Maria Popescu.';
+    } else {
+      if (nm.for === 'me') { r.name = name; r.cards.forEach((c) => { c.recipient = ''; }); r.recipient = ''; r.forWho = 'eu'; }
+      else { r.cards[0].recipient = name; r.recipient = name; r.forWho = 'cadou'; }
+      Object.assign(nm, { state: 'done', how: nm.for, doneAt: nowISO() });
+      mark(r, 'named', nm.for);
+      await sendCards(r, nm.for === 'me' ? 'pe numele ei' : 'cadou');
+      if (nm.for === 'me') await nameLead(r);
+    }
+  }
+  const l2 = await readJSON(KEY, []);
+  const i = l2.findIndex((x) => x.id === r.id);
+  if (i >= 0) { l2[i] = r; await writeJSON(KEY, l2); }
+  if (reply) {
+    try {
+      const y = await require('./whatsapp').sendWhatsApp({ phone: r.phone, text: reply, from: m.city || r.city });
+      if (y.sent) await logChat(r.phone, y.fromCity || r.city, r.name, reply, '', y.id, { cardOrder: r.id, cardStep: 'name' });
+    } catch (e) { console.error('card name reply:', e.message); }
+  }
+  return { quiet: true, kind: 'name' };
+}
+
+// what happened to the online payments started on the site (api/lead-health.js ?cardpay=abandon): counts only
+function abandonStats(list, now) {
+  const t = now || Date.now();
+  const started = (list || []).filter((r) => r.via === 'site' && (r.pay === 'online' || r.convertedAt)).map(norm);
+  const n = (f) => started.filter(f).length;
+  const tally = (ev) => { const o = {}; started.forEach((r) => (r.trail || []).filter((e) => e.ev === ev).forEach((e) => { const k = String(e.note || '').split(':')[0] || '-'; o[k] = (o[k] || 0) + 1; })); return o; };
+  const recs = (k) => ({ sent: n((r) => r.rec && r.rec[k] && r.rec[k].ok), failed: n((r) => r.rec && r.rec[k] && !r.rec[k].ok), waitingTemplate: n((r) => r.rec && r.rec[k + 'Wait'] && !r.rec[k]) });
+  return {
+    started: started.length,
+    paid: { all: n((r) => r.status === 'platit'), online: n((r) => r.status === 'platit' && r.paidVia === 'online'), inClinic: n((r) => r.status === 'platit' && r.paidVia === 'clinica'),
+      auto: n((r) => r.status === 'platit' && r.match), afterRecovery: n((r) => r.status === 'platit' && r.rec && r.rec.wa1 && r.rec.wa1.ok && Date.parse(r.paidAt) > Date.parse(r.rec.wa1.at)) },
+    unpaid: { all: n((r) => r.status === 'asteptare'), held: n((r) => r.status === 'asteptare' && live(r, t)), holdOver: n((r) => r.status === 'asteptare' && !live(r, t)) },
+    reserved: n((r) => r.status === 'rezervat'), converted: n((r) => r.convertedAt), convertedBy: tally('converted'),
+    saidNo: n((r) => r.cancelledBy === 'ea'), cancelledByTeam: n((r) => r.status === 'anulat' && r.cancelledBy !== 'ea'),
+    returned: n((r) => (r.trail || []).some((e) => e.ev === 'returned')), reasons: tally('reason'),
+    wa1: recs('wa1'), wa2: recs('wa2'), replies: tally('replied'),
+    stops: started.reduce((o, r) => { const s = r.rec && r.rec.stop; if (s) o[s] = (o[s] || 0) + 1; return o; }, {}),
+    naming: { asked: n((r) => (r.trail || []).some((e) => e.ev === 'ask_name' && e.note === 'ok')), waiting: n((r) => r.naming && r.naming.state !== 'done'),
+      forHer: n((r) => r.naming && r.naming.how === 'me'), gift: n((r) => r.naming && r.naming.how === 'gift'), noName: n((r) => r.naming && ['none', 'timeout'].includes(r.naming.how)), byDesk: n((r) => r.naming && r.naming.how === 'portal') },
+  };
+}
+
 // ---- the clock (every hour): the templates sent to Meta, the payments looked for, the reminders, the probe now and then
 async function tick() {
   const out = {};
@@ -680,6 +1138,7 @@ async function tick() {
   const pr = await readJSON(PROBE, null).catch(() => null);
   if (!pr || Date.now() - Date.parse(pr.at) > 7 * 86400e3) out.probe = await scanMypos(3, { events: true }).then((s) => (s.ok ? { read: s.probe.read, online: s.probe.online } : s)).catch((e) => ({ error: e.message }));
   out.remind = await reminders().catch((e) => ({ error: e.message }));
+  out.recover = await recoverIfIdle().catch((e) => ({ error: e.message }));
   return out;
 }
 
@@ -690,12 +1149,14 @@ function cardView(r, c, now) {
     order: r.id, code: c.code, recipient: c.recipient || '', buyer: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, value: c.value,
     used, left: leftOf(c), state: stateOf(r, c, now), pay: r.pay, paidVia: r.paidVia || '', payMethod: r.payMethod || '', paidAt: r.paidAt || '', created: r.created, forWho: r.forWho || '',
     gift: c.gift || null, club: !!r.bonus, sent: c.sent || null, match: r.match || null, paidByName: r.paidByName || '',
+    naming: r.naming ? (r.naming.state === 'done' ? (r.naming.how === 'none' || r.naming.how === 'timeout' ? 'none' : 'done') : r.naming.for ? 'typing' : 'asked') : '',
     claims: (c.claims || []).map((x) => ({ id: x.id, at: x.at, date: x.date, city: x.city, byName: x.byName, performerName: x.performerName, items: x.items, applied: x.applied, rest: x.rest, undone: !!x.undone, msg: x.msg || null })),
   };
 }
 
 module.exports = {
-  NONAME, greetName, KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
+  KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
   norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
+  CORE, REC_BTN, NAME_BTN, NONAME, CHECK, REASONS, needsName, knownName, nameLead, sendCards, askName, cleanName, pick, openCheckOf, openChecks, greetName, mark, recOf, heldFrom, rehold, back, answer, toClinic, recover, recoverIfIdle, onWhatsApp, abandonStats, cardsLeft, quiet, awake,
 };

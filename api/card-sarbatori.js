@@ -2,14 +2,19 @@
 // api/_lib/card-sarbatori.js. Public calls only from our own pages (Origin), with a hidden trap field, the consent box and a
 // few tries per address.
 //   GET                → { total, left, deadline, open, tiers, links }   left: what is left of the wave of now; nothing else about the waves   links: the myPOS PayLink of each card (or null)
-//   POST { pay: 'online', tier, phone, city, consent, website, page, event_id }   (the card block's own field, no form: the
-//        owner, 21.11; name / recipient optional: the card goes out with a neutral name until she gives one)
+//   POST { pay: 'online', tier, phone, city, consent, website, page, event_id }   (the card block's own field, no form:
+//        the owner, 21.11; name / recipient optional, asked on WhatsApp once she paid, _lib/card-sarbatori.js askName)
 //        → { ok, id, link, amount }: the order waits for its payment ('asteptare', its cards held 2 h on the counter) and the
 //        page sends her to that card's PayLink. One card per online order (a PayLink is one sum).
 //   POST { pay: 'clinica', tier, qty 1-5, names: [..], name, phone, city, consent, ... }   (from the card block: tier, phone,
-//        city, qty 1, no name: reception calls her)
+//        city, qty 1, no name: reception calls her; the name on the card is asked on WhatsApp once paid)
 //        → { ok, reservation }: reserved, paid in the clinic; nothing is issued until the team confirms the payment.
 //   POST { action: 'order', id }   what she ordered (her phone masked), paid or not
+//   POST { action: 'back', id }    she is back on the site with the order of her tab, not paid: { paid } | { gone } | { ask, tier,
+//        credit, amount, city, held, until } (the line „s-a întors” on the order)
+//   POST { action: 'answer', id, reason: retry | declined | nocard | confusing | clinic | no }   her answer to „Plata nu s-a
+//        finalizat?”: retry → { link } (her hold again), clinic → { reservation } (paid in the clinic, the desk hears it),
+//        no → the order cancelled; the others only written on the order (_lib/card-sarbatori.js back, answer)
 //   The team (admin, manager, reception; reception records payments):
 //   POST { action: 'list' }        every card (pending first), the counter, the totals, the treatments of the price list
 //   POST { action: 'confirm', id, via: 'online' | 'clinica', method: 'card' | 'cash' | 'transfer' }   paid: the card is issued
@@ -23,6 +28,7 @@
 //   POST { action: 'stock', wave, max }   the waves: how many cards in a wave (10) and in all (70) (admin only; Activitate notes it)
 //   POST { action: 'open_wave' }   the wave of now ends early, the next one starts now (admin only)
 //   POST { action: 'scan' }        look in myPOS for the payments now
+//   POST { action: 'pick', check, id }   „De verificat”: a payment that could be two orders' (the same sum), hers is this one
 //   GET ?img=<code>                the card's picture (the team, a portal session)
 
 const crypto = require('crypto');
@@ -51,6 +57,10 @@ const orderOf = (r) => (C.norm(r), {
   id: r.id, name: r.name, phone: '•••• ' + String(r.phone || '').replace(/\D/g, '').slice(-3), city: r.city,
   tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit, names: (r.cards || []).map((c) => c.recipient), status: r.status, paid: r.status === 'platit', pay: r.pay,
 });
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+// what the portal shows of an order's trail and of its recovery messages (no texts, no numbers of hers)
+const trailOf = (r) => (r.trail || []).slice(-20).map((e) => ({ at: e.at, ev: e.ev, note: e.note || '' }));
+const recView = (r) => { const x = r.rec || {}; return { wa1: x.wa1 ? { at: x.wa1.at, ok: !!x.wa1.ok } : null, wa2: x.wa2 ? { at: x.wa2.at, ok: !!x.wa2.ok } : null, wait: x.wa1Wait || x.wa2Wait ? 'template' : '', stop: x.stop || '' }; };
 const phoneOk = (p) => /^07\d{8}$/.test(p) || /^[1-9]\d{10,14}$/.test(p);
 const phoneOf = (v) => { let p = normalizePhone(clip(v, 30)); if (/^7\d{8}$/.test(p)) p = '0' + p; return p; };
 
@@ -78,7 +88,7 @@ function trackOf(req, page) {
 }
 async function lead(r, b, req, note) {
   try {
-    const L = await require('./portal-leads').createLead({ name: r.name || C.NONAME, phone: r.phone, source: 'site', location: r.city, createdBy: 'site-form', interest: 'Card de Sărbători', note, authorLabel: 'Site · Card de Sărbători', welcome: false });
+    const L = await require('./portal-leads').createLead({ name: r.name || r.hint || C.NONAME, phone: r.phone, source: 'site', location: r.city, createdBy: 'site-form', interest: 'Card de Sărbători', note, authorLabel: 'Site · Card de Sărbători', welcome: false });
     if (L && L.lead) {
       const l2 = await readJSON(C.KEY, []);
       const row = l2.find((x) => x.id === r.id);
@@ -118,7 +128,7 @@ module.exports = async (req, res) => {
     const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
 
     // ---- the team
-    const TEAM = ['void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set'];
+    const TEAM = ['void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick'];
     if (TEAM.includes(b.action)) {
       const session = await require('./_lib/auth').requireRole(req, res, b.action === 'undo' ? ['admin'] : ['admin', 'manager', 'receptie']);
       if (!session) return;
@@ -134,15 +144,23 @@ module.exports = async (req, res) => {
         const cards = [];
         list.filter((r) => r.status !== 'draft').forEach((r) => { C.norm(r); (r.cards.length ? r.cards : [{ code: '', recipient: r.recipient || '', value: C.TIERS[r.tier], claims: [] }]).forEach((c) => cards.push(C.cardView(r, c, now))); });
         // the orders waiting for a payment or a reservation, as one row each (their cards are not issued yet)
-        const orders = list.filter((r) => r.status === 'asteptare' || r.status === 'rezervat').map((r) => ({ id: r.id, created: r.created, name: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit,
-          pay: r.pay, status: r.status, forWho: r.forWho || '', names: r.cards.map((c) => c.recipient), held: C.live(r, now) })).reverse();
+        // and, 3 days, the online ones she gave up herself (what happened stays readable)
+        const gaveUp = (r) => r.status === 'anulat' && r.cancelledBy === 'ea' && now - Date.parse(r.cancelledAt || r.created) < 3 * 86400e3;
+        const orders = list.filter((r) => r.status === 'asteptare' || r.status === 'rezervat' || gaveUp(r)).map((r) => ({ id: r.id, created: r.created, name: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit,
+          pay: r.pay, status: r.status, forWho: r.forWho || '', names: r.cards.map((c) => c.recipient), held: C.live(r, now), heldUntil: r.status === 'asteptare' ? new Date(C.heldFrom(r) + C.HOLD_MS).toISOString() : '',
+          online: r.via === 'site' && (r.pay === 'online' || !!r.convertedAt), converted: r.convertedAt || '', byHer: gaveUp(r), trail: trailOf(r), rec: recView(r) })).reverse();
         const paid = list.filter((r) => r.status === 'platit');
         const totals = { cards: paid.reduce((n, r) => n + C.qtyOf(r), 0), money: paid.reduce((n, r) => n + (Number(r.paidAmount) || Number(r.amount) || 0), 0), online: paid.filter((r) => r.paidVia === 'online').reduce((n, r) => n + (Number(r.paidAmount) || r.amount), 0),
           credit: paid.reduce((n, r) => n + r.cards.reduce((m, c) => m + (Number(c.value) || 0), 0), 0), used: paid.reduce((n, r) => n + r.cards.reduce((m, c) => m + C.usedOf(c), 0), 0) };
         const T = await C.templates().catch(() => ({ t: {} }));
         const WT = require('./_lib/wa-templates');
-        const tpl = Object.fromEntries(Object.entries(T.t || {}).map(([k, t]) => [k, t ? WT.overall(t) : 'LIPSĂ']));
-        res.status(200).json(Object.assign({ cards: cards.filter((c) => c.code).reverse(), orders, totals, templates: tpl, scan, treatments: await treatments(), team: emps.filter((e) => e.active !== false && ['cosmetician', 'manager'].includes(e.role)).map((e) => ({ id: e.id, name: e.name, city: e.location || '' })),
+        const all = Object.fromEntries(Object.entries(T.t || {}).map(([k, t]) => [k, t ? WT.overall(t) : 'LIPSĂ']));
+        const tpl = Object.fromEntries(Object.entries(all).filter(([k]) => C.CORE.includes(k)));
+        // the payments of one sum that could be two orders': the desk picks (its phone's last 3 digits, here only)
+        const checks = (await C.openChecks()).map((c) => ({ id: c.id, amount: c.amount, at: c.at, cands: c.cands.map((id) => list.find((r) => r.id === id)).filter(Boolean).map((r) => ({
+          id: r.id, created: r.created, city: r.city, tier: r.tier, name: r.name || '', last3: String(r.phone || '').replace(/\D/g, '').slice(-3), status: r.status })) }));
+        const recTpl = Object.fromEntries(Object.entries(all).filter(([k]) => !C.CORE.includes(k)));
+        res.status(200).json(Object.assign({ cards: cards.filter((c) => c.code).reverse(), orders, totals, templates: tpl, recTemplates: recTpl, checks, scan, treatments: await treatments(), team: emps.filter((e) => e.active !== false && ['cosmetician', 'manager'].includes(e.role)).map((e) => ({ id: e.id, name: e.name, city: e.location || '' })),
           role: session.role, links: await C.links(), gift: { 'Timișoara': C.giftShort('Timișoara'), Arad: C.giftShort('Arad') } }, await C.count(list, now)));
         return;
       }
@@ -169,13 +187,22 @@ module.exports = async (req, res) => {
         return;
       }
       if (b.action === 'scan') { res.status(200).json(await C.autoMatch(true)); return; }
+      if (b.action === 'pick') {
+        const x = await C.pick(clip(b.check, 40), clip(b.id, 60), { by: session.employeeId || '', byName });
+        if (x.error) { res.status(409).json(x); return; }
+        res.status(200).json(Object.assign({ ok: true, reservation: x.row, cards: x.row.cards.map((c) => C.cardView(x.row, c)) }, await C.count(await readJSON(C.KEY, []))));
+        return;
+      }
       if (b.action === 'confirm' || (b.action === 'set' && b.status === 'platit')) {
         const list = await readJSON(C.KEY, []);
         const r = list.find((x) => x.id === clip(b.id, 60));
         if (!r) { res.status(404).json({ error: 'not_found' }); return; }
         if (r.status === 'anulat' && b.action === 'set') { res.status(409).json({ error: 'cancelled' }); return; }
         const via = b.via === 'online' || (b.via !== 'clinica' && r.pay === 'online') ? 'online' : 'clinica';
-        const x = await C.confirm(r.id, via, { by: session.employeeId || '', byName, method: b.method });
+        // waiting in „De verificat”: that payment is this order's
+        const chk = via === 'online' ? await C.openCheckOf(r.id) : null;
+        const x = chk ? await C.pick(chk.id, r.id, { by: session.employeeId || '', byName, method: b.method })
+          : await C.confirm(r.id, via, { by: session.employeeId || '', byName, method: b.method });
         if (x.error) { res.status(400).json(x); return; }
         res.status(200).json(Object.assign({ ok: true, again: !!x.again, reservation: x.row, cards: x.row.cards.map((c) => C.cardView(x.row, c)) }, await C.count(await readJSON(C.KEY, []))));
         return;
@@ -186,6 +213,7 @@ module.exports = async (req, res) => {
         if (!r) { res.status(404).json({ error: 'not_found' }); return; }
         if (r.status === 'platit') { res.status(409).json({ error: 'paid' }); return; }
         Object.assign(r, { status: 'anulat', cancelledAt: new Date().toISOString(), cancelledBy: session.employeeId || '' });
+        C.mark(r, 'cancelled', 'team'); C.recOf(r).stop = C.recOf(r).stop || 'cancelled';
         await writeJSON(C.KEY, list);
         res.status(200).json(Object.assign({ ok: true, reservation: r }, await C.count(list)));
         return;
@@ -194,6 +222,7 @@ module.exports = async (req, res) => {
         const list = await readJSON(C.KEY, []);
         const r = list.find((x) => x.id === clip(b.id, 60));
         if (!r || r.status === 'platit') { res.status(409).json({ error: 'not_open' }); return; }
+        if (r.pay === 'online' && r.status !== 'rezervat') { r.convertedAt = new Date().toISOString(); C.mark(r, 'converted', 'portal'); C.recOf(r).stop = C.recOf(r).stop || 'converted'; }
         Object.assign(r, { status: 'rezervat', pay: 'clinica' }); delete r.cancelledAt;
         await writeJSON(C.KEY, list);
         res.status(200).json(Object.assign({ ok: true, reservation: r }, await C.count(list)));
@@ -227,7 +256,22 @@ module.exports = async (req, res) => {
         const list = await readJSON(C.KEY, []);
         const f = C.findCard(list, b.code);
         if (!f || f.r.status !== 'platit') { res.status(404).json({ error: 'not_found' }); return; }
-        if (b.action === 'rename') { f.c.recipient = clean(b.recipient, 80); if (f.r.cards[0] === f.c) f.r.recipient = f.c.recipient; await writeJSON(C.KEY, list); res.status(200).json({ ok: true, card: C.cardView(f.r, f.c) }); return; }
+        if (b.action === 'rename') {
+          // the name on the card changed by the desk: the card goes to her again with it (the owner, 21.11); an order
+          // waiting for her answer stops waiting
+          f.c.recipient = clean(b.recipient, 80); if (f.r.cards[0] === f.c) f.r.recipient = f.c.recipient;
+          if (f.r.naming && f.r.naming.state !== 'done') Object.assign(f.r.naming, { state: 'done', how: 'portal', doneAt: new Date().toISOString() });
+          C.mark(f.r, 'renamed', byName ? 'de ' + byName : '');
+          await writeJSON(C.KEY, list);
+          if (b.send === false) { res.status(200).json({ ok: true, card: C.cardView(f.r, f.c) }); return; }
+          const sent = await C.deliver(f.r, f.c);
+          C.mark(f.r, 'card_sent', (sent.how ? 'ok' : 'netrimis') + ', nume nou');
+          const l2 = await readJSON(C.KEY, []);
+          const i = l2.findIndex((x) => x.id === f.r.id);
+          if (i >= 0) { l2[i] = f.r; await writeJSON(C.KEY, l2); }
+          res.status(200).json({ ok: !!sent.how, sent, card: C.cardView(f.r, f.c) });
+          return;
+        }
         const sent = await C.deliver(f.r, f.c);
         const l2 = await readJSON(C.KEY, []);
         const f2 = C.findCard(l2, b.code);
@@ -246,6 +290,18 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, paid: row.status === 'platit', order: orderOf(row) });
       return;
     }
+    // back from the PayLink without paying: the question on the site, her answer (the id is the whole key: a random UUID)
+    if (b.action === 'back' || b.action === 'answer') {
+      if (limited(b.action, ip, b.action === 'back' ? 30 : 20)) { res.status(429).json({ error: 'too_many' }); return; }
+      const id = clip(b.id, 60).toLowerCase();
+      if (!UUID.test(id)) { res.status(404).json({ error: 'not_found' }); return; }
+      const x = b.action === 'back' ? await C.back(id) : await C.answer(id, String(b.reason || ''));
+      if (x.error) { res.status(x.error === 'not_found' ? 404 : x.error === 'bad_reason' ? 400 : 409).json(x); return; }
+      res.status(200).json(Object.assign({ ok: true }, x, x.reservation ? { left: (await C.count(await readJSON(C.KEY, []))).left } : {}));
+      // moved to the clinic from that window: her WhatsApp „Ți-am rezervat Cardul…”, as for a reservation from the block
+      if (x.reservation && !x.again && !x.paid) { try { await C.reservedMsg(id); } catch (e) { console.error('card reserved msg:', e.message); } }
+      return;
+    }
     if (b.action) { res.status(401).json({ error: 'unauthorized' }); return; }
 
     // ---- an order from the site: online (to the PayLink) or reserved (paid in the clinic)
@@ -260,7 +316,8 @@ module.exports = async (req, res) => {
     if (!Number.isInteger(qty) || qty < 1 || qty > C.MAXQ) { res.status(400).json({ error: 'bad_qty' }); return; }
     const gift = b.forWho === 'cadou' || (b.forWho == null && Array.isArray(b.names) && b.names.some((x) => clean(x, 80)));
     const names = online ? [gift ? clean(b.recipient || (b.names || [])[0], 80) : ''] : Array.from({ length: qty }, (_, i) => clean((Array.isArray(b.names) ? b.names : [])[i], 80));
-    // only her phone and the clinic (the card block's field, both ways: the owner, 21.11); a name when one is sent
+    // only her phone and the clinic (the card block's field, both ways: the owner, 21.11); the name on the card comes on
+    // WhatsApp after the payment
     if (!phoneOk(phone)) { res.status(400).json({ error: 'bad_phone' }); return; }
     if (!city) { res.status(400).json({ error: 'missing_city' }); return; }
     if (!(b.consent === true || b.consent === 'true' || b.consent === 'on')) { res.status(400).json({ error: 'missing_consent' }); return; }
@@ -270,29 +327,38 @@ module.exports = async (req, res) => {
     const lk = online ? (await C.links())[tier] : null;
     if (online && !lk) { res.status(409).json({ error: 'no_link' }); return; }
     let list = await readJSON(C.KEY, []);
+    const newId = crypto.randomUUID();
     const cnt0 = await C.count(list, now);
     const left0 = cnt0.left; // what is left of the wave of now (the next opens at once)
     const hers = list.filter((r) => C.live(r, now) && d9(r.phone) === d9(phone));
     // the same order again within 10 minutes (a second tap, back from the PayLink): the one she has
     const same = hers.find((r) => C.norm(r).tier === tier && r.qty === qty && r.pay === (online ? 'online' : 'clinica') && ['rezervat', 'asteptare'].includes(r.status) && now - Date.parse(r.created) < 10 * 60e3 &&
       r.cards.map((c) => fold(c.recipient)).join('|') === names.map(fold).join('|'));
-    if (same) { res.status(200).json(online ? { ok: true, again: true, id: same.id, link: lk, amount: same.amount } : { ok: true, again: true, reservation: publicOf(same), left: left0 }); return; }
+    if (same) {
+      if (online) { C.mark(same, 'to_paylink'); await writeJSON(C.KEY, list); }
+      res.status(200).json(online ? { ok: true, again: true, id: same.id, link: lk, amount: same.amount } : { ok: true, again: true, reservation: publicOf(same), left: left0 }); return;
+    }
     if (hers.reduce((n, r) => n + C.qtyOf(r), 0) + qty > 10) { res.status(409).json({ error: 'too_many_cards' }); return; }
     if (cnt0.wave.soldOut || left0 <= 0) { res.status(409).json({ error: 'sold_out' }); return; }
     if (left0 < qty) { res.status(409).json({ error: 'not_enough', left: left0 }); return; }
 
     // nothing is issued now: the codes come when the payment is confirmed (the owner, 21.11)
-    const entry = { id: crypto.randomUUID(), created: new Date().toISOString(), name, phone, city, tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty, forWho: gift ? 'cadou' : 'eu',
+    const entry = { id: newId, created: new Date().toISOString(), name, phone, city, tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty, forWho: gift ? 'cadou' : 'eu',
       cards: names.map((n) => ({ code: '', recipient: n })), recipient: names[0] || '', status: online ? 'asteptare' : 'rezervat', via: 'site', pay: online ? 'online' : 'clinica', page: clip(b.page, 200), track: trackOf(req, b.page) };
+    if (!name) entry.hint = await C.knownName(phone).catch(() => '');
+    C.mark(entry, 'created');
+    if (online) C.mark(entry, 'to_paylink');
     list.push(entry);
     await writeJSON(C.KEY, list);
     // two at the same second for the last cards: the later one gives way
     list = await readJSON(C.KEY, []);
     const before = list.filter((r) => C.live(r));
     const upTo = before.slice(0, before.findIndex((r) => r.id === entry.id) + 1).reduce((n, r) => n + C.qtyOf(r), 0);
-    if (upTo > await C.total() || (await C.count(list.filter((r) => r.id !== entry.id))).wave.left < qty) { await writeJSON(C.KEY, list.filter((r) => r.id !== entry.id)); res.status(409).json({ error: 'sold_out' }); return; }
+    if (upTo > await C.total() || (await C.count(list.filter((r) => r.id !== entry.id))).wave.left < qty) {
+      await writeJSON(C.KEY, list.filter((r) => r.id !== entry.id)); res.status(409).json({ error: 'sold_out' }); return;
+    }
 
-    const note = 'Card de Sărbători ' + (online ? 'trimis la plata online (PayLink myPOS), de confirmat plata' : 'rezervat pe site, plata în clinică') + ': ' + qty + ' × ' + tier + ' lei (credit ' + C.TIERS[tier] + ' lei fiecare), de plată ' + entry.amount + ' lei' +
+    const note = 'Card de Sărbători ' + (online ? 'trimis la plata online (PayLink myPOS), de confirmat plata; numele de pe card îl cerem pe WhatsApp după plată' : 'rezervat pe site, plata în clinică') + ': ' + qty + ' × ' + tier + ' lei (credit ' + C.TIERS[tier] + ' lei fiecare), de plată ' + entry.amount + ' lei' +
       (names.some(Boolean) ? ' · pe numele: ' + names.map((n) => n || '(al ei)').join(', ') : '');
     if (online) {
       res.status(200).json({ ok: true, id: entry.id, link: lk, amount: entry.amount, left: (await C.count(list)).left });
@@ -300,7 +366,7 @@ module.exports = async (req, res) => {
       try {
         const N = require('./_lib/notify');
         await N.notifyMany({ readJSON, writeJSON }, await N.deskIds({ readJSON, writeJSON }, city), { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-wait-' + entry.id,
-          title: 'CARD DE SĂRBĂTORI' + N.cityTag(city) + ' - la plată online', text: (name || 'fără nume') + ' · ' + tier + ' lei · se confirmă singur când plata apare în myPOS; altfel „Confirmă plata” în Carduri' });
+          title: 'CARD DE SĂRBĂTORI' + N.cityTag(city) + ' - la plată online', text: (name || entry.hint || 'fără nume') + ' · ' + tier + ' lei · se confirmă singur când plata apare în myPOS; altfel „Confirmă plata” în Carduri' });
       } catch (e) { /* the order stands */ }
       return;
     }

@@ -1799,18 +1799,20 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     check('CS', 'the same order again (back from the PayLink): the one she has, not a second', again1.ok && again1.again && again1.id === on1.id && rd(CSK, []).length === 1, again1);
     const noRec = await pub(Object.assign({}, me, { forWho: 'cadou', recipient: '', phone: '0755000112' }));
     const giftAr = await pub(Object.assign({}, me, { tier: 490, forWho: 'cadou', recipient: 'Mama Proba', name: 'Proba Arad', phone: '0755000113', city: 'Arad' }));
-    check('CS', 'a gift online: the name on the card is asked; with it, kept on the card', noRec.error === 'missing_recipient' && giftAr.ok && ord(giftAr.id).cards[0].recipient === 'Mama Proba' && ord(giftAr.id).forWho === 'cadou' && giftAr.amount === 490, { noRec, g: ord(giftAr.id).cards });
+    // an online order needs no name (the card block, 21.11): the name on the card is asked on WhatsApp after the payment
+    if (noRec.id) wr(CSK, rd(CSK, []).filter((r) => r.id !== noRec.id)); // out of the way of the counts below
+    check('CS', 'a gift online: no name needed (asked after the payment); one given is kept on the card', noRec.ok && !!noRec.id && giftAr.ok && ord(giftAr.id).cards[0].recipient === 'Mama Proba' && ord(giftAr.id).forWho === 'cadou' && giftAr.amount === 490, { noRec, g: ord(giftAr.id).cards });
 
     // 2. reserved, paid in the clinic: nothing issued until the payment
     const res3 = await pub({ tier: 490, qty: 3, names: ['Mama Proba', '', 'Sora Proba'], name: 'Proba Clinica', phone: '0755000232', city: 'Arad', consent: true, pay: 'clinica', amount: 5 });
     const o3 = ord((res3.reservation || {}).id);
     check('CS', 'reserved 3 × 490 (clinic): 1.470 and 3.000 made on the server, each card its name, no code until paid, 5 left', res3.ok && o3.status === 'rezervat' && o3.pay === 'clinica' && o3.amount === 1470 && o3.credit === 3000 && o3.cards.map((c) => c.recipient).join('|') === 'Mama Proba||Sora Proba' && o3.cards.every((c) => !c.code) && res3.left === 5, { res3, o3 });
     const bad = await Promise.all([
-      pub({ tier: 990, qty: 1, name: 'X', phone: '0755000222', city: 'Arad', consent: true }), pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '12', city: 'Arad', consent: true }),
+      pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '', city: 'Arad', consent: true }), pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '12', city: 'Arad', consent: true }),
       pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '0755000223', city: 'Cluj', consent: true }), pub({ tier: 990, qty: 1, name: 'Proba Doi', phone: '0755000223', city: 'Arad' }),
       pub({ tier: 500, qty: 1, name: 'Proba Doi', phone: '0755000223', city: 'Arad', consent: true }), pub({ tier: 990, qty: 6, name: 'Proba Doi', phone: '0755000223', city: 'Arad', consent: true }),
       pub({ tier: 990, qty: 0, name: 'Proba Doi', phone: '0755000223', city: 'Arad', consent: true })]);
-    check('CS', 'validation: name, phone, city, consent, the card (only 290/490/990), the quantity (1 to 5)', bad.map((x) => x.error).join() === 'missing_name,bad_phone,missing_city,missing_consent,bad_tier,bad_qty,bad_qty' && bad.every((x) => x._status === 400) && rd(CSK, []).length === 3, bad.map((x) => x.error));
+    check('CS', 'validation: phone (no name needed), city, consent, the card (only 290/490/990), the quantity (1 to 5)', bad.map((x) => x.error).join() === 'bad_phone,bad_phone,missing_city,missing_consent,bad_tier,bad_qty,bad_qty' && bad.every((x) => x._status === 400) && rd(CSK, []).length === 3, bad.map((x) => x.error));
     const hp = await pub({ tier: 990, qty: 1, name: 'Bot Proba', phone: '0755000333', city: 'Arad', consent: true, website: 'http://spam' });
     const evil = await pub({ tier: 990, qty: 1, name: 'Proba Trei', phone: '0755000444', city: 'Arad', consent: true }, 'https://evil.example');
     check('CS', 'the trap field: a quiet ok, nothing stored; another site\'s origin: 403', hp.ok && !hp.id && !hp.reservation && evil._status === 403 && rd(CSK, []).length === 3, { hp, evil: evil._status });

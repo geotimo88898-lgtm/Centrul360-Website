@@ -207,6 +207,17 @@ async function handleInboundMessage(conversations, message, phoneNumberId, conta
     if (ctxId && !sent) for (const c of conversations) { sent = pick(c); if (sent) break; }
     out.tap = { phone: convo.phone, name: convo.clientName || '', text: textFor(message), appt: (sent && sent.appt) || '', akey: (sent && sent.akey) || '', templateId: (sent && sent.templateId) || '', msgId: message.id || '' };
   }
+  // an answer to a Card de Sărbători recovery message („plata nu s-a finalizat”, _lib/card-sarbatori.js recover): her
+  // button, or anything she writes in the 4 days after one (it stops the messages; the text stays in Mesaje as always)
+  const cardMsg = (convo.messages || []).slice().reverse().find((x) => x.direction === 'out' && x.cardOrder && Date.now() - Date.parse(x.timestamp) < 4 * 86400e3);
+  if (cardMsg) {
+    const ctxId = message.context && message.context.id;
+    const ctx = ctxId ? (convo.messages || []).find((x) => x.id === ctxId && x.cardOrder) : null;
+    const isBtn = message.type === 'button' || (message.type === 'interactive' && !!(message.interactive || {}).button_reply);
+    out.card = { order: (ctx || cardMsg).cardOrder, phone: convo.phone, city: city || convo.location || '', button: isBtn ? textFor(message) : '', text: textFor(message), msgId: message.id || '',
+      // her name for „Bună, …!”: her WhatsApp profile's, else the one the portal knows
+      waName: (((contacts || []).find((c) => c && String(c.wa_id) === String(from)) || {}).profile || {}).name || (convo.clientName && convo.clientName !== convo.phone ? String(convo.clientName) : '') };
+  }
   return out;
 }
 
@@ -375,6 +386,7 @@ module.exports = async (req, res) => {
     const fresh = new Map(); // the newest message per client, for the phones
     const failed = []; // messages Meta couldn't deliver, for the UNDELIVERED alert
     const taps = []; // buttons tapped on a reminder
+    const cards = []; // answers to the Card de Sărbători's recovery messages
     const heard = []; // her new voice notes and videos, for the transcripts
     const fc = []; // answers to the „Transformarea 360” campaign (api/_lib/fc-campaign.js)
     const FC = require('./_lib/fc-campaign');
@@ -392,7 +404,8 @@ module.exports = async (req, res) => {
             if (m) fresh.set(m.phone, m);
             if (m) { const hit = await FC.onInbound(conversations, message, textFor(message)); if (hit) fc.push({ hit, m }); }
             if (m) await require('./_lib/card-blast').onInbound(conversations, message).catch((e) => console.error('card blast chat', e.message)); // the Cardul de Sărbători she answers, in her chat
-            if (m && m.tap) taps.push(m);
+            if (m && m.tap && !(m.card && m.card.button)) taps.push(m);
+            if (m && m.card) cards.push(m);
             changed = true;
           } catch (err) {
             console.error('webhook-whatsapp: error processing message', err.message);
@@ -441,6 +454,11 @@ module.exports = async (req, res) => {
     // her voice notes written out (and her videos in one line), saved on the messages: after the answer to Meta, kept alive
     // by the platform (waitUntil), never delaying it; a failure leaves the label „Mesaj vocal” as it is
     if (changed && heard.length) { try { require('./_lib/media-read').later(heard).catch(() => {}); } catch (err) { console.error('webhook-whatsapp: transcripts', err.message); } }
+    // the Card de Sărbători: „Finalizez plata” gets her PayLink, „Plătesc în clinică” a reservation (the desk hears it as one),
+    // „Nu mai vreau” a thanks; any other answer only stops the messages (after the chats are saved: the answer is logged there)
+    for (const m of cards) {
+      try { const x = await require('./_lib/card-sarbatori').onWhatsApp(m.card); if (x && x.quiet && fresh.get(m.phone) === m) fresh.delete(m.phone); } catch (err) { console.error('webhook-whatsapp: card answer', err.message); }
+    }
     // „Da, ajung” confirms the appointment, „Nu ajung” cancels it; the desk hears that instead of the plain message
     for (const m of taps) {
       try { if (await require('./_lib/reminders').reply(m.tap) && fresh.get(m.phone) === m) fresh.delete(m.phone); } catch (err) { console.error('webhook-whatsapp: reminder answer', err.message); }
