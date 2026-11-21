@@ -12,6 +12,21 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 21.11 ~17:20, George: „da, pornește-le”: the Card de Sărbători gets the money (two destinations side by side: the
+  // reservation form and the card page); the lead filter ads without cheap leads stop; per day the total stays the same
+  { id: 'card-on-2026-11-21', why: 'Cardul de Sărbători primește banii (formular și pagina cardului), totalul pe zi rămâne același', actions: [
+    { campaignId: '120260591748260112', name: 'LF · TM · P2 · O singură ședință', status: 'PAUSED', why: '21 lei pe lead, banii merg la card' },
+    { campaignId: '120260591767590112', name: 'LF · AR · C2 · Corp sau față?', status: 'PAUSED', why: '22 lei pe lead, banii merg la card' },
+    { campaignId: '120260595786020112', name: 'BK · AR · VIDEO · HIFU abdomen · vid 8 (contul vechi)', status: 'PAUSED', why: '12 lei, niciun lead, banii merg la card' },
+    { campaignId: '120260599181870112', name: 'CARD · FORM (setul)', status: 'ACTIVE', why: 'pornit cu campania' },
+    { campaignId: '120260599182200112', name: 'CARD · FORM (reclama)', status: 'ACTIVE', why: 'pornit cu campania' },
+    { campaignId: '120260599181780112', name: 'CARD · FORM · Tu plătești 990 lei. Ea primește 2.500 lei', daily: 40, why: 'cardul, formularul de rezervare' },
+    { campaignId: '120260599181780112', name: 'CARD · FORM · Tu plătești 990 lei. Ea primește 2.500 lei', status: 'ACTIVE', why: 'cardul, formularul de rezervare' },
+    { campaignId: '120260599183110112', name: 'CARD · SITE (setul)', status: 'ACTIVE', why: 'pornit cu campania' },
+    { campaignId: '120260599183950112', name: 'CARD · SITE (reclama)', status: 'ACTIVE', why: 'pornit cu campania' },
+    { campaignId: '120260599182800112', name: 'CARD · SITE · Plătești 290 lei. Ea primește 500 lei', daily: 40, why: 'cardul, direct pe pagina cardului' },
+    { campaignId: '120260599182800112', name: 'CARD · SITE · Plătești 290 lei. Ea primește 500 lei', status: 'ACTIVE', why: 'cardul, direct pe pagina cardului' },
+  ] },
   // 21.11 ~14:30: the lead filter's door for gușă: the proven HIFU gușă 190 ads of the old account, now into a lead-filter
   // form (14.900 / 4.990 / 990 / 190, no review screen). AR's door takes the budget of „Căutăm 8 doamne din Arad” (0 leads)
   { id: 'lf-door-190-2026-11-21', why: 'Ușa de 190 în lead filter: HIFU gușă, reclama dovedită, în formularul cu pachete', actions: [
