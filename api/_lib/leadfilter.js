@@ -480,4 +480,14 @@ async function testForms() {
 }
 async function tests() { return { ok: true, results: await readJSON(TESTS_KEY, []) }; }
 
-module.exports = { testResult, testForms, tests, KEY, TIERS, HOT, Q, load, save, zonesOf, tiersOf, knownTiers, formInput, dryRun, makeForms, parse, summary, afterLead, followups, saveContent, saveImages, templates, kpi, tplLabel, msgFor };
+// one lead's first message again, with the error if it can't leave (?leadfilter=resend&id=, with the key)
+async function resend(id) {
+  const all = await readJSON(LEADS_KEY, []);
+  const l = (all || []).find((y) => y && y.id === id && y.lf);
+  if (!l) return { error: 'not_found' };
+  if (l.lf.sentAt) return { already: true };
+  try { await sendFirst(l, l.lf, l.lf.city || l.location); } catch (e) { return { error: String(e && e.message || e), stack: String(e && e.stack || '').split('\n').slice(0, 4) }; }
+  const after = ((await readJSON(LEADS_KEY, [])) || []).find((y) => y && y.id === id) || {};
+  return { ok: true, sent: !!(after.lf && after.lf.sentAt), note: String((((after.activities || []).slice(-1)[0]) || {}).text || '').replace(/\d{6,}/g, '…') };
+}
+module.exports = { resend, testResult, testForms, tests, KEY, TIERS, HOT, Q, load, save, zonesOf, tiersOf, knownTiers, formInput, dryRun, makeForms, parse, summary, afterLead, followups, saveContent, saveImages, templates, kpi, tplLabel, msgFor };
