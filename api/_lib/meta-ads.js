@@ -368,9 +368,11 @@ async function port(conn, oldId, o) {
   const t0 = (sets[0] && sets[0].targeting) || {};
   const t = {}; KEEP_T.forEach((k) => { if (t0[k] !== undefined) t[k] = t0[k]; });
   const ld = oss.link_data || null, vd = oss.video_data || null;
+  // the texts of an ad that mixes several (Meta's asset feed) live there, not in the story: the first ones stand in
+  const fb0 = (k) => (feed && feed[k] && feed[k][0] && feed[k][0].text) || '';
   const cta = (ld && ld.call_to_action) || (vd && vd.call_to_action) || (feed && feed.call_to_action_types && { type: feed.call_to_action_types[0] }) || {};
   const formId = String((cta.value && cta.value.lead_gen_form_id) || (o && o.formId) || '');
-  const plan = { oldName: r.j.name, kind: vd ? 'video' : 'image', formId, targeting: t, cta: cta.type || '', text: ((ld && ld.message) || (vd && vd.message) || '').slice(0, 120), feed: !!feed };
+  const plan = { oldName: r.j.name, kind: vd ? 'video' : 'image', formId, targeting: t, cta: cta.type || '', text: ((ld && ld.message) || (vd && vd.message) || fb0('bodies')).slice(0, 120), feed: !!feed };
   if (!formId) return Object.assign({ error: 'formularul vechi nu se vede' }, { plan });
   if (o && o.dry) return { ok: true, dry: true, plan, dsa: await dsaOf(conn), creative: ad.creative };
 
@@ -395,7 +397,7 @@ async function port(conn, oldId, o) {
     if (!ready) return { ok: false, pending: true, videoId: vid };
     let thumb = vd.image_url || '';
     if (!thumb) { const th = await call('GET', '/' + vid + '/thumbnails', tok, {}); thumb = th.ok && th.j.data && th.j.data[0] ? th.j.data[0].uri : ''; }
-    mediaSpec = { video_data: Object.assign({ video_id: vid, message: vd.message || '', title: vd.title || undefined, link_description: vd.link_description || undefined,
+    mediaSpec = { video_data: Object.assign({ video_id: vid, message: vd.message || fb0('bodies'), title: vd.title || fb0('titles') || undefined, link_description: vd.link_description || fb0('descriptions') || undefined,
       call_to_action: { type: cta.type || 'LEARN_MORE', value: { lead_gen_form_id: formId } } }, thumb ? { image_url: thumb } : {}) };
   } else {
     const hash = (ld && ld.image_hash) || (feed && feed.images && feed.images[0] && feed.images[0].hash) || '';
@@ -413,7 +415,7 @@ async function port(conn, oldId, o) {
     if (!img.ok) return { error: metaError(img.j, 'Imaginea') };
     const imgs = img.j.images || {}; const h = (imgs[Object.keys(imgs)[0]] || {}).hash;
     if (!h) return { error: 'Imaginea: Meta n-a întors codul imaginii' };
-    mediaSpec = { link_data: { image_hash: h, link: 'https://fb.me/', message: (ld && ld.message) || '', name: (ld && ld.name) || undefined, description: (ld && ld.description) || undefined,
+    mediaSpec = { link_data: { image_hash: h, link: 'https://fb.me/', message: (ld && ld.message) || fb0('bodies'), name: (ld && ld.name) || fb0('titles') || undefined, description: (ld && ld.description) || fb0('descriptions') || undefined,
       call_to_action: { type: cta.type || 'LEARN_MORE', value: { lead_gen_form_id: formId } } } };
   }
 
@@ -430,9 +432,8 @@ async function port(conn, oldId, o) {
     const ig = await call('GET', '/' + conn.pageId, conn.pageAccessToken, { fields: 'instagram_business_account' });
     if (ig.ok && ig.j.instagram_business_account) spec.instagram_user_id = ig.j.instagram_business_account.id;
     // the old ad's extra texts / titles (Meta mixing them), when it had them
-    const multi = feed && !vd && ((feed.bodies || []).length > 1 || (feed.titles || []).length > 1);
+    const multi = feed && ((feed.bodies || []).length > 1 || (feed.titles || []).length > 1);
     const af = multi ? { bodies: (feed.bodies || []).map((x) => ({ text: x.text })), titles: (feed.titles || []).map((x) => ({ text: x.text })), descriptions: feed.descriptions ? feed.descriptions.map((x) => ({ text: x.text })) : undefined, optimization_type: 'DEGREES_OF_FREEDOM' } : null;
-    if (multi && !spec.link_data.message && af.bodies[0]) spec.link_data.message = af.bodies[0].text;
     let creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name, object_story_spec: spec }, af ? { asset_feed_spec: af } : {}));
     if (!creative.ok && af) creative = await call('POST', '/' + act + '/adcreatives', tok, { name, object_story_spec: spec });
     if (!creative.ok) { await undo(); return { error: metaError(creative.j, 'Reclama (textele și imaginea)') }; }
