@@ -120,6 +120,14 @@ module.exports = async (req, res) => {
   // ?fcaudience=1: who a „Fast Cash” WhatsApp offer could go to (the owner, 20.11), counts only, per clinic: clients
   // with a finished visit in the last 6 months, older clients, and the leads of the last 90 days who never came;
   // with a phone, without a test name. Never a name or a number. Read only.
+  // POST ?customers=sync: the clinic's own people (clients + the Transformarea 360 list) as a Meta custom audience,
+  // hashed (api/_lib/meta-customers.js), to leave them out of the lead filter ads and reach them with the card
+  if (req.query && req.query.customers) {
+    const MC = require('./_lib/meta-customers');
+    const r = req.method === 'POST' && req.query.customers === 'sync' ? await MC.sync() : { ok: true, audience: await MC.current() };
+    res.status(r.error ? 400 : 200).json(r);
+    return;
+  }
   if (req.query && req.query.fcaudience) {
     const [clients, appts, leads] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/appointments.json', []), readJSON('data/leads.json', [])]);
     const { normalizePhone } = require('./_lib/clients');
