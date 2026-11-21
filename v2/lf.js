@@ -32,13 +32,39 @@
     return loading;
   }
   var zonesOf = function (city) { return (offer && offer.cities && offer.cities[city]) || []; };
-  var zoneOf = function () { return zonesOf(st.city).filter(function (z) { return z.key === st.zone; })[0] || null; };
+  // before she says the clinic (it's the last question now, the owner 21.11): both clinics' zones in one list; a package's
+  // value the lower of the two, an item that differs said for each („EMS la Timișoara, radiofrecvență la Arad”)
+  function both() {
+    var tm = zonesOf('Timișoara'), ar = zonesOf('Arad');
+    var words = function (l) { return String(l || '').split(' '); };
+    var mix = function (a, b) { if (!b || a.label === b.label) return a; var x = words(a.label), y = words(b.label), k = 0; while (k < x.length && k < y.length && x[k] === y[k]) k++;
+      return { label: x.join(' ') + ' la Timișoara, ' + y.slice(k).join(' ') + ' la Arad', qty: a.qty }; };
+    return tm.map(function (z) {
+      var a = ar.filter(function (x) { return x.key === z.key; })[0];
+      if (!a) return z;
+      var packs = {};
+      Object.keys(z.packs || {}).forEach(function (t) {
+        var p = z.packs[t], q = a.packs[t];
+        packs[t] = !q ? p : Object.assign({}, p, { items: (p.items || []).map(function (it, i) { return mix(it, (q.items || [])[i]); }), value: Math.min(p.value || 0, q.value || 0), valueFrom: (p.value || 0) !== (q.value || 0) });
+      });
+      return Object.assign({}, z, { packs: packs });
+    }).concat(ar.filter(function (a) { return !tm.some(function (z) { return z.key === a.key; }); }));
+  }
+  var zonesNow = function () { return st.city ? zonesOf(st.city) : both(); };
+  var zoneOf = function () { return zonesNow().filter(function (z) { return z.key === st.zone; })[0] || null; };
+  var ONLY = { 'par-nedorit': 'Timișoara' }; // a zone one clinic has: its clinic, without asking
+  function zoneCity() {
+    if (ONLY[st.zone]) { if (!st.cityFixed || st.cityAuto) { st.city = ONLY[st.zone]; st.cityFixed = true; st.cityAuto = true; } }
+    else if (st.cityAuto) { st.city = ''; st.cityFixed = false; st.cityAuto = false; }
+  }
   // the steps she still has to go through, in order
   function steps() {
+    // zone → problem → when → package → clinic → her details (the clinic last, the owner 21.11)
     var s = [];
-    if (!st.cityFixed) s.push('city');
     if (!st.zoneFixed) s.push('zone');
-    s.push('problem', 'when', 'pack', 'contact');
+    s.push('problem', 'when', 'pack');
+    if (!st.cityFixed) s.push('city');
+    s.push('contact');
     return s;
   }
 
@@ -63,8 +89,8 @@
   }
 
   function pick(what, v) {
-    if (what === 'city') { st.city = v; if (st.zone && !zonesOf(v).some(function (z) { return z.key === st.zone; })) { st.zone = ''; st.zoneFixed = false; } }
-    else if (what === 'zone') { st.zone = v; st.problem = ''; st.tier = ''; st.sel = ''; }
+    if (what === 'city') st.city = v;
+    else if (what === 'zone') { st.zone = v; st.problem = ''; st.tier = ''; st.sel = ''; zoneCity(); }
     else if (what === 'problem') st.problem = v;
     else if (what === 'when') st.when = v;
     else if (what === 'pack') st.tier = v;
@@ -86,7 +112,7 @@
     if (step === 'city') {
       html = q('Unde vrei să vii?', 'Avem două clinici.') + '<div class="lfs-two">' + CITIES.map(function (c) { return opt('city', c, '<b>' + c + '</b>' + (c === 'Timișoara' ? '<small>Str. Bucegi 7</small>' : '<small>Str. Ioan Alexandru 16-18</small>'), st.city === c); }).join('') + '</div>';
     } else if (step === 'zone') {
-      html = q('Ce zonă vrei să schimbi cel mai mult?') + '<div class="lfs-list">' + zonesOf(st.city).map(function (x) { return opt('zone', x.key, '<b>' + esc(x.label) + '</b>', st.zone === x.key); }).join('') + '</div>';
+      html = q('Ce zonă vrei să schimbi cel mai mult?') + '<div class="lfs-list">' + zonesNow().map(function (x) { return opt('zone', x.key, '<b>' + esc(x.label) + '</b>', st.zone === x.key); }).join('') + '</div>';
     } else if (step === 'problem') {
       html = q('Ce te deranjează cel mai mult?', z ? esc(z.label) : '') + '<div class="lfs-list">' + ((z && z.problems) || []).map(function (p) { return opt('problem', p.key, '<b>' + esc(p.label) + '</b>', st.problem === p.key); }).join('') + '</div>';
     } else if (step === 'when') {
@@ -134,7 +160,7 @@
     var head = '<button type="button" class="lfs-row" role="radio" aria-checked="' + on + '" data-sel="' + esc(t) + '">' +
       '<span class="lfs-rd" aria-hidden="true"></span>' +
       '<span class="lfs-rt"><b>' + lei(p.price) + '</b><strong>' + esc(p.name) + '</strong>' +
-      '<small>' + esc(sh) + (p.value > p.price ? (sh ? ' · ' : '') + 'valoare ' + lei(p.value) : '') + '</small></span>' +
+      '<small>' + esc(sh) + (p.value > p.price ? (sh ? ' · ' : '') + 'valoare ' + (p.valueFrom ? 'de la ' : '') + lei(p.value) : '') + '</small></span>' +
       (p.popular ? '<em class="lfs-pop">Cele mai multe aleg asta</em>' : last ? '<em class="lfs-start">Vreau doar să încep</em>' : '') + '</button>';
     var body = '';
     if (on) {
@@ -200,7 +226,7 @@
     var city = o.city || (btn && btn.getAttribute('data-lf-city')) || '';
     city = CITIES.filter(function (c) { return fold(c) === fold(city); })[0] || '';
     var zone = o.zone || (btn && btn.getAttribute('data-lf-zone')) || '';
-    st = { city: city, cityFixed: !!city, zone: zone, zoneFixed: false, problem: '', when: '', tier: '', started: false, step: '' };
+    st = { city: city, cityFixed: !!city, cityAuto: false, zone: zone, zoneFixed: false, problem: '', when: '', tier: '', started: false, step: '' };
     root.classList.remove('sent', 'shown');
     sc.innerHTML = '<div class="lfs-wait"><span class="csb-spin csb-spin-big" aria-hidden="true"></span></div>'; ft.hidden = true;
     root.classList.add('open'); root.setAttribute('aria-hidden', 'false'); document.documentElement.classList.add('csb-lock');
@@ -211,6 +237,7 @@
       if (!d) { sc.innerHTML = '<div class="lfs-q"><h3>Nu am putut încărca variantele.</h3><p>Încearcă din nou peste un minut sau programează direct consultația gratuită.</p></div>'; return; }
       // the zone is known (the page's or the link's) and is at that clinic: it isn't asked again
       if (st.zone) st.zoneFixed = !st.city || zonesOf(st.city).some(function (z) { return z.key === st.zone; });
+      if (st.zoneFixed) zoneCity();
       if (st.zone && !st.zoneFixed) st.zone = '';
       show(steps()[0], 0);
     });
