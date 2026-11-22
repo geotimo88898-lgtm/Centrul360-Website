@@ -300,3 +300,5 @@ main [hidden]{ display:none !important; }
 .cst-gift + .btn{ position:relative; z-index:2; }
 .cs-vipcall > .cst-gift, .cst-go.is-done > .cst-gift{ display:none !important; }
 @media (max-width:380px){ .cst-gift{ font-size:11.5px; padding:5px 10px 13px; } }
+/* no x2 / x2,5 / x3 chips in the three cards (the owner, 22.11) */
+.cst-t .cst-x{ display:none !important; }
