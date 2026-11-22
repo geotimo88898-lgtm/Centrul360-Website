@@ -22,7 +22,7 @@ function organic(src) {
 }
 
 async function view(days) {
-  const n = Math.max(1, Math.min(60, Number(days) || 14));
+  const n = Array.isArray(days) ? days : Math.max(1, Math.min(60, Number(days) || 14));
   const [fun, dm] = await Promise.all([F.view(n), readJSON('data/content/dm.json', null).catch(() => null)]);
   const list = fun.days.map((d) => d.day);
   const add = (o, k, v) => { o[k] = (o[k] || 0) + (v == null ? 1 : v); };

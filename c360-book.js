@@ -36,6 +36,13 @@
     if (!kept || ref || Object.keys(tag).length) { kept = now; try { sessionStorage.setItem('c360-src', JSON.stringify(now)); } catch (e) { /* private mode */ } }
     return kept;
   })();
+  // Pay online with 10% off (the owner, 22.11): before „Programează-mă” an offer can be paid online now, the whole
+  // offer at 10% less (on top of the Black Friday price), or booked and paid at the clinic at the full price, as before.
+  // The payment itself (myPOS) is not ready: startOnlinePay() below is where it plugs in. ON only on the /v2/ preview
+  // pages for now; live = this one line (or window.C360_PAY_ONLINE = true set before this file runs).
+  const PAY_ON = /^\/v2\//.test(location.pathname) || window.C360_PAY_ONLINE === true;
+  const PAY_OFF = 10; // percent off when paid online
+  const payAmount = (full) => Math.floor((Number(full) || 0) * (100 - PAY_OFF) / 100); // whole lei, never less than 10% off
   const PAGE_CITY = { timisoara: 'Timișoara', arad: 'Arad', 'epilare-laser': 'Timișoara', 'tonifiere-musculara': 'Timișoara', 'detox-drenaj': 'Timișoara' }[PAGE] || '';
 
   const CSS = `
@@ -174,6 +181,18 @@
   .bk-two{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .bk-ghost{ min-height:50px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); color:#f5f4f2; font:inherit; font-size:14px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; transition:background-color .2s; }
   .bk-ghost:hover{ background:rgba(255,255,255,.12); }
+  .bk-pay{ display:grid; gap:10px; }
+  .bk-payo{ min-height:96px; padding:16px 18px; }
+  .bk-payo b{ font-size:16px; line-height:1.3; }
+  .bk-payo small{ line-height:1.45; }
+  .bk-payo .bk-pr strong{ font-size:18px; }
+  @media (hover:none){ .bk-payo:hover:not(.on){ border-color:rgba(255,255,255,.1); background:rgba(255,255,255,.035); } }
+  .bk-credit{ display:flex; gap:10px; align-items:flex-start; margin:0 6px 4px; font-size:14px; line-height:1.45; color:rgba(245,244,242,.82); }
+  .bk-credit svg{ flex:none; margin-top:1px; color:#e9cfa3; }
+  .bk-paid{ display:flex; align-items:center; gap:12px; padding:12px 12px 12px 16px; border-radius:16px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); margin:-6px 0 16px; }
+  .bk-paid div{ min-width:0; }
+  .bk-paid b{ display:block; font-size:14.5px; font-weight:700; }
+  .bk-paid small{ display:block; font-size:12.5px; color:rgba(245,244,242,.5); margin-top:2px; }
   .bk-step{ animation:bkIn .45s cubic-bezier(.16,1,.3,1); }
   @keyframes bkIn{ from{ opacity:0; transform:translateX(14px); } to{ opacity:1; transform:none; } }
   .bk-step.back{ animation-name:bkBack; }
@@ -188,6 +207,7 @@
     pin: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
     spark: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/></svg>',
     wa: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5z"/></svg>',
+    shield: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',
     next: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="#e9cfa3" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
   };
@@ -244,7 +264,7 @@
   // ---------------------------------------------------------------- state & data
   function fresh(o) {
     const me = store.get('c360-book-me') || {};
-    return { step: 'svc', city: o.city || PAGE_CITY || store.get('c360-book-city') || '', svc: o.service || '', label: o.label || '', services: null, days: null, date: '', time: '', err: '', name: me.name || '', phone: me.phone || '', busy: false, done: null, dir: '' };
+    return { step: 'svc', city: o.city || PAGE_CITY || store.get('c360-book-city') || '', svc: o.service || '', label: o.label || '', services: null, days: null, date: '', time: '', err: '', name: me.name || '', phone: me.phone || '', busy: false, done: null, dir: '', pay: '' };
   }
   async function load(fresh) {
     const my = ++seq;
@@ -306,7 +326,7 @@
   }
   const consultSvc = () => (S.services || []).find((x) => x.id === 'consult') || { id: 'consult', title: 'Consultație gratuită', minutes: 30, price: 0 };
   function choose(id, stay) {
-    S.svc = id; S.service = id === 'consult' ? consultSvc() : S.proc; S.time = '';
+    S.svc = id; S.service = id === 'consult' ? consultSvc() : S.proc; S.time = ''; S.pay = '';
     // the consultation's hours came with the city's list: no second wait
     if (id === 'consult' && S.pre && S.pre.city === S.city && S.pre.days) { S.days = S.pre.days; S.service = S.pre.service || S.service; pickDay(); }
     else S.days = null;
@@ -335,14 +355,22 @@
   const byId = (id) => (id === 'custom' ? { id: 'custom', title: S.label, minutes: fullBody(S.label) ? 90 : 60, price: 0 } : (S.services || []).find((s) => s.id === id) || null);
 
   // ---------------------------------------------------------------- painting
-  function prog(n) { root.querySelectorAll('.bk-prog i').forEach((i, k) => i.classList.toggle('on', k < n)); }
+  // the pay step: only for an offer with its price (not the free consultation, not a treatment priced at the clinic)
+  const payable = () => PAY_ON && !!S.service && S.service.id !== 'consult' && S.service.id !== 'custom' && S.service.price > 0;
+  function prog(n) {
+    const bar = root.querySelector('.bk-prog'), want = payable() ? 5 : 4;
+    while (bar.children.length < want) bar.appendChild(document.createElement('i'));
+    while (bar.children.length > want) bar.lastElementChild.remove();
+    bar.querySelectorAll('i').forEach((i, k) => i.classList.toggle('on', k < n));
+  }
   function paint() {
     if (!root) return;
     body = root.querySelector('.bk-body');
     const back = root.querySelector('[data-bk-back]');
     back.hidden = S.step === 'city' || S.step === 'done' || (S.step === 'when' && S.lock && !!S.proc);
-    const html = S.step === 'city' ? cityHtml() : S.step === 'svc' ? svcHtml() : S.step === 'when' ? whenHtml() : S.step === 'you' ? youHtml() : doneHtml();
-    prog({ city: 1, svc: 2, when: 3, you: 4, done: 4 }[S.step] || 1);
+    const html = S.step === 'city' ? cityHtml() : S.step === 'svc' ? svcHtml() : S.step === 'when' ? whenHtml() : S.step === 'pay' ? payHtml() : S.step === 'you' ? youHtml() : doneHtml();
+    const last = payable() ? 5 : 4;
+    prog({ city: 1, svc: 2, when: 3, pay: 4, you: last, done: last }[S.step] || 1);
     const anim = S.dir;
     body.innerHTML = '<div class="bk-step' + (anim === 'back' ? ' back' : '') + '">' + html + '</div>';
     if (!anim) body.firstChild.style.animation = 'none';
@@ -418,18 +446,33 @@
     });
     return h;
   }
+  const sumHtml = () => '<div class="bk-sum"><div class="when">' + esc(niceDay(S.date).replace(/^./, (c) => c.toUpperCase())) + ' · <span>' + esc(S.time) + '</span></div>' +
+    '<div class="what">' + esc((S.service || {}).title || '') + ' · ' + esc(ADDR[S.city]) + '</div></div>';
+  // how she pays: online now, the whole offer at 10% less, or at the clinic at the full price. Two equal buttons, always both.
+  function payHtml() {
+    const full = S.service.price, now = payAmount(full);
+    return '<p class="bk-eyebrow">Plata</p><h2 class="bk-h">Cum vrei să <em>plătești?</em></h2>' + sumHtml() +
+      '<div class="bk-pay" role="group" aria-label="Plata">' +
+      '<button type="button" class="bk-svc bk-payo' + (S.pay === 'online' ? ' on' : '') + '" data-pay="online"><span><i class="bk-tag">Cu ' + PAY_OFF + '% reducere</i><b>Plătesc online acum</b><small>Toată oferta, plătită acum</small></span>' +
+        '<span class="bk-pr"><strong>' + lei(now) + '</strong><s>' + lei(full) + '</s></span></button>' +
+      '<p class="bk-credit">' + ICON.shield + '<span>Nu poți ajunge? Mutăm programarea, iar banii rămân credit pentru tine (nu se returnează).</span></p>' +
+      '<button type="button" class="bk-svc bk-payo' + (S.pay === 'clinic' ? ' on' : '') + '" data-pay="clinic"><span><i class="bk-tag">Fără plată acum</i><b>Rezerv și plătesc în clinică</b><small>Plătești în ziua programării</small></span>' +
+        '<span class="bk-pr"><strong>' + lei(full) + '</strong></span></button>' +
+      '</div>';
+  }
+  const payOnline = () => S.pay === 'online' && payable();
   function youHtml() {
     const s = S.service || {};
-    return '<p class="bk-eyebrow">Ultimul pas</p><h2 class="bk-h">Unde îți trimitem <em>confirmarea?</em></h2>' +
-      '<div class="bk-sum"><div class="when">' + esc(niceDay(S.date).replace(/^./, (c) => c.toUpperCase())) + ' · <span>' + esc(S.time) + '</span></div>' +
-      '<div class="what">' + esc(s.title || '') + ' · ' + esc(ADDR[S.city]) + '</div></div>' +
+    const paid = payable() && S.pay ? '<div class="bk-paid"><div><b>' + (payOnline() ? 'Plătești online ' + lei(payAmount(s.price)) : 'Plătești în clinică ' + lei(s.price)) + '</b><small>' +
+      (payOnline() ? 'Cu ' + PAY_OFF + '% reducere, toată oferta' : 'În ziua programării') + '</small></div><button type="button" class="bk-link" data-go="pay">Schimbă</button></div>' : '';
+    return '<p class="bk-eyebrow">Ultimul pas</p><h2 class="bk-h">Unde îți trimitem <em>confirmarea?</em></h2>' + sumHtml() + paid +
       (S.err && S.err !== 'net' ? '<div class="bk-alert">' + S.err + '</div>' : '') +
       '<form novalidate data-bk-form>' +
       '<input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">' +
       '<div class="bk-f"><label for="bkN">Nume și prenume</label><input id="bkN" name="name" autocomplete="name" placeholder="ex: Maria Popescu" value="' + esc(S.name) + '"><span class="msg">Scrie numele tău.</span></div>' +
       '<div class="bk-f"><label for="bkT">Telefon (WhatsApp)</label><input id="bkT" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07xx xxx xxx" value="' + esc(S.phone) + '"><span class="msg">Scrie un număr de telefon valid.</span></div>' +
       '<label class="bk-ok"><input type="checkbox" name="ok"' + (S.ok ? ' checked' : '') + '><span>Sunt de acord să primesc pe WhatsApp sau telefonic confirmarea și reamintirile programării de la Centrul360.</span></label>' +
-      '<button type="submit" class="bk-cta"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '<span class="spin"></span>Se programează…' : 'Programează-mă') + '</button>' +
+      '<button type="submit" class="bk-cta"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '<span class="spin"></span>Se programează…' : payOnline() ? 'Programează-mă și plătesc ' + lei(payAmount(s.price)) : 'Programează-mă') + '</button>' +
       '<p class="bk-note">Îți trimitem imediat un mesaj pe WhatsApp. Ca programarea să rămână valabilă, confirm-o răspunzând „Confirm”.</p></form>';
   }
   function doneHtml() {
@@ -438,7 +481,7 @@
       '<h2 class="bk-h">Mai e <em>un pas.</em></h2><p>Ți-am trimis un mesaj pe WhatsApp. Ca programarea să rămână valabilă, confirm-o răspunzând la el cu „Confirm” (sau apasă butonul din mesaj).</p>' +
       '<div class="bk-card">' +
       '<div class="bk-row">' + ICON.cal + '<div><b>' + esc(niceDay(a.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(a.time) + '</b><small>' + mins(minsBetween(a.time, a.endTime)) + '</small></div></div>' +
-      '<div class="bk-row">' + ICON.spark + '<div><b>' + esc(a.treatment) + '</b><small>' + (S.service && S.service.id === 'consult' ? 'Gratuit, fără obligații' : S.service && S.service.price ? lei(S.service.price) + ', plătești la clinică' : 'Prețul ți-l spunem la clinică') + '</small></div></div>' +
+      '<div class="bk-row">' + ICON.spark + '<div><b>' + esc(a.treatment) + '</b><small>' + (S.service && S.service.id === 'consult' ? 'Gratuit, fără obligații' : payOnline() ? lei(payAmount(S.service.price)) + ', plata online, cu ' + PAY_OFF + '% reducere' : S.service && S.service.price ? lei(S.service.price) + ', plătești la clinică' : 'Prețul ți-l spunem la clinică') + '</small></div></div>' +
       '<div class="bk-row">' + ICON.pin + '<div><b>Centrul360 ' + esc(a.location) + '</b><small>' + esc(ADDR[a.location]) + '</small></div></div></div>' +
       // the one thing left: her answer to the message (the chat with the clinic's number opens)
       '<a class="bk-cta" href="https://wa.me/' + (WA[a.location] || WA['Timișoara']) + '" target="_blank" rel="noopener" style="margin:0 0 10px;text-decoration:none">' + ICON.wa + 'Deschide WhatsApp și confirmă</a>' +
@@ -459,7 +502,8 @@
     if (!t || !root.contains(t)) { if (e.target.closest('[data-bk-close]')) close(); return; }
     if (t.hasAttribute('data-bk-close')) { close(); return; }
     if (t.hasAttribute('data-bk-back')) {
-      if (S.step === 'you') go('when', 'back');
+      if (S.step === 'you') go(payable() ? 'pay' : 'when', 'back');
+      else if (S.step === 'pay') go('when', 'back');
       else if (S.step === 'when') go(S.note ? 'svc' : 'city', 'back');
       else if (S.step === 'svc') go('city', 'back');
       return;
@@ -481,9 +525,11 @@
     if (t.dataset.svc) { choose(t.dataset.svc); return; }
     if (t.dataset.go === 'city') { go('city', 'back'); return; }
     if (t.dataset.go === 'svc') { go('svc', 'back'); return; }
+    if (t.dataset.go === 'pay') { go('pay', 'back'); return; }
+    if (t.dataset.pay) { S.pay = t.dataset.pay; paint(); setTimeout(() => go('you'), 160); return; }
     if (t.hasAttribute('data-retry')) { if (S.service) load(); else loadServices('enter'); return; }
     if (t.dataset.date) { S.date = t.dataset.date; S.time = ''; paint(); return; }
-    if (t.dataset.time) { S.time = t.dataset.time; paint(); setTimeout(() => go('you'), 160); return; }
+    if (t.dataset.time) { S.time = t.dataset.time; paint(); setTimeout(() => go(payable() ? 'pay' : 'you'), 160); return; }
     if (t.hasAttribute('data-ics')) { ics(); return; }
   }
   function onSubmit(e) {
@@ -502,9 +548,9 @@
     S.busy = true; S.err = ''; paint();
     // one id for this booking's Schedule: the portal gets it (Conversions API) and the pixel too, so Meta counts it once
     const eid = 'bk.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
-    fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-      city: S.city, service: S.svc, label: S.svc === 'custom' ? S.label : '', date: S.date, time: S.time, name: S.name, phone: S.phone, consent: true, page: PAGE, src: SRC, event_id: window.C360_CONSENT === true ? eid : ''
-    }) }).then((r) => r.json().then((d) => ({ r, d })), () => ({ r: { ok: false }, d: { error: 'net' } })).then(({ r, d }) => {
+    const booking = { city: S.city, service: S.svc, label: S.svc === 'custom' ? S.label : '', date: S.date, time: S.time, name: S.name, phone: S.phone, consent: true, page: PAGE, src: SRC, event_id: window.C360_CONSENT === true ? eid : '' };
+    if (payable() && S.pay === 'clinic') booking.pay = 'clinic';
+    (payOnline() ? startOnlinePay({ offer: S.service, amount: payAmount(S.service.price), booking }) : book(booking)).then(({ r, d }) => {
       S.busy = false;
       if (r.ok && d.ok) {
         store.set('c360-book-me', { name: S.name, phone: S.phone });
@@ -522,6 +568,21 @@
         : 'Nu am putut face programarea. Verifică internetul și încearcă din nou, sau <a href="' + waLink() + '" target="_blank" rel="noopener">scrie-ne pe WhatsApp</a>.';
       paint();
     });
+  }
+  // the booking itself (api/booking.js): resolves { r, d } with r.ok and the API's answer d ({ ok, appointment } or { error })
+  function book(booking) {
+    return fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(booking) })
+      .then((r) => r.json().then((d) => ({ r, d })), () => ({ r: { ok: false }, d: { error: 'net' } }));
+  }
+  // THE PAYMENT HOOK (myPOS, built later in its own session). Called when she chose „Plătesc online acum” and pressed
+  // „Programează-mă și plătesc …”, with offer = the chosen offer ({ id, title, price, old, minutes }), amount = what she
+  // pays now in whole lei (price minus 10%), booking = the body for POST /api/booking. It must resolve like book():
+  // { r, d } (d.ok + d.appointment shows „Programare făcută”, d.error shows the error, as today). For now: the booking as
+  // today, marked pay 'online-pending' (api/booking.js ignores the extra fields today: nothing is saved, nothing is
+  // charged). The payment session: book, then the myPOS link for amount (match it to the appointment), the receipt and
+  // the WhatsApp confirmation; and save pay / payAmount on the appointment in api/booking.js.
+  function startOnlinePay({ offer, amount, booking }) {
+    return book(Object.assign({}, booking, { pay: 'online-pending', payAmount: amount, payFull: offer.price }));
   }
   // the ads learn from it (Meta pixel, Google)
   function track(eid) {
