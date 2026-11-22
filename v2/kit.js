@@ -195,7 +195,7 @@
       var hit = PIC.filter(function (p) { return p[0].test(words); })[0] || PIC.filter(function (p) { return p[0].test(k); })[0];
       if (!hit) return;
       el.classList.add('has-pic');
-      el.insertAdjacentHTML('afterbegin', '<span class="pic" aria-hidden="true"><img src="/brand_asset/oferte/' + hit[1] + '.webp?v=2" alt="" decoding="async"></span>');
+      el.insertAdjacentHTML('afterbegin', '<span class="pic" aria-hidden="true"><img src="/brand_asset/oferte/' + hit[1] + '.webp?v=3" alt="" decoding="async"></span>');
     });
   }
 
