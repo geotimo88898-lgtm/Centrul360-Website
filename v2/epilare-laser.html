@@ -270,7 +270,7 @@
 
 <section class="s" id="aparat" style="padding-top:0"><div class="wrap ep-dv">
   <figure class="ep-dv-stage rv" data-dv>
-    <img class="ep-dv-img" src="/brand_asset/elysion/01.webp" alt="Laserul Elysion Pro de la Centrul360" width="600" height="600" draggable="false">
+    <img class="ep-dv-img" src="/brand_asset/elysion-hd/01.webp" alt="Laserul Elysion Pro de la Centrul360" width="1200" height="1200" decoding="async" draggable="false">
     <span class="ep-dv-hs" aria-hidden="true"><i></i><em><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></em><b></b></span>
     <span class="ep-dv-hint" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8l4 4-4 4M7 8l-4 4 4 4M3 12h18"/></svg>Rotește aparatul</span>
   </figure>
@@ -391,20 +391,22 @@
 /* the device (the owner, 8.11: „mai dinamic, mai interactiv”): it comes in with a full turn, then shows itself by its
    own, part by part: it turns to the handpiece and the light pulses, to the screen, to the cooling, to the back with its
    certificate, each one lit on the device and in the list. A drag turns it by hand, a point takes it to its part; the tour
-   goes on by itself a few seconds later. Frames load only when the section comes near (every second one on a phone). */
+   goes on by itself a few seconds later. Frames load only when the section comes near. The views are 1200 px (sharp on a
+   phone at 3x and on a large screen at 2x); the canvas is drawn at the screen's real pixels, and when the device stops
+   it settles on one whole view, never on two blended ones (the owner, 22.11: „cam blurată”). */
 (function () {
   var st = document.querySelector('[data-dv]'); if (!st) return;
   var box = st.closest('.ep-dv'), img = st.querySelector('.ep-dv-img'), hs = st.querySelector('.ep-dv-hs'), btns = [].slice.call(box.querySelectorAll('[data-dv-to]'));
   var N = 61, frames = {}, drawn = -1, pos = 61;
   // a canvas over the picture: two neighbouring views blended by how far between them the device is (smooth at any speed)
   var cv = document.createElement('canvas'), ctx = cv.getContext('2d'); cv.className = 'ep-dv-cv'; cv.setAttribute('aria-hidden', 'true'); img.after(cv);
-  var size = function () { var w = Math.round(st.clientWidth * Math.min(2, devicePixelRatio || 1)); if (w && cv.width !== w) { cv.width = cv.height = w; drawn = -1; draw(pos); } };
+  var size = function () { var w = Math.min(1200, Math.round(st.clientWidth * Math.min(3, devicePixelRatio || 1))); if (w && cv.width !== w) { cv.width = cv.height = w; drawn = -1; draw(pos); } };
   if ('ResizeObserver' in window) new ResizeObserver(size).observe(st);
   // the four stops: the frame, its point in the list, its effect, where the part is on the picture (%)
   var STOPS = [{ f: 1, k: 0, fx: 'laser', x: 74, y: 27 }, { f: 12, k: 2, fx: 'screen', x: 53, y: 16 }, { f: 30, k: 1, fx: 'cool', x: 65, y: 28 }, { f: 61, k: 3, fx: 'cert', x: 61, y: 25 }];
   var calm = matchMedia('(prefers-reduced-motion: reduce)').matches, seen = false, started = false, raf = 0;
   var anim = null, stop = -1, holdUntil = 0, pauseUntil = 0;
-  var url = function (i) { return '/brand_asset/elysion/' + (i < 10 ? '0' : '') + i + '.webp'; };
+  var url = function (i) { return '/brand_asset/elysion-hd/' + (i < 10 ? '0' : '') + i + '.webp'; };
   // all 61 views, every fourth first (so it can turn at once), then the ones between; each decoded before it is drawn
   function load() {
     var order = []; for (var i = 1; i <= N; i += 4) order.push(i); for (var j = 1; j <= N; j++) if (order.indexOf(j) < 0) order.push(j);
@@ -417,7 +419,7 @@
     if (Math.abs(p - drawn) < .02 || !cv.width) return;
     var a = Math.floor(p), t = p - a, A = near(a, -1), B = t > .02 ? near(Math.min(N, a + 1), 1) : null;
     if (!A) return;
-    var w = cv.width; ctx.clearRect(0, 0, w, w); ctx.globalAlpha = 1; ctx.drawImage(A.im, 0, 0, w, w);
+    var w = cv.width; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.clearRect(0, 0, w, w); ctx.globalAlpha = 1; ctx.drawImage(A.im, 0, 0, w, w);
     if (B && B.k !== A.k) { ctx.globalAlpha = t; ctx.drawImage(B.im, 0, 0, w, w); ctx.globalAlpha = 1; }
     drawn = p;
     if (!cv.classList.contains('is-on')) { cv.classList.add('is-on'); img.classList.add('is-under'); }
@@ -463,7 +465,11 @@
     pos = Math.max(1, Math.min(N, drag.p - dx / (st.clientWidth / 70))); pauseUntil = performance.now() + 4500; show(pos);
   });
   var up = function () {
-    if (drag && drag.moved) { var best = 0; STOPS.forEach(function (S, i) { if (Math.abs(S.f - pos) < Math.abs(STOPS[best].f - pos)) best = i; }); stop = best - 1 < 0 ? STOPS.length - 1 : best - 1; pauseUntil = performance.now() + 4500; }
+    if (drag && drag.moved) {
+      var best = 0; STOPS.forEach(function (S, i) { if (Math.abs(S.f - pos) < Math.abs(STOPS[best].f - pos)) best = i; }); stop = best - 1 < 0 ? STOPS.length - 1 : best - 1; pauseUntil = performance.now() + 4500;
+      // it settles on the nearest whole view, so it rests sharp (between two views it would show both, softly)
+      var to = Math.round(pos); if (to !== pos) { anim = { a: pos, b: to, t: performance.now(), ms: 220, then: null }; go(); }
+    }
     drag = null;
   };
   st.addEventListener('pointerup', up); st.addEventListener('pointercancel', up);
