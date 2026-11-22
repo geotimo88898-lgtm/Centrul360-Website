@@ -21,7 +21,7 @@
 //                               JPG cover; carousel / slideshow: 2-10 JPG 4:5 or 1:1) and the texts (content.js qa:
 //                               the limits, the words refused, the diacritics), plans it in its week → { plan, week,
 //                               info, warnings? }  (422 + problems); a reel without its clean MP4 gets a warning
-//   POST {action:'replace', id, captions?, caption?, hook?, hookType?, clear?}   an item the owner sent back: open
+//   POST {action:'replace', id, captions?, caption?, hook?, hookType?, promo?, clear?}   an item the owner sent back: open
 //                               again for its new files (same names replace them; clear: drop them all first), then 'ready'
 //   POST {action:'settings', on}   the global switch
 

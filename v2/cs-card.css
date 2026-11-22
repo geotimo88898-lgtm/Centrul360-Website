@@ -157,6 +157,7 @@ main [hidden]{ display:none !important; }
   .cst-t{ padding:12px 9px 10px; border-radius:16px; }
   .cst-t b{ font-size:1.2rem; }
   .cst-t span{ font-size:11.5px; }
+  .cst-t span strong{ display:block; font-size:12.5px; } /* the same two lines in all three cards */
   .cst-best{ right:5px; font-size:9.5px; padding:2px 7px; }
   .cst-sub{ font-size:13px; }
 }
@@ -250,11 +251,13 @@ main [hidden]{ display:none !important; }
 /* no extra reason line (the owner, 22.11: „fără detalii nefolositoare”) */
 .cst-why{ display:none !important; }
 /* no PayLink for the VIP yet: one line in place of „Plătesc online”, the clinic's button the main one */
-.cst-call{ margin:0; padding:12px 14px; border-radius:14px; text-align:center; font-size:14.5px; font-weight:600; color:#5c4410; background:#f8f1e1; box-shadow:0 0 0 1px rgba(169,126,40,.24) inset; }
+.cst-call{ margin:0; padding:2px 0; text-align:center; font-size:14.5px; font-weight:600; color:#141210; }
 .cs-vipcall > [data-cs-buy][data-cs-follow], .cs-vipcall > [data-cs-help]{ display:none !important; }
 /* its cards left, in gold: „Au mai rămas doar N carduri VIP” */
-.cst-urg:has(.cst-vipl:not([hidden])){ background:#f8f1e1; color:#5c4410; box-shadow:0 0 0 1px rgba(169,126,40,.24) inset; }
-.cst-urg:has(.cst-vipl:not([hidden])) .dot, .cst-urg:has(.cst-vipl:not([hidden])) .dot::after{ background:#c9a04a; }
+/* the VIP one's box: black and gold (the owner, 22.11: the pink box stays for the others) */
+.cst-urg:has(.cst-vipl:not([hidden])){ background:linear-gradient(150deg,#2b251e 0%,#15120e 60%,#0a0807 100%); color:#f6ead0; box-shadow:0 0 0 1px rgba(227,194,122,.42) inset; }
+.cst-urg:has(.cst-vipl:not([hidden])) .dot, .cst-urg:has(.cst-vipl:not([hidden])) .dot::after{ background:#e3c27a; }
+.cst-vipl b{ color:#f3d589; }
 .cst-vipl b{ font-weight:800; }
 .cst-city label.is-out{ grid-auto-flow:column; gap:6px; color:var(--mute2); }
 .cst-out{ font-size:10.5px; font-weight:700; letter-spacing:.02em; color:#9c0f4a; }
@@ -297,3 +300,41 @@ main [hidden]{ display:none !important; }
 .cst-gift + .btn{ position:relative; z-index:2; }
 .cs-vipcall > .cst-gift, .cst-go.is-done > .cst-gift{ display:none !important; }
 @media (max-width:380px){ .cst-gift{ font-size:11.5px; padding:5px 10px 13px; } }
+/* no x2 / x2,5 / x3 chips in the three cards (the owner, 22.11) */
+.cst-t .cst-x{ display:none !important; }
+/* the VIP one chosen: „Plătesc online” black like the scarcity box with a gold edge, „Rezerv și plătesc în clinică” white with the black border like the others (the owner, 22.11) */
+.cs-vipon [data-cs-buy][data-cs-follow]{ color:#fbecc6 !important; border:1.5px solid transparent !important;
+  background:linear-gradient(150deg,#2b251e 0%,#15120e 60%,#0a0807 100%) padding-box, linear-gradient(135deg,#8a6420 0%,#f3d589 25%,#fff3c4 36%,#c9a04a 58%,#7a5618 80%,#e3c27a 100%) border-box !important;
+  box-shadow:0 18px 34px -16px rgba(20,14,6,.7) !important; }
+.cs-vipon [data-cs-buy][data-cs-follow] b, .cs-vipon [data-cs-buy][data-cs-follow] strong{ color:#f3d589; }
+.cs-vipon [data-cs-buy][data-cs-follow] s{ color:rgba(251,236,198,.55); }
+/* the VIP card's border: real gold, a light that runs round it (the owner, 22.11: „un border mai nice auriu”) */
+.cst-t.vip{ border:1.5px solid transparent; box-shadow:0 16px 30px -24px rgba(20,14,6,.8);
+  background:linear-gradient(150deg,#2b251e 0%,#15120e 55%,#0a0807 100%) padding-box, linear-gradient(135deg,#8a6420 0%,#f3d589 22%,#fff3c4 34%,#c9a04a 55%,#7a5618 78%,#e3c27a 100%) border-box; }
+.cst-t.vip:hover{ box-shadow:0 16px 30px -20px rgba(60,40,10,.75); }
+.cst-t.vip:has(input:checked){ border-width:2px; box-shadow:0 0 0 4px rgba(227,194,122,.18), 0 18px 34px -18px rgba(120,86,24,.7);
+  background:linear-gradient(150deg,#322a21 0%,#17130f 55%,#0a0807 100%) padding-box, linear-gradient(135deg,#a07428 0%,#f7dc97 20%,#fffbe6 32%,#e3c27a 50%,#8a6420 74%,#f3d589 100%) border-box; }
+/* the VIP online: its full price struck through, quieter than the price she pays (22.11) */
+[data-cs-v="payon"] s{ opacity:.72; font-weight:500; margin-right:2px; }
+/* the VIP one's ribbon: metal gold (the owner, 22.11: „auriu auriu, nu galben”) over the black button */
+.cs-vipon .cst-gift{ color:#1f1608 !important; text-shadow:0 1px 0 rgba(255,246,215,.45);
+  background:linear-gradient(120deg,#9a6b1f 0%,#d4a645 22%,#f6dc8e 42%,#fff1c2 50%,#e0b456 62%,#a8792a 82%,#c9973c 100%) !important;
+  box-shadow:0 0 0 1px rgba(120,84,24,.55) inset, 0 1px 0 rgba(255,250,225,.6) inset !important; }
+/* RULE for the VIP card (the owner, 22.11): metal gold everywhere, never yellow. Fills (badges, buttons): the metal
+   gradient; big numbers on black: the light metal gradient as text; small numbers: one warm gold #e0b456. */
+.cst-vk, .cs-tier.vip .cs-vk, .cs-tier.vip .btn.ghost{ color:#1f1608 !important; text-shadow:0 1px 0 rgba(255,246,215,.45);
+  background:linear-gradient(120deg,#9a6b1f 0%,#d4a645 22%,#f6dc8e 42%,#fff1c2 50%,#e0b456 62%,#a8792a 82%,#c9973c 100%) !important;
+  box-shadow:0 0 0 1px rgba(120,84,24,.55) inset, 0 1px 0 rgba(255,250,225,.6) inset, 0 8px 18px -10px rgba(90,62,16,.7) !important; border-color:transparent !important; }
+.cs-tier.vip .btn.ghost:hover{ filter:brightness(1.05); }
+.cst-t.vip b, .cs-tier.vip .cs-tp{ background:linear-gradient(100deg,#c9973c 0%,#f6dc8e 34%,#fff1c2 48%,#e0b456 66%,#b8862e 100%) !important; -webkit-background-clip:text !important; background-clip:text !important; color:transparent !important; }
+.cst-t.vip span strong, .cs-tier.vip .cs-tg strong, .cst-vipl b, .cs-vipon [data-cs-buy][data-cs-follow] b, .cs-vipon [data-cs-buy][data-cs-follow] strong{ color:#e0b456 !important; }
+.cs-tier.vip .cs-mul{ color:#e0b456 !important; background:rgba(224,180,86,.14) !important; }
+.cst-t.vip small, .cs-tier.vip small{ color:rgba(224,180,86,.75) !important; }
+.cst-urg:has(.cst-vipl:not([hidden])) .dot, .cst-urg:has(.cst-vipl:not([hidden])) .dot::after{ background:#d4a645 !important; }
+.cs-tier.vip .cs-tb li::before{ background:linear-gradient(135deg,#f6dc8e,#b8862e) !important; }
+/* the VIP one's reasons under the button: its ticks and numbers in metal gold */
+.cst-pts li[data-cs-vipr] i{ color:#fff8e6; background:linear-gradient(135deg,#d4a645,#9a6b1f); }
+.cst-pts li[data-cs-vipr] b{ color:#a8792a; }
+/* with the VIP one chosen, every tick and number in the list in metal gold (one colour, not teal and gold mixed) */
+:root:has([data-cst] input[value="9900"]:checked) .cst-pts i{ color:#fff8e6; background:linear-gradient(135deg,#d4a645,#9a6b1f); }
+:root:has([data-cst] input[value="9900"]:checked) .cst-pts b{ color:#a8792a; }

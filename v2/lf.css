@@ -223,8 +223,10 @@ html.csb-lock{ overflow:hidden; }
 .gs-card{ position:relative; display:grid; grid-template-columns:auto 1fr; gap:clamp(18px,3vw,36px); align-items:start; max-width:980px; margin:0 auto; padding:clamp(24px,4.5vw,52px);
   border-radius:30px; background:linear-gradient(160deg,#0f1a19 0%,#132826 55%,#0d3b36 100%); color:#eef7f5; box-shadow:0 40px 90px -50px rgba(6,40,36,.9); overflow:hidden; isolation:isolate; }
 .gs-card::after{ content:''; position:absolute; z-index:-1; right:-120px; top:-140px; width:420px; height:420px; border-radius:50%; background:radial-gradient(circle,rgba(95,212,198,.28),transparent 62%); }
-.gs-shield{ display:grid; place-items:center; width:clamp(64px,8vw,92px); height:clamp(64px,8vw,92px); border-radius:26px; color:#5fd4c6; background:rgba(95,212,198,.1); box-shadow:0 0 0 1px rgba(95,212,198,.28) inset; }
-.gs-shield svg{ width:58%; height:58%; }
+.gs-shield{ position:relative; display:grid; place-items:center; width:clamp(64px,7.5vw,84px); aspect-ratio:1; border-radius:50%; margin-top:2px;
+  background:radial-gradient(circle at 32% 28%,#9fe9df 0%,#5fd4c6 38%,#14a596 100%);
+  box-shadow:0 0 0 7px rgba(95,212,198,.09),0 0 0 1px rgba(255,255,255,.25) inset,0 18px 40px -14px rgba(95,212,198,.7); }
+.gs-shield svg{ width:52%; height:52%; filter:drop-shadow(0 2px 3px rgba(4,30,27,.35)); }
 .gs-txt{ display:grid; gap:14px; min-width:0; }
 .gs .eye{ color:#9fe3da; }
 .gs-txt h2{ font-size:clamp(2rem,5vw,3.3rem); line-height:1.04; letter-spacing:-.045em; color:#fff; max-width:15ch; }
@@ -241,7 +243,7 @@ html.csb-lock{ overflow:hidden; }
 .gs .gar-in a{ color:#9fe3da; }
 @media (max-width:640px){
   .gs-card{ grid-template-columns:1fr; border-radius:24px; padding:26px 20px 24px; }
-  .gs-shield{ width:60px; height:60px; border-radius:18px; }
+  .gs-shield{ width:56px; }
   .gs-act .btn{ width:100%; }
 }
 /* the conditions, one tap away (wherever the guarantee is) */
@@ -273,3 +275,6 @@ html.csb-lock{ overflow:hidden; }
     -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 16px),transparent 100%); mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 16px),transparent 100%); }
   .home-od.dots{ position:relative; z-index:1; }
 }
+/* home: the Black Friday offers and the guarantee band sit close (the owner, 22.11: „prea mult spațiu inutil”) */
+.s.home-of{ padding-bottom:clamp(18px,3vw,34px); }
+.s.home-of + .gs{ padding-top:0; }

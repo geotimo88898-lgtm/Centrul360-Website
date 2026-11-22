@@ -453,6 +453,9 @@ async function replace(id, input) {
     if (x.endType) it.endType = slug(x.endType, 12);
     if (x.keyword != null) it.keyword = oneLine(x.keyword, 30);
     if (x.links) it.links = linksOf(x.links);
+    // a sale of ours on a redone item (22.11: the Card's end card and caption line on the educative reels until 24.12);
+    // '' takes it off again
+    if (x.promo != null) { if (x.promo === '') delete it.promo; else if (!PROMOS[x.promo]) throw fail('invalid_promo'); else it.promo = x.promo; }
     // another week (the check after a wave of approvals moves a post that doesn't sit well; 15.11)
     if (x.week) it.week = weekFor(x.week, Date.now());
     let dropped = [];

@@ -40,10 +40,21 @@
   // offer at 10% less (on top of the Black Friday price), or booked and paid at the clinic at the full price, as before.
   // The payment itself (myPOS) is not ready: startOnlinePay() below is where it plugs in. ON only on the /v2/ preview
   // pages for now; live = this one line (or window.C360_PAY_ONLINE = true set before this file runs).
-  const PAY_ON = /^\/v2\//.test(location.pathname) || window.C360_PAY_ONLINE === true;
+  const PAY_ON = true; // live since 22.11 (the owner: „da, pune-o live”)
   const PAY_OFF = 10; // percent off when paid online
   const payAmount = (full) => Math.floor((Number(full) || 0) * (100 - PAY_OFF) / 100); // whole lei, never less than 10% off
   window.C360_PAY_ON = PAY_ON;
+  // The myPOS payment links (the owner, 22.11): one fixed-amount link per offer, its amount = the offer's price minus 10%.
+  // The online option shows only when the offer has a link AND the link's amount is exactly what we would ask (Admin
+  // changed a price → the link no longer fits → she books and pays at the clinic, nobody pays a wrong sum).
+  const PAY_LINKS = {
+    'hifu-gusa-1sedinta': { amount: 171, url: 'https://mypos.com/vmp/btn/BMV54DNVRCU83' },
+    'liposonix-2zone': { amount: 576, url: 'https://mypos.com/vmp/btn/BTYITW3AIRN58' },
+    'facial-restart': { amount: 171, url: 'https://mypos.com/vmp/btn/BAGHP1O65D760' },
+    'cavitatie-ems': { amount: 252, url: 'https://mypos.com/vmp/btn/BUEJR62196862' }, // Timișoara
+    'cavitatie-1plus1': { amount: 252, url: 'https://mypos.com/vmp/btn/BF9N98QLHWQ95' }, // Arad
+    'full-body-6': { amount: 4471, url: 'https://mypos.com/vmp/btn/BV9WXX4UDFY47' }, // Epilare laser Full Body, 6 ședințe (Timișoara)
+  };
   const PAGE_CITY = { timisoara: 'Timișoara', arad: 'Arad', 'epilare-laser': 'Timișoara', 'tonifiere-musculara': 'Timișoara', 'detox-drenaj': 'Timișoara' }[PAGE] || '';
 
   const CSS = `
@@ -196,14 +207,22 @@
   .bk-pb small s{ opacity:.85; }
   .bk-pb-go{ flex:none; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; }
   .bk-off{ flex:none; font-style:normal; font-size:13px; font-weight:800; letter-spacing:-.01em; padding:6px 10px; border-radius:999px; }
-  .bk-pb.online{ color:#fff; background:linear-gradient(180deg,#1bb9a9 0%,#0f9083 100%); box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 14px 30px -12px rgba(16,145,132,.7); }
-  .bk-pb.online .bk-pb-go{ background:rgba(255,255,255,.2); }
-  .bk-pb.online .bk-off{ background:#fff; color:#0b7f74; }
+  /* online: the rose gold of the Black Friday offers' „Rezervă oferta” (v2/kit.css .btn.book.gold, the owner, 22.11) */
+  .bk-pb.online{ position:relative; isolation:isolate; overflow:hidden; color:#3b1c14; text-shadow:0 1px 0 rgba(255,255,255,.45);
+    background:linear-gradient(125deg,rgba(214,150,135,.92) 0%,rgba(240,196,182,.9) 30%,rgba(250,224,215,.92) 45%,rgba(226,170,155,.9) 62%,rgba(205,140,125,.92) 82%,rgba(238,190,176,.92) 100%);
+    background-size:240% 240%; animation:bkRose 10s cubic-bezier(.65,0,.35,1) infinite alternate;
+    box-shadow:0 0 0 1px rgba(255,255,255,.7) inset, 0 1px 0 rgba(255,255,255,.95) inset, 0 -6px 14px -6px rgba(150,80,65,.35) inset,
+      0 0 0 1px rgba(176,108,92,.28), 0 14px 30px -12px rgba(176,108,92,.55), 0 2px 6px -2px rgba(176,108,92,.3); }
+  .bk-pb.online::after{ content:''; position:absolute; z-index:-1; left:3%; right:3%; top:1px; height:56%; border-radius:999px 999px 60% 60% / 999px 999px 40% 40%; pointer-events:none; filter:blur(.6px);
+    background:linear-gradient(180deg,rgba(255,255,255,.62) 0%,rgba(255,255,255,.18) 60%,rgba(255,255,255,0) 100%); }
+  @keyframes bkRose{ 0%{ background-position:0% 30%; } 100%{ background-position:100% 70%; } }
+  .bk-pb.online .bk-pb-go{ background:rgba(59,28,20,.12); }
+  .bk-pb.online .bk-off{ background:#0b0b0d; color:#f6d6cb; text-shadow:none; }
+  @media (prefers-reduced-motion:reduce){ .bk-pb.online{ animation:none; } }
   .bk-pb.clinic{ color:#0b0b0d; background:#f5f4f2; box-shadow:0 14px 30px -14px rgba(0,0,0,.6); }
   .bk-pb.clinic .bk-pb-go{ background:rgba(11,11,13,.08); }
-  .bk-pb.on{ box-shadow:0 0 0 3px rgba(95,212,198,.45), 0 14px 30px -14px rgba(0,0,0,.5); }
-  .bk-credit{ display:flex; gap:10px; align-items:flex-start; margin:0 10px 2px; font-size:14px; line-height:1.45; color:rgba(245,244,242,.82); }
-  .bk-credit svg{ flex:none; margin-top:1px; color:#e9cfa3; }
+  .bk-pb.on{ outline:2.5px solid rgba(95,212,198,.8); outline-offset:3px; }
+  .bk-paynow{ text-decoration:none; margin:0 0 12px; }
   .bk-paid{ display:flex; align-items:center; gap:12px; padding:12px 12px 12px 16px; border-radius:16px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); margin:-6px 0 16px; }
   .bk-paid div{ min-width:0; }
   .bk-paid b{ display:block; font-size:14.5px; font-weight:700; }
@@ -224,7 +243,6 @@
     pin: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
     spark: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/></svg>',
     wa: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5z"/></svg>',
-    shield: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',
     next: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="#e9cfa3" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
   };
@@ -281,7 +299,7 @@
   // ---------------------------------------------------------------- state & data
   function fresh(o) {
     const me = store.get('c360-book-me') || {};
-    return { step: 'svc', city: o.city || PAGE_CITY || store.get('c360-book-city') || '', svc: o.service || '', label: o.label || '', services: null, days: null, date: '', time: '', err: '', name: me.name || '', phone: me.phone || '', busy: false, done: null, dir: '', pay: '' };
+    return { step: 'svc', city: o.city || PAGE_CITY || store.get('c360-book-city') || '', svc: o.service || '', label: o.label || '', services: null, days: null, date: '', time: '', err: '', name: me.name || '', phone: me.phone || '', busy: false, done: null, dir: '', pay: '', payUrl: '' };
   }
   async function load(fresh) {
     const my = ++seq;
@@ -376,7 +394,12 @@
   // ---------------------------------------------------------------- painting
   // the pay step: only for an offer with its price (not the free consultation, not a treatment priced at the clinic; a
   // treatment booked by its name only when its button carries its price, like the Full Body package)
-  const payable = () => PAY_ON && !!S.service && S.service.id !== 'consult' && S.service.price > 0;
+  const linkOf = (s) => {
+    if (!s || !(s.price > 0)) return null;
+    const l = s.id === 'custom' ? (fullBody(s.title) && /pachet|6\s*[sș]edin/i.test(s.title) ? PAY_LINKS['full-body-6'] : null) : PAY_LINKS[s.id];
+    return l && l.amount === payAmount(s.price) ? l : null;
+  };
+  const payable = () => PAY_ON && !!S.service && S.service.id !== 'consult' && !!linkOf(S.service);
   function prog(n) {
     const bar = root.querySelector('.bk-prog'), want = payable() ? 5 : 4;
     while (bar.children.length < want) bar.appendChild(document.createElement('i'));
@@ -476,7 +499,6 @@
       '<p class="bk-when">' + esc(niceDay(S.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(S.time) + '<small>' + esc(S.service.title || '') + ' · Centrul360 ' + esc(S.city) + '</small></p>' +
       '<div class="bk-pay" role="group" aria-label="Plata">' +
       '<button type="button" class="bk-pb online' + (S.pay === 'online' ? ' on' : '') + '" data-pay="online"><span class="bk-pb-t"><b>Plătesc online ' + lei(now) + '</b><small><s>' + lei(full) + '</s> · toată oferta, acum</small></span><i class="bk-off">-' + PAY_OFF + '%</i>' + go + '</button>' +
-      '<p class="bk-credit">' + ICON.shield + '<span>Nu poți ajunge? Mutăm programarea, banii rămân credit (nu se returnează).</span></p>' +
       '<button type="button" class="bk-pb clinic' + (S.pay === 'clinic' ? ' on' : '') + '" data-pay="clinic"><span class="bk-pb-t"><b>Rezerv și plătesc în clinică</b><small>' + lei(full) + ', în ziua programării</small></span>' + go + '</button>' +
       '</div>';
   }
@@ -497,6 +519,16 @@
   }
   function doneHtml() {
     const a = S.done || {};
+    if (payOnline() && S.payUrl) {
+      const n = lei(payAmount(S.service.price));
+      return '<div class="bk-done"><div class="bk-check">' + ICON.check + '</div><p class="bk-eyebrow" style="justify-content:center">Programare făcută</p>' +
+        '<h2 class="bk-h">Programarea e făcută. Mai ai <em>un pas:</em> plata de ' + n + '.</h2><p>După plată îți confirmăm pe WhatsApp.</p>' +
+        '<div class="bk-card">' +
+        '<div class="bk-row">' + ICON.cal + '<div><b>' + esc(niceDay(a.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(a.time) + '</b><small>' + esc(a.treatment) + '</small></div></div>' +
+        '<div class="bk-row">' + ICON.pin + '<div><b>Centrul360 ' + esc(a.location) + '</b><small>' + esc(ADDR[a.location]) + '</small></div></div></div>' +
+        '<a class="bk-pb online bk-paynow" href="' + esc(S.payUrl) + '"><span class="bk-pb-t"><b>Plătesc acum ' + n + '</b><small>Plata securizată prin myPOS</small></span><span class="bk-pb-go" aria-hidden="true">' + ICON.next + '</span></a>' +
+          '<div class="bk-two"><button type="button" class="bk-ghost" data-ics>' + ICON.cal + 'În calendar</button><a class="bk-ghost" href="' + MAPS[a.location] + '" target="_blank" rel="noopener">' + ICON.pin + 'Vezi pe hartă</a></div></div>';
+    }
     return '<div class="bk-done"><div class="bk-check">' + ICON.check + '</div><p class="bk-eyebrow" style="justify-content:center">Programare făcută</p>' +
       '<h2 class="bk-h">Mai e <em>un pas.</em></h2><p>Ți-am trimis un mesaj pe WhatsApp. Ca programarea să rămână valabilă, confirm-o răspunzând la el cu „Confirm” (sau apasă butonul din mesaj).</p>' +
       '<div class="bk-card">' +
@@ -594,15 +626,20 @@
     return fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(booking) })
       .then((r) => r.json().then((d) => ({ r, d })), () => ({ r: { ok: false }, d: { error: 'net' } }));
   }
-  // THE PAYMENT HOOK (myPOS, built later in its own session). Called when she chose „Plătesc online acum” and pressed
-  // „Programează-mă și plătesc …”, with offer = the chosen offer ({ id, title, price, old, minutes }), amount = what she
-  // pays now in whole lei (price minus 10%), booking = the body for POST /api/booking. It must resolve like book():
-  // { r, d } (d.ok + d.appointment shows „Programare făcută”, d.error shows the error, as today). For now: the booking as
-  // today, marked pay 'online-pending' (api/booking.js ignores the extra fields today: nothing is saved, nothing is
-  // charged). The payment session: book, then the myPOS link for amount (match it to the appointment), the receipt and
-  // the WhatsApp confirmation; and save pay / payAmount on the appointment in api/booking.js.
+  // THE PAYMENT: she chose „Plătesc online” and pressed „Programează-mă și plătesc …”. offer = the chosen offer
+  // ({ id, title, price, old, minutes }), amount = what she pays now in whole lei (price minus 10%), booking = the body for
+  // POST /api/booking. The booking is made first, marked pay 'online-pending' with payAmount (api/booking.js saves both, the
+  // Calendar shows „Plată online … de verificat în myPOS”); then the offer's myPOS link opens in the same tab after a
+  // second, with „Plătesc acum” on the done screen as the fallback. Resolves like book(): { r, d }.
   function startOnlinePay({ offer, amount, booking }) {
-    return book(Object.assign({}, booking, { pay: 'online-pending', payAmount: amount, payFull: offer.price }));
+    const link = linkOf(offer);
+    return book(Object.assign({}, booking, { pay: 'online-pending', payAmount: amount, payFull: offer.price })).then((res) => {
+      if (res.r.ok && res.d.ok && link) {
+        S.payUrl = link.url;
+        setTimeout(() => { if (S.payUrl === link.url && S.step === 'done') location.assign(link.url); }, 1100);
+      }
+      return res;
+    });
   }
   // the ads learn from it (Meta pixel, Google)
   function track(eid) {
