@@ -289,6 +289,10 @@
   (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(function () {
     load().then(function (d) {
       if (!d) return;
+      // „Reducere de până la N%”: the biggest discount of a package against its full list value, both clinics, rounded down
+      var off = 0;
+      CITIES.forEach(function (c) { zonesOf(c).forEach(function (x) { Object.keys(x.packs || {}).forEach(function (t) { var p = x.packs[t]; if (p.value > p.price) off = Math.max(off, Math.floor((1 - p.price / p.value) * 100)); }); }); });
+      if (off > 0) [].slice.call(document.querySelectorAll('[data-lf-maxoff]')).forEach(function (el) { el.textContent = off; });
       [].slice.call(document.querySelectorAll('[data-lf-from]')).forEach(function (el) {
         // a zone's key, or * for every zone; data-lf-fmt says how ({n} = the price), else „, de la N lei”
         var z = el.getAttribute('data-lf-from'), min = Infinity;
