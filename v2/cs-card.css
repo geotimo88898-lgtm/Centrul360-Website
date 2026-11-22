@@ -338,3 +338,6 @@ main [hidden]{ display:none !important; }
 /* with the VIP one chosen, every tick and number in the list in metal gold (one colour, not teal and gold mixed) */
 :root:has([data-cst] input[value="9900"]:checked) .cst-pts i{ color:#fff8e6; background:linear-gradient(135deg,#d4a645,#9a6b1f); }
 :root:has([data-cst] input[value="9900"]:checked) .cst-pts b{ color:#a8792a; }
+/* the gift ribbon: a drawn gift icon, no emoji, no „+” (the owner, 22.11) */
+.cst-gift{ display:inline-flex; align-items:center; gap:6px; }
+.cst-gi{ width:14px; height:14px; flex:none; margin-top:-1px; }
