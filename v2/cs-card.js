@@ -122,21 +122,12 @@
       ['Trei: plătești 290 lei și primești 500 lei în tratamente; plătești 490 lei și primești 1.000 lei; plătești 990 lei și primești 2.500 lei.',
         'Trei: plătești 490 lei și primești 1.000 lei în tratamente; plătești 990 lei și primești 2.500 lei; cardul VIP: plătești 9.900 lei și primești 30.000 lei, pentru tine și cei dragi, cu revizia completă și planul tău personal la început (doar 5 carduri pe clinică).']];
     $$('.tl p, .q .a p').forEach(function (p) { SAY.forEach(function (x) { if (p.children.length === 0 && p.textContent.indexOf(x[0]) >= 0) p.textContent = p.textContent.replace(x[0], x[1]); }); });
-    // the gift of the online payment (the owner, 22.11): a BioLifting session in both clinics, no value in lei said
-    var GIFT = [['La plata online: acces în Clubul 360 și un tratament cadou (EMS la Timișoara, Restart la Arad)', 'La plata online: o ședință de BioLifting cadou și acces în Clubul 360'],
-      ['La plata online: EMS cadou la Timișoara, Restart cadou la Arad, și Clubul 360', 'La plata online: o ședință de BioLifting cadou și Clubul 360'],
-      ['La plata online: o ședință de EMS la Timișoara, un Tratament Restart la Arad.', 'La plata online, în ambele clinici: tratament anti-rid sau de prevenție.'],
-      ['Bonusurile (la Timișoara o ședință de EMS cadou, la Arad un Tratament Restart cadou, și locul în Clubul 360)', 'Bonusurile (o ședință de BioLifting cadou și locul în Clubul 360)'],
-      ['un tratament cadou (la Timișoara o ședință de EMS, la Arad un Tratament Restart)', 'o ședință de BioLifting cadou (tratament anti-rid sau de prevenție)'],
-      ['Tratamentul cadou (EMS la Timișoara, Restart la Arad)', 'Ședința de BioLifting cadou']];
-    $$('main').forEach(function (m) {
-      var w = document.createTreeWalker(m, NodeFilter.SHOW_TEXT), t;
-      while ((t = w.nextNode())) { var v = t.nodeValue; if (v.indexOf('EMS') < 0 && v.indexOf('Restart') < 0) continue; GIFT.forEach(function (x) { if (v.indexOf(x[0]) >= 0) v = v.replace(x[0], x[1]); }); if (v !== t.nodeValue) t.nodeValue = v; }
-    });
-    $$('.cs-stack .cs-row').forEach(function (r) {
-      var b = r.querySelector('b'), v = r.querySelector('.cs-v');
-      if (b && v && b.textContent.trim() === 'Un tratament cadou') { b.textContent = 'O ședință de BioLifting cadou'; v.textContent = 'cadou'; v.classList.add('inc'); }
-    });
+    // the VIP card paid online costs 10% less (the owner, 22.11), when its 10% PayLink is set (CSC.state.online), and has no
+    // gift; the 490 and 990 ones keep the BioLifting gift online. Their words kept here to come back to (CSC.tier)
+    $$('.cst-go [data-cs-buy] [data-cs-v="pay"]').forEach(function (el) { el.setAttribute('data-cs-v', 'payon'); });
+    $$('.cst-pts [data-cs-v="save"]').forEach(function (el) { if (!el.parentNode.querySelector('[data-cs-svon]')) el.insertAdjacentHTML('afterend', '<span data-cs-svon hidden> la plata online</span>'); });
+    $$('[data-cs-gift]').forEach(function (el) { if (el._h == null) el._h = el.innerHTML; });
+    $$('.cst-pts li span').forEach(function (sp) { if (/^La plata online/.test(sp.textContent) && sp._t == null) sp._t = sp.textContent; });
     // the ideas' sum: the 990 card's when the VIP is chosen (they are its ideas)
     $$('#exemple .eye [data-cs-v="get"]').forEach(function (el) { el.setAttribute('data-cs-v', 'getx'); });
     // the card's own words, kept to come back to
@@ -182,7 +173,8 @@
     CSC.current = t;
     var vip = t === VIP;
     var get = TIERS[t][0], worth = get; // the gift has no value in lei said (22.11)
-    var val = { getx: fmt(TIERS[vip ? 990 : t][0]) + ' lei', pay: fmt(t) + ' lei', get: fmt(get) + ' lei', payd: fmt(t) + ' lei.', getd: fmt(get) + ' lei.', save: fmt(get - t) + ' lei', save2: fmt(worth - t) + ' lei', worth: fmt(worth) + ' lei', mul: 'x' + TIERS[t][1] };
+    var on = (CSC.state && CSC.state.online) || {}, d = Number(on[t]) || 0; // the VIP's price online, when its 10% link is set
+    var val = { getx: fmt(TIERS[vip ? 990 : t][0]) + ' lei', pay: fmt(t) + ' lei', get: fmt(get) + ' lei', payd: fmt(t) + ' lei.', getd: fmt(get) + ' lei.', save: fmt(get - (d || t)) + ' lei', save2: fmt(worth - t) + ' lei', worth: fmt(worth) + ' lei', mul: 'x' + TIERS[t][1] };
     $$('[data-cs-v]').forEach(function (el) { var k = el.getAttribute('data-cs-v'); if (val[k] != null && el.textContent !== val[k]) el.textContent = val[k]; });
     $$('[data-csc-credit]').forEach(function (el) { setCredit(el, fmt(get)); });
     $$('[data-cs-only]').forEach(function (el) { el.hidden = el.getAttribute('data-cs-only').split(',').indexOf(String(t)) < 0; });
@@ -206,6 +198,12 @@
     });
     $$('[data-cs-call]').forEach(function (el) { el.hidden = !call; });
     $$('[data-cs-pts] li').forEach(function (li) { if (/myPOS/.test(li.textContent)) li.hidden = call; });
+    // online: the VIP 10% less (its full price struck through) and no gift; the others as they were
+    $$('[data-cs-v="payon"]').forEach(function (el) { var h = d ? '<s>' + fmt(t) + ' lei</s> ' + fmt(d) + ' lei' : fmt(t) + ' lei'; if (el.innerHTML !== h) el.innerHTML = h; });
+    $$('[data-cs-gift]').forEach(function (el) { var h = vip ? '−10% la plata online' : el._h; if (h != null && el.innerHTML !== h) el.innerHTML = h; el.hidden = vip && !(d && link); });
+    $$('[data-cs-svon]').forEach(function (el) { el.hidden = !d; });
+    $$('.cst-pts li span').forEach(function (sp) { if (sp._t != null) sp.textContent = !vip ? sp._t : d ? 'La plata online: 10% reducere și acces în Clubul 360' : 'La plata online: acces în Clubul 360'; });
+    $$('.cs-stack .cs-row').forEach(function (r) { var b = r.querySelector('b'); if (b && /BioLifting/.test(b.textContent)) r.hidden = vip; });
     if (!quiet) { try { localStorage.setItem(KEY, String(t)); } catch (e) {} }
   };
   $$('[data-cst]').forEach(function (box) { box.addEventListener('change', function (e) { if (e.target.name === 'cst') CSC.tier(e.target.value); }); });

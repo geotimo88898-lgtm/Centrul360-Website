@@ -120,9 +120,10 @@ module.exports = async (req, res) => {
         res.status(200).send(buf);
         return;
       }
-      const [list, links] = await Promise.all([readJSON(C.KEY, []), C.links()]);
+      // links: where „Plătesc online” goes, per card (its 10% link when set); online: the sum online, for those cards only
+      const [list, sl] = await Promise.all([readJSON(C.KEY, []), C.siteLinks()]);
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=10, stale-while-revalidate=30');
-      res.status(200).json(Object.assign(C.publicCount(await C.count(list)), { links }));
+      res.status(200).json(Object.assign(C.publicCount(await C.count(list)), { links: sl.links, online: sl.online }));
       return;
     }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
@@ -171,7 +172,7 @@ module.exports = async (req, res) => {
           id: r.id, created: r.created, city: r.city, tier: r.tier, name: r.name || '', last3: String(r.phone || '').replace(/\D/g, '').slice(-3), status: r.status })) }));
         const recTpl = Object.fromEntries(Object.entries(all).filter(([k]) => !C.CORE.includes(k)));
         res.status(200).json(Object.assign({ cards: cards.filter((c) => c.code).reverse(), orders, totals, templates: tpl, recTemplates: recTpl, checks, scan, treatments: await treatments(), team: emps.filter((e) => e.active !== false && ['cosmetician', 'manager'].includes(e.role)).map((e) => ({ id: e.id, name: e.name, city: e.location || '' })),
-          role: session.role, links: await C.links(), gift: { 'Timișoara': C.giftShort(), Arad: C.giftShort() } }, await C.count(list, now)));
+          role: session.role, links: await C.links(), online: await C.onlineLinks() }, await C.count(list, now)));
         return;
       }
       // „Interesate” (_lib/card-interested.js): who answered the campaign's message with words and has no order
@@ -282,7 +283,9 @@ module.exports = async (req, res) => {
         // a VIP one sold at the desk takes one of her clinic's VIP cards (5 per clinic); the regular ones never waited for a wave here
         if (C.isVip(tier)) { const st = await C.stockFor(list, tier, city, qty); if (!st.ok) { res.status(409).json({ error: st.error, left: st.left }); return; } }
         const names = Array.from({ length: qty }, (_, i) => clean((Array.isArray(b.names) ? b.names : [])[i], 80));
-        const row = { id: crypto.randomUUID(), created: new Date().toISOString(), name, phone, city, tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty, forWho: names.some(Boolean) ? 'cadou' : 'eu',
+        // paid online with the 10% link: its sum (22.11)
+        const disc = b.via === 'online' && b.disc === true && qty === 1 && C.DISC_TIERS.includes(tier);
+        const row = { id: crypto.randomUUID(), created: new Date().toISOString(), name, phone, city, tier, qty, amount: disc ? C.discOf(tier) : tier * qty, disc: disc || undefined, credit: C.TIERS[tier] * qty, forWho: names.some(Boolean) ? 'cadou' : 'eu',
           cards: names.map((n) => ({ code: '', recipient: n })), recipient: names[0] || '', status: 'rezervat', via: 'portal', pay: b.via === 'online' ? 'online' : 'clinica', addedBy: session.employeeId || '' };
         list.push(row);
         await writeJSON(C.KEY, list);
@@ -372,7 +375,10 @@ module.exports = async (req, res) => {
 
     const now = Date.now();
     if (now >= Date.parse(C.DEADLINE)) { res.status(409).json({ error: 'closed' }); return; }
-    const lk = online ? (await C.links())[tier] : null;
+    // online: 10% off when the card's 10% link is set (the 290 one never), else its full price and link
+    const op = online && Number(tier) !== 290 ? await C.onlinePay(tier) : null;
+    const lk = online ? (op ? op.link : (await C.links())[tier]) : null;
+    const payAmount = op && op.disc ? op.amount : tier * qty;
     if (online && !lk) { res.status(409).json({ error: 'no_link' }); return; }
     let list = await readJSON(C.KEY, []);
     // the id made by her browser (an online order: she is on myPOS before this answer, the owner 22.11: „prea lent”), kept
@@ -398,7 +404,7 @@ module.exports = async (req, res) => {
     if (!st0.ok) { res.status(409).json(st0.error === 'not_enough' ? { error: 'not_enough', left: left0 } : { error: st0.error === 'closed' ? 'closed' : 'sold_out', vip: cnt0.vip }); return; }
 
     // nothing is issued now: the codes come when the payment is confirmed (the owner, 21.11)
-    const entry = { id: newId, created: new Date().toISOString(), name, phone, city, tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty, forWho: gift ? 'cadou' : 'eu',
+    const entry = { id: newId, created: new Date().toISOString(), name, phone, city, tier, qty, amount: payAmount, credit: C.TIERS[tier] * qty, forWho: gift ? 'cadou' : 'eu', disc: op && op.disc ? true : undefined,
       cards: names.map((n) => ({ code: '', recipient: n })), recipient: names[0] || '', status: online ? 'asteptare' : 'rezervat', via: 'site', pay: online ? 'online' : 'clinica', page: clip(b.page, 200), track: trackOf(req, b.page, b.ct) };
     // where the name on the card comes from (the portal says it): typed on the site; else hers in our files (clients, then
     // leads, the newest first): her greeting and her card's name, nothing asked on WhatsApp; else asked once paid
@@ -437,7 +443,7 @@ module.exports = async (req, res) => {
       try {
         const N = require('./_lib/notify');
         await N.notifyMany({ readJSON, writeJSON }, await N.deskIds({ readJSON, writeJSON }, city), { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-wait-' + entry.id,
-          title: C.sarb(tier) + ' · LA PLATĂ ONLINE' + N.cityTag(city), text: (name || entry.hint || 'fără nume') + ' · se confirmă singur când plata apare în myPOS' });
+          title: C.sarb(tier, entry.amount) + ' · LA PLATĂ ONLINE' + N.cityTag(city), text: (name || entry.hint || 'fără nume') + ' · se confirmă singur când plata apare în myPOS' });
       } catch (e) { /* the order stands */ }
       return;
     }

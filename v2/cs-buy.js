@@ -30,7 +30,7 @@
   // Meta pixel (the owner, 21.11: „tracking cu absolut totul”): it only queues until „Accept” loads it (_shell.html);
   // the Lead's event id is the one the server's Conversions API copy carries, so Meta counts it once
   var px = function (name, data, eid) { try { if (window.fbq) window.fbq('track', name, data || {}, eid ? { eventID: eid } : undefined); } catch (e) {} };
-  var item = function (tier) { return { content_name: Number(tier) === VIP ? 'Card VIP Transformarea 360' : 'Card de Sărbători ' + tier + ' lei', content_ids: ['card-' + tier], content_type: 'product', value: Number(tier) || 0, currency: 'RON', num_items: 1 }; };
+  var item = function (tier, paid) { return { content_name: Number(tier) === VIP ? 'Card VIP Transformarea 360' : 'Card de Sărbători ' + tier + ' lei', content_ids: ['card-' + tier], content_type: 'product', value: Number(paid) || Number(tier) || 0, currency: 'RON', num_items: 1 }; };
   // the site's funnel (site-pulse.js): the order started, the payment page / the reservation
   var fev = function (n) { try { if (window.C360P) window.C360P.ev(n); } catch (e) {} };
   var post = function (b) { return fetch('/api/card-sarbatori', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json(); }); };
@@ -45,7 +45,7 @@
   }
   function load() {
     return fetch('/api/card-sarbatori').then(function (r) { return r.json(); }).then(function (d) {
-      if (d && typeof d.left === 'number') { st.open = d.open !== false; st.left = d.left; st.links = d.links || {}; st.vip = d.vip || null; st.loaded = true; }
+      if (d && typeof d.left === 'number') { st.open = d.open !== false; st.left = d.left; st.links = d.links || {}; st.online = d.online || {}; st.vip = d.vip || null; st.loaded = true; }
     }).catch(function () {});
   }
 
@@ -195,14 +195,14 @@
     // online, its PayLink known and a card there for her: to myPOS now, the order sent on the way (keepalive), not awaited
     // (what cs-card.js already read when this file's own read is not back yet: the same answer)
     var cs = window.CSC && window.CSC.state;
-    if (!st.loaded && cs && typeof cs.left === 'number') { st.open = cs.open !== false; st.left = cs.left; st.links = cs.links || {}; st.vip = cs.vip || null; st.loaded = true; }
+    if (!st.loaded && cs && typeof cs.left === 'number') { st.open = cs.open !== false; st.left = cs.left; st.links = cs.links || {}; st.online = cs.online || {}; st.vip = cs.vip || null; st.loaded = true; }
     var link = !clinic && st.loaded && st.links && st.links[tier], id = link ? uuid() : '';
     if (link && id && (vip ? !(st.vip && st.vip[city] && st.vip[city].left <= 0) : st.open && st.left > 0)) {
       busy = true; pressed(btn); phMsg('');
       var fb = { id: id, tier: tier, qty: 1, pay: 'online', forWho: 'eu', phone: phone, city: city, consent: true, website: '', page: location.href };
       if (window.C360P && window.C360P.tok) fb.ct = window.C360P.tok;
       if (window.C360_CONSENT === true) fb.event_id = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
-      var v0 = item(tier);
+      var v0 = item(tier, (st.online || {})[tier]);
       px('InitiateCheckout', v0); fev('start'); px('Lead', v0, fb.event_id); fev('pay');
       put(sessionStorage, K_ORDER, id);
       var json = JSON.stringify(fb);

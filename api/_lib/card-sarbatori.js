@@ -64,7 +64,8 @@ const GIFT_ARAD = 'un Tratament Restart cadou';
 const giftOf = () => GIFT;
 const giftShort = () => GIFT_SHORT;
 // the gift of a card paid already: the one written on it (EMS / Restart before 22.11), else today's
-const giftFor = (r, c) => { const w = String((c && c.gift && c.gift.what) || ''); return /EMS/.test(w) ? GIFT_TM : /Restart/.test(w) ? GIFT_ARAD : GIFT; };
+// (a VIP card paid online has no gift: 10% off instead; giftFor is '' for it)
+const giftFor = (r, c) => { const w = String((c && c.gift && c.gift.what) || ''); return !w ? '' : /EMS/.test(w) ? GIFT_TM : /Restart/.test(w) ? GIFT_ARAD : GIFT; };
 
 const store = { readJSON, writeJSON };
 const nowISO = () => new Date().toISOString();
@@ -230,26 +231,74 @@ const findCard = (list, code) => {
 // (api/lead-health.js ?cardlinks), only https links of myPOS.
 const LINKS = 'data/card-sarbatori-links.json';
 const okLink = (u) => { try { const x = new URL(String(u || '').trim()); return x.protocol === 'https:' && /(^|\.)mypos\.(com|eu)$/i.test(x.hostname) ? x.href : ''; } catch (e) { return ''; } };
+// The VIP card paid online costs 10% less (the owner, 22.11): 9.900 → 8.910 lei, the full 30.000 credit all the same, and no
+// gift (the 490 and 990 cards keep the BioLifting gift online, at their full price). The 10% sum has its own PayLink, made
+// by him, kept as "9900_online"; until it is set the VIP is sold online as before (full price, full link, if any).
+const DISC_TIERS = [VIP];
+const discOf = (t) => Math.round(Number(t) * 0.9);
 async function links() {
   const d = (await readJSON(LINKS, {}).catch(() => ({}))) || {};
   const out = {};
   Object.keys(TIERS).forEach((t) => { out[t] = okLink(d[t]) || null; });
   return out;
 }
+// the 10% links set: { "990": "https://…" } (only these tiers)
+async function onlineLinks() {
+  const d = (await readJSON(LINKS, {}).catch(() => ({}))) || {};
+  const out = {};
+  DISC_TIERS.forEach((t) => { const u = okLink(d[t + '_online']); if (u) out[t] = u; });
+  return out;
+}
+// what she pays online for a card now, and where: its 10% link when there is one, else the full price and link
+async function onlinePay(tier) {
+  const [full, on] = await Promise.all([links(), onlineLinks()]);
+  return on[tier] ? { link: on[tier], amount: discOf(tier), disc: true } : { link: full[tier] || null, amount: Number(tier), disc: false };
+}
+// the link of an order: the one of the sum it carries (a 10% order: its 10% link while it exists, else the full one; the
+// payment of the full sum is matched to it too: candsOf)
+async function linkOf(r) {
+  const [full, on] = await Promise.all([links(), onlineLinks()]);
+  return (r.disc && on[r.tier]) || full[r.tier] || null;
+}
+// the site's view: per card, the link she goes to online and, for a card with its 10% link, the sum she pays
+async function siteLinks() {
+  const [full, on] = await Promise.all([links(), onlineLinks()]);
+  const out = Object.assign({}, full), online = {};
+  Object.keys(on).forEach((t) => { out[t] = on[t]; online[t] = discOf(t); });
+  return { links: out, online };
+}
+// ?cardlinks: { "990": url } the full one; { "990_online": url } or { "990": { url, amount: 891 } } the 10% one; '' clears
 async function setLinks(input, by) {
   const cur = (await readJSON(LINKS, {}).catch(() => ({}))) || {};
   const next = Object.assign({}, cur);
+  const put = (key, t, v) => {
+    const s = String(v == null ? '' : v).trim();
+    if (!s) { delete next[key]; return null; }
+    const ok = okLink(s);
+    if (!ok) return { error: 'bad_link', tier: key };
+    next[key] = ok;
+    return null;
+  };
   for (const t of Object.keys(TIERS)) {
-    if (!input || !(t in input)) continue;
-    const v = String(input[t] == null ? '' : input[t]).trim();
-    if (!v) { delete next[t]; continue; }
-    const ok = okLink(v);
-    if (!ok) return { error: 'bad_link', tier: t };
-    next[t] = ok;
+    if (!input) break;
+    if (t in input) {
+      const v = input[t];
+      if (v && typeof v === 'object') {
+        const amount = Number(v.amount);
+        const disc = DISC_TIERS.includes(Number(t)) && amount === discOf(t);
+        if (!disc && amount !== Number(t)) return { error: 'bad_amount', tier: t, amounts: DISC_TIERS.includes(Number(t)) ? [Number(t), discOf(t)] : [Number(t)] };
+        const e = put(disc ? t + '_online' : t, t, v.url); if (e) return e;
+      } else { const e = put(t, t, v); if (e) return e; }
+    }
+    if ((t + '_online') in input) {
+      if (!DISC_TIERS.includes(Number(t))) return { error: 'no_discount', tier: t };
+      const e = put(t + '_online', t, input[t + '_online']); if (e) return e;
+    }
   }
   next.updatedAt = nowISO(); next.by = by || '';
   await writeJSON(LINKS, next);
-  return { ok: true, links: await links() };
+  const on = await onlineLinks();
+  return { ok: true, links: await links(), online: Object.fromEntries(Object.keys(on).map((t) => [t, { link: on[t], amount: discOf(t) }])) };
 }
 
 // ---- the picture of a card (made once, kept; made again when the name on it changes)
@@ -399,13 +448,14 @@ const greetName = (r) => { const f = firstName(r.name || (r.hint !== NONAME ? r.
 const VIP_WHAT = 'Cardul VIP e pentru tine și cei dragi și începe cu revizia completă și planul tău personal: te sunăm să o programăm.';
 const cardWord = (r) => (isVip(r) ? 'Cardul VIP Transformarea 360' : 'Cardul de Sărbători');
 function cardText(r, c) {
-  const extra = (isVip(r) ? VIP_WHAT + ' ' : '') + (r.bonus ? 'Cadou: ' + giftFor(r, c) + '. Locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code : 'Te așteptăm cu drag.');
+  const gf = giftFor(r, c);
+  const extra = (isVip(r) ? VIP_WHAT + ' ' : '') + (r.bonus ? (gf ? 'Cadou: ' + gf + '. ' : '') + 'Locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code : 'Te așteptăm cu drag.');
   const g = greetName(r);
   return { vars: { prenume: g || 'dragă', credit: lei(c.value), cod: c.code, cadou: extra },
     text: 'Bună' + (g ? ', ' + g : '') + '! ' + (isVip(r) ? '💎 Cardul tău VIP Transformarea 360' : '🎁 Cardul tău de Sărbători') + ' Centrul360 este activ' + (c.recipient && c.recipient !== r.name ? ' (pe numele ' + c.recipient + ')' : '') + ':\n' +
       '• credit de ' + lei(c.value) + ' lei, pentru orice tratament la prețul de listă' + (isVip(r) ? ', pentru tine și cei dragi' : '') + '\n• cod ' + c.code + '\n• valabil până pe ' + VALID_TXT + '\n' +
       (isVip(r) ? '• începem cu revizia completă și planul tău personal: te sunăm să o programăm\n' : '') +
-      (r.bonus ? '• cadou: ' + giftFor(r, c) + (giftFor(r, c) === GIFT_TM ? ' (în clinica din Timișoara)' : '') + '\n• locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code + '\n' : '') +
+      (r.bonus ? (gf ? '• cadou: ' + gf + (gf === GIFT_TM ? ' (în clinica din Timișoara)' : '') + '\n' : '') + '• locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code + '\n' : '') +
       '\nPentru programare răspunde la acest mesaj. Mulțumim!' };
 }
 // her card, out on WhatsApp; what happened is kept on the card (the portal shows „de trimis manual” when it could not go)
@@ -458,7 +508,7 @@ async function recordSale(r, by) {
     id: crypto.randomUUID(), source: 'incasare', cardSale: true, label: isVip(r) ? 'Card VIP Transformarea 360' : 'Card de Sărbători', cardOrderId: r.id, online: r.paidVia === 'online', // online: a PayLink, never a POS terminal's
     employeeId: by || r.paidBy || 'card-sarbatori', performedBy: '', appointmentId: '', clientId: r.clientId || '', client: r.name || '',
     date: roDay(Date.parse(r.paidAt) || Date.now()), location: r.city || '', categories: [], category: '',
-    treatment: (isVip(r) ? 'Card VIP Transformarea 360' : 'Card de Sărbători') + ' · plătești ' + (r.qty > 1 ? r.qty + ' × ' : '') + lei(r.tier) + ' lei, credit ' + (r.qty > 1 ? r.qty + ' × ' : '') + lei(TIERS[r.tier]) + ' lei',
+    treatment: (isVip(r) ? 'Card VIP Transformarea 360' : 'Card de Sărbători') + ' · plătești ' + (r.qty > 1 ? r.qty + ' × ' + lei(r.tier) : lei(Number(r.paidAmount) || Number(r.amount) || r.tier)) + ' lei' + (r.disc ? ' (10% reducere online)' : '') + ', credit ' + (r.qty > 1 ? r.qty + ' × ' : '') + lei(TIERS[r.tier]) + ' lei',
     amount, bookedAmount: 0, upsell: 0, method, split: null, status: 'recorded', commission: 0,
     note: (r.paidVia === 'online' ? 'Online (myPOS)' : 'În clinică') + ' · ' + r.cards.map((c) => c.code).filter(Boolean).join(', '),
     createdAt: nowISO(), decidedAt: null,
@@ -563,6 +613,8 @@ async function confirm(id, via, o) {
   r.status = 'platit'; r.paidAt = nowISO(); r.paidVia = via === 'online' ? 'online' : 'clinica';
   r.paidBy = o.by || ''; if (o.byName) r.paidByName = o.byName;
   r.paidAmount = Number(o.amount) > 0 ? r2(o.amount) : r.amount;
+  // online, what she really paid is the order's sum (a 10% order paid by the full link: the full sum)
+  if (r.paidVia === 'online' && r.paidAmount !== r.amount) { mark(r, 'amount', r.amount + ' → ' + r.paidAmount); r.amount = r.paidAmount; r.disc = r.paidAmount === discOf(r.tier) && r.tier !== 290; }
   r.payMethod = r.paidVia === 'online' ? 'card' : PAY_METHODS.includes(o.method) ? o.method : 'card';
   if (o.match) r.match = o.match;
   r.bonus = r.paidVia === 'online';
@@ -571,7 +623,7 @@ async function confirm(id, via, o) {
   r.cards.forEach((c) => {
     if (!c.code) c.code = codeOf(list);
     c.value = TIERS[r.tier] || c.value;
-    c.gift = r.bonus ? { what: giftShort(r.city), state: 'open' } : null;
+    c.gift = r.bonus && !isVip(r) ? { what: giftShort(r.city), state: 'open' } : null; // the VIP: 10% off online, no gift
   });
   await writeJSON(KEY, list);
   // the money in Încasări, once (its own line there; the notice below is the only one)
@@ -589,7 +641,7 @@ async function confirm(id, via, o) {
   if (r.bonus) await clubAdd({ name: r.name, phone: r.phone, city: r.city, code: r.cards[0].code, source: 'card' }).catch((e) => console.error('card club:', e.message));
   try {
     const note = (isVip(r) ? 'Card VIP Transformarea 360' : 'Card de Sărbători') + ' plătit ' + (r.paidVia === 'online' ? 'online' : 'în clinică') + ': ' + r.qty + ' × ' + r.tier + ' lei, credit ' + lei(r.credit) + ' lei · ' +
-      r.cards.map((c) => c.code + (c.recipient ? ' (' + c.recipient + ')' : '')).join(', ') + (r.bonus ? ' · cadou: ' + giftShort(r.city) + ' · Clubul 360' : '');
+      r.cards.map((c) => c.code + (c.recipient ? ' (' + c.recipient + ')' : '')).join(', ') + (r.bonus ? (isVip(r) ? (r.disc ? ' · 10% reducere online' : '') : ' · cadou: ' + giftShort(r.city)) + ' · Clubul 360' : '');
     const L = await require('../portal-leads').createLead({ name: r.name || r.hint || NONAME, phone: r.phone, source: 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: 'Card de Sărbători', welcome: false });
     if (L && L.lead && !r.leadId) r.leadId = L.lead.id;
   } catch (e) { console.error('card lead:', e.message); }
@@ -603,7 +655,7 @@ async function confirm(id, via, o) {
     await N.notifyMany(store, ids, {
       kind: 'money', tone: 'good', go: 'carduri', tag: posPaid ? posPaid.tag : 'card-paid-' + r.id, quiet: !!posPaid, ref: r.paidVia === 'clinica' && r.payMethod === 'card' ? N.payRef('desk', r.paidAmount) : '',
       title: sarb(r.tier, r.amount) + ' · PLĂTIT' + (r.paidVia === 'online' ? ' ONLINE' : '') + N.cityTag(r.city),
-      text: (r.name || r.hint || 'numele vine pe WhatsApp') + ' · ' + r.qty + ' × ' + r.tier + ' lei (credit ' + lei(r.credit) + ') · ' + r.cards.map((c) => c.code).join(', ') + (r.bonus ? ' · + ' + giftShort(r.city) + ' și Clubul 360' : '') +
+      text: (r.name || r.hint || 'numele vine pe WhatsApp') + ' · ' + r.qty + ' × ' + r.tier + ' lei (credit ' + lei(r.credit) + ') · ' + r.cards.map((c) => c.code).join(', ') + (r.bonus ? (isVip(r) ? (r.disc ? ' · 10% reducere online' : '') + ' · + Clubul 360' : ' · + ' + giftShort(r.city) + ' și Clubul 360') : '') +
         (o.match ? ' · găsit automat în myPOS' : ''),
     });
   } catch (e) { console.error('card notify:', e.message); }
@@ -638,7 +690,9 @@ const waits = (x) => x.status === 'asteptare' || (x.status === 'anulat' && (x.ca
 //   data/card-sarbatori-check.json  [{ id, ref, amount, at, src, found, cands: [order id], state: 'open' | 'done' | 'none',
 //                                      order, doneAt, by }]
 const CHECK = 'data/card-sarbatori-check.json';
-const candsOf = (list, amount, t) => list.filter((x) => waits(x) && Math.abs(Number(x.amount) - Number(amount)) < 0.01 && Date.parse(x.created) <= t + 5 * 60e3 && t - heldFrom(x) <= MATCH_MS)
+// (a 10% order paid by the full link, or the other way, is hers too: both sums of her card)
+const sumOk = (x, amount) => { const a = Number(amount); if (Math.abs(Number(x.amount) - a) < 0.01) return true; if (qtyOf(x) !== 1 || !DISC_TIERS.includes(Number(x.tier))) return false; return a === Number(x.tier) || a === discOf(x.tier); };
+const candsOf = (list, amount, t) => list.filter((x) => waits(x) && sumOk(x, amount) && Date.parse(x.created) <= t + 5 * 60e3 && t - heldFrom(x) <= MATCH_MS)
   .sort((a, b) => Date.parse(a.created) - Date.parse(b.created));
 async function matchPayments(pays) {
   const list = await readJSON(KEY, []);
@@ -711,7 +765,7 @@ async function scanMypos(days, opts) {
   const probe = { at: nowISO(), days: days || 3, read: raw.length, groups: {}, fields: [], tierSums: 0 };
   const fields = new Set();
   const pays = [];
-  const sums = new Set([290, 490, 990, 580, 980, 1980, 870, 1470, 2970, 9900].map(String));
+  const sums = new Set([290, 490, 990, 580, 980, 1980, 870, 1470, 2970, 9900, 441, 891, 8910].map(String));
   for (const t of raw) {
     Object.keys(t || {}).forEach((k) => fields.add(k));
     const type = String(t.transaction_type || '').padStart(3, '0');
@@ -959,7 +1013,7 @@ async function answer(id, reason) {
   if (reason === 'clinic') { await writeJSON(KEY, list); return toClinic(id, 'site'); }
   if (reason === 'retry') {
     const h = await rehold(list, r);
-    const link = h === 'ok' ? (await links())[r.tier] : null;
+    const link = h === 'ok' ? await linkOf(r) : null;
     if (link && !again) mark(r, 'to_paylink');
     await writeJSON(KEY, list);
     return link ? { ok: true, link } : { error: h === 'ok' ? 'no_link' : h };
@@ -1243,7 +1297,7 @@ async function onWhatsApp(m) {
   if (r.status === 'platit') { reply = hi('Bună') + '! Plata ta e deja confirmată, iar cardul l-ai primit aici pe WhatsApp. Mulțumim!'; quietDesk = true; }
   else if (kind === 'pay' && openOnline(r)) {
     const h = await rehold(list, r);
-    const link = h === 'ok' ? (await links())[r.tier] : null;
+    const link = h === 'ok' ? await linkOf(r) : null;
     if (link) {
       mark(r, 'to_paylink', 'whatsapp');
       reply = hi('Sigur') + '! Aici plătești Cardul de Sărbători de ' + lei(r.credit) + ' lei în tratamente (' + lei(r.amount) + ' lei), pe pagina securizată myPOS: ' + link + '\nCardul îți vine aici pe WhatsApp imediat ce se confirmă plata.';
@@ -1373,7 +1427,9 @@ async function leadMsg(id) {
   const r = list.find((x) => x.id === id);
   if (!r || r.status !== 'lead' || r.leadMsg) return r ? r.leadMsg || {} : {};
   norm(r);
-  const vars = { suma: lei(r.amount), credit: lei(r.credit), cadoul: giftOf(r.city) };
+  const op = await onlinePay(r.tier).catch(() => ({ disc: false }));
+  // („Online, cu cardul, primești în plus {{3}} și acces în Clubul 360”: the gift; the VIP: 10% off, or its card at once)
+  const vars = { suma: lei(r.amount), credit: lei(r.credit), cadoul: !isVip(r) ? giftOf(r.city) : op.disc ? '10% reducere (' + lei(op.amount) + ' lei)' : 'cardul pe loc, aici pe WhatsApp' };
   let png = null, path = 'wa-out/card-lead-' + String(r.id).replace(/[^\w-]/g, '').slice(0, 36) + '.png';
   try {
     png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: r.forWho === 'cadou' ? '' : r.name || '', code: '', valid: VALID_TXT, vip: isVip(r) });
@@ -1422,12 +1478,15 @@ async function leadReply(list, r, m) {
   let reply = '', quietDesk = false, vipCall = false;
   if (kind === 'online') {
     const h = await rehold(list, r);
-    const link = h === 'ok' ? (await links())[r.tier] : null;
+    // online: 10% off when its 10% link is set (the order's sum follows)
+    const op = h === 'ok' ? await onlinePay(r.tier) : null;
+    const link = op && op.link;
     if (link) {
       r.pay = 'online';
+      if (Number(r.tier) !== 290 && qtyOf(r) === 1) { r.amount = op.amount; if (op.disc) r.disc = true; else delete r.disc; }
       mark(r, 'to_paylink', 'whatsapp');
-      reply = hi('Super') + '! Aici plătești Cardul de Sărbători de ' + lei(r.credit) + ' lei în tratamente (' + lei(r.amount) + ' lei), pe pagina securizată myPOS: ' + link +
-        '\nDupă plată primești cardul aici pe WhatsApp, plus ' + giftOf(r.city) + ' și accesul în Clubul 360.';
+      reply = hi('Super') + '! Aici plătești Cardul de Sărbători de ' + lei(r.credit) + ' lei în tratamente (' + (op.disc ? lei(r.amount) + ' lei în loc de ' + lei(r.tier) + ' lei, 10% reducere la plata online' : lei(r.amount) + ' lei') + '), pe pagina securizată myPOS: ' + link +
+        '\nDupă plată primești cardul aici pe WhatsApp' + (isVip(r) ? '' : ', plus ' + giftOf(r.city) + ',') + ' și accesul în Clubul 360.';
       quietDesk = true;
     } else {
       if (r.status === 'asteptare' && r.pay !== 'online') r.status = 'lead'; // no PayLink now: she stays a lead, the desk calls her
@@ -1614,7 +1673,7 @@ async function requestFromTap(i, opt) {
 }
 
 module.exports = { requestFromTap, deleteOrder, orderExtras,
-  KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT, GIFT_TM, GIFT_ARAD, giftOf, giftShort, giftFor, TPL,
+  KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT, GIFT_TM, GIFT_ARAD, giftOf, giftShort, giftFor, DISC_TIERS, discOf, onlineLinks, onlinePay, linkOf, siteLinks, sumOk, TPL,
   byId, VIP, SALE, isVip, vipLeft, stockFor, leftFor, lostRace, sarb, norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
   supersede, supersedeOnce, request, editOrder, reserveFromLead, leadMsg, leadCall, leadReply, LEAD_BTN, CORE, REC_BTN, NAME_BTN, NONAME, CHECK, REASONS, needsName, knownName, nameLead, sendCards, askName, cleanName, pick, openCheckOf, openChecks, greetName, mark, recOf, heldFrom, rehold, back, answer, toClinic, recover, recoverIfIdle, onWhatsApp, abandonStats, cardsLeft, quiet, awake,

@@ -311,3 +311,5 @@ main [hidden]{ display:none !important; }
 .cst-t.vip:hover{ box-shadow:0 16px 30px -20px rgba(60,40,10,.75); }
 .cst-t.vip:has(input:checked){ border-width:2px; box-shadow:0 0 0 4px rgba(227,194,122,.18), 0 18px 34px -18px rgba(120,86,24,.7);
   background:linear-gradient(150deg,#322a21 0%,#17130f 55%,#0a0807 100%) padding-box, linear-gradient(135deg,#a07428 0%,#f7dc97 20%,#fffbe6 32%,#e3c27a 50%,#8a6420 74%,#f3d589 100%) border-box; }
+/* the VIP online: its full price struck through, quieter than the price she pays (22.11) */
+[data-cs-v="payon"] s{ opacity:.72; font-weight:500; margin-right:2px; }

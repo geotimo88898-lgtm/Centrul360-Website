@@ -90,12 +90,12 @@ module.exports = async (req, res) => {
     res.status(r.error ? 400 : 200).json(r);
     return;
   }
-  // ?cardlinks=1: the Card de Sărbători's myPOS PayLinks, one per card; POST { 290, 490, 990, 9900 } sets them (9900: the VIP card) (only https links of
+  // ?cardlinks=1: the Card de Sărbători's myPOS PayLinks, one per card; POST { 290, 490, 990, 9900 } sets them (9900: the VIP card); the 10% ones (paying online, 22.11): { "9900_online": url } or { "9900": { url, amount: 8910 } } (only https links of
   // mypos.com / mypos.eu; '' clears one), GET reads them (api/_lib/card-sarbatori.js)
   if (req.query && req.query.cardlinks) {
     const C = require('./_lib/card-sarbatori');
     let b = req.body || {}; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
-    const r = req.method === 'POST' ? await C.setLinks(b, session ? session.employeeId : 'creative') : { links: await C.links() };
+    const r = req.method === 'POST' ? await C.setLinks(b, session ? session.employeeId : 'creative') : { links: await C.links(), online: Object.fromEntries(Object.entries(await C.onlineLinks()).map(([t, u]) => [t, { link: u, amount: C.discOf(t) }])) };
     res.status(r.error ? 400 : 200).json(r);
     return;
   }
