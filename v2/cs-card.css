@@ -320,3 +320,15 @@ main [hidden]{ display:none !important; }
 .cs-vipon .cst-gift{ color:#1f1608 !important; text-shadow:0 1px 0 rgba(255,246,215,.45);
   background:linear-gradient(120deg,#9a6b1f 0%,#d4a645 22%,#f6dc8e 42%,#fff1c2 50%,#e0b456 62%,#a8792a 82%,#c9973c 100%) !important;
   box-shadow:0 0 0 1px rgba(120,84,24,.55) inset, 0 1px 0 rgba(255,250,225,.6) inset !important; }
+/* RULE for the VIP card (the owner, 22.11): metal gold everywhere, never yellow. Fills (badges, buttons): the metal
+   gradient; big numbers on black: the light metal gradient as text; small numbers: one warm gold #e0b456. */
+.cst-vk, .cs-tier.vip .cs-vk, .cs-tier.vip .btn.ghost{ color:#1f1608 !important; text-shadow:0 1px 0 rgba(255,246,215,.45);
+  background:linear-gradient(120deg,#9a6b1f 0%,#d4a645 22%,#f6dc8e 42%,#fff1c2 50%,#e0b456 62%,#a8792a 82%,#c9973c 100%) !important;
+  box-shadow:0 0 0 1px rgba(120,84,24,.55) inset, 0 1px 0 rgba(255,250,225,.6) inset, 0 8px 18px -10px rgba(90,62,16,.7) !important; border-color:transparent !important; }
+.cs-tier.vip .btn.ghost:hover{ filter:brightness(1.05); }
+.cst-t.vip b, .cs-tier.vip .cs-tp{ background:linear-gradient(100deg,#c9973c 0%,#f6dc8e 34%,#fff1c2 48%,#e0b456 66%,#b8862e 100%) !important; -webkit-background-clip:text !important; background-clip:text !important; color:transparent !important; }
+.cst-t.vip span strong, .cs-tier.vip .cs-tg strong, .cst-vipl b, .cs-vipon [data-cs-buy][data-cs-follow] b, .cs-vipon [data-cs-buy][data-cs-follow] strong{ color:#e0b456 !important; }
+.cs-tier.vip .cs-mul{ color:#e0b456 !important; background:rgba(224,180,86,.14) !important; }
+.cst-t.vip small, .cs-tier.vip small{ color:rgba(224,180,86,.75) !important; }
+.cst-urg:has(.cst-vipl:not([hidden])) .dot, .cst-urg:has(.cst-vipl:not([hidden])) .dot::after{ background:#d4a645 !important; }
+.cs-tier.vip .cs-tb li::before{ background:linear-gradient(135deg,#f6dc8e,#b8862e) !important; }
