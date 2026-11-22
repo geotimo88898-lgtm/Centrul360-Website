@@ -210,7 +210,7 @@
     $$('[data-cs-pts] li').forEach(function (li) { if (/myPOS/.test(li.textContent)) li.hidden = call; });
     // online: the VIP 10% less (its full price struck through) and no gift; the others as they were
     $$('[data-cs-v="payon"]').forEach(function (el) { var h = d ? '<s>' + fmt(t) + ' lei</s> ' + fmt(d) + ' lei' : fmt(t) + ' lei'; if (el.innerHTML !== h) el.innerHTML = h; });
-    $$('[data-cs-gift]').forEach(function (el) { var h = vip ? '−10% la plata online' : el._h; if (h != null && el.innerHTML !== h) el.innerHTML = h; el.hidden = vip && !(d && link); });
+    $$('[data-cs-gift]').forEach(function (el) { var h = vip ? '−10% și Clubul 360 la plata online' : el._h; if (h != null && el.innerHTML !== h) el.innerHTML = h; el.hidden = vip && !(d && link); });
     $$('[data-cs-svon]').forEach(function (el) { el.hidden = !d; });
     $$('.cst-pts li span').forEach(function (sp) { if (sp._t != null) sp.textContent = !vip ? sp._t : d ? 'La plata online: 10% reducere și acces în Clubul 360' : 'La plata online: acces în Clubul 360'; });
     $$('.cs-stack .cs-row').forEach(function (r) { var b = r.querySelector('b'); if (b && /BioLifting/.test(b.textContent)) r.hidden = vip; });
