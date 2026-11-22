@@ -134,7 +134,7 @@
       var first = ul.querySelector('li'), tk = first && first.querySelector('i') ? first.querySelector('i').outerHTML : '';
       var li = function (h) { return '<li data-cs-vipr data-cs-only="9900" hidden>' + tk + '<span>' + h + '</span></li>'; };
       var html = li('Îl împarți cu cei dragi: la 5 persoane, <b>6.000 lei</b> de tratamente fiecare') +
-        li('Începi cu <b>revizia completă</b> și planul tău personal') + li('Orice tratament, valabil până pe 30.06.2027');
+        li('Începi cu <b>revizia completă</b> și planul tău personal');
       if (first) first.insertAdjacentHTML('afterend', html); else ul.insertAdjacentHTML('afterbegin', html);
     });
     $$('.cst-pts li span').forEach(function (sp) { if (/^La plata online/.test(sp.textContent) && sp._t == null) sp._t = sp.textContent; });
