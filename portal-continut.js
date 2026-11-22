@@ -685,9 +685,16 @@
     // buttons at the bottom and of the speaker
     return '<article class="cn-tx-c" data-cttrid="' + id + '">' + media(it, 'cn-tx-m').replace(/<\/div>$/, '<div class="cn-tx-fv">' + favBtn(it, 'is-on-video') + shareBtn(it, 'is-on-video') + '</div></div>') +
       '<span class="cn-tx-stamp is-ok" aria-hidden="true">' + icon('check') + 'Aprobat</span><span class="cn-tx-stamp is-no" aria-hidden="true">' + icon('undo') + 'De refăcut</span>' +
-      '<div class="cn-tx-i"><div class="cn-tx-h"><small>' + esc(meta) + (it.week ? ' · ' + esc(range(it.week)) : '') + '</small><h3>' + esc(title(it)) + '</h3>' + (it.hook ? '<p class="cn-tx-hook">„' + esc(it.hook) + '”</p>' : '') + '</div>' +
+      '<div class="cn-tx-i"><div class="cn-tx-h"><small>' + esc(meta) + (it.week ? ' · ' + esc(range(it.week)) : '') + '</small><h3>' + esc(title(it)) + '</h3>' + (it.hook ? '<p class="cn-tx-hook">„' + esc(it.hook) + '”</p>' : '') + storyLink(it) + '</div>' +
       '<div class="cn-tx-w"><small>Când și unde se postează</small>' + slotRow(it, true) + '</div>' + prev + bad + caps +
       '<button type="button" class="k-btn is-ghost is-sm cn-tx-more" data-ctitem="' + id + '">' + icon('pen') + 'Editează textele, detalii</button></div></article>';
+  }
+  // a story's link (the sticker „Link” on its last frame), seen while it is approved: where the tap leads
+  function storyLink(it) {
+    const l = it.kind === 'story' && it.links ? it.links.ig || it.links.fb : '';
+    if (!l) return '';
+    const shown = l.replace(/^https?:\/\/(www\.)?/, '').replace(/[?#].*$/, '').replace(/\/$/, '');
+    return '<p class="cn-tx-lk">' + icon('link') + '<span>Link: </span><a href="' + esc(l) + '" target="_blank" rel="noopener">' + esc(shown || l) + '</a></p>';
   }
   // a network's text, as it goes (with its hashtags and its checks)
   function capView(it, net) {

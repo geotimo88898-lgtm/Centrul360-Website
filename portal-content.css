@@ -63,6 +63,9 @@
 .cn-tx-h small{ font-size:.72rem; font-weight:650; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
 .cn-tx-h h3{ margin:0; font-size:1.22rem; font-weight:760; letter-spacing:-.022em; line-height:1.25; overflow-wrap:anywhere; }
 .cn-tx-hook{ margin:0; font-size:.95rem; line-height:1.45; color:var(--muted); font-style:italic; overflow-wrap:anywhere; }
+.cn-tx-lk{ margin:4px 0 0; display:flex; align-items:center; gap:6px; min-width:0; font-size:.85rem; color:var(--muted); }
+.cn-tx-lk svg{ flex:none; width:15px; height:15px; }
+.cn-tx-lk a{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:inherit; text-decoration:underline; }
 .cn-tx-w{ display:grid; gap:.45rem; }
 .cn-tx-w > small, .cn-rq small.cn-rq-l1, .cn-rq-n > small, .cn-rq-refs > small, .cn-rq-tx > small{ font-size:.7rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); }
 .cn-tx-f{ display:flex; align-items:flex-start; gap:.5rem; margin:0; padding:.6rem .75rem; border-radius:14px; background:var(--info-soft); color:var(--fg); font-size:.86rem; line-height:1.45; }
