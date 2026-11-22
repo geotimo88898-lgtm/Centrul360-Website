@@ -275,3 +275,6 @@ html.csb-lock{ overflow:hidden; }
     -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 16px),transparent 100%); mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 16px),transparent 100%); }
   .home-od.dots{ position:relative; z-index:1; }
 }
+/* home: the Black Friday offers and the guarantee band sit close (the owner, 22.11: „prea mult spațiu inutil”) */
+.s.home-of{ padding-bottom:clamp(18px,3vw,34px); }
+.s.home-of + .gs{ padding-top:0; }
