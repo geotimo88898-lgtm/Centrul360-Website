@@ -302,9 +302,12 @@ main [hidden]{ display:none !important; }
 @media (max-width:380px){ .cst-gift{ font-size:11.5px; padding:5px 10px 13px; } }
 /* no x2 / x2,5 / x3 chips in the three cards (the owner, 22.11) */
 .cst-t .cst-x{ display:none !important; }
-/* the VIP one chosen: „Plătesc online” in gold, „Rezerv și plătesc în clinică” white with the black border like the others (the owner, 22.11) */
-.cs-vipon [data-cs-buy][data-cs-follow]{ background:linear-gradient(150deg,#f7dc97 0%,#e3c27a 45%,#c9a04a 100%) !important; color:#1a140c !important; border-color:transparent !important;
-  box-shadow:0 1px 0 rgba(255,247,220,.7) inset, 0 16px 30px -14px rgba(140,100,30,.65) !important; }
+/* the VIP one chosen: „Plătesc online” black like the scarcity box with a gold edge, „Rezerv și plătesc în clinică” white with the black border like the others (the owner, 22.11) */
+.cs-vipon [data-cs-buy][data-cs-follow]{ color:#fbecc6 !important; border:1.5px solid transparent !important;
+  background:linear-gradient(150deg,#2b251e 0%,#15120e 60%,#0a0807 100%) padding-box, linear-gradient(135deg,#8a6420 0%,#f3d589 25%,#fff3c4 36%,#c9a04a 58%,#7a5618 80%,#e3c27a 100%) border-box !important;
+  box-shadow:0 18px 34px -16px rgba(20,14,6,.7) !important; }
+.cs-vipon [data-cs-buy][data-cs-follow] b, .cs-vipon [data-cs-buy][data-cs-follow] strong{ color:#f3d589; }
+.cs-vipon [data-cs-buy][data-cs-follow] s{ color:rgba(251,236,198,.55); }
 /* the VIP card's border: real gold, a light that runs round it (the owner, 22.11: „un border mai nice auriu”) */
 .cst-t.vip{ border:1.5px solid transparent; box-shadow:0 16px 30px -24px rgba(20,14,6,.8);
   background:linear-gradient(150deg,#2b251e 0%,#15120e 55%,#0a0807 100%) padding-box, linear-gradient(135deg,#8a6420 0%,#f3d589 22%,#fff3c4 34%,#c9a04a 55%,#7a5618 78%,#e3c27a 100%) border-box; }
@@ -313,5 +316,7 @@ main [hidden]{ display:none !important; }
   background:linear-gradient(150deg,#322a21 0%,#17130f 55%,#0a0807 100%) padding-box, linear-gradient(135deg,#a07428 0%,#f7dc97 20%,#fffbe6 32%,#e3c27a 50%,#8a6420 74%,#f3d589 100%) border-box; }
 /* the VIP online: its full price struck through, quieter than the price she pays (22.11) */
 [data-cs-v="payon"] s{ opacity:.72; font-weight:500; margin-right:2px; }
-/* the VIP one's ribbon over the gold button: black with gold words */
-.cs-vipon .cst-gift{ background:linear-gradient(150deg,#2b251e,#0a0807) !important; color:#f3d589 !important; box-shadow:0 0 0 1px rgba(227,194,122,.45) inset !important; }
+/* the VIP one's ribbon: metal gold (the owner, 22.11: „auriu auriu, nu galben”) over the black button */
+.cs-vipon .cst-gift{ color:#1f1608 !important; text-shadow:0 1px 0 rgba(255,246,215,.45);
+  background:linear-gradient(120deg,#9a6b1f 0%,#d4a645 22%,#f6dc8e 42%,#fff1c2 50%,#e0b456 62%,#a8792a 82%,#c9973c 100%) !important;
+  box-shadow:0 0 0 1px rgba(120,84,24,.55) inset, 0 1px 0 rgba(255,250,225,.6) inset !important; }
