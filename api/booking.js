@@ -73,6 +73,11 @@ module.exports = async (req, res) => {
     const date = clip(b.date, 10), time = clip(b.time, 5);
     if (!B.isDate(date) || B.toMin(time) == null) { res.status(400).json({ error: 'bad_time' }); return; }
 
+    // how she chose to pay (the site's pay step, c360-book.js): 'online-pending' (she is sent to the myPOS link, the team
+    // checks the money in myPOS) with what she pays, or 'clinic'. Old pages send nothing: nothing is saved.
+    const pay = b.pay === 'online-pending' || b.pay === 'clinic' ? b.pay : '';
+    const payAmount = pay === 'online-pending' && Number.isInteger(Number(b.payAmount)) && Number(b.payAmount) > 0 &&
+      Number(b.payAmount) <= (svc.price > 0 ? svc.price : svc.id === 'custom' ? 20000 : 0) ? Number(b.payAmount) : 0;
     const appts = await readJSON('data/appointments.json', []);
     const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
     const today = B.roNow().date;
@@ -96,7 +101,8 @@ module.exports = async (req, res) => {
       clientId: client.id, clientName: client.name || name, clientPhone: client.phone || phone,
       treatment: svc.title, categories: [svc.cat || 'corporale'], category: svc.cat || 'corporale',
       amount: svc.price || 0, location: city, cosmeticianId: who ? who.id : '', cosmeticianName: who ? who.name : '', status: 'programata', package: false,
-      note: clip(['Programare online pe site', svc.id === 'consult' ? '' : svc.price ? svc.price + ' lei' : '', clip(b.page, 120)].filter(Boolean).join(' · '), 500),
+      note: clip(['Programare online pe site', svc.id === 'consult' ? '' : svc.price ? svc.price + ' lei' : '', payAmount ? 'Plată online ' + payAmount + ' lei, de verificat în myPOS' : '', clip(b.page, 120)].filter(Boolean).join(' · '), 500),
+      ...(payAmount ? { pay, payAmount } : pay === 'clinic' ? { pay } : {}),
       online: true, createdBy: 'site', createdAt: at, updatedAt: at,
       src: B.sourceOf(b.src, req.headers && req.headers.cookie), // where she came from: saved, not shown in the Calendar
     };

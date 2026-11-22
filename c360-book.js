@@ -44,6 +44,17 @@
   const PAY_OFF = 10; // percent off when paid online
   const payAmount = (full) => Math.floor((Number(full) || 0) * (100 - PAY_OFF) / 100); // whole lei, never less than 10% off
   window.C360_PAY_ON = PAY_ON;
+  // The myPOS payment links (the owner, 22.11): one fixed-amount link per offer, its amount = the offer's price minus 10%.
+  // The online option shows only when the offer has a link AND the link's amount is exactly what we would ask (Admin
+  // changed a price → the link no longer fits → she books and pays at the clinic, nobody pays a wrong sum).
+  const PAY_LINKS = {
+    'hifu-gusa-1sedinta': { amount: 171, url: 'https://mypos.com/vmp/btn/BMV54DNVRCU83' },
+    'liposonix-2zone': { amount: 576, url: 'https://mypos.com/vmp/btn/BTYITW3AIRN58' },
+    'facial-restart': { amount: 171, url: 'https://mypos.com/vmp/btn/BAGHP1O65D760' },
+    'cavitatie-ems': { amount: 252, url: 'https://mypos.com/vmp/btn/BUEJR62196862' }, // Timișoara
+    'cavitatie-1plus1': { amount: 252, url: 'https://mypos.com/vmp/btn/BF9N98QLHWQ95' }, // Arad
+    'full-body-6': { amount: 4471, url: 'https://mypos.com/vmp/btn/BV9WXX4UDFY47' }, // Epilare laser Full Body, 6 ședințe (Timișoara)
+  };
   const PAGE_CITY = { timisoara: 'Timișoara', arad: 'Arad', 'epilare-laser': 'Timișoara', 'tonifiere-musculara': 'Timișoara', 'detox-drenaj': 'Timișoara' }[PAGE] || '';
 
   const CSS = `
@@ -202,6 +213,8 @@
   .bk-pb.clinic{ color:#0b0b0d; background:#f5f4f2; box-shadow:0 14px 30px -14px rgba(0,0,0,.6); }
   .bk-pb.clinic .bk-pb-go{ background:rgba(11,11,13,.08); }
   .bk-pb.on{ box-shadow:0 0 0 3px rgba(95,212,198,.45), 0 14px 30px -14px rgba(0,0,0,.5); }
+  .bk-paynow{ text-decoration:none; margin:0 0 12px; }
+  .bk-done .bk-credit{ text-align:left; margin:0 10px 16px; }
   .bk-credit{ display:flex; gap:10px; align-items:flex-start; margin:0 10px 2px; font-size:14px; line-height:1.45; color:rgba(245,244,242,.82); }
   .bk-credit svg{ flex:none; margin-top:1px; color:#e9cfa3; }
   .bk-paid{ display:flex; align-items:center; gap:12px; padding:12px 12px 12px 16px; border-radius:16px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); margin:-6px 0 16px; }
@@ -281,7 +294,7 @@
   // ---------------------------------------------------------------- state & data
   function fresh(o) {
     const me = store.get('c360-book-me') || {};
-    return { step: 'svc', city: o.city || PAGE_CITY || store.get('c360-book-city') || '', svc: o.service || '', label: o.label || '', services: null, days: null, date: '', time: '', err: '', name: me.name || '', phone: me.phone || '', busy: false, done: null, dir: '', pay: '' };
+    return { step: 'svc', city: o.city || PAGE_CITY || store.get('c360-book-city') || '', svc: o.service || '', label: o.label || '', services: null, days: null, date: '', time: '', err: '', name: me.name || '', phone: me.phone || '', busy: false, done: null, dir: '', pay: '', payUrl: '' };
   }
   async function load(fresh) {
     const my = ++seq;
@@ -376,7 +389,12 @@
   // ---------------------------------------------------------------- painting
   // the pay step: only for an offer with its price (not the free consultation, not a treatment priced at the clinic; a
   // treatment booked by its name only when its button carries its price, like the Full Body package)
-  const payable = () => PAY_ON && !!S.service && S.service.id !== 'consult' && S.service.price > 0;
+  const linkOf = (s) => {
+    if (!s || !(s.price > 0)) return null;
+    const l = s.id === 'custom' ? (fullBody(s.title) && /pachet|6\s*[sș]edin/i.test(s.title) ? PAY_LINKS['full-body-6'] : null) : PAY_LINKS[s.id];
+    return l && l.amount === payAmount(s.price) ? l : null;
+  };
+  const payable = () => PAY_ON && !!S.service && S.service.id !== 'consult' && !!linkOf(S.service);
   function prog(n) {
     const bar = root.querySelector('.bk-prog'), want = payable() ? 5 : 4;
     while (bar.children.length < want) bar.appendChild(document.createElement('i'));
@@ -497,6 +515,17 @@
   }
   function doneHtml() {
     const a = S.done || {};
+    if (payOnline() && S.payUrl) {
+      const n = lei(payAmount(S.service.price));
+      return '<div class="bk-done"><div class="bk-check">' + ICON.check + '</div><p class="bk-eyebrow" style="justify-content:center">Programare făcută</p>' +
+        '<h2 class="bk-h">Programarea e făcută. Mai ai <em>un pas:</em> plata de ' + n + '.</h2><p>După plată îți confirmăm pe WhatsApp.</p>' +
+        '<div class="bk-card">' +
+        '<div class="bk-row">' + ICON.cal + '<div><b>' + esc(niceDay(a.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(a.time) + '</b><small>' + esc(a.treatment) + '</small></div></div>' +
+        '<div class="bk-row">' + ICON.pin + '<div><b>Centrul360 ' + esc(a.location) + '</b><small>' + esc(ADDR[a.location]) + '</small></div></div></div>' +
+        '<a class="bk-pb online bk-paynow" href="' + esc(S.payUrl) + '"><span class="bk-pb-t"><b>Plătesc acum ' + n + '</b><small>Plata securizată prin myPOS</small></span><span class="bk-pb-go" aria-hidden="true">' + ICON.next + '</span></a>' +
+        '<p class="bk-credit">' + ICON.shield + '<span>Nu poți ajunge? Mutăm programarea, banii rămân credit (nu se returnează).</span></p>' +
+        '<div class="bk-two"><button type="button" class="bk-ghost" data-ics>' + ICON.cal + 'În calendar</button><a class="bk-ghost" href="' + MAPS[a.location] + '" target="_blank" rel="noopener">' + ICON.pin + 'Vezi pe hartă</a></div></div>';
+    }
     return '<div class="bk-done"><div class="bk-check">' + ICON.check + '</div><p class="bk-eyebrow" style="justify-content:center">Programare făcută</p>' +
       '<h2 class="bk-h">Mai e <em>un pas.</em></h2><p>Ți-am trimis un mesaj pe WhatsApp. Ca programarea să rămână valabilă, confirm-o răspunzând la el cu „Confirm” (sau apasă butonul din mesaj).</p>' +
       '<div class="bk-card">' +
@@ -594,15 +623,20 @@
     return fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(booking) })
       .then((r) => r.json().then((d) => ({ r, d })), () => ({ r: { ok: false }, d: { error: 'net' } }));
   }
-  // THE PAYMENT HOOK (myPOS, built later in its own session). Called when she chose „Plătesc online acum” and pressed
-  // „Programează-mă și plătesc …”, with offer = the chosen offer ({ id, title, price, old, minutes }), amount = what she
-  // pays now in whole lei (price minus 10%), booking = the body for POST /api/booking. It must resolve like book():
-  // { r, d } (d.ok + d.appointment shows „Programare făcută”, d.error shows the error, as today). For now: the booking as
-  // today, marked pay 'online-pending' (api/booking.js ignores the extra fields today: nothing is saved, nothing is
-  // charged). The payment session: book, then the myPOS link for amount (match it to the appointment), the receipt and
-  // the WhatsApp confirmation; and save pay / payAmount on the appointment in api/booking.js.
+  // THE PAYMENT: she chose „Plătesc online” and pressed „Programează-mă și plătesc …”. offer = the chosen offer
+  // ({ id, title, price, old, minutes }), amount = what she pays now in whole lei (price minus 10%), booking = the body for
+  // POST /api/booking. The booking is made first, marked pay 'online-pending' with payAmount (api/booking.js saves both, the
+  // Calendar shows „Plată online … de verificat în myPOS”); then the offer's myPOS link opens in the same tab after a
+  // second, with „Plătesc acum” on the done screen as the fallback. Resolves like book(): { r, d }.
   function startOnlinePay({ offer, amount, booking }) {
-    return book(Object.assign({}, booking, { pay: 'online-pending', payAmount: amount, payFull: offer.price }));
+    const link = linkOf(offer);
+    return book(Object.assign({}, booking, { pay: 'online-pending', payAmount: amount, payFull: offer.price })).then((res) => {
+      if (res.r.ok && res.d.ok && link) {
+        S.payUrl = link.url;
+        setTimeout(() => { if (S.payUrl === link.url && S.step === 'done') location.assign(link.url); }, 1100);
+      }
+      return res;
+    });
   }
   // the ads learn from it (Meta pixel, Google)
   function track(eid) {

@@ -425,7 +425,10 @@
   const trLine = (a) => (a.block ? treatOf(a) : [treatOf(a), Number(a.amount) > 0 ? K.lei(a.amount) : ''].filter(Boolean).join(' · '));
   // „Ședința 3 din 6”: a package session, counted by the server (api/_lib/package-next.js sessionOf)
   const pkgOf = (a) => (a && a.pkg && a.pkg.n ? 'Ședința ' + a.pkg.n + ' din ' + a.pkg.of : '');
-  const subOf = (a) => [pkgOf(a), a.online ? '🌐 online' : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ');
+  // paid online on the site (api/booking.js pay): the sum to find in myPOS, until it is cashed in (Încasează)
+  const payOn = (a) => a && a.pay === 'online-pending' && a.payAmount > 0 && !a.paidSaleId;
+  const payNote = (a) => (payOn(a) ? '<div class="mo-note">' + icon('wallet') + '<span>Plată online <b>' + K.lei(a.payAmount) + '</b> · de verificat în myPOS</span></div>' : '');
+  const subOf = (a) => [pkgOf(a), a.online ? '🌐 online' : '', payOn(a) ? 'plată online ' + K.lei(a.payAmount) : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ');
   function blockHtml(it) {
     const a = it.a, st = stOf(a);
     const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(30, (Math.min(it.e, END * 60) - it.s) * PPM - 3);
@@ -1914,7 +1917,7 @@
         body: '<dl class="k-kv cal-kv"><dt>Tratament</dt><dd>' + esc(a.treatment || '-') + '</dd>' + (pkgOf(a) ? '<dt>Pachet</dt><dd>' + esc(pkgOf(a)) + '</dd>' : '') + '<dt>Categorie</dt><dd>' + esc(K.catLabel(a) || '-') + '</dd>' + (a.amount ? '<dt>Sumă</dt><dd>' + K.lei(a.amount) + '</dd>' : '') +
           '<dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Ora</dt><dd>' + esc(span(a) || '-') + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd>' +
           '<dt>Cosmeticiană</dt><dd>' + esc(a.cosmeticianName || 'neasignat') + '</dd></dl>' +
-          markHtml(a) +
+          payNote(a) + markHtml(a) +
           (a.clientId ? '<section class="k-section cal-client" data-client-brief><h4>' + icon('user') + 'Clienta</h4><div class="k-skel" style="height:56px"></div></section>' : '') +
           '<div class="mo-note">' + icon('info') + 'Programările le face și le modifică recepția.</div>' +
           (a.clientId ? '<div class="cal-cos-acts">' + (mineAppt(a) ? '<button type="button" class="k-btn is-accent" data-offer-calc>' + icon('percent') + 'Fă oferta</button>' : '') +
@@ -1934,6 +1937,7 @@
       subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + (a.online ? '<span class="k-tag is-info" title="Clienta s-a programat singură pe site">' + icon('globe') + 'Online</span> ' : '') + esc(K.relDay(a.date)) + ' · ' + esc(span(a) || 'fără oră') + ' · ' + esc(a.location),
       body:
         (a.paidSaleId ? '<div class="mo-note is-good">' + icon('checkCircle') + 'Plătită, apare în Încasări.</div>' : '') +
+        payNote(a) +
         '<div class="cal-status' + (pickFor(a).length > 4 ? ' is-5' : '') + '" role="group" aria-label="Status" style="--n:' + pickFor(a).length + '">' + pickFor(a).map((s) =>
           '<button type="button" class="is-' + STATUS[s].tone + (s === a.status ? ' is-on' : '') + '" data-status="' + s + '">' + icon(STATUS[s].ic) + '<span>' + STATUS[s].label + '</span></button>').join('') + '</div>' +
         (a.clientPhone ? '<div class="cal-contact">' +

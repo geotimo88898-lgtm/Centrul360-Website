@@ -78,3 +78,4 @@ html body .bk-paid{ background:rgba(11,11,13,.035); border:0; }
 html body .bk-paid small{ color:#646b75; }
 html body .bk-paid .bk-link{ color:#0b7f74; background:#fff; box-shadow:0 0 0 1.5px #14a596 inset; }
 html body .bk-paid .bk-link:hover{ background:#effaf8; }
+html body .bk-done .bk-credit{ color:#262a30; max-width:none; }
