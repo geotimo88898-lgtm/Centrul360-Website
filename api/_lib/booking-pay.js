@@ -87,6 +87,13 @@ async function markPaid(apptId, p, by) {
       title: 'PLĂTITĂ ONLINE ' + ({ 'Timișoara': 'TM', Arad: 'AR' })[a.location] + ' 💳 - ' + lei(p.amount) + ' lei',
       text: (a.clientName || '') + ' · ' + (a.treatment || '') + ' · ' + a.date + ' ' + (a.time || '') + (msg && (msg.sent || msg.dup) ? '' : ' · confirmarea pe WhatsApp nu a plecat, anunț-o tu'),
     }).catch(() => {});
+    // the sale goes back to Meta (Conversions API) as a Purchase in RON, with her browser's ids from the booking (like the card)
+    try {
+      const capi = require('./meta-capi');
+      const t = a.track || {};
+      await capi.soon(() => capi.laterEvent({ name: 'Purchase', eventId: 'purchase.booking.' + a.id, phone: a.clientPhone, leadId: a.leadId, url: t.url,
+        custom: { value: r2(p.amount) } }, t));
+    } catch (e) { console.error('booking purchase capi:', e.message); }
     return { appt: a, sale, msg };
   }
   return null;

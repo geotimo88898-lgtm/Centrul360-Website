@@ -102,7 +102,7 @@ module.exports = async (req, res) => {
       treatment: svc.title, categories: [svc.cat || 'corporale'], category: svc.cat || 'corporale',
       amount: svc.price || 0, location: city, cosmeticianId: who ? who.id : '', cosmeticianName: who ? who.name : '', status: 'programata', package: false,
       note: clip(['Programare online pe site', svc.id === 'consult' ? '' : svc.price ? svc.price + ' lei' : '', payAmount ? 'Plată online ' + payAmount + ' lei, de verificat în myPOS' : '', clip(b.page, 120)].filter(Boolean).join(' · '), 500),
-      ...(payAmount ? { pay, payAmount } : pay === 'clinic' ? { pay } : {}),
+      ...(payAmount ? { pay, payAmount, track: capi.fromRequest(req, b.page) } : pay === 'clinic' ? { pay } : {}), // track: her browser's ids, for the Purchase when she pays
       online: true, createdBy: 'site', createdAt: at, updatedAt: at,
       src: B.sourceOf(b.src, req.headers && req.headers.cookie), // where she came from: saved, not shown in the Calendar
     };
