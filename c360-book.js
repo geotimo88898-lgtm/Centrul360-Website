@@ -40,7 +40,7 @@
   // offer at 10% less (on top of the Black Friday price), or booked and paid at the clinic at the full price, as before.
   // The payment itself (myPOS) is not ready: startOnlinePay() below is where it plugs in. ON only on the /v2/ preview
   // pages for now; live = this one line (or window.C360_PAY_ONLINE = true set before this file runs).
-  const PAY_ON = /^\/v2(\/|$)/.test(location.pathname) || window.C360_PAY_ONLINE === true;
+  const PAY_ON = true; // live since 22.11 (the owner: „da, pune-o live”)
   const PAY_OFF = 10; // percent off when paid online
   const payAmount = (full) => Math.floor((Number(full) || 0) * (100 - PAY_OFF) / 100); // whole lei, never less than 10% off
   window.C360_PAY_ON = PAY_ON;
