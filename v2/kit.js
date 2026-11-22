@@ -173,8 +173,35 @@
     procRaf = requestAnimationFrame(run);
   }
 
+  // ---------- the offer cards' pictures (the owner, 22.11): a small cut-out picture of the treated area on every Black Friday
+  // card, the black card is its background (brand_asset/oferte/, cut from the WhatsApp lead pictures; illustrative, never a
+  // before/after). Matched on the card's own words (service key, label, title), else on its category label, so a new offer
+  // gets one too. PREVIEW ONLY (/v2/...) until the owner's „da”; then PICS = true.
+  var PICS = /^\/v2\//.test(location.pathname);
+  var PIC = [
+    [/gu[sș][aă]|b[aă]rbie|dubl[aă]|mandibul/i, 'hifu-gusa'],
+    [/epil|laser|full ?body|axil|inghinal/i, 'epilare'],
+    [/facial|restart|face|fa[tț][aă]|\bten\b|riduri|pete|hidrat|microneedl|periocular|lifting/i, 'facial'],
+    [/cavita|\bems\b/i, 'cavitatie'],
+    [/lipo|hifu|abdomen|talie|corp|remodel|celul|tonif|drenaj|detox|presoter|sculpt/i, 'liposonix']
+  ];
+  function pics() {
+    if (!PICS) return;
+    $$('.slip:not([data-p])').forEach(function (el) {
+      el.setAttribute('data-p', '1');
+      var b = el.querySelector('[data-book]') || el;
+      var k = (el.querySelector('.k') || {}).textContent || '';
+      var words = [b.getAttribute('data-book-service'), b.getAttribute('data-book-label'), (el.querySelector('h3') || {}).textContent].join(' ');
+      var hit = PIC.filter(function (p) { return p[0].test(words); })[0] || PIC.filter(function (p) { return p[0].test(k); })[0];
+      if (!hit) return;
+      el.classList.add('has-pic');
+      el.insertAdjacentHTML('afterbegin', '<span class="pic" aria-hidden="true"><img src="/brand_asset/oferte/' + hit[1] + '.webp" alt="" decoding="async"></span>');
+    });
+  }
+
   // ---------- interactions (also re-run after the offers arrive)
   function wire() {
+    pics();
     $$('.slip:not([data-w])').forEach(function (el) {
       el.setAttribute('data-w', '1');
       el.addEventListener('pointermove', function (e) { var r = el.getBoundingClientRect(); el.style.setProperty('--mx', (e.clientX - r.left) + 'px'); el.style.setProperty('--my', (e.clientY - r.top) + 'px'); });
