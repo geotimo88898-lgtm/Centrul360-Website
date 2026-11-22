@@ -373,7 +373,8 @@ async function publish(conn, image, s) {
 // old account (OLD_OWN), and only a name the connected account counts as ours. dry: only what it would make.
 // A video is copied by Meta from its link and processed for a while: the call answers { pending, videoId } and the
 // same call with that videoId goes on from there.
-const OLD_OWN = { act_4502494523405059: true };
+// 22.11: the CAD account act_1136609638911845 stopped (unpaid threshold); its C360 campaigns move to act_989208510351291
+const OLD_OWN = { act_4502494523405059: true, act_1136609638911845: 'C360' };
 const KEEP_T = ['geo_locations', 'excluded_geo_locations', 'age_min', 'age_max', 'genders', 'publisher_platforms', 'facebook_positions', 'instagram_positions', 'device_platforms', 'locales', 'targeting_automation'];
 async function port(conn, oldId, o) {
   const tok = conn.userToken, act = conn.adAccountId;
@@ -388,6 +389,7 @@ async function port(conn, oldId, o) {
   if (!OLD_OWN[oldAct]) return { error: 'campania nu e din contul vechi al Centrul360' };
   if (oldAct === act) return { error: 'campania e deja în contul conectat' };
   if (!SCOPE.keep(SCOPE.DEFAULT, r.j.name)) return { error: 'campania e a altei afaceri' };
+  if (typeof OLD_OWN[oldAct] === 'string' && !String(r.j.name || '').startsWith(OLD_OWN[oldAct])) return { error: 'campania nu e a Centrul360 (fără prefixul ' + OLD_OWN[oldAct] + ')' };
   const sets = (r.j.adsets && r.j.adsets.data) || [], adsL = (r.j.ads && r.j.ads.data) || [];
   const ad = adsL.find((a) => a.effective_status !== 'DELETED' && a.effective_status !== 'ARCHIVED') || adsL[0];
   if (!ad || !ad.creative) return { error: 'campania veche n-are reclamă' };
