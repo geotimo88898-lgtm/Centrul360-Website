@@ -78,15 +78,14 @@
   var fmt = function (n) { return Math.round(n).toLocaleString('ro-RO'); };
   var saved = 990;
   try { var v = Number(localStorage.getItem(KEY)); if (SALE.indexOf(v) >= 0) saved = v; } catch (e) {}
-  var VIP_WHY = 'Pentru tine și toată familia. Doar 5 carduri pe clinică, ediția de Crăciun.';
-  var VIP_K = 'VIP · Transformarea 360', VIP_SUB = 'pentru tine și toată familia';
+  var VIP_K = 'VIP · Transformarea 360', VIP_SUB = 'pentru tine și cei dragi';
   var tierBox = function (t, best) {
     var g = TIERS[t];
-    return '<label class="cst-t' + (best ? ' best' : '') + (t === VIP ? ' vip' : '') + '">' + (best ? '<em class="cst-best">Cea mai bună valoare</em>' : t === VIP ? '<em class="cst-vk">VIP · Transformarea 360</em>' : '') +
+    return '<label class="cst-t' + (best ? ' best' : '') + (t === VIP ? ' vip' : '') + '">' + (best ? '<em class="cst-best">Cea mai bună valoare</em>' : t === VIP ? '<em class="cst-vk">VIP</em>' : '') +
       '<input type="radio" name="cst" value="' + t + '"' + (t === 990 ? ' checked' : '') + '><small>Plătești</small><b>' + fmt(t) + ' lei</b><span>primești <strong>' + fmt(g[0]) + ' lei</strong></span><em class="cst-x">x' + g[1] + '</em></label>';
   };
   var VIP_TIER = '<div class="card cs-tier rv in vip"><span class="cs-best cs-vk">VIP · Transformarea 360</span><small>Plătești</small><b class="cs-tp">9.900 lei</b><p class="cs-tg">Primești <strong>30.000 lei</strong> în tratamente</p>' +
-    '<p class="cs-ts"><span>Economisești 20.100 lei</span><span class="cs-mul">x3</span></p><ul class="cs-tb"><li>Pentru tine și toată familia, oricâte persoane</li><li>Începi cu revizia completă și planul tău personal</li>' +
+    '<p class="cs-ts"><span>Economisești 20.100 lei</span><span class="cs-mul">x3</span></p><ul class="cs-tb"><li>Pentru tine și cei dragi, oricâte persoane</li><li>Începi cu revizia completă și planul tău personal</li>' +
     '<li>Doar 5 carduri pe clinică</li></ul><button type="button" class="btn ghost" data-cs-buy data-cs-tier="9900">Vreau cardul VIP</button></div>';
   var ROW = function (icon, title, text) { return '<div class="cs-row" data-cs-only="9900" hidden><i>' + icon + '</i><div><b>' + title + '</b><p>' + text + '</p></div><span class="cs-v inc">inclus</span></div>'; };
   var I_FAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2c2.8.2 5 2.5 5 5.8"/></svg>';
@@ -96,8 +95,6 @@
     $$('[data-cst]').forEach(function (box) {
       if (box.querySelector('input[value="9900"]')) return;
       box.innerHTML = tierBox(490) + tierBox(990, true) + tierBox(VIP);
-      // the reason under the headline, only with the VIP chosen
-      if (!box.parentNode.querySelector('[data-cs-why]')) box.insertAdjacentHTML('beforebegin', '<p class="cst-why" data-cs-why data-cs-only="9900" hidden>' + VIP_WHY + '</p>');
     });
     // the three cards lower on the page: the 290 one gives its place to the VIP one (last)
     $$('.cs-tiers').forEach(function (row) {
@@ -111,7 +108,7 @@
       if (st.querySelector('[data-cs-only="9900"]')) return;
       var tot = st.querySelector('.cs-tot');
       if (tot) tot.insertAdjacentHTML('beforebegin', ROW(I_PLAN, 'Revizia completă și planul tău personal', 'Doar la cardul VIP: la început, o revizie completă și planul tău, făcut pentru tine.') +
-        ROW(I_FAM, 'Pentru tine și toată familia', 'Doar la cardul VIP: îl pot folosi familia și prietenii tăi, oricâte persoane.'));
+        ROW(I_FAM, 'Pentru tine și cei dragi', 'Doar la cardul VIP: îl pot folosi familia și prietenii tăi, oricâte persoane.'));
     });
     // the scarcity line: its VIP words beside the others (per clinic, vipLine)
     $$('.cst-urg').forEach(function (u) { if (!u.querySelector('.cst-vipl')) u.insertAdjacentHTML('beforeend', '<span class="cst-vipl" hidden></span>'); });
@@ -123,7 +120,7 @@
     // the page's words that still name the 290 one (its steps, its questions)
     var SAY = [['290, 490 sau 990 lei, pentru tine sau cadou, câte vrei.', '490, 990 sau 9.900 lei (VIP), pentru tine sau cadou, câte vrei.'],
       ['Trei: plătești 290 lei și primești 500 lei în tratamente; plătești 490 lei și primești 1.000 lei; plătești 990 lei și primești 2.500 lei.',
-        'Trei: plătești 490 lei și primești 1.000 lei în tratamente; plătești 990 lei și primești 2.500 lei; cardul VIP: plătești 9.900 lei și primești 30.000 lei, pentru tine și toată familia, cu revizia completă și planul tău personal la început (doar 5 carduri pe clinică).']];
+        'Trei: plătești 490 lei și primești 1.000 lei în tratamente; plătești 990 lei și primești 2.500 lei; cardul VIP: plătești 9.900 lei și primești 30.000 lei, pentru tine și cei dragi, cu revizia completă și planul tău personal la început (doar 5 carduri pe clinică).']];
     $$('.tl p, .q .a p').forEach(function (p) { SAY.forEach(function (x) { if (p.children.length === 0 && p.textContent.indexOf(x[0]) >= 0) p.textContent = p.textContent.replace(x[0], x[1]); }); });
     // the gift of the online payment (the owner, 22.11): a BioLifting session in both clinics, no value in lei said
     var GIFT = [['La plata online: acces în Clubul 360 și un tratament cadou (EMS la Timișoara, Restart la Arad)', 'La plata online: o ședință de BioLifting cadou și acces în Clubul 360'],
@@ -158,11 +155,10 @@
       if (!mine) return;
       mine.hidden = !on;
       if (!on || !v) return;
-      var T = v['Timișoara'] || { max: 5, left: 0 }, A = v.Arad || { max: 5, left: 0 };
-      var max = city ? (v[city] || { max: 5 }).max : T.max === A.max ? T.max : 0;
-      var head = (max ? 'Doar ' + max : 'Doar câteva') + ' carduri VIP pe clinică · ';
-      var one = function (c, x) { return x.left > 0 ? 'au mai rămas <b>' + x.left + '</b>' + (city ? '' : ' la ' + c) : c + ': epuizat'; };
-      mine.innerHTML = head + (city ? one(city, v[city] || { left: 0 }) : T.left > 0 && A.left > 0 ? 'au mai rămas <b>' + T.left + '</b> la Timișoara și <b>' + A.left + '</b> la Arad' : one('Timișoara', T) + ', ' + one('Arad', A));
+      var T = v['Timișoara'] || { left: 0 }, A = v.Arad || { left: 0 };
+      // one line (the owner, 22.11): „Au mai rămas doar N carduri VIP” (her clinic's, or both clinics before she chooses)
+      var n = city ? (v[city] || { left: 0 }).left : Math.max(0, T.left) + Math.max(0, A.left);
+      mine.innerHTML = n > 0 ? 'Au mai rămas doar <b>' + n + '</b> ' + (n === 1 ? 'card VIP' : 'carduri VIP') : 'Cardurile VIP s-au epuizat' + (city ? ' la ' + city : '');
     });
     // a clinic with no VIP card left: „epuizat” on its button
     $$('[data-cs-city] label').forEach(function (l) {

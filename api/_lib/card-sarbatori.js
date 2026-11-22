@@ -396,14 +396,14 @@ async function say(kind, r, vars, text, png, code, opt) {
 // her first name for „Bună, …!”: the one on the order, else the one the portal or her WhatsApp knows (r.hint), letters only
 const greetName = (r) => { const f = firstName(r.name || (r.hint !== NONAME ? r.hint : '')).replace(/[^\p{L}-]/gu, ''); return f.length >= 2 ? f.slice(0, 30) : ''; };
 // the VIP one, in its messages (the template's {{4}} carries it): for her and all her family, the full review first
-const VIP_WHAT = 'Cardul VIP e pentru tine și toată familia și începe cu revizia completă și planul tău personal: te sunăm să o programăm.';
+const VIP_WHAT = 'Cardul VIP e pentru tine și cei dragi și începe cu revizia completă și planul tău personal: te sunăm să o programăm.';
 const cardWord = (r) => (isVip(r) ? 'Cardul VIP Transformarea 360' : 'Cardul de Sărbători');
 function cardText(r, c) {
   const extra = (isVip(r) ? VIP_WHAT + ' ' : '') + (r.bonus ? 'Cadou: ' + giftFor(r, c) + '. Locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code : 'Te așteptăm cu drag.');
   const g = greetName(r);
   return { vars: { prenume: g || 'dragă', credit: lei(c.value), cod: c.code, cadou: extra },
     text: 'Bună' + (g ? ', ' + g : '') + '! ' + (isVip(r) ? '💎 Cardul tău VIP Transformarea 360' : '🎁 Cardul tău de Sărbători') + ' Centrul360 este activ' + (c.recipient && c.recipient !== r.name ? ' (pe numele ' + c.recipient + ')' : '') + ':\n' +
-      '• credit de ' + lei(c.value) + ' lei, pentru orice tratament la prețul de listă' + (isVip(r) ? ', pentru tine și toată familia' : '') + '\n• cod ' + c.code + '\n• valabil până pe ' + VALID_TXT + '\n' +
+      '• credit de ' + lei(c.value) + ' lei, pentru orice tratament la prețul de listă' + (isVip(r) ? ', pentru tine și cei dragi' : '') + '\n• cod ' + c.code + '\n• valabil până pe ' + VALID_TXT + '\n' +
       (isVip(r) ? '• începem cu revizia completă și planul tău personal: te sunăm să o programăm\n' : '') +
       (r.bonus ? '• cadou: ' + giftFor(r, c) + (giftFor(r, c) === GIFT_TM ? ' (în clinica din Timișoara)' : '') + '\n• locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code + '\n' : '') +
       '\nPentru programare răspunde la acest mesaj. Mulțumim!' };

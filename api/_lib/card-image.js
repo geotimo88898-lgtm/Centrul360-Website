@@ -83,7 +83,7 @@ const PAL = {
   rose: { back: ['#fff8f3', '#fbe9ea'], glow: ['#f4b8c6', '#e3c27a'], card: ['#ec87a6', '#d9497f', '#c2185b', '#9c0f4a', '#7e0b3c'], hi: '#ffcede', hiOp: '.55', lo: '#46001e',
     deep: '#46001c', base: '#5e0a2c', shadow: '#821436', dots: ['#ec87a6', '#e3c27a'], lines: '#ffebd2', label: 'CARDUL DE SĂRBĂTORI', sub: 'pentru orice tratament', creditSize: 12.6, ink: '#fff6ea', ink2: '#fff3e4' },
   vip: { back: ['#f7f3ea', '#ece3d1'], glow: ['#e3c27a', '#cfa75a'], card: ['#3a3229', '#221d18', '#14110e', '#0b0907', '#050403'], hi: '#fff1c9', hiOp: '.16', lo: '#000000',
-    deep: '#000000', base: '#030201', shadow: '#2b2114', dots: ['#d9b465', '#e3c27a'], lines: '#ffe7a8', label: 'VIP · TRANSFORMAREA 360', sub: 'pentru tine și toată familia', creditSize: 10.8, ink: '#fbecc6', ink2: '#f1dfb4' },
+    deep: '#000000', base: '#030201', shadow: '#2b2114', dots: ['#d9b465', '#e3c27a'], lines: '#ffe7a8', label: 'VIP · TRANSFORMAREA 360', sub: 'pentru tine și cei dragi', creditSize: 10.8, ink: '#fbecc6', ink2: '#f1dfb4' },
 };
 
 // ---- the card: { credit, name, code, valid, mark, vip } → SVG of the whole picture (mark: „Rezervat” in place of the code)
