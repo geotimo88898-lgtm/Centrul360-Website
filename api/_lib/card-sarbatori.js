@@ -3,7 +3,7 @@
 // (both clinics), on sale until 24 December 2026, 23:59 (Romania), valid until 30 June 2027.
 //
 //   data/card-sarbatori.json  [order]
-//   order = { id, created, name, phone, city, tier (290 | 490 | 990), qty (1-5), amount (tier × qty, made here), credit,
+//   order = { id, created, name, phone, city, tier (490 | 990 | 9900 VIP; 290 out of sale, its orders kept), qty (1-5), amount (tier × qty, made here), credit,
 //             forWho: 'eu' | 'cadou', cards: [card], recipient (the first card's name), via: 'site' | 'portal',
 //             pay: 'online' | 'clinica', status: 'asteptare' (sent to the PayLink, not paid yet) | 'rezervat' (to pay in
 //             the clinic) | 'platit' | 'anulat', leadId, paidAt, paidVia: 'online' | 'clinica', paidBy, paidAmount,
@@ -39,7 +39,14 @@ const KEY = 'data/card-sarbatori.json';
 const CLUB = 'data/club360-waitlist.json';
 const PROBE = 'data/card-sarbatori-probe.json';
 const TOTAL = 10; // only 10 cards in all (the owner, 20.11)
-const TIERS = { 290: 500, 490: 1000, 990: 2500 };
+const TIERS = { 290: 500, 490: 1000, 990: 2500, 9900: 30000 };
+// on sale now (the owner, 22.11): the 290 card is out (its orders and cards keep working), the VIP is in. The VIP card
+// („Cardul VIP Transformarea 360”): 9.900 lei → 30.000 lei, for her and all her family; 5 per clinic, its own stock, outside
+// the waves (vipLeft); after its payment, the full review and her plan (reviewNotice)
+const VIP = 9900;
+const SALE = [490, 990, VIP];
+const isVip = (t) => Number(t && typeof t === 'object' ? t.tier : t) === VIP;
+const VIP_MAX = 5;
 const MAXQ = 5;
 const DEADLINE = '2026-12-24T21:59:59.000Z'; // 24 December 2026, 23:59:59 in Romania (UTC+2 in winter)
 const VALID_UNTIL = '2027-06-30T20:59:59.000Z'; // 30 June 2027, 23:59:59 in Romania (UTC+3 in summer)
@@ -47,12 +54,17 @@ const VALID_TXT = '30.06.2027';
 const HOLD_MS = 2 * 3600e3; // an order sent to the PayLink keeps its cards 2 hours on the counter
 const MATCH_MS = 48 * 3600e3; // a payment is matched to an order made at most 48 h before it
 const CLUB_URL = 'https://www.centrul360.com/club-360';
-// the gift of the online payment (the owner, 21.11): an EMS session, done only in Timișoara. For a buyer from Arad the gift
-// is this one line (change it here and only here):
+// the gift of the online payment (the owner, 22.11): the same in both clinics, a BioLifting session (anti-wrinkle or
+// prevention), no value in lei said. Change it here and only here. Until 22.11 it was an EMS session in Timișoara and a
+// Tratament Restart in Arad (GIFT_TM, GIFT_ARAD): the cards paid then keep the gift they were promised (c.gift.what, giftFor).
+const GIFT = 'o ședință de BioLifting cadou';
+const GIFT_SHORT = 'Ședință BioLifting cadou';
 const GIFT_TM = 'o ședință de EMS cadou';
 const GIFT_ARAD = 'un Tratament Restart cadou';
-const giftOf = (city) => (city === 'Arad' ? GIFT_ARAD : GIFT_TM);
-const giftShort = (city) => (city === 'Arad' ? 'Tratament Restart cadou' : 'Ședință EMS cadou (Timișoara)');
+const giftOf = () => GIFT;
+const giftShort = () => GIFT_SHORT;
+// the gift of a card paid already: the one written on it (EMS / Restart before 22.11), else today's
+const giftFor = (r, c) => { const w = String((c && c.gift && c.gift.what) || ''); return /EMS/.test(w) ? GIFT_TM : /Restart/.test(w) ? GIFT_ARAD : GIFT; };
 
 const store = { readJSON, writeJSON };
 const nowISO = () => new Date().toISOString();
@@ -106,14 +118,24 @@ async function settings() {
   const d = (await readJSON(STOCK, null).catch(() => null)) || {};
   const wave = Number.isInteger(d.wave) && d.wave >= 1 && d.wave <= 200 ? d.wave : WAVE;
   const max = Number.isInteger(d.max) && d.max >= 0 && d.max <= 1000 ? d.max : MAX;
-  return { wave, max, skip: Number.isInteger(d.skip) && d.skip > 0 ? d.skip : 0 };
+  const vm = (c) => (d.vip && Number.isInteger(d.vip[c]) && d.vip[c] >= 0 && d.vip[c] <= 100 ? d.vip[c] : VIP_MAX);
+  return { wave, max, skip: Number.isInteger(d.skip) && d.skip > 0 ? d.skip : 0, vip: { 'Timișoara': vm('Timișoara'), Arad: vm('Arad') } };
 }
 async function setStock(input, by) {
   const cur = await settings();
   const wave = input.wave == null ? cur.wave : Number(input.wave), max = input.max == null ? cur.max : Number(input.max);
   if (!Number.isInteger(wave) || wave < 1 || wave > 200 || !Number.isInteger(max) || max < 0 || max > 1000) return { error: 'bad_stock' };
-  await writeJSON(STOCK, { wave, max, skip: cur.skip, by: by || '', at: nowISO() });
-  return { ok: true, wave, max };
+  // the VIP cards of each clinic (5 / 5 at first)
+  const vip = Object.assign({}, cur.vip);
+  const iv = input.vip || {};
+  for (const [c, v] of [['Timișoara', iv['Timișoara'] != null ? iv['Timișoara'] : input.vipTm], ['Arad', iv.Arad != null ? iv.Arad : input.vipAr]]) {
+    if (v == null || v === '') continue;
+    const n = Number(v);
+    if (!Number.isInteger(n) || n < 0 || n > 100) return { error: 'bad_stock' };
+    vip[c] = n;
+  }
+  await writeJSON(STOCK, { wave, max, skip: cur.skip, vip, by: by || '', at: nowISO() });
+  return { ok: true, wave, max, vip };
 }
 // „Deschide acum următorul val”: the cards left in the wave of now are skipped, the next wave starts now
 async function openNext(list, by) {
@@ -122,10 +144,20 @@ async function openNext(list, by) {
   if (c.wave.soldOut || c.wave.n >= c.wave.of) return { error: 'last_wave' };
   if (c.wave.left >= cfg.wave) return { error: 'just_opened' };
   const skip = cfg.skip + c.wave.left;
-  await writeJSON(STOCK, { wave: cfg.wave, max: cfg.max, skip, by: by || '', at: nowISO() });
+  await writeJSON(STOCK, { wave: cfg.wave, max: cfg.max, skip, vip: cfg.vip, by: by || '', at: nowISO() });
   return { ok: true, wave: c.wave.n + 1 };
 }
-const ordered = (list, now) => (list || []).filter((r) => live(r, now || Date.now())).reduce((n, r) => n + qtyOf(r), 0);
+// the waves count the regular cards; the VIP ones have their own stock, per clinic
+const ordered = (list, now) => (list || []).filter((r) => !isVip(r) && live(r, now || Date.now())).reduce((n, r) => n + qtyOf(r), 0);
+function vipLeft(list, now, cfg) {
+  const t = now || Date.now(), out = {};
+  ['Timișoara', 'Arad'].forEach((c) => {
+    const max = cfg && cfg.vip && Number.isInteger(cfg.vip[c]) ? cfg.vip[c] : VIP_MAX;
+    const used = (list || []).filter((r) => isVip(r) && r.city === c && live(r, t)).reduce((n, r) => n + qtyOf(r), 0);
+    out[c] = { max, left: Math.max(0, max - used) };
+  });
+  return out;
+}
 // what the page may know (left, open, the deadline) and, for the portal only, the wave
 function counter(list, now, cfg) {
   const t = now || Date.now();
@@ -136,13 +168,35 @@ function counter(list, now, cfg) {
   const n = Math.floor(eff / W) + 1;
   const of = n + Math.ceil(Math.max(0, max - sold - left) / W);
   const open = t < Date.parse(DEADLINE) && !soldOut && left > 0;
-  return { total: W, left, deadline: DEADLINE, open, tiers: TIERS, maxQty: MAXQ, validUntil: VALID_UNTIL,
+  return { total: W, left, deadline: DEADLINE, open, tiers: TIERS, sale: SALE, maxQty: MAXQ, validUntil: VALID_UNTIL, vip: vipLeft(list, t, cfg),
     sold, wave: { n, of, size: W, max, sold: eff % W, left, soldOut } };
 }
 // the public answer: nothing about the waves
-const publicCount = (c) => ({ total: c.total, left: c.left, deadline: c.deadline, open: c.open, tiers: c.tiers, maxQty: c.maxQty, validUntil: c.validUntil });
+const publicCount = (c) => ({ total: c.total, left: c.left, deadline: c.deadline, open: c.open, tiers: c.tiers, sale: c.sale, maxQty: c.maxQty, validUntil: c.validUntil, vip: c.vip });
 const count = async (list, now) => counter(list, now, await settings());
 const total = async () => (await settings()).max;
+// is there a card of this kind for her: the VIP ones of her clinic, else the wave of now → { ok, left, error }
+async function stockFor(list, tier, city, qty, now, cnt) {
+  const t = now || Date.now();
+  if (t >= Date.parse(DEADLINE)) return { ok: false, left: 0, error: 'closed' };
+  const c = cnt || await count(list, t);
+  if (isVip(tier)) { const v = c.vip[city] || { left: 0 }; return v.left >= (qty || 1) ? { ok: true, left: v.left } : { ok: false, left: v.left, error: v.left > 0 ? 'not_enough' : 'sold_out' }; }
+  if (!c.open || c.wave.soldOut) return { ok: false, left: 0, error: 'sold_out' };
+  return c.left >= (qty || 1) ? { ok: true, left: c.left } : { ok: false, left: c.left, error: c.left > 0 ? 'not_enough' : 'sold_out' };
+}
+// what is left for her card: the VIP ones of her clinic, else the wave's
+const leftFor = (c, tier, city) => (isVip(tier) ? ((c.vip || {})[city] || { left: 0 }).left : c.left);
+// two at the same second for the last cards: is this one past the stock (the later one gives way)
+async function lostRace(list, entry) {
+  const cfg = await settings();
+  const mine = (r) => (isVip(entry) ? isVip(r) && r.city === entry.city : !isVip(r));
+  const before = list.filter((r) => mine(r) && live(r));
+  const upTo = before.slice(0, before.findIndex((r) => r.id === entry.id) + 1).reduce((n, r) => n + qtyOf(r), 0);
+  if (isVip(entry)) return upTo > ((cfg.vip || {})[entry.city] != null ? cfg.vip[entry.city] : VIP_MAX);
+  return upTo > cfg.max || (await count(list.filter((r) => r.id !== entry.id))).wave.left < qtyOf(entry);
+}
+// the notifications' title: „C. SARB 🎄 990 lei · …”, a VIP one „C. SARB 💎 VIP 9.900 lei · …” (the owner, 22.11)
+const sarb = (tier, amount) => 'C. SARB ' + (isVip(tier) ? '💎 VIP ' : '🎄 ') + N.leiTxt(amount != null ? amount : tier);
 const expired = (now) => (now || Date.now()) > Date.parse(VALID_UNTIL);
 const usedOf = (c) => r2((c.claims || []).filter((x) => !x.undone).reduce((n, x) => n + (Number(x.applied) || 0), 0));
 const leftOf = (c) => Math.max(0, r2((Number(c.value) || 0) - usedOf(c)));
@@ -202,9 +256,9 @@ async function setLinks(input, by) {
 const imgPath = (code) => 'wa-out/card-' + code + '.png'; // the chat (Mesaje) shows it from there (api/portal-file.js)
 async function image(r, c) {
   const name = c.recipient || r.name;
-  const key = [c.code, name, c.value].join('|');
+  const key = [c.code, name, c.value, isVip(r) ? 'vip' : ''].join('|');
   if (c.img === key) { const b = await readBinary(imgPath(c.code)).catch(() => null); if (b && b.length) return b; }
-  const buf = await require('./card-image').png({ credit: c.value, name, code: c.code, valid: VALID_TXT });
+  const buf = await require('./card-image').png({ credit: c.value, name, code: c.code, valid: VALID_TXT, vip: isVip(r) });
   await writeBinary(imgPath(c.code), buf, 'image/png').catch((e) => console.error('card image save:', e.message));
   c.img = key;
   return buf;
@@ -341,13 +395,17 @@ async function say(kind, r, vars, text, png, code, opt) {
 // the words of the card's message (the same as the template, with the gift and the Club when paid online)
 // her first name for „Bună, …!”: the one on the order, else the one the portal or her WhatsApp knows (r.hint), letters only
 const greetName = (r) => { const f = firstName(r.name || (r.hint !== NONAME ? r.hint : '')).replace(/[^\p{L}-]/gu, ''); return f.length >= 2 ? f.slice(0, 30) : ''; };
+// the VIP one, in its messages (the template's {{4}} carries it): for her and all her family, the full review first
+const VIP_WHAT = 'Cardul VIP e pentru tine și toată familia și începe cu revizia completă și planul tău personal: te sunăm să o programăm.';
+const cardWord = (r) => (isVip(r) ? 'Cardul VIP Transformarea 360' : 'Cardul de Sărbători');
 function cardText(r, c) {
-  const extra = r.bonus ? 'Cadou: ' + giftOf(r.city) + '. Locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code : 'Te așteptăm cu drag.';
+  const extra = (isVip(r) ? VIP_WHAT + ' ' : '') + (r.bonus ? 'Cadou: ' + giftFor(r, c) + '. Locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code : 'Te așteptăm cu drag.');
   const g = greetName(r);
   return { vars: { prenume: g || 'dragă', credit: lei(c.value), cod: c.code, cadou: extra },
-    text: 'Bună' + (g ? ', ' + g : '') + '! 🎁 Cardul tău de Sărbători Centrul360 este activ' + (c.recipient && c.recipient !== r.name ? ' (pe numele ' + c.recipient + ')' : '') + ':\n' +
-      '• credit de ' + lei(c.value) + ' lei, pentru orice tratament la prețul de listă\n• cod ' + c.code + '\n• valabil până pe ' + VALID_TXT + '\n' +
-      (r.bonus ? '• cadou: ' + giftOf(r.city) + (r.city === 'Arad' ? '' : ' (în clinica din Timișoara)') + '\n• locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code + '\n' : '') +
+    text: 'Bună' + (g ? ', ' + g : '') + '! ' + (isVip(r) ? '💎 Cardul tău VIP Transformarea 360' : '🎁 Cardul tău de Sărbători') + ' Centrul360 este activ' + (c.recipient && c.recipient !== r.name ? ' (pe numele ' + c.recipient + ')' : '') + ':\n' +
+      '• credit de ' + lei(c.value) + ' lei, pentru orice tratament la prețul de listă' + (isVip(r) ? ', pentru tine și toată familia' : '') + '\n• cod ' + c.code + '\n• valabil până pe ' + VALID_TXT + '\n' +
+      (isVip(r) ? '• începem cu revizia completă și planul tău personal: te sunăm să o programăm\n' : '') +
+      (r.bonus ? '• cadou: ' + giftFor(r, c) + (giftFor(r, c) === GIFT_TM ? ' (în clinica din Timișoara)' : '') + '\n• locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code + '\n' : '') +
       '\nPentru programare răspunde la acest mesaj. Mulțumim!' };
 }
 // her card, out on WhatsApp; what happened is kept on the card (the portal shows „de trimis manual” when it could not go)
@@ -372,7 +430,7 @@ async function reservedMsg(id) {
   const vars = { suma: lei(r.amount), credit: lei(r.credit), locatie: r.city === 'Arad' ? 'Arad' : 'Timișoara' };
   let png = null, path = 'wa-out/card-rez-' + String(r.id).replace(/[^\w-]/g, '').slice(0, 36) + '.png';
   try {
-    png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: (r.cards[0] || {}).recipient || r.name || '', code: '', mark: 'Rezervat', valid: VALID_TXT });
+    png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: (r.cards[0] || {}).recipient || r.name || '', code: '', mark: 'Rezervat', valid: VALID_TXT, vip: isVip(r) });
     await writeBinary(path, png, 'image/png').catch(() => { path = ''; });
   } catch (e) { console.error('card reserved image:', e.message); }
   // the version ending with a question once approved for her number, else the first one
@@ -397,10 +455,10 @@ async function recordSale(r, by) {
   if (!(amount > 0)) return null;
   const method = r.paidVia === 'online' ? 'card' : PAY_METHODS.includes(r.payMethod) ? r.payMethod : 'card';
   const entry = {
-    id: crypto.randomUUID(), source: 'incasare', cardSale: true, label: 'Card de Sărbători', cardOrderId: r.id, online: r.paidVia === 'online', // online: a PayLink, never a POS terminal's
+    id: crypto.randomUUID(), source: 'incasare', cardSale: true, label: isVip(r) ? 'Card VIP Transformarea 360' : 'Card de Sărbători', cardOrderId: r.id, online: r.paidVia === 'online', // online: a PayLink, never a POS terminal's
     employeeId: by || r.paidBy || 'card-sarbatori', performedBy: '', appointmentId: '', clientId: r.clientId || '', client: r.name || '',
     date: roDay(Date.parse(r.paidAt) || Date.now()), location: r.city || '', categories: [], category: '',
-    treatment: 'Card de Sărbători · plătești ' + (r.qty > 1 ? r.qty + ' × ' : '') + lei(r.tier) + ' lei, credit ' + (r.qty > 1 ? r.qty + ' × ' : '') + lei(TIERS[r.tier]) + ' lei',
+    treatment: (isVip(r) ? 'Card VIP Transformarea 360' : 'Card de Sărbători') + ' · plătești ' + (r.qty > 1 ? r.qty + ' × ' : '') + lei(r.tier) + ' lei, credit ' + (r.qty > 1 ? r.qty + ' × ' : '') + lei(TIERS[r.tier]) + ' lei',
     amount, bookedAmount: 0, upsell: 0, method, split: null, status: 'recorded', commission: 0,
     note: (r.paidVia === 'online' ? 'Online (myPOS)' : 'În clinică') + ' · ' + r.cards.map((c) => c.code).filter(Boolean).join(', '),
     createdAt: nowISO(), decidedAt: null,
@@ -421,7 +479,7 @@ async function voidPaid(id, session, reason) {
   const sale = saleOf(sales, r.id);
   let refund = null;
   if (sale && !sales.some((x) => x.kind === 'refund' && x.refundOf === sale.id)) {
-    refund = { id: crypto.randomUUID(), source: 'incasare', kind: 'refund', refundOf: sale.id, scope: 'payment', cardOrderId: r.id, cardSale: true, label: 'Card de Sărbători',
+    refund = { id: crypto.randomUUID(), source: 'incasare', kind: 'refund', refundOf: sale.id, scope: 'payment', cardOrderId: r.id, cardSale: true, label: sale.label || 'Card de Sărbători',
       employeeId: session.employeeId || '', performedBy: '', appointmentId: '', clientId: sale.clientId || '', client: sale.client || '',
       date: roDay(Date.now()), location: sale.location || '', categories: [], category: '', treatment: 'Rambursare · ' + sale.treatment,
       amount: -Number(sale.amount), upsell: 0, method: sale.method === 'cash' || sale.method === 'transfer' ? sale.method : 'card', split: null, status: 'recorded', commission: 0,
@@ -508,6 +566,7 @@ async function confirm(id, via, o) {
   r.payMethod = r.paidVia === 'online' ? 'card' : PAY_METHODS.includes(o.method) ? o.method : 'card';
   if (o.match) r.match = o.match;
   r.bonus = r.paidVia === 'online';
+  if (isVip(r) && !r.review) r.review = { state: 'todo', at: nowISO() }; // her full review and plan, booked by the desk (reviewNotice)
   delete r.bonusRestart; delete r.cancelledAt; delete r.cancelledBy;
   r.cards.forEach((c) => {
     if (!c.code) c.code = codeOf(list);
@@ -529,7 +588,7 @@ async function confirm(id, via, o) {
   // the Club's waiting list (online only), her lead and her client file
   if (r.bonus) await clubAdd({ name: r.name, phone: r.phone, city: r.city, code: r.cards[0].code, source: 'card' }).catch((e) => console.error('card club:', e.message));
   try {
-    const note = 'Card de Sărbători plătit ' + (r.paidVia === 'online' ? 'online' : 'în clinică') + ': ' + r.qty + ' × ' + r.tier + ' lei, credit ' + lei(r.credit) + ' lei · ' +
+    const note = (isVip(r) ? 'Card VIP Transformarea 360' : 'Card de Sărbători') + ' plătit ' + (r.paidVia === 'online' ? 'online' : 'în clinică') + ': ' + r.qty + ' × ' + r.tier + ' lei, credit ' + lei(r.credit) + ' lei · ' +
       r.cards.map((c) => c.code + (c.recipient ? ' (' + c.recipient + ')' : '')).join(', ') + (r.bonus ? ' · cadou: ' + giftShort(r.city) + ' · Clubul 360' : '');
     const L = await require('../portal-leads').createLead({ name: r.name || r.hint || NONAME, phone: r.phone, source: 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: 'Card de Sărbători', welcome: false });
     if (L && L.lead && !r.leadId) r.leadId = L.lead.id;
@@ -543,11 +602,19 @@ async function confirm(id, via, o) {
     const posPaid = r.paidVia === 'clinica' && r.payMethod === 'card' ? await N.claim(store, N.payRef('pos', r.paidAmount), true) : null;
     await N.notifyMany(store, ids, {
       kind: 'money', tone: 'good', go: 'carduri', tag: posPaid ? posPaid.tag : 'card-paid-' + r.id, quiet: !!posPaid, ref: r.paidVia === 'clinica' && r.payMethod === 'card' ? N.payRef('desk', r.paidAmount) : '',
-      title: 'C. SARB 🎄 ' + N.leiTxt(r.amount) + ' · PLĂTIT' + (r.paidVia === 'online' ? ' ONLINE' : '') + N.cityTag(r.city),
+      title: sarb(r.tier, r.amount) + ' · PLĂTIT' + (r.paidVia === 'online' ? ' ONLINE' : '') + N.cityTag(r.city),
       text: (r.name || r.hint || 'numele vine pe WhatsApp') + ' · ' + r.qty + ' × ' + r.tier + ' lei (credit ' + lei(r.credit) + ') · ' + r.cards.map((c) => c.code).join(', ') + (r.bonus ? ' · + ' + giftShort(r.city) + ' și Clubul 360' : '') +
         (o.match ? ' · găsit automat în myPOS' : ''),
     });
   } catch (e) { console.error('card notify:', e.message); }
+  // a VIP one: the desk books her full review and her plan (the card's row shows „Revizie: de programat / programată …”)
+  if (isVip(r)) {
+    try {
+      await N.notifyMany(store, await N.deskIds(store, r.city), { kind: 'lead', tone: 'info', go: 'carduri', tag: 'card-review-' + r.id,
+        title: sarb(r.tier, r.amount) + ' · REVIZIE DE PROGRAMAT' + N.cityTag(r.city),
+        text: (r.name || r.hint || 'numele vine pe WhatsApp') + ' · sun-o să programați revizia completă și planul ei personal' });
+    } catch (e) { console.error('card review notify:', e.message); }
+  }
 
   // her cards on WhatsApp; paid online with no name yet: first the question of the name (askName)
   if (nameless) await askName(r).catch((e) => console.error('card ask name:', e.message));
@@ -644,7 +711,7 @@ async function scanMypos(days, opts) {
   const probe = { at: nowISO(), days: days || 3, read: raw.length, groups: {}, fields: [], tierSums: 0 };
   const fields = new Set();
   const pays = [];
-  const sums = new Set([290, 490, 990, 580, 980, 1980, 870, 1470, 2970].map(String));
+  const sums = new Set([290, 490, 990, 580, 980, 1980, 870, 1470, 2970, 9900].map(String));
   for (const t of raw) {
     Object.keys(t || {}).forEach((k) => fields.add(k));
     const type = String(t.transaction_type || '').padStart(3, '0');
@@ -725,7 +792,10 @@ async function redeem(code, input, session) {
   const perf = emps.find((e) => e.id === String(input.performer || ''));
   const claim = { id: crypto.randomUUID().slice(0, 12), at: nowISO(), date, city: ['Timișoara', 'Arad'].includes(input.city) ? input.city : r.city,
     by: session.employeeId || '', byName: (emps.find((e) => e.id === session.employeeId) || {}).name || (session.employeeId === 'admin' ? 'Admin' : ''),
-    performer: perf ? perf.id : '', performerName: perf ? perf.name : String(input.performerName || '').slice(0, 80), items, applied, rest: r2(total - applied) };
+    performer: perf ? perf.id : '', performerName: perf ? perf.name : String(input.performerName || '').slice(0, 80), items, applied, rest: r2(total - applied),
+    // who used it (a card for all her family, the VIP: anyone she gives it to), as the desk writes it; optional
+    usedBy: String(input.usedBy || '').replace(/[<>]/g, '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 80) };
+  if (!claim.usedBy) delete claim.usedBy;
   c.claims.push(claim);
   if (gift) c.gift = Object.assign({}, c.gift, { state: 'used', usedAt: claim.at });
   await writeJSON(KEY, list);
@@ -733,7 +803,7 @@ async function redeem(code, input, session) {
   let msg = null;
   if (applied > 0) {
     const vars = { prenume: firstName(r.name), folosit: lei(applied), cod: c.code, sold: lei(leftOf(c)) };
-    const text = 'Bună, ' + firstName(r.name) + '! Am folosit ' + lei(applied) + ' lei din Cardul tău de Sărbători ' + c.code + '. Pe card mai ai ' + lei(leftOf(c)) + ' lei, valabili până pe ' + VALID_TXT + '. Mulțumim!';
+    const text = 'Bună, ' + firstName(r.name) + '! Am folosit ' + lei(applied) + ' lei din ' + (isVip(r) ? 'Cardul tău VIP ' : 'Cardul tău de Sărbători ') + c.code + '. Pe card mai ai ' + lei(leftOf(c)) + ' lei, valabili până pe ' + VALID_TXT + '. Mulțumim!';
     msg = await say('sold', r, vars, text, null, c.code).catch((e) => ({ sent: false, error: e.message }));
     claim.msg = msg.sent ? { how: msg.how } : { error: msg.error };
     const l2 = await readJSON(KEY, []);
@@ -806,8 +876,8 @@ async function reminders(now) {
     const { r, c, k } = x;
     const vars = { prenume: firstName(r.name), sold: lei(leftOf(c)), cod: c.code };
     const text = k === 'd14'
-      ? 'Bună, ' + firstName(r.name) + '! Pe Cardul tău de Sărbători ' + c.code + ' ai ' + lei(leftOf(c)) + ' lei pentru orice tratament la prețul de listă: remodelare corporală, tratamente faciale, epilare laser. Spune-ne ce ți-ar plăcea și îți găsim o oră. Răspunde la acest mesaj.'
-      : 'Bună, ' + firstName(r.name) + '! Mai ai ' + lei(leftOf(c)) + ' lei pe Cardul de Sărbători ' + c.code + ' până pe 30 iunie. Răspunde la acest mesaj și îți facem programarea.';
+      ? 'Bună, ' + firstName(r.name) + '! Pe ' + (isVip(r) ? 'Cardul tău VIP ' : 'Cardul tău de Sărbători ') + c.code + ' ai ' + lei(leftOf(c)) + ' lei pentru orice tratament la prețul de listă: remodelare corporală, tratamente faciale, epilare laser. Spune-ne ce ți-ar plăcea și îți găsim o oră. Răspunde la acest mesaj.'
+      : 'Bună, ' + firstName(r.name) + '! Mai ai ' + lei(leftOf(c)) + ' lei pe ' + (isVip(r) ? 'Cardul VIP ' : 'Cardul de Sărbători ') + c.code + ' până pe 30 iunie. Răspunde la acest mesaj și îți facem programarea.';
     const m = await say('remind', r, vars, text, null, c.code).catch((e) => ({ sent: false, error: e.message }));
     c.remind[k] = m.sent ? nowISO() : 'netrimis: ' + String(m.error || '').slice(0, 120);
     if (m.sent) sent++;
@@ -844,13 +914,15 @@ const ADDR = { 'Timișoara': 'Str. Bucegi 7, Timișoara', Arad: 'Str. Ioan Alexa
 const pubRes = (r) => ({ id: r.id, city: r.city, recipient: r.recipient, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit, names: (r.cards || []).map((c) => c.recipient), pay: r.pay, status: r.status });
 const openOnline = (r) => r.pay === 'online' && (r.status === 'asteptare' || (r.status === 'anulat' && r.cancelledBy === 'ea'));
 
+// an order by its id, or by the id her browser made for a second tap of the same order (api/card-sarbatori.js: same.ids)
+const byId = (list, id) => list.find((x) => x.id === id) || list.find((x) => (x.ids || []).includes(id));
 // her hold started again (2 h) when a card is still there for her: 'ok' | 'sold_out' | 'closed'
 async function rehold(list, r, now) {
   const t = now || Date.now();
   if (t >= Date.parse(DEADLINE)) return 'closed';
   if (r.status === 'asteptare' && live(r, t)) return 'ok';
-  const c = await count(list.filter((x) => x !== r), t);
-  if (!c.open || c.left < qtyOf(r)) return 'sold_out';
+  const c = await stockFor(list.filter((x) => x !== r), r.tier, r.city, qtyOf(r), t);
+  if (!c.ok) return c.error === 'closed' ? 'closed' : 'sold_out';
   if (r.status === 'anulat') { delete r.cancelledAt; delete r.cancelledBy; }
   r.status = 'asteptare'; r.held = new Date(t).toISOString();
   return 'ok';
@@ -860,7 +932,7 @@ async function rehold(list, r, now) {
 async function back(id) {
   await autoMatch().catch(() => null); // a payment that just came in is found first (at most every 3 minutes)
   const list = await readJSON(KEY, []);
-  const r = list.find((x) => x.id === id);
+  const r = byId(list, id);
   if (!r) return { error: 'not_found' };
   norm(r);
   if (r.status === 'platit') return { ok: true, paid: true };
@@ -874,7 +946,7 @@ async function back(id) {
 async function answer(id, reason) {
   if (!REASONS.includes(reason)) return { error: 'bad_reason' };
   const list = await readJSON(KEY, []);
-  const r = list.find((x) => x.id === id);
+  const r = byId(list, id);
   if (!r) return { error: 'not_found' };
   norm(r);
   if (r.status === 'platit') return { ok: true, paid: true };
@@ -960,8 +1032,8 @@ async function request(input, session, byName) {
     note: cleanText(i.note, 300) };
   mark(entry, 'created', 'portal' + (byName ? ': ' + byName : ''));
   const replaced = supersede(list, entry);
-  const c0 = await count(list, now);
-  if (!c0.open || c0.left < qty) return { error: c0.left > 0 ? 'not_enough' : 'sold_out', left: c0.left };
+  const c0 = await stockFor(list, tier, city, qty, now);
+  if (!c0.ok) return { error: c0.error, left: c0.left };
   list.push(entry);
   await writeJSON(KEY, list);
   try {
@@ -996,7 +1068,11 @@ async function editOrder(id, input, byName) {
   if (!TIERS[tier]) return { error: 'bad_tier' };
   if (!Number.isInteger(qty) || qty < 1 || qty > MAXQ || (r.pay !== 'clinica' && qty !== 1)) return { error: 'bad_qty' }; // a PayLink is one card
   // more cards: only when they are left (its own cards counted as hers)
-  if (qty > qtyOf(r)) { const c = await count(list.filter((x) => x !== r)); if (c.left < qty) return { error: c.left > 0 ? 'not_enough' : 'sold_out', left: c.left }; }
+  // (a VIP one: of her clinic; to or from a VIP one, the other stock)
+  if (qty > qtyOf(r) || isVip(tier) !== isVip(r) || (isVip(tier) && city !== r.city)) {
+    const c = await stockFor(list.filter((x) => x !== r), tier, city, qty);
+    if (!c.ok) return { error: c.error === 'closed' ? 'sold_out' : c.error, left: c.left };
+  }
   const gift = i.forWho == null ? r.forWho === 'cadou' : i.forWho === 'cadou';
   const given = Array.isArray(i.names) ? i.names : r.cards.map((c) => c.recipient);
   const names = Array.from({ length: qty }, (_, k) => (gift ? cleanText(given[k], 80) : ''));
@@ -1033,7 +1109,7 @@ async function toClinic(id, how) {
   } catch (e) { console.error('card clinic lead:', e.message); }
   try {
     await N.notifyMany(st, await N.deskIds(st, r.city), { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-clinic-' + r.id,
-      title: 'C. SARB 🎄 ' + N.leiTxt(r.amount) + ' · REZERVAT' + N.cityTag(r.city), text: (r.name || 'fără nume') + ' · plătește în clinică · ' + (how === 'lead' ? 'din reclamă, a ales clinica pe WhatsApp' : 'a trecut de la plata online' + (how === 'whatsapp' ? ' (din WhatsApp)' : '')) + '. Sun-o să stabiliți când vine.' });
+      title: sarb(r.tier, r.amount) + ' · REZERVAT' + N.cityTag(r.city), text: (r.name || 'fără nume') + ' · plătește în clinică · ' + (how === 'lead' ? 'din reclamă, a ales clinica pe WhatsApp' : 'a trecut de la plata online' + (how === 'whatsapp' ? ' (din WhatsApp)' : '')) + '. Sun-o să stabiliți când vine.' });
   } catch (e) { console.error('card clinic notify:', e.message); }
   return { ok: true, reservation: pubRes(r) };
 }
@@ -1097,8 +1173,8 @@ async function recover(now) {
     if (t < from || quiet(t)) continue;
     if (t > end) { rc[step] = { at: new Date(t).toISOString(), ok: false, error: rc[step + 'Wait'] || 'nu a plecat la timp' }; mark(r, step, 'netrimis: ' + rc[step].error); changed.add(r); if (step === 'wa1') stop(r, 'missed'); continue; }
     if (!cnt) cnt = await count(list, t);
-    if (!live(r, t) && cnt.left < qtyOf(r)) { stop(r, 'stock'); continue; }
-    if (step === 'wa2' && cnt.left < 1) { stop(r, 'stock'); continue; }
+    if (!live(r, t) && leftFor(cnt, r.tier, r.city) < qtyOf(r)) { stop(r, 'stock'); continue; }
+    if (step === 'wa2' && leftFor(cnt, r.tier, r.city) < 1) { stop(r, 'stock'); continue; }
     // she wrote us on WhatsApp since the order: the desk talks to her, nothing automatic
     if (!convos) convos = await readJSON('data/whatsapp-conversations.json', []).catch(() => []);
     const c = convos.find((x) => d9(x.phone) === d9(r.phone));
@@ -1109,10 +1185,10 @@ async function recover(now) {
   for (const { r, step } of due.slice(0, 6)) {
     const rc = recOf(r);
     const k = step === 'wa1' ? 'rec1' : 'rec2';
-    const vars = { credit: lei(r.credit), carduri: cardsLeft(cnt.left) };
+    const vars = { credit: lei(r.credit), carduri: cardsLeft(leftFor(cnt, r.tier, r.city)) };
     let png = null, path = 'wa-out/card-rec-' + String(r.id).replace(/[^\w-]/g, '').slice(0, 36) + '.png';
     try {
-      png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: (r.cards[0] || {}).recipient || r.name, code: '', valid: VALID_TXT });
+      png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: (r.cards[0] || {}).recipient || r.name, code: '', valid: VALID_TXT, vip: isVip(r) });
       await writeBinary(path, png, 'image/png').catch(() => { path = ''; });
     } catch (e) { console.error('card rec image:', e.message); }
     const m = await say(k, r, vars, fill(k, vars), png, '', { path, only: 'template', tag: { cardOrder: r.id, cardStep: step } }).catch((e) => ({ sent: false, error: e.message }));
@@ -1244,7 +1320,7 @@ async function named(r, m) {
 }
 
 // ---- a lead from the ads' form „Rezervă Cardul de Sărbători” (the owner, 21.11; called by api/_lib/fb-leads.js):
-// reserveFromLead({ phone, name, city, value: '290' | '490' | '990', forWhom: 'eu' | 'cadou', source: { utm_source, utm_campaign,
+// reserveFromLead({ phone, name, city, value: '290' | '490' | '990' | '9900', forWhom: 'eu' | 'cadou', source: { utm_source, utm_campaign,
 // utm_content, adId, adsetId, campaignId, formId, leadId } }) → { ok, id, sent } | { error }
 // The same rules as an order on the site (her phone, the clinic, the card, the cards left); one open order per phone (a
 // second lead gives back the one she has). The order waits for her choice ('lead', its card held 2 hours) and gets at once
@@ -1271,8 +1347,8 @@ async function reserveFromLead(o) {
   const mine = list.filter((r) => d9(r.phone) === k && (r.status === 'lead' || r.status === 'rezervat' || (r.status === 'asteptare' && now - heldFrom(r) < MATCH_MS)))
     .sort((a, b) => Date.parse(b.created) - Date.parse(a.created))[0];
   if (mine) return { ok: true, id: mine.id, sent: false, again: true };
-  const c0 = await count(list, now);
-  if (!c0.open || c0.wave.soldOut || c0.left < 1) return { error: 'sold_out' };
+  const c0 = await stockFor(list, tier, city, 1, now);
+  if (!c0.ok) return { error: c0.error === 'closed' ? 'closed' : 'sold_out' };
   // her name: the form's, else ours (clients, then leads); nameFrom says which
   let name = cleanText(o.name, 100), nameFrom = name ? 'formular' : '';
   if (!name) { const kn = await knownName(phone).catch(() => ''); if (kn) { name = kn; nameFrom = 'fisa'; } }
@@ -1287,9 +1363,7 @@ async function reserveFromLead(o) {
   await writeJSON(KEY, list);
   // two at the same second for the last cards: the later one gives way
   list = await readJSON(KEY, []);
-  const before = list.filter((r) => live(r));
-  const upTo = before.slice(0, before.findIndex((r) => r.id === entry.id) + 1).reduce((n, r) => n + qtyOf(r), 0);
-  if (upTo > await total() || (await count(list.filter((r) => r.id !== entry.id))).wave.left < 1) { await writeJSON(KEY, list.filter((r) => r.id !== entry.id)); return { error: 'sold_out' }; }
+  if (await lostRace(list, entry)) { await writeJSON(KEY, list.filter((r) => r.id !== entry.id)); return { error: 'sold_out' }; }
   const m = await leadMsg(entry.id).catch((e) => ({ sent: false, error: e.message }));
   return { ok: true, id: entry.id, sent: !!m.sent };
 }
@@ -1302,7 +1376,7 @@ async function leadMsg(id) {
   const vars = { suma: lei(r.amount), credit: lei(r.credit), cadoul: giftOf(r.city) };
   let png = null, path = 'wa-out/card-lead-' + String(r.id).replace(/[^\w-]/g, '').slice(0, 36) + '.png';
   try {
-    png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: r.forWho === 'cadou' ? '' : r.name || '', code: '', valid: VALID_TXT });
+    png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: r.forWho === 'cadou' ? '' : r.name || '', code: '', valid: VALID_TXT, vip: isVip(r) });
     await writeBinary(path, png, 'image/png').catch(() => { path = ''; });
   } catch (e) { console.error('card lead image:', e.message); }
   const m = png ? await say('lead', r, vars, fill('lead', vars), png, '', { path, only: 'template', tag: { cardOrder: r.id, cardStep: 'lead' } }).catch((e) => ({ sent: false, error: e.message }))
@@ -1332,7 +1406,7 @@ async function leadCall(id, why) {
   } catch (e) { console.error('card lead pipeline:', e.message); }
   try {
     await N.notifyMany(st, await N.deskIds(st, r.city), { kind: 'lead', tone: 'info', go: 'carduri', tag: 'card-lead-' + r.id,
-      title: 'C. SARB 🎄 ' + r.tier + ' lei · SUN-O' + N.cityTag(r.city), text: (r.name || 'fără nume') + ' · ' + why + '. Sun-o să aleagă: online sau în clinică.' });
+      title: sarb(r.tier) + ' · SUN-O' + N.cityTag(r.city), text: (r.name || 'fără nume') + ' · ' + why + '. Sun-o să aleagă: online sau în clinică.' });
   } catch (e) { console.error('card lead notify:', e.message); }
   return true;
 }
@@ -1345,7 +1419,7 @@ async function leadReply(list, r, m) {
   r.leadChoice = { at: nowISO(), what: kind, msg: String(m.msgId || '').slice(0, 80) };
   mark(r, 'choice', kind);
   const g = greetName(r), hi = (w) => w + (g ? ', ' + g : '');
-  let reply = '', quietDesk = false;
+  let reply = '', quietDesk = false, vipCall = false;
   if (kind === 'online') {
     const h = await rehold(list, r);
     const link = h === 'ok' ? (await links())[r.tier] : null;
@@ -1357,6 +1431,8 @@ async function leadReply(list, r, m) {
       quietDesk = true;
     } else {
       if (r.status === 'asteptare' && r.pay !== 'online') r.status = 'lead'; // no PayLink now: she stays a lead, the desk calls her
+      // the VIP one has no PayLink yet: we call her (the desk hears it now, not in 2 hours)
+      if (h === 'ok' && isVip(r)) { reply = hi('Mulțumim') + '! Pentru cardul VIP te sunăm noi în curând, să stabilim plata și revizia ta completă.'; vipCall = true; }
       if (h !== 'ok') reply = hi('Ne pare rău') + ', ' + (h === 'closed' ? 'oferta Cardului de Sărbători s-a încheiat.' : 'în acest moment nu mai avem carduri disponibile.') + ' Mulțumim!';
     }
     await writeJSON(KEY, list);
@@ -1378,6 +1454,7 @@ async function leadReply(list, r, m) {
       if (y.sent) await logChat(r.phone, y.fromCity || r.city, r.name, reply, '', y.id, { cardOrder: r.id, cardStep: 'lead-reply' });
     } catch (e) { console.error('card lead reply:', e.message); }
   }
+  if (vipCall) await leadCall(r.id, 'a ales online cardul VIP, fără link de plată').catch((e) => console.error('card vip call:', e.message));
   return { quiet: quietDesk && (ok || kind === 'clinic'), kind };
 }
 
@@ -1436,7 +1513,7 @@ function cardView(r, c, now) {
     used, left: leftOf(c), state: stateOf(r, c, now), pay: r.pay, paidVia: r.paidVia || '', payMethod: r.payMethod || '', paidAt: r.paidAt || '', created: r.created, forWho: r.forWho || '',
     gift: c.gift || null, club: !!r.bonus, sent: c.sent || null, match: r.match || null, paidByName: r.paidByName || '', nameFrom: r.nameFrom || (r.via === 'portal' ? 'receptie' : ''),
     naming: r.naming ? (r.naming.state === 'done' ? (r.naming.how === 'none' || r.naming.how === 'timeout' ? 'none' : 'done') : r.naming.for ? 'typing' : 'asked') : '',
-    claims: (c.claims || []).map((x) => ({ id: x.id, at: x.at, date: x.date, city: x.city, byName: x.byName, performerName: x.performerName, items: x.items, applied: x.applied, rest: x.rest, undone: !!x.undone, msg: x.msg || null })),
+    claims: (c.claims || []).map((x) => ({ id: x.id, at: x.at, date: x.date, city: x.city, byName: x.byName, performerName: x.performerName, items: x.items, applied: x.applied, rest: x.rest, undone: !!x.undone, msg: x.msg || null, usedBy: x.usedBy || '' })),
   };
 }
 
@@ -1468,7 +1545,7 @@ async function orderExtras(orders) {
   clients.forEach((c) => { const k = d9(c.phone); if (k.length === 9) idsBy.set(k, (idsBy.get(k) || []).concat(c.id)); });
   const ahead = appts.filter((a) => a && !a.block && a.date >= today && !['anulata', 'finalizata', 'concediu'].includes(a.status)).sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
   const wave = new Map(((st && st.list) || []).map((p) => [p.k, p]));
-  const tierOfPre = (pre) => (/_290$/.test(String(pre || '')) ? 290 : /_490$/.test(String(pre || '')) ? 490 : 990);
+  const tierOfPre = (pre) => (/_290$/.test(String(pre || '')) ? 290 : /_490$/.test(String(pre || '')) ? 490 : /_9900$/.test(String(pre || '')) ? 9900 : 990);
   const out = {};
   orders.forEach((o) => {
     const k = d9(o.phone), ids = new Set((idsBy.get(k) || []).concat(o.clientId ? [o.clientId] : []));
@@ -1478,6 +1555,13 @@ async function orderExtras(orders) {
       appt: a ? { date: a.date, time: a.time || '', city: clinicOf(a.location) } : null,
       lot: p && m && !m.e ? { n: Number(p.batch) || 1, tier: tierOfPre(m.t || p.pre) } : null,
     };
+    // a paid VIP card: her full review, booked (her first appointment since the payment) or still to book
+    if (isVip(o.tier) && o.paidAt) {
+      const from = roDay(Date.parse(o.paidAt));
+      const b = appts.filter((x) => x && !x.block && x.date >= from && !['anulata', 'concediu'].includes(x.status) && ((x.clientId && ids.has(x.clientId)) || (x.clientPhone && d9(x.clientPhone) === k)))
+        .sort((x, y) => (x.date + (x.time || '')).localeCompare(y.date + (y.time || '')))[0];
+      out[o.id].review = b ? { state: 'booked', date: b.date, time: b.time || '' } : { state: 'todo' };
+    }
   });
   return out;
 }
@@ -1501,12 +1585,12 @@ async function requestFromTap(i, opt) {
   const k9 = d9(phone);
   const open = list.find((r) => d9(r.phone) === k9 && (r.status === 'rezervat' || r.status === 'lead' || (r.status === 'asteptare' && live(r, now))));
   if (open) return { ok: true, exists: true, id: open.id };
-  let c0 = await count(list, now);
-  if (!c0.open || c0.left < 1) { await openNext(list, 'whatsapp').catch(() => null); c0 = await count(list, now); }
+  let c0 = await stockFor(list, tier, city, 1, now);
+  if (!c0.ok && !isVip(tier)) { await openNext(list, 'whatsapp').catch(() => null); c0 = await stockFor(list, tier, city, 1, now); }
   const known = await knownName(phone).catch(() => '');
   const entry = { id: crypto.randomUUID(), created: nowISO(), name: known || '', phone, city, tier, qty: 1, amount: tier, credit: TIERS[tier], forWho: 'eu',
     cards: [{ code: '', recipient: '' }], recipient: '', status: 'rezervat', via: 'whatsapp', pay: 'clinica', nameFrom: known ? 'fisa' : '',
-    note: 'A apăsat „Rezerv în clinică” în mesajul WhatsApp' + (i.wave ? ' (valul ' + i.wave + ')' : ''), overStock: !(c0.open && c0.left >= 1) || undefined };
+    note: 'A apăsat „Rezerv în clinică” în mesajul WhatsApp' + (i.wave ? ' (valul ' + i.wave + ')' : ''), overStock: !c0.ok || undefined };
   mark(entry, 'created', 'whatsapp: a apăsat „Rezerv în clinică”');
   list = await readJSON(KEY, []);
   if (list.some((r) => d9(r.phone) === k9 && (r.status === 'rezervat' || r.status === 'lead'))) return { ok: true, exists: true };
@@ -1522,7 +1606,7 @@ async function requestFromTap(i, opt) {
       const N = require('./notify'), st = { readJSON, writeJSON };
       const ids = [...new Set((await N.deskIds(st, city)).concat(await N.adminIds(st)))];
       await N.notifyMany(st, ids, { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-tap-' + entry.id,
-        title: 'C. SARB 🎄 ' + N.leiTxt(tier) + ' · REZERVAT' + N.cityTag(city), text: (known || 'fără nume') + ' · a apăsat „Rezerv în clinică” în mesaj. Sun-o.' });
+        title: sarb(tier) + ' · REZERVAT' + N.cityTag(city), text: (known || 'fără nume') + ' · a apăsat „Rezerv în clinică” în mesaj. Sun-o.' });
     } catch (e) { console.error('card tap notify:', e.message); }
     await reservedMsg(entry.id).catch((e) => console.error('card tap msg:', e.message));
   }
@@ -1530,8 +1614,8 @@ async function requestFromTap(i, opt) {
 }
 
 module.exports = { requestFromTap, deleteOrder, orderExtras,
-  KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
-  norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
+  KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT, GIFT_TM, GIFT_ARAD, giftOf, giftShort, giftFor, TPL,
+  byId, VIP, SALE, isVip, vipLeft, stockFor, leftFor, lostRace, sarb, norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
   supersede, supersedeOnce, request, editOrder, reserveFromLead, leadMsg, leadCall, leadReply, LEAD_BTN, CORE, REC_BTN, NAME_BTN, NONAME, CHECK, REASONS, needsName, knownName, nameLead, sendCards, askName, cleanName, pick, openCheckOf, openChecks, greetName, mark, recOf, heldFrom, rehold, back, answer, toClinic, recover, recoverIfIdle, onWhatsApp, abandonStats, cardsLeft, quiet, awake,
 };

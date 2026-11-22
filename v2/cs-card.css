@@ -233,3 +233,70 @@ main [hidden]{ display:none !important; }
 .cst-help{ margin:-3px 0 2px; font-size:12.5px; line-height:1.4; color:var(--mute2); text-align:center; }
 .cst-help[hidden]{ display:none; }
 .cst-help a{ color:var(--teal2); font-weight:600; text-decoration:underline; text-underline-offset:2px; }
+
+/* the VIP card („Cardul VIP Transformarea 360”, the owner 22.11): black with gold, premium and quiet. In the block it takes
+   the whole row under the 490 and 990 ones; chosen, the card in the first screen turns black and gold (cs-card.js). */
+.cst:has(.cst-t.vip){ grid-template-columns:1fr 1fr; row-gap:12px; }
+.cst-t.vip{ grid-column:1/-1; grid-template-columns:auto auto 1fr; grid-template-areas:"k k x" "s s s" "b sp sp"; align-items:baseline; column-gap:12px; padding:13px 16px 14px;
+  background:linear-gradient(135deg,#2b251e 0%,#15120e 55%,#0a0807 100%); box-shadow:0 0 0 1px rgba(227,194,122,.42) inset, 0 16px 30px -24px rgba(20,14,6,.8); }
+.cst-t.vip:hover{ box-shadow:0 0 0 1px rgba(227,194,122,.75) inset, 0 16px 30px -24px rgba(20,14,6,.8); }
+.cst-t.vip:has(input:checked){ background:linear-gradient(135deg,#322a21 0%,#17130f 55%,#0a0807 100%); box-shadow:0 0 0 2px #d9b465 inset, 0 18px 34px -20px rgba(40,28,8,.75); }
+.cst-t.vip:has(input:focus-visible){ outline-color:#b8862e; }
+.cst-vk{ grid-area:k; justify-self:start; font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:#e3c27a; white-space:nowrap; }
+.cst-t.vip small{ grid-area:s; color:rgba(243,213,137,.62); margin-top:2px; }
+.cst-t.vip b{ grid-area:b; background:linear-gradient(100deg,#f7dc97 0%,#fff3c4 38%,#e3c27a 72%,#f3d589 100%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.cst-t.vip span{ grid-area:sp; color:rgba(255,246,234,.8); }
+.cst-t.vip span strong{ color:#f3d589; }
+.cst-t.vip .cst-x{ grid-area:x; justify-self:end; margin-top:0; color:#f3d589; background:rgba(227,194,122,.16); }
+/* the reason under the headline, only with the VIP chosen */
+.cst-why{ margin:-6px 0 2px; font-size:16px; line-height:1.45; font-weight:500; color:var(--ink2); }
+/* no PayLink for the VIP yet: one line in place of „Plătesc online”, the clinic's button the main one */
+.cst-call{ margin:0; padding:12px 14px; border-radius:14px; text-align:center; font-size:14.5px; font-weight:600; color:#5c4410; background:#f8f1e1; box-shadow:0 0 0 1px rgba(169,126,40,.24) inset; }
+.cs-vipcall > [data-cs-buy][data-cs-follow], .cs-vipcall > [data-cs-help]{ display:none !important; }
+/* its cards left, per clinic, in gold */
+.cst-urg:has(.cst-vipl:not([hidden])){ background:#f8f1e1; color:#5c4410; box-shadow:0 0 0 1px rgba(169,126,40,.24) inset; }
+.cst-urg:has(.cst-vipl:not([hidden])) .dot, .cst-urg:has(.cst-vipl:not([hidden])) .dot::after{ background:#c9a04a; }
+.cst-vipl b{ font-weight:800; }
+.cst-city label.is-out{ grid-auto-flow:column; gap:6px; color:var(--mute2); }
+.cst-out{ font-size:10.5px; font-weight:700; letter-spacing:.02em; color:#9c0f4a; }
+@media (max-width:640px){
+  .cst-t.vip{ padding:11px 12px 12px; column-gap:10px; }
+  .cst-vk{ font-size:10px; letter-spacing:.13em; }
+  .cst-why{ font-size:15px; }
+}
+/* the card in the first screen, VIP: black with gold, the same ribbon, bow, holly and sprig (cross-fade, no jump) */
+.csc-card::before{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:0; transition:opacity .55s var(--e);
+  background:radial-gradient(70% 60% at 18% 8%,rgba(255,241,201,.14),transparent 62%), radial-gradient(80% 70% at 100% 100%,rgba(0,0,0,.6),transparent 64%),
+    linear-gradient(138deg,#3a3229 0%,#221d18 26%,#14110e 54%,#0b0907 78%,#050403 100%); }
+.is-vip .csc-card::before{ opacity:1; }
+.csc-edge{ transition:background .55s var(--e); }
+.is-vip .csc-edge{ background:linear-gradient(160deg,#3a3229,#050403); }
+.is-vip .csc-card{ box-shadow:0 1px 0 rgba(255,241,201,.3) inset, 0 0 0 1px rgba(227,194,122,.5) inset, 0 50px 90px -40px rgba(20,14,6,.65), 0 22px 36px -22px rgba(20,14,6,.55); }
+.is-vip .csc-gold{ filter:drop-shadow(0 .22cqw 0 rgba(0,0,0,.75)) drop-shadow(0 0 .35cqw rgba(0,0,0,.5)); }
+.is-vip .csc-val b{ font-size:10.8cqw; }
+.is-vip .csc-val small{ color:#f1dfb4; text-shadow:0 .2cqw .4cqw rgba(0,0,0,.5); }
+.is-vip .csc-bot b, .is-vip .csc-brand b{ color:#fbecc6; }
+.is-vip .csc-rib{ box-shadow:0 0 0 .25cqw rgba(255,240,200,.3) inset, 0 .8cqw 2cqw rgba(0,0,0,.45); }
+.csc-stage.is-vip::before{ background:radial-gradient(circle at 48% 46%,rgba(227,194,122,.34),rgba(140,105,45,.12) 48%,transparent 70%); }
+.csc-stage.is-vip .csc-shadow{ background:radial-gradient(closest-side,rgba(30,22,10,.34),transparent); }
+.csc-stage.is-vip .csc-dust i:nth-child(2n){ background:#e3c27a; box-shadow:0 0 10px rgba(227,194,122,.9); }
+
+/* the VIP card lower on the page, among the three */
+.cs-tier.vip{ background:linear-gradient(160deg,#2b251e 0%,#15120e 55%,#0a0807 100%); color:#fbecc6; box-shadow:0 0 0 1px rgba(227,194,122,.45) inset, 0 40px 70px -40px rgba(20,14,6,.6); }
+.cs-tier.vip .cs-vk{ color:#1a140c; background:linear-gradient(150deg,#f3d589,#c9a04a); box-shadow:0 8px 18px -8px rgba(120,90,30,.6); white-space:nowrap; }
+.cs-tier.vip small{ color:rgba(243,213,137,.62); }
+.cs-tier.vip .cs-tp{ background:linear-gradient(100deg,#f7dc97 0%,#fff3c4 38%,#e3c27a 72%,#f3d589 100%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.cs-tier.vip .cs-tg{ color:rgba(255,246,234,.85); }
+.cs-tier.vip .cs-tg strong{ color:#f3d589; }
+.cs-tier.vip .cs-ts{ color:rgba(255,246,234,.6); }
+.cs-tier.vip .cs-mul{ color:#f3d589; background:rgba(227,194,122,.16); }
+.cs-tier.vip .cs-tb{ border-top-color:rgba(227,194,122,.22); color:rgba(255,246,234,.85); }
+.cs-tier.vip .btn.ghost{ color:#1a140c; background:linear-gradient(150deg,#f3d589,#d9b465); box-shadow:none; border-color:transparent; }
+.is-vip .csc-flakes g > path:first-child{ display:none; } /* no flake behind its longer label */
+
+/* the online payment's gift, a small ribbon sitting on „Plătesc online” (22.11): rose and gold, one line; the clinic button plain */
+.cst-gift{ justify-self:center; position:relative; z-index:1; margin:0 0 -16px; padding:5px 14px 13px; border-radius:12px 12px 0 0; font-size:12.5px; line-height:1.2; font-weight:650; letter-spacing:-.005em;
+  color:#7d1240; white-space:nowrap; background:linear-gradient(100deg,#fde7ef,#fbefd6); box-shadow:0 0 0 1px rgba(201,160,74,.38) inset; }
+.cst-gift + .btn{ position:relative; z-index:2; }
+.cs-vipcall > .cst-gift, .cst-go.is-done > .cst-gift{ display:none !important; }
+@media (max-width:380px){ .cst-gift{ font-size:11.5px; padding:5px 10px 13px; } }

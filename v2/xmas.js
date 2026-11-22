@@ -2,6 +2,14 @@
    sets it until 7 January 2027), never with reduced motion; few flakes on a phone. The card's own pages have theirs. */
 (function () {
   'use strict';
+  // the cards start at 490 lei since 22.11 (the 290 one is out of sale): the menu's pill and the home page's pill, until the
+  // pages are written again (v2/src has it already)
+  try {
+    [].slice.call(document.querySelectorAll('.xm-pill, .pill')).forEach(function (el) {
+      var w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), t;
+      while ((t = w.nextNode())) if (t.nodeValue.indexOf('de la 290 lei') >= 0) t.nodeValue = t.nodeValue.replace('de la 290 lei', 'de la 490 lei');
+    });
+  } catch (e) {}
   if (!document.documentElement.classList.contains('xmas') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var hero = document.querySelector('main > section.hero:not(.csc-xmas)');
   if (!hero) return;

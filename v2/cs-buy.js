@@ -13,7 +13,8 @@
    reservation made; the order carries her personal link's token (site-pulse.js C360P.tok), when she came with one. */
 (function () {
   'use strict';
-  var TIERS = [[290, 500], [490, 1000], [990, 2500]];
+  // the 290 one is out of sale (22.11), still known here for an order of it (back from its PayLink); 9900: the VIP card
+  var TIERS = [[290, 500], [490, 1000], [990, 2500], [9900, 30000]], VIP = 9900;
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var lei = function (n) { return Math.round(n).toLocaleString('ro-RO') + ' lei'; };
   var ARROW = '<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
@@ -21,7 +22,7 @@
   var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
   var SPIN = '<span class="csb-spin" data-spin aria-hidden="true"></span>';
   var ADDR = { 'Timișoara': 'Timișoara, Str. Bucegi 7', Arad: 'Arad, Str. Ioan Alexandru 16-18' };
-  var st = { open: true, left: 10, loaded: false, links: {} };
+  var st = { open: true, left: 10, loaded: false, links: {}, vip: null };
   var busy = false;
   var K_ORDER = 'c360_cs_order', K_ASKED = 'c360_cs_asked', K_PHONE = 'c360_cs_phone', K_CITY = 'c360_cs_city';
   var get = function (s, k) { try { return s.getItem(k) || ''; } catch (e) { return ''; } };
@@ -29,11 +30,12 @@
   // Meta pixel (the owner, 21.11: „tracking cu absolut totul”): it only queues until „Accept” loads it (_shell.html);
   // the Lead's event id is the one the server's Conversions API copy carries, so Meta counts it once
   var px = function (name, data, eid) { try { if (window.fbq) window.fbq('track', name, data || {}, eid ? { eventID: eid } : undefined); } catch (e) {} };
-  var item = function (tier) { return { content_name: 'Card de Sărbători ' + tier + ' lei', content_ids: ['card-' + tier], content_type: 'product', value: Number(tier) || 0, currency: 'RON', num_items: 1 }; };
+  var item = function (tier) { return { content_name: Number(tier) === VIP ? 'Card VIP Transformarea 360' : 'Card de Sărbători ' + tier + ' lei', content_ids: ['card-' + tier], content_type: 'product', value: Number(tier) || 0, currency: 'RON', num_items: 1 }; };
   // the site's funnel (site-pulse.js): the order started, the payment page / the reservation
   var fev = function (n) { try { if (window.C360P) window.C360P.ev(n); } catch (e) {} };
   var post = function (b) { return fetch('/api/card-sarbatori', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json(); }); };
   var tierOf = function (t) { return TIERS.filter(function (x) { return x[0] === Number(t); })[0] || TIERS[2]; };
+  var cardOf = function (t) { return Number(t) === VIP ? 'Cardul VIP' : 'Cardul de ' + lei(t); };
   var hourRo = function () { return Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', hour: '2-digit', hourCycle: 'h23' }).format(new Date())); };
   // a Romanian mobile, however she writes it: 07xx xxx xxx, +40 7xx, 0040 7xx
   function mobile(v) {
@@ -43,7 +45,7 @@
   }
   function load() {
     return fetch('/api/card-sarbatori').then(function (r) { return r.json(); }).then(function (d) {
-      if (d && typeof d.left === 'number') { st.open = d.open !== false; st.left = d.left; st.links = d.links || {}; st.loaded = true; }
+      if (d && typeof d.left === 'number') { st.open = d.open !== false; st.left = d.left; st.links = d.links || {}; st.vip = d.vip || null; st.loaded = true; }
     }).catch(function () {});
   }
 
@@ -53,7 +55,7 @@
   var TK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
   // under the buttons: short lines with a tick, nothing that reads like a warning (the saving follows the card chosen)
   var POINTS = '<ul class="cst-pts" data-cs-pts><li><i>' + TK + '</i><span>Economisești <b data-cs-v="save">1.510 lei</b></span></li>' +
-    '<li><i>' + TK + '</i><span>La plata online: acces în Clubul 360 și un tratament cadou (EMS la Timișoara, Restart la Arad)</span></li>' +
+    '<li><i>' + TK + '</i><span>La plata online: o ședință de BioLifting cadou și acces în Clubul 360</span></li>' +
     '<li><i>' + TK + '</i><span>Plătești cu cardul pe pagina securizată myPOS</span></li></ul>';
   // the phone and the clinic, put in when a page does not have them
   var FIELD = '<div class="cst-ph" data-cs-ph><label class="cst-pl" for="cst-tel">Telefonul tău · îți trimitem cardul pe WhatsApp</label>' +
@@ -87,6 +89,8 @@
     if (meta && pts && pts.parentNode !== meta) { var alt2 = g.querySelector('.cst-alt'); meta.appendChild(pts); if (alt2) meta.appendChild(alt2); }
     // under „Plătesc online”, one quiet line for when the payment page does not take her card (the owner, 21.11): WhatsApp to
     // her clinic for another link (helpLink)
+    // the gift of the online payment, right on „Plătesc online” (the owner, 22.11): the clinic button stays plain
+    if (!g.querySelector('[data-cs-gift]')) pb0.insertAdjacentHTML('beforebegin', '<p class="cst-gift" data-cs-gift><span aria-hidden="true">🎁</span> + BioLifting cadou și Clubul 360 la plata online</p>');
     if (!g.querySelector('[data-cs-help]')) pb0.insertAdjacentHTML('afterend', '<p class="cst-help" data-cs-help>Nu te descurci cu plata? <a href="#" target="_blank" rel="noopener" data-cs-wa>Scrie-ne pe WhatsApp</a> și te ajutăm.</p>');
     // one „Au mai rămas” line: the one above the phone (the second, under the block, goes)
     var txt = g.parentNode;
@@ -119,7 +123,7 @@
     var line = a.closest('[data-cs-help]');
     if (!n) { line.hidden = true; return; }
     var tier = (window.CSC && window.CSC.current) || 990;
-    a.href = 'https://wa.me/' + n + '?text=' + encodeURIComponent('Bună ziua! Vreau Cardul de Sărbători de ' + tier + ' lei, dar plata online nu merge. Îmi trimiteți alt link?');
+    a.href = 'https://wa.me/' + n + '?text=' + encodeURIComponent('Bună ziua! Vreau ' + (Number(tier) === VIP ? 'Cardul VIP Transformarea 360 (9.900 lei)' : 'Cardul de Sărbători de ' + tier + ' lei') + ', dar plata online nu merge. Îmi trimiteți alt link?');
   }
   function initBlock() {
     shape();
@@ -139,7 +143,22 @@
     if (!btn) return;
     var s = btn.querySelector('[data-spin]');
     if (on) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); if (!s) btn.insertAdjacentHTML('afterbegin', SPIN); }
-    else { btn.disabled = false; btn.removeAttribute('aria-busy'); if (s) s.remove(); }
+    else { btn.disabled = false; btn.removeAttribute('aria-busy'); if (s) s.remove(); if (btn._lbl != null) { var l = btn.querySelector('span:not([data-spin])'); if (l) l.innerHTML = btn._lbl; btn._lbl = null; } }
+  }
+  // the tap felt at once: „Te ducem la plată…” on the button while the payment page loads
+  function pressed(btn) {
+    spin(btn, true);
+    var l = btn.querySelector('span:not([data-spin])');
+    if (l && btn._lbl == null) { btn._lbl = l.innerHTML; l.textContent = 'Te ducem la plată…'; }
+  }
+  // the order's id, made here: she goes to myPOS at once and the order follows (the owner, 22.11: „prea lent”)
+  function uuid() {
+    try {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      var a = crypto.getRandomValues(new Uint8Array(16)); a[6] = (a[6] & 15) | 64; a[8] = (a[8] & 63) | 128;
+      var h = [].map.call(a, function (x) { return (x + 256).toString(16).slice(1); }).join('');
+      return h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20);
+    } catch (e) { return ''; }
   }
   // a buy button away from the block: carried to it (the card chosen there), the field or the button in focus
   function carry(tier, clinic) {
@@ -157,6 +176,11 @@
   var PMSG = { bad_phone: 'Scrie un număr de mobil valid (07xx xxx xxx).', missing_city: 'Alege clinica: Timișoara sau Arad.', too_many: 'Prea multe încercări. Încearcă din nou în câteva minute.',
     too_many_cards: 'Pe acest număr sunt deja multe carduri. Te sunăm noi.', sold_out: 'Cardurile s-au terminat.', closed: 'Oferta s-a încheiat.', not_enough: 'Cardurile s-au terminat.',
     no_link: 'Plata online nu e disponibilă acum. Rezervă cardul și plătești în clinică.' };
+  // the VIP one: 5 per clinic, its own stock
+  var vipOut = function (city) {
+    var o = city === 'Arad' ? 'Timișoara' : 'Arad', x = st.vip && st.vip[o];
+    return 'Cardurile VIP din ' + city + ' s-au epuizat.' + (x && x.left > 0 ? ' La ' + o + ' mai sunt.' : '');
+  };
   // both buttons of the block: online → the PayLink; clinic → reserved here, said in place
   function order(btn, clinic) {
     var b = blk(); if (!b || busy) return;
@@ -167,10 +191,31 @@
     if (!phone) { phMsg(inp.value.trim() ? PMSG.bad_phone : 'Scrie numărul tău de mobil: pe el îți trimitem cardul.', 'phone'); inp.focus(); return; }
     if (!city) { phMsg(PMSG.missing_city, 'city'); b.querySelector('input[name="cst-city"]').focus(); return; }
     put(localStorage, K_PHONE, phone); put(localStorage, K_CITY, city);
+    var vip = Number(tier) === VIP;
+    // online, its PayLink known and a card there for her: to myPOS now, the order sent on the way (keepalive), not awaited
+    // (what cs-card.js already read when this file's own read is not back yet: the same answer)
+    var cs = window.CSC && window.CSC.state;
+    if (!st.loaded && cs && typeof cs.left === 'number') { st.open = cs.open !== false; st.left = cs.left; st.links = cs.links || {}; st.vip = cs.vip || null; st.loaded = true; }
+    var link = !clinic && st.loaded && st.links && st.links[tier], id = link ? uuid() : '';
+    if (link && id && (vip ? !(st.vip && st.vip[city] && st.vip[city].left <= 0) : st.open && st.left > 0)) {
+      busy = true; pressed(btn); phMsg('');
+      var fb = { id: id, tier: tier, qty: 1, pay: 'online', forWho: 'eu', phone: phone, city: city, consent: true, website: '', page: location.href };
+      if (window.C360P && window.C360P.tok) fb.ct = window.C360P.tok;
+      if (window.C360_CONSENT === true) fb.event_id = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
+      var v0 = item(tier);
+      px('InitiateCheckout', v0); fev('start'); px('Lead', v0, fb.event_id); fev('pay');
+      put(sessionStorage, K_ORDER, id);
+      var json = JSON.stringify(fb);
+      try { fetch('/api/card-sarbatori', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: json }).catch(function () {}); }
+      catch (e) { try { navigator.sendBeacon('/api/card-sarbatori', new Blob([json], { type: 'application/json' })); } catch (e2) {} }
+      location.href = link;
+      return;
+    }
     busy = true; spin(btn, true); phMsg('');
     var stop = function (text) { busy = false; spin(btn, false); if (text) phMsg(text); };
     (st.loaded ? Promise.resolve() : load()).then(function () {
-      if (!st.open) { stop(st.left <= 0 ? PMSG.sold_out : PMSG.closed); return; }
+      if (vip && st.vip && st.vip[city] && st.vip[city].left <= 0) { stop(vipOut(city)); return; }
+      if (!vip && !st.open) { stop(st.left <= 0 ? PMSG.sold_out : PMSG.closed); return; }
       if (!clinic && !(st.links && st.links[tier])) { stop(PMSG.no_link); return; }
       var body = { tier: tier, qty: 1, pay: clinic ? 'clinica' : 'online', forWho: 'eu', phone: phone, city: city, consent: true, website: '', page: location.href };
       if (window.C360P && window.C360P.tok) body.ct = window.C360P.tok;
@@ -181,10 +226,15 @@
         if (!clinic && d.ok && d.link) { px('Lead', val, body.event_id); fev('pay'); put(sessionStorage, K_ORDER, d.id || ''); location.href = d.link; return; }
         if (clinic && d.ok && d.reservation) {
           px('Lead', val, body.event_id); fev('lead'); fev('cs-sent');
-          if (typeof d.left === 'number' && window.CSC && window.CSC.state) window.CSC.set(Object.assign({}, window.CSC.state, { left: d.left }));
+          if (d.vip) st.vip = d.vip;
+          if (typeof d.left === 'number' && window.CSC && window.CSC.state) window.CSC.set(Object.assign({}, window.CSC.state, vip ? { vip: d.vip || window.CSC.state.vip } : { left: d.left }));
           busy = false; spin(btn, false); reserved(d.reservation); return;
         }
         if (d.error === 'no_link') st.links[tier] = null;
+        if (vip && (d.error === 'sold_out' || d.error === 'not_enough')) {
+          if (d.vip) { st.vip = d.vip; if (window.CSC && window.CSC.state) window.CSC.set(Object.assign({}, window.CSC.state, { vip: d.vip })); }
+          stop(vipOut(city)); return;
+        }
         stop(PMSG[d.error] || 'Nu am putut trimite. Încearcă din nou.');
       });
     }).catch(function () { stop('Nu am putut trimite. Încearcă din nou.'); });
@@ -192,8 +242,8 @@
   // reserved: the field and the buttons give their place to one line with a tick (the scarcity line stays)
   function reservedText(r) {
     var t = tierOf(r.tier);
-    return '<b>Cardul de ' + lei(t[0]) + ' e rezervat.</b><span>Te sunăm ' + (hourRo() < 18 ? 'azi' : 'mâine') +
-      ' să stabilim plata în clinică (' + (ADDR[r.city] || r.city) + '). Primești ' + lei(t[1]) + ' în tratamente.</span>';
+    return '<b>' + cardOf(t[0]) + ' e rezervat.</b><span>Te sunăm ' + (hourRo() < 18 ? 'azi' : 'mâine') +
+      ' să stabilim plata în clinică (' + (ADDR[r.city] || r.city) + ')' + (t[0] === VIP ? ' și revizia ta completă' : '') + '. Primești ' + lei(t[1]) + ' în tratamente.</span>';
   }
   function reserved(r) {
     var g = goBox(); if (!g) return;

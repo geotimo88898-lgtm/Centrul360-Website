@@ -11,7 +11,8 @@ const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./store');
 
 const LEADS_KEY = 'data/leads.json';
-const TIERS = { 290: 500, 490: 1000, 990: 2500 };
+// 290 is out of sale on the site (22.11), still read here: a form that offers it keeps working; 9900 the VIP one
+const TIERS = { 290: 500, 490: 1000, 990: 2500, 9900: 30000 };
 const Q = { card: 'Ce card vrei?', who: 'Pentru cine este?', city: 'La ce clinică?' };
 const CARD_OPTS = ['290 lei → 500 lei în tratamente', '490 lei → 1.000 lei în tratamente', '990 lei → 2.500 lei (cea mai bună valoare)'];
 const WHO_OPTS = ['Pentru mine', 'Cadou'];
@@ -25,8 +26,9 @@ function parse(form, pairs) {
   const find = (q) => (pairs || []).find((p) => fold(p.q) === fold(q)) || null;
   const out = { tier: '', credit: 0, forWhom: '', city: form && form.location ? form.location : '' };
   const c = find(Q.card);
-  const m = c && /^(\d{3})/.exec(String(c.a).trim());
-  if (m && TIERS[m[1]]) { out.tier = m[1]; out.credit = TIERS[m[1]]; }
+  const m = c && /^(\d{1,2}[.\s]?\d{3}|\d{3})\b/.exec(String(c.a).trim()); // „990 lei → …”, „9.900 lei → 30.000 lei …”
+  const t = m ? m[1].replace(/\D/g, '') : '';
+  if (TIERS[t]) { out.tier = t; out.credit = TIERS[t]; }
   const w = find(Q.who);
   if (w) out.forWhom = /cadou/i.test(w.a) ? 'cadou' : 'pentru mine';
   const k = find(Q.city);
@@ -62,7 +64,7 @@ async function afterLead(lead, x) {
     const N = require('./notify');
     const ids = await N.deskIds({ readJSON }, x.city || l.location || '');
     await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'lead', tone: 'good', go: 'pipeline', tag: 'card-' + lead.id, ownerPush: true,
-      title: 'C. SARB 🎄 ' + (x.tier ? lei(x.tier) + ' lei · ' : '') + 'SUN-O' + (({ 'Timișoara': ' TM', Arad: ' AR' })[x.city] || ''),
+      title: 'C. SARB ' + (String(x.tier) === '9900' ? '💎 VIP ' : '🎄 ') + (x.tier ? lei(x.tier) + ' lei · ' : '') + 'SUN-O' + (({ 'Timișoara': ' TM', Arad: ' AR' })[x.city] || ''),
       text: (lead.name || 'fără nume') + ' · a cerut cardul ' + summary(x) + '. Trimite-i linkul de plată sau rezervă-l în clinică.' }).catch((e) => console.error('card-lead notify:', e.message));
   } catch (err) { console.error('card-lead.afterLead:', err.message); }
 }

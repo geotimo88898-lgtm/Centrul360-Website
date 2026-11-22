@@ -154,3 +154,19 @@
 /* the row with its menu open sits above the next rows (a faded row makes its own layer) */
 .cd-o{ position:relative; }
 .cd-o:has(.cd-mw.open){ z-index:40; }
+/* the VIP card (22.11): black and gold, in its tag and its small card */
+.cd .k-tag.cd-vip{ color:#f3d589; background:linear-gradient(135deg,#2b251e,#0a0807); box-shadow:0 0 0 1px rgba(227,194,122,.45) inset; font-weight:700; letter-spacing:.04em; }
+.cd .cd-mini.is-vip{ background:linear-gradient(135deg,#3a3229,#0b0907); box-shadow:0 0 0 1px rgba(227,194,122,.5) inset; }
+.cd .k-tag.cd-rev svg{ width:12px; height:12px; }
+/* the two lists as tabs, „De confirmat” and „Interesate” (22.11), in the card's head; Interesate: what she wrote, its potential apart */
+.cd .cd-tabs{ display:inline-flex; gap:4px; padding:4px; border-radius:14px; background:var(--glass); box-shadow:0 0 0 1px var(--line) inset; min-width:0; }
+.cd .cd-tab{ display:inline-flex; align-items:center; gap:8px; padding:7px 12px; border-radius:10px; font:inherit; font-size:.92rem; font-weight:600; color:var(--muted); background:none; border:0; cursor:pointer; white-space:nowrap; }
+.cd .cd-tab span{ font-size:.78rem; font-weight:700; padding:1px 7px; border-radius:999px; background:var(--glass-2); color:var(--fg); }
+.cd .cd-tab.is-on{ color:var(--fg); background:var(--paper); box-shadow:0 4px 12px -8px rgba(0,0,0,.6); }
+.cd .cd-int-pot{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; margin:2px 0 10px; font-size:.86rem; color:var(--muted); }
+.cd .cd-int-pot b{ font-size:1rem; color:var(--fg); }
+.cd .cd-int-pot small{ font-size:.74rem; color:var(--muted); opacity:.8; }
+.cd .cd-i-q{ display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.84rem; color:var(--muted); }
+.cd .k-tag.cd-note{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cd .k-tag.cd-note svg{ width:11px; height:11px; }
+@media (max-width:520px){ .cd .cd-tab{ padding:7px 10px; font-size:.88rem; } }

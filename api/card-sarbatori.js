@@ -131,7 +131,7 @@ module.exports = async (req, res) => {
     const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
 
     // ---- the team
-    const TEAM = ['delete', 'void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'request', 'edit', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick'];
+    const TEAM = ['delete', 'void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'request', 'edit', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick', 'interested', 'int_note', 'int_hide', 'int_add', 'to_interested'];
     if (TEAM.includes(b.action)) {
       const session = await require('./_lib/auth').requireRole(req, res, b.action === 'undo' ? ['admin'] : ['admin', 'manager', 'receptie']);
       if (!session) return;
@@ -150,14 +150,14 @@ module.exports = async (req, res) => {
         // and, 3 days, the online ones she gave up herself (what happened stays readable)
         const gaveUp = (r) => r.status === 'anulat' && r.cancelledBy === 'ea' && now - Date.parse(r.cancelledAt || r.created) < 3 * 86400e3;
         // and the cancelled orders never paid (shown under „Anulate”, to be deleted for good)
-        const dead = (r) => r.status === 'anulat' && !r.cards.some((c) => c.code);
+        const dead = (r) => r.status === 'anulat' && !r.cards.some((c) => c.code) && r.cancelledBy !== 'interesate';
         const orders = list.filter((r) => r.status === 'asteptare' || r.status === 'rezervat' || r.status === 'lead' || gaveUp(r) || dead(r)).map((r) => ({ id: r.id, created: r.created, name: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit,
           pay: r.pay, status: r.status, forWho: r.forWho || '', names: r.cards.map((c) => c.recipient), held: C.live(r, now), heldUntil: r.status === 'asteptare' || r.status === 'lead' ? new Date(C.heldFrom(r) + C.HOLD_MS).toISOString() : '',
           online: r.via === 'site' && (r.pay === 'online' || !!r.convertedAt), converted: r.convertedAt || '', byHer: gaveUp(r), nameFrom: r.nameFrom || '', via: r.via || '', note: r.note || '', leadCall: r.leadCall ? r.leadCall.at : '', cancelled: dead(r) && !gaveUp(r), clientId: r.clientId || '', trail: trailOf(r), rec: recView(r) })).reverse();
         // her next appointment and the campaign wave, next to each order and each card
-        const ex = await C.orderExtras(orders.concat(list.filter((r) => r.status === 'platit').map((r) => ({ id: r.id, phone: r.phone, clientId: r.clientId })))).catch(() => ({}));
+        const ex = await C.orderExtras(orders.concat(list.filter((r) => r.status === 'platit').map((r) => ({ id: r.id, phone: r.phone, clientId: r.clientId, tier: r.tier, paidAt: r.paidAt })))).catch(() => ({}));
         orders.forEach((o) => Object.assign(o, ex[o.id] || {}));
-        cards.forEach((c) => { const x = ex[c.order]; if (x) c.lot = x.lot; });
+        cards.forEach((c) => { const x = ex[c.order]; if (x) { c.lot = x.lot; if (x.review) c.review = x.review; } });
         const paid = list.filter((r) => r.status === 'platit');
         const totals = { cards: paid.reduce((n, r) => n + C.qtyOf(r), 0), money: paid.reduce((n, r) => n + (Number(r.paidAmount) || Number(r.amount) || 0), 0), online: paid.filter((r) => r.paidVia === 'online').reduce((n, r) => n + (Number(r.paidAmount) || r.amount), 0),
           credit: paid.reduce((n, r) => n + r.cards.reduce((m, c) => m + (Number(c.value) || 0), 0), 0), used: paid.reduce((n, r) => n + r.cards.reduce((m, c) => m + C.usedOf(c), 0), 0),
@@ -171,12 +171,22 @@ module.exports = async (req, res) => {
           id: r.id, created: r.created, city: r.city, tier: r.tier, name: r.name || '', last3: String(r.phone || '').replace(/\D/g, '').slice(-3), status: r.status })) }));
         const recTpl = Object.fromEntries(Object.entries(all).filter(([k]) => !C.CORE.includes(k)));
         res.status(200).json(Object.assign({ cards: cards.filter((c) => c.code).reverse(), orders, totals, templates: tpl, recTemplates: recTpl, checks, scan, treatments: await treatments(), team: emps.filter((e) => e.active !== false && ['cosmetician', 'manager'].includes(e.role)).map((e) => ({ id: e.id, name: e.name, city: e.location || '' })),
-          role: session.role, links: await C.links(), gift: { 'Timișoara': C.giftShort('Timișoara'), Arad: C.giftShort('Arad') } }, await C.count(list, now)));
+          role: session.role, links: await C.links(), gift: { 'Timișoara': C.giftShort(), Arad: C.giftShort() } }, await C.count(list, now)));
+        return;
+      }
+      // „Interesate” (_lib/card-interested.js): who answered the campaign's message with words and has no order
+      if (b.action === 'interested') { res.status(200).json(Object.assign({ ok: true }, await require('./_lib/card-interested').list({ all: b.all === true }))); return; }
+      if (b.action === 'int_note' || b.action === 'int_hide' || b.action === 'int_add' || b.action === 'to_interested') {
+        const I = require('./_lib/card-interested');
+        const x = b.action === 'int_note' ? await I.note(b.phone, b.note, byName) : b.action === 'int_hide' ? await I.hide(b.phone, b.hide !== false, session, byName)
+          : b.action === 'to_interested' ? await I.fromOrder(clip(b.id, 60), session, byName) : await I.addManual(b, session, byName);
+        if (x.error) { res.status(x.error === 'not_found' ? 404 : x.error === 'not_open' ? 409 : 400).json(x); return; }
+        res.status(200).json(x);
         return;
       }
       if (b.action === 'stock') {
         if (session.role !== 'admin') { res.status(403).json({ error: 'forbidden' }); return; }
-        const x = await C.setStock({ wave: b.wave, max: b.max == null ? b.total : b.max }, session.employeeId || '');
+        const x = await C.setStock({ wave: b.wave, max: b.max == null ? b.total : b.max, vip: b.vip && typeof b.vip === 'object' ? b.vip : undefined }, session.employeeId || '');
         if (x.error) { res.status(400).json(x); return; }
         res.status(200).json(Object.assign({ ok: true }, await C.count(await readJSON(C.KEY, []))));
         return;
@@ -269,6 +279,8 @@ module.exports = async (req, res) => {
         if (!phoneOk(phone)) { res.status(400).json({ error: 'bad_phone' }); return; }
         if (!city) { res.status(400).json({ error: 'missing_city' }); return; }
         const list = await readJSON(C.KEY, []);
+        // a VIP one sold at the desk takes one of her clinic's VIP cards (5 per clinic); the regular ones never waited for a wave here
+        if (C.isVip(tier)) { const st = await C.stockFor(list, tier, city, qty); if (!st.ok) { res.status(409).json({ error: st.error, left: st.left }); return; } }
         const names = Array.from({ length: qty }, (_, i) => clean((Array.isArray(b.names) ? b.names : [])[i], 80));
         const row = { id: crypto.randomUUID(), created: new Date().toISOString(), name, phone, city, tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty, forWho: names.some(Boolean) ? 'cadou' : 'eu',
           cards: names.map((n) => ({ code: '', recipient: n })), recipient: names[0] || '', status: 'rezervat', via: 'portal', pay: b.via === 'online' ? 'online' : 'clinica', addedBy: session.employeeId || '' };
@@ -363,33 +375,35 @@ module.exports = async (req, res) => {
     const lk = online ? (await C.links())[tier] : null;
     if (online && !lk) { res.status(409).json({ error: 'no_link' }); return; }
     let list = await readJSON(C.KEY, []);
-    const newId = crypto.randomUUID();
+    // the id made by her browser (an online order: she is on myPOS before this answer, the owner 22.11: „prea lent”), kept
+    // when it is a UUID not used yet; else ours
+    const cid = String(b.id || '').toLowerCase();
+    const newId = UUID.test(cid) && !list.some((r) => r.id === cid || (r.ids || []).includes(cid)) ? cid : crypto.randomUUID();
     // a clinic reservation closes her open online order of the same card, not paid (one card, not two; _lib supersede)
     const replaced = online ? 0 : C.supersede(list, { id: newId, phone, tier });
     const cnt0 = await C.count(list, now);
-    const left0 = cnt0.left; // what is left of the wave of now (the next opens at once)
+    const st0 = await C.stockFor(list, tier, city, qty, now, cnt0);
+    const left0 = st0.left; // what is left of the wave of now (the next opens at once); a VIP one: of her clinic
     const hers = list.filter((r) => C.live(r, now) && d9(r.phone) === d9(phone));
     // the same order again within 10 minutes (a second tap, back from the PayLink): the one she has
     const same = hers.find((r) => C.norm(r).tier === tier && r.qty === qty && r.pay === (online ? 'online' : 'clinica') && ['rezervat', 'asteptare'].includes(r.status) && now - Date.parse(r.created) < 10 * 60e3 &&
       r.cards.map((c) => fold(c.recipient)).join('|') === names.map(fold).join('|'));
     if (same) {
+      // her browser's id of this tap, an other name of the same order (the window back from myPOS finds it: C.byId)
+      if (online && newId === cid && cid) same.ids = (same.ids || []).concat(cid).slice(-10);
       if (online) { C.mark(same, 'to_paylink'); await writeJSON(C.KEY, list); }
       res.status(200).json(online ? { ok: true, again: true, id: same.id, link: lk, amount: same.amount } : { ok: true, again: true, reservation: publicOf(same), left: left0 }); return;
     }
     if (hers.reduce((n, r) => n + C.qtyOf(r), 0) + qty > 10) { res.status(409).json({ error: 'too_many_cards' }); return; }
-    if (cnt0.wave.soldOut || left0 <= 0) { res.status(409).json({ error: 'sold_out' }); return; }
-    if (left0 < qty) { res.status(409).json({ error: 'not_enough', left: left0 }); return; }
+    if (!st0.ok) { res.status(409).json(st0.error === 'not_enough' ? { error: 'not_enough', left: left0 } : { error: st0.error === 'closed' ? 'closed' : 'sold_out', vip: cnt0.vip }); return; }
 
     // nothing is issued now: the codes come when the payment is confirmed (the owner, 21.11)
     const entry = { id: newId, created: new Date().toISOString(), name, phone, city, tier, qty, amount: tier * qty, credit: C.TIERS[tier] * qty, forWho: gift ? 'cadou' : 'eu',
       cards: names.map((n) => ({ code: '', recipient: n })), recipient: names[0] || '', status: online ? 'asteptare' : 'rezervat', via: 'site', pay: online ? 'online' : 'clinica', page: clip(b.page, 200), track: trackOf(req, b.page, b.ct) };
     // where the name on the card comes from (the portal says it): typed on the site; else hers in our files (clients, then
     // leads, the newest first): her greeting and her card's name, nothing asked on WhatsApp; else asked once paid
+    // (that one is looked up after the answer: knownName below)
     if (cardName) entry.nameFrom = 'site';
-    if (!name) {
-      const known = await C.knownName(phone).catch(() => '');
-      if (known) { entry.hint = known; if (!cardName && !names.some(Boolean)) { entry.name = known; entry.nameFrom = 'fisa'; } }
-    }
     C.mark(entry, 'created');
     if (replaced) C.mark(entry, 'replaced', String(replaced));
     if (online) C.mark(entry, 'to_paylink');
@@ -397,35 +411,48 @@ module.exports = async (req, res) => {
     await writeJSON(C.KEY, list);
     // two at the same second for the last cards: the later one gives way
     list = await readJSON(C.KEY, []);
-    const before = list.filter((r) => C.live(r));
-    const upTo = before.slice(0, before.findIndex((r) => r.id === entry.id) + 1).reduce((n, r) => n + C.qtyOf(r), 0);
-    if (upTo > await C.total() || (await C.count(list.filter((r) => r.id !== entry.id))).wave.left < qty) {
+    if (await C.lostRace(list, entry)) {
       // the online order it replaced, back as it was
       list.filter((r) => r.replacedBy === entry.id).forEach((r) => { Object.assign(r, { status: 'asteptare' }); ['cancelledAt', 'cancelledBy', 'replacedBy'].forEach((k) => delete r[k]); if (r.rec) delete r.rec.stop; });
       await writeJSON(C.KEY, list.filter((r) => r.id !== entry.id)); res.status(409).json({ error: 'sold_out' }); return;
     }
 
+    // after the answer (she is on her way): her name from our files, then her lead and the team's notice
+    const named = async () => {
+      if (name) return;
+      const known = await C.knownName(phone).catch(() => '');
+      if (!known) return;
+      const l2 = await readJSON(C.KEY, []);
+      const row = l2.find((x) => x.id === entry.id);
+      entry.hint = known; if (!cardName && !names.some(Boolean)) { entry.name = known; entry.nameFrom = 'fisa'; }
+      if (row) { row.hint = known; if (entry.nameFrom === 'fisa' && !row.name) { row.name = known; row.nameFrom = 'fisa'; } await writeJSON(C.KEY, l2); }
+    };
     const note = 'Card de Sărbători ' + (online ? 'trimis la plata online (PayLink myPOS), de confirmat plata; numele de pe card îl cerem pe WhatsApp după plată' : 'rezervat pe site, plata în clinică') + ': ' + qty + ' × ' + tier + ' lei (credit ' + C.TIERS[tier] + ' lei fiecare), de plată ' + entry.amount + ' lei' +
       (names.some(Boolean) ? ' · pe numele: ' + names.map((n) => n || '(al ei)').join(', ') : '');
     if (online) {
-      res.status(200).json({ ok: true, id: entry.id, link: lk, amount: entry.amount, left: (await C.count(list)).left });
+      const c1 = await C.count(list);
+      res.status(200).json({ ok: true, id: entry.id, link: lk, amount: entry.amount, left: C.leftFor(c1, tier, city), vip: c1.vip });
+      await named();
       await lead(entry, b, req, note); // after the answer: she goes to myPOS at once
       try {
         const N = require('./_lib/notify');
         await N.notifyMany({ readJSON, writeJSON }, await N.deskIds({ readJSON, writeJSON }, city), { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-wait-' + entry.id,
-          title: 'C. SARB 🎄 ' + tier + ' lei · LA PLATĂ ONLINE' + N.cityTag(city), text: (name || entry.hint || 'fără nume') + ' · se confirmă singur când plata apare în myPOS' });
+          title: C.sarb(tier) + ' · LA PLATĂ ONLINE' + N.cityTag(city), text: (name || entry.hint || 'fără nume') + ' · se confirmă singur când plata apare în myPOS' });
       } catch (e) { /* the order stands */ }
       return;
     }
+    // the answer first (the box „rezervat” at once, the owner 22.11), then her name, her lead, the team, her WhatsApp
+    const c2 = await C.count(list);
+    res.status(200).json({ ok: true, reservation: publicOf(entry), left: C.leftFor(c2, tier, city), vip: c2.vip });
+    await named();
     await lead(entry, b, req, note);
     // the desk and the owner: a card reserved on the site, told apart from the leads (the owner, 21.11)
     try {
       const N = require('./_lib/notify');
       const ids = [...new Set((await N.deskIds({ readJSON, writeJSON }, city)).concat(await N.adminIds({ readJSON, writeJSON })))];
       await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-res-' + entry.id,
-        title: 'C. SARB 🎄 ' + N.leiTxt(entry.amount) + ' · REZERVAT' + N.cityTag(city), text: (name || entry.hint || 'fără nume') + ' · plătește în clinică' });
+        title: C.sarb(tier, entry.amount) + ' · REZERVAT' + N.cityTag(city), text: (name || entry.hint || 'fără nume') + ' · plătește în clinică' });
     } catch (e) { /* the order stands */ }
-    res.status(200).json({ ok: true, reservation: publicOf(entry), left: (await C.count(await readJSON(C.KEY, []))).left });
     // after the answer: her WhatsApp „Ți-am rezervat Cardul de Sărbători…” with the card's picture (once; only the approved template)
     try { await C.reservedMsg(entry.id); } catch (e) { console.error('card reserved msg:', e.message); }
   } catch (err) {

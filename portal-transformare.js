@@ -422,7 +422,7 @@
       r('Online neplătite, expirate', (x) => n0(x.onlineExpired), 'is-bad'), r('Rezervate pentru clinică', (x) => n0(x.resv)), r('Rezervări încă de plătit', (x) => n0(x.resvOpen)), r('Plătite în clinică', (x) => n0(x.clinicPaid), 'is-good'),
       r('Anulate', (x) => n0(x.cancelled)), r('Carduri plătite', (x) => n0(x.cards)), r('Încasat', (x) => lei0(x.cash), 'is-good'), r('Credit vândut', (x) => lei0(x.credit)),
       r('Până la plată online', (x) => mins(x.minOnline)), r('Până la plata în clinică', (x) => mins(x.minClinic))];
-    const tiers = Object.keys(mo.tiers).map((t) => [t + ' lei', [n0(mo.tiers[t].orders), n0(mo.tiers[t].cards), lei0(mo.tiers[t].cash)]]);
+    const tiers = Object.keys(mo.tiers).map((t) => [(t === '9900' ? 'VIP 9.900' : t) + ' lei', [n0(mo.tiers[t].orders), n0(mo.tiers[t].cards), lei0(mo.tiers[t].cash)]]);
     const spl = [['Telefon din listă', sp.list], ['Alt telefon, din linkul mesajului', sp.link], ['Restul (alte surse)', sp.rest]].map(([l, x]) => [l, [n0(x.orders), n0(x.paid), lei0(x.cash)]]);
     return '<section class="k-card tf-card"><div class="k-card-head"><h3>' + icon('wallet') + 'Comenzi și bani</h3>' + segBox('cpmoney', [['camp', 'Din campanie'], ['all', 'Toate comenzile']], S.ms) + '</div>' +
       table(['TM', 'AR', 'Total'], list) +
