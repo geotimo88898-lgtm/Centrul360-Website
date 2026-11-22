@@ -108,7 +108,7 @@
       if (st.querySelector('[data-cs-only="9900"]')) return;
       var tot = st.querySelector('.cs-tot');
       if (tot) tot.insertAdjacentHTML('beforebegin', ROW(I_PLAN, 'Revizia completă și planul tău personal', 'Doar la cardul VIP: la început, o revizie completă și planul tău, făcut pentru tine.') +
-        ROW(I_FAM, 'Pentru tine și cei dragi', 'Doar la cardul VIP: îl pot folosi familia și prietenii tăi, oricâte persoane.'));
+        ROW(I_FAM, 'Pentru tine și cei dragi', 'Doar la cardul VIP: îl pot folosi și cei dragi ai tăi, oricâte persoane.'));
     });
     // the scarcity line: its VIP words beside the others (per clinic, vipLine)
     $$('.cst-urg').forEach(function (u) { if (!u.querySelector('.cst-vipl')) u.insertAdjacentHTML('beforeend', '<span class="cst-vipl" hidden></span>'); });
