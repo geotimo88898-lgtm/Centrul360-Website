@@ -218,6 +218,30 @@ module.exports = async (req, res) => {
     res.status(200).json({ ok: true, orders: list.length - keep.length, leads: leads.length - lk.length });
     return;
   }
+  // POST ?leadoffers=fix (&dry=1): leads that signed up again for ANOTHER offer before 22.11 show the newest one; the older
+  // ones go to interestHistory (the owner, 22.11). Read from their own „A trimis din nou datele … · <oferta>” lines; only
+  // offers we know (Admin → Oferte titles, the lead filter, the card). Counts back.
+  if (req.query && req.query.leadoffers === 'fix' && req.method === 'POST') {
+    const { writeJSON } = require('./_lib/store');
+    const offers = await loadOffers(readJSON).catch(() => []);
+    const titles = new Set((Array.isArray(offers) ? offers : Object.values(offers || {})).map((o) => o && o.title).filter(Boolean));
+    const known = (t) => titles.has(t) || /^Lead filter · /.test(t) || /^Cardul de Sărbători/.test(t);
+    const leads = await readJSON('data/leads.json', []);
+    let changed = 0;
+    leads.forEach((l) => {
+      const ret = (l.activities || []).filter((a) => a && a.type === 'returned' && / · /.test(String(a.text || ''))).sort((a, b) => String(a.at).localeCompare(String(b.at)));
+      if (!ret.length) return;
+      const last = ret[ret.length - 1];
+      const body = String(last.text).split(' - ')[0];
+      const seg = body.split(' · ').pop().replace(/ \(înainte: .*\)$/, '').trim();
+      if (!known(seg) || seg === l.interest) return;
+      if (l.interest) l.interestHistory = (l.interestHistory || []).concat({ interest: l.interest, value: l.value || 0, until: last.at }).slice(-10);
+      l.interest = seg; l.interestAt = last.at; changed++;
+    });
+    if (changed && req.query.dry !== '1') await writeJSON('data/leads.json', leads);
+    res.status(200).json({ ok: true, changed, dry: req.query.dry === '1', offers: titles.size });
+    return;
+  }
   if (req.query && req.query.cardblast) {
     const CB = require('./_lib/card-blast');
     const op = String(req.query.cardblast);
