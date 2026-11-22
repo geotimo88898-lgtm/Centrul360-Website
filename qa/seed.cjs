@@ -243,18 +243,30 @@ const f = (p) => path.join(DATA, p.replace(/\//g, '__'));
 const w = (p, d) => fs.writeFileSync(f(p), typeof d === 'string' ? d : JSON.stringify(d));
 const now = Date.now(), t0 = now - 6 * 3600e3, iso = (ms) => new Date(ms).toISOString();
 const names = ['Maria-Magdalena Constantinescu-Ionescu', 'Ana Proba', 'Elena Lungu-Teodorescu', 'Ioana Proba', 'Cristina Popa', 'Andreea Marinescu-Vasilescu'];
-const list = []; for (let i = 0; i < 60; i++) { const k = String(733000100 + i); list.push(Object.assign({ k, to: '40' + k, city: i % 3 ? 'Timișoara' : 'Arad', fn: names[i % names.length].split(/[\s-]/)[0], seg: i >= 45 ? 'client2' : i % 5 ? 'client' : 'lead', score: 100, visits: 1 + (i % 4) }, i >= 45 ? { batch: 2, paid: 3400 } : {})); }
+const list = []; for (let i = 0; i < 60; i++) { const k = String(733000100 + i); list.push(Object.assign({ k, to: '40' + k, city: i % 3 ? 'Timișoara' : 'Arad', fn: names[i % names.length].split(/[\s-]/)[0], seg: i >= 45 ? (i % 2 ? 'client2' : 'client-tr') : i >= 35 ? 'lead' : i % 5 ? 'client' : 'lead', score: 100, visits: i >= 35 && i < 45 ? 0 : 1 + (i % 4) },
+  i >= 45 ? { batch: 3, paid: 1200 + i * 90, pre: 'card_sarbatori_490' } : i >= 35 ? { batch: 2, pre: 'card_sarbatori_290' } : {})); }
 w('cardblast/state.json', { armed: true, list, pickedAt: iso(t0 - 900e3), doneAt: iso(t0 + 20 * 60e3), media: {}, note: '' });
 const sent = {};
-list.forEach((p, i) => { sent[p.k] = i % 17 === 4 ? { e: 'Meta a refuzat (cod 131026)', code: 131026, at: iso(t0 + i * 20e3), c: p.city } : { w: 'wamid.CS' + i, at: iso(t0 + i * 20e3), c: p.city }; });
+list.forEach((p, i) => { sent[p.k] = i % 17 === 4 ? { e: 'Meta a refuzat (cod 131026)', code: 131026, at: iso(t0 + i * 20e3), c: p.city } : Object.assign({ w: 'wamid.CS' + i, at: iso(t0 + i * 20e3 + (p.batch || 1) * 3600e3 - 3600e3), c: p.city }, p.pre ? { t: p.pre } : {}); });
+// the client files and visits of some of them: the last visit, a booking ahead (the lot card, „programare” on her row)
+const dday = (n) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date(now + n * 864e5));
+const cls = JSON.parse(fs.readFileSync(f('data/clients.json'), 'utf8')), aps = JSON.parse(fs.readFileSync(f('data/appointments.json'), 'utf8'));
+list.forEach((p, i) => {
+  if (p.seg === 'lead') return;
+  const id = 'cl-cs-' + i; cls.push({ id, name: names[i % names.length], phone: '0' + p.k });
+  aps.push({ id: 'ap-cs-' + i, date: dday(-[12, 45, 100, 200, 400][i % 5]), time: '10:00', location: p.city, clientId: id, clientName: names[i % names.length], treatment: 'Lipo 640', status: 'finalizata', createdAt: iso(now - 500 * 864e5) });
+  if (i % 4 === 1) aps.push({ id: 'ap-cs-n' + i, date: dday(1 + (i % 6)), time: String(9 + (i % 8)).padStart(2, '0') + ':30', location: p.city, clientId: id, clientName: names[i % names.length], treatment: 'Radiofrecvență facială', status: 'programata', createdAt: iso(t0 - 864e5) });
+});
+w('data/clients.json', cls); w('data/appointments.json', aps);
 w('cardblast/sent.json', sent);
 w('cardblast/ev-since.txt', iso(t0 + 40 * 60e3));
 const touch = (p, ms) => { const t = new Date(ms); fs.utimesSync(f(p), t, t); };
 list.forEach((p, i) => {
   if (!sent[p.k].w) return;
-  if (i % 11 !== 7) { w('cardblast/ev/delivered/wamid.CS' + i, p.k + '||'); touch('cardblast/ev/delivered/wamid.CS' + i, t0 + i * 20e3 + 4e3); }
+  const sh = Date.parse(sent[p.k].at) - t0 - i * 20e3; // the lot's own hour
+  if (i % 11 !== 7) { w('cardblast/ev/delivered/wamid.CS' + i, p.k + '||'); touch('cardblast/ev/delivered/wamid.CS' + i, t0 + sh + i * 20e3 + 4e3); }
   if (i % 11 === 7 && i % 2) { w('cardblast/ev/failed/wamid.CS' + i, p.k + '|131049|'); }
-  if (i % 3 !== 2 && i % 11 !== 7) { w('cardblast/ev/read/wamid.CS' + i, p.k + '||'); touch('cardblast/ev/read/wamid.CS' + i, t0 + (i % 6) * 3600e3 + 600e3); }
+  if (i % 3 !== 2 && i % 11 !== 7) { w('cardblast/ev/read/wamid.CS' + i, p.k + '||'); touch('cardblast/ev/read/wamid.CS' + i, Math.min(now - 60e3, t0 + sh + (i % 6) * 3600e3 + 600e3)); }
 });
 const said = [['tap', 'Rezerv în clinică'], ['text', 'Bună ziua, cardul de 490 se poate folosi și pentru epilare la Arad sau doar la Timișoara? Mulțumesc!'], ['tap', 'Rezerv în clinică'], ['stop', 'Stop'], ['tap', 'Rezerv în clinică'], ['text', 'Îl iau cadou pentru mama 🤍']];
 said.forEach(([kind, text], j) => { const i = j * 5 + 1; w('cardblast/in/wamid.IN' + j, { k: list[i].k, kind, text, at: iso(t0 + (j + 1) * 1800e3), ctx: 1 }); });
@@ -280,6 +292,7 @@ const ord = (i, tier, pay, status, mins, extra) => o(Object.assign({ created: is
 w('data/card-sarbatori.json', [
   ord(1, 990, 'online', 'platit', 9, { trail: [['created', 0], ['to_paylink', 0], ['paid', 9, 'auto'], ['ask_name', 10, 'ok'], ['named', 14], ['card_sent', 14, 'ok']].map(([ev, m, note]) => Object.assign({ at: iso(t0 + 2 * 1500e3 + m * 60e3), ev }, note ? { note } : {})) }), ord(4, 490, 'online', 'platit', 23), ord(6, 990, 'clinica', 'platit', 140, { qty: 2, amount: 1980, credit: 5000 }), ord(10, 290, 'online', 'asteptare', 0, { created: iso(now - 25 * 60e3) }),
   ord(12, 990, 'online', 'asteptare', 0, { trail: [['created', 0], ['to_paylink', 0], ['returned', 3], ['reason', 4, 'declined'], ['wa1', 35, 'ok'], ['expired', 120]].map(([ev, m, note]) => Object.assign({ at: iso(t0 + 13 * 1500e3 + m * 60e3), ev }, note ? { note } : {})) }), ord(16, 490, 'clinica', 'rezervat', 0, { track: { ua: pc } }), ord(21, 290, 'clinica', 'anulat', 0),
+  ord(46, 490, 'clinica', 'rezervat', 0, { created: iso(now - 3600e3), via: 'whatsapp', page: '', track: {} }), ord(48, 490, 'clinica', 'lead', 0, { created: iso(now - 2400e3), via: 'whatsapp', page: '', track: {} }), ord(50, 490, 'clinica', 'platit', 90, { created: iso(now - 7200e3), paidAt: iso(now - 1800e3), via: 'whatsapp', page: '', track: {} }),
   ord(null, 990, 'online', 'platit', 14, { track: { utm_campaign: 'card-sarbatori', ua: pc } }),
   o({ created: iso(t0 - 2 * 86400e3), phone: '0722000777', city: 'Timișoara', tier: 990, amount: 990, credit: 2500, pay: 'online', status: 'platit', paidVia: 'online', paidAt: iso(t0 - 2 * 86400e3 + 600e3), page: 'https://www.centrul360.com/card-sarbatori', track: { utm_source: 'instagram', ua } }),
   o({ created: iso(t0 + 3 * 3600e3), phone: '0722000778', city: 'Arad', tier: 490, amount: 490, credit: 1000, pay: 'online', status: 'platit', paidVia: 'online', paidAt: iso(t0 + 3 * 3600e3 + 300e3), page: 'https://www.centrul360.com/card-sarbatori', track: { ua } }),

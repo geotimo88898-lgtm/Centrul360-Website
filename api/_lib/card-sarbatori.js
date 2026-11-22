@@ -1440,6 +1440,48 @@ function cardView(r, c, now) {
   };
 }
 
+// ---- „Șterge” in the portal (the owner, 22.11; admin only): an order not paid (open or cancelled) or a paid card already
+// cancelled (its refund in Încasări, voidPaid) goes for good: out of the list, the counts and the stock. Her lead in the
+// Pipeline stays; Încasări keeps its rows (the payment and its refund); Activitate has the line. A paid card still active:
+// „Anulează” first. → { ok, order: { name, phone, tier, qty } } | { error: 'not_found' | 'paid' }
+async function deleteOrder(id) {
+  const list = await readJSON(KEY, []);
+  const r = list.find((x) => x.id === id);
+  if (!r) return { error: 'not_found' };
+  if (r.status === 'platit' || r.status === 'matching') return { error: 'paid' };
+  await writeJSON(KEY, list.filter((x) => x.id !== id));
+  // a payment of „De verificat” waiting for it: one candidate less
+  try {
+    const checks = await readJSON(CHECK, []);
+    if (checks.some((c) => c.state === 'open' && c.cands.includes(id))) { checks.forEach((c) => { if (c.state === 'open') c.cands = c.cands.filter((x) => x !== id); }); await writeJSON(CHECK, checks); }
+  } catch (e) { /* the order is gone either way */ }
+  return { ok: true, order: { name: r.name || '', phone: r.phone, tier: r.tier, qty: qtyOf(r), status: r.status } };
+}
+// what the desk sees next to an order (the owner, 22.11): her next appointment (when she comes to pay), and the campaign
+// wave whose WhatsApp she got (card-blast: „Lot 6 · mesaj 990”)
+async function orderExtras(orders) {
+  const [appts, clients, st, sent] = await Promise.all([readJSON('data/appointments.json', []).catch(() => []), readJSON('data/clients.json', []).catch(() => []),
+    readJSON('cardblast/state.json', null).catch(() => null), readJSON('cardblast/sent.json', null).catch(() => null)]);
+  const today = roDay(Date.now());
+  const clinicOf = (l) => { try { return require('./clinic').clinicOf(l) || l || ''; } catch (e) { return l || ''; } };
+  const idsBy = new Map();
+  clients.forEach((c) => { const k = d9(c.phone); if (k.length === 9) idsBy.set(k, (idsBy.get(k) || []).concat(c.id)); });
+  const ahead = appts.filter((a) => a && !a.block && a.date >= today && !['anulata', 'finalizata', 'concediu'].includes(a.status)).sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+  const wave = new Map(((st && st.list) || []).map((p) => [p.k, p]));
+  const tierOfPre = (pre) => (/_290$/.test(String(pre || '')) ? 290 : /_490$/.test(String(pre || '')) ? 490 : 990);
+  const out = {};
+  orders.forEach((o) => {
+    const k = d9(o.phone), ids = new Set((idsBy.get(k) || []).concat(o.clientId ? [o.clientId] : []));
+    const a = ahead.find((x) => (x.clientId && ids.has(x.clientId)) || (x.clientPhone && d9(x.clientPhone) === k));
+    const p = wave.get(k), m = sent && sent[k];
+    out[o.id] = {
+      appt: a ? { date: a.date, time: a.time || '', city: clinicOf(a.location) } : null,
+      lot: p && m && !m.e ? { n: Number(p.batch) || 1, tier: tierOfPre(m.t || p.pre) } : null,
+    };
+  });
+  return out;
+}
+
 // ---- „Rezerv în clinică” tapped in a campaign's WhatsApp message (api/_lib/card-blast.js, the owner 22.11: „bagă-le și pe ele
 // în cereri”): a request like the portal's, the card of the message she got, her name from our files when we have it. One per
 // phone (an open order: nothing new). A full wave opens the next one rather than turning her away. opt.quiet: no alert and
@@ -1487,7 +1529,7 @@ async function requestFromTap(i, opt) {
   return { ok: true, id: entry.id };
 }
 
-module.exports = { requestFromTap,
+module.exports = { requestFromTap, deleteOrder, orderExtras,
   KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
   norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,

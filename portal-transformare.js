@@ -48,6 +48,7 @@
       '<div class="cp-pick" data-cppick></div>' +
       '<div data-tfbody><div class="k-skel" style="height:520px"></div></div>';
     panel.addEventListener('click', onClick);
+    panel.addEventListener('toggle', (e) => { const d = e.target.closest && e.target.closest('[data-cpfold]'); if (d) { S.open = S.open || {}; S.open[d.dataset.cpfold] = d.open; if (d.open) { const ch = d.querySelector('[data-cpchart]'); if (ch && !ch.children.length) drawHours(ch); } } }, true);
   }
   const dataOf = (key) => (key === 'card' ? S.c : S.d);
   async function load(quiet, action) {
@@ -267,7 +268,48 @@
     const b = S.c.batches || [];
     if (b.length < 2) return '';
     const n = (k) => (S.c.waBy[k] || { total: { list: 0 } }).total.list;
-    return '<div class="cp-batch">' + segBox('cpbatch', [['all', 'Toate loturile ' + K.num(n('all'))]].concat(b.map((k) => [k, 'Lotul ' + k + ' · ' + K.num(n(k))])), bAll() ? 'all' : S.batch) + '</div>';
+    const lot = (k) => (S.c.lots || []).find((l) => l.b === k) || {};
+    return '<div class="cp-batch">' + segBox('cpbatch', [['all', 'Toate · ' + K.num(n('all'))]].concat(b.map((k) => [k, 'Lotul ' + k + ' · ' + (lot(k).msg || '990') + ' · ' + K.num(n(k))])), bAll() ? 'all' : S.batch) + '</div>';
+  }
+  // ---- the lots: the chosen one's card, all of them side by side
+  const SEGS = { client: 'clienți calzi din lista Transformarea', client2: 'clienți cu vizite, din afara listei', 'client-tr': 'din lista Transformarea', lead: 'leaduri care n-au venit' };
+  const SEG_S = { client: 'calzi', client2: 'cu vizite', 'client-tr': 'Transformarea', lead: 'leaduri' };
+  const MSG = (m) => (m === 'mix' ? 'mix' : (m || '990') + ' lei');
+  const span = (a, b) => (a ? fmt(a, { day: '2-digit', month: '2-digit' }) + ' ' + fmt(a, { hour: '2-digit', minute: '2-digit' }) + (b && b !== a ? ' – ' + fmt(b, { hour: '2-digit', minute: '2-digit' }) : '') : 'netrimis încă');
+  const segLine = (segs, short) => Object.keys(segs || {}).sort((a, b) => segs[b] - segs[a]).map((k) => K.num(segs[k]) + ' ' + ((short ? SEG_S : SEGS)[k] || k)).join(' · ');
+  function cLot() {
+    if (bAll()) return '';
+    const l = (S.c.lots || []).find((x) => x.b === S.batch);
+    if (!l) return '';
+    const r = l.recency || {}, tot = l.n || 1;
+    const REC = [['m1', 'sub o lună'], ['m3', '1-3 luni'], ['m6', '3-6 luni'], ['m12', '6-12 luni'], ['older', 'peste un an'], ['never', 'niciodată']];
+    const bar = '<div class="cp-rec">' + REC.map(([k], i) => (r[k] ? '<i class="r' + i + '" style="flex:' + r[k] + '"></i>' : '')).join('') + '</div>' +
+      '<div class="cp-rec-l">' + REC.filter(([k]) => r[k]).map(([k, lbl], i) => '<span><i class="r' + REC.findIndex((x) => x[0] === k) + '"></i>' + esc(lbl) + ' ' + esc(K.num(r[k])) + '</span>').join('') + '</div>';
+    return '<section class="k-card tf-card cp-lot">' +
+      '<div class="cp-lot-h">' + (l.img ? '<img class="cp-thumb" src="/api/portal-file?p=' + encodeURIComponent(l.img) + '" alt="" loading="lazy">' : '<span class="cp-thumb">' + icon('image') + '</span>') +
+        '<div><b>Lotul ' + esc(l.b) + ' · mesajul ' + esc(MSG(l.msg)) + '</b><span class="k-muted">' + esc(span(l.first, l.last)) + ' · TM ' + esc(K.num(l.cities['Timișoara'])) + ' · AR ' + esc(K.num(l.cities.Arad)) + '</span></div></div>' +
+      '<div class="cp-lot-g">' +
+        '<div><small>Cine</small><b>' + esc(K.num(l.n)) + '</b><span>' + esc(segLine(l.segs)) + '</span></div>' +
+        '<div><small>Vizite</small><b>' + (l.visits ? esc(l.visits.med) : '—') + '</b><span>' + (l.visits ? 'de la ' + esc(l.visits.min) + ' la ' + esc(l.visits.max) : '') + '</span></div>' +
+        '<div><small>Plătit la noi</small><b>' + (l.paidMed != null ? esc(K.lei(l.paidMed)) : '—') + '</b><span>mediana</span></div>' +
+        '<div><small>Programare la trimitere</small><b>' + esc(K.num(l.atSend)) + '</b><span>' + esc(pct(l.atSend, tot)) + '</span></div>' +
+      '</div><small class="cp-h2">Ultima vizită</small>' + bar + '</section>';
+  }
+  function cLots() {
+    const L = S.c.lots || [];
+    if (L.length < 2) return '';
+    const rowsH = L.map((l) => {
+      const x = l.stats;
+      return '<button type="button" class="cp-lr' + (S.c.best === l.b ? ' is-best' : '') + (!bAll() && S.batch === l.b ? ' is-on' : '') + '" data-cplot="' + esc(l.b) + '">' +
+        '<span class="cp-ln"><b>Lotul ' + esc(l.b) + '</b>' + (S.c.best === l.b ? '<em>cel mai bun</em>' : '') + '<small>' + esc(MSG(l.msg)) + ' · ' + esc(segLine(l.segs, true)) + '</small></span>' +
+        '<span>' + n0(x.sent) + '</span><span class="cp-x">' + n0(x.delivered) + '</span><span>' + esc(pct(x.read, x.sent) || '—') + '</span><span class="cp-x">' + n0(x.replied) + '</span><span class="cp-x">' + n0(x.taps) + '</span>' +
+        '<span>' + n0(x.requests) + '</span><span class="cp-x">' + n0(x.paidOnline) + '</span><span class="cp-x">' + n0(x.paidClinic) + '</span><span>' + lei0(x.cash) + '</span><span class="cp-x">' + lei0(x.potential) + '</span>' +
+        '<span class="cp-conv">' + (x.conv == null ? DASH : esc(String(x.conv).replace('.', ',')) + '%') + '</span></button>';
+    }).join('');
+    const head = ['Trimise', 'Livrate', 'Citite', 'Răspuns', '„Rezerv”', 'Cereri', 'Online', 'Clinică', 'Încasat', 'Potențial', 'Conversie'];
+    const extra = new Set(['Livrate', 'Răspuns', '„Rezerv”', 'Online', 'Clinică', 'Potențial']); // behind a tap on a phone (the lot's card)
+    return '<section class="k-card tf-card"><div class="k-card-head"><h3>' + icon('layers') + 'Loturile</h3><span class="k-sub">conversie = plătite sau cerute / trimise</span></div>' +
+      '<div class="cp-scroll"><div class="cp-lots"><div class="cp-lr cp-lh"><span>Lot</span>' + head.map((h) => '<span' + (extra.has(h) ? ' class="cp-x"' : '') + '>' + esc(h) + '</span>').join('') + '</div>' + rowsH + '</div></div></section>';
   }
   const segBox = (name, pairs, on) => K.seg(name, pairs, on);
 
@@ -279,19 +321,22 @@
       body.innerHTML = K.empty('chat', 'Mesajul nu a plecat încă', 'Când pleacă primele mesaje ale cardului, aici apar cifrele: WhatsApp, site, comenzi, bani.');
       return;
     }
-    body.innerHTML = cBatch() + cTop() + cLine() + cFunnel() + cWa() + cSite() + cMoney() + cHours() + cPeople();
+    body.innerHTML = cBatch() + cLot() + cTop() + cLots() + cFunnel() + cPeople() + fold('wa', 'WhatsApp, pe clinică', cWa()) + fold('site', 'Pe site', cSite()) +
+      fold('money', 'Comenzi și bani, în detaliu', cMoney()) + fold('hours', 'Oră cu oră', cHours()) + cLine();
     const ch = body.querySelector('[data-cpchart]');
     if (ch) { if (S.drawn) ch.classList.add('no-anim'); drawHours(ch); S.drawn = true; }
   }
+  // the money, in four tiles: cashed, still to come (open requests), the credit sold, who to call
   function cTop() {
-    const d = S.c, w = waOf().total, camp = d.site.camp, m = campOf().by.total;
-    const visits = bAll() ? (camp.m.visit || 0) + (camp.d.visit || 0) : null;
+    const m = campOf().by.total, w = waOf().total;
     return '<div class="k-grid c4 tf-top">' +
-      stat('is-accent', 'chat', 'Trimise', esc(K.num(w.sent)) + '<small>/' + esc(K.num(w.list)) + '</small>', esc(K.num(w.failed)) + ' eșuate' + (w.waiting ? ' · ' + esc(K.num(w.waiting)) + ' netrimise' : '')) +
-      stat('is-info', 'eye', 'Citite', esc(K.num(w.read)), (w.sent ? esc(pct(w.read, w.sent)) + ' din trimise · ' : '') + esc(K.num(w.delivered)) + ' livrate') +
-      stat('is-warn', 'globe', 'Pe site din mesaj', visits == null ? DASH : esc(K.num(visits)), visits == null ? 'pe lot nu se știe (același link)' : 'telefon ' + esc(K.num(camp.m.visit || 0)) + ' · calculator ' + esc(K.num(camp.d.visit || 0))) +
-      stat('is-good', 'wallet', 'Încasat din campanie', esc(K.lei(m.cash)), esc(K.num(m.cards)) + ' carduri plătite · credit ' + esc(K.lei(m.credit))) + '</div>';
+      stat('is-good', 'wallet', 'Încasat', esc(K.lei(m.cash)), esc(K.plural(m.cards, 'card', 'carduri')) + ' · ' + esc(K.num(w.sent)) + ' trimise') +
+      stat('is-warn', 'trend', 'Potențial', esc(K.lei(m.potential)), esc(K.plural(m.open, 'cerere deschisă', 'cereri deschise'))) +
+      stat('is-info', 'gift', 'Credit vândut', esc(K.lei(m.credit)), 'în tratamente') +
+      stat('is-accent', 'phone', 'De sunat', esc(K.num(m.resvOpen)), '<button type="button" class="cp-go" data-cp="carduri">Carduri ' + icon('arrow') + '</button>') + '</div>';
   }
+  // a block that opens in place (its open state kept across the refresh)
+  const fold = (key, title, html) => (html ? '<details class="k-card tf-card cp-fold" data-cpfold="' + key + '"' + (S.open && S.open[key] ? ' open' : '') + '><summary>' + esc(title) + icon('down') + '</summary><div class="cp-fbody">' + html.replace(/^<section class="k-card tf-card">/, '<div>').replace(/<\/section>$/, '</div>') + '</div></details>' : '');
   function cLine() {
     const d = S.c, st = d.state, sk = d.stock;
     const sending = st.armed && !st.doneAt ? '<span class="k-tag is-info">' + icon('zap') + 'se trimite</span>' : st.doneAt ? '<span class="k-tag is-good">trimis tot, ' + esc(dayHour(st.doneAt)) + '</span>' : '<span class="k-tag">oprit</span>';
@@ -468,6 +513,16 @@
     else if (o.status === 'rezervat') out.push(['De plătit în clinică', '', 'is-off']);
     return out;
   }
+  const apptTxt = (a) => fmt(a.date + 'T12:00:00Z', { day: '2-digit', month: '2-digit' }) + (a.time ? ' ' + a.time : '') + (a.city ? ' ' + (SHORT[a.city] || a.city) : '');
+  // her card now: paid, a request to call, at the payment, or nothing
+  function stateChip(p) {
+    const o = p.orders.slice().reverse();
+    const paid = o.find((x) => x.status === 'platit'), req = o.find((x) => x.status === 'rezervat' || x.status === 'lead'), pay = o.find((x) => (x.status === 'asteptare' || x.status === 'matching') && !x.expired);
+    if (paid) return '<span class="cp-chip is-good">Plătit ' + esc(paid.tier) + '</span>';
+    if (req) return '<span class="cp-chip is-warn">Cerere ' + esc(req.tier) + '</span>';
+    if (pay) return '<span class="cp-chip is-warn">La plată ' + esc(pay.tier) + '</span>';
+    return '';
+  }
   const paidOf = (p) => p.orders.some((o) => o.status === 'platit');
   const PF = [
     ['all', 'Toate', () => true],
@@ -488,8 +543,10 @@
     const page = shown.slice(0, S.pn || 40);
     const rowsH = page.map((p) => '<button type="button" class="k-row is-click tf-person cp-person" data-cpp="' + esc(p.k) + '">' +
         '<div class="k-row-main"><div class="k-row-title">' + esc(p.name || p.phone) + '</div>' +
-        '<div class="k-row-sub">' + esc(SHORT[p.city] || '') + ' · ' + esc(p.phone) + (p.seg === 'lead' ? ' · lead' : '') + ((S.c.batches || []).length > 1 ? ' · lotul ' + esc(p.batch) : '') + '</div>' +
-        '<div class="cp-chips">' + chips(p, 6) + '</div></div></button>').join('');
+        '<div class="k-row-sub">' + esc(SHORT[p.city] || '') + ' · ' + esc(p.phone) + '</div>' +
+        '<div class="cp-meta-row"><span class="cp-chip">Lotul ' + esc(p.batch) + ' · ' + esc(MSG(p.msg)) + '</span>' + stateChip(p) +
+          (p.appt ? '<span class="cp-chip is-info">' + icon('calendar') + esc(apptTxt(p.appt)) + '</span>' : '') + '</div>' +
+        '<div class="cp-chips">' + chips(p, 5) + '</div></div></button>').join('');
     const more = shown.length > page.length ? '<button type="button" class="k-btn is-outline cp-more" data-cp="more">Mai arată ' + esc(K.num(Math.min(40, shown.length - page.length))) + ' din ' + esc(K.num(shown.length - page.length)) + '</button>' : '';
     return '<section class="k-card tf-card"><div class="k-card-head"><h3>' + icon('users') + 'Fiecare persoană</h3><span class="k-sub">' + esc(K.num(list.length)) + ' în listă</span></div>' + '<div class="tf-filter">' + seg + '</div>' +
       (rowsH ? '<div class="k-list">' + rowsH + '</div>' + more : K.empty('users', 'Nimeni aici', 'Nicio persoană din listă nu e în pasul ăsta acum.')) +
@@ -530,6 +587,9 @@
     const cb = e.target.closest('[data-cp]');
     if (cb && cb.dataset.cp === 'refresh') return K.busy(cb, () => load(false, 'refresh'));
     if (cb && cb.dataset.cp === 'more') { S.pn = (S.pn || 40) + 40; paint(); return; }
+    if (cb && cb.dataset.cp === 'carduri') { K.go('carduri'); return; }
+    const lr = e.target.closest('[data-cplot]');
+    if (lr) { S.batch = S.batch === lr.dataset.cplot ? 'all' : lr.dataset.cplot; S.pn = 40; paint(); panel.querySelector('[data-cppick]').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     const city = e.target.closest('[data-tfcity] > button');
     if (city) { S.city = city.dataset.v; paint(); return; }
     const f = e.target.closest('[data-tffilter] > button');

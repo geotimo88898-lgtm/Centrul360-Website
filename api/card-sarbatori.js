@@ -131,7 +131,7 @@ module.exports = async (req, res) => {
     const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
 
     // ---- the team
-    const TEAM = ['void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'request', 'edit', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick'];
+    const TEAM = ['delete', 'void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'request', 'edit', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick'];
     if (TEAM.includes(b.action)) {
       const session = await require('./_lib/auth').requireRole(req, res, b.action === 'undo' ? ['admin'] : ['admin', 'manager', 'receptie']);
       if (!session) return;
@@ -149,12 +149,19 @@ module.exports = async (req, res) => {
         // the orders waiting for a payment or a reservation, as one row each (their cards are not issued yet)
         // and, 3 days, the online ones she gave up herself (what happened stays readable)
         const gaveUp = (r) => r.status === 'anulat' && r.cancelledBy === 'ea' && now - Date.parse(r.cancelledAt || r.created) < 3 * 86400e3;
-        const orders = list.filter((r) => r.status === 'asteptare' || r.status === 'rezervat' || r.status === 'lead' || gaveUp(r)).map((r) => ({ id: r.id, created: r.created, name: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit,
+        // and the cancelled orders never paid (shown under „Anulate”, to be deleted for good)
+        const dead = (r) => r.status === 'anulat' && !r.cards.some((c) => c.code);
+        const orders = list.filter((r) => r.status === 'asteptare' || r.status === 'rezervat' || r.status === 'lead' || gaveUp(r) || dead(r)).map((r) => ({ id: r.id, created: r.created, name: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit,
           pay: r.pay, status: r.status, forWho: r.forWho || '', names: r.cards.map((c) => c.recipient), held: C.live(r, now), heldUntil: r.status === 'asteptare' || r.status === 'lead' ? new Date(C.heldFrom(r) + C.HOLD_MS).toISOString() : '',
-          online: r.via === 'site' && (r.pay === 'online' || !!r.convertedAt), converted: r.convertedAt || '', byHer: gaveUp(r), nameFrom: r.nameFrom || '', via: r.via || '', note: r.note || '', leadCall: r.leadCall ? r.leadCall.at : '', trail: trailOf(r), rec: recView(r) })).reverse();
+          online: r.via === 'site' && (r.pay === 'online' || !!r.convertedAt), converted: r.convertedAt || '', byHer: gaveUp(r), nameFrom: r.nameFrom || '', via: r.via || '', note: r.note || '', leadCall: r.leadCall ? r.leadCall.at : '', cancelled: dead(r) && !gaveUp(r), clientId: r.clientId || '', trail: trailOf(r), rec: recView(r) })).reverse();
+        // her next appointment and the campaign wave, next to each order and each card
+        const ex = await C.orderExtras(orders.concat(list.filter((r) => r.status === 'platit').map((r) => ({ id: r.id, phone: r.phone, clientId: r.clientId })))).catch(() => ({}));
+        orders.forEach((o) => Object.assign(o, ex[o.id] || {}));
+        cards.forEach((c) => { const x = ex[c.order]; if (x) c.lot = x.lot; });
         const paid = list.filter((r) => r.status === 'platit');
         const totals = { cards: paid.reduce((n, r) => n + C.qtyOf(r), 0), money: paid.reduce((n, r) => n + (Number(r.paidAmount) || Number(r.amount) || 0), 0), online: paid.filter((r) => r.paidVia === 'online').reduce((n, r) => n + (Number(r.paidAmount) || r.amount), 0),
-          credit: paid.reduce((n, r) => n + r.cards.reduce((m, c) => m + (Number(c.value) || 0), 0), 0), used: paid.reduce((n, r) => n + r.cards.reduce((m, c) => m + C.usedOf(c), 0), 0) };
+          credit: paid.reduce((n, r) => n + r.cards.reduce((m, c) => m + (Number(c.value) || 0), 0), 0), used: paid.reduce((n, r) => n + r.cards.reduce((m, c) => m + C.usedOf(c), 0), 0),
+          byCity: Object.fromEntries(CITIES.map((c) => [c, paid.filter((r) => r.city === c).reduce((n, r) => n + (Number(r.paidAmount) || Number(r.amount) || 0), 0)])) };
         const T = await C.templates().catch(() => ({ t: {} }));
         const WT = require('./_lib/wa-templates');
         const all = Object.fromEntries(Object.entries(T.t || {}).map(([k, t]) => [k, t ? WT.overall(t) : 'LIPSĂ']));
@@ -172,6 +179,14 @@ module.exports = async (req, res) => {
         const x = await C.setStock({ wave: b.wave, max: b.max == null ? b.total : b.max }, session.employeeId || '');
         if (x.error) { res.status(400).json(x); return; }
         res.status(200).json(Object.assign({ ok: true }, await C.count(await readJSON(C.KEY, []))));
+        return;
+      }
+      // „Șterge” (admin only): an order not paid, or a card already cancelled, gone for good (_lib deleteOrder)
+      if (b.action === 'delete') {
+        if (session.role !== 'admin') { res.status(403).json({ error: 'forbidden' }); return; }
+        const x = await C.deleteOrder(clip(b.id, 60));
+        if (x.error) { res.status(x.error === 'not_found' ? 404 : 409).json(x); return; }
+        res.status(200).json(Object.assign({ ok: true, deleted: x.order }, await C.count(await readJSON(C.KEY, []))));
         return;
       }
       if (b.action === 'void') {
