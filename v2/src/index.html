@@ -233,11 +233,14 @@ else if(q!=='card')fetch('/api/card-sarbatori').then(function(r){return r.json()
 <!-- the lead filter, its own section right after the card (the owner, 21.11 evening): for the ones who want a treatment for
      themselves, not a gift; on the home page it hides after the card sale, when the hero itself is the lead filter -->
 <section class="lfs-sec" id="pentru-tine" aria-labelledby="lfs-sec-t"><div class="wrap"><div class="lfb rv">
-  <div class="lfb-h"><span class="eye">Pentru tine</span><h2 id="lfs-sec-t">Nu știi ce ți se potrivește? <em>Află în 30 de secunde.</em></h2></div>
-  <div class="lfb-cs"><figure class="lfb-c"><img src="/brand_asset/catalog/cazul-16-hifu-gusa-tm-4.webp" alt="Înainte și după: HIFU gușă, Timișoara" width="1283" height="1400" loading="lazy" decoding="async"><figcaption><b>Gușă</b><span>HIFU · 1 ședință</span></figcaption></figure><figure class="lfb-c"><img src="/brand_asset/catalog/cazul-39-hifu-abdomen-tm.webp" alt="Înainte și după: HIFU abdomen, Timișoara" width="1400" height="946" loading="lazy" decoding="async"><figcaption><b>Abdomen</b><span>HIFU · 1 ședință</span></figcaption></figure><figure class="lfb-c"><img src="/brand_asset/catalog/cazul-23-hifu-periocular-tm.webp" alt="Înainte și după: HIFU periocular, Timișoara" width="1400" height="946" loading="lazy" decoding="async"><figcaption><b>Față</b><span>HIFU periocular · 1 ședință</span></figcaption></figure></div>
+  <h2 id="lfs-sec-t" class="lfb-t">Nu știi ce ți se potrivește? <em>Află în 30 de secunde.</em></h2>
+  <div class="lfb-cs">
+    <figure class="lfb-c" style="--ar:1.48"><img src="/brand_asset/catalog/cazul-39-hifu-abdomen-tm.webp" alt="Înainte și după: HIFU abdomen, Timișoara" width="1400" height="946" loading="lazy" decoding="async"><figcaption><b>Abdomen</b> HIFU, 1 ședință</figcaption></figure>
+    <figure class="lfb-c" style="--ar:.92"><img src="/brand_asset/catalog/cazul-16-hifu-gusa-tm-4.webp" alt="Înainte și după: HIFU gușă, Timișoara" width="1283" height="1400" loading="lazy" decoding="async"><figcaption><b>Gușă</b> HIFU, 1 ședință</figcaption></figure>
+  </div>
   <p class="lfb-legal">Clientele noastre, fotografiate la noi. Rezultatele diferă de la o persoană la alta.</p>
-  <ul class="lfb-ok"><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></i>Planul tău, pentru zona ta</li><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></i>Prețul exact, înainte să vii</li><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></i>Consultația e gratuită, fără obligații</li></ul>
-  <button type="button" class="btn book halo lfb-go" data-lf>Vreau planul meu{{arrow}}</button>
+  <ul class="lfb-ok"><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></i>Planul și prețul exact pentru zona ta</li><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></i>Consultația e gratuită</li><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></i>Fără obligații</li></ul>
+  <button type="button" class="btn book halo lfb-go" data-lf><span class="lfb-go-t">Vreau planul meu{{arrow}}</span><small class="lfb-go-s">5 întrebări · 30 de secunde</small></button>
   <p class="lfb-or">sau alege direct zona:</p>
   <div class="lfb-chips"><button type="button" class="lfb-chip" data-lf data-lf-zone="abdomen-talie">Abdomen și talie</button><button type="button" class="lfb-chip" data-lf data-lf-zone="coapse-fese">Coapse și fese</button><button type="button" class="lfb-chip" data-lf data-lf-zone="brate">Brațe</button><button type="button" class="lfb-chip" data-lf data-lf-zone="gusa-contur">Gușă</button><button type="button" class="lfb-chip" data-lf data-lf-zone="fata">Față</button><button type="button" class="lfb-chip" data-lf data-lf-zone="par-nedorit" data-lf-city="Timișoara">Epilare laser</button></div>
 </div></div></section>
@@ -275,9 +278,25 @@ else if(q!=='card')fetch('/api/card-sarbatori').then(function(r){return r.json()
   <div class="head rv"><span class="eye bf">Ofertele de Black Friday</span><h2>Ofertele de <em>Black Friday.</em></h2><p class="lead">Alegi oferta, apoi ziua și ora. Confirmarea vine pe WhatsApp.</p></div>
   <div class="offers" data-offers="all"></div>
   <div class="dots home-od" aria-hidden="true"></div>
-  <div class="card home-gar rv"><span class="home-seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><div><span class="eye">Garanție scrisă · epilare laser</span><b>Dacă părul crește la loc, continuăm gratuit până când nu mai e nevoie.</b><p>După cele 6 ședințe din curs, dacă pe zona tratată părul revine și tot ai nevoie să te epilezi regulat, mai faci ședințe pe cheltuiala noastră. Fără plafon.</p><a class="more" href="{{base}}epilare-laser">Vezi epilarea laser{{arrow}}</a></div></div>
   <div class="home-all"><a class="more" href="{{base}}oferte">Vezi toate ofertele și pachetele{{arrow}}</a></div>
 </div></section>
+
+<section class="gs" id="garantie" aria-labelledby="gs-t"><div class="wrap"><div class="gs-card rv">
+  <span class="gs-shield"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8 3.5v6c0 5-3.4 8.4-8 9.9-4.6-1.5-8-4.9-8-9.9V6z"/><path d="M8.6 12.2l2.4 2.4 4.6-4.8"/></svg></span>
+  <div class="gs-txt">
+    <span class="eye">Garanție scrisă · epilare laser</span>
+    <h2 id="gs-t">Dacă părul crește la loc, <em>continuăm gratuit.</em></h2>
+    <p class="gs-lead">Dacă, după protocolul complet recomandat de noi, părul crește la loc ca înainte, continuăm gratuit până nu mai e nevoie.</p>
+    <ul class="gs-proof"><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></i>Elysion Pro, aparatură medicală certificată</li><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></i>Garanția e în scris</li><li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></i>5,0 pe Google, 300+ recenzii</li></ul>
+    <div class="gs-act"><a class="btn book" href="{{base}}epilare-laser#garantie">Vezi epilarea laser{{arrow}}</a></div>
+    <details class="gar-cond"><summary>Condițiile garanției</summary><div class="gar-in">
+<p><b>Protocolul complet înseamnă:</b></p><ul><li>toate ședințele recomandate de specialistă, la intervalele indicate, fără pauze nereprogramate;</li><li>indicațiile de înainte și după ședință, respectate;</li><li>evaluarea de la final, făcută de specialistă (cu poze).</li></ul>
+<p><b>Garanția nu acoperă:</b></p><ul><li>firul alb, blond, roșcat sau foarte fin, pe care laserul nu îl vede;</li><li>cauze hormonale sau medicamentoase noi (de exemplu sarcina sau tratamente hormonale);</li><li>zonele care nu au fost tratate în protocol.</li></ul>
+<p>Garanția înseamnă ședințe gratuite în plus, nu bani înapoi. Toate detaliile, în <a href="{{base}}politica-de-garantie">Politica de garanție și returnare</a>.</p>
+</div></details>
+  </div>
+</div></div></section>
+
 
 <section class="s" id="cum" style="padding-top:0"><div class="wrap split">
   <div>

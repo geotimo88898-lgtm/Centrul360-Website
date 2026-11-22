@@ -180,39 +180,86 @@ html.csb-lock{ overflow:hidden; }
 /* the lead filter's own section, right after the card (the owner, 21.11 evening: proof first, one obvious action): its own
    band and one clear card; the real cases, what she gets, „Vreau planul meu”, and only under it the zones as small chips */
 .lfs-sec{ position:relative; margin:clamp(28px,5vw,56px) 0 0; padding:clamp(40px,6vw,80px) 0; background:linear-gradient(180deg,#eef9f7,#f6fcfb 70%,#fff); border-top:1px solid rgba(20,165,150,.14); }
-.lfb{ display:grid; gap:18px; max-width:980px; margin:0 auto; padding:clamp(22px,4vw,44px); border-radius:30px; background:#fff;
+.lfb{ display:grid; gap:16px; max-width:900px; margin:0 auto; padding:clamp(22px,4vw,40px); border-radius:30px; background:#fff;
   box-shadow:0 0 0 1px rgba(11,127,116,.12), 0 40px 80px -50px rgba(11,60,55,.45); text-align:center; justify-items:center; }
-.lfb-h{ display:grid; gap:10px; justify-items:center; }
-.lfb-h h2{ max-width:18ch; font-size:clamp(1.85rem,5.4vw,3rem); line-height:1.08; letter-spacing:-.045em; }
-.lfb-h h2 em{ display:block; }
-.lfb-cs{ display:grid; grid-template-columns:.92fr 1.48fr 1.48fr; gap:12px; width:100%; align-items:start; } /* each photo whole, the same height */
-.lfb-c{ margin:0; display:grid; gap:6px; text-align:left; }
-.lfb-c img{ width:100%; height:auto; border-radius:16px; background:#f2f5f5; }
-.lfb-c figcaption{ display:flex; flex-wrap:wrap; gap:2px 8px; align-items:baseline; font-size:13px; color:var(--mute); }
-.lfb-c figcaption b{ font-size:14px; color:var(--ink); }
+.lfb-t{ max-width:20ch; font-size:clamp(1.7rem,4.6vw,2.7rem); line-height:1.08; letter-spacing:-.045em; }
+.lfb-t em{ display:block; }
+/* the two results side by side, the same height, each photo whole (its own proportions, --ar) */
+.lfb-cs{ display:grid; grid-template-columns:1.48fr .92fr; gap:10px; width:100%; align-items:start; }
+.lfb-c{ margin:0; display:grid; gap:6px; text-align:left; min-width:0; }
+.lfb-c img{ width:100%; height:auto; aspect-ratio:var(--ar); border-radius:16px; background:#f2f5f5; box-shadow:0 18px 34px -24px rgba(11,40,38,.45); }
+.lfb-c figcaption{ font-size:13px; color:var(--mute); }
+.lfb-c figcaption b{ color:var(--ink); font-size:14px; }
 .lfb-legal{ margin-top:-6px; font-size:12px; color:var(--mute2); }
-.lfb-ok{ list-style:none; margin:0; padding:0; display:grid; gap:8px; justify-items:start; text-align:left; }
-.lfb-ok li{ display:flex; align-items:center; gap:10px; font-size:15.5px; font-weight:600; color:var(--ink2); }
-.lfb-ok i{ flex:none; width:24px; height:24px; border-radius:50%; display:grid; place-items:center; color:#fff; background:var(--teal); }
-.lfb-ok svg{ width:12px; height:12px; }
-.lfb-go{ width:min(100%,420px); min-height:60px; font-size:17px; }
-.lfb-or{ margin-top:-2px; font-size:13.5px; color:var(--mute); }
-.lfb-chips{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:-8px; }
-.lfb-chip{ height:38px; padding:0 14px; border:0; border-radius:999px; font:inherit; font-size:14px; font-weight:600; color:var(--teal2); background:var(--tint);
-  box-shadow:0 0 0 1px rgba(11,127,116,.18) inset; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background-color .3s var(--e), transform .3s var(--e); }
+.lfb-ok{ list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; justify-content:center; gap:6px 16px; }
+.lfb-ok li{ display:flex; align-items:center; gap:7px; font-size:14.5px; font-weight:600; color:var(--ink2); }
+.lfb-ok i{ flex:none; width:20px; height:20px; border-radius:50%; display:grid; place-items:center; color:#fff; background:var(--teal); }
+.lfb-ok svg{ width:11px; height:11px; }
+.lfb-go{ flex-direction:column; gap:2px; width:min(100%,440px); min-height:72px; height:auto; padding:12px 22px; }
+.lfb-go-t{ display:inline-flex; align-items:center; gap:10px; font-size:18.5px; font-weight:700; }
+.lfb-go-s{ font-size:13.5px; font-weight:500; opacity:.88; letter-spacing:.01em; }
+.lfb-or{ margin-top:-2px; font-size:13px; color:var(--mute); }
+.lfb-chips{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin-top:-8px; }
+.lfb-chip{ height:34px; padding:0 12px; border:0; border-radius:999px; font:inherit; font-size:13.5px; font-weight:600; color:var(--teal2); background:var(--tint);
+  box-shadow:0 0 0 1px rgba(11,127,116,.16) inset; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background-color .3s var(--e), transform .3s var(--e); }
 .lfb-chip:hover{ background:#e2f5f2; }
 .lfb-chip:active{ transform:scale(.97); }
 @media (max-width:720px){
-  .lfb{ padding:22px 16px 20px; border-radius:24px; gap:16px; }
-  /* the three cases: a row she swipes, each big enough to see */
-  .lfb-cs{ display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; margin:0 -16px; padding:0 16px 4px; width:calc(100% + 32px); scrollbar-width:none; }
-  .lfb-cs::-webkit-scrollbar{ display:none; }
-  .lfb-c{ flex:0 0 auto; scroll-snap-align:center; }
-  .lfb-c img{ width:auto; height:230px; }
-  .lfb-c figcaption{ max-width:100%; }
-  .lfb-ok li{ font-size:15px; }
+  .lfb{ padding:22px 14px 20px; border-radius:24px; gap:14px; }
+  .lfb-cs{ gap:8px; }
+  .lfb-c img{ border-radius:12px; }
+  .lfb-c figcaption{ font-size:12px; }
+  .lfb-ok{ gap:6px 12px; }
+  .lfb-ok li{ font-size:13.5px; }
 }
-
 /* the dock holds back while the lead filter section (or anything above it) is in view: v2/lf.js sets html.dock-hold */
 @media (max-width:640px){ html.dock-hold .dock.in{ transform:translateY(170%); } }
 @media (min-width:641px) and (max-width:920px){ html.dock-hold .dock.in{ transform:translate(-50%,170%); } }
+
+/* ---- the laser guarantee (the owner, 22.11: one of our strongest points): its own band on the home page, the shield,
+   the promise big, three short proofs, „Vezi epilarea laser” and the conditions one tap away */
+.gs{ padding:clamp(36px,6vw,72px) 0; }
+.gs-card{ position:relative; display:grid; grid-template-columns:auto 1fr; gap:clamp(18px,3vw,36px); align-items:start; max-width:980px; margin:0 auto; padding:clamp(24px,4.5vw,52px);
+  border-radius:30px; background:linear-gradient(160deg,#0f1a19 0%,#132826 55%,#0d3b36 100%); color:#eef7f5; box-shadow:0 40px 90px -50px rgba(6,40,36,.9); overflow:hidden; isolation:isolate; }
+.gs-card::after{ content:''; position:absolute; z-index:-1; right:-120px; top:-140px; width:420px; height:420px; border-radius:50%; background:radial-gradient(circle,rgba(95,212,198,.28),transparent 62%); }
+.gs-shield{ display:grid; place-items:center; width:clamp(64px,8vw,92px); height:clamp(64px,8vw,92px); border-radius:26px; color:#5fd4c6; background:rgba(95,212,198,.1); box-shadow:0 0 0 1px rgba(95,212,198,.28) inset; }
+.gs-shield svg{ width:58%; height:58%; }
+.gs-txt{ display:grid; gap:14px; min-width:0; }
+.gs .eye{ color:#9fe3da; }
+.gs-txt h2{ font-size:clamp(2rem,5vw,3.3rem); line-height:1.04; letter-spacing:-.045em; color:#fff; max-width:15ch; }
+.gs-txt h2 em{ color:#5fd4c6; }
+.gs-lead{ font-size:clamp(16px,1.7vw,18.5px); line-height:1.55; color:rgba(238,247,245,.86); max-width:40rem; }
+.gs-proof{ list-style:none; margin:2px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:8px 18px; }
+.gs-proof li{ display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:#d8f1ed; }
+.gs-proof i{ flex:none; width:20px; height:20px; border-radius:50%; display:grid; place-items:center; color:#0d3b36; background:#5fd4c6; }
+.gs-proof svg{ width:11px; height:11px; }
+.gs-act{ margin-top:6px; }
+.gs-act .btn{ min-height:56px; }
+.gs .gar-cond summary{ color:#9fe3da; }
+.gs .gar-in{ color:rgba(238,247,245,.86); background:rgba(255,255,255,.05); box-shadow:0 0 0 1px rgba(255,255,255,.08) inset; }
+.gs .gar-in a{ color:#9fe3da; }
+@media (max-width:640px){
+  .gs-card{ grid-template-columns:1fr; border-radius:24px; padding:26px 20px 24px; }
+  .gs-shield{ width:60px; height:60px; border-radius:18px; }
+  .gs-act .btn{ width:100%; }
+}
+/* the conditions, one tap away (wherever the guarantee is) */
+.gar-cond{ font-size:14.5px; line-height:1.55; }
+.gar-cond summary{ display:inline-flex; align-items:center; gap:6px; list-style:none; cursor:pointer; font-weight:600; color:var(--teal2); text-decoration:underline; text-underline-offset:3px; -webkit-tap-highlight-color:transparent; }
+.gar-cond summary::-webkit-details-marker{ display:none; }
+.gar-cond summary::after{ content:'+'; font-weight:700; text-decoration:none; display:inline-block; transition:transform .4s var(--e); }
+.gar-cond[open] summary::after{ transform:rotate(45deg); }
+.gar-in{ margin-top:10px; padding:16px 18px; border-radius:16px; background:var(--tint); color:var(--ink2); }
+.gar-in p{ margin:0 0 6px; }
+.gar-in ul{ margin:0 0 10px; padding-left:1.15em; }
+.gar-in li{ margin:3px 0; }
+.gar-in a{ color:var(--teal2); text-decoration:underline; text-underline-offset:3px; }
+
+/* the real result above „Ce te deranjează?”: small, beside its caption, so the answers stay in sight */
+.lfs-ba{ display:flex; align-items:center; gap:12px; margin:0; padding:8px; border-radius:16px; background:var(--tint); }
+.lfs-ba img{ flex:none; width:42%; max-width:200px; height:auto; border-radius:10px; }
+.lfs-ba figcaption{ display:grid; gap:2px; font-size:13.5px; line-height:1.35; color:var(--ink2); }
+.lfs-ba figcaption b{ font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--teal2); }
+.lfs-ba small{ margin-top:4px; font-size:11.5px; color:var(--mute); }
+.lfs-gar{ display:grid; gap:2px; padding:12px 14px; border-radius:16px; background:var(--tint); font-size:13.5px; line-height:1.45; color:var(--ink2); }
+.lfs-gar b{ font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--teal2); }

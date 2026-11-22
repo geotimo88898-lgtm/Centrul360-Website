@@ -114,7 +114,7 @@
     } else if (step === 'zone') {
       html = q('Ce zonă vrei să schimbi cel mai mult?') + '<div class="lfs-list">' + zonesNow().map(function (x) { return opt('zone', x.key, '<b>' + esc(x.label) + '</b>', st.zone === x.key); }).join('') + '</div>';
     } else if (step === 'problem') {
-      html = q('Ce te deranjează cel mai mult?', z ? esc(z.label) : '') + '<div class="lfs-list">' + ((z && z.problems) || []).map(function (p) { return opt('problem', p.key, '<b>' + esc(p.label) + '</b>', st.problem === p.key); }).join('') + '</div>';
+      html = proof(st.zone) + q('Ce te deranjează cel mai mult?', z ? esc(z.label) : '') + '<div class="lfs-list">' + ((z && z.problems) || []).map(function (p) { return opt('problem', p.key, '<b>' + esc(p.label) + '</b>', st.problem === p.key); }).join('') + '</div>';
     } else if (step === 'when') {
       html = q('Când vrei să vezi rezultatul?') + '<div class="lfs-list">' + ((offer && offer.timeline) || []).map(function (t) { return opt('when', t.key, '<b>' + esc(t.label) + '</b>', st.when === t.key); }).join('') + '</div>';
     } else if (step === 'pack') {
@@ -141,6 +141,20 @@
     }
     var el = sc.firstChild;
     if (!reduce && dir && el.animate) el.animate([{ opacity: 0, transform: 'translateX(' + (dir > 0 ? 28 : -28) + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 420, easing: 'cubic-bezier(.16,1,.3,1)' });
+  }
+  // above „Ce te deranjează?”: a real result of her zone (the owner, 22.11; only the homepage's approved cases, the strongest
+  // per zone), small beside its caption; arms have no case in the set (no photo); hair removal shows its guarantee instead
+  var BA = {
+    'abdomen-talie': ['cazul-39-hifu-abdomen-tm.webp', 1400, 946, 'HIFU abdomen', '1 ședință'],
+    'coapse-fese': ['cazul-05-liposonix-solduri.webp', 1400, 944, 'Liposonix șolduri', '1 ședință'],
+    'gusa-contur': ['cazul-16-hifu-gusa-tm-4.webp', 1283, 1400, 'HIFU gușă', '1 ședință'],
+    'fata': ['cazul-23-hifu-periocular-tm.webp', 1400, 946, 'HIFU periocular', '1 ședință'],
+  };
+  function proof(zone) {
+    if (zone === 'par-nedorit') return '<div class="lfs-gar"><b>Garanție scrisă</b>Dacă, după protocolul complet recomandat de noi, părul crește la loc ca înainte, continuăm gratuit până nu mai e nevoie.</div>';
+    var c = BA[zone]; if (!c) return '';
+    return '<figure class="lfs-ba"><img src="/brand_asset/catalog/' + c[0] + '" alt="Înainte și după: ' + esc(c[3]) + '" width="' + c[1] + '" height="' + c[2] + '" decoding="async">' +
+      '<figcaption><b>Rezultat real</b>' + esc(c[3]) + ' · ' + esc(c[4]) + '<small>Clientele noastre, fotografiate la noi. Rezultatele diferă de la o persoană la alta.</small></figcaption></figure>';
   }
   function q(t, sub) { return '<div class="lfs-q"><h3>' + t + '</h3>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>'; }
   function opt(what, v, inner, on) { return '<button type="button" class="lfs-o' + (on ? ' on' : '') + '" data-pick="' + what + '" data-v="' + esc(v) + '"><span>' + inner + '</span>' + ARROW + '</button>'; }
