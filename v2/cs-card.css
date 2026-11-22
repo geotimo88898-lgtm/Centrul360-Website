@@ -251,13 +251,14 @@ main [hidden]{ display:none !important; }
 /* no extra reason line (the owner, 22.11: „fără detalii nefolositoare”) */
 .cst-why{ display:none !important; }
 /* no PayLink for the VIP yet: one line in place of „Plătesc online”, the clinic's button the main one */
-.cst-call{ margin:0; padding:2px 0; text-align:center; font-size:14.5px; font-weight:600; color:#6b4f12; }
+.cst-call{ margin:0; padding:2px 0; text-align:center; font-size:14.5px; font-weight:600; color:#141210; }
 .cs-vipcall > [data-cs-buy][data-cs-follow], .cs-vipcall > [data-cs-help]{ display:none !important; }
 /* the scarcity line without a box (the owner, 22.11: „chenarul de urgency arată rău”): one line, its dot pulsing */
 .cst-urg{ padding:2px 0 !important; background:none !important; box-shadow:none !important; border-radius:0 !important; }
 /* its cards left, in gold: „Au mai rămas doar N carduri VIP” */
-.cst-urg:has(.cst-vipl:not([hidden])){ color:#6b4f12; }
-.cst-urg:has(.cst-vipl:not([hidden])) .dot, .cst-urg:has(.cst-vipl:not([hidden])) .dot::after{ background:#c9a04a; }
+.cst-urg:has(.cst-vipl:not([hidden])){ color:#141210; }
+.cst-urg:has(.cst-vipl:not([hidden])) .dot, .cst-urg:has(.cst-vipl:not([hidden])) .dot::after{ background:#b8862e; }
+.cst-vipl b{ color:#9a6b12; }
 .cst-vipl b{ font-weight:800; }
 .cst-city label.is-out{ grid-auto-flow:column; gap:6px; color:var(--mute2); }
 .cst-out{ font-size:10.5px; font-weight:700; letter-spacing:.02em; color:#9c0f4a; }
