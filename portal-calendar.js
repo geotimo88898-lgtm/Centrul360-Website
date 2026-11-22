@@ -425,7 +425,15 @@
   const trLine = (a) => (a.block ? treatOf(a) : [treatOf(a), Number(a.amount) > 0 ? K.lei(a.amount) : ''].filter(Boolean).join(' · '));
   // „Ședința 3 din 6”: a package session, counted by the server (api/_lib/package-next.js sessionOf)
   const pkgOf = (a) => (a && a.pkg && a.pkg.n ? 'Ședința ' + a.pkg.n + ' din ' + a.pkg.of : '');
-  const subOf = (a) => [pkgOf(a), a.online ? '🌐 online' : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ');
+  // paid online on the site (api/booking.js pay): the sum to find in myPOS, until it is cashed in (Încasează)
+  // paired by the clock with its myPOS payment (api/_lib/booking-pay.js): paid, in Încasări, never charged again at the desk;
+  // two bookings waiting for the same sum: the desk says which one paid (desk = the button, only in the editing drawer)
+  const payOn = (a) => a && a.pay === 'online-pending' && a.payAmount > 0 && !a.paidSaleId;
+  const payPaid = (a) => a && a.pay === 'online-paid' && a.paidOnline && a.paidOnline.amount > 0;
+  const payNote = (a, desk) => (payPaid(a) ? '<div class="mo-note is-good">' + icon('checkCircle') + '<span>Plătită online <b>' + K.lei(a.paidOnline.amount) + '</b> (myPOS), apare în Încasări. Nu se mai încasează la clinică.</span></div>'
+    : payOn(a) ? '<div class="mo-note">' + icon('wallet') + '<span>Plată online <b>' + K.lei(a.payAmount) + '</b> · ' + (a.payCheck > 1 ? 'de verificat: ' + a.payCheck + ' programări așteaptă aceeași sumă. Vezi în myPOS cine a plătit.' : 'de verificat în myPOS') + '</span>' +
+      (desk && a.payCheck > 1 ? '<button type="button" class="k-btn is-outline is-sm" data-paypick>Ea a plătit</button>' : '') + '</div>' : '');
+  const subOf = (a) => [pkgOf(a), a.online ? '🌐 online' : '', payPaid(a) ? 'plătită online' : payOn(a) ? 'plată online ' + K.lei(a.payAmount) : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ');
   function blockHtml(it) {
     const a = it.a, st = stOf(a);
     const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(30, (Math.min(it.e, END * 60) - it.s) * PPM - 3);
@@ -1914,7 +1922,7 @@
         body: '<dl class="k-kv cal-kv"><dt>Tratament</dt><dd>' + esc(a.treatment || '-') + '</dd>' + (pkgOf(a) ? '<dt>Pachet</dt><dd>' + esc(pkgOf(a)) + '</dd>' : '') + '<dt>Categorie</dt><dd>' + esc(K.catLabel(a) || '-') + '</dd>' + (a.amount ? '<dt>Sumă</dt><dd>' + K.lei(a.amount) + '</dd>' : '') +
           '<dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Ora</dt><dd>' + esc(span(a) || '-') + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd>' +
           '<dt>Cosmeticiană</dt><dd>' + esc(a.cosmeticianName || 'neasignat') + '</dd></dl>' +
-          markHtml(a) +
+          payNote(a) + markHtml(a) +
           (a.clientId ? '<section class="k-section cal-client" data-client-brief><h4>' + icon('user') + 'Clienta</h4><div class="k-skel" style="height:56px"></div></section>' : '') +
           '<div class="mo-note">' + icon('info') + 'Programările le face și le modifică recepția.</div>' +
           (a.clientId ? '<div class="cal-cos-acts">' + (mineAppt(a) ? '<button type="button" class="k-btn is-accent" data-offer-calc>' + icon('percent') + 'Fă oferta</button>' : '') +
@@ -1934,6 +1942,7 @@
       subtitle: '<span class="k-tag is-' + st.tone + '">' + st.label + '</span> ' + (a.online ? '<span class="k-tag is-info" title="Clienta s-a programat singură pe site">' + icon('globe') + 'Online</span> ' : '') + esc(K.relDay(a.date)) + ' · ' + esc(span(a) || 'fără oră') + ' · ' + esc(a.location),
       body:
         (a.paidSaleId ? '<div class="mo-note is-good">' + icon('checkCircle') + 'Plătită, apare în Încasări.</div>' : '') +
+        payNote(a, true) +
         '<div class="cal-status' + (pickFor(a).length > 4 ? ' is-5' : '') + '" role="group" aria-label="Status" style="--n:' + pickFor(a).length + '">' + pickFor(a).map((s) =>
           '<button type="button" class="is-' + STATUS[s].tone + (s === a.status ? ' is-on' : '') + '" data-status="' + s + '">' + icon(STATUS[s].ic) + '<span>' + STATUS[s].label + '</span></button>').join('') + '</div>' +
         (a.clientPhone ? '<div class="cal-contact">' +
@@ -1947,6 +1956,16 @@
       onMount(el) {
         const f = el.querySelector('[data-form]');
         wireForm(el, f, a.id);
+        const pp = el.querySelector('[data-paypick]');
+        if (pp) pp.addEventListener('click', async () => {
+          try {
+            const c = ((await K.api('/api/booking-pay', { action: 'list' })).checks || []).find((x) => (x.cands || []).includes(a.id));
+            if (!c) { K.ui().toast('Plata a fost deja potrivită. Reîncarcă Calendarul.', 'info'); load(true); return; }
+            if (!(await K.ui().confirm({ title: 'Plata de ' + K.lei(c.amount) + ' e a ei?', message: 'Ai văzut în myPOS că ' + (a.clientName || 'ea') + ' a plătit. Programarea devine plătită online și intră în Încasări.', confirmText: 'Da, e a ei' }))) return;
+            await K.api('/api/booking-pay', { action: 'pick', check: c.id, appt: a.id });
+            K.ui().toast('Plătită online.', 'success'); K.closeDrawer(); load(true);
+          } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+        });
         const picker = K.clientPicker(f.clientName, f.clientPhone);
         // Enter in a field saves (it used to send the page away)
         f.addEventListener('submit', (e) => { e.preventDefault(); el.querySelector('[data-save]').click(); });

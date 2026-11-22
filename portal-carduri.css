@@ -170,3 +170,5 @@
 .cd .k-tag.cd-note{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .cd .k-tag.cd-note svg{ width:11px; height:11px; }
 @media (max-width:520px){ .cd .cd-tab{ padding:7px 10px; font-size:.88rem; } }
+/* an open „⋯” menu stays above the card under its list (the owner, 22.11: the next card covered „Notă” and „Nu e interesată”) */
+section:has(.cd-mw.open), .k-card:has(.cd-mw.open){ position:relative; z-index:45; }

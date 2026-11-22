@@ -156,8 +156,8 @@
       mine.hidden = !on;
       if (!on || !v) return;
       var T = v['Timișoara'] || { left: 0 }, A = v.Arad || { left: 0 };
-      // one line (the owner, 22.11): „Au mai rămas doar N carduri VIP” (her clinic's, or both clinics before she chooses)
-      var n = city ? (v[city] || { left: 0 }).left : Math.max(0, T.left) + Math.max(0, A.left);
+      // one line (the owner, 22.11): „Au mai rămas doar N carduri VIP” (her clinic's; before she chooses, the clinic with the most left: the count is per clinic)
+      var n = city ? (v[city] || { left: 0 }).left : Math.max(0, T.left, A.left); // per clinic, never both added up
       mine.innerHTML = n > 0 ? 'Au mai rămas doar <b>' + n + '</b> ' + (n === 1 ? 'card VIP' : 'carduri VIP') : 'Cardurile VIP s-au epuizat' + (city ? ' la ' + city : '');
     });
     // a clinic with no VIP card left: „epuizat” on its button
