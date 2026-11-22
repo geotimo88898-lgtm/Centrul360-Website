@@ -180,7 +180,7 @@ html.csb-lock{ overflow:hidden; }
 /* the lead filter's own section, right after the card (the owner, 21.11 evening: proof first, one obvious action): its own
    band and one clear card; the real cases, what she gets, „Vreau planul meu”, and only under it the zones as small chips */
 .lfs-sec{ position:relative; margin:clamp(28px,5vw,56px) 0 0; padding:clamp(40px,6vw,80px) 0; background:linear-gradient(180deg,#eef9f7,#f6fcfb 70%,#fff); border-top:1px solid rgba(20,165,150,.14); }
-.lfb{ display:grid; gap:16px; max-width:900px; margin:0 auto; padding:clamp(22px,4vw,40px); border-radius:30px; background:#fff;
+.lfb{ display:grid; gap:22px; max-width:820px; margin:0 auto; padding:clamp(22px,4vw,40px); border-radius:30px; background:#fff;
   box-shadow:0 0 0 1px rgba(11,127,116,.12), 0 40px 80px -50px rgba(11,60,55,.45); text-align:center; justify-items:center; }
 .lfb-t{ max-width:20ch; font-size:clamp(1.7rem,4.6vw,2.7rem); line-height:1.08; letter-spacing:-.045em; }
 .lfb-t em{ display:block; }
@@ -188,13 +188,15 @@ html.csb-lock{ overflow:hidden; }
 .lfb-cs{ display:grid; grid-template-columns:1.48fr .92fr; gap:10px; width:100%; align-items:start; }
 .lfb-c{ margin:0; display:grid; gap:6px; text-align:left; min-width:0; }
 .lfb-c img{ width:100%; height:auto; aspect-ratio:var(--ar); border-radius:16px; background:#f2f5f5; box-shadow:0 18px 34px -24px rgba(11,40,38,.45); }
-.lfb-c figcaption{ font-size:13px; color:var(--mute); }
-.lfb-c figcaption b{ color:var(--ink); font-size:14px; }
+.lfb-c figcaption{ display:grid; font-size:14.5px; line-height:1.35; color:var(--ink2); }
+.lfb-c figcaption b{ color:var(--ink); font-weight:700; }
 .lfb-legal{ margin-top:-6px; font-size:12px; color:var(--mute2); }
-.lfb-ok{ list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; justify-content:center; gap:6px 16px; }
-.lfb-ok li{ display:flex; align-items:center; gap:7px; font-size:14.5px; font-weight:600; color:var(--ink2); }
-.lfb-ok i{ flex:none; width:20px; height:20px; border-radius:50%; display:grid; place-items:center; color:#fff; background:var(--teal); }
-.lfb-ok svg{ width:11px; height:11px; }
+/* the three promises: stacked, strong filled checks, a neat column in the middle */
+.lfb-ok{ list-style:none; margin:2px 0 0; padding:0; display:grid; gap:12px; justify-items:start; text-align:left; width:fit-content; max-width:100%; }
+.lfb-ok li{ display:flex; align-items:flex-start; gap:12px; font-size:16.5px; line-height:1.4; color:var(--ink2); }
+.lfb-ok b{ color:var(--ink); font-weight:700; }
+.lfb-ok i{ flex:none; width:28px; height:28px; margin-top:-2px; border-radius:50%; display:grid; place-items:center; color:#fff; background:var(--teal); box-shadow:0 6px 14px -6px rgba(11,127,116,.7); }
+.lfb-ok svg{ width:15px; height:15px; }
 .lfb-go{ flex-direction:column; gap:2px; width:min(100%,440px); min-height:72px; height:auto; padding:12px 22px; }
 .lfb-go-t{ display:inline-flex; align-items:center; gap:10px; font-size:18.5px; font-weight:700; }
 .lfb-go-s{ font-size:13.5px; font-weight:500; opacity:.88; letter-spacing:.01em; }
@@ -205,12 +207,11 @@ html.csb-lock{ overflow:hidden; }
 .lfb-chip:hover{ background:#e2f5f2; }
 .lfb-chip:active{ transform:scale(.97); }
 @media (max-width:720px){
-  .lfb{ padding:22px 14px 20px; border-radius:24px; gap:14px; }
+  .lfb{ padding:28px 16px 26px; border-radius:24px; gap:20px; }
   .lfb-cs{ gap:8px; }
   .lfb-c img{ border-radius:12px; }
-  .lfb-c figcaption{ font-size:12px; }
-  .lfb-ok{ gap:6px 12px; }
-  .lfb-ok li{ font-size:13.5px; }
+  .lfb-c figcaption{ font-size:14px; }
+  .lfb-ok li{ font-size:15.5px; }
 }
 /* the dock holds back while the lead filter section (or anything above it) is in view: v2/lf.js sets html.dock-hold */
 @media (max-width:640px){ html.dock-hold .dock.in{ transform:translateY(170%); } }
@@ -263,3 +264,12 @@ html.csb-lock{ overflow:hidden; }
 .lfs-ba small{ margin-top:4px; font-size:11.5px; color:var(--mute); }
 .lfs-gar{ display:grid; gap:2px; padding:12px 14px; border-radius:16px; background:var(--tint); font-size:13.5px; line-height:1.45; color:var(--ink2); }
 .lfs-gar b{ font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--teal2); }
+
+/* the Black Friday cards' glow on phones (the owner, 22.11): a sideways scroller clips what hangs out of it, so the
+   scroller gets the room the glow needs below the cards (and gives it back with a negative margin: nothing moves),
+   and its two sides fade instead of ending in a hard edge */
+@media (max-width:640px){
+  .offers,.home-of .offers{ padding-top:14px !important; padding-bottom:78px !important; margin-bottom:-56px !important;
+    -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 16px),transparent 100%); mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 16px),transparent 100%); }
+  .home-od.dots{ position:relative; z-index:1; }
+}

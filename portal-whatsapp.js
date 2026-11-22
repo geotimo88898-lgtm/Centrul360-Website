@@ -490,7 +490,7 @@
       if (a === 'lead' && C.thread && C.thread.lead) return openLead(C.thread.lead.id);
       // book her from the conversation: the Calendar's form over the chat, her name, phone and city filled in
       if (a === 'appt' && C.thread && C.thread.appointment && K.openAppointment) return K.openAppointment(C.thread.appointment.id, C.thread.appointment.date);
-      if (a === 'book' && C.thread) return K.emit('calendar:new', { clientName: named(C.thread) ? C.thread.clientName : '', clientPhone: isIg(C.thread) ? '' : localPhone(C.thread.phone), location: C.thread.location || '', treatment: C.thread.lead ? C.thread.lead.interest || '' : '' });
+      if (a === 'book' && C.thread) return K.emit('calendar:new', { clientName: named(C.thread) ? C.thread.clientName : (C.thread.lead && C.thread.lead.name && !/fără nume/i.test(C.thread.lead.name) ? C.thread.lead.name : ''), clientPhone: isIg(C.thread) ? '' : localPhone(C.thread.phone), location: C.thread.location || '', treatment: C.thread.lead ? C.thread.lead.interest || '' : '' });
       if (a === 'nuki') return nukiReply(act);
       if (a === 'transcribe') return transcribe(act);
       if (a === 'snip') return toggleSnips(act);
@@ -572,7 +572,7 @@
     const t = C.thread, d = C.slot && C.slot.d; if (!t || !d) return;
     const when = at || { date: d.date, time: d.time };
     const end = (() => { const m = /^(\d{2}):(\d{2})$/.exec(when.time); if (!m) return ''; const x = Number(m[1]) * 60 + Number(m[2]) + (d.minutes || 60); return String(Math.floor(x / 60)).padStart(2, '0') + ':' + String(x % 60).padStart(2, '0'); })();
-    K.emit('calendar:new', { clientName: named(t) ? t.clientName : '', clientPhone: isIg(t) ? '' : localPhone(t.phone), location: d.city || t.location || '', treatment: d.treatment || (t.lead ? t.lead.interest || '' : ''), date: when.date, time: when.time, endTime: end });
+    K.emit('calendar:new', { clientName: named(t) ? t.clientName : (t.lead && t.lead.name && !/fără nume/i.test(t.lead.name) ? t.lead.name : ''), clientPhone: isIg(t) ? '' : localPhone(t.phone), location: d.city || t.location || '', treatment: d.treatment || (t.lead ? t.lead.interest || '' : ''), date: when.date, time: when.time, endTime: end });
   }
   // a message for the client already booked there, asking her kindly to move, with two free hours: in her conversation, to send by hand
   function slotMove(i) {
