@@ -236,7 +236,9 @@ function cardFacts() {
   try {
     const C = require('./card-sarbatori');
     const lei = (n) => Number(n).toLocaleString('ro-RO');
-    const tiers = Object.keys(C.TIERS).map((t) => 'plătește ' + lei(t) + ' lei și primește ' + lei(C.TIERS[t]) + ' lei în tratamente').join('; ');
+    // only the cards on sale now (22.11: the 290 one is out, the VIP one is in)
+    const tiers = (C.SALE || Object.keys(C.TIERS)).map((t) => 'plătește ' + lei(t) + ' lei și primește ' + lei(C.TIERS[t]) + ' lei în tratamente' +
+      (C.VIP && Number(t) === C.VIP ? ' (cardul VIP Transformarea 360, pentru ea și toată familia, doar ' + (C.VIP_MAX || 5) + ' pe clinică)' : '')).join('; ');
     const until = new Intl.DateTimeFormat('ro-RO', { timeZone: 'Europe/Bucharest', day: 'numeric', month: 'long' }).format(new Date(C.DEADLINE));
     return 'Cardul de Sărbători Centrul360: ' + tiers + '. Pentru orice tratament din lista de prețuri, la prețul întreg, în Timișoara și Arad, valabil până pe ' + C.VALID_TXT +
       '. Se cumpără până pe ' + until + ', online (plata cu cardul) sau rezervat și plătit în clinică; vine pe WhatsApp, pe numele ei sau al celei care îl primește cadou.';
