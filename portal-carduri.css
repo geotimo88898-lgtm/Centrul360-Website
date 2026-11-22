@@ -95,3 +95,62 @@
 .cd-exists{ display:flex; gap:.5rem; align-items:flex-start; padding:.65rem .8rem; border-radius:12px; font-size:.85rem; background:var(--warn-soft); color:var(--warn); }
 .cd-exists[hidden]{ display:none; }
 .cd-exists svg{ flex:none; width:16px; height:16px; margin-top:.1rem; }
+/* „Bani potențiali” (the owner, 22.11): the open requests in lei, by clinic, and what is cashed */
+.cd-money{ margin-bottom:1rem; }
+.cd-money .k-stat-value{ font-variant-numeric:tabular-nums; }
+/* „De confirmat”, calm at 20+ rows: one compact row each (name, card, clinic, chips, the phone to tap), the history behind
+   a tap (it opens in place), the actions together: „Confirmă plata” and a small menu */
+.cd-orders .k-card-head{ flex-wrap:wrap; }
+.cd-sort{ margin-left:auto; display:inline-flex; align-items:center; gap:.4rem; font-size:.78rem; color:var(--muted); }
+.cd-of{ margin:.2rem 0 .7rem; }
+.cd-olist{ display:grid; }
+.cd-o{ border-top:1px solid var(--line); }
+.cd-o:first-child{ border-top:0; }
+.cd-o.is-off{ opacity:.66; }
+.cd-o-row{ display:flex; align-items:center; gap:.6rem; padding:.6rem 0; min-width:0; }
+.cd-o-main{ flex:1 1 auto; min-width:0; display:grid; gap:.3rem; padding:0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.cd-o-t{ display:flex; align-items:baseline; gap:.5rem; min-width:0; }
+.cd-o-t b{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.92rem; }
+.cd-o-m{ flex:none; font-size:.8rem; color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; }
+.cd-o-c{ display:flex; flex-wrap:wrap; gap:.3rem; min-width:0; }
+.cd-o-c .k-tag{ max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+.cd-lot{ background:var(--glass-2); color:var(--fg); }
+.cd-o-tel{ flex:none; display:inline-flex; align-items:center; gap:.35rem; padding:.35rem .55rem; border-radius:9px; font-size:.8rem; color:var(--fg); text-decoration:none; background:var(--glass); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.cd-o-tel svg{ width:14px; height:14px; }
+.cd-o-act{ flex:none; display:flex; align-items:center; gap:.3rem; }
+.cd-sm{ display:none; }
+.cd-o-more{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .4s cubic-bezier(.2,.8,.2,1); }
+.cd-o-more > div{ min-height:0; overflow:hidden; }
+.cd-o.open .cd-o-more{ grid-template-rows:1fr; }
+.cd-o-more .cd-trail{ margin:.35rem 0 .7rem; }
+.cd-o-sub{ margin:0; font-size:.8rem; line-height:1.45; color:var(--muted); overflow-wrap:anywhere; }
+/* the small menu: Editează, Anulează, Șterge; it grows out of its button */
+.cd-mw{ position:relative; display:inline-flex; }
+.cd-dots{ padding-inline:.45rem; }
+.cd-menu{ position:absolute; z-index:30; top:calc(100% + 6px); right:0; min-width:170px; display:grid; padding:.3rem; border-radius:12px; background:var(--paper); border:1px solid var(--line);
+  box-shadow:0 18px 40px -18px rgba(0,0,0,.6); transform-origin:top right; transform:scale(.94); opacity:0; visibility:hidden; transition:transform .25s cubic-bezier(.2,.8,.2,1), opacity .2s, visibility 0s .25s; }
+.cd-mw.open .cd-menu{ transform:none; opacity:1; visibility:visible; transition:transform .25s cubic-bezier(.2,.8,.2,1), opacity .2s; }
+.cd-menu button{ display:flex; align-items:center; gap:.5rem; padding:.55rem .6rem; border:0; border-radius:8px; background:none; color:var(--fg); font:inherit; font-size:.85rem; text-align:left; cursor:pointer; white-space:nowrap; }
+.cd-menu button:hover{ background:var(--glass-2); }
+.cd-menu button.is-bad{ color:var(--bad, #e5484d); }
+.cd-menu svg{ width:15px; height:15px; }
+/* the cards: the same compact rows */
+.cd-row .cd-o-c{ margin-top:.3rem; }
+.cd-row .cd-bar2{ margin-top:.4rem; }
+@media (max-width:720px){
+  /* a phone: the name, the card and the chips; under them the phone to tap and the actions, on one line */
+  .cd-o-row{ flex-wrap:wrap; row-gap:.4rem; padding:.55rem 0; }
+  .cd-o-main{ flex:1 1 100%; }
+  .cd-o-tel{ margin-right:auto; }
+  .cd-lg{ display:none; }
+  .cd-sm{ display:inline; }
+  .cd-sort-l{ display:none; }
+  /* the filters in one line that slides sideways */
+  .cd-of{ flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin-inline:-.2rem; padding:0 .2rem .1rem; }
+  .cd-of::-webkit-scrollbar{ display:none; }
+  .cd-of .k-chip{ flex:none; }
+}
+@media (prefers-reduced-motion:reduce){ .cd-o-more,.cd-menu{ transition:none; } }
+/* the row with its menu open sits above the next rows (a faded row makes its own layer) */
+.cd-o{ position:relative; }
+.cd-o:has(.cd-mw.open){ z-index:40; }
