@@ -207,16 +207,22 @@
   .bk-pb small s{ opacity:.85; }
   .bk-pb-go{ flex:none; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; }
   .bk-off{ flex:none; font-style:normal; font-size:13px; font-weight:800; letter-spacing:-.01em; padding:6px 10px; border-radius:999px; }
-  .bk-pb.online{ color:#fff; background:linear-gradient(180deg,#1bb9a9 0%,#0f9083 100%); box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 14px 30px -12px rgba(16,145,132,.7); }
-  .bk-pb.online .bk-pb-go{ background:rgba(255,255,255,.2); }
-  .bk-pb.online .bk-off{ background:#fff; color:#0b7f74; }
+  /* online: the rose gold of the Black Friday offers' „Rezervă oferta” (v2/kit.css .btn.book.gold, the owner, 22.11) */
+  .bk-pb.online{ position:relative; isolation:isolate; overflow:hidden; color:#3b1c14; text-shadow:0 1px 0 rgba(255,255,255,.45);
+    background:linear-gradient(125deg,rgba(214,150,135,.92) 0%,rgba(240,196,182,.9) 30%,rgba(250,224,215,.92) 45%,rgba(226,170,155,.9) 62%,rgba(205,140,125,.92) 82%,rgba(238,190,176,.92) 100%);
+    background-size:240% 240%; animation:bkRose 10s cubic-bezier(.65,0,.35,1) infinite alternate;
+    box-shadow:0 0 0 1px rgba(255,255,255,.7) inset, 0 1px 0 rgba(255,255,255,.95) inset, 0 -6px 14px -6px rgba(150,80,65,.35) inset,
+      0 0 0 1px rgba(176,108,92,.28), 0 14px 30px -12px rgba(176,108,92,.55), 0 2px 6px -2px rgba(176,108,92,.3); }
+  .bk-pb.online::after{ content:''; position:absolute; z-index:-1; left:3%; right:3%; top:1px; height:56%; border-radius:999px 999px 60% 60% / 999px 999px 40% 40%; pointer-events:none; filter:blur(.6px);
+    background:linear-gradient(180deg,rgba(255,255,255,.62) 0%,rgba(255,255,255,.18) 60%,rgba(255,255,255,0) 100%); }
+  @keyframes bkRose{ 0%{ background-position:0% 30%; } 100%{ background-position:100% 70%; } }
+  .bk-pb.online .bk-pb-go{ background:rgba(59,28,20,.12); }
+  .bk-pb.online .bk-off{ background:#0b0b0d; color:#f6d6cb; text-shadow:none; }
+  @media (prefers-reduced-motion:reduce){ .bk-pb.online{ animation:none; } }
   .bk-pb.clinic{ color:#0b0b0d; background:#f5f4f2; box-shadow:0 14px 30px -14px rgba(0,0,0,.6); }
   .bk-pb.clinic .bk-pb-go{ background:rgba(11,11,13,.08); }
-  .bk-pb.on{ box-shadow:0 0 0 3px rgba(95,212,198,.45), 0 14px 30px -14px rgba(0,0,0,.5); }
+  .bk-pb.on{ outline:2.5px solid rgba(95,212,198,.8); outline-offset:3px; }
   .bk-paynow{ text-decoration:none; margin:0 0 12px; }
-  .bk-done .bk-credit{ text-align:left; margin:0 10px 16px; }
-  .bk-credit{ display:flex; gap:10px; align-items:flex-start; margin:0 10px 2px; font-size:14px; line-height:1.45; color:rgba(245,244,242,.82); }
-  .bk-credit svg{ flex:none; margin-top:1px; color:#e9cfa3; }
   .bk-paid{ display:flex; align-items:center; gap:12px; padding:12px 12px 12px 16px; border-radius:16px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); margin:-6px 0 16px; }
   .bk-paid div{ min-width:0; }
   .bk-paid b{ display:block; font-size:14.5px; font-weight:700; }
@@ -237,7 +243,6 @@
     pin: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
     spark: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/></svg>',
     wa: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5z"/></svg>',
-    shield: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',
     next: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="#e9cfa3" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
   };
@@ -494,7 +499,6 @@
       '<p class="bk-when">' + esc(niceDay(S.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(S.time) + '<small>' + esc(S.service.title || '') + ' · Centrul360 ' + esc(S.city) + '</small></p>' +
       '<div class="bk-pay" role="group" aria-label="Plata">' +
       '<button type="button" class="bk-pb online' + (S.pay === 'online' ? ' on' : '') + '" data-pay="online"><span class="bk-pb-t"><b>Plătesc online ' + lei(now) + '</b><small><s>' + lei(full) + '</s> · toată oferta, acum</small></span><i class="bk-off">-' + PAY_OFF + '%</i>' + go + '</button>' +
-      '<p class="bk-credit">' + ICON.shield + '<span>Nu poți ajunge? Mutăm programarea, banii rămân credit (nu se returnează).</span></p>' +
       '<button type="button" class="bk-pb clinic' + (S.pay === 'clinic' ? ' on' : '') + '" data-pay="clinic"><span class="bk-pb-t"><b>Rezerv și plătesc în clinică</b><small>' + lei(full) + ', în ziua programării</small></span>' + go + '</button>' +
       '</div>';
   }
@@ -523,8 +527,7 @@
         '<div class="bk-row">' + ICON.cal + '<div><b>' + esc(niceDay(a.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(a.time) + '</b><small>' + esc(a.treatment) + '</small></div></div>' +
         '<div class="bk-row">' + ICON.pin + '<div><b>Centrul360 ' + esc(a.location) + '</b><small>' + esc(ADDR[a.location]) + '</small></div></div></div>' +
         '<a class="bk-pb online bk-paynow" href="' + esc(S.payUrl) + '"><span class="bk-pb-t"><b>Plătesc acum ' + n + '</b><small>Plata securizată prin myPOS</small></span><span class="bk-pb-go" aria-hidden="true">' + ICON.next + '</span></a>' +
-        '<p class="bk-credit">' + ICON.shield + '<span>Nu poți ajunge? Mutăm programarea, banii rămân credit (nu se returnează).</span></p>' +
-        '<div class="bk-two"><button type="button" class="bk-ghost" data-ics>' + ICON.cal + 'În calendar</button><a class="bk-ghost" href="' + MAPS[a.location] + '" target="_blank" rel="noopener">' + ICON.pin + 'Vezi pe hartă</a></div></div>';
+          '<div class="bk-two"><button type="button" class="bk-ghost" data-ics>' + ICON.cal + 'În calendar</button><a class="bk-ghost" href="' + MAPS[a.location] + '" target="_blank" rel="noopener">' + ICON.pin + 'Vezi pe hartă</a></div></div>';
     }
     return '<div class="bk-done"><div class="bk-check">' + ICON.check + '</div><p class="bk-eyebrow" style="justify-content:center">Programare făcută</p>' +
       '<h2 class="bk-h">Mai e <em>un pas.</em></h2><p>Ți-am trimis un mesaj pe WhatsApp. Ca programarea să rămână valabilă, confirm-o răspunzând la el cu „Confirm” (sau apasă butonul din mesaj).</p>' +
