@@ -127,6 +127,16 @@
     $$('.cst-go [data-cs-buy] [data-cs-v="pay"]').forEach(function (el) { el.setAttribute('data-cs-v', 'payon'); });
     $$('.cst-pts [data-cs-v="save"]').forEach(function (el) { if (!el.parentNode.querySelector('[data-cs-svon]')) el.insertAdjacentHTML('afterend', '<span data-cs-svon hidden> la plata online</span>'); });
     $$('[data-cs-gift]').forEach(function (el) { if (el._h == null) el._h = el.innerHTML; });
+    // the VIP one's reasons, under its savings (the owner, 22.11: the sales arguments we had and did not use): shared with
+    // her people (30.000 lei at 5 people = 6.000 lei each), the full review first, the long validity
+    $$('[data-cs-pts]').forEach(function (ul) {
+      if (ul.querySelector('[data-cs-vipr]')) return;
+      var first = ul.querySelector('li'), tk = first && first.querySelector('i') ? first.querySelector('i').outerHTML : '';
+      var li = function (h) { return '<li data-cs-vipr data-cs-only="9900" hidden>' + tk + '<span>' + h + '</span></li>'; };
+      var html = li('Îl împarți cu cei dragi: la 5 persoane, <b>6.000 lei</b> de tratamente fiecare') +
+        li('Începi cu <b>revizia completă</b> și planul tău personal') + li('Orice tratament, valabil până pe 30.06.2027');
+      if (first) first.insertAdjacentHTML('afterend', html); else ul.insertAdjacentHTML('afterbegin', html);
+    });
     $$('.cst-pts li span').forEach(function (sp) { if (/^La plata online/.test(sp.textContent) && sp._t == null) sp._t = sp.textContent; });
     // the ideas' sum: the 990 card's when the VIP is chosen (they are its ideas)
     $$('#exemple .eye [data-cs-v="get"]').forEach(function (el) { el.setAttribute('data-cs-v', 'getx'); });

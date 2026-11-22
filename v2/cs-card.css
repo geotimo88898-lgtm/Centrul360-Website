@@ -332,3 +332,9 @@ main [hidden]{ display:none !important; }
 .cst-t.vip small, .cs-tier.vip small{ color:rgba(224,180,86,.75) !important; }
 .cst-urg:has(.cst-vipl:not([hidden])) .dot, .cst-urg:has(.cst-vipl:not([hidden])) .dot::after{ background:#d4a645 !important; }
 .cs-tier.vip .cs-tb li::before{ background:linear-gradient(135deg,#f6dc8e,#b8862e) !important; }
+/* the VIP one's reasons under the button: its ticks and numbers in metal gold */
+.cst-pts li[data-cs-vipr] i{ color:#fff8e6; background:linear-gradient(135deg,#d4a645,#9a6b1f); }
+.cst-pts li[data-cs-vipr] b{ color:#a8792a; }
+/* with the VIP one chosen, every tick and number in the list in metal gold (one colour, not teal and gold mixed) */
+:root:has([data-cst] input[value="9900"]:checked) .cst-pts i{ color:#fff8e6; background:linear-gradient(135deg,#d4a645,#9a6b1f); }
+:root:has([data-cst] input[value="9900"]:checked) .cst-pts b{ color:#a8792a; }
