@@ -177,7 +177,7 @@
   // card, the black card is its background (brand_asset/oferte/, cut from the WhatsApp lead pictures; illustrative, never a
   // before/after). Matched on the card's own words (service key, label, title), else on its category label, so a new offer
   // gets one too. PREVIEW ONLY (/v2/...) until the owner's „da”; then PICS = true.
-  var PICS = /^\/v2\//.test(location.pathname);
+  var PICS = true;
   var PIC = [
     [/gu[sș][aă]|b[aă]rbie|dubl[aă]|mandibul/i, 'hifu-gusa'],
     [/epil|laser|full ?body|axil|inghinal/i, 'epilare'],
@@ -195,7 +195,7 @@
       var hit = PIC.filter(function (p) { return p[0].test(words); })[0] || PIC.filter(function (p) { return p[0].test(k); })[0];
       if (!hit) return;
       el.classList.add('has-pic');
-      el.insertAdjacentHTML('afterbegin', '<span class="pic" aria-hidden="true"><img src="/brand_asset/oferte/' + hit[1] + '.webp?v=2" alt="" decoding="async"></span>');
+      el.insertAdjacentHTML('afterbegin', '<span class="pic" aria-hidden="true"><img src="/brand_asset/oferte/' + hit[1] + '.webp?v=3" alt="" decoding="async"></span>');
     });
   }
 

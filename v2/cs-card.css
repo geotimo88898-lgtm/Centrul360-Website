@@ -157,6 +157,7 @@ main [hidden]{ display:none !important; }
   .cst-t{ padding:12px 9px 10px; border-radius:16px; }
   .cst-t b{ font-size:1.2rem; }
   .cst-t span{ font-size:11.5px; }
+  .cst-t span strong{ display:block; font-size:12.5px; } /* the same two lines in all three cards */
   .cst-best{ right:5px; font-size:9.5px; padding:2px 7px; }
   .cst-sub{ font-size:13px; }
 }
@@ -233,3 +234,71 @@ main [hidden]{ display:none !important; }
 .cst-help{ margin:-3px 0 2px; font-size:12.5px; line-height:1.4; color:var(--mute2); text-align:center; }
 .cst-help[hidden]{ display:none; }
 .cst-help a{ color:var(--teal2); font-weight:600; text-decoration:underline; text-underline-offset:2px; }
+
+/* the VIP card („Cardul VIP Transformarea 360”, the owner 22.11): the same small card as the others, only black with gold
+   (the owner, 22.11: „fă-l tot așa mic ca restul, doar negru”); chosen, the card in the first screen turns black and gold. */
+.cst-t.vip{ background:linear-gradient(150deg,#2b251e 0%,#15120e 55%,#0a0807 100%); box-shadow:0 0 0 1px rgba(227,194,122,.42) inset, 0 16px 30px -24px rgba(20,14,6,.8); }
+.cst-t.vip:hover{ box-shadow:0 0 0 1px rgba(227,194,122,.75) inset, 0 16px 30px -24px rgba(20,14,6,.8); }
+.cst-t.vip:has(input:checked){ background:linear-gradient(150deg,#322a21 0%,#17130f 55%,#0a0807 100%); box-shadow:0 0 0 2px #d9b465 inset, 0 18px 34px -20px rgba(40,28,8,.75); }
+.cst-t.vip:has(input:focus-visible){ outline-color:#b8862e; }
+.cst-vk{ position:absolute; top:-10px; right:10px; padding:2px 9px; border-radius:999px; font-size:10.5px; font-weight:800; letter-spacing:.12em; white-space:nowrap; color:#1a140c;
+  background:linear-gradient(150deg,#f3d589,#c9a04a); box-shadow:0 4px 10px -4px rgba(120,90,30,.6); }
+.cst-t.vip small{ color:rgba(243,213,137,.62); }
+.cst-t.vip b{ background:linear-gradient(100deg,#f7dc97 0%,#fff3c4 38%,#e3c27a 72%,#f3d589 100%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.cst-t.vip span{ color:rgba(255,246,234,.8); }
+.cst-t.vip span strong{ color:#f3d589; }
+.cst-t.vip .cst-x{ color:#f3d589; background:rgba(227,194,122,.16); }
+/* no extra reason line (the owner, 22.11: „fără detalii nefolositoare”) */
+.cst-why{ display:none !important; }
+/* no PayLink for the VIP yet: one line in place of „Plătesc online”, the clinic's button the main one */
+.cst-call{ margin:0; padding:2px 0; text-align:center; font-size:14.5px; font-weight:600; color:#6b4f12; }
+.cs-vipcall > [data-cs-buy][data-cs-follow], .cs-vipcall > [data-cs-help]{ display:none !important; }
+/* the scarcity line without a box (the owner, 22.11: „chenarul de urgency arată rău”): one line, its dot pulsing */
+.cst-urg{ padding:2px 0 !important; background:none !important; box-shadow:none !important; border-radius:0 !important; }
+/* its cards left, in gold: „Au mai rămas doar N carduri VIP” */
+.cst-urg:has(.cst-vipl:not([hidden])){ color:#6b4f12; }
+.cst-urg:has(.cst-vipl:not([hidden])) .dot, .cst-urg:has(.cst-vipl:not([hidden])) .dot::after{ background:#c9a04a; }
+.cst-vipl b{ font-weight:800; }
+.cst-city label.is-out{ grid-auto-flow:column; gap:6px; color:var(--mute2); }
+.cst-out{ font-size:10.5px; font-weight:700; letter-spacing:.02em; color:#9c0f4a; }
+@media (max-width:640px){
+  .cst-vk{ right:5px; font-size:9.5px; padding:2px 7px; }
+}
+/* the card in the first screen, VIP: black with gold, the same ribbon, bow, holly and sprig (cross-fade, no jump) */
+.csc-card::before{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:0; transition:opacity .55s var(--e);
+  background:radial-gradient(70% 60% at 18% 8%,rgba(255,241,201,.14),transparent 62%), radial-gradient(80% 70% at 100% 100%,rgba(0,0,0,.6),transparent 64%),
+    linear-gradient(138deg,#3a3229 0%,#221d18 26%,#14110e 54%,#0b0907 78%,#050403 100%); }
+.is-vip .csc-card::before{ opacity:1; }
+.csc-edge{ transition:background .55s var(--e); }
+.is-vip .csc-edge{ background:linear-gradient(160deg,#3a3229,#050403); }
+.is-vip .csc-card{ box-shadow:0 1px 0 rgba(255,241,201,.3) inset, 0 0 0 1px rgba(227,194,122,.5) inset, 0 50px 90px -40px rgba(20,14,6,.65), 0 22px 36px -22px rgba(20,14,6,.55); }
+.is-vip .csc-gold{ filter:drop-shadow(0 .22cqw 0 rgba(0,0,0,.75)) drop-shadow(0 0 .35cqw rgba(0,0,0,.5)); }
+.is-vip .csc-val b{ font-size:10.8cqw; }
+.is-vip .csc-val small{ color:#f1dfb4; text-shadow:0 .2cqw .4cqw rgba(0,0,0,.5); }
+.is-vip .csc-bot b, .is-vip .csc-brand b{ color:#fbecc6; }
+.is-vip .csc-rib{ box-shadow:0 0 0 .25cqw rgba(255,240,200,.3) inset, 0 .8cqw 2cqw rgba(0,0,0,.45); }
+.csc-stage.is-vip::before{ background:radial-gradient(circle at 48% 46%,rgba(227,194,122,.34),rgba(140,105,45,.12) 48%,transparent 70%); }
+.csc-stage.is-vip .csc-shadow{ background:radial-gradient(closest-side,rgba(30,22,10,.34),transparent); }
+.csc-stage.is-vip .csc-dust i:nth-child(2n){ background:#e3c27a; box-shadow:0 0 10px rgba(227,194,122,.9); }
+
+/* the VIP card lower on the page, among the three */
+.cs-tier.vip{ background:linear-gradient(160deg,#2b251e 0%,#15120e 55%,#0a0807 100%); color:#fbecc6; box-shadow:0 0 0 1px rgba(227,194,122,.45) inset, 0 40px 70px -40px rgba(20,14,6,.6); }
+.cs-tier.vip .cs-vk{ color:#1a140c; background:linear-gradient(150deg,#f3d589,#c9a04a); box-shadow:0 8px 18px -8px rgba(120,90,30,.6); white-space:nowrap; }
+.cs-tier.vip small{ color:rgba(243,213,137,.62); }
+.cs-tier.vip .cs-tp{ background:linear-gradient(100deg,#f7dc97 0%,#fff3c4 38%,#e3c27a 72%,#f3d589 100%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.cs-tier.vip .cs-tg{ color:rgba(255,246,234,.85); }
+.cs-tier.vip .cs-tg strong{ color:#f3d589; }
+.cs-tier.vip .cs-ts{ color:rgba(255,246,234,.6); }
+.cs-tier.vip .cs-mul{ color:#f3d589; background:rgba(227,194,122,.16); }
+.cs-tier.vip .cs-tb{ border-top-color:rgba(227,194,122,.22); color:rgba(255,246,234,.85); }
+.cs-tier.vip .btn.ghost{ color:#1a140c; background:linear-gradient(150deg,#f3d589,#d9b465); box-shadow:none; border-color:transparent; }
+.is-vip .csc-flakes g > path:first-child{ display:none; } /* no flake behind its longer label */
+
+/* the online payment's gift, a small ribbon sitting on „Plătesc online” (22.11): rose and gold, one line; the clinic button plain */
+.cst-gift{ justify-self:center; position:relative; z-index:1; margin:0 0 -16px; padding:5px 14px 13px; border-radius:12px 12px 0 0; font-size:12.5px; line-height:1.2; font-weight:650; letter-spacing:-.005em;
+  color:#7d1240; white-space:nowrap; background:linear-gradient(100deg,#fde7ef,#fbefd6); box-shadow:0 0 0 1px rgba(201,160,74,.38) inset; }
+.cst-gift + .btn{ position:relative; z-index:2; }
+.cs-vipcall > .cst-gift, .cst-go.is-done > .cst-gift{ display:none !important; }
+@media (max-width:380px){ .cst-gift{ font-size:11.5px; padding:5px 10px 13px; } }
+/* no x2 / x2,5 / x3 chips in the three cards (the owner, 22.11) */
+.cst-t .cst-x{ display:none !important; }

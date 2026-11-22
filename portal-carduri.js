@@ -14,10 +14,20 @@
   if (!K) return;
   const { esc, icon } = K;
   // of: the orders' filter (open, rezervat, lead, neplatita, appt, lot:N, anulate); os: their order (new, appt)
-  const S = { d: null, q: '', f: 'all', box: null, busy: false, of: 'open', os: 'new', open: new Set() };
+  // tab: 'req' („De confirmat”) or 'int' („Interesate”, api/_lib/card-interested.js); int: its list, loaded after the page
+  const S = { d: null, q: '', f: 'all', box: null, busy: false, of: 'open', os: 'new', open: new Set(), tab: 'req', int: null };
   const STATE = { activ: ['Activ', 'is-good'], folosit: ['Folosit', 'is-done'], expirat: ['Expirat', 'is-warn'], anulat: ['Anulat', 'is-bad'], rezervat: ['Rezervat', 'is-info'], lead: ['Lead', 'is-info'], asteptare: ['În așteptarea plății', 'is-warn'] };
-  const FILTERS = [['all', 'Toate'], ['activ', 'Active'], ['folosit', 'Folosite'], ['expirat', 'Expirate'], ['anulat', 'Anulate']];
+  const FILTERS = [['all', 'Toate'], ['activ', 'Active'], ['folosit', 'Folosite'], ['expirat', 'Expirate'], ['anulat', 'Anulate'], ['vip', 'VIP']];
   const lei = (n) => K.lei(n);
+  // the VIP card („Cardul VIP Transformarea 360”, 9.900 → 30.000, 5 per clinic, the owner 22.11); 290 is out of sale, its
+  // orders still shown and worked as they are
+  const VIP = 9900;
+  const isVip = (x) => Number(x && typeof x === 'object' ? x.tier : x) === VIP;
+  const tierTxt = (t) => (isVip(t) ? 'VIP 9.900 lei' : t + ' lei');
+  const TIER_SEG = [['490', '490 → 1.000'], ['990', '990 → 2.500'], ['9900', 'VIP 9.900']];
+  const vipTag = '<span class="k-tag cd-vip">VIP</span>';
+  // the VIP's full review and plan, booked from her appointments (api/_lib/card-sarbatori.js orderExtras)
+  const reviewTag = (r) => (r ? '<span class="k-tag ' + (r.state === 'booked' ? 'is-good' : 'is-warn') + ' cd-rev">' + icon('calendar') + (r.state === 'booked' ? 'Revizie programată ' + r.date.slice(8, 10) + '.' + r.date.slice(5, 7) + (r.time ? ', ' + r.time : '') : 'Revizie: de programat') + '</span>' : '');
   const when = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? new Date(t).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', day: 'numeric', month: 'short' }) + ', ' + new Date(t).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' }) : ''; };
   const dayOf = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? new Date(t).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', day: 'numeric', month: 'short', year: 'numeric' }) : ''; };
   const api = (b) => K.api('/api/card-sarbatori', b);
@@ -27,7 +37,7 @@
   function mount(p) {
     S.box = p;
     p.classList.add('k-panel', 'cd');
-    p.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Carduri de Sărbători</h2></div><div class="k-head-actions"><button type="button" class="k-btn is-outline admin-only hidden" data-cd-stock>' + icon('sliders') + 'Valuri</button><button type="button" class="k-btn is-outline" data-cd-req>' + icon('plus') + 'Adaugă cerere</button><button type="button" class="k-btn is-primary" data-cd-add>' + icon('plus') + 'Adaugă card plătit</button></div></div>' +
+    p.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Carduri de Sărbători</h2></div><div class="k-head-actions"><button type="button" class="k-btn is-outline admin-only hidden" data-cd-stock>' + icon('sliders') + 'Valuri</button><button type="button" class="k-btn is-outline" data-cd-iadd>' + icon('plus') + 'Adaugă interesată</button><button type="button" class="k-btn is-outline" data-cd-req>' + icon('plus') + 'Adaugă cerere</button><button type="button" class="k-btn is-primary" data-cd-add>' + icon('plus') + 'Adaugă card plătit</button></div></div>' +
       '<div data-cd-body><div class="k-skel" style="height:110px;border-radius:18px"></div><div class="k-skel" style="height:360px;margin-top:1rem;border-radius:18px"></div></div>';
     p.addEventListener('click', onClick);
     p.addEventListener('input', (e) => { if (e.target.matches('[data-cd-q]')) { S.q = e.target.value; paintList(); } });
@@ -37,8 +47,12 @@
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.box) closeMenus(); });
   }
   async function load(quiet) {
-    try { S.d = await api({ action: 'list', scan: !quiet }); const sb = S.box.querySelector('[data-cd-stock]'); if (sb) sb.classList.toggle('hidden', S.d.role !== 'admin'); paint(); }
+    try { S.d = await api({ action: 'list', scan: !quiet }); const sb = S.box.querySelector('[data-cd-stock]'); if (sb) sb.classList.toggle('hidden', S.d.role !== 'admin'); paint(); loadInt(); }
     catch (err) { const b = S.box && S.box.querySelector('[data-cd-body]'); if (b && !S.d) b.innerHTML = '<section class="k-card">' + K.empty('alert', 'Nu am putut încărca cardurile', esc(K.errText(err))) + '</section>'; }
+  }
+
+  async function loadInt() {
+    try { S.int = await api({ action: 'interested' }); paintOrders(); } catch (err) { if (!S.int) S.int = { people: [], potential: { total: 0 }, error: K.errText(err) }; paintOrders(); }
   }
 
   // ------------------------------------------------------------------ the page
@@ -91,6 +105,7 @@
       case 'cancelled': return n === 'ea' ? 'a renunțat' : n && n !== 'team' ? n : 'anulată';
       case 'edited': return 'modificată' + (n ? ' ' + n : '');
       case 'replaced': return 'a înlocuit comanda ei online neplătită (același card)';
+      case 'moved': return 'mutată la Interesate' + (n ? ' ' + n : '');
       case 'rez_msg': return failed ? 'WhatsApp „ți-am rezervat cardul” neplecat' + (why ? ' (' + why + ')' : '') : 'WhatsApp trimis: ți-am rezervat cardul';
       default: return '';
     }
@@ -106,11 +121,13 @@
     box.innerHTML = '<section class="k-card cd-orders cd-checks"><div class="k-card-head"><h3>De verificat în myPOS</h3><span class="k-muted">' + list.length + '</span></div>' +
       list.map((c) => '<div class="cd-check"><p class="cd-check-h">' + icon('alert') + '<span>Plată online de <b>' + lei(c.amount) + '</b>, ' + esc(when(c.at)) + '. Se potrivește cu ' + c.cands.length + ' comenzi: uită-te în myPOS cine a plătit și alege-o pe a ei.</span></p>' +
         '<div class="k-list">' + c.cands.map((o) => '<div class="k-row cd-order"><div class="k-row-main"><div class="k-row-title">' + esc(o.name || 'Fără nume') + ' · telefon •••' + esc(o.last3) + '</div>' +
-          '<div class="k-row-sub">comandată ' + esc(when(o.created)) + ' · ' + esc(o.city) + ' · ' + o.tier + ' lei</div></div>' +
+          '<div class="k-row-sub">comandată ' + esc(when(o.created)) + ' · ' + esc(o.city) + ' · ' + tierTxt(o.tier) + '</div></div>' +
           '<div class="k-row-end"><button type="button" class="k-btn is-primary is-sm" data-cd-pick="' + esc(c.id) + '" data-id="' + esc(o.id) + '">' + icon('check') + 'E a ei</button></div></div>').join('') + '</div></div>').join('') + '</section>';
   }
   // „Bani potențiali” (the owner, 22.11): what the open requests are worth, by clinic, and what is already cashed
   const isOpen = (o) => !o.byHer && !o.cancelled;
+  // the VIP cards left in a clinic („VIP 4 din 5”)
+  const vipLeft = (c) => { const v = S.d.vip && S.d.vip[c]; return v ? ' · VIP ' + (v.left > 0 ? v.left + ' din ' + v.max : 'epuizat') : ''; };
   function paintMoney() {
     const box = S.box.querySelector('[data-cd-money]');
     if (!box) return;
@@ -121,8 +138,8 @@
     const n = (l) => l.length + (l.length === 1 ? ' cerere' : ' cereri');
     box.innerHTML = '<div class="k-grid c4 cd-money">' +
       tile('is-accent', 'Bani potențiali', lei(sum(open)), n(open) + ' deschise') +
-      tile('', 'Timișoara', lei(sum(city('Timișoara'))), n(city('Timișoara')) + ' · încasat ' + lei(by['Timișoara'] || 0)) +
-      tile('', 'Arad', lei(sum(city('Arad'))), n(city('Arad')) + ' · încasat ' + lei(by.Arad || 0)) +
+      tile('', 'Timișoara', lei(sum(city('Timișoara'))), n(city('Timișoara')) + ' · încasat ' + lei(by['Timișoara'] || 0) + vipLeft('Timișoara')) +
+      tile('', 'Arad', lei(sum(city('Arad'))), n(city('Arad')) + ' · încasat ' + lei(by.Arad || 0) + vipLeft('Arad')) +
       tile('is-good', 'Încasat deja', lei(t.money || 0), (t.cards || 0) + ' carduri plătite') + '</div>';
   }
   const DAYS = ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă'];
@@ -133,14 +150,14 @@
     const open = all.filter(isOpen);
     const lots = [...new Set(open.filter((o) => o.lot).map((o) => o.lot.n))].sort((a, b) => a - b);
     const f = [['open', 'Deschise', open.length], ['rezervat', 'Rezervate', open.filter((o) => kind(o) === 'rezervat').length], ['lead', 'Lead', open.filter((o) => kind(o) === 'lead').length],
-      ['neplatita', 'Online neplătite', open.filter((o) => kind(o) === 'neplatita').length], ['appt', 'Au programare', open.filter((o) => o.appt).length]]
+      ['neplatita', 'Online neplătite', open.filter((o) => kind(o) === 'neplatita').length], ['appt', 'Au programare', open.filter((o) => o.appt).length], ['vip', 'VIP', open.filter(isVip).length]]
       .concat(lots.map((n) => ['lot:' + n, 'Lot ' + n, open.filter((o) => o.lot && o.lot.n === n).length]))
       .concat([['anulate', 'Anulate', all.filter((o) => o.cancelled).length]]);
     return f.filter((x) => x[2] || x[0] === 'open' || x[0] === S.of);
   }
   function pickOrders(all) {
     const f = S.of;
-    let l = all.filter((o) => (f === 'anulate' ? o.cancelled : f === 'open' ? !o.cancelled : isOpen(o) && (f === 'appt' ? !!o.appt : /^lot:/.test(f) ? o.lot && 'lot:' + o.lot.n === f : kind(o) === f)));
+    let l = all.filter((o) => (f === 'anulate' ? o.cancelled : f === 'open' ? !o.cancelled : isOpen(o) && (f === 'appt' ? !!o.appt : f === 'vip' ? isVip(o) : /^lot:/.test(f) ? o.lot && 'lot:' + o.lot.n === f : kind(o) === f)));
     if (S.os === 'appt') l = l.slice().sort((a, b) => (a.appt ? a.appt.date + a.appt.time : '9') .localeCompare(b.appt ? b.appt.date + b.appt.time : '9'));
     return l;
   }
@@ -152,13 +169,13 @@
     const st = o.cancelled ? ['Anulată', 'is-bad'] : isLead ? ['Lead', 'is-info'] : o.byHer ? ['A renunțat', 'is-bad'] : unpaid ? ['Neplătită', 'is-warn'] : o.pay === 'online' ? ['Online', 'is-info'] : ['Rezervat', 'is-info'];
     const what = isLead ? 'Lead din reclamă · alege cum plătește' : o.cancelled ? 'Anulată' : o.byHer ? 'A renunțat la plata online' : unpaid ? 'A început plata online · neplătită' + (over ? '' : ' · ținut până la ' + hm(o.heldUntil, o.created)) :
       o.via === 'whatsapp' ? 'Din mesajul WhatsApp · plătește în clinică' : o.via === 'portal' ? 'Adăugată în portal · plătește în clinică' : o.converted ? 'Plătește în clinică · a început online' : 'Plătește în clinică';
-    const chips = '<span class="k-tag ' + st[1] + '">' + st[0] + '</span>' + (o.lot ? '<span class="k-tag cd-lot">' + esc(lotTxt(o.lot)) + '</span>' : '') +
+    const chips = (isVip(o) ? vipTag : '') + '<span class="k-tag ' + st[1] + '">' + st[0] + '</span>' + (o.lot ? '<span class="k-tag cd-lot">' + esc(lotTxt(o.lot)) + '</span>' : '') +
       (o.appt ? '<span class="k-tag is-good cd-appt">' + icon('calendar') + esc(apptTxt(o.appt)) + '</span>' : '') + (call ? '<span class="k-tag is-warn">' + icon('phone') + 'Sun-o</span>' : '');
     const open = S.open.has(o.id), dead = o.byHer || o.cancelled;
-    const menu = (dead ? '' : '<button type="button" data-cd-edit="' + esc(o.id) + '">' + icon('pen') + 'Editează</button><button type="button" data-cd-cancel="' + esc(o.id) + '">' + icon('ban') + 'Anulează</button>') +
+    const menu = (dead ? '' : '<button type="button" data-cd-edit="' + esc(o.id) + '">' + icon('pen') + 'Editează</button><button type="button" data-cd-toint="' + esc(o.id) + '">' + icon('star') + 'Mută la Interesate</button><button type="button" data-cd-cancel="' + esc(o.id) + '">' + icon('ban') + 'Anulează</button>') +
       (admin ? '<button type="button" class="is-bad" data-cd-del="' + esc(o.id) + '">' + icon('trash') + 'Șterge</button>' : '');
     return '<div class="cd-o' + (dead ? ' is-off' : '') + (open ? ' open' : '') + '" data-o="' + esc(o.id) + '"><div class="cd-o-row">' +
-      '<button type="button" class="cd-o-main" data-cd-x="' + esc(o.id) + '" aria-expanded="' + open + '"><span class="cd-o-t"><b>' + esc(o.name || 'Fără nume') + '</b><span class="cd-o-m">' + (o.qty > 1 ? o.qty + ' × ' : '') + o.tier + ' lei · ' + esc(o.city) + '</span></span>' +
+      '<button type="button" class="cd-o-main" data-cd-x="' + esc(o.id) + '" aria-expanded="' + open + '"><span class="cd-o-t"><b>' + esc(o.name || 'Fără nume') + '</b><span class="cd-o-m">' + (o.qty > 1 ? o.qty + ' × ' : '') + tierTxt(o.tier) + ' · ' + esc(o.city) + '</span></span>' +
         '<span class="cd-o-c">' + chips + '</span></button>' +
       '<a class="cd-o-tel" href="' + K.tel(o.phone) + '" aria-label="Sună">' + icon('phone') + '<span>' + esc(o.phone) + '</span></a>' +
       '<div class="cd-o-act">' + (dead ? '' : '<button type="button" class="k-btn is-primary is-sm" data-cd-confirm="' + esc(o.id) + '" data-via="' + (o.pay === 'online' ? 'online' : 'clinica') + '">' + icon('check') +
@@ -167,17 +184,88 @@
       '<div class="cd-o-more"><div><p class="cd-o-sub">' + esc(what) + ' · ' + esc(when(o.created)) + (o.names.some(Boolean) ? ' · pe numele: ' + esc(o.names.map((n) => n || 'ea').join(', ')) : '') +
         (NAMEFROM[o.nameFrom] && o.via !== 'portal' ? ' · numele ' + NAMEFROM[o.nameFrom] : '') + (o.note ? ' · ' + esc(o.note) : '') + '</p>' + trailHtml(o) + '</div></div></div>';
   }
+  // the two lists side by side, as tabs: „De confirmat” (the requests) and „Interesate” (the owner, 22.11)
+  const ints = () => ((S.int && S.int.people) || []).filter((x) => !x.hidden);
+  function tabs(nReq) {
+    const t = (k, l, n) => '<button type="button" role="tab" class="cd-tab' + (S.tab === k ? ' is-on' : '') + '" aria-selected="' + (S.tab === k) + '" data-cd-tab="' + k + '">' + l + '<span>' + n + '</span></button>';
+    return '<div class="cd-tabs" role="tablist">' + t('req', 'De confirmat', nReq) + t('int', 'Interesate', S.int ? ints().length : '…') + '</div>';
+  }
   function paintOrders() {
     paintMoney(); paintChecks();
     const box = S.box.querySelector('[data-cd-orders]'), all = S.d.orders || [];
-    if (!all.length) { box.innerHTML = ''; return; }
+    if (!box) return;
+    if (S.tab === 'int') { box.innerHTML = paintInt(all.filter(isOpen).length); return; }
     const now = Date.now(), admin = S.d.role === 'admin';
     if (!orderFilters(all).some((x) => x[0] === S.of)) S.of = 'open';
     const list = pickOrders(all);
-    box.innerHTML = '<section class="k-card cd-orders"><div class="k-card-head"><h3>De confirmat</h3><span class="k-muted">' + all.filter(isOpen).length + '</span>' +
+    box.innerHTML = '<section class="k-card cd-orders"><div class="k-card-head">' + tabs(all.filter(isOpen).length) +
       '<label class="cd-sort"><span class="cd-sort-l">Ordine</span><select data-cd-sort><option value="new"' + (S.os === 'new' ? ' selected' : '') + '>cele mai noi</option><option value="appt"' + (S.os === 'appt' ? ' selected' : '') + '>după programare</option></select></label></div>' +
-      '<div class="k-chips cd-of">' + orderFilters(all).map(([k, l, n]) => '<button type="button" class="k-chip' + (S.of === k ? ' is-on' : '') + '" data-cd-of="' + esc(k) + '">' + esc(l) + '<span>' + n + '</span></button>').join('') + '</div>' +
-      (list.length ? '<div class="cd-olist">' + list.map((o) => orderRow(o, now, admin)).join('') + '</div>' : K.empty('gift', 'Nimic aici', 'Alege alt filtru.')) + '</section>';
+      (all.length ? '<div class="k-chips cd-of">' + orderFilters(all).map(([k, l, n]) => '<button type="button" class="k-chip' + (S.of === k ? ' is-on' : '') + '" data-cd-of="' + esc(k) + '">' + esc(l) + '<span>' + n + '</span></button>').join('') + '</div>' : '') +
+      (list.length ? '<div class="cd-olist">' + list.map((o) => orderRow(o, now, admin)).join('') + '</div>' : K.empty('gift', all.length ? 'Nimic aici' : 'Nicio cerere', all.length ? 'Alege alt filtru.' : 'Cererile de card apar aici.')) + '</section>';
+  }
+  // „Interesate”: who answered the campaign's message with words and has no order; by hand too
+  const said = (x) => (x.said && x.said.text ? '„' + x.said.text + '”' + (x.said.at ? ' · ' + hm(x.said.at) : '') : x.manual ? 'adăugată de mână' + (x.by ? ' de ' + x.by : '') + (x.from === 'cerere' ? ', din cereri' : '') : '');
+  function intRow(x) {
+    const k = x.k, open = S.open.has('i' + k);
+    const chips = (isVip(x.tier) ? vipTag : '') + (x.lot ? '<span class="k-tag cd-lot">' + esc(lotTxt(x.lot)) + '</span>' : '<span class="k-tag is-info">De mână</span>') +
+      (x.appt ? '<span class="k-tag is-good cd-appt">' + icon('calendar') + esc(apptTxt(x.appt)) + '</span>' : '') +
+      (x.note ? '<span class="k-tag cd-note">' + icon('pen') + esc(x.note.text) + '</span>' : '');
+    return '<div class="cd-o cd-i' + (open ? ' open' : '') + '" data-i="' + esc(k) + '"><div class="cd-o-row">' +
+      '<button type="button" class="cd-o-main" data-cd-ix="' + esc(k) + '" aria-expanded="' + open + '"><span class="cd-o-t"><b>' + esc(x.name || 'Fără nume') + '</b><span class="cd-o-m">' + tierTxt(x.tier) + (x.city ? ' · ' + esc(x.city) : '') + '</span></span>' +
+        (said(x) ? '<span class="cd-i-q">' + esc(said(x)) + '</span>' : '') + '<span class="cd-o-c">' + chips + '</span></button>' +
+      '<a class="cd-o-tel" href="' + K.tel(x.phone) + '" aria-label="Sună">' + icon('phone') + '<span>' + esc(x.phone) + '</span></a>' +
+      '<div class="cd-o-act"><a class="k-btn is-outline is-sm cd-i-chat" href="#mesaje" data-chat="' + esc(x.phone) + '" data-chat-name="' + esc(x.name || '') + '" data-chat-city="' + esc(x.city || '') + '">' + icon('chat') + '<span class="cd-lg">Mesaje</span></a>' +
+        '<button type="button" class="k-btn is-primary is-sm" data-cd-mk="' + esc(k) + '">' + icon('plus') + '<span class="cd-lg">Fă cerere</span><span class="cd-sm">Cerere</span></button>' +
+        '<span class="cd-mw"><button type="button" class="k-btn is-ghost is-sm cd-dots" data-cd-menu aria-haspopup="true" aria-expanded="false" aria-label="Mai mult">' + icon('more') + '</button><span class="cd-menu" role="menu">' +
+        '<button type="button" data-cd-iedit="' + esc(k) + '">' + icon('pen') + 'Editează</button><button type="button" data-cd-inote="' + esc(k) + '">' + icon('chat') + 'Notă</button>' +
+        '<button type="button" class="is-bad" data-cd-ihide="' + esc(k) + '">' + icon('ban') + 'Nu e interesată</button></span></span></div></div>' +
+      '<div class="cd-o-more"><div><p class="cd-o-sub">' + esc([x.said && x.n > 1 ? x.n + ' mesaje de la ea' : '', x.note ? 'Notă de ' + (x.note.byName || 'echipă') + ', ' + hm(x.note.at) : ''].filter(Boolean).join(' · ') || 'Fără alte detalii.') + '</p></div></div></div>';
+  }
+  function paintInt(nReq) {
+    const I = S.int, list = ints(), p = (I && I.potential) || {};
+    return '<section class="k-card cd-orders cd-int"><div class="k-card-head">' + tabs(nReq) + '</div>' +
+      (!I ? '<div class="k-skel" style="height:120px;border-radius:14px"></div>' :
+      '<p class="cd-int-pot"><b>Potențial ' + lei(p.total || 0) + '</b><span>' + list.length + (list.length === 1 ? ' persoană' : ' persoane') + ' · Timișoara ' + lei(p['Timișoara'] || 0) + ' · Arad ' + lei(p.Arad || 0) + '</span><small>separat de cereri</small></p>' +
+      (list.length ? '<div class="cd-olist">' + list.map(intRow).join('') + '</div>' : K.empty('chat', 'Nicio interesată', I.error ? esc(I.error) : 'Cine răspunde cu un mesaj la campania cardului apare aici.'))) + '</section>';
+  }
+  const intOf = (k) => ((S.int && S.int.people) || []).find((x) => x.k === k);
+  // „Adaugă interesată” and „Editează”: name, phone (the contact search), clinic, card, note
+  function intDrawer(from, x) {
+    const ed = !!x, v0 = x || {};
+    K.drawer({
+      from, title: ed ? 'Editează interesata' : 'Adaugă interesată', icon: 'star', width: 520,
+      subtitle: 'Apare la „Interesate”. „Fă cerere” o mută la „De confirmat”.',
+      body: '<form class="k-form cd-waves cd-form" data-f>' +
+        '<div class="k-grid c2">' + K.field('Numele ei', '<input name="name" autocomplete="off" required value="' + esc(v0.name || '') + '">') + K.field('Telefon (WhatsApp)', '<input name="phone" inputmode="tel" autocomplete="off" required value="' + esc(v0.phone || '') + '">') + '</div>' +
+        K.field('Clinica', K.seg('city', [['Timișoara', 'Timișoara'], ['Arad', 'Arad']], v0.city || 'Timișoara')) +
+        K.field('Cardul', K.seg('tier', (Number(v0.tier) === 290 ? [['290', '290 → 500']] : []).concat(TIER_SEG), String(v0.tier || 990))) +
+        K.field('Notă', '<textarea name="note" rows="2" maxlength="200" placeholder="ex. sunată, revine luni">' + esc((v0.note && v0.note.text) || '') + '</textarea>') + '</form>',
+      footer: '<button type="button" class="k-btn" data-cancel>Renunță</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + (ed ? 'Salvează' : 'Adaugă') + '</button>',
+      onMount(root, h) {
+        const f = root.querySelector('[data-f]');
+        contacts(f);
+        root.querySelector('[data-cancel]').addEventListener('click', () => h.close());
+        root.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          const v = K.formValues(f);
+          try { await api({ action: 'int_add', name: v.name, phone: v.phone, city: v.city, tier: Number(v.tier), note: v.note, was: ed ? v0.phone : '' }); h.close(); K.ui().toast(ed ? 'Salvat.' : 'Adăugată la Interesate.', 'success'); S.tab = 'int'; await loadInt(); }
+          catch (err) { K.ui().toast(REQERR[err.code] || K.errText(err), 'error'); }
+        }));
+      },
+    });
+  }
+  function noteDrawer(from, x) {
+    K.drawer({
+      from, title: 'Notă', icon: 'pen', width: 440, subtitle: esc(x.name || x.phone),
+      body: '<form class="k-form" data-f>' + K.field('Notă', '<textarea name="note" rows="3" maxlength="200" placeholder="ex. sunată, revine luni">' + esc((x.note && x.note.text) || '') + '</textarea>') + '</form>',
+      footer: '<button type="button" class="k-btn" data-cancel>Renunță</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
+      onMount(root, h) {
+        root.querySelector('[data-cancel]').addEventListener('click', () => h.close());
+        root.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          try { await api({ action: 'int_note', phone: x.phone, note: K.formValues(root.querySelector('[data-f]')).note }); h.close(); await loadInt(); }
+          catch (err) { K.ui().toast(K.errText(err), 'error'); }
+        }));
+      },
+    });
   }
   // the row opens in place (its history), the menu from its button
   function toggleRow(id) {
@@ -194,19 +282,19 @@
     const box = S.box && S.box.querySelector('[data-cd-rows]');
     if (!box || !S.d) return;
     const all = S.d.cards || [];
-    const n = (k) => (k === 'all' ? all.length : all.filter((c) => c.state === k).length);
-    S.box.querySelector('[data-cd-chips]').innerHTML = FILTERS.map(([k, l]) => '<button type="button" class="k-chip' + (S.f === k ? ' is-on' : '') + '" data-cd-f="' + k + '">' + l + '<span>' + n(k) + '</span></button>').join('');
+    const n = (k) => (k === 'all' ? all.length : k === 'vip' ? all.filter(isVip).length : all.filter((c) => c.state === k).length);
+    S.box.querySelector('[data-cd-chips]').innerHTML = FILTERS.filter(([k]) => k !== 'vip' || n('vip') || S.f === 'vip').map(([k, l]) => '<button type="button" class="k-chip' + (S.f === k ? ' is-on' : '') + '" data-cd-f="' + k + '">' + l + '<span>' + n(k) + '</span></button>').join('');
     const q = K.norm ? K.norm(S.q) : S.q.toLowerCase();
     const hit = (c) => !q || [c.code, c.recipient, c.buyer, c.phone].some((x) => (K.norm ? K.norm(x || '') : String(x || '').toLowerCase()).includes(q));
-    const rows = all.filter((c) => (S.f === 'all' || c.state === S.f) && hit(c));
+    const rows = all.filter((c) => (S.f === 'all' || (S.f === 'vip' ? isVip(c) : c.state === S.f)) && hit(c));
     if (!rows.length) { box.innerHTML = K.empty('gift', all.length ? 'Niciun card găsit' : 'Niciun card plătit încă', all.length ? 'Încearcă alt cod sau alt nume.' : 'Un card apare aici imediat ce plata e confirmată.'); return; }
     box.innerHTML = '<div class="k-list cd-rows">' + rows.map((c) => {
       const pct = c.value ? Math.round((c.left / c.value) * 100) : 0;
       const extra = c.naming === 'asked' || c.naming === 'typing' ? '<span class="k-tag is-info">Așteaptă numele</span>' : c.sent && !c.sent.how && c.state !== 'anulat' ? '<span class="k-tag is-warn">De trimis manual</span>' : '';
       return '<button type="button" class="k-row is-click cd-row" data-cd-open="' + esc(c.code) + '">' +
-        '<span class="cd-mini" aria-hidden="true"><b>' + esc(String(c.value / 1000 >= 1 ? (c.value / 1000).toLocaleString('ro-RO') + 'k' : c.value)) + '</b></span>' +
+        '<span class="cd-mini' + (isVip(c) ? ' is-vip' : '') + '" aria-hidden="true"><b>' + esc(String(c.value / 1000 >= 1 ? (c.value / 1000).toLocaleString('ro-RO') + 'k' : c.value)) + '</b></span>' +
         '<span class="k-row-main"><span class="k-row-title"><span>' + esc(c.recipient || c.buyer || 'Fără nume') + '</span><span class="cd-code">' + esc(c.code) + '</span></span>' +
-        '<span class="cd-o-c">' + tag(c.state) + '<span class="k-tag">' + esc(c.city) + ' · ' + (c.paidVia === 'online' ? 'online' : 'în clinică') + '</span>' + (c.lot ? '<span class="k-tag cd-lot">' + esc(lotTxt(c.lot)) + '</span>' : '') + extra + '</span>' +
+        '<span class="cd-o-c">' + (isVip(c) ? vipTag : '') + tag(c.state) + (c.state === 'activ' || c.state === 'folosit' ? reviewTag(c.review) : '') + '<span class="k-tag">' + esc(c.city) + ' · ' + (c.paidVia === 'online' ? 'online' : 'în clinică') + '</span>' + (c.lot ? '<span class="k-tag cd-lot">' + esc(lotTxt(c.lot)) + '</span>' : '') + extra + '</span>' +
         '<span class="cd-bar2" aria-hidden="true"><i style="width:' + pct + '%"></i></span></span>' +
         '<span class="k-row-end"><span class="cd-left"><b>' + lei(c.left) + '</b><small>din ' + lei(c.value) + '</small></span></span></button>';
     }).join('') + '</div>';
@@ -224,11 +312,29 @@
     if (b.dataset.cdDel) {
       const o = (S.d.orders || []).find((x) => x.id === b.dataset.cdDel);
       if (!o) return;
-      if (!(await K.ui().confirm({ title: 'Ștergi comanda definitiv?', message: (o.name || 'Fără nume') + ' · ' + o.qty + ' × ' + o.tier + ' lei. Dispare din listă, din numărători și din stoc. Leadul ei din Pipeline rămâne.', confirmText: 'Șterge', danger: true }))) return;
+      if (!(await K.ui().confirm({ title: 'Ștergi comanda definitiv?', message: (o.name || 'Fără nume') + ' · ' + o.qty + ' × ' + tierTxt(o.tier) + '. Dispare din listă, din numărători și din stoc. Leadul ei din Pipeline rămâne.', confirmText: 'Șterge', danger: true }))) return;
       try { await api({ action: 'delete', id: o.id, name: o.name || o.phone }); K.ui().toast('Comanda e ștearsă.', 'success'); S.open.delete(o.id); await load(true); } catch (err) { K.ui().toast(err.code === 'paid' ? 'E plătită: anulează întâi cardul.' : K.errText(err), 'error'); }
       return;
     }
     if (b.hasAttribute('data-cd-add')) { addDrawer(b); return; }
+    if (b.dataset.cdTab) { S.tab = b.dataset.cdTab; paintOrders(); return; }
+    if (b.hasAttribute('data-cd-iadd')) { intDrawer(b); return; }
+    if (b.dataset.cdIx) { const row = S.box.querySelector('.cd-i[data-i="' + CSS.escape(b.dataset.cdIx) + '"]'); if (row) { const on = !row.classList.contains('open'); row.classList.toggle('open', on); b.setAttribute('aria-expanded', String(on)); if (on) S.open.add('i' + b.dataset.cdIx); else S.open.delete('i' + b.dataset.cdIx); } return; }
+    if (b.dataset.cdMk) { const x = intOf(b.dataset.cdMk); if (x) requestDrawer(b, null, { name: x.name, phone: x.phone, city: x.city, tier: x.tier, note: x.note ? x.note.text : '' }); return; }
+    if (b.dataset.cdIedit) { const x = intOf(b.dataset.cdIedit); if (x) intDrawer(b, x); return; }
+    if (b.dataset.cdInote) { const x = intOf(b.dataset.cdInote); if (x) noteDrawer(b, x); return; }
+    if (b.dataset.cdIhide) {
+      const x = intOf(b.dataset.cdIhide); if (!x) return;
+      if (!(await K.ui().confirm({ title: 'Nu e interesată?', message: (x.name || x.phone) + ' nu mai apare la Interesate. Rămâne notat cine și când.', confirmText: 'Nu e interesată' }))) return;
+      try { await api({ action: 'int_hide', phone: x.phone, name: x.name || x.phone }); K.ui().toast('Scoasă din Interesate.', 'success'); await loadInt(); } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+      return;
+    }
+    if (b.dataset.cdToint) {
+      const o = (S.d.orders || []).find((x) => x.id === b.dataset.cdToint); if (!o) return;
+      if (!(await K.ui().confirm({ title: 'Muți cererea la Interesate?', message: (o.name || 'Fără nume') + ' · ' + tierTxt(o.tier) + '. Cererea se închide (cardul nu mai e ținut), ea rămâne la Interesate cu cardul și nota.', confirmText: 'Mută' }))) return;
+      try { await api({ action: 'to_interested', id: o.id, name: o.name || o.phone }); K.ui().toast('Mutată la Interesate.', 'success'); S.open.delete(o.id); await load(true); } catch (err) { K.ui().toast(err.code === 'not_open' ? 'Cererea nu mai e deschisă.' : K.errText(err), 'error'); }
+      return;
+    }
     if (b.hasAttribute('data-cd-req')) { requestDrawer(b); return; }
     if (b.dataset.cdEdit) { const o = (S.d.orders || []).find((x) => x.id === b.dataset.cdEdit); if (o) requestDrawer(b, o); return; }
     if (b.hasAttribute('data-cd-stock')) { stockDrawer(b); return; }
@@ -267,7 +373,7 @@
   function payDrawer(o, from) {
     K.drawer({
       from, title: 'Confirmă plata în clinică', icon: 'wallet', width: 460,
-      subtitle: esc(o.name) + ' · ' + o.qty + ' × ' + o.tier + ' lei = ' + lei(o.amount) + '. Cardul se emite, pleacă pe WhatsApp și plata intră în Încasări.',
+      subtitle: esc(o.name) + ' · ' + o.qty + ' × ' + tierTxt(o.tier) + ' = ' + lei(o.amount) + '. Cardul se emite, pleacă pe WhatsApp și plata intră în Încasări.',
       body: '<form class="k-form cd-waves" data-f>' + K.field('Cum a plătit', K.seg('method', [['card', 'Card (POS)'], ['cash', 'Cash'], ['transfer', 'Transfer']], 'card')) + '</form>',
       footer: '<button type="button" class="k-btn" data-cancel>Renunță</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Confirmă plata (' + lei(o.amount) + ')</button>',
       onMount(root, h) {
@@ -288,6 +394,8 @@
       subtitle: 'Valul ' + w.n + ' din ' + w.of + ' · ' + w.sold + ' vândute din val · ' + S.d.sold + ' în total. Pagina și numărătoarea se schimbă imediat.',
       body: '<form class="k-form cd-waves" data-f><div class="k-grid c2">' + K.field('Carduri într-un val', '<input type="number" name="wave" min="1" max="200" step="1" inputmode="numeric" value="' + w.size + '">') +
         K.field('Total maxim', '<input type="number" name="max" min="0" max="1000" step="1" inputmode="numeric" value="' + w.max + '">') + '</div>' +
+        '<h4 class="cd-h4">Carduri VIP, pe clinică</h4><div class="k-grid c2">' + ['Timișoara', 'Arad'].map((c) => { const x = (S.d.vip || {})[c] || { max: 5, left: 5 };
+          return K.field(c + ' · ' + (x.left > 0 ? x.left + ' rămase' : 'epuizat'), '<input type="number" name="vip' + (c === 'Arad' ? 'Ar' : 'Tm') + '" min="0" max="100" step="1" inputmode="numeric" value="' + x.max + '">'); }).join('') + '</div>' +
         '<p class="cd-stock-left">Doar în portal: pe site se vede numai „Au mai rămas doar N carduri”, N din valul de acum. Un val epuizat deschide imediat următorul; după total, vânzarea se închide.</p>' +
         (w.n < w.of && !w.soldOut ? '<div class="cd-wait"><span>Valul ' + w.n + ': ' + w.left + ' rămase.</span><button type="button" class="k-btn is-outline is-sm" data-open>' + icon('sparkles') + 'Deschide acum următorul val</button></div>' : '') + '</form>',
       footer: '<button type="button" class="k-btn" data-cancel>Renunță</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
@@ -295,8 +403,8 @@
         const v = (n) => Math.floor(Number(root.querySelector('input[name=' + n + ']').value));
         root.querySelector('[data-cancel]').addEventListener('click', () => h.close());
         root.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
-          try { const r = await api({ action: 'stock', wave: v('wave'), max: v('max') }); h.close(); K.ui().toast('Salvat: valul ' + r.wave.n + ' din ' + r.wave.of + '.', 'success'); await load(true); }
-          catch (err) { K.ui().toast(err.code === 'bad_stock' ? 'Valul: 1 până la 200, totalul: 0 până la 1.000.' : K.errText(err), 'error'); }
+          try { const r = await api({ action: 'stock', wave: v('wave'), max: v('max'), vip: { 'Timișoara': v('vipTm'), Arad: v('vipAr') } }); h.close(); K.ui().toast('Salvat: valul ' + r.wave.n + ' din ' + r.wave.of + '.', 'success'); await load(true); }
+          catch (err) { K.ui().toast(err.code === 'bad_stock' ? 'Valul: 1 până la 200, totalul: 0 până la 1.000, VIP: 0 până la 100.' : K.errText(err), 'error'); }
         }));
         const op = root.querySelector('[data-open]');
         if (op) op.addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
@@ -310,10 +418,21 @@
   // „Adaugă cerere”: a request taken by phone or at the desk, reserved for the clinic like one from the site; nothing issued,
   // nothing paid; „Confirmă plata” issues the card later (api/_lib/card-sarbatori.js request)
   const REQERR = { missing_name: 'Scrie numele ei.', bad_phone: 'Telefon invalid.', missing_city: 'Alege clinica.', bad_tier: 'Alege cardul.', bad_qty: 'Câte carduri: 1 până la 5.',
-    sold_out: 'Cardurile s-au terminat.', not_enough: 'Nu mai sunt atâtea carduri.', closed: 'Oferta s-a încheiat.' };
-  // o: an open order to change („Editează”, the same sheet, filled in); none: a new request
-  function requestDrawer(from, o) {
-    const ed = !!o, v0 = o || {}, gift0 = v0.forWho === 'cadou';
+    sold_out: 'Cardurile s-au terminat (la VIP: în clinica aleasă).', not_enough: 'Nu mai sunt atâtea carduri.', closed: 'Oferta s-a încheiat.' };
+  // her name or her phone: the contacts that match, like a new booking in Calendar (K.clientPicker); a tap fills her
+  // name, phone and clinic; a new person typed by hand stays as typed
+  function contacts(f) {
+    const nm = f.querySelector('input[name=name]'), ph = f.querySelector('input[name=phone]');
+    const clinic = (c) => { const l = K.norm ? K.norm(c.location || '') : String(c.location || '').toLowerCase(); const v = /arad/.test(l) ? 'Arad' : /timi/.test(l) ? 'Timișoara' : '';
+      const b = v && f.querySelector('[data-k-seg="city"] button[data-v="' + v + '"]'); if (b && !b.classList.contains('is-on')) b.click(); };
+    if (!K.clientPicker || !nm || !ph) return;
+    K.clientPicker(nm, ph, clinic);
+    K.clientPicker(ph, nm, (c) => { ph.value = c.phone || ''; nm.value = c.name || ''; clinic(c); });
+  }
+  // o: an open order to change („Editează”, the same sheet, filled in); none: a new request; pre: a new one filled in (from
+  // „Interesate”: her name, phone, clinic, the card of her message, her note)
+  function requestDrawer(from, o, pre) {
+    const ed = !!o, v0 = o || pre || {}, gift0 = v0.forWho === 'cadou';
     const one = ed && v0.pay !== 'clinica'; // an online order or a lead: one card (a PayLink is one sum)
     K.drawer({
       from, title: ed ? 'Editează comanda' : 'Adaugă cerere', icon: 'gift', width: 520,
@@ -321,7 +440,7 @@
       body: '<form class="k-form cd-waves cd-form" data-f>' +
         '<div class="k-grid c2">' + K.field('Numele ei', '<input name="name" autocomplete="off" required value="' + esc(v0.name || '') + '">') + K.field('Telefon (WhatsApp)', '<input name="phone" inputmode="tel" autocomplete="off" required value="' + esc(v0.phone || '') + '">') + '</div>' +
         K.field('Clinica', K.seg('city', [['Timișoara', 'Timișoara'], ['Arad', 'Arad']], v0.city || 'Timișoara')) +
-        K.field('Cardul', K.seg('tier', [['290', '290 → 500'], ['490', '490 → 1.000'], ['990', '990 → 2.500']], String(v0.tier || 990))) +
+        K.field('Cardul', K.seg('tier', (Number(v0.tier) === 290 ? [['290', '290 → 500']] : []).concat(TIER_SEG), String(v0.tier || 990))) +
         '<div class="k-grid c2">' + K.field('Câte carduri', '<input type="number" name="qty" min="1" max="' + (one ? 1 : 5) + '" step="1" inputmode="numeric" value="' + (v0.qty || 1) + '"' + (one ? ' readonly' : '') + '>') + K.field('Pentru', K.seg('forWho', [['eu', 'Ea'], ['cadou', 'Cadou']], gift0 ? 'cadou' : 'eu')) + '</div>' +
         '<div data-names' + (gift0 ? '' : ' hidden') + '>' + K.field('Pe numele (opțional)', '<input name="names" autocomplete="off" placeholder="ex. Mama; pentru mai multe carduri: Mama, Ana" value="' + esc((v0.names || []).filter(Boolean).join(', ')) + '">') + '</div>' +
         K.field('Notă', '<textarea name="note" rows="2" maxlength="300" placeholder="opțional">' + esc(v0.note || '') + '</textarea>') +
@@ -330,6 +449,9 @@
       footer: '<button type="button" class="k-btn" data-cancel>Renunță</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + (ed ? 'Salvează' : 'Rezervă cardul') + '</button>',
       onMount(root, h) {
         const f = root.querySelector('[data-f]'), names = root.querySelector('[data-names]'), ex = root.querySelector('[data-exists]');
+        // her name or her phone: the contacts that match, like a new booking in Calendar (K.clientPicker); a tap fills her
+        // name, phone and clinic; a new person typed by hand stays as typed
+        contacts(f);
         f.addEventListener('change', () => { names.hidden = K.formValues(f).forWho !== 'cadou'; });
         f.addEventListener('input', () => { ex.hidden = true; });
         root.querySelector('[data-cancel]').addEventListener('click', () => h.close());
@@ -348,13 +470,14 @@
               names: v.forWho === 'cadou' ? String(v.names || '').split(',').map((x) => x.trim()) : [], note: v.note, send: !!v.send });
             h.close();
             const m = r.msg ? (r.msg.how ? ' Confirmarea i-a plecat pe WhatsApp.' : ' WhatsApp: ' + (r.msg.skipped || 'neplecat') + '.') : '';
-            K.ui().toast('Cerere adăugată: ' + r.reservation.qty + ' × ' + r.reservation.tier + ' lei, plătește în clinică.' + (r.replaced ? ' Comanda ei online neplătită e închisă.' : '') + m, 'success');
+            if (pre) S.tab = 'req';
+            K.ui().toast('Cerere adăugată: ' + r.reservation.qty + ' × ' + tierTxt(r.reservation.tier) + ', plătește în clinică.' + (r.replaced ? ' Comanda ei online neplătită e închisă.' : '') + m, 'success');
             await load(true);
           } catch (err) {
             // she already has an open order: shown here, not a second one
             if (err.code === 'exists' && err.data && err.data.order) {
               const o = err.data.order;
-              ex.innerHTML = icon('alert') + '<span><b>Are deja o comandă deschisă.</b> ' + esc((o.name || 'Fără nume') + ' · ' + o.qty + ' × ' + o.tier + ' lei · ' + (STATE[o.status] || [o.status])[0] + ' · ' + o.city + ' · ' + when(o.created)) + '. O găsești la „De confirmat”.</span>';
+              ex.innerHTML = icon('alert') + '<span><b>Are deja o comandă deschisă.</b> ' + esc((o.name || 'Fără nume') + ' · ' + o.qty + ' × ' + tierTxt(o.tier) + ' · ' + (STATE[o.status] || [o.status])[0] + ' · ' + o.city + ' · ' + when(o.created)) + '. O găsești la „De confirmat”.</span>';
               ex.hidden = false;
               return;
             }
@@ -371,8 +494,8 @@
       from, title: 'Adaugă card plătit', icon: 'gift', width: 520,
       subtitle: 'Pentru o plată văzută în myPOS sau încasată în clinică. Cardul se emite și pleacă pe WhatsApp.',
       body: '<form class="k-form cd-form" data-f>' +
-        K.field('Cardul', K.seg('tier', [['290', '290 → 500'], ['490', '490 → 1.000'], ['990', '990 → 2.500']], '990')) +
-        K.field('Plătit', K.seg('via', [['clinica', 'În clinică'], ['online', 'Online (PayLink)']], 'clinica'), '', 'Plata online aduce și cadoul (EMS la Timișoara, Restart la Arad) și Clubul 360.') +
+        K.field('Cardul', K.seg('tier', TIER_SEG, '990')) +
+        K.field('Plătit', K.seg('via', [['clinica', 'În clinică'], ['online', 'Online (PayLink)']], 'clinica'), '', 'Plata online aduce și cadoul (o ședință de BioLifting) și Clubul 360.') +
         '<div class="k-grid c2">' + K.field('Numele ei', '<input name="name" autocomplete="off" required>') + K.field('Telefon (WhatsApp)', '<input name="phone" inputmode="tel" autocomplete="off" required>') + '</div>' +
         K.field('Pe numele (dacă e cadou)', '<input name="recipient" autocomplete="off" placeholder="gol = pe numele ei">') +
         K.field('Clinica', K.seg('city', [['Timișoara', 'Timișoara'], ['Arad', 'Arad']], 'Timișoara')) +
@@ -385,7 +508,7 @@
           try {
             const r = await api({ action: 'add', tier: Number(v.tier), qty: 1, names: [v.recipient || ''], name: v.name, phone: v.phone, city: v.city, via: v.via, method: v.via === 'online' ? 'card' : v.method });
             h.close(); K.ui().toast('Card emis: ' + ((r.cards || [])[0] || {}).code, 'success'); await load(true);
-          } catch (err) { K.ui().toast(err.code === 'bad_phone' ? 'Telefon invalid.' : err.code === 'missing_name' ? 'Scrie numele.' : K.errText(err), 'error'); }
+          } catch (err) { K.ui().toast(err.code === 'bad_phone' ? 'Telefon invalid.' : err.code === 'missing_name' ? 'Scrie numele.' : err.code === 'sold_out' ? 'Cardurile VIP din clinica asta s-au epuizat.' : K.errText(err), 'error'); }
         }));
       },
     });
@@ -407,7 +530,7 @@
       : '<p class="cd-sent">' + icon('alert') + '<span><b>De trimis manual.</b> ' + esc((c.sent && c.sent.error) || 'Nu a plecat încă.') + '</span></p>';
     const msg = 'Bună, ' + (c.buyer || '').split(' ')[0] + '! Cardul tău de Sărbători Centrul360: credit ' + lei(c.value) + ', cod ' + c.code + ', valabil până pe 30.06.2027.' + (c.gift ? ' Cadou: ' + c.gift.what + '.' : '') + (c.club ? ' Locul tău în Clubul 360: https://www.centrul360.com/club-360?cod=' + c.code : '');
     const hist = c.claims.length ? '<ol class="cd-hist">' + c.claims.slice().reverse().map((x) => '<li class="' + (x.undone ? 'is-undone' : '') + '"><div><b>' + esc(x.items.map((i) => i.name + (i.kind === 'gift' ? ' (cadou)' : ' ' + lei(i.amount))).join(', ')) + '</b>' +
-      '<small>' + esc(K.dateShort(x.date)) + ' · ' + esc(x.city) + (x.performerName ? ' · a făcut-o ' + esc(x.performerName) : '') + (x.byName ? ' · trecut de ' + esc(x.byName) : '') + (x.rest > 0 ? ' · a plătit în plus ' + lei(x.rest) : '') + (x.undone ? ' · anulat' : '') + '</small></div>' +
+      '<small>' + esc(K.dateShort(x.date)) + ' · ' + esc(x.city) + (x.usedBy ? ' · l-a folosit ' + esc(x.usedBy) : '') + (x.performerName ? ' · a făcut-o ' + esc(x.performerName) : '') + (x.byName ? ' · trecut de ' + esc(x.byName) : '') + (x.rest > 0 ? ' · a plătit în plus ' + lei(x.rest) : '') + (x.undone ? ' · anulat' : '') + '</small></div>' +
       '<span class="cd-amt">' + (x.applied ? '−' + lei(x.applied) : '0 lei') + '</span>' + (admin && x.id === lastId ? '<button type="button" class="k-btn is-ghost is-sm" data-undo>Anulează</button>' : '') + '</li>').join('') + '</ol>' : '<p class="k-muted">Nefolosit încă.</p>';
     const dr = K.drawer({
       from, title: c.recipient || c.buyer || 'Fără nume', icon: 'gift', width: 560,
@@ -417,8 +540,9 @@
         '<button type="button" class="k-btn is-outline is-sm" data-resend>' + icon('chat') + 'Trimite pe WhatsApp</button>' +
         '<a class="k-btn is-ghost is-sm" href="' + K.wa(c.phone, msg) + '" target="_blank" rel="noopener">' + icon('link') + 'Scrie din WhatsApp</a></div>' + sentLine +
         '<div class="cd-kv"><div><small>Credit</small><b>' + lei(c.value) + '</b></div><div><small>Folosit</small><b>' + lei(c.used) + '</b></div><div><small>Rămas</small><b class="cd-big">' + lei(c.left) + '</b></div></div>' +
-        '<p class="k-muted cd-meta">Cumpărat de ' + esc(c.buyer) + ' · <a href="' + K.tel(c.phone) + '">' + esc(c.phone) + '</a> · ' + esc(c.city) + ' · ' + c.tier + ' lei ' + (c.paidVia === 'online' ? 'online' : 'în clinică') + ', ' + esc(dayOf(c.paidAt)) +
+        '<p class="k-muted cd-meta">Cumpărat de ' + esc(c.buyer) + ' · <a href="' + K.tel(c.phone) + '">' + esc(c.phone) + '</a> · ' + esc(c.city) + ' · ' + tierTxt(c.tier) + ' ' + (c.paidVia === 'online' ? 'online' : 'în clinică') + ', ' + esc(dayOf(c.paidAt)) +
         (c.paidByName ? ' (' + esc(c.paidByName) + ')' : '') + (NAMEFROM[c.nameFrom] ? ' · Numele ' + NAMEFROM[c.nameFrom] : '') + (c.gift ? ' · Cadou: ' + esc(c.gift.what) + (c.gift.state === 'open' ? '' : ', folosit') : '') + (c.club ? ' · Clubul 360' : '') + '</p>' +
+        (isVip(c) && c.review ? '<p class="cd-sent' + (c.review.state === 'booked' ? ' ok' : '') + '">' + icon('calendar') + '<span>' + (c.review.state === 'booked' ? '<b>Revizia completă e programată</b> pe ' + esc(K.dateShort(c.review.date)) + (c.review.time ? ', ' + esc(c.review.time) : '') + '.' : '<b>Revizia completă: de programat.</b> Sun-o să stabiliți revizia și planul ei personal.') + '</span></p>' : '') +
         (canUse ? '<form class="k-form cd-use" data-use><h4>Folosește creditul</h4>' +
           '<div class="cd-pick"><select data-pick><option value="">Alege din lista de prețuri…</option>' + tr.map((t, i) => '<option value="' + i + '">' + esc(t.name) + ' · ' + lei(t.price) + (t.city ? ' · ' + esc(t.city) : '') + '</option>').join('') + '</select>' +
           '<button type="button" class="k-btn is-outline is-sm" data-line>' + icon('plus') + 'Alt tratament</button></div>' +
@@ -427,6 +551,7 @@
           '<div class="k-grid c3">' + K.field('Data', '<input type="date" name="date" value="' + today + '" max="' + today + '">') +
           K.field('A făcut-o', '<select name="performer"><option value="">Alege</option>' + K.options(team.map((p) => [p.id, p.name]), '') + '</select>') +
           K.field('Clinica', '<select name="city">' + K.options([['Timișoara', 'Timișoara'], ['Arad', 'Arad']], c.city) + '</select>') + '</div>' +
+          K.field('Cine a folosit (opțional)', '<input name="usedBy" autocomplete="off" maxlength="80" placeholder="' + (isVip(c) ? 'ex. sora ei, Ana' : 'gol = ea') + '">') +
           '<p class="cd-total" data-total></p><button type="button" class="k-btn is-primary" data-use-go>' + icon('check') + 'Scade din credit</button></form>'
           : '<p class="k-muted">' + (c.state === 'expirat' ? 'Cardul a expirat pe 30.06.2027 și nu mai poate fi folosit.' : c.state === 'folosit' ? 'Creditul e folosit în întregime.' : '') + '</p>') +
         '<h4 class="cd-h4">Istoric</h4>' + hist +
@@ -463,7 +588,7 @@
             if (!items.length) { K.ui().toast('Alege tratamentul și suma.', 'error'); return; }
             if (!f.performer.value) { K.ui().toast('Alege cine a făcut tratamentul.', 'error'); return; }
             try {
-              const r = await api({ action: 'redeem', code: c.code, items, date: f.date.value, performer: f.performer.value, city: f.city.value });
+              const r = await api({ action: 'redeem', code: c.code, items, date: f.date.value, performer: f.performer.value, city: f.city.value, usedBy: f.usedBy.value.trim() });
               K.ui().toast('Scăzut ' + lei(r.claim.applied) + '. Rămân ' + lei(r.left) + '.' + (r.claim.rest > 0 ? ' Mai are de plătit ' + lei(r.claim.rest) + '.' : '') + (r.msg ? (r.msg.sent ? ' Soldul i-a plecat pe WhatsApp.' : ' WhatsApp: soldul de spus manual.') : ''), 'success');
               h.close(); await load(true);
             } catch (err) { K.ui().toast({ expired: 'Cardul a expirat.', empty: 'Creditul e folosit în întregime.', no_gift: 'Cadoul a fost deja folosit.' }[err.code] || K.errText(err), 'error'); }
@@ -486,7 +611,7 @@
         }));
         const vd = root.querySelector('[data-void]');
         if (vd) vd.addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
-          if (!(await K.ui().confirm({ title: 'Anulezi cardul plătit?', message: 'Comanda ' + c.qty + ' × ' + c.tier + ' lei se anulează, cardurile ei nu mai pot fi folosite, iar banii apar ca rambursare în Încasări, azi.', confirmText: 'Anulează cardul', danger: true }))) return;
+          if (!(await K.ui().confirm({ title: 'Anulezi cardul plătit?', message: 'Comanda ' + c.qty + ' × ' + tierTxt(c.tier) + ' se anulează, cardurile ei nu mai pot fi folosite, iar banii apar ca rambursare în Încasări, azi.', confirmText: 'Anulează cardul', danger: true }))) return;
           try { await api({ action: 'void', id: c.order }); h.close(); K.ui().toast('Card anulat, rambursarea e în Încasări.', 'success'); await load(true); }
           catch (err) { K.ui().toast(err.code === 'used' ? 'Cardul a fost deja folosit: nu se mai anulează.' : K.errText(err), 'error'); }
         }));

@@ -1779,7 +1779,7 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const ord = (id) => rd(CSK, []).find((r) => r.id === id) || {};
 
     const g0 = await pub();
-    check('CS', 'GET: 10 cards, 10 left, open, the deadline 24.12 23:59 RO, valid until 30.06.2027, the three cards, no PayLink yet', g0.total === 10 && g0.left === 10 && g0.open === true && g0.deadline === '2026-12-24T21:59:59.000Z' && g0.validUntil === '2027-06-30T20:59:59.000Z' && JSON.stringify(g0.tiers) === JSON.stringify({ 290: 500, 490: 1000, 990: 2500 }) && g0.links[990] === null, g0);
+    check('CS', 'GET: 10 cards, 10 left, open, the deadline 24.12 23:59 RO, valid until 30.06.2027, the cards on sale 490, 990 and the VIP (290 still known for its orders), 5 VIP per clinic, no PayLink yet', g0.total === 10 && g0.left === 10 && g0.open === true && g0.deadline === '2026-12-24T21:59:59.000Z' && g0.validUntil === '2027-06-30T20:59:59.000Z' && JSON.stringify(g0.tiers) === JSON.stringify({ 290: 500, 490: 1000, 990: 2500, 9900: 30000 }) && JSON.stringify(g0.sale) === '[490,990,9900]' && g0.vip['Timișoara'].left === 5 && g0.vip.Arad.max === 5 && g0.links[990] === null && g0.links[9900] === null, g0);
     const me = { tier: 990, forWho: 'eu', name: 'Proba Card', phone: '0755 000 111', city: 'Timișoara', consent: true, pay: 'online', page: 'https://www.centrul360.com/v2/card-sarbatori' };
     const noLink = await pub(me);
     check('CS', 'online with no PayLink for that card: no_link, nothing stored (the page offers the reservation)', noLink._status === 409 && noLink.error === 'no_link' && rd(CSK, []).length === 0, noLink);
@@ -1866,14 +1866,14 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const p1 = ord(on1.id);
     const club1 = rd(CLK, []);
     const nP = rd('data/notifications.json', []).filter((n) => n.tag === 'card-paid-' + on1.id);
-    check('CS', 'matched: paid online by myPOS, the card issued (a C360 code, 2.500 credit), the gift open (EMS, Timișoara), on the Club\'s list as a card holder', m1.length === 1 && m1b.length === 0 && p1.status === 'platit' && p1.paidVia === 'online' && p1.match.ref === 'mypos-1' && p1.bonus === true && /^C360-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(p1.cards[0].code) && p1.cards[0].value === 2500 &&
-      p1.cards[0].gift && p1.cards[0].gift.state === 'open' && /EMS/.test(p1.cards[0].gift.what) && club1.length === 1 && club1[0].holder === true && club1[0].code === p1.cards[0].code, { m1, p1: p1.status, club1 });
+    check('CS', 'matched: paid online by myPOS, the card issued (a C360 code, 2.500 credit), the gift open (BioLifting, 22.11), on the Club\'s list as a card holder', m1.length === 1 && m1b.length === 0 && p1.status === 'platit' && p1.paidVia === 'online' && p1.match.ref === 'mypos-1' && p1.bonus === true && /^C360-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(p1.cards[0].code) && p1.cards[0].value === 2500 &&
+      p1.cards[0].gift && p1.cards[0].gift.state === 'open' && /BioLifting/.test(p1.cards[0].gift.what) && club1.length === 1 && club1[0].holder === true && club1[0].code === p1.cards[0].code, { m1, p1: p1.status, club1 });
     check('CS', 'the desk and the owner told once; her WhatsApp tried (not connected here: kept as „de trimis manual”, with why)', nP.some((n) => n.employeeId === 'admin' && /CARD DE SĂRBĂTORI PLĂTIT TM ONLINE/.test(n.title)) && nP.some((n) => n.employeeId === 'e-rec') && nP.filter((n) => n.employeeId === 'admin').length === 1 && p1.cards[0].sent && !p1.cards[0].sent.how && /WhatsApp/.test(p1.cards[0].sent.error), { nP: nP.map((n) => n.employeeId + ' ' + n.title), sent: p1.cards[0].sent });
     const leadNote = rd('data/leads.json', []).find((l) => l.id === lead1.id) || {};
     const cl1 = rd('data/clients.json', []).find((c) => String(c.phone || '').replace(/\D/g, '').endsWith('755000111'));
     check('CS', 'her lead gets the payment as a note, her client file exists', JSON.stringify(leadNote).includes('Card de Sărbători plătit online') && !!cl1 && p1.clientId === cl1.id, { cl1: !!cl1 });
     const mA = await CL.matchPayments([{ ref: 'mypos-2', amount: 490, at: new Date(Date.now() + 60e3).toISOString() }]);
-    check('CS', 'Arad online: the gift is the Arad one (one constant: Tratament Restart)', mA.length === 1 && /Restart/.test(ord(giftAr.id).cards[0].gift.what) && CL.giftOf('Arad') === CL.GIFT_ARAD, ord(giftAr.id).cards[0].gift);
+    check('CS', 'Arad online: the same gift as Timișoara (one constant: BioLifting, 22.11); a card paid before keeps EMS / Restart', mA.length === 1 && /BioLifting/.test(ord(giftAr.id).cards[0].gift.what) && CL.giftOf('Arad') === CL.GIFT && CL.giftFor({}, { gift: { what: 'Tratament Restart cadou' } }) === CL.GIFT_ARAD && CL.giftFor({}, { gift: { what: 'Ședință EMS cadou (Timișoara)' } }) === CL.GIFT_TM, ord(giftAr.id).cards[0].gift);
 
     // 5. confirmed by the team: paid in the clinic (no gift, no Club), one tap
     const club0 = rd(CLK, []).length;

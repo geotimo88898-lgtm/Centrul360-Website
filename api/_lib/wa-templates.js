@@ -24,12 +24,12 @@ const VARS = ['prenume', 'nume', 'telefon', 'procedura', 'interes', 'tratament',
 const SAMPLE = { prenume: 'Andreea', nume: 'Andreea Popescu', telefon: '0722 123 456', procedura: 'LipoSonix', interes: 'LipoSonix', tratament: 'Facial Restart', serviciu: 'HIFU · Gușă (190 lei)',
   locatie: 'Timișoara', adresa: 'Str. Bucegi 7, Timișoara', zi: 'mâine', data: '14.10.2026', ora: '11:00', link_recenzie: 'https://g.page/r/centrul360/review', ocupate: '4', ramase: '6', problema: 'grăsimea care nu pleacă cu dieta',
   // the Card de Sărbători's own templates (api/_lib/card-sarbatori.js TPL): not offered in the editor, only their examples
-  credit: '2.500', cod: 'C360-AB2C-DE3F', cadou: 'Cadou: o ședință de EMS cadou. Locul tău în Clubul 360 e rezervat: https://www.centrul360.com/club-360', folosit: '450', sold: '2.050',
+  credit: '2.500', cod: 'C360-AB2C-DE3F', cadou: 'Cadou: o ședință de BioLifting cadou. Locul tău în Clubul 360 e rezervat: https://www.centrul360.com/club-360', folosit: '450', sold: '2.050',
   // reserved, to pay in the clinic (rezervat: the sum she pays; locatie above is the clinic); the payment not finished
   // (rec1, rec2: the cards left, as the page says them) and the name asked after the payment (name)
   carduri: '6 carduri', suma: '990',
-  // a lead from the ads' form (lead): the gift of the online payment, by clinic (card-sarbatori.js giftOf)
-  cadoul: 'o ședință de EMS cadou' };
+  // a lead from the ads' form (lead): the gift of the online payment, the same in both clinics (card-sarbatori.js giftOf)
+  cadoul: 'o ședință de BioLifting cadou' };
 const CATEGORIES = ['UTILITY', 'MARKETING'];
 
 const clip = (s, n) => String(s == null ? '' : s).slice(0, n);

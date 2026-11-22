@@ -90,7 +90,7 @@ module.exports = async (req, res) => {
     res.status(r.error ? 400 : 200).json(r);
     return;
   }
-  // ?cardlinks=1: the Card de Sărbători's myPOS PayLinks, one per card; POST { 290, 490, 990 } sets them (only https links of
+  // ?cardlinks=1: the Card de Sărbători's myPOS PayLinks, one per card; POST { 290, 490, 990, 9900 } sets them (9900: the VIP card) (only https links of
   // mypos.com / mypos.eu; '' clears one), GET reads them (api/_lib/card-sarbatori.js)
   if (req.query && req.query.cardlinks) {
     const C = require('./_lib/card-sarbatori');
