@@ -823,7 +823,9 @@
         const f = el.querySelector('[data-form]');
         picker = K.clientPicker(f.clientName, f.clientPhone);
         wireForm(el, f);
-        if (pre.clientName) { f.clientName.value = pre.clientName; f.clientPhone.value = pre.clientPhone || ''; }
+        // her name and phone from where the booking started (a chat, a lead, a contact): the phone even when no name is known
+        if (pre.clientName) f.clientName.value = pre.clientName;
+        if (pre.clientPhone) f.clientPhone.value = pre.clientPhone;
         // the treatment she asked for (her lead's offer): its chip fills the price and the categories, as a tap would
         // (16.11) her interest as the desk or the form wrote it („LipoSonix 2 zone…”, „lipo”, „Epilare laser”): the offer whose
         // name it matches; none: the categories it names, so the category is never left to guess
