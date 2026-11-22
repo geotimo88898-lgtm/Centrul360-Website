@@ -200,6 +200,7 @@
     var call = vip && !link;
     $$('.cst-go, .cs-c').forEach(function (g) {
       g.classList.toggle('cs-vipcall', call);
+      g.classList.toggle('cs-vipon', vip); // the VIP one: gold „Plătesc online”, black „Rezerv” (the owner, 22.11)
       var r = g.querySelector('[data-cs-reserve]');
       if (r && r.classList.contains('ghost') === call) { r.classList.toggle('ghost', !call); r.classList.toggle('book', call); }
     });

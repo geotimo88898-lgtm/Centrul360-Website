@@ -253,12 +253,11 @@ main [hidden]{ display:none !important; }
 /* no PayLink for the VIP yet: one line in place of „Plătesc online”, the clinic's button the main one */
 .cst-call{ margin:0; padding:2px 0; text-align:center; font-size:14.5px; font-weight:600; color:#141210; }
 .cs-vipcall > [data-cs-buy][data-cs-follow], .cs-vipcall > [data-cs-help]{ display:none !important; }
-/* the scarcity line without a box (the owner, 22.11: „chenarul de urgency arată rău”): one line, its dot pulsing */
-.cst-urg{ padding:2px 0 !important; background:none !important; box-shadow:none !important; border-radius:0 !important; }
 /* its cards left, in gold: „Au mai rămas doar N carduri VIP” */
-.cst-urg:has(.cst-vipl:not([hidden])){ color:#141210; }
-.cst-urg:has(.cst-vipl:not([hidden])) .dot, .cst-urg:has(.cst-vipl:not([hidden])) .dot::after{ background:#b8862e; }
-.cst-vipl b{ color:#9a6b12; }
+/* the VIP one's box: black and gold (the owner, 22.11: the pink box stays for the others) */
+.cst-urg:has(.cst-vipl:not([hidden])){ background:linear-gradient(150deg,#2b251e 0%,#15120e 60%,#0a0807 100%); color:#f6ead0; box-shadow:0 0 0 1px rgba(227,194,122,.42) inset; }
+.cst-urg:has(.cst-vipl:not([hidden])) .dot, .cst-urg:has(.cst-vipl:not([hidden])) .dot::after{ background:#e3c27a; }
+.cst-vipl b{ color:#f3d589; }
 .cst-vipl b{ font-weight:800; }
 .cst-city label.is-out{ grid-auto-flow:column; gap:6px; color:var(--mute2); }
 .cst-out{ font-size:10.5px; font-weight:700; letter-spacing:.02em; color:#9c0f4a; }
@@ -303,3 +302,12 @@ main [hidden]{ display:none !important; }
 @media (max-width:380px){ .cst-gift{ font-size:11.5px; padding:5px 10px 13px; } }
 /* no x2 / x2,5 / x3 chips in the three cards (the owner, 22.11) */
 .cst-t .cst-x{ display:none !important; }
+/* the VIP one chosen: „Plătesc online” in gold, „Rezerv și plătesc în clinică” white with the black border like the others (the owner, 22.11) */
+.cs-vipon [data-cs-buy][data-cs-follow]{ background:linear-gradient(150deg,#f7dc97 0%,#e3c27a 45%,#c9a04a 100%) !important; color:#1a140c !important; border-color:transparent !important;
+  box-shadow:0 1px 0 rgba(255,247,220,.7) inset, 0 16px 30px -14px rgba(140,100,30,.65) !important; }
+/* the VIP card's border: real gold, a light that runs round it (the owner, 22.11: „un border mai nice auriu”) */
+.cst-t.vip{ border:1.5px solid transparent; box-shadow:0 16px 30px -24px rgba(20,14,6,.8);
+  background:linear-gradient(150deg,#2b251e 0%,#15120e 55%,#0a0807 100%) padding-box, linear-gradient(135deg,#8a6420 0%,#f3d589 22%,#fff3c4 34%,#c9a04a 55%,#7a5618 78%,#e3c27a 100%) border-box; }
+.cst-t.vip:hover{ box-shadow:0 16px 30px -20px rgba(60,40,10,.75); }
+.cst-t.vip:has(input:checked){ border-width:2px; box-shadow:0 0 0 4px rgba(227,194,122,.18), 0 18px 34px -18px rgba(120,86,24,.7);
+  background:linear-gradient(150deg,#322a21 0%,#17130f 55%,#0a0807 100%) padding-box, linear-gradient(135deg,#a07428 0%,#f7dc97 20%,#fffbe6 32%,#e3c27a 50%,#8a6420 74%,#f3d589 100%) border-box; }
