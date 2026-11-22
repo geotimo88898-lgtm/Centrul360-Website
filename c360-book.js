@@ -181,18 +181,34 @@
   .bk-two{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .bk-ghost{ min-height:50px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); color:#f5f4f2; font:inherit; font-size:14px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; transition:background-color .2s; }
   .bk-ghost:hover{ background:rgba(255,255,255,.12); }
-  .bk-pay{ display:grid; gap:10px; }
-  .bk-payo{ min-height:96px; padding:16px 18px; }
-  .bk-payo b{ font-size:16px; line-height:1.3; }
-  .bk-payo small{ line-height:1.45; }
-  .bk-payo .bk-pr strong{ font-size:18px; }
-  @media (hover:none){ .bk-payo:hover:not(.on){ border-color:rgba(255,255,255,.1); background:rgba(255,255,255,.035); } }
-  .bk-credit{ display:flex; gap:10px; align-items:flex-start; margin:0 6px 4px; font-size:14px; line-height:1.45; color:rgba(245,244,242,.82); }
+  .bk-pay{ display:grid; gap:12px; }
+  .bk-when{ margin:-4px 0 20px; font-size:16px; font-weight:700; letter-spacing:-.01em; line-height:1.4; }
+  .bk-when small{ display:block; margin-top:2px; font-size:13.5px; font-weight:500; color:rgba(245,244,242,.55); }
+  .bk-pb{ display:flex; align-items:center; gap:12px; width:100%; min-height:68px; padding:12px 14px 12px 24px; border:0; border-radius:999px; font:inherit; text-align:left; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; transition:transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s, filter .2s; }
+  .bk-pb:hover{ filter:brightness(1.06); }
+  .bk-pb:active{ transform:scale(.98); }
+  .bk-pb:focus-visible{ outline:3px solid rgba(95,212,198,.65); outline-offset:3px; }
+  .bk-pb-t{ flex:1; min-width:0; }
+  .bk-pb b{ display:block; font-size:16.5px; font-weight:800; letter-spacing:-.015em; line-height:1.25; }
+  .bk-pb small{ display:block; margin-top:3px; font-size:13px; font-weight:500; line-height:1.3; opacity:.82; }
+  .bk-pb small s{ opacity:.85; }
+  .bk-pb-go{ flex:none; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; }
+  .bk-off{ flex:none; font-style:normal; font-size:13px; font-weight:800; letter-spacing:-.01em; padding:6px 10px; border-radius:999px; }
+  .bk-pb.online{ color:#fff; background:linear-gradient(180deg,#1bb9a9 0%,#0f9083 100%); box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 14px 30px -12px rgba(16,145,132,.7); }
+  .bk-pb.online .bk-pb-go{ background:rgba(255,255,255,.2); }
+  .bk-pb.online .bk-off{ background:#fff; color:#0b7f74; }
+  .bk-pb.clinic{ color:#0b0b0d; background:#f5f4f2; box-shadow:0 14px 30px -14px rgba(0,0,0,.6); }
+  .bk-pb.clinic .bk-pb-go{ background:rgba(11,11,13,.08); }
+  .bk-pb.on{ box-shadow:0 0 0 3px rgba(95,212,198,.45), 0 14px 30px -14px rgba(0,0,0,.5); }
+  .bk-credit{ display:flex; gap:10px; align-items:flex-start; margin:0 10px 2px; font-size:14px; line-height:1.45; color:rgba(245,244,242,.82); }
   .bk-credit svg{ flex:none; margin-top:1px; color:#e9cfa3; }
   .bk-paid{ display:flex; align-items:center; gap:12px; padding:12px 12px 12px 16px; border-radius:16px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); margin:-6px 0 16px; }
   .bk-paid div{ min-width:0; }
   .bk-paid b{ display:block; font-size:14.5px; font-weight:700; }
   .bk-paid small{ display:block; font-size:12.5px; color:rgba(245,244,242,.5); margin-top:2px; }
+  .bk-paid .bk-link{ display:flex; align-items:center; gap:4px; min-height:40px; padding:0 12px 0 16px; font-size:14px; font-weight:700; color:#e9cfa3; box-shadow:0 0 0 1.5px rgba(233,207,163,.6) inset; }
+  .bk-paid .bk-link:active{ transform:scale(.97); }
   .bk-step{ animation:bkIn .45s cubic-bezier(.16,1,.3,1); }
   @keyframes bkIn{ from{ opacity:0; transform:translateX(14px); } to{ opacity:1; transform:none; } }
   .bk-step.back{ animation-name:bkBack; }
@@ -450,21 +466,21 @@
     '<div class="what">' + esc((S.service || {}).title || '') + ' · ' + esc(ADDR[S.city]) + '</div></div>';
   // how she pays: online now, the whole offer at 10% less, or at the clinic at the full price. Two equal buttons, always both.
   function payHtml() {
-    const full = S.service.price, now = payAmount(full);
-    return '<p class="bk-eyebrow">Plata</p><h2 class="bk-h">Cum vrei să <em>plătești?</em></h2>' + sumHtml() +
+    const full = S.service.price, now = payAmount(full), go = '<span class="bk-pb-go" aria-hidden="true">' + ICON.next + '</span>';
+    return '<p class="bk-eyebrow">Plata</p><h2 class="bk-h">Cum vrei să <em>plătești?</em></h2>' +
+      // the appointment as plain text, so the only things that look tappable are the two buttons (the owner, 22.11)
+      '<p class="bk-when">' + esc(niceDay(S.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(S.time) + '<small>' + esc(S.service.title || '') + ' · Centrul360 ' + esc(S.city) + '</small></p>' +
       '<div class="bk-pay" role="group" aria-label="Plata">' +
-      '<button type="button" class="bk-svc bk-payo' + (S.pay === 'online' ? ' on' : '') + '" data-pay="online"><span><i class="bk-tag">Cu ' + PAY_OFF + '% reducere</i><b>Plătesc online acum</b><small>Toată oferta, plătită acum</small></span>' +
-        '<span class="bk-pr"><strong>' + lei(now) + '</strong><s>' + lei(full) + '</s></span></button>' +
-      '<p class="bk-credit">' + ICON.shield + '<span>Nu poți ajunge? Mutăm programarea, iar banii rămân credit pentru tine (nu se returnează).</span></p>' +
-      '<button type="button" class="bk-svc bk-payo' + (S.pay === 'clinic' ? ' on' : '') + '" data-pay="clinic"><span><i class="bk-tag">Fără plată acum</i><b>Rezerv și plătesc în clinică</b><small>Plătești în ziua programării</small></span>' +
-        '<span class="bk-pr"><strong>' + lei(full) + '</strong></span></button>' +
+      '<button type="button" class="bk-pb online' + (S.pay === 'online' ? ' on' : '') + '" data-pay="online"><span class="bk-pb-t"><b>Plătesc online ' + lei(now) + '</b><small><s>' + lei(full) + '</s> · toată oferta, acum</small></span><i class="bk-off">-' + PAY_OFF + '%</i>' + go + '</button>' +
+      '<p class="bk-credit">' + ICON.shield + '<span>Nu poți ajunge? Mutăm programarea, banii rămân credit (nu se returnează).</span></p>' +
+      '<button type="button" class="bk-pb clinic' + (S.pay === 'clinic' ? ' on' : '') + '" data-pay="clinic"><span class="bk-pb-t"><b>Rezerv și plătesc în clinică</b><small>' + lei(full) + ', în ziua programării</small></span>' + go + '</button>' +
       '</div>';
   }
   const payOnline = () => S.pay === 'online' && payable();
   function youHtml() {
     const s = S.service || {};
     const paid = payable() && S.pay ? '<div class="bk-paid"><div><b>' + (payOnline() ? 'Plătești online ' + lei(payAmount(s.price)) : 'Plătești în clinică ' + lei(s.price)) + '</b><small>' +
-      (payOnline() ? 'Cu ' + PAY_OFF + '% reducere, toată oferta' : 'În ziua programării') + '</small></div><button type="button" class="bk-link" data-go="pay">Schimbă</button></div>' : '';
+      (payOnline() ? 'Cu ' + PAY_OFF + '% reducere, toată oferta' : 'În ziua programării') + '</small></div><button type="button" class="bk-link" data-go="pay">Schimbă' + ICON.next + '</button></div>' : '';
     return '<p class="bk-eyebrow">Ultimul pas</p><h2 class="bk-h">Unde îți trimitem <em>confirmarea?</em></h2>' + sumHtml() + paid +
       (S.err && S.err !== 'net' ? '<div class="bk-alert">' + S.err + '</div>' : '') +
       '<form novalidate data-bk-form>' +
