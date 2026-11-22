@@ -341,3 +341,6 @@ main [hidden]{ display:none !important; }
 /* the gift ribbon: a drawn gift icon, no emoji, no „+” (the owner, 22.11) */
 .cst-gift{ display:inline-flex; align-items:center; gap:6px; }
 .cst-gi{ width:14px; height:14px; flex:none; margin-top:-1px; }
+/* the card block is the first screen: full quality from the first frame, no blur, fade or slide in (the owner, 22.11:
+   „calitate maximă de la început”). The card keeps only its slow float. */
+:is(section,header,.hero):has([data-cst]) :is(.rv,.rv.blur), :is(section,header,.hero):has([data-cst]) [data-words] .w{ opacity:1 !important; transform:none !important; filter:none !important; transition:none !important; }
