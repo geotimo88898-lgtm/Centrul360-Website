@@ -71,7 +71,7 @@
   });
 
   // ---- the card chosen (490 / 990 / VIP): everything that depends on it changes at once, and it is kept from page to page
-  // On sale (the owner, 22.11): 490, 990 (chosen first, „Cea mai bună valoare”) and the VIP one, „Cardul VIP Transformarea
+  // On sale (the owner, 22.11): 490, 990 (chosen first, „Cel mai cumpărat”) and the VIP one, „Cardul VIP Transformarea
   // 360”: 9.900 lei → 30.000 lei, for her and all her family, 5 per clinic. The 290 lei card is out of sale (its orders
   // and cards keep working on the server); vipShape() brings an older block (the live pages until a swap) to these three.
   var TIERS = { 290: [500, '1,7'], 490: [1000, '2'], 990: [2500, '2,5'], 9900: [30000, '3'] }, SALE = [490, 990, 9900], VIP = 9900, KEY = 'c360_cs_tier';
@@ -81,7 +81,7 @@
   var VIP_K = 'VIP · Transformarea 360', VIP_SUB = 'pentru tine și cei dragi';
   var tierBox = function (t, best) {
     var g = TIERS[t];
-    return '<label class="cst-t' + (best ? ' best' : '') + (t === VIP ? ' vip' : '') + '">' + (best ? '<em class="cst-best">Cea mai bună valoare</em>' : t === VIP ? '<em class="cst-vk">VIP</em>' : '') +
+    return '<label class="cst-t' + (best ? ' best' : '') + (t === VIP ? ' vip' : '') + '">' + (best ? '<em class="cst-best">Cel mai cumpărat</em>' : t === VIP ? '<em class="cst-vk">VIP</em>' : '') +
       '<input type="radio" name="cst" value="' + t + '"' + (t === 990 ? ' checked' : '') + '><small>Plătești</small><b>' + fmt(t) + ' lei</b><span>primești <strong>' + fmt(g[0]) + ' lei</strong></span><em class="cst-x">x' + g[1] + '</em></label>';
   };
   var VIP_TIER = '<div class="card cs-tier rv in vip"><span class="cs-best cs-vk">VIP · Transformarea 360</span><small>Plătești</small><b class="cs-tp">9.900 lei</b><p class="cs-tg">Primești <strong>30.000 lei</strong> în tratamente</p>' +
