@@ -8,7 +8,7 @@ const DEFAULT = { exclude: ['ARANCA', 'BRAZI'], include: '' };
 // an ad account that belongs to another business (Summitlane's, used by Centrul360 since 21.11 at the owner's choice):
 // there only the campaigns whose name starts with the prefix are Centrul360's, whatever is saved, so nothing of the
 // other business is ever paused, changed or counted from here
-const OWN_PREFIX = { act_1136609638911845: 'C360' };
+const OWN_PREFIX = { act_1136609638911845: 'C360', act_989208510351291: 'C360' };
 const forAccount = (sc, adAccountId) => (OWN_PREFIX[adAccountId] ? { exclude: [], include: OWN_PREFIX[adAccountId] } : sc);
 
 const up = (s) => String(s || '').trim().toUpperCase();
