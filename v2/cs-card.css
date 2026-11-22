@@ -305,7 +305,7 @@ main [hidden]{ display:none !important; }
 /* the VIP one chosen: „Plătesc online” black like the scarcity box with a gold edge, „Rezerv și plătesc în clinică” white with the black border like the others (the owner, 22.11) */
 .cs-vipon [data-cs-buy][data-cs-follow]{ color:#fbecc6 !important; border:1.5px solid transparent !important;
   background:linear-gradient(150deg,#2b251e 0%,#15120e 60%,#0a0807 100%) padding-box, linear-gradient(135deg,#8a6420 0%,#f3d589 25%,#fff3c4 36%,#c9a04a 58%,#7a5618 80%,#e3c27a 100%) border-box !important;
-  box-shadow:0 18px 34px -16px rgba(20,14,6,.7) !important; }
+  box-shadow:0 10px 22px -14px rgba(60,42,12,.32) !important; }
 .cs-vipon [data-cs-buy][data-cs-follow] b, .cs-vipon [data-cs-buy][data-cs-follow] strong{ color:#f3d589; }
 .cs-vipon [data-cs-buy][data-cs-follow] s{ color:rgba(251,236,198,.55); }
 /* the VIP card's border: real gold, a light that runs round it (the owner, 22.11: „un border mai nice auriu”) */
