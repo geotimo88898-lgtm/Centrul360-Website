@@ -543,7 +543,7 @@ async function confirm(id, via, o) {
     const posPaid = r.paidVia === 'clinica' && r.payMethod === 'card' ? await N.claim(store, N.payRef('pos', r.paidAmount), true) : null;
     await N.notifyMany(store, ids, {
       kind: 'money', tone: 'good', go: 'carduri', tag: posPaid ? posPaid.tag : 'card-paid-' + r.id, quiet: !!posPaid, ref: r.paidVia === 'clinica' && r.payMethod === 'card' ? N.payRef('desk', r.paidAmount) : '',
-      title: 'CARD 🎄 ' + N.leiTxt(r.amount) + ' · PLĂTIT' + (r.paidVia === 'online' ? ' ONLINE' : '') + N.cityTag(r.city),
+      title: 'C. SARB 🎄 ' + N.leiTxt(r.amount) + ' · PLĂTIT' + (r.paidVia === 'online' ? ' ONLINE' : '') + N.cityTag(r.city),
       text: (r.name || r.hint || 'numele vine pe WhatsApp') + ' · ' + r.qty + ' × ' + r.tier + ' lei (credit ' + lei(r.credit) + ') · ' + r.cards.map((c) => c.code).join(', ') + (r.bonus ? ' · + ' + giftShort(r.city) + ' și Clubul 360' : '') +
         (o.match ? ' · găsit automat în myPOS' : ''),
     });
@@ -1033,7 +1033,7 @@ async function toClinic(id, how) {
   } catch (e) { console.error('card clinic lead:', e.message); }
   try {
     await N.notifyMany(st, await N.deskIds(st, r.city), { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-clinic-' + r.id,
-      title: 'CARD 🎄 ' + N.leiTxt(r.amount) + ' · REZERVAT' + N.cityTag(r.city), text: (r.name || 'fără nume') + ' · plătește în clinică · ' + (how === 'lead' ? 'din reclamă, a ales clinica pe WhatsApp' : 'a trecut de la plata online' + (how === 'whatsapp' ? ' (din WhatsApp)' : '')) + '. Sun-o să stabiliți când vine.' });
+      title: 'C. SARB 🎄 ' + N.leiTxt(r.amount) + ' · REZERVAT' + N.cityTag(r.city), text: (r.name || 'fără nume') + ' · plătește în clinică · ' + (how === 'lead' ? 'din reclamă, a ales clinica pe WhatsApp' : 'a trecut de la plata online' + (how === 'whatsapp' ? ' (din WhatsApp)' : '')) + '. Sun-o să stabiliți când vine.' });
   } catch (e) { console.error('card clinic notify:', e.message); }
   return { ok: true, reservation: pubRes(r) };
 }
@@ -1332,7 +1332,7 @@ async function leadCall(id, why) {
   } catch (e) { console.error('card lead pipeline:', e.message); }
   try {
     await N.notifyMany(st, await N.deskIds(st, r.city), { kind: 'lead', tone: 'info', go: 'carduri', tag: 'card-lead-' + r.id,
-      title: 'CARD 🎄 ' + r.tier + ' lei · SUN-O' + N.cityTag(r.city), text: (r.name || 'fără nume') + ' · ' + why + '. Sun-o să aleagă: online sau în clinică.' });
+      title: 'C. SARB 🎄 ' + r.tier + ' lei · SUN-O' + N.cityTag(r.city), text: (r.name || 'fără nume') + ' · ' + why + '. Sun-o să aleagă: online sau în clinică.' });
   } catch (e) { console.error('card lead notify:', e.message); }
   return true;
 }
@@ -1480,7 +1480,7 @@ async function requestFromTap(i, opt) {
       const N = require('./notify'), st = { readJSON, writeJSON };
       const ids = [...new Set((await N.deskIds(st, city)).concat(await N.adminIds(st)))];
       await N.notifyMany(st, ids, { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-tap-' + entry.id,
-        title: 'CARD 🎄 ' + N.leiTxt(tier) + ' · REZERVAT' + N.cityTag(city), text: (known || 'fără nume') + ' · a apăsat „Rezerv în clinică” în mesaj. Sun-o.' });
+        title: 'C. SARB 🎄 ' + N.leiTxt(tier) + ' · REZERVAT' + N.cityTag(city), text: (known || 'fără nume') + ' · a apăsat „Rezerv în clinică” în mesaj. Sun-o.' });
     } catch (e) { console.error('card tap notify:', e.message); }
     await reservedMsg(entry.id).catch((e) => console.error('card tap msg:', e.message));
   }

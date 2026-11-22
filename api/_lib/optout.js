@@ -24,7 +24,7 @@ async function add(phones, why) {
 function isStop(text) {
   const t = fold(text).replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
   return /^(stop|dezabonare|dezabonez|unsubscribe)\b/.test(t) ||
-    /sterger|baza de date|hartuire|spam\b|nu mai (scrieti|sunati)|nu ma mai suna|nu (ma|mai) intereseaza|nu mai (trimiteti|trimite|vreau|doresc)|nu (vreau|doresc) (sa (mai )?primesc|mesaje|oferte|promotii)|sterge(ti)? ma|scoate(ti)? ma|nu ma mai (contactati|deranjati)|lasati ma|stop (mesaje|promotii)/.test(t);
+    /sterger|baza de date|hartuire|spam\b|nu (imi |mi |ne )?mai (trimiteti|trimite|scrieti|sunati)|nu ma mai suna|nu (ma|mai) intereseaza|nu mai (trimiteti|trimite|vreau|doresc)|nu (vreau|doresc) (sa (mai )?primesc|mesaje|oferte|promotii)|sterge(ti)? ma|scoate(ti)? ma|nu ma mai (contactati|deranjati)|lasati ma|stop (mesaje|promotii)/.test(t);
 }
 // „forget her” (she asked to be deleted, the owner said yes): her leads, her chat and her client file go; a client file with
 // visits or payments keeps them for the accounts, with her name and phone taken out. Her phone stays only on the no-offers

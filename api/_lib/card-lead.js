@@ -62,7 +62,7 @@ async function afterLead(lead, x) {
     const N = require('./notify');
     const ids = await N.deskIds({ readJSON }, x.city || l.location || '');
     await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'lead', tone: 'good', go: 'pipeline', tag: 'card-' + lead.id, ownerPush: true,
-      title: 'CARD 🎄 ' + (x.tier ? lei(x.tier) + ' lei · ' : '') + 'SUN-O' + (({ 'Timișoara': ' TM', Arad: ' AR' })[x.city] || ''),
+      title: 'C. SARB 🎄 ' + (x.tier ? lei(x.tier) + ' lei · ' : '') + 'SUN-O' + (({ 'Timișoara': ' TM', Arad: ' AR' })[x.city] || ''),
       text: (lead.name || 'fără nume') + ' · a cerut cardul ' + summary(x) + '. Trimite-i linkul de plată sau rezervă-l în clinică.' }).catch((e) => console.error('card-lead notify:', e.message));
   } catch (err) { console.error('card-lead.afterLead:', err.message); }
 }

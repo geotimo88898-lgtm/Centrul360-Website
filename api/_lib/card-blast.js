@@ -392,12 +392,33 @@ const tierOfPre = (pre) => (/_290$/.test(String(pre || '')) ? 290 : /_490$/.test
 async function backfillTaps() {
   const v = await require('./card-kpi').view({ fresh: true });
   const sent = (await readJSON(SENT, null)) || {};
-  const out = { taps: 0, made: 0, existed: 0, errors: 0 };
+  const out = { taps: 0, made: 0, existed: 0, errors: 0, fromChats: 0 };
+  const CS = require('./card-sarbatori');
+  const one = async (k, city, tier, wave) => {
+    const r = await CS.requestFromTap({ phone: '0' + k, city, tier, wave }, { quiet: true }).catch((e) => ({ error: e.message }));
+    if (r && r.exists) out.existed++; else if (r && r.ok) out.made++; else out.errors++;
+  };
+  const done = new Set();
   for (const p of v.people || []) {
     if (!(p.answers || []).some((a) => a.kind === 'tap' && /rezerv/i.test(String(a.text || '')))) continue;
-    out.taps++;
-    const r = await require('./card-sarbatori').requestFromTap({ phone: '0' + p.k, city: p.city, tier: tierOfPre((sent[p.k] || {}).t), wave: p.batch }, { quiet: true }).catch((e) => ({ error: e.message }));
-    if (r && r.exists) out.existed++; else if (r && r.ok) out.made++; else out.errors++;
+    out.taps++; done.add(p.k);
+    await one(p.k, p.city, tierOfPre((sent[p.k] || {}).t), p.batch);
+  }
+  // the taps from before her answers were counted (21.11, before 16:40 UTC) and the ones written as words („am încercat
+  // să rezerv…”): read from the chats of the people who got the message; the sum she names wins over the message's
+  const st = await loadState();
+  const byK = new Map(st.list.map((p) => [p.k, p]));
+  const convos = await readJSON('data/whatsapp-conversations.json', []);
+  for (const c of convos) {
+    const k = d9(c && c.phone);
+    if (!byK.has(k) || done.has(k) || !sent[k] || !sent[k].w) continue;
+    const ins = (c.messages || []).filter((m) => m && m.direction === 'in' && String(m.timestamp || '') >= String(sent[k].at || ''));
+    const said = ins.map((m) => String(m.text || '')).join(' ');
+    if (!/rezerv/i.test(said)) continue;
+    const named = (said.match(/\b(290|490|990)\b/) || [])[1];
+    out.fromChats++; done.add(k);
+    const p = byK.get(k);
+    await one(k, p.city, named ? Number(named) : tierOfPre(sent[k].t || p.pre), p.batch || 1);
   }
   return out;
 }
