@@ -313,7 +313,8 @@ async function unpick(batch) {
 // which message the next sends use (the owner, 21.11): '' = the first one, '290' = the one that leads with the 290 lei card
 async function useTemplate(v) {
   const st = await loadState();
-  st.pre = v === '290' ? 'card_sarbatori_290' : v === '490' ? 'card_sarbatori_490' : '';
+  // 'bl' / 'bl490': the messages with the BioLifting gift for paying online (the owner, 22.11)
+  st.pre = ({ '290': 'card_sarbatori_290', '490': 'card_sarbatori_490', bl: 'card_sarbatori_bl', bl490: 'card_sarbatori_bl_490' })[v] || '';
   await saveState(st);
   return { ok: true, template: st.pre || 'card_sarbatori' };
 }
