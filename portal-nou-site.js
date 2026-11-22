@@ -226,7 +226,7 @@
         '<div class="st2-kpis">' +
           tile('users', 'Vizitatori azi', '<span data-count="' + t.visitors + '">' + num(t.visitors) + '</span>', num(t.views) + ' pagini văzute', 'is-accent') +
           tile('trend', 'Vizitatori 7 zile', num(w.visitors), num(w.views) + ' pagini · ' + num(d.month.visitors) + ' în 30 de zile') +
-          tile('file', 'Formulare de pe site', num(d.brought.week.forms), d.brought.today.forms + ' azi · ' + d.brought.month.forms + ' în 30 de zile', 'is-good') +
+          tile('file', 'Formulare site', num(d.brought.week.forms), d.brought.today.forms + ' azi · ' + d.brought.month.forms + ' în 30 de zile', 'is-good') +
           tile('calendar', 'Programări online', num(d.brought.week.books), d.brought.today.books + ' azi · ' + d.brought.month.books + ' în 30 de zile', 'is-good') +
           tile('zap', 'Conversie 7 zile', conv.toLocaleString('ro-RO') + '%', 'formulare + programări din vizitatori') +
           tile('clock', 'Se încarcă în', sec(w.load), 'media la vizitatori, 7 zile', w.load && w.load > 4000 ? 'is-warn' : '') +
@@ -273,7 +273,7 @@
       '<div class="st2-kpis">' +
         tile('users', 'Vizitatori', '<span data-count="' + q.visitors + '">' + num(q.visitors) + '</span>', num(q.views) + ' pagini văzute', 'is-accent') +
         tile('trend', one ? 'Pe vizitator' : 'Media pe zi', one ? (q.visitors ? (q.views / q.visitors).toLocaleString('ro-RO', { maximumFractionDigits: 1 }) : '0') : num(Math.round(q.visitors / q.n)), one ? 'pagini văzute de fiecare' : 'vizitatori pe zi · ' + num(Math.round(q.views / q.n)) + ' pagini') +
-        tile('file', 'Formulare de pe site', num(q.forms), 'în Pipeline, ' + span, 'is-good') +
+        tile('file', 'Formulare site', num(q.forms), 'în Pipeline, ' + span, 'is-good') +
         tile('calendar', 'Programări online', num(q.books), 'din pagina de programare', 'is-good') +
         tile('zap', 'Conversie', conv.toLocaleString('ro-RO') + '%', 'formulare + programări din vizitatori') +
         tile('clock', 'Se încarcă în', sec(q.load), 'media la vizitatori, ' + span, q.load && q.load > 4000 ? 'is-warn' : '') +
