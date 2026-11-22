@@ -197,9 +197,9 @@ html.csb-lock{ overflow:hidden; }
 .lfb-ok b{ color:var(--ink); font-weight:700; }
 .lfb-ok i{ flex:none; width:28px; height:28px; margin-top:-2px; border-radius:50%; display:grid; place-items:center; color:#fff; background:var(--teal); box-shadow:0 6px 14px -6px rgba(11,127,116,.7); }
 .lfb-ok svg{ width:15px; height:15px; }
-.lfb-go{ flex-direction:column; gap:2px; width:min(100%,440px); min-height:72px; height:auto; padding:12px 22px; }
-.lfb-go-t{ display:inline-flex; align-items:center; gap:10px; font-size:18.5px; font-weight:700; }
-.lfb-go-s{ font-size:13.5px; font-weight:500; opacity:.88; letter-spacing:.01em; }
+.lfb-go{ flex-direction:column; gap:0; width:min(100%,440px); min-height:58px; height:auto; padding:8px 22px; line-height:1.2; }
+.lfb-go-t{ display:inline-flex; align-items:center; gap:10px; font-size:17px; font-weight:600; }
+.lfb-go-s{ font-size:12.5px; font-weight:500; opacity:.85; letter-spacing:.01em; }
 .lfb-or{ margin-top:-2px; font-size:13px; color:var(--mute); }
 .lfb-chips{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin-top:-8px; }
 .lfb-chip{ height:34px; padding:0 12px; border:0; border-radius:999px; font:inherit; font-size:13.5px; font-weight:600; color:var(--teal2); background:var(--tint);
