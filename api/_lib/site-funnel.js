@@ -155,11 +155,15 @@ async function segments(fromIso) {
 
 // GET ?view=funnel&days=N: per day and in all, per source, the steps; plus the card orders (sent to pay / reserved / paid)
 // and the site's lead-filter leads, per source
+// (days: N, the last N days ending today; or the list of days itself, YYYY-MM-DD, at most 93: api/site-pulse.js rangeOf)
 async function view(days) {
-  const n = Math.max(1, Math.min(60, Number(days) || 14));
-  const now = Date.now();
-  const list = [];
-  for (let i = n - 1; i >= 0; i--) list.push(ro(new Date(now - i * 864e5)));
+  let list = [];
+  if (Array.isArray(days)) list = days.filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(String(d))).slice(-93);
+  if (!list.length) {
+    const n = Math.max(1, Math.min(60, Number(days) || 14));
+    const now = Date.now();
+    for (let i = n - 1; i >= 0; i--) list.push(ro(new Date(now - i * 864e5)));
+  }
   const [docs, orders, leads] = await Promise.all([
     Promise.all(list.map((d) => readJSON(keyOf(d), null).catch(() => null))),
     readJSON('data/card-sarbatori.json', []).catch(() => []),

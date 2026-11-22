@@ -36,7 +36,65 @@
     return v2 ? n + ' (site nou)' : n;
   };
 
-  var panel = null, timer = 0, htimer = 0, S = { d: null, h: null, dots: {} };
+  var panel = null, timer = 0, htimer = 0, S = { d: null, h: null, dots: {}, pd: null, fn: null, seq: 0 };
+
+  // ------------------------------------------------------------------ the period (the owner, 22.11: „Ieri”, 7 / 30 de zile, an interval)
+  // Acum = the live page (globe, who is on the site, today); the others: every number of the section over those days.
+  // Remembered per viewer (this browser only). The days are Bucharest's.
+  var PERS = [['now', 'Acum'], ['today', 'Azi'], ['yday', 'Ieri'], ['7', '7 zile'], ['30', '30 de zile'], ['range', 'Interval']];
+  var PER_KEY = 'c360.site.period';
+  var roDay = function (ms) { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms)); };
+  var calAdd = function (day, n) { var t = Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)) + n * 864e5; return new Date(t).toISOString().slice(0, 10); };
+  var okDay = function (x) { return /^\d{4}-\d{2}-\d{2}$/.test(String(x || '')); };
+  function perLoad() {
+    var v = null;
+    try { v = JSON.parse(localStorage.getItem(PER_KEY) || 'null'); } catch (e) { v = null; }
+    if (!v || !PERS.some(function (x) { return x[0] === v.p; })) v = { p: 'now' };
+    if (v.p === 'range' && !(okDay(v.from) && okDay(v.to))) { var t = roDay(Date.now()); v.from = calAdd(t, -6); v.to = t; }
+    return v;
+  }
+  function perSave() { try { localStorage.setItem(PER_KEY, JSON.stringify(S.per)); } catch (e) {} }
+  S.per = perLoad();
+  function perQuery() {
+    var p = S.per, t = roDay(Date.now());
+    if (p.p === 'today') return 'days=1';
+    if (p.p === 'yday') { var y = calAdd(t, -1); return 'from=' + y + '&to=' + y; }
+    if (p.p === '7' || p.p === '30') return 'days=' + p.p;
+    if (p.p === 'range') return 'from=' + encodeURIComponent(p.from) + '&to=' + encodeURIComponent(p.to);
+    return '';
+  }
+  var MON = ['ian.', 'feb.', 'mar.', 'apr.', 'mai', 'iun.', 'iul.', 'aug.', 'sept.', 'oct.', 'nov.', 'dec.'];
+  var WD = ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă'];
+  var dayLabel = function (x, wd) { var d = new Date(Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10), 12)); return (wd ? WD[d.getUTCDay()] + ', ' : '') + d.getUTCDate() + ' ' + MON[d.getUTCMonth()]; };
+  function perTitle(q) {
+    var p = S.per.p;
+    if (p === 'today') return 'Azi · ' + dayLabel(q.start, true);
+    if (p === 'yday') return 'Ieri · ' + dayLabel(q.start, true);
+    if (q.start === q.end) return dayLabel(q.start, true);
+    return 'De la ' + dayLabel(q.start) + ' până la ' + dayLabel(q.end) + ' · ' + q.n + ' zile';
+  }
+  function perBar() {
+    var p = S.per, t = roDay(Date.now());
+    return '<div class="k-seg st2-per-seg" role="tablist" aria-label="Perioada">' + PERS.map(function (x) {
+      return '<button type="button" role="tab" data-per="' + x[0] + '" aria-selected="' + (p.p === x[0]) + '"' + (p.p === x[0] ? ' class="is-on"' : '') + '>' + esc(x[1]) + '</button>';
+    }).join('') + '</div>' +
+      '<div class="st2-range"' + (p.p === 'range' ? '' : ' hidden') + '>' +
+        '<label class="k-field"><span>De la</span><input type="date" data-rfrom max="' + t + '" value="' + esc(p.from || calAdd(t, -6)) + '"></label>' +
+        '<label class="k-field"><span>Până la</span><input type="date" data-rto max="' + t + '" value="' + esc(p.to || t) + '"></label>' +
+      '</div>';
+  }
+  function perSet(v) {
+    S.per = v; perSave();
+    var bar = panel.querySelector('[data-per-bar]');
+    if (bar) bar.innerHTML = perBar();
+    var lv = panel.querySelector('[data-lv]');
+    if (lv) lv.hidden = v.p !== 'now';
+    if (v.p === 'now') lvEnter(); else lvLeave(true);
+    S.pd = null;
+    var body = panel.querySelector('[data-body]');
+    if (body) { body.dataset.key = ''; body.innerHTML = '<div class="k-skel" style="height:260px;border-radius:28px"></div>'; }
+    stats();
+  }
 
   // ------------------------------------------------------------------ the menu entry and the page
   function addNav() {
@@ -71,8 +129,9 @@
       '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Site</h2></div><div class="k-head-actions">' +
         '<a class="k-btn is-outline" href="https://www.centrul360.com/" target="_blank" rel="noopener">' + ic('globe') + 'Deschide site-ul</a>' +
         '<button type="button" class="k-btn is-accent" data-act="check">' + ic('refresh') + 'Verifică acum</button></div></div>' +
+      '<div class="st2-per" data-per-bar>' + perBar() + '</div>' +
       // the live band, ported from Summitlane's Live: the globe on black, the people on the site now, the list that turns it
-      '<section class="sx-lv island" data-lv><div class="lv-hero"><div class="lv-stage" data-lvstage><div class="glabels" data-glabels></div>' +
+      '<section class="sx-lv island" data-lv' + (S.per.p === 'now' ? '' : ' hidden') + '><div class="lv-hero"><div class="lv-stage" data-lvstage><div class="glabels" data-glabels></div>' +
         '<div class="lv-txt"><p class="eb"><i class="dot"></i>Live · se actualizează singur</p><h1><b data-lt>0</b> <span data-lw>vizitatori chiar acum</span></h1><p data-ls>&nbsp;</p></div>' +
         '<div class="lv-leg"><span><i style="background:var(--accent)"></i>vizitator</span><span><i style="background:#bcd3ff"></i>pe Programare</span><span><i style="background:#fff"></i>clinica</span></div></div>' +
         '<aside class="lv-feed"><h3>Pe site acum<span data-rate></span></h3><ul class="ev" data-feed></ul></aside></div>' +
@@ -85,19 +144,46 @@
       '<div data-body><div class="k-skel" style="height:260px;border-radius:28px"></div><div class="k-skel" style="height:120px;margin-top:1rem"></div></div>';
     panel.addEventListener('click', function (e) {
       if (e.target.closest('[data-act="check"]')) { health(true); stats(); }
+      var pb = e.target.closest('[data-per]');
+      if (pb) {
+        var k = pb.getAttribute('data-per');
+        if (k === S.per.p) return;
+        var v = { p: k };
+        if (k === 'range') { var t = roDay(Date.now()); v.from = S.per.from || calAdd(t, -6); v.to = S.per.to || t; }
+        else if (S.per.from) { v.from = S.per.from; v.to = S.per.to; }
+        perSet(v);
+      }
+    });
+    panel.addEventListener('change', function (e) {
+      if (!e.target.matches('[data-rfrom], [data-rto]')) return;
+      var f = panel.querySelector('[data-rfrom]').value, t = panel.querySelector('[data-rto]').value;
+      if (!okDay(f) || !okDay(t)) return;
+      if (f > t) { var x = f; f = t; t = x; }
+      perSet({ p: 'range', from: f, to: t });
     });
   }
   function show() {
-    lvEnter();
+    if (S.per.p === 'now') lvEnter();
     stats(); health(false);
     clearInterval(timer); clearInterval(htimer);
-    timer = setInterval(function () { if (K().isActive('site') && !document.hidden) stats(); else { clearInterval(timer); lvLeave(); } }, 15000);
+    // Acum: every 15 s; a period with today in it: every minute; a closed period (Ieri, an interval in the past): once
+    timer = setInterval(function () {
+      if (!(K().isActive('site'))) { clearInterval(timer); lvLeave(); return; }
+      if (document.hidden) return;
+      if (S.per.p === 'now') stats();
+      else if (S.pd && S.pd.period && S.pd.period.open && Date.now() - (S.pdAt || 0) > 55e3) stats();
+    }, 15000);
     htimer = setInterval(function () { if (K().isActive('site') && !document.hidden) health(false); else clearInterval(htimer); }, 60000);
   }
 
   // ------------------------------------------------------------------ data
   function stats() {
-    return K().api('/api/site-pulse?view=stats').then(function (d) { S.d = d; draw(); }, function (e) { S.err = K().errText ? K().errText(e) : 'Nu am putut citi site-ul.'; draw(); });
+    var my = ++S.seq, q = perQuery();
+    var fail = function (e) { if (my !== S.seq) return; S.err = K().errText ? K().errText(e) : 'Nu am putut citi site-ul.'; draw(); };
+    if (q) return K().api('/api/site-pulse?view=stats&' + q).then(function (d) { if (my !== S.seq) return; S.err = null; S.pd = d; S.pdAt = Date.now(); draw(); }, fail);
+    // Acum: the live page; the funnel per source (7 days) at most once a minute
+    if (!S.fn || Date.now() - S.fnAt > 60e3) { S.fnAt = Date.now(); K().api('/api/site-pulse?view=funnel&days=7').then(function (f) { S.fn = f; if (S.per.p === 'now' && panel) { var b = panel.querySelector('[data-funnel]'); if (b) b.innerHTML = funnelRows(f.total); } }, function () {}); }
+    return K().api('/api/site-pulse?view=stats').then(function (d) { if (my !== S.seq) return; S.err = null; S.d = d; draw(); }, fail);
   }
   function health(btn) {
     var b = panel && panel.querySelector('[data-act="check"]');
@@ -119,6 +205,7 @@
   function draw() {
     if (!panel) return;
     var body = panel.querySelector('[data-body]');
+    if (S.per.p !== 'now') return drawPeriod(body);
     var d = S.d, h = S.h;
     if (!d) { if (S.err) body.innerHTML = K().empty('alert', 'Nu am putut citi site-ul', esc(S.err)); return; }
     var t = d.today, w = d.week;
@@ -151,13 +238,9 @@
           '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('send') + 'De unde vin</h3><small>7 zile</small></div>' + bars(w.from) +
             '<div class="st2-dev">' + devSplit(w.dev) + '</div></section>' +
         '</div>' +
+        '<div class="st2-row">' + placesCard(w.places, '7 zile') + funnelCard(S.fn && S.fn.total, '7 zile') + '</div>' +
         // ---- health
-        '<section class="k-card st2-card st2-health"><div class="k-card-head"><h3>' + ic('shield') + 'Sănătatea site-ului</h3><small>' + (h ? (h.check.ok === h.check.n ? 'Toate paginile răspund' : (h.check.n - h.check.ok) + ' pagini nu răspund') + ' · ' + (up != null ? up.toLocaleString('ro-RO') + '% disponibil în istoric' : '') : 'se verifică…') + '</small></div>' +
-          (h ? '<div class="st2-checks">' + h.rows.map(function (r, i) {
-            var ok = r.status >= 200 && r.status < 400;
-            return '<div class="st2-check ' + (ok ? 'is-ok' : 'is-bad') + '" style="--i:' + i + '"><i></i><b>' + esc(pageName(r.p)) + '</b><span>' + (ok ? r.ms + ' ms · ' + r.kb.toLocaleString('ro-RO') + ' KB' : (r.err || 'cod ' + r.status)) + '</span></div>';
-          }).join('') + '</div><div class="st2-spark" data-hspark></div>' : '<div class="k-skel" style="height:120px"></div>') +
-        '</section>';
+        healthCard(h, up);
       var box = body.querySelector('[data-chart]');
       if (box) K().chart(box, {
         labels: d.days.map(function (x) { return K().dateShort ? K().dateShort(x.d) : x.d.slice(5); }), height: 220, axis: function (v) { return Math.round(v); },
@@ -166,11 +249,93 @@
           { name: 'Formulare + programări', values: d.days.map(function (x) { return x.forms + x.books; }), color: 'var(--good)' }
         ]
       });
-      var sp = body.querySelector('[data-hspark]');
-      if (sp && h && h.history.length > 1 && K().spark) sp.innerHTML = '<small>Timpul de răspuns, ultimele verificări</small>' + K().spark(h.history.map(function (c) { return c.ms; }), { color: 'var(--accent)' });
+      healthSpark(body, h);
     }
     live(d.live || []);
     globe(d);
+  }
+  // ---- a period (Azi, Ieri, 7 / 30 de zile, an interval): the same cards, every number over those days
+  function drawPeriod(body) {
+    var d = S.pd, h = S.h;
+    if (!d || !d.period) { if (S.err) body.innerHTML = K().empty('alert', 'Nu am putut citi site-ul', esc(S.err)); return; }
+    var q = d.period;
+    var up = h && h.history && h.history.length ? Math.round(h.history.reduce(function (a, c) { return a + c.ok / c.n; }, 0) / h.history.length * 1000) / 10 : null;
+    var key = JSON.stringify([S.per, q, d.funnel, h && h.check]);
+    if (body.dataset.key === key) return;
+    body.dataset.key = key;
+    var one = q.n === 1, span = one ? (q.start === q.today ? 'azi' : 'în ziua aleasă') : q.n + ' zile';
+    var conv = pct(q.forms + q.books, q.visitors);
+    var hourNow = +new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', hour: '2-digit', hourCycle: 'h23' }).format(new Date());
+    var hours = q.hours || [];
+    var mx = Math.max.apply(null, hours.concat([1]));
+    body.innerHTML =
+      '<div class="st2-per-t"><h3>' + esc(perTitle(q)) + '</h3>' + (q.open ? '<small><i class="n-live-dot"></i>se actualizează singur</small>' : '') + '</div>' +
+      '<div class="st2-kpis">' +
+        tile('users', 'Vizitatori', '<span data-count="' + q.visitors + '">' + num(q.visitors) + '</span>', num(q.views) + ' pagini văzute', 'is-accent') +
+        tile('trend', one ? 'Pe vizitator' : 'Media pe zi', one ? (q.visitors ? (q.views / q.visitors).toLocaleString('ro-RO', { maximumFractionDigits: 1 }) : '0') : num(Math.round(q.visitors / q.n)), one ? 'pagini văzute de fiecare' : 'vizitatori pe zi · ' + num(Math.round(q.views / q.n)) + ' pagini') +
+        tile('file', 'Formulare de pe site', num(q.forms), 'în Pipeline, ' + span, 'is-good') +
+        tile('calendar', 'Programări online', num(q.books), 'din pagina de programare', 'is-good') +
+        tile('zap', 'Conversie', conv.toLocaleString('ro-RO') + '%', 'formulare + programări din vizitatori') +
+        tile('clock', 'Se încarcă în', sec(q.load), 'media la vizitatori, ' + span, q.load && q.load > 4000 ? 'is-warn' : '') +
+      '</div>' +
+      (one
+        ? '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('trend') + 'Oră cu oră</h3><small>pagini văzute</small></div>' +
+            '<div class="st2-hours" aria-label="Vizitele, pe ore">' + hours.map(function (v, i) {
+              return '<span style="--h:' + Math.max(3, Math.round(v / mx * 100)) + '%;--i:' + i + '" title="' + i + ':00 · ' + v + ' vizualizări"' + (q.open && i === hourNow ? ' class="is-now"' : '') + '></span>';
+            }).join('') + '</div><div class="st2-hours-l"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div></section>'
+        : '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('trend') + 'Zi cu zi</h3><small>' + q.n + ' zile</small></div><div data-chart></div></section>') +
+      '<div class="st2-row">' +
+        '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('file') + 'Paginile cele mai văzute</h3><small>' + span + '</small></div>' + bars(q.pages.filter(function (x) { return !/^\/v2(\/|$)/.test(x.k || ''); }).slice(0, 8).map(function (x) { return { k: x.k, label: pageName(x.k), n: x.n }; })) + '</section>' +
+        '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('send') + 'De unde vin</h3><small>' + span + '</small></div>' + bars(q.from.slice(0, 8)) +
+          '<div class="st2-dev">' + devSplit(q.dev) + '</div></section>' +
+      '</div>' +
+      '<div class="st2-row">' + placesCard(q.places, span) + funnelCard(d.funnel && d.funnel.total, span) + '</div>' +
+      healthCard(h, up);
+    var box = body.querySelector('[data-chart]');
+    if (box) K().chart(box, {
+      labels: q.days.map(function (x) { return K().dateShort ? K().dateShort(x.d) : x.d.slice(5); }), height: 220, axis: function (v) { return Math.round(v); },
+      series: [
+        { name: 'Vizitatori', values: q.days.map(function (x) { return x.visitors; }), color: 'var(--accent)' },
+        { name: 'Formulare + programări', values: q.days.map(function (x) { return x.forms + x.books; }), color: 'var(--good)' }
+      ]
+    });
+    healthSpark(body, h);
+  }
+  // the cities (the one Cloudflare gives each visit)
+  function placesCard(list, span) {
+    return '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('globe') + 'Orașe</h3><small>' + esc(span) + '</small></div>' + bars((list || []).slice(0, 8)) + '</section>';
+  }
+  // the funnel per source (api/_lib/site-funnel.js): each step once per visitor and day
+  var FSTEPS = [['visit', 'Vizite'], ['cta', 'Apasă'], ['open', 'Deschide'], ['start', 'Începe'], ['lead', 'Lead'], ['pay', 'Plată']];
+  var NETS = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube', google: 'Google', whatsapp: 'WhatsApp', direct: 'Direct', site: 'Site' };
+  var srcName = function (k) { var a = String(k || '').split(':'); var n = NETS[a[0]] || (a[0] ? a[0].charAt(0).toUpperCase() + a[0].slice(1) : 'Direct'); return a[1] ? n + ' · ' + a[1] : n; };
+  function funnelRows(total) {
+    var keys = Object.keys(total || {}).filter(function (k) { return k !== 'preview' && (total[k].visit || total[k].lead || total[k].cardsPaid || total[k].lfLeads); })
+      .sort(function (a, b) { return (total[b].visit || 0) - (total[a].visit || 0); }).slice(0, 8);
+    if (!keys.length) return '<p class="st2-none">Încă nimic.</p>';
+    return '<ol class="st2-fn">' + keys.map(function (k, i) {
+      var r = total[k], extra = [];
+      if (r.lfLeads) extra.push(num(r.lfLeads) + (r.lfLeads === 1 ? ' lead din lead filter' : ' leaduri din lead filter'));
+      if (r.cardsPaid) extra.push(num(r.cardsPaid) + (r.cardsPaid === 1 ? ' card plătit' : ' carduri plătite'));
+      return '<li style="--i:' + i + '"><div class="st2-fn-h"><b>' + esc(srcName(k)) + '</b><small>' + (r.visit ? pct(r.lead || 0, r.visit).toLocaleString('ro-RO') + '% ajung la lead' : '') + '</small></div>' +
+        '<div class="st2-fn-s">' + FSTEPS.map(function (s) { return '<span' + (r[s[0]] ? '' : ' class="is-0"') + '><small>' + s[1] + '</small><b>' + num(r[s[0]] || 0) + '</b></span>'; }).join('') + '</div>' +
+        (extra.length ? '<p>' + esc(extra.join(' · ')) + '</p>' : '') + '</li>';
+    }).join('') + '</ol>';
+  }
+  function funnelCard(total, span) {
+    return '<section class="k-card st2-card"><div class="k-card-head"><h3>' + ic('zap') + 'Pâlnia pe surse</h3><small>' + esc(span) + '</small></div><div data-funnel>' + (total ? funnelRows(total) : '<div class="k-skel" style="height:120px"></div>') + '</div></section>';
+  }
+  function healthCard(h, up) {
+    return '<section class="k-card st2-card st2-health"><div class="k-card-head"><h3>' + ic('shield') + 'Sănătatea site-ului</h3><small>' + (h ? (h.check.ok === h.check.n ? 'Toate paginile răspund' : (h.check.n - h.check.ok) + ' pagini nu răspund') + ' · ' + (up != null ? up.toLocaleString('ro-RO') + '% disponibil în istoric' : '') : 'se verifică…') + '</small></div>' +
+          (h ? '<div class="st2-checks">' + h.rows.map(function (r, i) {
+            var ok = r.status >= 200 && r.status < 400;
+            return '<div class="st2-check ' + (ok ? 'is-ok' : 'is-bad') + '" style="--i:' + i + '"><i></i><b>' + esc(pageName(r.p)) + '</b><span>' + (ok ? r.ms + ' ms · ' + r.kb.toLocaleString('ro-RO') + ' KB' : (r.err || 'cod ' + r.status)) + '</span></div>';
+          }).join('') + '</div><div class="st2-spark" data-hspark></div>' : '<div class="k-skel" style="height:120px"></div>') +
+        '</section>';
+  }
+  function healthSpark(body, h) {
+    var sp = body.querySelector('[data-hspark]');
+    if (sp && h && h.history.length > 1 && K().spark) sp.innerHTML = '<small>Timpul de răspuns, ultimele verificări</small>' + K().spark(h.history.map(function (c) { return c.ms; }), { color: 'var(--accent)' });
   }
   function devSplit(dv) {
     var m = (dv && dv.m) || 0, c = (dv && dv.d) || 0, tot = m + c;
@@ -305,7 +470,7 @@
     if (r.bottom < 80 || r.top > innerHeight - 80) st.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   // the band sleeps when Site is left (the one WebGL canvas is not drawn behind other screens)
-  function lvLeave() { if (LV.m && !K().isActive('site')) LV.m.leave(); }
+  function lvLeave(force) { if (LV.m && (force || !K().isActive('site'))) LV.m.leave(); }
   function lvEnter() { if (LV.m && panel && panel.querySelector('[data-lvstage]')) LV.m.enter(); }
   function makeGlobe(T, stage) {
     var W = stage.clientWidth || 600, H = stage.clientHeight || 420;
