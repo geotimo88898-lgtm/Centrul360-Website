@@ -43,6 +43,7 @@
   const PAY_ON = /^\/v2\//.test(location.pathname) || window.C360_PAY_ONLINE === true;
   const PAY_OFF = 10; // percent off when paid online
   const payAmount = (full) => Math.floor((Number(full) || 0) * (100 - PAY_OFF) / 100); // whole lei, never less than 10% off
+  window.C360_PAY_ON = PAY_ON;
   const PAGE_CITY = { timisoara: 'Timișoara', arad: 'Arad', 'epilare-laser': 'Timișoara', 'tonifiere-musculara': 'Timișoara', 'detox-drenaj': 'Timișoara' }[PAGE] || '';
 
   const CSS = `
@@ -297,6 +298,8 @@
       S.services = d.services || S.services; S.off = d.on === false; S.err = '';
       if (S.off) { paint(); return; }
       S.service = d.service; S.svc = d.service.id;
+      // a treatment booked by its name keeps the fixed price its button carries (the Full Body package; the API knows none)
+      if (S.svc === 'custom' && !S.service.price && S.proc && S.proc.price) S.service = Object.assign({}, S.service, { price: S.proc.price, old: S.proc.old });
       S.days = d.days || [];
       const has = (x) => x && x.slots.length;
       if (!has(S.days.find((x) => x.date === S.date))) { const f = S.days.find(has); S.date = f ? f.date : ''; S.time = ''; }
@@ -368,11 +371,12 @@
     return '';
   }
   const fullBody = (t) => /full\s*body/.test(fold(t)) && /epil|laser/.test(fold(t)); // a full body laser: 90 minutes (api/_lib/booking.js custom)
-  const byId = (id) => (id === 'custom' ? { id: 'custom', title: S.label, minutes: fullBody(S.label) ? 90 : 60, price: 0 } : (S.services || []).find((s) => s.id === id) || null);
+  const byId = (id) => (id === 'custom' ? { id: 'custom', title: S.label, minutes: fullBody(S.label) ? 90 : 60, price: (S.pick && S.pick.price) || 0, old: (S.pick && S.pick.old) || 0 } : (S.services || []).find((s) => s.id === id) || null);
 
   // ---------------------------------------------------------------- painting
-  // the pay step: only for an offer with its price (not the free consultation, not a treatment priced at the clinic)
-  const payable = () => PAY_ON && !!S.service && S.service.id !== 'consult' && S.service.id !== 'custom' && S.service.price > 0;
+  // the pay step: only for an offer with its price (not the free consultation, not a treatment priced at the clinic; a
+  // treatment booked by its name only when its button carries its price, like the Full Body package)
+  const payable = () => PAY_ON && !!S.service && S.service.id !== 'consult' && S.service.price > 0;
   function prog(n) {
     const bar = root.querySelector('.bk-prog'), want = payable() ? 5 : 4;
     while (bar.children.length < want) bar.appendChild(document.createElement('i'));
@@ -622,7 +626,7 @@
   // ---------------------------------------------------------------- open / close
   function start(o) {
     S = fresh(o || {});
-    S.pick = S.svc ? { svc: S.svc, label: S.label } : null; // what the button named
+    S.pick = S.svc ? { svc: S.svc, label: S.label, price: (o && o.price) || 0, old: (o && o.old) || 0 } : null; // what the button named
     S.svc = '';
     // an offer's button with its clinic (an offer of one city): only that clinic (the owner, 21.11)
     S.lock = !!(o && o.city) && !!(S.pick && S.pick.svc !== 'consult');
@@ -655,7 +659,8 @@
   // ---------------------------------------------------------------- the buttons of the site
   // what a button books: from data-book-* first, else from the WhatsApp text it carried (the offer, the city)
   function intentOf(a) {
-    if (a.hasAttribute('data-book')) return { service: a.dataset.bookService || '', city: a.dataset.bookCity || '', label: a.dataset.bookLabel || '' };
+    // data-book-price / data-book-old: a fixed price the Admin offers don't carry (the Full Body package, booked by its name)
+    if (a.hasAttribute('data-book')) return { service: a.dataset.bookService || '', city: a.dataset.bookCity || '', label: a.dataset.bookLabel || '', price: +a.dataset.bookPrice || 0, old: +a.dataset.bookOld || 0 };
     if (a.hasAttribute('data-sim-consult')) return { service: 'consult', city: '', label: '' }; // the home page's results: the free consultation
     const href = a.getAttribute('href') || '';
     if (!/wa\.me\//.test(href)) return null;
@@ -704,6 +709,31 @@
     if (!o.city) o.city = PAGE_CITY;
     open(o);
   }, true);
+
+  // The news above the offers (the owner, 22.11), wherever the Black Friday offers show ([data-offers], filled by kit.js),
+  // once per page and only while the pay step is on: „Nou: plătești online și primești încă 10% reducere…”
+  function payNews() {
+    const first = document.querySelector('[data-offers]');
+    if (!PAY_ON || !first || document.querySelector('.bk-news')) return;
+    if (!document.getElementById('bk-news-css')) {
+      const st = document.createElement('style'); st.id = 'bk-news-css';
+      st.textContent = '.bk-news{ display:flex; justify-content:center; align-items:flex-start; margin:0 0 28px; padding:0 4px; }' +
+        '.bk-news span{ display:inline-flex; align-items:center; align-self:flex-start; gap:10px; max-width:100%; min-height:40px; padding:5px 16px 5px 6px; border-radius:999px; font-size:14.5px; font-weight:600; letter-spacing:-.01em; line-height:1.3; color:#fff;' +
+        ' background:linear-gradient(160deg,#1d1e22,#0b0b0d); box-shadow:0 0 0 1px rgba(233,184,168,.45) inset, 0 12px 28px -14px rgba(214,140,120,.6); }' +
+        '.bk-news i{ flex:none; font-style:normal; font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; padding:6px 10px; border-radius:999px; color:#3b1c14; background:linear-gradient(125deg,#e7b3a3,#f8dccf 50%,#d99d8c); }' +
+        '.bk-news em{ font-style:normal; }' +
+        '.bk-news b{ font-weight:700; color:#f6d6cb; }' +
+        '.bk-news .bk-news-s{ display:none; }' +
+        '@media (max-width:640px){ .bk-news .bk-news-l{ display:none; } .bk-news .bk-news-s{ display:inline; } .bk-news span{ font-size:14px; } }';
+      document.head.appendChild(st);
+    }
+    const p = document.createElement('p');
+    p.className = 'bk-news';
+    p.innerHTML = '<span><i>Nou</i><em class="bk-news-l">Plătești online și primești <b>încă ' + PAY_OFF + '% reducere</b>, peste prețul de Black Friday.</em>' +
+      '<em class="bk-news-s">Plătești online: <b>încă ' + PAY_OFF + '% reducere</b></em></span>';
+    (first.closest('.ofr-grp') || first).before(p); // on Oferte: above the groups, under the filters
+  }
+  payNews();
 
   window.C360Book = { open, close, mount };
   const auto = () => {
