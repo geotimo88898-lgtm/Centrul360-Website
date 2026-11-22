@@ -13,6 +13,9 @@
 //   Money      the orders: online / in the clinic, paid, waiting, expired, cancelled, cashed, credit, by card, the minutes
 //              to the payment, the stock; „din campanie” = an order made after the send by a phone of the list, or from
 //              the campaign's link
+//   Lots       card-blast's batches: who they were (seg, visits, what she paid us, her last visit, a booking ahead at the
+//              send), when and with which message (sent[k].t: 990 / 290 / 490), and each lot's numbers side by side
+//   People     each one of the list: her steps, her next booking (data/appointments.json), her lot and message
 // cardblast/kpi-cache.json keeps what was read once (her answers, the failure codes, Meta's count for 10 minutes).
 
 const { readJSON, writeJSON, readBinary } = require('./store');
@@ -88,7 +91,11 @@ async function metaCount(fromMs, cache) {
 
 // ---------------------------------------------------------------- the numbers
 const blankWa = () => ({ list: 0, sent: 0, failed: 0, failedSend: 0, failedLater: 0, waiting: 0, delivered: 0, read: 0, replied: 0, taps: 0, stop: 0, texts: 0 });
-const blankMoney = () => ({ online: 0, onlinePaid: 0, onlineWaiting: 0, onlineExpired: 0, resv: 0, resvOpen: 0, clinicPaid: 0, cancelled: 0, paid: 0, cards: 0, cash: 0, credit: 0, minOnline: [], minClinic: [] });
+const blankMoney = () => ({ online: 0, onlinePaid: 0, onlineWaiting: 0, onlineExpired: 0, resv: 0, resvOpen: 0, clinicPaid: 0, cancelled: 0, paid: 0, cards: 0, cash: 0, credit: 0, open: 0, potential: 0, minOnline: [], minClinic: [] });
+// an order still to be paid: a reservation or a request (to call), or an online one still in its 2 hours
+const isOpen = (r, now) => r.status === 'rezervat' || r.status === 'lead' || ((r.status === 'asteptare' || r.status === 'matching') && now - Date.parse(r.created) < C.HOLD_MS);
+// which message a send was (card-blast sent[k].t, else her own p.pre): the card it leads with
+const msgOf = (pre) => (/_290$/.test(String(pre || '')) ? '290' : /_490$/.test(String(pre || '')) ? '490' : '990');
 
 function moneyOf(orders, now) {
   const by = { total: blankMoney() };
@@ -107,7 +114,8 @@ function moneyOf(orders, now) {
       if (paid && r.paidVia === 'online') { x.onlinePaid++; if (mins != null) x.minOnline.push(mins); }
       if (paid && r.paidVia !== 'online') { x.clinicPaid++; if (mins != null) x.minClinic.push(mins); }
       if (waiting) { if (age < C.HOLD_MS) x.onlineWaiting++; else x.onlineExpired++; }
-      if (r.status === 'rezervat') x.resvOpen++;
+      if (r.status === 'rezervat' || r.status === 'lead') x.resvOpen++;
+      if (isOpen(r, now)) { x.open++; x.potential += Number(r.amount) || 0; }
       if (r.status === 'anulat') x.cancelled++;
     });
     const t = tiers[r.tier];
@@ -119,12 +127,14 @@ function moneyOf(orders, now) {
 
 async function view(opts) {
   const now = Date.now();
-  const [st, sent, cache0, ordersRaw, clients] = await Promise.all([
+  const [st, sent, cache0, ordersRaw, clients, appts, tplsAll] = await Promise.all([
     readJSON(CB.STATE, null).then((x) => Object.assign({ list: [], armed: false, pickedAt: '', doneAt: '', note: '' }, x || {})),
     readJSON(CB.SENT, null).then((x) => x || {}),
     readJSON(CACHE, null).then((x) => x || {}).catch(() => ({})),
     readJSON(C.KEY, []).catch(() => []),
     readJSON('data/clients.json', []).catch(() => []),
+    readJSON('data/appointments.json', []).catch(() => []),
+    require('./wa-templates').load().then((d) => d.templates || []).catch(() => []),
   ]);
   const cache = { in: cache0.in || {}, fail: cache0.fail || {}, meta: cache0.meta || null };
   const list = Array.isArray(st.list) ? st.list : [];
@@ -159,7 +169,7 @@ async function view(opts) {
 
   // per batch too (api/_lib/card-blast.js pickMore: batch 2; the first ones have none)
   const batchOf = (p) => String((p && p.batch) || 1);
-  const batches = [...new Set(list.map(batchOf))].sort();
+  const batches = [...new Set(list.map(batchOf))].sort((a, b) => Number(a) - Number(b));
   const waBy = {};
   ['all'].concat(batches).forEach((b) => { waBy[b] = { total: blankWa() }; CITIES.forEach((c) => { waBy[b][c] = blankWa(); }); });
   const wa = waBy.all;
@@ -271,11 +281,67 @@ async function view(opts) {
   });
   const tokens = everyone.filter((x) => x.site).length;
 
+  // ---- her visits (the appointments of her client file): the last one done, the next one booked now, one booked when the
+  // message went (made before it, still not cancelled)
+  const today = roKey(now, 'day');
+  const cid = new Map(); // phone → client ids
+  (Array.isArray(clients) ? clients : []).forEach((c) => { const k = d9(c && c.phone); if (k.length === 9 && c.id) cid.set(k, (cid.get(k) || []).concat(c.id)); });
+  const apOf = new Map(); // client id or phone → appointments
+  (Array.isArray(appts) ? appts : []).forEach((a) => {
+    if (!a || !a.date) return;
+    if (a.clientId) apOf.set(a.clientId, (apOf.get(a.clientId) || []).concat(a));
+    const k = d9(a.clientPhone); if (k.length === 9) apOf.set('p' + k, (apOf.get('p' + k) || []).concat(a));
+  });
+  const visitsOf = (k) => { const seen = new Set(); return (cid.get(k) || []).concat('p' + k).flatMap((id) => apOf.get(id) || []).filter((a) => (seen.has(a.id) ? false : seen.add(a.id))); };
+  const dead = (a) => /anulat|neprezent/.test(String(a.status || ''));
+  const visit = new Map();
+  list.forEach((p) => {
+    const as = visitsOf(p.k), s = sent[p.k];
+    const done = as.filter((a) => a.status === 'finalizata' && a.date <= today).map((a) => a.date).sort();
+    const next = as.filter((a) => a.date >= today && !dead(a) && a.status !== 'finalizata').sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')))[0] || null;
+    const sendDay = s && s.at ? roKey(Date.parse(s.at), 'day') : '';
+    const atSend = !!(sendDay && as.some((a) => a.date >= sendDay && !dead(a) && (!a.createdAt || a.createdAt <= s.at)));
+    visit.set(p.k, { last: done[done.length - 1] || '', next: next ? { date: next.date, time: next.time || '', city: next.location || '', what: String(next.treatment || '').slice(0, 60) } : null, atSend });
+  });
+  everyone.forEach((x) => { const v = visit.get(x.k) || {}; x.appt = v.next || null; x.msg = msgOf((sent[x.k] || {}).t || (byK.get(x.k) || {}).pre || st.pre); });
+
+  // ---- the lots (card-blast batches): who they were, when and with what message, and how each did, side by side
+  const tplImg = (pre) => { const t = tplsAll.filter((x) => x.fastcash === (pre || 'card_sarbatori') + '_tm' || x.fastcash === (pre || 'card_sarbatori') + '_ar').sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))[0]; return t ? require('./wa-templates').imageOf(t) || '' : ''; };
+  const ageDays = (d) => (d ? (Date.parse(today) - Date.parse(d)) / 864e5 : null);
+  const lots = batches.map((b) => {
+    const ps = list.filter((p) => batchOf(p) === b), ev = everyone.filter((x) => x.batch === b);
+    // the message: what went (sent[k].t); before anything went, what is planned (her p.pre, else the list's)
+    const went = ps.filter((p) => sent[p.k] && sent[p.k].w);
+    const pres = went.length ? went.map((p) => sent[p.k].t || '') : ps.map((p) => p.pre || st.pre || '');
+    const msgs = {}; pres.forEach((x) => { const m = msgOf(x); msgs[m] = (msgs[m] || 0) + 1; });
+    const keys = Object.keys(msgs);
+    const segs = {}; ps.forEach((p) => { segs[p.seg || 'client'] = (segs[p.seg || 'client'] || 0) + 1; });
+    const vis = ps.map((p) => Number(p.visits)).filter((n) => Number.isFinite(n));
+    const paid = ps.map((p) => p.paid).filter((n) => typeof n === 'number' && n > 0);
+    const rec = { m1: 0, m3: 0, m6: 0, m12: 0, older: 0, never: 0 };
+    ps.forEach((p) => { const a = ageDays((visit.get(p.k) || {}).last); rec[a == null ? 'never' : a <= 30 ? 'm1' : a <= 91 ? 'm3' : a <= 182 ? 'm6' : a <= 365 ? 'm12' : 'older']++; });
+    const at = ps.map((p) => sent[p.k] && sent[p.k].w ? Date.parse(sent[p.k].at) : 0).filter((t) => t > 0);
+    const w = waBy[b].total, mo = campBy[b].by.total;
+    const won = ev.filter((x) => x.orders.some((o) => o.status === 'platit' || isOpen(o, now))).length;
+    const allPre = [...new Set(pres)];
+    return {
+      b, n: ps.length, msg: keys.length > 1 ? 'mix' : keys[0] || '990', msgs, img: tplImg(allPre.length === 1 ? allPre[0] : ''), segs,
+      visits: vis.length ? { min: Math.min(...vis), med: median(vis), max: Math.max(...vis) } : null, paidMed: paid.length ? median(paid) : null, recency: rec,
+      atSend: ps.filter((p) => (visit.get(p.k) || {}).atSend).length, cities: { 'Timișoara': ps.filter((p) => p.city === 'Timișoara').length, Arad: ps.filter((p) => p.city === 'Arad').length },
+      first: at.length ? new Date(Math.min(...at)).toISOString() : '', last: at.length ? new Date(Math.max(...at)).toISOString() : '',
+      stats: { sent: w.sent, delivered: w.delivered, read: w.read, replied: w.replied, taps: w.taps, requests: mo.resv, paidOnline: mo.onlinePaid, paidClinic: mo.clinicPaid,
+        cash: mo.cash, potential: mo.potential, open: mo.open, won, conv: w.sent ? Math.round((won / w.sent) * 1000) / 10 : null },
+    };
+  });
+  // the best lot: the most people won (paid or asked) per message sent, among lots with 20 sent or more
+  const ranked = lots.filter((l) => l.stats.sent >= 20 && l.stats.conv != null).sort((a, b) => b.stats.conv - a.stats.conv || b.stats.cash - a.stats.cash);
+  const best = ranked.length > 1 && ranked[0].stats.conv > 0 ? ranked[0].b : '';
+
   await writeJSON(CACHE, cache, { quiet: true }).catch(() => {});
   return {
     ok: true, key: KEY, name: NAME, at: nowISO(),
     state: { armed: !!st.armed, pickedAt: st.pickedAt || '', doneAt: st.doneAt || '', note: st.note || '', from: from ? new Date(from).toISOString() : '', to: to ? new Date(to).toISOString() : '', tracked: tracked ? new Date(tracked).toISOString() : '' },
-    wa, waBy, batches, fails: Object.values(reasons).sort((a, b) => b.n - a.n), meta,
+    wa, waBy, batches, lots, best, fails: Object.values(reasons).sort((a, b) => b.n - a.n), meta,
     site, money: { camp: campBy.all, campBy, all: moneyOf(orders, now0), split }, stock, hours, people: everyone, tokens,
   };
 }
