@@ -313,3 +313,5 @@ main [hidden]{ display:none !important; }
   background:linear-gradient(150deg,#322a21 0%,#17130f 55%,#0a0807 100%) padding-box, linear-gradient(135deg,#a07428 0%,#f7dc97 20%,#fffbe6 32%,#e3c27a 50%,#8a6420 74%,#f3d589 100%) border-box; }
 /* the VIP online: its full price struck through, quieter than the price she pays (22.11) */
 [data-cs-v="payon"] s{ opacity:.72; font-weight:500; margin-right:2px; }
+/* the VIP one's ribbon over the gold button: black with gold words */
+.cs-vipon .cst-gift{ background:linear-gradient(150deg,#2b251e,#0a0807) !important; color:#f3d589 !important; box-shadow:0 0 0 1px rgba(227,194,122,.45) inset !important; }
