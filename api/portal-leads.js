@@ -509,7 +509,14 @@ async function createLead({ name, phone, source, location, createdBy, email, int
       existing.stageChangedAt = nowISO();
       existing.lostReason = '';
     }
-    if (result.fields.interest && !existing.interest) existing.interest = result.fields.interest;
+    // the offer she signed up for now is the one shown (the owner, 22.11: „să-mi apară oferta nouă”); the ones before stay
+    // in her history (interestHistory, newest last) and in the activity line below
+    if (result.fields.interest && result.fields.interest !== existing.interest) {
+      if (existing.interest) existing.interestHistory = (existing.interestHistory || []).concat({ interest: existing.interest, value: existing.value || 0, until: nowISO() }).slice(-10);
+      existing.interest = result.fields.interest;
+      if (result.fields.value) existing.value = result.fields.value;
+      existing.interestAt = nowISO();
+    }
     if (result.fields.email && !existing.email) existing.email = result.fields.email;
     if (filled) existing.forms = (existing.forms || []).concat(filled).slice(-5);
     if (organic && organic.itemId && !existing.organic) existing.organic = organicOf(organic);
@@ -517,7 +524,7 @@ async function createLead({ name, phone, source, location, createdBy, email, int
     addActivity(existing, {
       type: 'returned', author,
       text: (reopened ? 'Leadul pierdut s-a întors' : 'A trimis din nou datele') + ' (' + (SOURCE_LABELS[source] || source) + ')' + (moved && !reopened ? ' · ' + moved + ' → ' + nou.name : '') +
-        (result.fields.interest ? ' · ' + result.fields.interest : '') + (note ? ' - ' + clip(note, 500) : ''),
+        (result.fields.interest ? ' · ' + result.fields.interest + ((existing.interestHistory || []).length && existing.interestAt && Date.now() - Date.parse(existing.interestAt) < 5e3 ? ' (înainte: ' + existing.interestHistory[existing.interestHistory.length - 1].interest + ')' : '') : '') + (note ? ' - ' + clip(note, 500) : ''),
     });
     await writeJSON(LEADS_KEY, leads);
     // someone already in the Pipeline filled the form again: worth an alert, not a second welcome

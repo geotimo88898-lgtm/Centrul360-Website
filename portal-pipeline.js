@@ -1236,6 +1236,8 @@
             field('Sursă', '<select name="source">' + sourceOptions(l.source) + '</select>') +
             field('Locație', '<select name="location">' + locationOptions(l.location) + '</select>') +
             field('Interesată de', '<select name="interest">' + offerOptions(l.interest) + '</select>', 'full') +
+            // the offers she signed up for before (newest first): the one above is the latest (the owner, 22.11)
+            ((l.interestHistory || []).length ? '<p class="pl-field full" style="margin-top:-4px;font-size:12.5px;color:var(--muted)">Înainte: ' + l.interestHistory.slice().reverse().map((h) => esc(h.interest) + (h.until ? ' (până pe ' + esc(new Date(h.until).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' })) + ')' : '')).join(' · ') + '</p>' : '') +
             '<div class="pl-field full is-hidden" data-custom-interest><span>Descrie interesul</span><input name="interestCustom" maxlength="120"></div>' +
             field('Valoare estimată (lei)', '<input name="value" type="number" min="0" step="10" value="' + (l.value || '') + '">') +
           '</div><div class="pl-form-actions"><button type="submit" class="pl-btn is-primary" data-save-details disabled>' + ic('check') + 'Salvează detaliile</button></div></form>' +
