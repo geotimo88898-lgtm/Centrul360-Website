@@ -1440,7 +1440,54 @@ function cardView(r, c, now) {
   };
 }
 
-module.exports = {
+// ---- „Rezerv în clinică” tapped in a campaign's WhatsApp message (api/_lib/card-blast.js, the owner 22.11: „bagă-le și pe ele
+// în cereri”): a request like the portal's, the card of the message she got, her name from our files when we have it. One per
+// phone (an open order: nothing new). A full wave opens the next one rather than turning her away. opt.quiet: no alert and
+// no WhatsApp (the backfill of the taps already made: reception sees them in the list).
+async function requestFromTap(i, opt) {
+  const o = opt || {};
+  const { normalizePhone } = require('./clients');
+  let phone = normalizePhone(String(i.phone || '')) || '';
+  if (/^7\d{8}$/.test(phone)) phone = '0' + phone;
+  const city = ['Timișoara', 'Arad'].find((c) => fold(c) === fold(i.city)) || '';
+  const tier = TIERS[Number(i.tier)] ? Number(i.tier) : 990;
+  if (!(/^07\d{8}$/.test(phone) || /^[1-9]\d{10,14}$/.test(phone))) return { error: 'bad_phone' };
+  if (!city) return { error: 'missing_city' };
+  const now = Date.now();
+  if (now >= Date.parse(DEADLINE)) return { error: 'closed' };
+  let list = await readJSON(KEY, []);
+  const k9 = d9(phone);
+  const open = list.find((r) => d9(r.phone) === k9 && (r.status === 'rezervat' || r.status === 'lead' || (r.status === 'asteptare' && live(r, now))));
+  if (open) return { ok: true, exists: true, id: open.id };
+  let c0 = await count(list, now);
+  if (!c0.open || c0.left < 1) { await openNext(list, 'whatsapp').catch(() => null); c0 = await count(list, now); }
+  const known = await knownName(phone).catch(() => '');
+  const entry = { id: crypto.randomUUID(), created: nowISO(), name: known || '', phone, city, tier, qty: 1, amount: tier, credit: TIERS[tier], forWho: 'eu',
+    cards: [{ code: '', recipient: '' }], recipient: '', status: 'rezervat', via: 'whatsapp', pay: 'clinica', nameFrom: known ? 'fisa' : '',
+    note: 'A apăsat „Rezerv în clinică” în mesajul WhatsApp' + (i.wave ? ' (valul ' + i.wave + ')' : ''), overStock: !(c0.open && c0.left >= 1) || undefined };
+  mark(entry, 'created', 'whatsapp: a apăsat „Rezerv în clinică”');
+  list = await readJSON(KEY, []);
+  if (list.some((r) => d9(r.phone) === k9 && (r.status === 'rezervat' || r.status === 'lead'))) return { ok: true, exists: true };
+  supersede(list, entry);
+  list.push(entry);
+  await writeJSON(KEY, list);
+  try {
+    await require('../portal-leads').createLead({ name: known || NONAME, phone, source: 'altul', location: city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători',
+      note: 'Card de Sărbători rezervat din mesajul WhatsApp („Rezerv în clinică”): ' + tier + ' lei, credit ' + lei(TIERS[tier]) + ' lei. Sun-o să stabiliți când vine să-l plătească.', authorLabel: 'WhatsApp · Card de Sărbători', welcome: false });
+  } catch (e) { console.error('card tap lead:', e.message); }
+  if (!o.quiet) {
+    try {
+      const N = require('./notify'), st = { readJSON, writeJSON };
+      const ids = [...new Set((await N.deskIds(st, city)).concat(await N.adminIds(st)))];
+      await N.notifyMany(st, ids, { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-tap-' + entry.id,
+        title: 'CARD 🎄 ' + N.leiTxt(tier) + ' · REZERVAT' + N.cityTag(city), text: (known || 'fără nume') + ' · a apăsat „Rezerv în clinică” în mesaj. Sun-o.' });
+    } catch (e) { console.error('card tap notify:', e.message); }
+    await reservedMsg(entry.id).catch((e) => console.error('card tap msg:', e.message));
+  }
+  return { ok: true, id: entry.id };
+}
+
+module.exports = { requestFromTap,
   KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT_TM, GIFT_ARAD, giftOf, giftShort, TPL,
   norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,

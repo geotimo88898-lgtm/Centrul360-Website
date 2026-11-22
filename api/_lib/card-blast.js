@@ -378,8 +378,28 @@ async function noteAnswer(message, text) {
     const rec = { k, kind, text: String(text || '').slice(0, 300), at: message.timestamp ? new Date(Number(message.timestamp) * 1000).toISOString() : nowISO(), ctx: (message.context && message.context.id) === m.byK.get(k).w ? 1 : 0 };
     await createOnce(P + 'in/' + safeId(message.id), JSON.stringify(rec)).catch(() => {});
     if (kind === 'stop' || require('./optout').isStop(text)) await require('./optout').add(k, 'a cerut pe WhatsApp: ' + String(text || '').slice(0, 60)).catch(() => {});
+    // „Rezerv în clinică” in the message: a request in Carduri, reception told (the owner, 22.11)
+    if (kind === 'tap' && /rezerv/i.test(String(text || ''))) {
+      const p = m.st.list.find((x) => x.k === k) || {};
+      await require('./card-sarbatori').requestFromTap({ phone: '0' + k, city: p.city, tier: tierOfPre((m.byK.get(k) || {}).t || p.pre), wave: p.batch || 1 }).catch((e) => console.error('cardblast tap request', e.message));
+    }
     return kind;
   } catch (err) { console.error('cardblast noteAnswer', err.message); return null; }
 }
 
-module.exports = { useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };
+const tierOfPre = (pre) => (/_290$/.test(String(pre || '')) ? 290 : /_490$/.test(String(pre || '')) ? 490 : 990);
+// the taps on „Rezerv în clinică” made before the requests existed: once, into Carduri, no WhatsApp, no alerts (counts back)
+async function backfillTaps() {
+  const v = await require('./card-kpi').view({ fresh: true });
+  const sent = (await readJSON(SENT, null)) || {};
+  const out = { taps: 0, made: 0, existed: 0, errors: 0 };
+  for (const p of v.people || []) {
+    if (!(p.answers || []).some((a) => a.kind === 'tap' && /rezerv/i.test(String(a.text || '')))) continue;
+    out.taps++;
+    const r = await require('./card-sarbatori').requestFromTap({ phone: '0' + p.k, city: p.city, tier: tierOfPre((sent[p.k] || {}).t), wave: p.batch }, { quiet: true }).catch((e) => ({ error: e.message }));
+    if (r && r.exists) out.existed++; else if (r && r.ok) out.made++; else out.errors++;
+  }
+  return out;
+}
+
+module.exports = { backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };
