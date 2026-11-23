@@ -85,8 +85,20 @@ async function create(c, { orderId, amount, title, clientName }) {
     reason: plain(title || 'Centrul360').slice(0, 100) || 'Centrul360', booking_text: plain(orderId), dba: 'Centrul360', expiry_date: day(Date.now() + 2 * 86400e3),
     payment_request_lang: 'ro', qr_generated: false,
   });
-  if (!j.code || !j.payment_request_url) throw new ReqError('mypos_failed', 0, 'fără cod sau link');
-  return { code: String(j.code), url: String(j.payment_request_url) };
+  const code = String(j.code || j.payment_request_code || '');
+  if (!code) throw new ReqError('mypos_failed', 0, 'fără cod');
+  let url = String(j.payment_request_url || j.url || '');
+  if (!url) { const d = await call(c, 'GET', '/ecommerce/v1/payment-requests/' + encodeURIComponent(code)).catch(() => ({})); url = String(d.url || ''); }
+  if (!url) throw new ReqError('mypos_failed', 0, 'fără link (cod ' + code + ')');
+  return { code, url };
+}
+// the payment requests made for an order (its id in the booking text), newest first: an order whose code was never saved
+// (a request made but its answer lost) is found again by them
+async function findByOrder(c, orderId) {
+  const j = await call(c, 'GET', '/ecommerce/v1/payment-requests?' + new URLSearchParams({ booking_text: plain(orderId), page: '1', size: '10' }));
+  return (j.items || []).filter((x) => x && String(x.booking_text || '') === plain(orderId))
+    .map((x) => ({ code: String(x.code || ''), url: String(x.url || ''), status: String(x.status || ''), amount: Number(x.amount) || 0, currency: String(x.currency || ''), at: String(x.added_on || '') }))
+    .filter((x) => x.code).sort((a, b) => (a.at < b.at ? 1 : -1));
 }
 // what myPOS says of a payment request: { status: 'Paid' | 'Pending' | 'Seen' | 'Failed' | 'Expired' | 'Cancelled', amount,
 // currency, bookingText }
@@ -186,4 +198,4 @@ async function probeCreate(store) {
   return { ok: true, tries: out };
 }
 
-module.exports = { probeCreate, active, KEY, FIELDS, ready, load, create, status, adminOf, save, check, setLive, drop, note, ReqError };
+module.exports = { findByOrder, probeCreate, active, KEY, FIELDS, ready, load, create, status, adminOf, save, check, setLive, drop, note, ReqError };

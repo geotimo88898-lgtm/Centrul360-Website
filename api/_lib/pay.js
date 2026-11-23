@@ -393,7 +393,7 @@ async function check(orderId, key) {
   if (o.status !== 'open') return { paid: false, status: o.status };
   let st = null;
   try {
-    if (o.provider === 'requests') { const r = await RQ.active(S); if (!r) return { paid: false, status: 'open' }; st = await askRequest(r, o); }
+    if (o.provider === 'requests') { const r = await RQ.active(S); if (!r) return { paid: false, status: 'open' }; st = await askRequest(r, await recoverRequest(r, o)); }
     else { const c = await IPC.load(S); if (!IPC.ready(c)) return { paid: false, status: 'open' }; st = await askBoth(c, o); }
   } catch (e) { await rqFail(e); return { paid: false, status: 'open', error: e.code || 'mypos_failed' }; }
   if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(orderId, st, 'status'); return { paid: !!r.ok, status: r.ok ? 'paid' : r.double ? 'double' : 'open' }; }
@@ -447,15 +447,31 @@ async function link(orderId, key) {
   if (o.provider !== 'requests') return { error: 'bad_provider' };
   if (o.status === 'paid') return { error: 'already_paid' };
   if (o.status !== 'open') return { error: 'not_open' };
-  if (o.request && o.request.url) return { ok: true, url: o.request.url };
+  if (o.request && o.request.code && o.request.url) return { ok: true, url: o.request.url };
   if (['hold', 'offer', 'treatment'].includes(o.kind) && !o.phone) return { error: 'missing_contact' };
   const r = await RQ.active(S);
   if (!r || r.error) return { error: 'off' };
-  let req;
-  try { req = await RQ.create(r, { orderId: o.id, amount: o.amount, title: o.title, clientName: o.name }); }
-  catch (e) { await rqFail(e); console.error('pay link:', e.code, e.status, e.message); return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' }; }
+  // one request per order, saved before its page is given out: a request made before for this order (its answer lost, a
+  // second tap) is found by the order id in its booking text and used again; a new one only when there is none
+  let req = null;
+  try {
+    if (o.requestTried) req = (await RQ.findByOrder(r, o.id)).find((x) => !['Expired', 'Cancelled'].includes(x.status) && Math.abs(x.amount - o.amount) < 0.005) || null;
+    if (!req) {
+      await update(orderId, (x) => { x.requestTried = nowISO(); });
+      req = await RQ.create(r, { orderId: o.id, amount: o.amount, title: o.title, clientName: o.name });
+    }
+  } catch (e) { await rqFail(e); console.error('pay link:', e.code, e.status, e.message); return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' }; }
   const saved = await update(orderId, (x) => { if (x.request && x.request.code) return false; x.request = { code: req.code, url: req.url, at: nowISO() }; });
-  return { ok: true, url: (saved && saved.request && saved.request.url) || req.url };
+  if (!saved || !saved.request || !saved.request.code || !saved.request.url) return { error: 'mypos_failed', message: 'cererea nu s-a putut salva' };
+  return { ok: true, url: saved.request.url };
+}
+// an open order of the Partners way without a saved code (its request made, the answer lost): found again at myPOS
+async function recoverRequest(r, o) {
+  if (o.request && o.request.code) return o;
+  const found = (await RQ.findByOrder(r, o.id)).find((x) => Math.abs(x.amount - o.amount) < 0.005) || null;
+  if (!found) return o;
+  const saved = await update(o.id, (x) => { if (x.request && x.request.code) return false; x.request = { code: found.code, url: found.url, at: nowISO(), recovered: true }; });
+  return saved || o;
 }
 // what myPOS says of the order's payment request, as the embedded way's answer (status 1 paid, 3 failed, 4 gone)
 async function askRequest(r, o) {
@@ -507,7 +523,7 @@ async function sweep() {
     if (!o || o.status !== 'open') { await openList((l) => l.filter((x) => x.id !== it.id)); out.gone++; continue; }
     let st = null;
     try {
-      if (o.provider === 'requests') { if (!r || r.error) continue; st = await askRequest(r, o); }
+      if (o.provider === 'requests') { if (!r || r.error) continue; st = await askRequest(r, await recoverRequest(r, o)); }
       else { if (!IPC.ready(c)) continue; st = await askBoth(c, o); }
     } catch (e) { await rqFail(e); continue; }
     if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(o.id, st, 'status'); if (r.ok) out.paid++; continue; }
@@ -547,4 +563,4 @@ async function status() {
   return Object.assign(pv.name === 'embedded' ? IPC.publicOf(pv.c) : { on: true, live: pv.live, sandbox: pv.sandbox }, { provider: pv.name, bonusPct: BONUS_PCT });
 }
 
-module.exports = { bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
+module.exports = { recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
