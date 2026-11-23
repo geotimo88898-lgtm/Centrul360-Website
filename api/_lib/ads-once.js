@@ -11,14 +11,8 @@ const AC = require('./ads-cache');
 const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
-const JOBS = [
-  // 23.11, George: two campaigns of real results to the home page (Purchase on the site's pixel), 50 lei a day each, women
-  // only, the button „Află mai multe”: Timișoara with cases 16 and 05, Arad with cases 24 and 11 (the homepage's approved
-  // cases, untouched, under the city's name). The pictures: brand_asset/ads/rezultate-*.jpg. Made once (api/_lib/ads-once.js
-  // `site`): the first ad makes the campaign and its ad set, the second joins that ad set; each step written down at once.
-  { id: 'site-results-2026-11-23', why: 'Rezultate reale spre prima pagină: TM și AR, câte 2 reclame, 50 lei/zi', site: {
-    pixelId: '2276074362800484', cta: 'LEARN_MORE', ages: [25, 64],
-    campaigns: [
+// the two „Rezultate · site” campaigns of 23.11 (George): the city's name over a real case of the homepage, to the home page
+const SITE_CAMPAIGNS = [
       { name: 'C360 · TM · Rezultate · site', utm: 'c360-tm-rezultate-site', city: 'Timișoara', budget: 50, ads: [
         { name: 'TM · HIFU gușă · caz 16', image: 'rezultate-tm-gusa.jpg',
           text: 'TIMIȘOARA! Uite cum poți scăpa de gușă fără ace și fără operație, chiar dacă ai încercat deja tot.\n\n' +
@@ -51,7 +45,23 @@ const JOBS = [
             'Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\nAlege-ți ziua pe site, durează câteva secunde.\n👉 centrul360.com\n\nRezultatele diferă de la o persoană la alta.',
           headlines: ['TEN MAI LUMINOS ÎN 50 DE MINUTE ⏰💨', 'TEN ODIHNIT, FĂRĂ RECUPERARE 👉', '190 LEI ÎN LOC DE 300 👉'], description: '5,0 pe Google, peste 300 de recenzii' },
       ] },
-    ] } },
+    ];
+const JOBS = [
+  // 23.11 ~01:30, George („cu pixel configurat”, the account is only Centrul360's now): the site's pixel was never shared
+  // with this ad account (Meta: „Contul nu are acces la pixel”, 1815045), so the 2 campaigns made at 01:18 can't run and
+  // can't be fixed (Meta: make them again from scratch). The pixel shared once (as api/_lib/pixel-share.js, the pixel's
+  // business Mellon Vision); if Meta refuses, the job stops there with Meta's words (no blind retries); if it works, the
+  // same 2 campaigns made again, then the 2 broken ones paused
+  { id: 'site-results-v2-2026-11-23', why: 'Pixelul partajat cu contul și rezultatele reale refăcute (TM și AR, câte 2 reclame, 50 lei/zi)', site: {
+    pixelId: '2276074362800484', sharePixel: '1107600260509887', cta: 'LEARN_MORE', ages: [25, 64], campaigns: SITE_CAMPAIGNS,
+    pauseAfter: [{ campaignId: '120250718543790149', name: 'C360 · TM · Rezultate · site (fără pixel)' }, { campaignId: '120250718631180149', name: 'C360 · AR · Rezultate · site (fără pixel)' }] } },
+  // 23.11, George: two campaigns of real results to the home page (Purchase on the site's pixel), 50 lei a day each, women
+  // only, the button „Află mai multe”: Timișoara with cases 16 and 05, Arad with cases 24 and 11 (the homepage's approved
+  // cases, untouched, under the city's name). The pictures: brand_asset/ads/rezultate-*.jpg. Made once (api/_lib/ads-once.js
+  // `site`): the first ad makes the campaign and its ad set, the second joins that ad set; each step written down at once.
+  { id: 'site-results-2026-11-23', why: 'Rezultate reale spre prima pagină: TM și AR, câte 2 reclame, 50 lei/zi', site: {
+    pixelId: '2276074362800484', cta: 'LEARN_MORE', ages: [25, 64],
+    campaigns: SITE_CAMPAIGNS } },
   // 23.11 ~00:20, the first copy (1713044987053623) was made with a draft ending, before George's final words; the final
   // one: copied from it as it is, only the ending in George's words; every C360 ad on the first copy or on the old WhatsApp
   // form moves to it, the template too, and the draft copy is archived once no ad sends into it
@@ -554,13 +564,24 @@ async function sitePicture(file) {
   }
   return { error: why || 'poza lipsește' };
 }
+// the site's pixel shared with the connected ad account (the call of api/_lib/pixel-share.js), by the pixel's business;
+// Meta's own words when it refuses
+async function sharePixel(conn, pixel, business) {
+  const tok = conn.userToken, act = conn.adAccountId;
+  const words = (j) => { const e = (j && j.error) || {}; return [e.error_user_title, e.error_user_msg, e.message].filter(Boolean).join(' · ') + (e.code ? ' (cod ' + e.code + (e.error_subcode ? '/' + e.error_subcode : '') + ')' : ''); };
+  const has = async () => { const r = await ads.call('GET', '/' + act + '/adspixels', tok, { fields: 'id,name', limit: '100' }); return r.ok ? (r.j.data || []).some((x) => String(x.id) === pixel) : null; };
+  if (await has()) return { ok: true, already: true };
+  const r = await ads.call('POST', '/' + pixel + '/shared_accounts', tok, { account_id: act.replace(/^act_/, ''), business });
+  if (!r.ok || r.j.error) return { ok: false, error: words(r.j) || 'Meta n-a răspuns' };
+  return { ok: true, answer: r.j, seen: await has() };
+}
 // what the site ads job made (ids, ads counted, the last refusal), for /api/clock-status
 async function siteSummary() {
   const doc = (await readJSON(KEY, {})) || {};
   const out = {};
   for (const j of JOBS.filter((x) => x.site)) {
     const st = (doc.site || {})[j.id] || {};
-    out[j.id] = { done: !!(doc.done || {})[j.id], campaigns: j.site.campaigns.map((c) => { const sc = st[c.name] || {}; return { name: c.name, campaignId: sc.campaignId || '', adsetId: sc.adsetId || '', ads: sc.ads || {}, error: sc.error || '', warning: sc.warning || '' }; }) };
+    out[j.id] = { done: !!(doc.done || {})[j.id], campaigns: j.site.campaigns.map((c) => { const sc = st[c.name] || {}; return { name: c.name, campaignId: sc.campaignId || '', adsetId: sc.adsetId || '', ads: sc.ads || {}, error: sc.error || '', warning: sc.warning || '' }; }), pixel: st.pixelAnswer || null, paused: st.paused || null };
   }
   return out;
 }
@@ -762,6 +783,19 @@ async function run() {
     for (const j of todo.filter((x) => x.site)) {
       doc.site = doc.site || {};
       const st = doc.site[j.id] = doc.site[j.id] || {};
+      // the pixel shared with the connected ad account first (once: a refusal ends the job with Meta's words)
+      if (j.site.sharePixel && !st.pixel) {
+        const px = await sharePixel(conn, j.site.pixelId, j.site.sharePixel);
+        st.pixelAnswer = px; await save();
+        if (!px.ok) {
+          doc.done[j.id] = new Date().toISOString();
+          doc.log.push({ job: j.id, at: new Date().toISOString(), expired: true, why: 'pixelul: ' + px.error });
+          await save();
+          await tell({ tone: 'bad', tag: 'once-expired-' + j.id, title: 'NEFĂCUT ⚠️ - ' + j.why, text: 'Meta n-a partajat pixelul: ' + px.error });
+          continue;
+        }
+        st.pixel = new Date().toISOString(); await save();
+      }
       const d = await ads.loadDefaults(readJSON);
       let failed = '';
       for (const c of j.site.campaigns) {
@@ -794,6 +828,19 @@ async function run() {
           out.push(r.adId);
         }
         if (failed) break;
+      }
+      // the campaigns these replace go off, once every new ad is made
+      if (!failed && Array.isArray(j.site.pauseAfter)) {
+        st.paused = st.paused || {};
+        for (const p of j.site.pauseAfter) {
+          if (st.paused[p.campaignId]) continue;
+          const r = await ads.act(conn, { action: 'status', id: p.campaignId, status: 'PAUSED' });
+          if (r.error) { failed = p.name + ': ' + r.error; break; }
+          await AC.switched(p.campaignId, 'PAUSED').catch(() => {});
+          st.paused[p.campaignId] = new Date().toISOString();
+          doc.log.push({ job: j.id, at: new Date().toISOString(), campaignId: p.campaignId, campaignName: p.name, status: 'PAUSED', why: 'înlocuită de campania refăcută cu pixelul' });
+          await save();
+        }
       }
       if (!failed) {
         doc.done[j.id] = new Date().toISOString();
