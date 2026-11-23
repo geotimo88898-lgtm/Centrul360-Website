@@ -49,7 +49,12 @@
       s.online[VIP] = Math.round(VIP * 0.9);
     }
     CSC.state = s;
-    $$('[data-cs-left]').forEach(function (el) { el.textContent = String(s.left); });
+    $$('[data-cs-left]').forEach(function (el) {
+      el.textContent = String(s.left);
+      // „1 card”, „2 carduri” (the text after the number is the next text node: „ carduri”)
+      var n = el.nextSibling;
+      if (n && n.nodeType === 3 && /^\s*card(uri)?\b/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(/^(\s*)card(uri)?/, '$1' + (s.left === 1 ? 'card' : 'carduri'));
+    });
     $$('[data-cs-bar]').forEach(function (el) { el.style.setProperty('--k', (s.left / s.total).toFixed(3)); });
     $$('[data-cs-live]').forEach(function (el) { el.hidden = false; });
     CSC.subs.forEach(function (fn) { try { fn(s); } catch (e) {} });

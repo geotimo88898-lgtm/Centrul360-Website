@@ -92,9 +92,10 @@ async function place(o) {
     clientId: client.id, clientName: client.name || name, clientPhone: client.phone || phone,
     treatment: svc.title, categories: [svc.cat || 'corporale'], category: svc.cat || 'corporale',
     amount: svc.price || 0, location: city, cosmeticianId: who ? who.id : '', cosmeticianName: who ? who.name : '', status: 'programata', package: false,
-    note: clip(['Programare online pe site', svc.id === 'consult' ? '' : svc.price ? svc.price + ' lei' : '', payAmount ? 'Plată online ' + payAmount + ' lei' + (viaCheckout ? ', pe site' : ', de verificat în myPOS') : '', clip(o.page, 120)].filter(Boolean).join(' · '), 500),
+    note: clip(['Programare online pe site', svc.id === 'consult' ? '' : svc.price ? svc.price + ' lei' : '', payAmount ? 'Plată online ' + payAmount + ' lei' + (viaCheckout ? ', pe site' : ', de verificat în myPOS') : '',
+      o.bonus && o.bonus.type === 'gift' ? 'Cadou la plata online: ' + o.bonus.gift : '', clip(o.page, 120)].filter(Boolean).join(' · '), 500),
     // track: her browser's ids, for the Purchase when she pays
-    ...(payAmount ? { pay, payAmount, track: o.track || null, ...(viaCheckout ? { payVia: 'checkout', payBonus: P.BONUS_PCT } : {}) } : pay === 'clinic' ? { pay } : {}),
+    ...(payAmount ? { pay, payAmount, track: o.track || null, ...(viaCheckout ? { payVia: 'checkout', payBonus: o.bonus && o.bonus.type === 'gift' ? 0 : (o.bonus && o.bonus.pct) || P.BONUS_PCT, ...(o.bonus && o.bonus.type === 'gift' ? { payGift: o.bonus.gift } : {}) } : {}) } : pay === 'clinic' ? { pay } : {}),
     ...(svc.treatment ? { priceListId: svc.treatment } : {}),
     ...(o.holdId ? { holdId: o.holdId } : {}),
     online: true, createdBy: 'site', createdAt: at, updatedAt: at,
@@ -174,6 +175,10 @@ module.exports = async (req, res) => {
       const appts = appts0.concat(H.asAppts(holds)); // an hour held while someone pays online is taken
       const { list, svc } = picked;
       const s = svc || list[0];
+      // what each one gets when paid online (the offer's own bonus, the price list's default): the pay step shows it
+      const P = require('./_lib/pay');
+      const offers = await require('./_lib/offers').loadOffers(readJSON, null);
+      for (const x of list.concat(svc && svc.id === 'custom' ? [svc] : [])) { const bb = await P.bonusFor(x, offers); if (bb) x.bonus = bb; }
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=10, stale-while-revalidate=50');
       if (!cfg.on) { res.status(200).json({ on: false, city, services: list }); return; }
       res.status(200).json({ on: true, city, services: list, service: s, step: cfg.step, days: B.days(cfg, city, s.minutes, appts) });
@@ -219,7 +224,8 @@ module.exports = async (req, res) => {
     if (b.pay === 'online-checkout' && !viaCheckout) { res.status(400).json({ error: 'not_payable' }); return; }
     if (viaCheckout && !(await P.status()).on) { res.status(409).json({ error: 'pay_off' }); return; }
     const pay = viaCheckout ? 'online-pending' : b.pay === 'online-pending' || b.pay === 'clinic' ? b.pay : '';
-    const payAmount = viaCheckout ? P.bonusPrice(svc.price) : pay === 'online-pending' && Number.isInteger(Number(b.payAmount)) && Number(b.payAmount) > 0 &&
+    const vb = viaCheckout ? await P.bonusFor(svc) : null;
+    const payAmount = viaCheckout ? vb.amount : pay === 'online-pending' && Number.isInteger(Number(b.payAmount)) && Number(b.payAmount) > 0 &&
       Number(b.payAmount) <= (svc.price > 0 ? svc.price : svc.id === 'custom' ? 20000 : 0) ? Number(b.payAmount) : 0;
     const appts = await readJSON('data/appointments.json', []);
     const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
@@ -232,7 +238,7 @@ module.exports = async (req, res) => {
     if (!B.freeOn(cfg, city, date, svc.minutes, appts.concat(H.asAppts(await H.all()))).includes(time)) { res.status(409).json({ error: 'taken' }); return; }
 
     const placed = await place({ cfg, city, svc, date, time, name, phone, page: b.page, src: b.src, cookie: req.headers && req.headers.cookie,
-      track: payAmount ? capi.fromRequest(req, b.page) : null, pay, payAmount, viaCheckout, appts });
+      track: payAmount ? capi.fromRequest(req, b.page) : null, pay, payAmount, viaCheckout, appts, bonus: vb });
     if (placed.error) { res.status(409).json({ error: placed.error }); return; }
     const { entry, lead } = placed;
     res.status(200).json({ ok: true, appointment: { id: entry.id, date, time, endTime: entry.endTime, nice: nice(date), location: city, treatment: svc.title, ...(viaCheckout ? { payAmount } : {}) } });

@@ -513,13 +513,18 @@
   const sumHtml = () => '<div class="bk-sum"><div class="when">' + esc(niceDay(S.date).replace(/^./, (c) => c.toUpperCase())) + ' · <span>' + esc(S.time) + '</span></div>' +
     '<div class="what">' + esc((S.service || {}).title || '') + ' · ' + esc(ADDR[S.city]) + '</div></div>';
   // how she pays: online now, the whole offer at 10% less, or at the clinic at the full price. Two equal buttons, always both.
+  // what she gets when she pays online (23.11): the service's own bonus from the server (an offer's percent or its gift, the
+  // price list's default), else the old 10% (the payment links' sums)
+  const bonusOf = (s) => (S.embed && s && s.bonus ? s.bonus : { type: 'pct', pct: PAY_OFF, amount: payAmount(s && s.price), line: '-' + PAY_OFF + '% la plata online' });
   function payHtml() {
-    const full = S.service.price, now = payAmount(full), go = '<span class="bk-pb-go" aria-hidden="true">' + ICON.next + '</span>';
+    const full = S.service.price, b = bonusOf(S.service), now = b.amount, go = '<span class="bk-pb-go" aria-hidden="true">' + ICON.next + '</span>';
+    // the final sum big, the bonus in one line under it; both buttons full size, always (the owner)
+    const small = b.type === 'gift' ? 'Prețul întreg + ' + esc(b.gift) + ' cadou' : '<s>' + lei(full) + '</s> · ' + esc(b.line);
     return '<p class="bk-eyebrow">Plata</p><h2 class="bk-h">Cum vrei să <em>plătești?</em></h2>' +
       // the appointment as plain text, so the only things that look tappable are the two buttons (the owner, 22.11)
       '<p class="bk-when">' + esc(niceDay(S.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(S.time) + '<small>' + esc(S.service.title || '') + ' · Centrul360 ' + esc(S.city) + '</small></p>' +
       '<div class="bk-pay" role="group" aria-label="Plata">' +
-      '<button type="button" class="bk-pb online' + (S.pay === 'online' ? ' on' : '') + '" data-pay="online"><span class="bk-pb-t"><b>Plătesc online ' + lei(now) + '</b><small><s>' + lei(full) + '</s> · ' + (S.service.id === 'custom' ? 'tot, acum' : 'toată oferta, acum') + '</small></span><i class="bk-off">-' + PAY_OFF + '%</i>' + go + '</button>' +
+      '<button type="button" class="bk-pb online' + (S.pay === 'online' ? ' on' : '') + '" data-pay="online"><span class="bk-pb-t"><b>Plătesc online ' + lei(now) + '</b><small>' + small + '</small></span><i class="bk-off">' + (b.type === 'gift' ? 'Cadou' : '-' + b.pct + '%') + '</i>' + go + '</button>' +
       '<button type="button" class="bk-pb clinic' + (S.pay === 'clinic' ? ' on' : '') + '" data-pay="clinic"><span class="bk-pb-t"><b>Rezerv și plătesc în clinică</b><small>' + lei(full) + ', în ziua programării</small></span>' + go + '</button>' +
       '</div>';
   }
@@ -542,9 +547,10 @@
   // payment opens right here; her name and phone are on the payment screen. Paid: the booking is made (by the server, on
   // myPOS's signed word) and confirmed. Not paid: the hold runs out, nothing is booked.
   function checkoutHtml() {
-    return '<p class="bk-eyebrow">Plata online</p><h2 class="bk-h">Plătești acum, <em>cu ' + PAY_OFF + '% mai puțin.</em></h2>' +
+    const b = bonusOf(S.service);
+    return '<p class="bk-eyebrow">Plata online</p><h2 class="bk-h">Plătești acum, <em>' + (b.type === 'gift' ? 'cu ' + esc(b.gift) + ' cadou.' : 'cu ' + b.pct + '% mai puțin.') + '</em></h2>' +
       '<p class="bk-when">' + esc(niceDay(S.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(S.time) + '<small>' + esc((S.service || {}).title || '') + ' · Centrul360 ' + esc(S.city) + '</small></p>' +
-      '<div data-bk-checkout><div class="bk-skel" style="height:96px;border-radius:18px;margin-bottom:12px"></div><div class="bk-skel" style="height:300px;border-radius:18px"></div></div>';
+      '<div data-bk-checkout></div>';
   }
   const holdBody = () => ({ hold: true, city: S.city, service: S.svc, label: S.svc === 'custom' ? S.label : '', treatment: S.svc === 'custom' && S.pick ? S.pick.treatment || '' : '', date: S.date, time: S.time, page: PAGE, src: SRC });
   function releaseHold(beacon) {
@@ -553,25 +559,30 @@
     S.hold = null;
     try { fetch('/api/booking', { method: 'POST', keepalive: !!beacon, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ release: h.id, key: h.key }) }); } catch (e) { /* it runs out by itself */ }
   }
-  async function mountCheckout() {
+  // the payment opens at once (the owner, 23.11: „fluid”): the sum and the bonus are known here, the hour is held and the order
+  // made in the background; a taken hour sends her back to the hours
+  function mountCheckout() {
     const el = body.querySelector('[data-bk-checkout]');
     if (!el || !window.C360Pay) return;
-    const mine = S;
-    let d = null;
-    try { const r = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(holdBody()) }); d = await r.json(); } catch (e) { d = { error: 'net' }; }
-    if (S !== mine || S.step !== 'checkout') { if (d && d.hold) { S.hold = d.hold; releaseHold(); } return; }
-    if (!d || !d.hold) {
-      const e2 = d && d.error;
-      if (e2 === 'taken') { Object.keys(early).forEach((k) => delete early[k]); S.time = ''; go('when', 'back'); load(true); setTimeout(() => { const b2 = root.querySelector('.bk-body .bk-step'); if (b2) b2.insertAdjacentHTML('afterbegin', '<div class="bk-alert">Ora aleasă tocmai a fost ocupată. Alege, te rog, altă oră.</div>'); }, 400); return; }
-      if (e2 === 'pay_off') { S.embed = false; embedP = null; S.pay = ''; go('pay', 'back'); return; }
-      el.innerHTML = '<div class="bk-alert">Nu am putut porni plata. Verifică internetul și încearcă din nou, sau <a href="' + waLink() + '" target="_blank" rel="noopener">scrie-ne pe WhatsApp</a>.</div><button type="button" class="bk-ghost" data-go="pay" style="width:100%">Înapoi</button>';
-      return;
-    }
-    S.hold = d.hold;
-    el.innerHTML = '';
+    const mine = S, b = bonusOf(S.service);
+    const holdP = fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(holdBody()) })
+      .then((r) => r.json(), () => ({ error: 'net' }))
+      .then((d) => {
+        if (S !== mine || S.step !== 'checkout') { if (d && d.hold) fetch('/api/booking', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ release: d.hold.id, key: d.hold.key }) }).catch(() => {}); return Promise.reject({ code: 'gone' }); }
+        if (!d || !d.hold) return Promise.reject({ code: (d && d.error) || 'net' });
+        S.hold = d.hold;
+        return d.hold.id;
+      });
     window.C360Pay.open({
-      kind: 'hold', ref: d.hold.id, city: S.city, page: PAGE, mount: el,
-      contact: { name: S.name, phone: S.phone }, consent: !!S.ok,
+      kind: 'hold', ref: holdP, city: S.city, page: PAGE, mount: el,
+      preview: { amount: b.amount, full: b.type === 'pct' ? S.service.price : 0, title: (S.service || {}).title || '', bonusText: b.line },
+      contact: { name: S.name, phone: S.phone },
+      onError: (code) => {
+        if (S !== mine || code === 'gone') return;
+        if (code === 'taken') { Object.keys(early).forEach((k) => delete early[k]); S.time = ''; go('when', 'back'); load(true); setTimeout(() => { const b2 = root.querySelector('.bk-body .bk-step'); if (b2) b2.insertAdjacentHTML('afterbegin', '<div class="bk-alert">Ora aleasă tocmai a fost ocupată. Alege, te rog, altă oră.</div>'); }, 400); return; }
+        if (code === 'pay_off') { S.embed = false; embedP = null; S.pay = ''; go('pay', 'back'); return; }
+        el.innerHTML = '<div class="bk-alert">Nu am putut porni plata. Verifică internetul și încearcă din nou, sau <a href="' + waLink() + '" target="_blank" rel="noopener">scrie-ne pe WhatsApp</a>.</div><button type="button" class="bk-ghost" data-go="pay" style="width:100%">Înapoi</button>';
+      },
       onContact: (c) => { if (S !== mine) return; S.name = c.name; S.phone = c.phone; S.ok = true; store.set('c360-book-me', { name: c.name, phone: c.phone }); },
       onPaid: (r) => {
         if (S !== mine) return;
@@ -593,7 +604,7 @@
         '<h2 class="bk-h">Plătit. Ne vedem <em>' + esc(niceDay(a.date)) + '.</em></h2><p>' + (S.paid.confirmed ? 'Programarea e confirmată. Îți trimitem și pe WhatsApp.' : 'Banca mai confirmă plata câteva clipe. Îți scriem pe WhatsApp imediat ce vine.') + '</p>' +
         '<div class="bk-card">' +
         '<div class="bk-row">' + ICON.cal + '<div><b>' + day + ', ora ' + esc(a.time) + '</b><small>' + mins((S.service && S.service.minutes) || 60) + '</small></div></div>' +
-        '<div class="bk-row">' + ICON.spark + '<div><b>' + esc(a.treatment) + '</b><small>' + lei(S.paid.amount) + ', plătit online, cu ' + PAY_OFF + '% reducere</small></div></div>' +
+        '<div class="bk-row">' + ICON.spark + '<div><b>' + esc(a.treatment) + '</b><small>' + lei(S.paid.amount) + ', plătit online' + (bonusOf(S.service).type === 'gift' ? ' · cadou: ' + esc(bonusOf(S.service).gift) : ', cu ' + bonusOf(S.service).pct + '% reducere') + '</small></div></div>' +
         '<div class="bk-row">' + ICON.pin + '<div><b>Centrul360 ' + esc(a.location) + '</b><small>' + esc(ADDR[a.location]) + '</small></div></div></div>' +
         '<div class="bk-two"><button type="button" class="bk-ghost" data-ics>' + ICON.cal + 'În calendar</button><a class="bk-ghost" href="' + MAPS[a.location] + '" target="_blank" rel="noopener">' + ICON.pin + 'Vezi pe hartă</a></div></div>';
     }
@@ -657,7 +668,9 @@
     if (t.dataset.go === 'city') { go('city', 'back'); return; }
     if (t.dataset.go === 'svc') { go('svc', 'back'); return; }
     if (t.dataset.go === 'pay') { go('pay', 'back'); return; }
-    if (t.dataset.pay) { S.pay = t.dataset.pay; paint(); setTimeout(() => go(S.pay === 'online' && S.embed ? 'checkout' : 'you'), 160); return; }
+    // online: the payment at once, no fade or slide (the owner, 23.11: „fluid”); at the clinic: the last step as before
+    if (t.dataset.pay === 'online' && S.embed) { S.pay = 'online'; S.step = 'checkout'; S.dir = ''; S.err = S.err === 'net' ? S.err : ''; paint(); body.scrollTop = 0; return; }
+    if (t.dataset.pay) { S.pay = t.dataset.pay; paint(); setTimeout(() => go('you'), 160); return; }
     if (t.hasAttribute('data-retry')) { if (S.service) load(); else loadServices('enter'); return; }
     if (t.dataset.date) { S.date = t.dataset.date; S.time = ''; paint(); return; }
     if (t.dataset.time) { S.time = t.dataset.time; paint(); setTimeout(() => go(payable() ? 'pay' : 'you'), 160); return; }
@@ -866,6 +879,9 @@
     if (location.hash === '#programare') open({});
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auto); else auto();
+  // the payment ready before the tap (c360-pay.js and its status, 23.11: the sheet must open at once)
+  const warm = () => embedOn().then((on) => { if (on && window.C360Pay && window.C360Pay.preload) window.C360Pay.preload(); });
+  if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 2500 }); else setTimeout(warm, 1200);
   // back on the site with a payment made on myPOS's page (the Partners way) not yet confirmed, or /?plata=<order>&k=<key>:
   // c360-pay.js says „Plătit” as soon as myPOS does
   try {

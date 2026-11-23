@@ -182,7 +182,8 @@
       '<button type="button" class="cd-o-main" data-cd-x="' + esc(o.id) + '" aria-expanded="' + open + '"><span class="cd-o-t"><b>' + esc(o.name || 'Fără nume') + '</b><span class="cd-o-m">' + (o.qty > 1 ? o.qty + ' × ' : '') + tierTxt(o.tier) + (Number(o.amount) !== Number(o.tier) * (o.qty || 1) ? ' · plătește ' + lei(o.amount) : '') + ' · ' + esc(o.city) + '</span></span>' +
         '<span class="cd-o-c">' + chips + '</span></button>' +
       '<a class="cd-o-tel" href="' + K.tel(o.phone) + '" aria-label="Sună">' + icon('phone') + '<span>' + esc(o.phone) + '</span></a>' +
-      '<div class="cd-o-act">' + (dead ? '' : '<button type="button" class="k-btn is-primary is-sm" data-cd-confirm="' + esc(o.id) + '" data-via="' + (o.pay === 'online' ? 'online' : 'clinica') + '">' + icon('check') +
+      '<div class="cd-o-act">' + (o.phone ? '<a class="k-btn is-outline is-sm cd-i-chat" href="#mesaje" data-chat="' + esc(o.phone) + '" data-chat-name="' + esc(o.name || '') + '" data-chat-city="' + esc(o.city || '') + '" aria-label="Mesaje">' + icon('chat') + '<span class="cd-lg">Mesaje</span></a>' : '') +
+        (dead ? '' : '<button type="button" class="k-btn is-primary is-sm" data-cd-confirm="' + esc(o.id) + '" data-via="' + (o.pay === 'online' ? 'online' : 'clinica') + '">' + icon('check') +
         '<span class="cd-lg">' + (o.pay === 'online' ? 'Confirmă (e în myPOS)' : 'Confirmă plata') + '</span><span class="cd-sm">Confirmă</span></button>') +
         (menu ? '<span class="cd-mw"><button type="button" class="k-btn is-ghost is-sm cd-dots" data-cd-menu aria-haspopup="true" aria-expanded="false" aria-label="Mai mult">' + icon('more') + '</button><span class="cd-menu" role="menu">' + menu + '</span></span>' : '') + '</div></div>' +
       '<div class="cd-o-more"><div><p class="cd-o-sub">' + esc(what) + ' · ' + esc(when(o.created)) + (o.names.some(Boolean) ? ' · pe numele: ' + esc(o.names.map((n) => n || 'ea').join(', ')) : '') +

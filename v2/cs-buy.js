@@ -55,7 +55,7 @@
     }).catch(function () {}).then(function () { if (!st.loaded) st.failed = true; mode(); });
   }
   // the block as the checkout wants it: with it, no phone (the payment sheet asks it), only the clinic
-  function mode() { var g = goBox(); if (g) g.classList.toggle('cst-emb', embedOn()); }
+  function mode() { var on = embedOn(); document.querySelectorAll('.cst-go').forEach(function (g) { g.classList.toggle('cst-emb', on); }); if (on) warm(); }
 
   // ------------------------------------------------------------------ her phone in the card block
   // The block's own parts, written here once and put in by shape() on any page whose markup is older (the live pages
@@ -212,7 +212,8 @@
       return;
     }
     var phone = o.phone || (emb ? '' : mobile(inp.value));
-    if (!emb && !phone) { phMsg(inp.value.trim() ? PMSG.bad_phone : 'Scrie numărul tău de mobil: pe el îți trimitem cardul.', 'phone'); inp.focus(); return; }
+    // the block drawn without the phone (the new checkout on a visit before) while the PayLinks are back: the field comes back
+    if (!emb && !phone) { mode(); document.querySelectorAll('.cst-go').forEach(function (g) { g.classList.remove('cst-emb'); }); phMsg(inp.value.trim() ? PMSG.bad_phone : 'Scrie numărul tău de mobil: pe el îți trimitem cardul.', 'phone'); inp.focus(); return; }
     if (!city) { phMsg(PMSG.missing_city, 'city'); b.querySelector('input[name="cst-city"]').focus(); return; }
     if (phone) put(localStorage, K_PHONE, phone);
     put(localStorage, K_CITY, city);
@@ -293,45 +294,76 @@
   // ask: the order has no phone yet (made from the block, which asks none): the sheet asks her name and phone (filled in
   // with what she gave here before), and they reach our order from there (api/_lib/pay.js contact); lead: the pixel's Lead,
   // sent when she gave them (the server's copy carries the same event id)
-  function openCheckout(id, city, from, o) {
+  // the payment sheet loaded and asked ahead (when the checkout is on), so the tap opens it at once (the owner, 24.11)
+  var payReady = null, warmed = false;
+  function warm() {
+    if (warmed) return; warmed = true;
+    payLib().then(function (P) { if (P.preload) P.preload(); return P.ready(); }).then(function (ok) { payReady = !!ok; }, function () { payReady = false; warmed = false; });
+  }
+  // what the sheet shows at once, from what the block knows (the server's numbers replace it): the card, its credit, the
+  // online price (490 and 990 in full, the VIP 8.910), the same words as the server's (api/_lib/card-sarbatori.js payQuote)
+  var dots = function (n) { return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); };
+  function previewOf(tier) {
+    var t = tierOf(tier), vip = Number(t[0]) === VIP;
+    var amount = vip ? Number((st.online || {})[VIP]) || 8910 : t[0];
+    return { amount: amount, full: vip ? t[0] : amount,
+      title: (vip ? 'Cardul VIP Transformarea 360' : 'Cardul de Sărbători ' + dots(t[0]) + ' lei') + ' · ' + dots(t[1]) + ' lei în tratamente',
+      bonusText: vip ? '−10% și Clubul 360 la plata online' : '+ BioLifting cadou și Clubul 360 la plata online' };
+  }
+  // the sheet for an order of ours: ref is its id, or the promise of it (made now, in the background: the sheet is open
+  // before the server answers). o: { ask: her name and phone asked in the sheet, tier: for the preview, lead: the pixel's
+  // Lead when she gave them, onError(code): the order could not be made (the sheet is closed, the block says why) }
+  function openCheckout(ref, city, from, o) {
     o = o || {};
-    var ask = !!o.ask && get(sessionStorage, K_CONT) !== id;
-    var nm = get(localStorage, K_NAME), ph = get(localStorage, K_PHONE);
-    return payLib().then(function (P) {
-      return P.open({ kind: 'card', ref: id, city: city || '', contact: ask ? { name: nm, phone: ph } : false, consent: ask ? !!(nm && ph) : true, page: location.href,
+    var id = typeof ref === 'string' ? ref : '', failed = false;
+    var refP = Promise.resolve(ref).then(function (x) { id = x; return x; });
+    var ask = !!o.ask && !(id && get(sessionStorage, K_CONT) === id);
+    var nm = get(localStorage, K_NAME), ph = get(localStorage, K_PHONE), known = {};
+    if (nm) known.name = nm;
+    if (ph) known.phone = ph;
+    var go = function (P) {
+      return P.open({ kind: 'card', ref: ref, city: city || '', contact: ask ? known : false, page: location.href,
+        preview: o.tier ? previewOf(o.tier) : undefined,
         onContact: function (c) {
-          put(sessionStorage, K_CONT, id);
+          refP.then(function (x) { put(sessionStorage, K_CONT, x); });
           var m = mobile(c && c.phone); if (m) put(localStorage, K_PHONE, m);
           if (c && c.name) put(localStorage, K_NAME, String(c.name).slice(0, 100));
           if (o.lead) { px('Lead', o.lead.val, o.lead.eid); o.lead = null; }
         },
         onPaid: function (x) { put(sessionStorage, K_ORDER, null); fev('paid'); paidBox(x && x.confirmed); },
-        onClose: function () { put(sessionStorage, K_ORDER, id); back(false); } });
-    });
+        onClose: function () { if (failed) return; refP.then(function (x) { put(sessionStorage, K_ORDER, x); back(false); }, function () {}); },
+        onError: function (code) {
+          failed = true;
+          var x = document.querySelector('.cp-root [data-cp-x]'); if (x) x.click(); // the sheet closes (nothing to pay)
+          if (o.onError) o.onError(code);
+        } });
+    };
+    // loaded and asked already (warm): opened in this very tap; else once it is there
+    if (window.C360Pay && payReady === true) { try { return Promise.resolve(go(window.C360Pay)); } catch (e) { return Promise.reject(e); } }
+    return payLib().then(function (P) { return P.ready().then(function (ok) { if (!ok) { if (o.onError) o.onError('no_link'); return null; } return go(P); }); });
   }
   function embedPay(btn, tier, city, vip) {
-    if (busy) return;
-    busy = true; spin(btn, true); phMsg('');
-    var stop = function (text) { busy = false; spin(btn, false); if (text) phMsg(text); };
+    phMsg('');
     // no phone here: the sheet asks it (contactLater; the server makes the order without it)
     var body = { embedded: true, preview: PREVIEW, contactLater: true, tier: tier, qty: 1, pay: 'online', forWho: 'eu', phone: '', city: city, website: '', page: location.href };
     if (window.C360P && window.C360P.tok) body.ct = window.C360P.tok;
     if (window.C360_CONSENT === true) body.event_id = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
     var val = item(tier, vip ? (st.online || {})[tier] : 0);
     px('InitiateCheckout', val); fev('start');
-    payLib().then(function (P) { return P.ready(); }).then(function (ok) {
-      if (!ok) { stop(PMSG.no_link); return; }
-      return post(body).then(function (d) {
-        if (!(d && d.ok && d.id)) {
-          if (vip && d && (d.error === 'sold_out' || d.error === 'not_enough')) { stop(vipOut(city)); return; }
-          stop(PMSG[d && d.error] || 'Nu am putut trimite. Încearcă din nou.'); return;
-        }
-        fev('pay');
-        put(sessionStorage, K_ORDER, d.id);
-        stop('');
-        return openCheckout(d.id, city, btn, { ask: true, lead: { val: val, eid: body.event_id } });
-      });
-    }).catch(function () { stop('Nu am putut trimite. Încearcă din nou.'); });
+    // our order, made while the sheet is already open (its promise is the sheet's ref)
+    var order = post(body).then(function (d) {
+      if (!(d && d.ok && d.id)) throw Object.assign(new Error('order'), { code: (d && d.error) || 'failed' });
+      fev('pay');
+      put(sessionStorage, K_ORDER, d.id);
+      return d.id;
+    }, function () { throw Object.assign(new Error('net'), { code: 'net' }); });
+    // a word in the block when it could not be made (the sheet closes)
+    var said = function (code) {
+      if (vip && (code === 'sold_out' || code === 'not_enough')) phMsg(vipOut(city));
+      else phMsg(PMSG[code] || 'Nu am putut trimite. Încearcă din nou.');
+      if (btn && btn.focus) btn.focus({ preventScroll: true });
+    };
+    openCheckout(order, city, btn, { ask: true, tier: tier, lead: { val: val, eid: body.event_id }, onError: said }).catch(function () { said('net'); });
   }
   // the recovery message's link: ?plata=<her order> opens her checkout again
   var reopen = (/[?&]plata=([0-9a-f-]{36})\b/.exec(location.search) || [])[1];
@@ -476,7 +508,7 @@
     post(tel ? { action: 'answer', id: ret.id, reason: k, phone: tel } : { action: 'answer', id: ret.id, reason: k }).then(function (d) {
       if (d && d.paid) { retScreen('<span class="csb-tick">' + TICK + '</span><h3>Plata a ajuns.</h3><p class="csb-rl">Cardul îți vine pe WhatsApp în câteva minute.</p><button type="button" class="btn ghost" data-ret="close">Gata</button>', true); return; }
       if (k === 'retry') {
-        if (d && d.link && embedOn()) { var rid = ret.id, rc = ret.city, rn = !!ret.nophone; close().then(function () { openCheckout(rid, rc, null, { ask: rn }); }); return; }
+        if (d && d.link && embedOn()) { var rid = ret.id, rc = ret.city, rn = !!ret.nophone; var rt = ret.tier; close().then(function () { openCheckout(rid, rc, null, { ask: rn, tier: rt }); }); return; }
         if (d && d.link) { fev('pay'); location.href = d.link; return; }
         throw new Error(d && d.error === 'sold_out' ? 'Cardurile s-au terminat între timp.' : d && d.error === 'closed' ? 'Oferta s-a încheiat.' : 'Plata online nu merge acum. Îl poți rezerva și plăti în clinică.');
       }
