@@ -314,7 +314,16 @@ async function pickMore(n, opt) {
     if (!ph || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(c.name || ''))) return no(k, 'c-seen');
     seen.add(k);
     if (!withTrans && inTrans.has(k)) return no(k, 'c-trans'); if (already.has(k)) return no(k, 'c-already'); if (bought.has(k)) return no(k, 'c-bought'); if (staff.has(k)) return no(k, 'c-staff'); if (recentPay.has(c.id)) return no(k, 'c-recentpay');
-    const v = vis.get(c.id); if (!v || !CITIES.includes(v.city)) return no(k, 'c-novisit'); // only clients who came at least once, to one of our clinics
+    const v = vis.get(c.id);
+    // a file with no visit (an old lead kept as a client file, the owner 23.11: „mai avem contacte?”), when asked: her city from the file
+    if (!v && opt && opt.cold) {
+      const city = C.clinicOf(c.location); if (!CITIES.includes(city)) return no(k, 'c-cold-city');
+      const to = WA.toE164(c.phone); if (!to) return no(k, 'c-to');
+      const age = (now - Date.parse(c.createdAt || c.created || 0)) / 864e5;
+      pool.push({ k, to, city, fn: FC.firstName(c.name), seg: 'cold', score: Math.round(age < 30 ? 30 : age < 90 ? 20 : age < 365 ? 10 : 0), visits: 0, paid: 0, batch: (opt && opt.batch) || 2, at: c.createdAt || '' });
+      return;
+    }
+    if (!v || !CITIES.includes(v.city)) return no(k, 'c-novisit'); // only clients who came at least once, to one of our clinics
     const to = WA.toE164(c.phone); if (!to) return no(k, 'c-to');
     const paid = money.get(c.id) || 0;
     const score = Math.min(paid, 20000) / 200 + v.n * 8 + (v.last >= d365 && v.last < d30 ? 15 : v.last >= d30 ? 5 : 0);
@@ -335,13 +344,13 @@ async function pickMore(n, opt) {
       pool.push({ k, to, city, fn: FC.firstName(l.name), seg: 'lead', score: Math.round(age < 30 ? 30 : age < 90 ? 20 : age < 365 ? 10 : 0), visits: 0, paid: 0, batch: (opt && opt.batch) || 2 });
     });
   }
-  if (opt && opt.dry) return { dry: true, pool: pool.length, trans: inTrans.size, why, byCity: CITIES.reduce((o, c) => Object.assign(o, { [c]: pool.filter((p) => p.city === c).length }), {}) };
+  if (opt && opt.dry) return { dry: true, pool: pool.length, trans: inTrans.size, why, segs: pool.reduce((o, p) => Object.assign(o, { [p.city + ' · ' + p.seg + ' · ' + p.score]: (o[p.city + ' · ' + p.seg + ' · ' + p.score] || 0) + 1 }), {}), byCity: CITIES.reduce((o, c) => Object.assign(o, { [c]: pool.filter((p) => p.city === c).length }), {}) };
   const tot = pool.length || 1;
   const share = {}; share['Timișoara'] = Math.round(want * pool.filter((p) => p.city === 'Timișoara').length / tot); share.Arad = want - share['Timișoara'];
   const list = [];
   // a test between messages (opt.pres): handed out in turn down each clinic's ranking, so both get people as good
   const pres = String((opt && opt.pres) || '').split(',').map((x) => x.trim()).filter(Boolean);
-  CITIES.forEach((c) => { pool.filter((p) => p.city === c).sort((a, b) => b.score - a.score).slice(0, share[c]).forEach((p, i) => { if (pres.length) p.pre = pres[i % pres.length]; list.push(p); }); });
+  CITIES.forEach((c) => { pool.filter((p) => p.city === c).sort((a, b) => b.score - a.score || String(b.at || '').localeCompare(String(a.at || ''))).slice(0, share[c]).forEach((p, i) => { if (pres.length) p.pre = pres[i % pres.length]; list.push(p); }); });
   st.list = st.list.concat(list); st.armed = false; st.doneAt = ''; st.pickedAt = nowISO();
   await saveState(st);
   // the ones from the Transformarea list: out of it (while it isn't frozen), so nobody gets both
