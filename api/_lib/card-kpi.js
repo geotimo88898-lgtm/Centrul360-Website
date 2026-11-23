@@ -342,9 +342,20 @@ async function view(opts) {
   const spend = from ? await require('./wa-cost').rangeMarketing(readJSON, Math.floor(from / 1000), Math.floor(now / 1000)).catch((e) => ({ error: e.message })) : null;
   if (spend && !spend.error && spend.unit) lots.forEach((l) => { l.stats.spend = Math.round((l.stats.delivered || 0) * spend.unit); });
 
+  // the interested ones (Carduri → Interesate, no request yet): the desk calls them too (the owner, 23.11), counted in
+  // „De sunat” beside the open requests; per lot by the lot she came from (her chat answers only here, so no loop back)
+  let interested = null;
+  try {
+    const il = await require('./card-interested').list({ noKpi: true });
+    const shown = (il.people || []).filter((x) => !x.hidden);
+    const byBatch = {};
+    shown.forEach((x) => { if (x.lot && x.lot.n) byBatch[x.lot.n] = (byBatch[x.lot.n] || 0) + 1; });
+    interested = { n: shown.length, byBatch };
+  } catch (e) { console.error('card kpi interested:', e.message); }
+
   await writeJSON(CACHE, cache, { quiet: true }).catch(() => {});
   return {
-    spend,
+    spend, interested,
     ok: true, key: KEY, name: NAME, at: nowISO(),
     state: { armed: !!st.armed, pickedAt: st.pickedAt || '', doneAt: st.doneAt || '', note: st.note || '', from: from ? new Date(from).toISOString() : '', to: to ? new Date(to).toISOString() : '', tracked: tracked ? new Date(tracked).toISOString() : '' },
     wa, waBy, batches, lots, best, fails: Object.values(reasons).sort((a, b) => b.n - a.n), meta,

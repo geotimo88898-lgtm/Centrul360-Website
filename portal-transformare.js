@@ -333,7 +333,14 @@
       stat('is-good', 'wallet', 'Încasat', esc(K.lei(m.cash)), esc(K.plural(m.cards, 'card', 'carduri')) + ' · ' + esc(K.num(w.sent)) + ' trimise') +
       stat('is-warn', 'trend', 'Potențial', esc(K.lei(m.potential)), esc(K.plural(m.open, 'cerere deschisă', 'cereri deschise'))) +
       stat('is-info', 'gift', 'Credit vândut', esc(K.lei(m.credit)), 'în tratamente') +
-      stat('is-accent', 'phone', 'De sunat', esc(K.num(m.resvOpen)), '<button type="button" class="cp-go" data-cp="carduri">Carduri ' + icon('arrow') + '</button>') + cSpend(m, w) + '</div>';
+      cCall(m) + cSpend(m, w) + '</div>';
+  }
+  // who the desk calls (the owner, 23.11): the open requests and the interested ones (no request yet), both
+  function cCall(m) {
+    const it = S.c.interested || { n: 0, byBatch: {} };
+    const ni = bAll() ? it.n || 0 : (it.byBatch || {})[S.batch] || 0, nr = m.resvOpen || 0;
+    return stat('is-accent', 'phone', 'De sunat', esc(K.num(nr + ni)), '<span class="cp-call">' + esc(K.plural(nr, 'cerere', 'cereri')) + ' · ' + esc(K.plural(ni, 'interesată', 'interesate')) + '</span>' +
+      '<button type="button" class="cp-go" data-cp="carduri">Carduri ' + icon('arrow') + '</button>');
   }
   // what the messages cost (the owner, 23.11): Meta's own charges for the marketing messages since the first send (in lei);
   // a lot's share at the same price per delivered message; with it, what one card sold cost in messages

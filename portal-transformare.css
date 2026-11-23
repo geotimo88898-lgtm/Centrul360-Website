@@ -168,3 +168,4 @@
 
 /* five money tiles (the messages' cost added, 23.11): five in a row on a wide screen */
 @media (min-width:1101px){ .tf .k-grid.tf-top5{ grid-template-columns:repeat(5,minmax(0,1fr)); } }
+.tf .cp-call{ display:block; margin-bottom:.35rem; }
