@@ -26,7 +26,8 @@ function parse(form, pairs) {
   const find = (q) => (pairs || []).find((p) => fold(p.q) === fold(q)) || null;
   const out = { tier: '', credit: 0, forWhom: '', city: form && form.location ? form.location : '' };
   const c = find(Q.card);
-  const m = c && /^(\d{1,2}[.\s]?\d{3}|\d{3})\b/.exec(String(c.a).trim()); // „990 lei → …”, „9.900 lei → 30.000 lei …”
+  // the first sum in lei (the price): „990 lei → …”, „Plătești 490 lei → primești 1.000 lei”, „Card VIP: plătești 9.900 lei → …”
+  const m = c && /(\d{1,2}[.\s]?\d{3}|\d{3})\s*lei/i.exec(String(c.a));
   const t = m ? m[1].replace(/\D/g, '') : '';
   if (TIERS[t]) { out.tier = t; out.credit = TIERS[t]; }
   const w = find(Q.who);

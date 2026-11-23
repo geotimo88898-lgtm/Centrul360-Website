@@ -53,13 +53,15 @@ const REEL_ARATAM = { url: 'https://admin.centrul360.com/api/content-file?i=dd7a
 // „Rezultate · site”; a third, C, 23.11 ~23:00), Purchase on the site's pixel, men and women 28-58, Timișoara 8 km, no lookalike, 100 lei a day, to
 // the home page (its card block, 990 chosen on every visit). A: the picture of the 990 card's WhatsApp message (template
 // v4), as it is; B: the same picture with the cards on sale fanned in place of the one card (its headline: George picks);
-// C: each card on its own, with what paying online adds (the site's words). Held out of JOBS (not run)
-// until George says go on picture B; nothing was made from its first version (TM and AR, 50 lei, to the card page)
+// C: each card on its own, with what paying online adds (the site's words). In JOBS since George's go
+// (23.11 ~23:20); the first version (TM and AR, 50 lei, to the card page) made only TM, paused (card-site-v1-off)
 const CARD_SITE = { id: 'card-site-tm-2026-11-23', why: 'Cardul de Sărbători direct din reclame: TM, 3 reclame, 100 lei/zi', site: {
-  pixelId: '2276074362800484', cta: 'SHOP_NOW', ages: [28, 58],
+  // 23.11 ~23:20, George: traffic (landing page views), the pixel tracked on each ad; each ad its own utm_content and
+  // Meta's ad id in the link (c360_ad)
+  pixelId: '2276074362800484', goal: 'views', urlTags: 'c360_ad={{ad.id}}', cta: 'SHOP_NOW', ages: [28, 58],
   campaigns: [{ name: 'C360 · TM · Card · site', utm: 'card-tm', city: 'Timișoara', radiusKm: 8, everyone: true, budget: 100,
     adsetName: 'Timișoara 8 km · femei și bărbați 28-58', ads: [
-      { name: 'C360 · TM · Card 990 · WhatsApp', image: 'card-990-wa.jpg',
+      { name: 'C360 · TM · Card 990 · WhatsApp', image: 'card-990-wa.jpg', utmContent: 'card-a',
         text: 'TIMIȘOARA! 🎁 Cum să ai 2.500 lei în tratamente 💆‍♀️ fără să plătești prețul întreg, chiar dacă nu știi încă ce tratament vrei.\n\n' +
           '✅ Plătești 990 lei și primești 2.500 lei în tratamente 💳\n' +
           '✅ Valabil până pe 30.06.2027, la orice tratament din lista de prețuri 💆‍♀️\n' +
@@ -68,7 +70,7 @@ const CARD_SITE = { id: 'card-site-tm-2026-11-23', why: 'Cardul de Sărbători d
           '🗓️ Până pe 24 decembrie.\n\n' +
           '👉 Ia-ți cardul acum, pe site:\ncentrul360.com\n📍 Timișoara',
         headlines: ['PLĂTEȘTI 990 LEI, PRIMEȘTI 2.500 LEI 👉', 'AU MAI RĂMAS DOAR 4 CARDURI ⏰💨', 'BIOLIFTING CADOU LA PLATA ONLINE 👉'], description: 'Valabil până pe 30.06.2027' },
-      { name: 'C360 · TM · Card 990 · mai multe carduri', image: 'card-990-evantai.jpg',
+      { name: 'C360 · TM · Card 990 · mai multe carduri', image: 'card-990-evantai.jpg', utmContent: 'card-b',
         text: 'TIMIȘOARA! 🎁 Cum să faci un cadou de 2.500 lei în tratamente 💆‍♀️ fără să plătești prețul întreg, chiar dacă nu știi încă ce i-ar plăcea.\n\n' +
           '✅ Plătești 990 lei și primești 2.500 lei în tratamente, pentru tine sau cadou 🎄\n' +
           '✅ Altă sumă? Plătești 490 lei și primești 1.000 lei, sau cardul VIP: plătești 9.900 lei și primești 30.000 lei 💎\n' +
@@ -77,7 +79,7 @@ const CARD_SITE = { id: 'card-site-tm-2026-11-23', why: 'Cardul de Sărbători d
           '🗓️ Până pe 24 decembrie. Valabil până pe 30.06.2027.\n\n' +
           '👉 Alege-ți cardul pe site:\ncentrul360.com\n📍 Timișoara',
         headlines: ['PLĂTEȘTI 990 LEI, PRIMEȘTI 2.500 LEI 👉', 'AU MAI RĂMAS DOAR 4 CARDURI ⏰💨', 'ALEGE CARDUL: PLĂTEȘTI 490, PRIMEȘTI 1.000 👉'], description: 'Valabil până pe 30.06.2027' },
-      { name: 'C360 · TM · Card · fiecare card', image: 'card-trei-c.jpg',
+      { name: 'C360 · TM · Card · fiecare card', image: 'card-trei-c.jpg', utmContent: 'card-c',
         text: 'TIMIȘOARA! 🎁 Cum să primești de până la 3 ori mai mult în tratamente 💆‍♀️ fără să plătești prețul întreg, chiar dacă nu știi încă ce tratament vrei.\n\n' +
           '✅ Plătești 490 lei și primești 1.000 lei 💳\n' +
           '✅ Plătești 990 lei și primești 2.500 lei, cardul cel mai cumpărat 🎄\n' +
@@ -88,8 +90,65 @@ const CARD_SITE = { id: 'card-site-tm-2026-11-23', why: 'Cardul de Sărbători d
           '👉 Alege-ți cardul pe site:\ncentrul360.com\n📍 Timișoara',
         headlines: ['ALEGE CARDUL: PLĂTEȘTI 990, PRIMEȘTI 2.500 👉', 'AU MAI RĂMAS DOAR 4 CARDURI ⏰💨', 'CARDUL VIP: PLĂTEȘTI 9.900, PRIMEȘTI 30.000 👉'], description: 'Valabil până pe 30.06.2027' },
     ] }] } };
-void CARD_SITE;
+// 23.11 ~23:30, George: the twin of CARD_SITE on a Facebook lead form, TM only: „C360 · TM · Card · formular”, leads,
+// 100 lei a day, men and women 28-58, Timișoara 8 km, no lookalike, the same 3 pictures and texts (only the line to
+// the form), SIGN_UP. Its form (form-card-tm, in JOBS: a form without ads is harmless): the old „Rezervă Cardul de
+// Sărbători” copied (privacy, language, settings, kind 'card' so its leads go into the card's flow) with the cards on
+// sale now (490, 990, VIP 9.900; 290 is no longer sold), no clinic question (Timișoara only, the form's city), and an
+// ending to the home page's card block. HELD (outside JOBS) until George says go
+const CARD_FORM_TM = { id: 'form-card-tm-2026-11-23', why: 'Formularul nou al cardului, Timișoara (490, 990, VIP), finalul pe site', formSite: {
+  formId: '1134301339396504', name: 'Cardul de Sărbători · Timișoara · site', location: 'Timișoara',
+  questions: [{ type: 'FULL_NAME' }, { type: 'PHONE' },
+    { type: 'CUSTOM', key: 'ce_card_vrei', label: 'Ce card vrei?', options: [
+      { value: 'Plătești 490 lei → primești 1.000 lei', key: 'card_490' },
+      { value: 'Plătești 990 lei → primești 2.500 lei (cel mai cumpărat)', key: 'card_990' },
+      { value: 'Card VIP: plătești 9.900 lei → primești 30.000 lei', key: 'card_9900' }] },
+    { type: 'CUSTOM', key: 'pentru_cine_este', label: 'Pentru cine este?', options: [
+      { value: 'Pentru mine', key: 'pentru_mine' }, { value: 'Cadou', key: 'cadou' }] }],
+  // the site's words (v2 cs-card.js, cs-buy.js): 490 and 990 online: BioLifting cadou and Clubul 360; the VIP online:
+  // 10% less and Clubul 360, no BioLifting
+  page: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un pas 👇 Plătește online acum și primești în plus o ședință de BioLifting cadou ✨ și acces în Clubul 360 (la cardul VIP, în loc de BioLifting: 10% reducere). Îți trimitem și pe WhatsApp linkul tău de plată.', button_type: 'VIEW_WEBSITE', button_text: 'PLĂTEȘTE ONLINE 👉',
+    website_url: 'https://www.centrul360.com/?utm_source=facebook&utm_medium=leadform&utm_campaign=card-form-tm' } } };
+const CARD_FORM = { id: 'card-form-tm-2026-11-23', why: 'Cardul de Sărbători pe formular: TM, 3 reclame, 100 lei/zi', site: {
+  cta: 'SIGN_UP', ages: [28, 58],
+  campaigns: [{ name: 'C360 · TM · Card · formular', city: 'Timișoara', radiusKm: 8, everyone: true, budget: 100, formJob: CARD_FORM_TM.id,
+    adsetName: 'Timișoara 8 km · femei și bărbați 28-58', ads: [
+      { name: 'C360 · TM · Card 990 · WhatsApp · formular', image: 'card-990-wa.jpg',
+        text: 'TIMIȘOARA! 🎁 Cum să ai 2.500 lei în tratamente 💆‍♀️ fără să plătești prețul întreg, chiar dacă nu știi încă ce tratament vrei.\n\n' +
+          '✅ Plătești 990 lei și primești 2.500 lei în tratamente 💳\n' +
+          '✅ Valabil până pe 30.06.2027, la orice tratament din lista de prețuri 💆‍♀️\n' +
+          '✅ Plătești online, pe site, și primești o ședință de BioLifting cadou ✨ și acces în Clubul 360\n\n' +
+          '🔥 Au mai rămas doar 4 carduri.\n' +
+          '🗓️ Până pe 24 decembrie.\n\n' +
+          '👉 Completează formularul și îți trimitem cardul pe WhatsApp\ncentrul360.com\n📍 Timișoara',
+        headlines: ['PLĂTEȘTI 990 LEI, PRIMEȘTI 2.500 LEI 👉', 'AU MAI RĂMAS DOAR 4 CARDURI ⏰💨', 'BIOLIFTING CADOU LA PLATA ONLINE 👉'], description: 'Valabil până pe 30.06.2027' },
+      { name: 'C360 · TM · Card 990 · mai multe carduri · formular', image: 'card-990-evantai.jpg',
+        text: 'TIMIȘOARA! 🎁 Cum să faci un cadou de 2.500 lei în tratamente 💆‍♀️ fără să plătești prețul întreg, chiar dacă nu știi încă ce i-ar plăcea.\n\n' +
+          '✅ Plătești 990 lei și primești 2.500 lei în tratamente, pentru tine sau cadou 🎄\n' +
+          '✅ Altă sumă? Plătești 490 lei și primești 1.000 lei, sau cardul VIP: plătești 9.900 lei și primești 30.000 lei 💎\n' +
+          '✅ Plătești online, pe site, și primești o ședință de BioLifting cadou ✨ la cardurile de 490 și 990 lei 💳\n\n' +
+          '🔥 Au mai rămas doar 4 carduri.\n' +
+          '🗓️ Până pe 24 decembrie. Valabil până pe 30.06.2027.\n\n' +
+          '👉 Completează formularul și îți trimitem cardul pe WhatsApp\ncentrul360.com\n📍 Timișoara',
+        headlines: ['PLĂTEȘTI 990 LEI, PRIMEȘTI 2.500 LEI 👉', 'AU MAI RĂMAS DOAR 4 CARDURI ⏰💨', 'ALEGE CARDUL: PLĂTEȘTI 490, PRIMEȘTI 1.000 👉'], description: 'Valabil până pe 30.06.2027' },
+      { name: 'C360 · TM · Card · fiecare card · formular', image: 'card-trei-c.jpg',
+        text: 'TIMIȘOARA! 🎁 Cum să primești de până la 3 ori mai mult în tratamente 💆‍♀️ fără să plătești prețul întreg, chiar dacă nu știi încă ce tratament vrei.\n\n' +
+          '✅ Plătești 490 lei și primești 1.000 lei 💳\n' +
+          '✅ Plătești 990 lei și primești 2.500 lei, cardul cel mai cumpărat 🎄\n' +
+          '✅ Cardul VIP Transformarea 360: plătești 9.900 lei și primești 30.000 lei, pentru tine și cei dragi 💎\n\n' +
+          '✨ La plata online, pe site: BioLifting cadou și Clubul 360 la cardurile de 490 și 990 lei; la cardul VIP, 10% reducere (8.910 lei) și Clubul 360.\n\n' +
+          '🔥 Au mai rămas doar 4 carduri.\n' +
+          '🗓️ Până pe 24 decembrie. Valabil până pe 30.06.2027.\n\n' +
+          '👉 Completează formularul și îți trimitem cardul pe WhatsApp\ncentrul360.com\n📍 Timișoara',
+        headlines: ['ALEGE CARDUL: PLĂTEȘTI 990, PRIMEȘTI 2.500 👉', 'AU MAI RĂMAS DOAR 4 CARDURI ⏰💨', 'CARDUL VIP: PLĂTEȘTI 9.900, PRIMEȘTI 30.000 👉'], description: 'Valabil până pe 30.06.2027' },
+    ] }] } };
 const JOBS = [
+  // 23.11 ~23:30, George: the card's new form for Timișoara (its campaign CARD_FORM held above until George says go)
+  CARD_FORM_TM,
+  // 24.11 ~02:00, George: „da, pornește campania pe formular”
+  CARD_FORM,
+  // 23.11 ~23:20, George: go (traffic, 3 ads, per-ad tags)
+  CARD_SITE,
   // 23.11 ~22:55, George changed the card campaigns (only TM, 100 lei, men and women, the home page) after the first
   // version had already made „C360 · TM · Card · site” (two ads, to the card page): it goes off at once; the new one comes
   // from CARD_SITE above once George says go
@@ -897,9 +956,10 @@ async function run() {
         if (reg.replacedBy && reg.replacedBy !== f.formId) st.newId = reg.replacedBy; // made on a run cut short
         else {
           const FCp = require('./fb-form-copy');
-          let r = await FCp.copyOne(store, f.formId, null, { name: f.name, page: f.page });
+          const more = { questions: f.questions, location: f.location }; // the card form (23.11): its own questions and city
+          let r = await FCp.copyOne(store, f.formId, null, Object.assign({ name: f.name, page: f.page }, more));
           // a button Meta doesn't take with the emoji: the same words without it
-          if (r.error && !/are deja copie/.test(r.error)) r = await FCp.copyOne(store, f.formId, null, { name: f.name, page: Object.assign({}, f.page, { button_text: String(f.page.button_text).replace(/[^\p{L}\p{N} .,!?]/gu, '').trim() }) });
+          if (r.error && !/are deja copie/.test(r.error)) r = await FCp.copyOne(store, f.formId, null, Object.assign({ name: f.name, page: Object.assign({}, f.page, { button_text: String(f.page.button_text).replace(/[^\p{L}\p{N} .,!?]/gu, '').trim() }) }, more));
           if (r.error) { await fail('formularul: ' + r.error); continue; }
           st.newId = r.id; st.button = r.button;
         }
@@ -1077,10 +1137,12 @@ async function run() {
             if (pic.error) { failed = a.name + ': ' + pic.error; break; }
             media = { base64: pic.base64, name: a.image };
           }
+          // each ad its own utm_content (23.11, the card: which ad brought whom), after the campaign's tags
+          const adLink = link && a.utmContent ? link + '&utm_content=' + encodeURIComponent(a.utmContent) : link;
           const v = ads.cleanSettings({
             adsetId: sc.adsetId || '', campaignName: c.name, adsetName: c.adsetName || (c.city + ' ' + (c.radiusKm || d.radiusKm) + ' km · ' + (c.everyone ? 'femei și bărbați ' : 'femei ') + j.site.ages.join('-')), adName: a.name,
             city: c.city, radiusKm: c.radiusKm || d.radiusKm, women: !c.everyone, ageMin: j.site.ages[0], ageMax: j.site.ages[1], placements: d.placements, budget: c.budget,
-            link, formId, goal: formId ? '' : 'purchase', pixelId: j.site.pixelId, primaryText: a.text, headline: a.headlines[0], headline2: a.headlines[1], headline3: a.headlines[2],
+            link: adLink, formId, goal: formId ? '' : (j.site.goal || 'purchase'), pixelId: j.site.pixelId, urlTags: j.site.urlTags || '', primaryText: a.text, headline: a.headlines[0], headline2: a.headlines[1], headline3: a.headlines[2],
             description: a.description, cta: j.site.cta, startNow: true,
           });
           if (v.error) { failed = a.name + ': ' + v.error; break; }
