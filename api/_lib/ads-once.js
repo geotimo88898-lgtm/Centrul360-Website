@@ -50,6 +50,56 @@ const SITE_CAMPAIGNS = [
 // the reel „Nu promitem. Îți arătăm.” of Conținut: its clean video (no music) and its cover, public links (api/content-file.js)
 const REEL_ARATAM = { url: 'https://admin.centrul360.com/api/content-file?i=dd7a54f3-7464-4cd7-adb8-2e903006f48d&n=clean.mp4', thumb: 'https://admin.centrul360.com/api/content-file?i=dd7a54f3-7464-4cd7-adb8-2e903006f48d&n=cover.jpg' };
 const JOBS = [
+  // 23.11 ~19:00, George: „pune-le pe toate 4 live”: four lead-form campaigns of one ad each, 50 lei a day, the audience of
+  // the running winners copied exactly (TM: „C360 · TM · HIFU G · sezon”, AR: „C360 · AR · HIFU G · sezon (2)”), women only,
+  // with the clients' lookalike where it leaves enough people; the picture: a real case of the homepage, untouched, under
+  // the city's name (brand_asset/ads/); HIFU gușă into the HIFU site forms, Liposonix TM into its simple form's site copy
+  { id: 'four-cases-2026-11-23', why: 'Patru campanii noi pe formular (cazurile 16, 02, 24, 05), 50 lei/zi fiecare', site: {
+    cta: 'SIGN_UP', ages: [28, 64],
+    campaigns: [
+      { name: 'C360 · TM · HIFU G · caz 16', city: 'Timișoara', radiusKm: 7, budget: 50, formId: '1649159630586598', like: '120250715944510149', lal: 'lal-clientele-2026-11-23', adsetName: 'C360 · TM · HIFU G · caz 16', ads: [
+        { name: 'C360 · TM · HIFU G · caz 16', image: 'rezultate-tm-gusa.jpg',
+          text: 'TIMIȘOARA! Cum să ai un profil mai definit, fără ace și fără operație, chiar dacă până acum cremele și exercițiile n-au ajutat.\n\n' +
+            '✅ Rezultatul din poză e real, făcut la noi în clinica din Timișoara.\n' +
+            '✅ HIFU: ultrasunete care strâng pielea de sub bărbie, într-o singură ședință.\n' +
+            '✅ HIFU gușă la 190 lei în loc de 290.\n\n' +
+            '⏰ Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\n' +
+            '👉 Completează formularul și îți scriem noi pe WhatsApp.\ncentrul360.com\n\nRezultatele diferă de la o persoană la alta.',
+          headlines: ['PROFIL MAI DEFINIT, FĂRĂ OPERAȚIE 👉', 'DE PÂNĂ LA 3 ORI MAI MULT, PÂNĂ PE 24 DECEMBRIE ⏰💨', 'HIFU GUȘĂ: 190 LEI ÎN LOC DE 290 👉'], description: '5,0 pe Google, peste 300 de recenzii' },
+      ] },
+      { name: 'C360 · TM · HIFU G · caz 02', city: 'Timișoara', radiusKm: 7, budget: 50, formId: '1649159630586598', like: '120250715944510149', lal: 'lal-clientele-2026-11-23', adsetName: 'C360 · TM · HIFU G · caz 02', ads: [
+        { name: 'C360 · TM · HIFU G · caz 02', image: 'rezultate-tm-gusa-02.jpg',
+          text: 'TIMIȘOARA! Cum să ai bărbia și gâtul mai definite fără operație, chiar dacă ai crezut că doar bisturiul mai poate ajuta.\n\n' +
+            '✅ Poza e reală: aceeași persoană, înainte și după HIFU, la noi în clinica din Timișoara.\n' +
+            '✅ Fără ace și fără pauză. Te întorci la treburile tale în aceeași zi.\n' +
+            '✅ 5,0 pe Google, din peste 300 de recenzii.\n\n' +
+            'HIFU gușă: 190 lei în loc de 290.\n\n' +
+            '⏰ Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\n' +
+            '👉 Lasă-ne numărul în formular și îți scriem noi pe WhatsApp.\ncentrul360.com\n\nRezultatele diferă de la o persoană la alta.',
+          headlines: ['BĂRBIE MAI DEFINITĂ, FĂRĂ ACE 👉', 'DOAR PÂNĂ PE 24 DECEMBRIE ⏰💨', '190 LEI ÎN LOC DE 290 👉'], description: 'Consultația e gratuită' },
+      ] },
+      { name: 'C360 · AR · HIFU G · caz 24', city: 'Arad', radiusKm: 7, budget: 50, formId: '2726705401061098', like: '120250718340060149', lal: 'lal-clientele-2026-11-23', adsetName: 'C360 · AR · HIFU G · caz 24', ads: [
+        { name: 'C360 · AR · HIFU G · caz 24', image: 'rezultate-ar-gat.jpg',
+          text: 'ARAD! Cum să ai un gât mai neted și o bărbie mai definită, fără ace și fără operație, chiar dacă ai crezut că pielea lăsată nu se mai strânge.\n\n' +
+            '✅ Poza e reală, făcută la noi în clinica din Arad.\n' +
+            '✅ HIFU: ultrasunete care strâng pielea. Te întorci la treburile tale în aceeași zi.\n' +
+            '✅ 5,0 pe Google, din peste 300 de recenzii.\n\n' +
+            'HIFU gușă în Arad: 190 lei în loc de 290.\n\n' +
+            '⏰ Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\n' +
+            '👉 Completează formularul și îți scriem noi pe WhatsApp.\ncentrul360.com\n\nRezultatele diferă de la o persoană la alta.',
+          headlines: ['GÂT MAI NETED, FĂRĂ OPERAȚIE 👉', 'MAI E PUȚIN PÂNĂ PE 24 DECEMBRIE ⏰💨', 'HIFU GUȘĂ ÎN ARAD: 190 LEI 👉'], description: '5,0 pe Google, peste 300 de recenzii' },
+      ] },
+      { name: 'C360 · TM · Liposonix · caz 05', city: 'Timișoara', radiusKm: 7, budget: 50, formJob: 'form-site-lipo-tm-2026-11-23', like: '120250715944510149', lal: 'lal-clientele-2026-11-23', adsetName: 'C360 · TM · Liposonix · caz 05', ads: [
+        { name: 'C360 · TM · Liposonix · caz 05', image: 'rezultate-tm-solduri.jpg',
+          text: 'TIMIȘOARA! Cum să ai o talie mai definită fără operație și fără diete stricte, chiar dacă sala nu te-a ajutat până acum.\n\n' +
+            '✅ Poza e reală, făcută la noi în clinica din Timișoara.\n' +
+            '✅ Stai întinsă, iar ultrasunetele Liposonix lucrează pe grăsimea de pe șolduri. Tu nu faci niciun efort.\n' +
+            '✅ 2 zone la preț de una: 640 lei în loc de 1.280.\n\n' +
+            '⏰ Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\n' +
+            '👉 Completează formularul și îți scriem noi pe WhatsApp.\ncentrul360.com\n\nRezultatele diferă de la o persoană la alta.',
+          headlines: ['TALIE MAI DEFINITĂ, FĂRĂ OPERAȚIE 👉', 'DE PÂNĂ LA 3 ORI MAI MULT, PÂNĂ PE 24 DECEMBRIE ⏰💨', '2 ZONE LA PREȚ DE UNA 👉'], description: '5,0 pe Google, peste 300 de recenzii' },
+      ] },
+    ] } },
   // 23.11 ~19:00, George („pune-le pe toate 4 live”, the lookalike „la toate”): lookalikes of „C360 · Clientele noastre”
   // (the clinic's clients and the Transformarea 360 list), Romania, 1 to 10%; each new campaign takes the smallest one that
   // still reaches enough people in its city, or none
