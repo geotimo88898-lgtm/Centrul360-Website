@@ -304,10 +304,24 @@ module.exports = async (req, res) => {
       const id = /^\d{5,25}$/.test(String(req.query.id || '')) ? String(req.query.id) : '';
       if (!id) { res.status(400).json({ error: 'id' }); return; }
       const r = await ads.call('GET', '/' + id, conn.userToken, { fields: 'account_id,name,effective_status,campaign{name},creative{id,name,object_story_spec,asset_feed_spec}' });
-      if (!r.ok || 'act_' + r.j.account_id !== conn.adAccountId) { res.status(200).json({ ok: false, reason: 'not_ours' }); return; }
+      // the connected account's ads, or (23.11, to check what a port would carry) an ad of ours in an old account
+      const SCOPE = require('./_lib/ads-scope');
+      const adAct = r.ok ? 'act_' + r.j.account_id : '';
+      const oldOurs = ['act_4502494523405059', 'act_1136609638911845'].includes(adAct) && SCOPE.keep(SCOPE.forAccount(SCOPE.DEFAULT, adAct), (r.j.campaign || {}).name);
+      if (!r.ok || (adAct !== conn.adAccountId && !oldOurs)) { res.status(200).json({ ok: false, reason: 'not_ours' }); return; }
       const p = require('./_lib/ads-edit').partsOf(r.j.creative || {});
+      // what the ad shows, in full: its pictures (from their codes) and its video (link and cover)
+      const media = { images: [], video: null };
+      if (req.query.media) {
+        if (p.hashes.length) {
+          const im = await ads.call('GET', '/' + adAct + '/adimages', conn.userToken, { hashes: JSON.stringify(p.hashes), fields: 'hash,url,width,height' });
+          media.images = im.ok ? (im.j.data || []).map((x) => ({ hash: x.hash, url: x.url, width: x.width, height: x.height })) : [];
+        }
+        const s = (r.j.creative || {}).object_story_spec || {}, vid = (s.video_data || {}).video_id || '';
+        if (vid) { const v = await ads.call('GET', '/' + vid, conn.userToken, { fields: 'source,picture,length' }); media.video = v.ok ? { id: vid, source: v.j.source || '', picture: v.j.picture || '', length: v.j.length || 0 } : { id: vid }; }
+      }
       delete p.hashes;
-      res.status(200).json({ ok: true, id, name: r.j.name, status: r.j.effective_status, campaign: (r.j.campaign || {}).name, creativeId: (r.j.creative || {}).id, creativeName: (r.j.creative || {}).name, parts: p });
+      res.status(200).json({ ok: true, id, account: adAct === conn.adAccountId ? 'connected' : 'old', name: r.j.name, status: r.j.effective_status, campaign: (r.j.campaign || {}).name, creativeId: (r.j.creative || {}).id, creativeName: (r.j.creative || {}).name, parts: p, media });
       return;
     }
     if (req.method === 'GET') { res.status(200).json(await options()); return; }
