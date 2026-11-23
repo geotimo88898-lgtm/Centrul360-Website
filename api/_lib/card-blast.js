@@ -162,7 +162,11 @@ async function status() {
   });
   const reasons = {};
   Object.values(sent).filter((x) => x.e).forEach((x) => { const k = x.code || x.e.slice(0, 40); reasons[k] = (reasons[k] || 0) + 1; });
-  return { ok: true, armed: st.armed, pickedAt: st.pickedAt, doneAt: st.doneAt, note: st.note, excluded: ex.size, byCity: by, failReasons: reasons };
+  // the message the list gets (st.pre) and the wave's templates as Meta has them (no names)
+  const d = await WT.load().catch(() => ({ templates: [] }));
+  const tpls = (d.templates || []).filter((t) => /^card_sarbatori/.test(String(t.fastcash || ''))).map((t) => ({ key: t.fastcash, label: t.label, state: WT.overall(t), body: String(t.body || '').slice(0, 220) }));
+  const batches = {}; st.list.forEach((p) => { const b = p.batch || 1; batches[b] = batches[b] || { n: 0, sent: 0 }; batches[b].n++; if (sent[p.k]) batches[b].sent++; });
+  return { ok: true, armed: st.armed, pickedAt: st.pickedAt, doneAt: st.doneAt, note: st.note, excluded: ex.size, byCity: by, failReasons: reasons, pre: st.pre || 'card_sarbatori', batches, tpls };
 }
 
 // ---- the message she got, in her chat (Mesaje): when she answers (the webhook calls onInbound) and, once, for the chats
@@ -262,6 +266,7 @@ async function pickMore(n, opt) {
   clients.forEach((c) => {
     const ph = normalizePhone(c && c.phone); const k = d9(ph);
     if (opt && opt.only === 'leads') { if (ph && k.length === 9) seen.add(k); return; }
+    if (opt && opt.only === 'trans' && !inTrans.has(k)) return;
     if (!ph || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(c.name || ''))) return;
     seen.add(k);
     if ((!withTrans && inTrans.has(k)) || already.has(k) || bought.has(k) || staff.has(k) || recentPay.has(c.id)) return;
@@ -278,6 +283,7 @@ async function pickMore(n, opt) {
       const ph = normalizePhone(l && l.phone); const k = d9(ph);
       if (!ph || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(l.name || ''))) return;
       seen.add(k);
+      if (opt && opt.only === 'trans' && !inTrans.has(k)) return;
       if ((!withTrans && inTrans.has(k)) || already.has(k) || bought.has(k) || staff.has(k)) return;
       const city = C.clinicOf(l.location); if (!CITIES.includes(city)) return;
       const to = WA.toE164(l.phone); if (!to) return;
