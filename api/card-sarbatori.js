@@ -413,7 +413,8 @@ module.exports = async (req, res) => {
 
     // nothing is issued now: the codes come when the payment is confirmed (the owner, 21.11)
     const entry = { id: newId, created: new Date().toISOString(), name, phone, city, tier, qty, amount: payAmount, credit: C.TIERS[tier] * qty, forWho: gift ? 'cadou' : 'eu', disc: (op && op.disc) || (emb && C.isVip(tier)) ? true : undefined, checkout: emb ? { at: new Date().toISOString() } : undefined, leadEv: later && /^[A-Za-z0-9._-]{8,80}$/.test(String(b.event_id || '')) ? String(b.event_id) : undefined,
-      cards: names.map((n) => ({ code: '', recipient: n })), recipient: names[0] || '', status: online ? 'asteptare' : 'rezervat', via: 'site', pay: online ? 'online' : 'clinica', page: clip(b.page, 200), track: trackOf(req, b.page, b.ct) };
+      cards: names.map((n) => ({ code: '', recipient: n })), recipient: names[0] || '', status: online ? 'asteptare' : 'rezervat', via: 'site', pay: online ? 'online' : 'clinica', page: clip(b.page, 200), track: trackOf(req, b.page, b.ct),
+      src: require('./_lib/booking').sourceOf(b.src, req.headers.cookie, req.headers['user-agent']) };
     // where the name on the card comes from (the portal says it): typed on the site; else hers in our files (clients, then
     // leads, the newest first): her greeting and her card's name, nothing asked on WhatsApp; else asked once paid
     // (that one is looked up after the answer: knownName below)
