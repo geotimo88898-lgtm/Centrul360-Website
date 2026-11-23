@@ -156,4 +156,31 @@ async function setLive(store, on) {
 async function drop(store) { await store.writeJSON(KEY, {}); }
 async function note(store, patch) { const c = await load(store); Object.assign(c, patch); await store.writeJSON(KEY, c, { quiet: true }); }
 
-module.exports = { active, KEY, FIELDS, ready, load, create, status, adminOf, save, check, setLive, drop, note, ReqError };
+// a check for the owner (23.11: myPOS answered 500 to the payment request): a few forms of the same 1 leu request, each
+// answer's status and text (no keys), the first that myPOS takes is kept as its link. Nothing is paid.
+async function probeCreate(store) {
+  const c = await active(store);
+  if (!c) return { error: 'not_saved' };
+  const tok = await token(c), ses = await session(c, tok);
+  const base0 = { amount: 1, currency: 'RON', client_name: 'Test Centrul360', reason: 'Test plata online Centrul360', booking_text: 'probe-' + Date.now().toString(36), dba: 'Centrul360', expiry_date: day(Date.now() + 2 * 86400e3) };
+  const tries = [
+    ['as now', 'application/json', Object.assign({}, base0, { payment_request_lang: 'ro', qr_generated: false })],
+    ['versioned type', 'application/json; x-api-version=1', Object.assign({}, base0, { payment_request_lang: 'ro', qr_generated: false })],
+    ['lang en', 'application/json; x-api-version=1', Object.assign({}, base0, { payment_request_lang: 'en', qr_generated: false })],
+    ['minimal', 'application/json; x-api-version=1', { amount: 1, currency: 'RON', client_name: 'Test Centrul360', reason: 'Test' }],
+    ['eur', 'application/json; x-api-version=1', { amount: 1, currency: 'EUR', client_name: 'Test Centrul360', reason: 'Test' }],
+  ];
+  const out = [];
+  for (const [name, type, body] of tries) {
+    let st = 0, text = '';
+    try {
+      const r = await fetch(base(c) + '/ecommerce/v1/payment-requests', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': type, Authorization: 'Bearer ' + tok, 'X-Session': ses, 'X-Partner-Id': c.partnerId, 'X-Application-Id': c.appId }, body: JSON.stringify(body) });
+      st = r.status; text = (await r.text()).slice(0, 400);
+    } catch (e) { text = 'fetch: ' + e.message; }
+    out.push({ name, status: st, text });
+    if (st >= 200 && st < 300) break;
+  }
+  return { ok: true, tries: out };
+}
+
+module.exports = { probeCreate, active, KEY, FIELDS, ready, load, create, status, adminOf, save, check, setLive, drop, note, ReqError };

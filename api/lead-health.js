@@ -508,6 +508,11 @@ module.exports = async (req, res) => {
     res.status(200).json({ at: aud && aud.at, days: aud && aud.ig && aud.ig.online && aud.ig.online.days ? aud.ig.online.days.length : 0, grid: g });
     return;
   }
+  // ?mprprobe=1: myPOS payment requests, a few forms of a 1 leu request and myPOS's answers (api/_lib/mypos-requests.js)
+  if (req.query && req.query.mprprobe) {
+    res.status(200).json(await require('./_lib/mypos-requests').probeCreate(require('./_lib/store')).catch((e) => ({ error: e.code || e.message, status: e.status || 0, message: e.message })));
+    return;
+  }
   // ?docfile=<path>: one of the owner's documents (Regulament intern, Fișa postului, „De făcut”'s print files) as a file,
   // for the owner's own copies outside the portal (same reach as the portal's owner; nothing else in the store)
   if (req.query && req.query.docfile) {
