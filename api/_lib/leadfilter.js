@@ -503,4 +503,26 @@ async function resend(id) {
   const outs = ((convo && convo.messages) || []).filter((m) => m && m.direction !== 'in' && String(m.timestamp || '') >= String(l.createdAt || '')).map((m) => ({ at: m.timestamp, text: String(m.text || '').slice(0, 90), status: m.status || '' }));
   return { ok: true, outs, sent: !!(after.lf && after.lf.sentAt), note: String((((after.activities || []).slice(-1)[0]) || {}).text || '').replace(/\d{6,}/g, '…') };
 }
-module.exports = { resend, testResult, testForms, tests, KEY, TIERS, HOT, Q, load, save, zonesOf, tiersOf, knownTiers, formInput, dryRun, makeForms, parse, summary, afterLead, followups, saveContent, saveImages, templates, kpi, tplLabel, msgFor };
+// read only (23.11): what a lead on this lead-filter form would become, for each answer of its package question (the
+// first answer of the others): her zone, the package, whether reception is told to call, and the WhatsApp template that
+// would leave from her clinic's number, the way api/_lib/fb-leads.js reads a real one. Nothing is sent or written.
+async function preview(form) {
+  const d = await load();
+  if (!d.packages) return { error: 'no_packages' };
+  const { answerPairs } = require('./facebook');
+  const qs = (form && form.questions) || [];
+  const custom = qs.filter((q) => q.key && Array.isArray(q.options) && q.options.length);
+  const pack = custom.find((q) => fold(q.label) === fold(Q.pack));
+  if (!pack) return { error: 'formularul nu are întrebarea pachetului' };
+  const city = form.location || '';
+  const tpls = (await WT.load()).templates;
+  const rows = pack.options.map((o) => {
+    const fieldData = custom.map((q) => ({ name: q.key, values: [q === pack ? o.value : q.options[0].value] }));
+    const x = parse(d.packages, form, answerPairs(fieldData, qs));
+    const t = x.zone && x.tier ? pickTpl(tpls, x.zone, x.tier, city) : null;
+    return { answer: o.value, zone: x.zone, problem: x.problemLabel, when: x.whenLabel, tier: x.tier, pack: x.packName, call: HOT.includes(x.tier), template: t ? t.label : '', status: t ? WT.overall(t) : 'lipsește' };
+  });
+  return { ok: true, city, zone: form.zone || '', rows };
+}
+
+module.exports = { preview, resend, testResult, testForms, tests, KEY, TIERS, HOT, Q, load, save, zonesOf, tiersOf, knownTiers, formInput, dryRun, makeForms, parse, summary, afterLead, followups, saveContent, saveImages, templates, kpi, tplLabel, msgFor };

@@ -261,6 +261,8 @@ module.exports = async (req, res) => {
       const interest = form.kind === 'leadfilter' ? 'Lead filter' : form.kind === 'card' ? 'Cardul de Sărbători' : offer ? offer.title : form.name;
       const out = { ok: true, form: { id, name: form.name, kind: form.kind || '', offerId: form.offerId || '', location, copyOf: form.copyOf || '', replacedBy: form.replacedBy || '', archived: form.archived || '' },
         lead: { interest, location, offerFound: !!offer, welcome: form.kind ? 'nu (are mesajul lui)' : 'da' }, templates: [] };
+      // a lead-filter form: each package answer → her zone, the package, the WhatsApp template from her clinic
+      if (form.kind === 'leadfilter') out.leadfilter = await require('./_lib/leadfilter').preview(form).catch((e) => ({ error: e.message }));
       if (!form.kind && offer) {
         const o2 = offers.find((o) => fold(o.title) === fold(interest) || o.key === interest);
         const cities = [...new Set(((o2 && o2.locations) || []).map((l) => (/arad/i.test(l) ? 'Arad' : 'Timișoara')))];

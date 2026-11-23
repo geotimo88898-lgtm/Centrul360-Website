@@ -48,12 +48,39 @@ const SITE_CAMPAIGNS = [
   ] },
 ];
 const JOBS = [
+  // 23.11, George: Liposonix in Arad, into the lead filter. The Arad abdomen-talie lead-filter form still ended on WhatsApp,
+  // so it's copied as it is (questions, packages, privacy; registered with the same kind, zone and city, so its leads get
+  // the same package messages), only the ending on the home page; then one campaign of one ad (the Arad name over case 05,
+  // the real Liposonix șolduri result of the homepage), 50 lei a day, women 28-64, Arad 7 km, into the copy; „C360 · AR ·
+  // HIFU G · sezon” goes off once it's made, so the day's total stays the same (its twin „(2)” keeps running)
+  { id: 'form-home-lf-abdomen-ar-2026-11-23', why: 'Finalul formularului lead filter abdomen-talie Arad duce pe site', formSite: {
+    formId: '1652022543051105', name: 'Lead filter · Abdomen și talie · Arad · site',
+    page: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un pas 👇 Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.', button_type: 'VIEW_WEBSITE', button_text: 'VEZI MAI MULTE 👉',
+      website_url: 'https://www.centrul360.com/?utm_source=facebook&utm_medium=leadform&utm_campaign=lf-lipo-ar' } } },
+  { id: 'lf-lipo-ar-2026-11-23', why: 'Liposonix Arad în lead filter (50 lei/zi), HIFU gușă AR sezon oprită', site: {
+    cta: 'SIGN_UP', ages: [28, 64],
+    campaigns: [{ name: 'C360 · AR · LF · Liposonix', city: 'Arad', radiusKm: 7, budget: 50, formJob: 'form-home-lf-abdomen-ar-2026-11-23', ads: [
+      { name: 'AR · LF · Liposonix șolduri · caz 05', image: 'rezultate-ar-solduri.jpg',
+        text: 'ARAD! Cum să ai o talie mai definită fără operație, chiar dacă dietele și sala nu te-au ajutat până acum.\n\n' +
+          '✅ O singură ședință de Liposonix. Poza e reală, făcută la noi în clinică.\n' +
+          '✅ Fără diete stricte. Stai întinsă, iar ultrasunetele lucrează pe grăsimea de pe șolduri și talie.\n' +
+          '✅ 2 zone la preț de una: 640 lei în loc de 1.280, de Black Friday.\n\n' +
+          'Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\n' +
+          '👉 Completează formularul și vezi ce plan ți se potrivește.\ncentrul360.com\n\nRezultatele diferă de la o persoană la alta.',
+        headlines: ['TALIE MAI DEFINITĂ, FĂRĂ OPERAȚIE 👉', '2 ZONE LA PREȚ DE UNA, DE BLACK FRIDAY ⏰💨', 'VEZI CE PLAN ȚI SE POTRIVEȘTE 👉'], description: '5,0 pe Google, peste 300 de recenzii' },
+    ] }],
+    pauseAfter: [{ campaignId: '120250718332580149', name: 'C360 · AR · HIFU G · sezon', why: 'oprită ca totalul pe zi să rămână același (Liposonix AR în lead filter)' }] } },
   // 23.11 ~01:30, George („cu pixel configurat”, the account is only Centrul360's now): the site's pixel was never shared
   // with this ad account (Meta: „Contul nu are acces la pixel”, 1815045), so the 2 campaigns made at 01:18 can't run and
   // can't be fixed (Meta: make them again from scratch). The pixel shared once (as api/_lib/pixel-share.js, the pixel's
   // business Mellon Vision); if Meta refuses, the job stops there with Meta's words (no blind retries); if it works, the
   // same 2 campaigns made again, then the 2 broken ones paused. 01:30, George: only the two best
   // cases, 05 and 24, in both cities (SITE_CAMPAIGNS)
+  // 23.11 ~02:30, George: Mellon Vision is now a partner on the ad account (v2 was refused at 02:18: „the business 1107600260509887
+  // must have access to both the pixel and the ad account”, 200/1784039); v3 is the same job again
+  { id: 'site-results-v3-2026-11-23', why: 'Pixelul partajat cu contul și rezultatele reale refăcute (TM și AR, câte 2 reclame, 50 lei/zi)', site: {
+    pixelId: '2276074362800484', sharePixel: '1107600260509887', cta: 'LEARN_MORE', ages: [25, 64], campaigns: SITE_CAMPAIGNS,
+    pauseAfter: [{ campaignId: '120250718543790149', name: 'C360 · TM · Rezultate · site (fără pixel)' }, { campaignId: '120250718631180149', name: 'C360 · AR · Rezultate · site (fără pixel)' }] } },
   { id: 'site-results-v2-2026-11-23', why: 'Pixelul partajat cu contul și rezultatele reale refăcute (TM și AR, câte 2 reclame, 50 lei/zi)', site: {
     pixelId: '2276074362800484', sharePixel: '1107600260509887', cta: 'LEARN_MORE', ages: [25, 64], campaigns: SITE_CAMPAIGNS,
     pauseAfter: [{ campaignId: '120250718543790149', name: 'C360 · TM · Rezultate · site (fără pixel)' }, { campaignId: '120250718631180149', name: 'C360 · AR · Rezultate · site (fără pixel)' }] } },
@@ -804,16 +831,19 @@ async function run() {
       for (const c of j.site.campaigns) {
         if (!ads.ours(conn, c.name)) { failed = c.name + ': numele nu e al nostru în contul conectat'; break; }
         const sc = st[c.name] = st[c.name] || { ads: {} };
-        const link = 'https://www.centrul360.com/?utm_source=facebook&utm_medium=paid&utm_campaign=' + c.utm;
+        // a lead-form campaign (c.formJob): the form a formSite job above made, once it's there; else a page of the site
+        const formId = c.formJob ? ((doc.forms || {})[c.formJob] || {}).newId || '' : '';
+        if (c.formJob && !formId) { failed = c.name + ': formularul nu e gata încă'; break; }
+        const link = formId ? '' : 'https://www.centrul360.com/?utm_source=facebook&utm_medium=paid&utm_campaign=' + c.utm;
         for (const a of c.ads) {
           if (sc.ads[a.name]) continue;
           if (sc.making && Date.now() - Date.parse(sc.making) < 10 * 60e3) { failed = c.name + ': se face deja'; break; }
           const pic = await sitePicture(a.image);
           if (pic.error) { failed = a.name + ': ' + pic.error; break; }
           const v = ads.cleanSettings({
-            adsetId: sc.adsetId || '', campaignName: c.name, adsetName: c.city + ' ' + d.radiusKm + ' km · femei ' + j.site.ages.join('-'), adName: a.name,
-            city: c.city, radiusKm: d.radiusKm, women: true, ageMin: j.site.ages[0], ageMax: j.site.ages[1], placements: d.placements, budget: c.budget,
-            link, goal: 'purchase', pixelId: j.site.pixelId, primaryText: a.text, headline: a.headlines[0], headline2: a.headlines[1], headline3: a.headlines[2],
+            adsetId: sc.adsetId || '', campaignName: c.name, adsetName: c.city + ' ' + (c.radiusKm || d.radiusKm) + ' km · femei ' + j.site.ages.join('-'), adName: a.name,
+            city: c.city, radiusKm: c.radiusKm || d.radiusKm, women: true, ageMin: j.site.ages[0], ageMax: j.site.ages[1], placements: d.placements, budget: c.budget,
+            link, formId, goal: formId ? '' : 'purchase', pixelId: j.site.pixelId, primaryText: a.text, headline: a.headlines[0], headline2: a.headlines[1], headline3: a.headlines[2],
             description: a.description, cta: j.site.cta, startNow: true,
           });
           if (v.error) { failed = a.name + ': ' + v.error; break; }
@@ -841,7 +871,7 @@ async function run() {
           if (r.error) { failed = p.name + ': ' + r.error; break; }
           await AC.switched(p.campaignId, 'PAUSED').catch(() => {});
           st.paused[p.campaignId] = new Date().toISOString();
-          doc.log.push({ job: j.id, at: new Date().toISOString(), campaignId: p.campaignId, campaignName: p.name, status: 'PAUSED', why: 'înlocuită de campania refăcută cu pixelul' });
+          doc.log.push({ job: j.id, at: new Date().toISOString(), campaignId: p.campaignId, campaignName: p.name, status: 'PAUSED', why: p.why || 'înlocuită de campania refăcută cu pixelul' });
           await save();
         }
       }
