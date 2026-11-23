@@ -95,6 +95,11 @@ function adminOf(c) {
     savedAt: c.savedAt || '', checkedAt: c.checkedAt || '', error: c.error || '', testPassedAt: c.testPassedAt || '' };
 }
 
+// token + session must work; the read after them only counts when myPOS refuses it (401 / 403)
+async function readProbe(c) {
+  try { await call(c, 'GET', '/ecommerce/v1/common/settlement-data'); }
+  catch (e) { if (e.code === 'mypos_failed' && e.status >= 400 && e.status < 500 && e.status !== 429) return; throw e; }
+}
 // Integrări → myPOS → „Aplicația de parteneri”: the six keys checked once (token, session, a harmless read), kept only when
 // all worked. Empty secrets with the same IDs: the saved ones.
 async function save(store, input, by) {
@@ -110,7 +115,10 @@ async function save(store, input, by) {
   }
   if (c.merchantSecret === c.clientSecret) return { error: 'req_format', field: 'merchantSecret', same: true };
   ['t|', 's|'].forEach((p) => cache.forEach((v, k) => { if (k.startsWith(p)) cache.delete(k); }));
-  try { await call(c, 'GET', '/ecommerce/v1/common/settlement-data'); } catch (e) {
+  // the keys are good when myPOS gives the token (Client ID / Secret) and the clinic's session (Merchant ID / Secret); the
+  // harmless read after them may answer 400 for an integration without that resource (23.11): only a refusal (401 / 403)
+  // of the read stops the save
+  try { await readProbe(c); } catch (e) {
     console.error('mypos requests save:', e.code, e.status, e.message);
     return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' };
   }
@@ -126,7 +134,7 @@ async function check(store) {
   if (!c || !ready(c)) return { error: 'not_saved' };
   if (c.error === 'req_merchant') return { error: 'req_merchant', message: 'Cheile clinicii au fost refuzate: salvează-le din nou (myPOS blochează după 3 încercări).' };
   let err = null;
-  try { await call(c, 'GET', '/ecommerce/v1/common/settlement-data'); } catch (e) { err = e; }
+  try { await readProbe(c); } catch (e) { err = e; }
   const hard = err && (err.code === 'req_partner' || err.code === 'req_merchant' || err.code === 'req_denied');
   await note(store, Object.assign({ checkedAt: new Date().toISOString() }, hard ? { error: err.code } : err ? {} : { error: '' }));
   return err ? { error: err.code, status: err.status, message: err.message } : { ok: true };
