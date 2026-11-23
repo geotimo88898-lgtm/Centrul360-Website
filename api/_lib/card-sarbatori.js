@@ -163,12 +163,16 @@ async function openNext(list, by) {
 }
 // the waves count the regular cards; the VIP ones have their own stock, per clinic
 const ordered = (list, now) => (list || []).filter((r) => !isVip(r) && live(r, now || Date.now())).reduce((n, r) => n + qtyOf(r), 0);
+const VIP_WAVE = 4;
 function vipLeft(list, now, cfg) {
   const t = now || Date.now(), out = {};
   ['Timișoara', 'Arad'].forEach((c) => {
     const max = cfg && cfg.vip && Number.isInteger(cfg.vip[c]) ? cfg.vip[c] : VIP_MAX;
     const used = (list || []).filter((r) => isVip(r) && r.city === c && live(r, t)).reduce((n, r) => n + qtyOf(r), 0);
-    out[c] = { max, left: Math.max(0, max - used) };
+    // in waves of 4 like the regular cards (the owner, 23.11: „Au mai rămas doar 4 carduri” everywhere): what is left of the
+    // wave of now (4, 3, 2, 1), never more than the clinic's real stock (below 4: the real number); stock: the real one
+    const stock = Math.max(0, max - used);
+    out[c] = { max, left: stock ? Math.min(stock, VIP_WAVE - (used % VIP_WAVE)) : 0, stock };
   });
   return out;
 }
@@ -196,7 +200,7 @@ async function stockFor(list, tier, city, qty, now, cnt) {
   const t = now || Date.now();
   if (t >= Date.parse(DEADLINE)) return { ok: false, left: 0, error: 'closed' };
   const c = cnt || await count(list, t);
-  if (isVip(tier)) { const v = c.vip[city] || { left: 0 }; return v.left >= (qty || 1) ? { ok: true, left: v.left } : { ok: false, left: v.left, error: v.left > 0 ? 'not_enough' : 'sold_out' }; }
+  if (isVip(tier)) { const v = c.vip[city] || { left: 0 }; const st = v.stock != null ? v.stock : v.left; return st >= (qty || 1) ? { ok: true, left: st } : { ok: false, left: st, error: st > 0 ? 'not_enough' : 'sold_out' }; }
   // the regular cards: always there before the deadline (more than the wave holds: the next wave takes the rest)
   return { ok: true, left: Math.max(c.left, qty || 1) };
 }
