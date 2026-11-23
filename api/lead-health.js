@@ -668,7 +668,7 @@ module.exports = async (req, res) => {
       out.push({ id: it.id, at: it.at, kind: o.kind, amount: o.amount, provider: o.provider, status: o.status, code: o.request && o.request.code, contact: !!o.phone, linkError: o.linkError || undefined, fallback: o.fallback ? o.fallback.kind : undefined, trace: (o.trace || []).slice(-6).map((t) => t.step + (t.code ? ':' + t.code : '')).join(' ') || undefined, mypos: st && { status: st.status, amount: st.amount, currency: st.currency, bookingMatch: st.bookingText === it.id, booking: String(st.bookingText || '').slice(0, 40), error: st.error } });
     }
     const R = require('./_lib/pay-recovery');
-    res.status(200).json({ open: (open || []).length, recovery: Object.assign({ on: await R.on().catch(() => false) }, await R.counts().catch(() => ({}))), out });
+    res.status(200).json({ open: (open || []).length, tick: await ST.readJSON('data/pay-tick.json', null).catch(() => null), recovery: Object.assign({ on: await R.on().catch(() => false) }, await R.counts().catch(() => ({}))), out });
     return;
   }
   // ?mprlive=1: the payment requests route's state (no keys); POST {"on": true|false} switches it on the site (the owner)

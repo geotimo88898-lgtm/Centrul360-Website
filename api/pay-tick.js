@@ -11,6 +11,8 @@ module.exports = async (req, res) => {
   try {
     const P = require('./_lib/pay'), R = require('./_lib/pay-recovery');
     const out = Object.assign({ ok: true }, await P.sweep({ fresh: true }));
+    // its last round that asked myPOS something (lead-health ?payopen=1 shows it): proof the minute clock works
+    if (out.asked || out.paid) await require('./_lib/store').writeJSON('data/pay-tick.json', { at: new Date().toISOString(), asked: out.asked, paid: out.paid }, { quiet: true }).catch(() => null);
     if (await R.on()) out.recovery = await R.run(P).catch((e) => ({ error: e.message }));
     else out.template = await R.template().then((t) => t.state, (e) => 'eroare: ' + e.message);
     res.status(200).json(out);
