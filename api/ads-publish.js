@@ -206,6 +206,44 @@ module.exports = async (req, res) => {
       return;
     }
     if (req.method === 'GET' && req.query && req.query.action === 'daily') { res.status(200).json(await daily(req.query.since)); return; }
+    // read only (23.11): one lead form in full as Meta keeps it (intro, questions, privacy, ending) and how the portal
+    // has it registered (procedure, city, kind), so a copy can be made the same; never a token
+    if (req.method === 'GET' && req.query && req.query.action === 'form_full') {
+      const id = /^\d{5,25}$/.test(String(req.query.id || '')) ? String(req.query.id) : '';
+      if (!id) { res.status(400).json({ error: 'id' }); return; }
+      const conn = await loadConnection(readJSON);
+      if (!conn.pageAccessToken) { res.status(200).json({ ok: false, reason: 'not_connected' }); return; }
+      const j = await require('./_lib/fb-form-template').readForm(id, conn.pageAccessToken);
+      if (!j) { res.status(200).json({ ok: false, reason: 'not_read' }); return; }
+      const [doc, poll, lf, offersRaw] = await Promise.all([readJSON('data/fb-forms.json', {}), readJSON('data/fb-poll.json', {}), readJSON('data/leadfilter.json', {}), readJSON('data/offers.json', [])]);
+      const reg = Object.assign({}, (doc.forms || {})[id] || null);
+      const tp = j.thank_you_page || null;
+      const lfKeys = [];
+      Object.entries((lf && lf.forms) || {}).forEach(([city, m]) => Object.entries(m || {}).forEach(([k, v]) => { if (String(v) === id) lfKeys.push(city + '/' + k); }));
+      const offerKeys = [];
+      (Array.isArray(offersRaw) ? offersRaw : []).forEach((o) => Object.entries((o && o.forms) || {}).forEach(([city, v]) => { if (String(v) === id) offerKeys.push(o.id + '/' + city); }));
+      res.status(200).json({ ok: true, id, name: j.name, status: j.status, locale: j.locale, privacy: j.privacy_policy_url || '', followUp: j.follow_up_action_url || '',
+        headline: j.question_page_custom_headline || '', quality: !!j.is_optimized_for_quality, intro: j.context_card || null,
+        questions: (j.questions || []).map((q) => ({ key: q.key, type: q.type, label: q.label || '', options: (q.options || []).map((o) => ({ value: o.value, key: o.key })) })),
+        ending: tp ? { title: tp.title || '', body: tp.body || '', button_type: tp.button_type || '', button_text: tp.button_text || '', website_url: tp.website_url || '', whatsapp: tp.business_phone_number ? 'da' : '' } : null,
+        registered: Object.keys(reg).length ? { name: reg.name, kind: reg.kind || '', zone: reg.zone || '', variant: reg.variant || '', offerId: reg.offerId || '', location: reg.location || '', detected: reg.detected || null, copyOf: reg.copyOf || '', replacedBy: reg.replacedBy || '', leads: reg.leads || 0, keys: Object.keys(reg) } : null,
+        poll: (poll.forms || []).find((f) => String(f.id) === id) || null, leadfilter: lfKeys, offers: offerKeys });
+      return;
+    }
+    // read only (23.11): which form an ad's creative sends to, and its words (to check a form switch)
+    if (req.method === 'GET' && req.query && req.query.action === 'ad_form') {
+      const AM = require('./ads-manager');
+      const { conn, problem } = await AM.connection();
+      if (problem) { res.status(200).json({ ok: false, reason: problem }); return; }
+      const id = /^\d{5,25}$/.test(String(req.query.id || '')) ? String(req.query.id) : '';
+      if (!id) { res.status(400).json({ error: 'id' }); return; }
+      const r = await ads.call('GET', '/' + id, conn.userToken, { fields: 'account_id,name,effective_status,campaign{name},creative{id,name,object_story_spec,asset_feed_spec}' });
+      if (!r.ok || 'act_' + r.j.account_id !== conn.adAccountId) { res.status(200).json({ ok: false, reason: 'not_ours' }); return; }
+      const p = require('./_lib/ads-edit').partsOf(r.j.creative || {});
+      delete p.hashes;
+      res.status(200).json({ ok: true, id, name: r.j.name, status: r.j.effective_status, campaign: (r.j.campaign || {}).name, creativeId: (r.j.creative || {}).id, creativeName: (r.j.creative || {}).name, parts: p });
+      return;
+    }
     if (req.method === 'GET') { res.status(200).json(await options()); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
     const body = req.body || {};
