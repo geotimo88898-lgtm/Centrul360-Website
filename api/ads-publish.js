@@ -237,6 +237,41 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, act, since, until: today, currency: view.account && view.account.currency, ads: out });
       return;
     }
+    // read only, a dry run (23.11): what a new lead on this form would become, the way api/_lib/fb-leads.js and
+    // workflows.welcome read it (the form's procedure and city → the lead's interest → the offer's new-lead WhatsApp
+    // templates, from the city's number): the template, Meta's approval, its text with a sample name, its picture.
+    // Nothing is sent and nothing is written.
+    if (req.method === 'GET' && req.query && req.query.action === 'lead_preview') {
+      const id = /^\d{5,25}$/.test(String(req.query.id || '')) ? String(req.query.id) : '';
+      if (!id) { res.status(400).json({ error: 'id' }); return; }
+      const fold = (x) => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+      const doc = await readJSON('data/fb-forms.json', {});
+      const form = (doc.forms || {})[id];
+      if (!form) { res.status(200).json({ ok: false, reason: 'not_registered' }); return; }
+      const offers = (await loadOffers(readJSON, writeJSON)).filter((o) => o.active !== false);
+      const offer = form.kind ? null : (form.offerId && offers.find((o) => o.id === form.offerId)) || null;
+      const location = form.location || '';
+      const interest = form.kind === 'leadfilter' ? 'Lead filter' : form.kind === 'card' ? 'Cardul de Sărbători' : offer ? offer.title : form.name;
+      const out = { ok: true, form: { id, name: form.name, kind: form.kind || '', offerId: form.offerId || '', location, copyOf: form.copyOf || '', replacedBy: form.replacedBy || '', archived: form.archived || '' },
+        lead: { interest, location, offerFound: !!offer, welcome: form.kind ? 'nu (are mesajul lui)' : 'da' }, templates: [] };
+      if (!form.kind && offer) {
+        const o2 = offers.find((o) => fold(o.title) === fold(interest) || o.key === interest);
+        const cities = [...new Set(((o2 && o2.locations) || []).map((l) => (/arad/i.test(l) ? 'Arad' : 'Timișoara')))];
+        out.lead.offerKey = o2 ? o2.key : '';
+        out.lead.cityOk = !(cities.length === 1 && location && location !== cities[0]);
+        const WT = require('./_lib/wa-templates'), WA = require('./_lib/whatsapp');
+        const [tpls, cfg] = [(await WT.load()).templates, await WA.loadConfig()];
+        const n = (cfg.numbers || {})[location] || {};
+        const sample = { prenume: 'Ana', nume: 'Ana Exemplu', interes: interest, procedura: interest, tratament: interest, locatie: location, serviciu: interest };
+        out.templates = tpls.filter((t) => o2 && (t.leadOffers || []).includes(o2.key)).map((t) => ({
+          label: t.label, metaName: ((t.meta || {})[n.wabaId] || {}).name || t.name, status: ((t.meta || {})[n.wabaId] || {}).status || 'netrimis la Meta', from: location,
+          number: n.display ? String(n.display).replace(/\d(?=\d{3})/g, '•') : '', header: t.headerType || '', picture: WT.imageOf(t),
+          text: String(t.body || '').replace(/\{\{(\d+)\}\}/g, (m, k) => { const v = (t.map || [])[k - 1]; return v ? (sample[v] || '{' + v + '}') : m; }),
+          footer: t.footer || '', buttons: (t.buttons || []).map((b) => b.text || b.type || '') }));
+      }
+      res.status(200).json(out);
+      return;
+    }
     // read only (23.11): one lead form in full as Meta keeps it (intro, questions, privacy, ending) and how the portal
     // has it registered (procedure, city, kind), so a copy can be made the same; never a token
     if (req.method === 'GET' && req.query && req.query.action === 'form_full') {
