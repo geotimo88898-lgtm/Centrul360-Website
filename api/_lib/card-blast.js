@@ -261,17 +261,18 @@ async function pickMore(n, opt) {
     v.n++; if (a.date > v.last) { v.last = a.date; v.city = C.clinicOf(a.location); }
     vis.set(a.clientId, v);
   });
-  const seen = new Set(), pool = [];
+  const seen = new Set(), pool = [], why = {};
+  const no = (k, w) => { if (inTrans.has(k)) why[w] = (why[w] || 0) + 1; };
   // only the leads who never came (opt.only === 'leads'): their phones still marked seen, so no client slips in as a lead
   clients.forEach((c) => {
     const ph = normalizePhone(c && c.phone); const k = d9(ph);
     if (opt && opt.only === 'leads') { if (ph && k.length === 9) seen.add(k); return; }
     if (opt && opt.only === 'trans' && !inTrans.has(k)) return;
-    if (!ph || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(c.name || ''))) return;
+    if (!ph || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(c.name || ''))) return no(k, 'c-seen');
     seen.add(k);
-    if ((!withTrans && inTrans.has(k)) || already.has(k) || bought.has(k) || staff.has(k) || recentPay.has(c.id)) return;
-    const v = vis.get(c.id); if (!v || !CITIES.includes(v.city)) return; // only clients who came at least once, to one of our clinics
-    const to = WA.toE164(c.phone); if (!to) return;
+    if (!withTrans && inTrans.has(k)) return no(k, 'c-trans'); if (already.has(k)) return no(k, 'c-already'); if (bought.has(k)) return no(k, 'c-bought'); if (staff.has(k)) return no(k, 'c-staff'); if (recentPay.has(c.id)) return no(k, 'c-recentpay');
+    const v = vis.get(c.id); if (!v || !CITIES.includes(v.city)) return no(k, 'c-novisit'); // only clients who came at least once, to one of our clinics
+    const to = WA.toE164(c.phone); if (!to) return no(k, 'c-to');
     const paid = money.get(c.id) || 0;
     const score = Math.min(paid, 20000) / 200 + v.n * 8 + (v.last >= d365 && v.last < d30 ? 15 : v.last >= d30 ? 5 : 0);
     pool.push({ k, to, city: v.city, fn: FC.firstName(c.name), seg: inTrans.has(k) ? 'client-tr' : 'client2', score: Math.round(score), visits: v.n, paid: Math.round(paid), batch: (opt && opt.batch) || 2 });
@@ -281,16 +282,17 @@ async function pickMore(n, opt) {
     const leads = await readJSON('data/leads.json', []);
     leads.slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).forEach((l) => {
       const ph = normalizePhone(l && l.phone); const k = d9(ph);
-      if (!ph || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(l.name || ''))) return;
+      if (!ph || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(l.name || ''))) return no(k, 'l-seen');
       seen.add(k);
       if (opt && opt.only === 'trans' && !inTrans.has(k)) return;
-      if ((!withTrans && inTrans.has(k)) || already.has(k) || bought.has(k) || staff.has(k)) return;
-      const city = C.clinicOf(l.location); if (!CITIES.includes(city)) return;
-      const to = WA.toE164(l.phone); if (!to) return;
+      if (!withTrans && inTrans.has(k)) return no(k, 'l-trans'); if (already.has(k)) return no(k, 'l-already'); if (bought.has(k)) return no(k, 'l-bought'); if (staff.has(k)) return no(k, 'l-staff');
+      const city = C.clinicOf(l.location); if (!CITIES.includes(city)) return no(k, 'l-city');
+      const to = WA.toE164(l.phone); if (!to) return no(k, 'l-to');
       const age = (now - Date.parse(l.createdAt || 0)) / 864e5;
       pool.push({ k, to, city, fn: FC.firstName(l.name), seg: 'lead', score: Math.round(age < 30 ? 30 : age < 90 ? 20 : age < 365 ? 10 : 0), visits: 0, paid: 0, batch: (opt && opt.batch) || 2 });
     });
   }
+  if (opt && opt.dry) return { dry: true, pool: pool.length, trans: inTrans.size, why, byCity: CITIES.reduce((o, c) => Object.assign(o, { [c]: pool.filter((p) => p.city === c).length }), {}) };
   const tot = pool.length || 1;
   const share = {}; share['Timișoara'] = Math.round(want * pool.filter((p) => p.city === 'Timișoara').length / tot); share.Arad = want - share['Timișoara'];
   const list = [];
