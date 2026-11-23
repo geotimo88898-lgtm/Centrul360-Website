@@ -89,6 +89,27 @@ async function go() {
   await saveState(st);
   return { ok: true, list: st.list.length };
 }
+// a batch sent with the wrong message (the owner, 23.11: the old one with 290 and EMS): the same people get the right one
+// (pre); what they got first is kept in cardblast/sent-prev.json. Only people whose first message went out.
+async function resend(batch, pre) {
+  const st = await loadState();
+  if (st.armed && !st.doneAt) return { error: 'still_sending' };
+  const sent = (await readJSON(SENT, null)) || {};
+  const prev = (await readJSON(P + 'sent-prev.json', null)) || {};
+  let n = 0; const by = {};
+  st.list.forEach((p) => {
+    if ((p.batch || 1) !== Number(batch) || !sent[p.k] || sent[p.k].e) return;
+    prev[p.k] = (prev[p.k] || []).concat(sent[p.k]);
+    delete sent[p.k];
+    p.pre = String(pre || '');
+    n++; by[p.city] = (by[p.city] || 0) + 1;
+  });
+  await writeJSON(P + 'sent-prev.json', prev, { quiet: true });
+  await writeJSON(SENT, sent, { quiet: true });
+  st.doneAt = '';
+  await saveState(st);
+  return { ok: true, again: n, byCity: by, pre: pre || 'card_sarbatori' };
+}
 async function stop() { const st = await loadState(); st.armed = false; await saveState(st); return { ok: true }; }
 
 function tplFor(tpls, cfg, city, pre) {
@@ -102,6 +123,8 @@ async function tick(opts) {
   const t0 = Date.now(), budget = (opts && opts.budgetMs) || 15e3;
   const st = await loadState();
   if (!st.armed || st.doneAt) return { idle: true };
+  const roH = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', hour: '2-digit', hour12: false }).format(new Date()));
+  if (roH < 9 || roH >= 21) return { idle: true, quiet: true };
   const [tpls, cfg] = [(await WT.load()).templates, await WA.loadConfig(true)];
   const sent = (await readJSON(SENT, null)) || {};
   let halt = '', count = 0, failed = 0;
@@ -448,4 +471,4 @@ async function backfillTaps() {
   return out;
 }
 
-module.exports = { whyLeft, backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };
+module.exports = { resend, whyLeft, backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };
