@@ -19,6 +19,12 @@ const JOBS = [
     formId: '1604290084129939', name: 'HIFU Gușă 190 · Timișoara · site', adId: '120250715948280149', campaign: 'C360 · TM · HIFU G · sezon',
     page: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un pas 👇 Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.', button_type: 'VIEW_WEBSITE', button_text: 'VEZI MAI MULTE 👉',
       website_url: 'https://www.centrul360.com/?utm_source=facebook&utm_medium=leadform&utm_campaign=hifu-gusa-tm' } } },
+  // 23.11, George: every HIFU gușă campaign sends into the site form; Arad gets its twin (the same questions and ending,
+  // Arad's routing), so an Arad HIFU gușă campaign can use it
+  { id: 'form-home-hifu-ar-2026-11-23', why: 'Finalul formularului duce pe site: HIFU gușă Arad', formSite: {
+    formId: '1532605858616346', name: 'HIFU Gușă 190 · Arad · site',
+    page: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un pas 👇 Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.', button_type: 'VIEW_WEBSITE', button_text: 'VEZI MAI MULTE 👉',
+      website_url: 'https://www.centrul360.com/?utm_source=facebook&utm_medium=leadform&utm_campaign=hifu-gusa-ar' } } },
   // 23.11, George: every new form ends the same way, on the home page (Formulare → Setări formulare)
   { id: 'form-template-home-2026-11-23', why: 'Formularele noi se termină pe site', template: {
     ending: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un pas 👇 Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.' },
