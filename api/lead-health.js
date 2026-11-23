@@ -587,6 +587,27 @@ module.exports = async (req, res) => {
         code: (o.request && o.request.code) || null, requestAt: (o.request && o.request.at) || null, requestTried: o.requestTried || null, linkError: o.linkError || null, fallback: o.fallback || null, trace: o.trace || [] });
       return;
     }
+    // ?payopen=byref&ref=<card or booking id>: the checkout's orders for it (paid recently or open), no names or phones;
+    // POST ?payopen=marktest&ref=…: those orders marked as a test (the owner's own payments: out of the checkout's counts)
+    if (req.query.payopen === 'byref' || (req.query.payopen === 'marktest' && req.method === 'POST')) {
+      const ref = String(req.query.ref || '').slice(0, 120);
+      if (!ref) { res.status(400).json({ error: 'missing_ref' }); return; }
+      const paid = (await ST.readJSON('data/pay-paid.json', [])) || [], open = (await ST.readJSON('data/pay-open.json', [])) || [];
+      const ids = [...new Set(paid.map((x) => x.id).concat(open.map((x) => x.id)))].slice(-300);
+      const out = [];
+      for (const id of ids) {
+        const o = await ST.readJSON('data/pay/' + id + '.json', null).catch(() => null);
+        if (!o || o.ref !== ref) continue;
+        if (req.query.payopen === 'marktest' && !o.test) { Object.assign(o, { test: true, testMarkedAt: new Date().toISOString(), testWhy: 'plata proprietarului (test)' }); await ST.writeJSON('data/pay/' + o.id + '.json', o, { quiet: true }); }
+        out.push({ id: o.id, kind: o.kind, amount: o.amount, status: o.status, paidAt: o.paidAt || '', src: (o.mypos || {}).src || '', method: (o.mypos || {}).method || '', test: !!o.test, handled: !!o.handled });
+      }
+      if (req.query.payopen === 'marktest' && out.length) {
+        const pl = (await ST.readJSON('data/pay-paid.json', [])) || [], set = new Set(out.map((x) => x.id));
+        await ST.writeJSON('data/pay-paid.json', pl.map((x) => (set.has(x.id) ? Object.assign({}, x, { test: true }) : x)), { quiet: true });
+      }
+      res.status(200).json({ ok: true, orders: out });
+      return;
+    }
     // POST ?payopen=cleantest: the checkout's test orders out of the open list (cancelled, test): the ones with the test
     // number 0700000000 (the speed tests, 23.11) and the two card test orders made without a phone (23.11). Counts back.
     if (req.query.payopen === 'cleantest' && req.method === 'POST') {
@@ -630,6 +651,12 @@ module.exports = async (req, res) => {
     if (req.method === 'POST' && req.body && 'on' in req.body) { const r = await RQ.setLive(ST, !!req.body.on); res.status(r.error ? 400 : 200).json(Object.assign(r, { state: RQ.adminOf(await RQ.active(ST)) })); return; }
     if (req.method === 'POST') { res.status(200).json({ ok: true, state: RQ.adminOf(await RQ.active(ST)) }); return; }
     res.status(200).json(RQ.adminOf(await RQ.active(ST)));
+    return;
+  }
+  // ?capilast=1: the Conversions API's last sends (when, kind, mode, event names, how many, ok), nothing about the people
+  if (req.query && req.query.capilast) {
+    const st = (await readJSON(require('./_lib/meta-capi').STATUS_KEY, {})) || {};
+    res.status(200).json({ lastOk: st.lastOk || '', lastError: st.lastError || null, last: (st.last || []).map((e) => ({ at: e.at, kind: e.kind, mode: e.mode, names: e.names, n: e.n, ok: e.ok, error: e.error ? String(e.error).slice(0, 120) : undefined })) });
     return;
   }
   // ?mprprobe=1: myPOS payment requests, a few forms of a 1 leu request and myPOS's answers (api/_lib/mypos-requests.js)

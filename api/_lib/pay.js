@@ -588,28 +588,38 @@ async function toClinic(orderId, key) {
 
 // on the clock (every 5 minutes): the orders still open are asked about once they are 2 minutes old (a lost notification
 // still ends paid), forgotten after 48 hours; a paid order whose handler failed is tried again
-async function sweep() {
+// fresh (every minute, api/pay-tick.js): only the orders of the last 2 hours whose myPOS page was made, newest first, at
+// most 12 asked (myPOS has no return or notification for these pages: a payment is seen within a minute, 23.11); the full
+// round (every 5 minutes) asks the older ones and finds lost codes again
+async function sweep(opts) {
+  const fresh = !!(opts && opts.fresh);
   const c = await IPC.load(S), r = await RQ.active(S);
   if (!IPC.ready(c) && !r) return { open: 0 };
   const list = await readJSON(OPEN, []);
   const now = Date.now();
-  const out = { open: list.length, paid: 0, gone: 0, retried: 0 };
-  for (const it of list.slice(0, 25)) {
+  const out = { open: list.length, paid: 0, gone: 0, retried: 0, asked: 0 };
+  const items = fresh ? list.filter((it) => { const a = now - Date.parse(it.at); return a >= 20e3 && a < 2 * 3600e3; }).sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 25) : list.slice(0, 25);
+  for (const it of items) {
     const age = now - Date.parse(it.at);
-    if (age < 120e3) continue;
+    if (!fresh && age < 120e3) continue;
+    if (fresh && out.asked >= 12) break;
     const { data: o } = await readOrder(it.id);
-    if (!o || o.status !== 'open') { await openList((l) => l.filter((x) => x.id !== it.id)); out.gone++; continue; }
+    if (!o || o.status !== 'open') { if (!fresh) { await openList((l) => l.filter((x) => x.id !== it.id)); out.gone++; } continue; }
+    if (fresh && o.provider === 'requests' && !(o.request && o.request.code)) continue;
+    out.asked++;
     let st = null;
     try {
-      if (o.provider === 'requests') { if (!r || r.error) continue; st = await askRequest(r, await recoverRequest(r, o)); }
+      if (o.provider === 'requests') { if (!r || r.error) continue; st = await askRequest(r, fresh ? o : await recoverRequest(r, o)); }
       else { if (!IPC.ready(c)) continue; st = await askBoth(c, o); }
     } catch (e) { await rqFail(e); continue; }
-    if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(o.id, st, 'status'); if (r.ok) out.paid++; continue; }
+    if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(o.id, st, fresh ? 'status-1min' : 'status'); if (r.ok) out.paid++; continue; }
+    if (fresh) continue;
     if (age > 48 * 3600e3 || (st && baseOf(st.orderId) === o.id && (st.status === 3 || st.status === 4) && age > 30 * 60e3)) {
       await update(o.id, (x) => { if (x.status !== 'open') return false; x.status = st && st.status === 4 ? 'failed' : 'expired'; });
       await openList((l) => l.filter((x) => x.id !== it.id)); out.gone++;
     }
   }
+  if (fresh) return out;
   // the paid ones whose handler failed (kept in a short list by the handler's error)
   const failed = (await readJSON(RETRY, [])).filter(Boolean);
   for (const id of failed.slice(0, 10)) {
