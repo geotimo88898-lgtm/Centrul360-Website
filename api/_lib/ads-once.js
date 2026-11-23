@@ -11,16 +11,10 @@ const AC = require('./ads-cache');
 const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
-// the two „Rezultate · site” campaigns of 23.11 (George): the city's name over a real case of the homepage, to the home page
+// the two „Rezultate · site” campaigns of 23.11 (George): the city's name over one of the two best real cases of the
+// homepage (05 Liposonix șolduri, 24 HIFU gât), the same two in both cities (both treatments are done in both clinics)
 const SITE_CAMPAIGNS = [
-      { name: 'C360 · TM · Rezultate · site', utm: 'c360-tm-rezultate-site', city: 'Timișoara', budget: 50, ads: [
-        { name: 'TM · HIFU gușă · caz 16', image: 'rezultate-tm-gusa.jpg',
-          text: 'TIMIȘOARA! Uite cum poți scăpa de gușă fără ace și fără operație, chiar dacă ai încercat deja tot.\n\n' +
-            '✅ O singură ședință. Poza e reală, făcută la noi în clinică.\n' +
-            '✅ Fără ace și fără operație. Doar ultrasunete care strâng pielea de sub bărbie.\n' +
-            '✅ HIFU gușă costă acum 190 lei în loc de 290, de Black Friday.\n\n' +
-            'Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\nIntră pe site și alege ce ți se potrivește.\n👉 centrul360.com\n\nRezultatele diferă de la o persoană la alta.',
-          headlines: ['SCAPĂ DE GUȘĂ FĂRĂ ACE 👉', 'REZULTAT DUPĂ O ȘEDINȚĂ ⏰💨', '190 LEI ÎN LOC DE 290 👉'], description: '5,0 pe Google, peste 300 de recenzii' },
+  { name: 'C360 · TM · Rezultate · site', utm: 'c360-tm-rezultate-site', city: 'Timișoara', budget: 50, ads: [
         { name: 'TM · Liposonix șolduri · caz 05', image: 'rezultate-tm-solduri.jpg',
           text: 'TIMIȘOARA! Uite cum poți obține un asemenea rezultat fără operație și fără diete stricte, chiar dacă sala nu te-a ajutat până acum.\n\n' +
             '✅ O singură ședință de Liposonix. Poza e reală, făcută la noi în clinică.\n' +
@@ -28,30 +22,38 @@ const SITE_CAMPAIGNS = [
             '✅ 2 zone la preț de una: 640 lei în loc de 1.280, de Black Friday.\n\n' +
             'Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\nAlege-ți ziua pe site, durează câteva secunde.\n👉 centrul360.com\n\nRezultatele diferă de la o persoană la alta.',
           headlines: ['TALIE MAI DEFINITĂ, FĂRĂ OPERAȚIE 👉', 'SE VEDE DIN PRIMA ȘEDINȚĂ ⏰💨', '2 ZONE LA PREȚ DE UNA 👉'], description: '5,0 pe Google, peste 300 de recenzii' },
-      ] },
-      { name: 'C360 · AR · Rezultate · site', utm: 'c360-ar-rezultate-site', city: 'Arad', budget: 50, ads: [
-        { name: 'AR · HIFU gât · caz 24', image: 'rezultate-ar-gat.jpg',
-          text: 'ARAD! Uite cum poți avea un gât mai neted, fără ace și fără operație, chiar dacă până acum cremele n-au ajutat.\n\n' +
-            '✅ O singură ședință de HIFU. Poza e reală, făcută la noi în clinica din Arad.\n' +
+        { name: 'TM · HIFU gât · caz 24', image: 'rezultate-tm-gat.jpg',
+          text: 'TIMIȘOARA! Uite cum poți avea un gât mai neted, fără ace și fără operație, chiar dacă până acum cremele n-au ajutat.\n\n' +
+            '✅ O singură ședință de HIFU. Poza e reală, făcută la noi în clinică.\n' +
             '✅ Ultrasunete care strâng pielea. Te întorci la treburile tale în aceeași zi.\n' +
             '✅ Cu Cardul de Sărbători plătești 990 lei și primești 2.500 lei în tratamente.\n\n' +
             'Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\nIntră pe site și vezi ce ți se potrivește.\n👉 centrul360.com\n\nRezultatele diferă de la o persoană la alta.',
           headlines: ['GÂT MAI NETED, FĂRĂ ACE 👉', 'REZULTAT DUPĂ O ȘEDINȚĂ ⏰💨', 'PLĂTEȘTI 990 LEI, PRIMEȘTI 2.500 👉'], description: 'Consultația e gratuită' },
-        { name: 'AR · Restart · caz 11', image: 'rezultate-ar-restart.jpg',
-          text: 'ARAD! Uite cum poți avea un ten mai luminos și mai odihnit, fără zile de recuperare, chiar dacă ai un program plin.\n\n' +
-            '✅ O singură ședință de 50 de minute. Poza e reală, făcută la noi în clinica din Arad.\n' +
-            '✅ Curățăm, hidratăm și redăm strălucirea pielii. Te întorci la treburile tale în aceeași zi.\n' +
-            '✅ Tratamentul facial Restart costă acum 190 lei în loc de 300, de Black Friday.\n\n' +
+  ] },
+  { name: 'C360 · AR · Rezultate · site', utm: 'c360-ar-rezultate-site', city: 'Arad', budget: 50, ads: [
+        { name: 'AR · Liposonix șolduri · caz 05', image: 'rezultate-ar-solduri.jpg',
+          text: 'ARAD! Uite cum poți avea o talie mai definită fără operație și fără efort, chiar dacă ai încercat deja diete și sală.\n\n' +
+            '✅ O singură ședință de Liposonix. Poza e reală, făcută la noi în clinică.\n' +
+            '✅ Stai întinsă, iar ultrasunetele lucrează pe grăsimea de pe șolduri. Fără ace. Te întorci la treburile tale în aceeași zi.\n' +
+            '✅ 2 zone la preț de una: 640 lei în loc de 1.280, de Black Friday.\n\n' +
             'Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\nAlege-ți ziua pe site, durează câteva secunde.\n👉 centrul360.com\n\nRezultatele diferă de la o persoană la alta.',
-          headlines: ['TEN MAI LUMINOS ÎN 50 DE MINUTE ⏰💨', 'TEN ODIHNIT, FĂRĂ RECUPERARE 👉', '190 LEI ÎN LOC DE 300 👉'], description: '5,0 pe Google, peste 300 de recenzii' },
-      ] },
-    ];
+          headlines: ['TALIE MAI DEFINITĂ, FĂRĂ EFORT 👉', 'REZULTAT DUPĂ O ȘEDINȚĂ ⏰💨', '640 LEI ÎN LOC DE 1.280 👉'], description: '5,0 pe Google, peste 300 de recenzii' },
+        { name: 'AR · HIFU gât · caz 24', image: 'rezultate-ar-gat.jpg',
+          text: 'ARAD! Uite cum poți obține un asemenea rezultat la gât, fără operație și fără ace, chiar dacă ai crezut că ridurile de acolo nu mai pleacă.\n\n' +
+            '✅ O singură ședință de HIFU. Poza e reală, făcută la noi în clinică.\n' +
+            '✅ Ultrasunete care strâng pielea. Te întorci la treburile tale în aceeași zi.\n' +
+            '✅ Cu Cardul de Sărbători plătești 990 lei și primești 2.500 lei în tratamente.\n\n' +
+            'Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\nIntră pe site și vezi ce ți se potrivește.\n👉 centrul360.com\n\nRezultatele diferă de la o persoană la alta.',
+          headlines: ['GÂT MAI NETED, FĂRĂ OPERAȚIE 👉', 'SE VEDE DIN PRIMA ȘEDINȚĂ ⏰💨', 'PLĂTEȘTI 990 LEI, PRIMEȘTI 2.500 👉'], description: 'Consultația e gratuită' },
+  ] },
+];
 const JOBS = [
   // 23.11 ~01:30, George („cu pixel configurat”, the account is only Centrul360's now): the site's pixel was never shared
   // with this ad account (Meta: „Contul nu are acces la pixel”, 1815045), so the 2 campaigns made at 01:18 can't run and
   // can't be fixed (Meta: make them again from scratch). The pixel shared once (as api/_lib/pixel-share.js, the pixel's
   // business Mellon Vision); if Meta refuses, the job stops there with Meta's words (no blind retries); if it works, the
-  // same 2 campaigns made again, then the 2 broken ones paused
+  // same 2 campaigns made again, then the 2 broken ones paused. 01:30, George: only the two best
+  // cases, 05 and 24, in both cities (SITE_CAMPAIGNS)
   { id: 'site-results-v2-2026-11-23', why: 'Pixelul partajat cu contul și rezultatele reale refăcute (TM și AR, câte 2 reclame, 50 lei/zi)', site: {
     pixelId: '2276074362800484', sharePixel: '1107600260509887', cta: 'LEARN_MORE', ages: [25, 64], campaigns: SITE_CAMPAIGNS,
     pauseAfter: [{ campaignId: '120250718543790149', name: 'C360 · TM · Rezultate · site (fără pixel)' }, { campaignId: '120250718631180149', name: 'C360 · AR · Rezultate · site (fără pixel)' }] } },
