@@ -246,39 +246,51 @@ function overbooked(cfg, appts, entry) {
   return false;
 }
 
-// Where a site booking came from (the owner, 13.11: „să salvăm asta să știm de unde vin”, not shown in the Calendar):
-// what the site sent (c360-book.js SRC: the outside page's host, the address's tags, the page she landed on) and
-// whether the browser has Meta's click cookie (_fbc: she came from a Facebook or Instagram link in the last 90 days,
-// set by the pixel only after the cookies' Accept). from: one plain word for the owner.
-function sourceOf(raw, cookie) {
+// Where a site customer came from (the owner, 13.11: „să salvăm asta să știm de unde vin”, 23.11: on every booking, payment
+// and lead of the site, stored only, never shown in the admin): what the site sent (c360-book.js SRC, window.C360Src(): the
+// outside page's host, the address's tags, the page she landed on, kept from page to page for the visit), whether the browser
+// has Meta's click cookie (_fbc: she came from a Facebook or Instagram link in the last 90 days, set by the pixel only after
+// the cookies' Accept) and the app whose browser she is in (ua: Instagram, Facebook, TikTok open links in their own browser,
+// often without a referrer). from: one plain word for the reports.
+const appOf = (ua) => {
+  const u = String(ua || '');
+  if (/^(instagram|facebook|tiktok)$/.test(u)) return u;
+  return /Instagram/i.test(u) ? 'instagram' : /FBAN|FBAV|FB_IAB|FBIOS/i.test(u) ? 'facebook' : /musical_ly|TikTok|Bytedance/i.test(u) ? 'tiktok' : '';
+};
+function sourceOf(raw, cookie, ua) {
   const x = raw && typeof raw === 'object' ? raw : {};
   const host = String(x.ref || '').toLowerCase().replace(/[^a-z0-9.-]/g, '').slice(0, 80);
   const t = x.tag && typeof x.tag === 'object' ? x.tag : {};
   const tag = {};
   ['source', 'medium', 'campaign', 'content'].forEach((k) => { if (t[k]) tag[k] = clip(String(t[k]).replace(/[<>]/g, ''), 80); });
   ['fbclid', 'gclid', 'gbraid', 'wbraid', 'ttclid', 'msclkid'].forEach((k) => { if (t[k]) tag[k] = 1; });
-  const fbc = /(^|;\s*)_fbc=fb\./.test(String(cookie || ''));
+  const fbc = /(^|;\s*)_fbc=fb\./.test(String(cookie || '')) || x.fbc === true;
+  const app = appOf(ua || x.app);
   const us = fold(tag.source), um = fold(tag.medium);
   const on = (re) => re.test(host);
+  const AI = /chatgpt|openai|perplexity|gemini|copilot|claude/;
   const from = tag.gclid || tag.gbraid || tag.wbraid ? 'Reclamă Google'
     : /facebook|^fb$|instagram|^ig$|meta/.test(us) && /paid|cpc|ad|ppc/.test(um) ? 'Reclamă Facebook/Instagram'
     : tag.ttclid ? 'Reclamă TikTok'
-    : on(/(^|\.)instagram\.com$/) ? 'Instagram'
-    : on(/(^|\.)facebook\.com$|(^|\.)fb\.com$|(^|\.)fb\.me$/) ? 'Facebook'
+    : AI.test(us) || on(/chatgpt\.com$|openai\.com$|perplexity\.ai$|gemini\.google\.com$|copilot\.microsoft\.com$|claude\.ai$/) ? 'ChatGPT / AI'
+    : on(/(^|\.)instagram\.com$/) || /^(instagram|ig|insta)$/.test(us) ? 'Instagram'
+    : on(/(^|\.)facebook\.com$|(^|\.)fb\.com$|(^|\.)fb\.me$/) || /^(facebook|fb)$/.test(us) ? 'Facebook'
     : tag.fbclid ? 'Facebook/Instagram'
     : on(/(^|\.)google\.[a-z.]+$/) || /google/.test(us) ? 'Google'
     : on(/(^|\.)tiktok\.com$/) || /tiktok/.test(us) ? 'TikTok'
-    : on(/(^|\.)youtube\.com$|(^|\.)youtu\.be$/) ? 'YouTube'
-    : on(/chatgpt\.com$|openai\.com$|perplexity\.ai$|gemini\.google\.com$|copilot\.microsoft\.com$/) ? 'ChatGPT / AI'
+    : on(/(^|\.)youtube\.com$|(^|\.)youtu\.be$/) || /youtube|^yt$/.test(us) ? 'YouTube'
     : on(/bing\.com$|yahoo\.|duckduckgo\.com$/) ? 'Alt motor de căutare'
-    : on(/whatsapp\.com$|wa\.me$/) || /whatsapp/.test(us) ? 'WhatsApp'
+    : on(/whatsapp|wa\.me$|(^|\.)wl\.co$/) || /whatsapp|^wa$/.test(us) ? 'WhatsApp'
     : tag.source ? clip(tag.source, 40)
+    : app === 'instagram' ? 'Instagram' : app === 'facebook' ? 'Facebook' : app === 'tiktok' ? 'TikTok'
     : host ? host
     : fbc ? 'Facebook/Instagram (mai devreme)'
     : 'Direct';
   const land = clip(String(x.land || '').replace(/[^\w\/.-]/g, ''), 80);
   const at = !isNaN(Date.parse(x.at)) ? new Date(Date.parse(x.at)).toISOString() : '';
-  return Object.assign({ from }, host ? { ref: host } : {}, Object.keys(tag).length ? { tag } : {}, land ? { land } : {}, at ? { at } : {}, fbc ? { fbc: true } : {});
+  return Object.assign({ from }, host ? { ref: host } : {}, Object.keys(tag).length ? { tag } : {}, land ? { land } : {}, at ? { at } : {}, fbc ? { fbc: true } : {}, app ? { app } : {});
 }
+// a source saved earlier, classified again with today's rules (the reports): it keeps everything sourceOf needs
+const sourceAgain = (s) => (s && typeof s === 'object' ? sourceOf(s, '', s.app) : null);
 
-module.exports = { KEY, CITIES, DEFAULTS, CONSULT, clean, settings, openDay, soleCosmetician, sourceOf, services, custom, freeOn, days, overbooked, capacity, roNow, toMin, hhmm, addDay, isDate, minutesOf, catOf, fold };
+module.exports = { KEY, CITIES, DEFAULTS, CONSULT, clean, settings, openDay, soleCosmetician, sourceOf, sourceAgain, appOf, services, custom, freeOn, days, overbooked, capacity, roNow, toMin, hhmm, addDay, isDate, minutesOf, catOf, fold };

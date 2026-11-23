@@ -3,7 +3,7 @@
 // else, and nothing is booked yet. Paid (myPOS's signed word, api/_lib/pay.js kind 'hold'): the booking is made from the hold
 // with the name and phone she gave on the payment screen. Not paid: the hold runs out and the hour is free again.
 //   data/booking-holds.json  [{ id, city, svc: { id, title, price, old, minutes, cat, treatment }, date, time, endTime, until,
-//                                page, src, cookie, track, contact: { name, phone, consent, at }, orderIds, bookingId, released }]
+//                                page, src, cookie, app, track, contact: { name, phone, consent, at }, orderIds, bookingId, released }]
 const crypto = require('crypto');
 const store = require('./store');
 

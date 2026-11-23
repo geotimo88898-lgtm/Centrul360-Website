@@ -197,7 +197,8 @@
     if (!f.consent.checked) { err.textContent = MSG.missing_consent; return; }
     var eid = window.C360_CONSENT === true ? 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10) : '';
     var body = { lf: { zone: st.zone, problem: st.problem, when: st.when, tier: st.tier }, nume: v('name'), telefon: v('phone'), oras: st.city, consimtamant_whatsapp: true,
-      website: v('website'), sursa: (window.C360P && window.C360P.src) || 'site', pagina: location.href.slice(0, 200), event_id: eid || undefined };
+      website: v('website'), sursa: (window.C360P && window.C360P.src) || 'site', pagina: location.href.slice(0, 200), event_id: eid || undefined,
+      src: window.C360Src ? window.C360Src() : undefined }; // where she came from this visit (c360-book.js), saved on the lead
     busy = true; var b = ft.querySelector('.lfs-go'); b.disabled = true; b.innerHTML = '<span class="csb-spin" aria-hidden="true"></span>Se trimite…';
     fetch('/api/site-lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }).then(function (d) {
       if (!d || !d.ok) throw new Error(MSG[d && d.error] || 'Nu am putut trimite. Încearcă din nou.');

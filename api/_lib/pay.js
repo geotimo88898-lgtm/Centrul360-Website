@@ -13,8 +13,9 @@
 //
 //   data/pay/<orderId>.json  { id, key, kind, ref, amount, full, bonusPct, currency, title, city, name, phone, status:
 //                              'open' | 'paid' | 'failed' | 'mismatch' | 'expired', createdAt, paidAt, mypos: { ref, method,
-//                              src: 'notify' | 'status', at }, handled, handledAt, result, sandbox, test }
+//                              src: 'notify' | 'status', at }, handled, handledAt, result, sandbox, test, src (where she came from, booking.js sourceOf) }
 //   data/pay-open.json       [{ id, at }]  the orders still waiting (the clock asks myPOS about them)
+//   data/pay-index.json      [{ id, at, kind }]  every order (the last 2000), for the reports (api/lead-health.js ?sources=1)
 const crypto = require('crypto');
 const store = require('./store');
 const { readJSON, writeJSON } = store;
@@ -81,6 +82,8 @@ async function saveSettings(input, by) {
 }
 const OPEN = 'data/pay-open.json';
 const docOf = (id) => 'data/pay/' + id + '.json';
+const INDEX = 'data/pay-index.json'; // [{ id, at, kind }]: every order of the site, newest last (the reports read the orders from it)
+const sourceOf = (raw, cookie, ua) => require('./booking').sourceOf(raw, cookie, ua);
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 const nowISO = () => new Date().toISOString();
 const roDay = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date(ms));
@@ -137,7 +140,7 @@ const KINDS = {
       const full = Number(h.svc && h.svc.price) || 0;
       if (!(full > 0)) return { error: 'not_payable' };
       const b = await bonusFor(h.svc);
-      return { amount: b.amount, full, bonus: b, title: h.svc.title, city: h.city, name: (h.contact || {}).name || '', phone: (h.contact || {}).phone || '' };
+      return { amount: b.amount, full, bonus: b, title: h.svc.title, city: h.city, name: (h.contact || {}).name || '', phone: (h.contact || {}).phone || '', src: h.src, cookie: h.cookie, app: h.app };
     },
     async paid(o) {
       const H = require('./booking-holds');
@@ -152,7 +155,7 @@ const KINDS = {
       if (!apptId) {
         const B = require('./booking');
         const r = await require('../booking').place({ cfg: await B.settings({ team: true }), city: h.city, svc: h.svc, date: h.date, time: h.time, name: c.name || 'Clientă site', phone: c.phone,
-          page: h.page, src: h.src, cookie: h.cookie, track: h.track, pay: 'online-pending', payAmount: o.amount, viaCheckout: true, paid: true, holdId: h.id, bonus: o.bonus });
+          page: h.page, src: h.src, cookie: h.cookie, ua: h.app, track: h.track, pay: 'online-pending', payAmount: o.amount, viaCheckout: true, paid: true, holdId: h.id, bonus: o.bonus });
         if (!r || !r.entry) throw new Error('hold_booking_failed');
         apptId = r.entry.id;
         if (r.entry.overbooked) await ring(o, 'PLĂTITĂ ONLINE, ORA S-A OCUPAT ⚠️', (c.name || '') + ' a plătit ' + h.date + ' ' + h.time + ', dar ora s-a ocupat între timp. Sun-o să mutați ora.');
@@ -265,12 +268,12 @@ async function prepaid(o) {
 
 // ------------------------------------------------------------------ orders
 async function readOrder(id) { return validId(id) ? store.readJSONTagged(docOf(id), null) : { data: null, etag: '' }; }
-async function listEdit(path, fn) {
+async function listEdit(path, fn, max) {
   for (let round = 0; round < 5; round++) {
     const { data, etag } = await store.readJSONTagged(path, []);
     const list = fn(Array.isArray(data) ? data : []);
     if (!list) return;
-    if (await store.writeJSONIf(path, list.slice(-400), etag, { quiet: true })) return;
+    if (await store.writeJSONIf(path, list.slice(-(max || 400)), etag, { quiet: true })) return;
   }
 }
 const openList = (fn) => listEdit(OPEN, fn);
@@ -308,10 +311,13 @@ async function createOrder({ kind, ref, input, host, track }) {
     title: clip(q.title, 120), city: q.city || '', name, phone, status: 'open',
     ...(input && input.notice && name && phone ? { consent: true, notice: { kind: clip(input.notice, 40), text: 'Îți trimitem confirmarea pe WhatsApp.', at: nowISO() } } : {}), createdAt: nowISO(), paidAt: '', mypos: {}, handled: false,
     sandbox: pv.sandbox, test: kind === 'test', track: track || null, provider: pv.name,
+    // where she came from (the page's first touch of the visit, c360-pay.js): saved for the reports, never shown
+    ...(kind === 'test' ? {} : { src: sourceOf(input && input.src && typeof input.src === 'object' ? input.src : q.src, (input && input.cookie) || q.cookie, (input && input.ua) || q.app) }),
   };
   await Promise.all([
     writeJSON(docOf(id), o, { quiet: true }),
     openList((l) => l.concat({ id, at: o.createdAt, amount })),
+    kind === 'test' ? null : listEdit(INDEX, (l) => l.concat({ id, at: o.createdAt, kind }), 2000),
     kind === 'booking' ? noteBooking(ref, id) : null,
     kind === 'hold' ? require('./booking-holds').patch(ref, (h) => { h.orderIds = (h.orderIds || []).concat(id).slice(-10); }) : null,
   ]);
@@ -683,4 +689,4 @@ async function requestWords(o) {
   return { words: found.map((x) => x.status), found: found.length };
 }
 
-module.exports = { touch, lastActivity, markRecovery, requestWords, later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
+module.exports = { INDEX, touch, lastActivity, markRecovery, requestWords, later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };

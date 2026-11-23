@@ -8,7 +8,7 @@
 //   GET ?lf=1                 the offer as the forms ask it (zones per clinic, their problems, when, each zone's four
 //                             packages with what's in them and their full list value), from Admin's lead filter
 //                             (data/leadfilter.json, api/_lib/leadfilter.js); nothing else
-//   POST { lf: { zone, problem, when, tier }, nume, telefon, oras, consimtamant_whatsapp, sursa, pagina, event_id }
+//   POST { lf: { zone, problem, when, tier }, nume, telefon, oras, consimtamant_whatsapp, sursa, pagina, event_id, src }
 //                             the lead, in the same lead filter: her answers on the lead, her zone × package × clinic
 //                             WhatsApp with its picture, the call for 4.990 / 14.900, the push „LEAD SITE TM · 990 lei · …”
 
@@ -91,6 +91,9 @@ module.exports = async (req, res) => {
   const city = CITIES[fold(b.oras || b.city).replace(/[^a-z]/g, '')] || '';
   if (!name || String(phone).replace(/\D/g, '').length < 9) { res.status(400).json({ error: 'missing_fields' }); return; }
   if (!city) { res.status(400).json({ error: 'missing_city' }); return; }
+  // where she came from this visit (the page's window.C360Src, c360-book.js): saved on the lead, never shown
+  const B = require('./_lib/booking');
+  const from = B.sourceOf(b.src, req.headers.cookie, req.headers['user-agent']);
   if (!(b.consimtamant_whatsapp === true || b.consimtamant_whatsapp === 'true' || b.consimtamant_whatsapp === 'on')) { res.status(400).json({ error: 'missing_consent' }); return; }
 
   // the lead filter on the site: its own path (the same as a Facebook lead filter lead's, but from the site)
@@ -104,7 +107,7 @@ module.exports = async (req, res) => {
       const lei = (t) => Number(t).toLocaleString('ro-RO');
       const note = ['Lead filter pe site', 'sursa: ' + src, clip(b.pagina, 200)].filter(Boolean).join(' · ');
       const r = await createLead({ name, phone, source: 'site', location: city, createdBy: 'site-form', interest: 'Lead filter · ' + x.zoneLabel, note, authorLabel: 'Site · Lead filter',
-        welcome: false, alertWhat: { title: [lei(x.tier) + ' lei', x.zoneLabel].join(' · '), text: LF.summary(x) } });
+        welcome: false, alertWhat: { title: [lei(x.tier) + ' lei', x.zoneLabel].join(' · '), text: LF.summary(x) }, src: from });
       if (r.error) { res.status(400).json({ error: r.error }); return; }
       if (r.lead && !r.same) {
         // where she came from, on the lead (the funnel counts the site's lead filter leads per source)
@@ -126,7 +129,7 @@ module.exports = async (req, res) => {
   const interest = clip(b.interes_principal, 120);
   const note = ['Formular site', clip(b.sursa, 160), b.zona ? 'zona: ' + clip(b.zona, 80) : '', clip(b.pagina, 200)].filter(Boolean).join(' · ');
   try {
-    const r = await createLead({ name, phone, email: clip(b.email, 120), source: 'site', location: city, createdBy: 'site-form', interest, note, authorLabel: 'Site' });
+    const r = await createLead({ name, phone, email: clip(b.email, 120), source: 'site', location: city, createdBy: 'site-form', interest, note, authorLabel: 'Site', src: from });
     if (r.error) { res.status(400).json({ error: r.error }); return; }
     res.status(200).json({ ok: true });
     // the thank-you page's Lead, from the server too (Conversions API), with the event_id the page gave its pixel: counted once

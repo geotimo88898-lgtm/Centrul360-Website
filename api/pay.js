@@ -1,7 +1,7 @@
 // /api/pay: the site's online payment, inside the page (c360-pay.js, myPOS's embedded form + Apple Pay / Google Pay).
 // Public (our pages only), the price is always the server's (api/_lib/pay.js).
 //   GET  ?status=1                                    → { on, live, sandbox, sid, walletNumber, keyIndex, bonusPct }
-//   POST { action: 'create', kind, ref, city?, name?, phone?, page? }
+//   POST { action: 'create', kind, ref, city?, name?, phone?, page?, src? }   src: where she came from (c360-book.js SRC), kept on the order
 //        kind: 'booking' (ref = the booking's id, made first by /api/booking with pay 'online-checkout'), 'offer' (ref = the
 //        offer's key), 'treatment' (ref = the price list's id), 'card' (ref = the card's order, priced by the card module),
 //        'test' (Integrări → myPOS → Test 1 leu)
@@ -46,7 +46,7 @@ module.exports = async (req, res) => {
     const kind = String(b.kind || '');
     if (!KINDS.includes(kind)) { res.status(400).json({ error: 'bad_kind' }); return; }
     const r = await P.createOrder({
-      kind, ref: b.ref, input: { city: b.city, name: b.name, phone: b.phone, page: b.page, notice: b.notice },
+      kind, ref: b.ref, input: { city: b.city, name: b.name, phone: b.phone, page: b.page, notice: b.notice, src: b.src, cookie: req.headers.cookie, ua: req.headers['user-agent'] },
       host: /^(www|admin)\.centrul360\.com$/.test(String(req.headers.host || '')) ? 'www.centrul360.com' : String(req.headers.host || 'www.centrul360.com'),
       track: kind === 'offer' || kind === 'treatment' ? capi.fromRequest(req, b.page) : null,
     });

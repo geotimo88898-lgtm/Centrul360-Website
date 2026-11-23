@@ -21,7 +21,7 @@
   const PAGE = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
   // Where she came from this visit (the owner, 13.11: „să știm de unde vin”): the outside page that sent her (its host
   // only), the ad's and campaign's tags of the address she landed on, the page she landed on. Kept for this visit only
-  // (sessionStorage, gone when the tab closes) and sent with a booking; a new arrival from outside in the same tab
+  // (sessionStorage, gone when the tab closes) and sent with a booking, a payment or a lead; a new arrival from outside in the same tab
   // replaces it. Saved with the booking, never shown to her.
   const SRC = (function () {
     let ref = '';
@@ -36,6 +36,9 @@
     if (!kept || ref || Object.keys(tag).length) { kept = now; try { sessionStorage.setItem('c360-src', JSON.stringify(now)); } catch (e) { /* private mode */ } }
     return kept;
   })();
+  // the same, for every other form of the site (the payment, the lead filter, the gift form): one helper, so a booking, a
+  // payment and a lead all say where she came from the same way (api/_lib/booking.js sourceOf on the server)
+  if (!window.C360Src) window.C360Src = () => SRC;
   // Pay online with 10% off (the owner, 22.11): before „Programează-mă” an offer can be paid online now, the whole
   // offer at 10% less (on top of the Black Friday price), or booked and paid at the clinic at the full price, as before.
   // The payment itself (myPOS) is not ready: startOnlinePay() below is where it plugs in. ON only on the /v2/ preview

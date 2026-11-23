@@ -7,6 +7,7 @@
 //   delivery: per template, Meta's statuses of the messages sent (sent, delivered, read, failed and why)
 //   ?wa=1: also the template messages one by one, newest first (time, template, status, why), no name or phone
 //   ?voice=1: the voice notes' transcription (Gemini) works, in length and time only
+//   ?sources=1&days=N: where the site's bookings, payments, leads and card orders come from, counts and lei per source
 
 const crypto = require('crypto');
 const { readJSON } = require('./_lib/store');
@@ -848,6 +849,9 @@ module.exports = async (req, res) => {
   // ?voice=1: the newest stored voice note written out now by Gemini (api/_lib/media-read.js), nothing saved; only its
   // length in characters, the time, ok or the error, and the last 7 days' voice notes in counts. Never the text.
   if (req.query && req.query.voice) { res.status(200).json(await require('./_lib/media-read').probe().catch((e) => ({ ok: false, error: String((e && (e.code || e.name)) || 'error').slice(0, 60) }))); return; }
+  // ?sources=1&days=N: where the site's customers come from, per kind (bookings, the checkout's orders paid / unpaid, the
+  // forms' leads, the Card de Sărbători orders), counts and lei per `from` only (api/_lib/site-sources.js). Read only.
+  if (req.query && req.query.sources) { res.status(200).json(await require('./_lib/site-sources').report(req.query.days)); return; }
   // ?sitebook=1: where the site's own bookings come from (the owner, 13.11: „de unde vin toate?”). The site keeps no
   // source with a booking, so for each one: the page it was made on, what we had of her before it (a lead from an ad
   // form or the site's quiz, an earlier appointment, a WhatsApp talk, a message of ours with the site's link). No phones,

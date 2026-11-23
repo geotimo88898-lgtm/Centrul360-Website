@@ -58,6 +58,7 @@ async function hold(req, res, cfg, b) {
   if (!B.freeOn(cfg, city, date, svc.minutes, appts.concat(H.asAppts(holds))).includes(time)) { res.status(409).json({ error: 'taken' }); return; }
   const h = await H.add({ key: crypto.randomBytes(12).toString('hex'), city, svc: { id: svc.id, title: svc.title, price: svc.price, old: svc.old || 0, minutes: svc.minutes, cat: svc.cat || '', treatment: svc.treatment || '' },
     date, time, endTime: B.hhmm(B.toMin(time) + svc.minutes), page: clip(b.page, 120), src: b.src && typeof b.src === 'object' ? b.src : null, cookie: /(^|;\s*)_fbc=fb\./.test(String((req.headers && req.headers.cookie) || '')) ? '_fbc=fb.' : '', // only whether Facebook sent her (sourceOf)
+    app: B.appOf(req.headers && req.headers['user-agent']), // only the app whose browser she is in (sourceOf)
     track: capi.fromRequest(req, b.page) });
   // two at the same second: the later one gives way
   const again = await H.all();
@@ -72,7 +73,7 @@ async function hold(req, res, cfg, b) {
 
 // A booking of the site, once everything about it was checked (the form's POST below, or a payment of the slip's checkout
 // that held its hour: api/_lib/pay.js kind 'hold'): the client, the appointment, the Pipeline, the messages, the bell.
-// o: { cfg, city, svc, date, time, name, phone, page, src, cookie, track, pay, payAmount, viaCheckout, paid, appts }
+// o: { cfg, city, svc, date, time, name, phone, page, src, cookie, ua, track, pay, payAmount, viaCheckout, paid, appts }
 // → { entry, lead } | { error: 'taken' }
 async function place(o) {
   const { cfg, city, svc, date, time, name, phone, pay, payAmount, viaCheckout } = o;
@@ -99,7 +100,7 @@ async function place(o) {
     ...(svc.treatment ? { priceListId: svc.treatment } : {}),
     ...(o.holdId ? { holdId: o.holdId } : {}),
     online: true, createdBy: 'site', createdAt: at, updatedAt: at,
-    src: B.sourceOf(o.src, o.cookie), // where she came from: saved, not shown in the Calendar
+    src: B.sourceOf(o.src, o.cookie, o.ua), // where she came from: saved, not shown in the Calendar
   };
   appts.push(entry);
   await writeJSON('data/appointments.json', appts);
@@ -121,7 +122,7 @@ async function place(o) {
   let lead = await leads.bookLead(entry, { author: 'Site · programare online' });
   if (!lead) {
     const r = await leads.createLead({ name: entry.clientName, phone: entry.clientPhone, source: 'site', location: city, createdBy: 'site-booking', interest: svc.title,
-      note: 'S-a programat singură pe site: ' + date + ' ' + time, authorLabel: 'Site' }).catch(() => null);
+      note: 'S-a programat singură pe site: ' + date + ' ' + time, authorLabel: 'Site', src: entry.src }).catch(() => null);
     if (r && r.lead) lead = await leads.bookLead(entry, { leadId: r.lead.id, author: 'Site · programare online' });
   }
   if (lead) {
@@ -237,7 +238,7 @@ module.exports = async (req, res) => {
     if (hers.filter((a) => a.createdBy === 'site').length >= 3) { res.status(409).json({ error: 'too_many_bookings' }); return; }
     if (!B.freeOn(cfg, city, date, svc.minutes, appts.concat(H.asAppts(await H.all()))).includes(time)) { res.status(409).json({ error: 'taken' }); return; }
 
-    const placed = await place({ cfg, city, svc, date, time, name, phone, page: b.page, src: b.src, cookie: req.headers && req.headers.cookie,
+    const placed = await place({ cfg, city, svc, date, time, name, phone, page: b.page, src: b.src, cookie: req.headers && req.headers.cookie, ua: req.headers && req.headers['user-agent'],
       track: payAmount ? capi.fromRequest(req, b.page) : null, pay, payAmount, viaCheckout, appts, bonus: vb });
     if (placed.error) { res.status(409).json({ error: placed.error }); return; }
     const { entry, lead } = placed;

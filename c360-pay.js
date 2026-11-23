@@ -29,6 +29,8 @@
   const ME = 'c360-book-me'; // { name, phone } this device already gave (the booking slip keeps it too)
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const lei = (n) => (Math.round(n * 100) % 100 ? (Math.round(n * 100) / 100).toFixed(2).replace('.', ',') : Math.round(n).toLocaleString('ro-RO')) + ' lei';
+  // where she came from this visit (c360-book.js keeps it, window.C360Src; on a page without it, what it kept in this tab)
+  const srcNow = () => { try { return window.C360Src ? window.C360Src() : JSON.parse(sessionStorage.getItem('c360-src') || 'null'); } catch (e) { return null; } };
   const post = (body, keep) => fetch('/api/pay', { method: 'POST', keepalive: !!keep, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     .then((r) => r.json().then((d) => (r.ok ? d : Promise.reject(Object.assign(new Error(d.error || 'failed'), { code: d.error, said: d.message || '', status: d.status || 0, data: d })))), (e) => Promise.reject(Object.assign(e, { code: e.code || 'net' })));
   const store = { get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } } };
@@ -205,7 +207,7 @@
         const st = await status();
         // her name and phone known already (this device): the myPOS page is made in the same call
         const known = ask && valid() ? { name: fv('name'), phone: fv('phone') } : null;
-        order = await post(Object.assign({ action: 'create', kind: o.kind, ref, city: o.city, name: ask ? fv('name') || who.name : o.name, phone: ask ? fv('phone') || who.phone : o.phone, page: o.page || location.pathname },
+        order = await post(Object.assign({ action: 'create', kind: o.kind, ref, city: o.city, name: ask ? fv('name') || who.name : o.name, phone: ask ? fv('phone') || who.phone : o.phone, page: o.page || location.pathname, src: o.src || srcNow() },
           known ? { link: true, notice: 'whatsapp-confirmation' } : {}));
         if (known && order.url) link = order.url;
         if (known && !order.contactError && known.name === fv('name') && known.phone === fv('phone')) saidContact(known);
