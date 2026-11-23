@@ -41,6 +41,12 @@
     return sdkP;
   }
   // what the wallets' session says (Apple Pay / Google Pay switched on for the store): its first field, "wallet-cards-apple-google-…"
+  // the order's sum, big, with its bonus in one line (a percent: the full price struck through; a gift: what she gets)
+  function sumHtml(order) {
+    const b = order.bonus || (order.bonusPct ? { type: 'pct', pct: order.bonusPct, line: '-' + order.bonusPct + '% la plata online' } : null);
+    const sub = b && b.type === 'gift' ? esc(b.line) + ' · ' + esc(order.title) : (order.full > order.amount ? '<s>' + lei(order.full) + '</s> · ' : '') + esc(order.title);
+    return '<div class="cp-sum"><div><b>' + lei(order.amount) + '</b><small>' + sub + '</small></div>' + (b ? '<i class="cp-off">' + (b.type === 'gift' ? 'Cadou' : '-' + b.pct + '%') + '</i>' : '') + '</div>';
+  }
   function tokenInfo(t) { try { const p = JSON.parse(atob(t)).info.split('-'); return { apple: p[2] === '1', google: p[3] === '1' }; } catch (e) { return { apple: false, google: false }; } }
 
   // the site's light look (v2/book-light.css): ink text, teal for what matters; inside the slip it takes the slip's colours
@@ -254,10 +260,9 @@
       }
     }
     function startRequest() {
-      const save = order.full > order.amount ? '<small><s>' + lei(order.full) + '</s> · ' + esc(order.title) + '</small>' : '<small>' + esc(order.title) + '</small>';
       n = me.id + '-' + Date.now().toString(36);
       paint((order.sandbox ? '<p class="cp-test">Cont demo myPOS: plătește doar cu un card de test.</p>' : '') +
-        '<div class="cp-sum"><div><b>' + lei(order.amount) + '</b>' + save + '</div>' + (order.bonusPct ? '<i class="cp-off">-' + order.bonusPct + '%</i>' : '') + '</div>' +
+        sumHtml(order) +
         (ask ? '<div class="cp-who"><div class="cp-two">' +
           '<label class="cp-f" data-cp-f="name"><span>Nume</span><input name="cp-name" autocomplete="name" placeholder="Maria Popescu" value="' + esc(last.name) + '"></label>' +
           '<label class="cp-f" data-cp-f="phone"><span>Telefon (WhatsApp)</span><input name="cp-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07xx xxx xxx" value="' + esc(last.phone) + '"></label></div>' +
@@ -317,9 +322,8 @@
       if (order.provider === 'requests') { startRequest(); return; }
       n = me.id + '-' + Date.now().toString(36);
       const keep = last;
-      const save = order.full > order.amount ? '<small><s>' + lei(order.full) + '</s> · ' + esc(order.title) + '</small>' : '<small>' + esc(order.title) + '</small>';
       paint((order.sandbox ? '<p class="cp-test">Cont de test myPOS: plătește doar cu un card de test.</p>' : '') +
-        '<div class="cp-sum"><div><b>' + lei(order.amount) + '</b>' + save + '</div>' + (order.bonusPct ? '<i class="cp-off">-' + order.bonusPct + '%</i>' : '') + '</div>' +
+        sumHtml(order) +
         (ask ? '<div class="cp-who"><div class="cp-two">' +
           '<label class="cp-f" data-cp-f="name"><span>Nume</span><input name="cp-name" autocomplete="name" placeholder="Maria Popescu" value="' + esc(keep.name) + '"></label>' +
           '<label class="cp-f" data-cp-f="phone"><span>Telefon (WhatsApp)</span><input name="cp-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07xx xxx xxx" value="' + esc(keep.phone) + '"></label></div>' +

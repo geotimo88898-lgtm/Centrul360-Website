@@ -513,13 +513,18 @@
   const sumHtml = () => '<div class="bk-sum"><div class="when">' + esc(niceDay(S.date).replace(/^./, (c) => c.toUpperCase())) + ' · <span>' + esc(S.time) + '</span></div>' +
     '<div class="what">' + esc((S.service || {}).title || '') + ' · ' + esc(ADDR[S.city]) + '</div></div>';
   // how she pays: online now, the whole offer at 10% less, or at the clinic at the full price. Two equal buttons, always both.
+  // what she gets when she pays online (23.11): the service's own bonus from the server (an offer's percent or its gift, the
+  // price list's default), else the old 10% (the payment links' sums)
+  const bonusOf = (s) => (S.embed && s && s.bonus ? s.bonus : { type: 'pct', pct: PAY_OFF, amount: payAmount(s && s.price), line: '-' + PAY_OFF + '% la plata online' });
   function payHtml() {
-    const full = S.service.price, now = payAmount(full), go = '<span class="bk-pb-go" aria-hidden="true">' + ICON.next + '</span>';
+    const full = S.service.price, b = bonusOf(S.service), now = b.amount, go = '<span class="bk-pb-go" aria-hidden="true">' + ICON.next + '</span>';
+    // the final sum big, the bonus in one line under it; both buttons full size, always (the owner)
+    const small = b.type === 'gift' ? 'Prețul întreg + ' + esc(b.gift) + ' cadou' : '<s>' + lei(full) + '</s> · ' + esc(b.line);
     return '<p class="bk-eyebrow">Plata</p><h2 class="bk-h">Cum vrei să <em>plătești?</em></h2>' +
       // the appointment as plain text, so the only things that look tappable are the two buttons (the owner, 22.11)
       '<p class="bk-when">' + esc(niceDay(S.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(S.time) + '<small>' + esc(S.service.title || '') + ' · Centrul360 ' + esc(S.city) + '</small></p>' +
       '<div class="bk-pay" role="group" aria-label="Plata">' +
-      '<button type="button" class="bk-pb online' + (S.pay === 'online' ? ' on' : '') + '" data-pay="online"><span class="bk-pb-t"><b>Plătesc online ' + lei(now) + '</b><small><s>' + lei(full) + '</s> · ' + (S.service.id === 'custom' ? 'tot, acum' : 'toată oferta, acum') + '</small></span><i class="bk-off">-' + PAY_OFF + '%</i>' + go + '</button>' +
+      '<button type="button" class="bk-pb online' + (S.pay === 'online' ? ' on' : '') + '" data-pay="online"><span class="bk-pb-t"><b>Plătesc online ' + lei(now) + '</b><small>' + small + '</small></span><i class="bk-off">' + (b.type === 'gift' ? 'Cadou' : '-' + b.pct + '%') + '</i>' + go + '</button>' +
       '<button type="button" class="bk-pb clinic' + (S.pay === 'clinic' ? ' on' : '') + '" data-pay="clinic"><span class="bk-pb-t"><b>Rezerv și plătesc în clinică</b><small>' + lei(full) + ', în ziua programării</small></span>' + go + '</button>' +
       '</div>';
   }
@@ -542,7 +547,8 @@
   // payment opens right here; her name and phone are on the payment screen. Paid: the booking is made (by the server, on
   // myPOS's signed word) and confirmed. Not paid: the hold runs out, nothing is booked.
   function checkoutHtml() {
-    return '<p class="bk-eyebrow">Plata online</p><h2 class="bk-h">Plătești acum, <em>cu ' + PAY_OFF + '% mai puțin.</em></h2>' +
+    const b = bonusOf(S.service);
+    return '<p class="bk-eyebrow">Plata online</p><h2 class="bk-h">Plătești acum, <em>' + (b.type === 'gift' ? 'cu ' + esc(b.gift) + ' cadou.' : 'cu ' + b.pct + '% mai puțin.') + '</em></h2>' +
       '<p class="bk-when">' + esc(niceDay(S.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(S.time) + '<small>' + esc((S.service || {}).title || '') + ' · Centrul360 ' + esc(S.city) + '</small></p>' +
       '<div data-bk-checkout><div class="bk-skel" style="height:96px;border-radius:18px;margin-bottom:12px"></div><div class="bk-skel" style="height:300px;border-radius:18px"></div></div>';
   }
@@ -593,7 +599,7 @@
         '<h2 class="bk-h">Plătit. Ne vedem <em>' + esc(niceDay(a.date)) + '.</em></h2><p>' + (S.paid.confirmed ? 'Programarea e confirmată. Îți trimitem și pe WhatsApp.' : 'Banca mai confirmă plata câteva clipe. Îți scriem pe WhatsApp imediat ce vine.') + '</p>' +
         '<div class="bk-card">' +
         '<div class="bk-row">' + ICON.cal + '<div><b>' + day + ', ora ' + esc(a.time) + '</b><small>' + mins((S.service && S.service.minutes) || 60) + '</small></div></div>' +
-        '<div class="bk-row">' + ICON.spark + '<div><b>' + esc(a.treatment) + '</b><small>' + lei(S.paid.amount) + ', plătit online, cu ' + PAY_OFF + '% reducere</small></div></div>' +
+        '<div class="bk-row">' + ICON.spark + '<div><b>' + esc(a.treatment) + '</b><small>' + lei(S.paid.amount) + ', plătit online' + (bonusOf(S.service).type === 'gift' ? ' · cadou: ' + esc(bonusOf(S.service).gift) : ', cu ' + bonusOf(S.service).pct + '% reducere') + '</small></div></div>' +
         '<div class="bk-row">' + ICON.pin + '<div><b>Centrul360 ' + esc(a.location) + '</b><small>' + esc(ADDR[a.location]) + '</small></div></div></div>' +
         '<div class="bk-two"><button type="button" class="bk-ghost" data-ics>' + ICON.cal + 'În calendar</button><a class="bk-ghost" href="' + MAPS[a.location] + '" target="_blank" rel="noopener">' + ICON.pin + 'Vezi pe hartă</a></div></div>';
     }

@@ -833,7 +833,7 @@
   K.on('remote', () => { if (!opanel || !K.isActive('oferte') || Date.now() - kpiAt < 15e3) return; kpiAt = Date.now(); loadKpi(); });
   async function loadOffers() {
     loadKpi();
-    try { const j = await K.api('/api/portal-offers', { action: 'list' }); O.list = j.offers || []; O.images = j.images || []; renderOffers(); }
+    try { const j = await K.api('/api/portal-offers', { action: 'list' }); O.list = j.offers || []; O.images = j.images || []; O.payT = j.payTreatment || null; renderOffers(); }
     catch (e) { opanel.querySelector('[data-body]').innerHTML = K.empty('alert', 'Nu am putut încărca ofertele', '', '<button type="button" class="k-btn is-primary" data-reload>Reîncearcă</button>'); }
   }
   function renderOffers() {
@@ -843,7 +843,8 @@
     opanel.querySelector('[data-body]').innerHTML =
       '<div class="k-toolbar"><div class="k-chips">' + [['active', 'Active pe site'], ['ads', 'În reclame'], ['off', 'Inactive'], ['all', 'Toate']].map(([k, l]) =>
         '<button type="button" class="k-chip' + (O.filter === k ? ' is-on' : '') + '" data-filter="' + k + '">' + l + '<span>' + count[k] + '</span></button>').join('') + '</div>' +
-        '<span class="k-muted of-drag-hint">' + icon('grip') + 'Trage cardurile ca să schimbi ordinea de pe site</span></div>' +
+        '<span class="k-muted of-drag-hint">' + icon('grip') + 'Trage cardurile ca să schimbi ordinea de pe site</span>' +
+        '<button type="button" class="k-btn is-outline is-sm" data-pay-treat>' + icon('card') + 'Plata online · tratamente: ' + esc(O.payT ? O.payT.line.replace(/ la plata online$/, '') : '-10%') + '</button></div>' +
       (list.length ? '<div class="of-grid" data-grid>' + list.map(offerCard).join('') + '</div>' : '<section class="k-card">' + K.empty('tag', 'Nicio ofertă aici', '', '<button type="button" class="k-btn is-primary" data-new>' + icon('plus') + 'Ofertă nouă</button>') + '</section>');
     wireDrag();
   }
@@ -888,12 +889,13 @@
   }
   // the short names the notifications use when an offer has none of its own (api/_lib/offers.js SHORT)
   const SHORT_DEF = { 'liposonix-2zone': 'Lipo', 'facial-restart': 'Facial', 'cavitatie-ems': 'Cav Ems', 'cavitatie-1plus1': 'Cav Cav', 'epilare-full-body': 'Laser Full Body' };
-  const marketingFields = (o) => ({ ads: !!o.ads, locations: o.locations, short: o.short || '', forms: o.forms || {}, adName: o.adName, mechanic: o.mechanic, includes: o.includes, device: o.device, dreamOutcome: o.dreamOutcome, mechanism: o.mechanism, objections: o.objections, zones: o.zones, guarantee: o.guarantee, notes: o.notes });
+  const marketingFields = (o) => ({ payBonus: o.payBonus || '', payPct: Number(o.payPct) || 0, payGift: o.payGift || '', ads: !!o.ads, locations: o.locations, short: o.short || '', forms: o.forms || {}, adName: o.adName, mechanic: o.mechanic, includes: o.includes, device: o.device, dreamOutcome: o.dreamOutcome, mechanism: o.mechanism, objections: o.objections, zones: o.zones, guarantee: o.guarantee, notes: o.notes });
 
   function onOfferClick(e) {
     const t = e.target;
     if (t.closest('[data-new]')) return openOffer(null);
     if (t.closest('[data-reload]')) return loadOffers();
+    if (t.closest('[data-pay-treat]')) return openPayTreatment();
     const f = t.closest('[data-filter]');
     if (f) { O.filter = f.dataset.filter; return renderOffers(); }
     if (t.closest('.of-toggles .k-switch')) return; // handled on change
@@ -926,6 +928,48 @@
     });
   }
 
+  // The bonus when paid online by card (the owner, 23.11: „la unele 10%, la altele tratamente gratis”): a percent off, or a
+  // treatment as a gift at the full price. One line, as the client sees it on the pay step.
+  function payBonusForm(o, attr) {
+    const type = o.payBonus === 'gift' || o.type === 'gift' ? 'gift' : 'pct';
+    const pct = Number(o.payPct || o.pct) || 10, gift = o.payGift || o.gift || '';
+    return '<form class="k-form" ' + attr + '>' +
+      K.field('Ce primește când plătește online', K.seg('payBonus', [['pct', 'Reducere %'], ['gift', 'Tratament cadou']], type), 'full') +
+      K.field('Reducere (%)', '<input name="payPct" type="number" min="1" max="50" value="' + esc(pct) + '">', '', 'La reducere: plătește prețul minus atât.') +
+      K.field('Tratamentul cadou', '<input name="payGift" maxlength="80" value="' + esc(gift) + '" placeholder="ex: BioLifting">', '', 'La cadou: plătește prețul întreg și primește tratamentul.') +
+      '<p class="full k-muted" data-payb-line style="margin:0"></p></form>';
+  }
+  function wirePayBonus(f) {
+    const line = () => {
+      const v = K.formValues(f), g = v.payBonus === 'gift';
+      f.querySelector('[name=payPct]').closest('.k-field').style.display = g ? 'none' : '';
+      f.querySelector('[name=payGift]').closest('.k-field').style.display = g ? '' : 'none';
+      f.querySelector('[data-payb-line]').textContent = 'Pe site: ' + (g ? '+ ' + (v.payGift || '…') + ' cadou la plata online' : '-' + (Number(v.payPct) || 10) + '% la plata online');
+    };
+    f.addEventListener('input', line); f.addEventListener('click', () => setTimeout(line, 0)); line();
+  }
+  function openPayTreatment() {
+    const t = O.payT || { type: 'pct', pct: 10, gift: '' };
+    const d = K.drawer({
+      title: 'Plata online · tratamente', icon: 'card', width: 520,
+      body: '<p class="k-muted" style="margin:0 0 12px">Pentru tratamentele din lista de prețuri. Ofertele au fiecare bonusul lor, din ofertă.</p>' + payBonusForm(t, 'data-payt'),
+      footer: '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon('check') + 'Salvează</button>',
+      onMount(el) {
+        const f = el.querySelector('[data-payt]');
+        wirePayBonus(f);
+        el.querySelector('[data-cancel]').addEventListener('click', () => d.close());
+        el.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
+          const v = K.formValues(f);
+          if (v.payBonus === 'gift' && !String(v.payGift || '').trim()) { K.ui().toast('Scrie tratamentul cadou.', 'error'); return; }
+          try {
+            const j = await K.api('/api/portal-offers', { action: 'pay_settings', treatment: { type: v.payBonus, pct: Number(v.payPct) || 10, gift: v.payGift || '' } });
+            O.payT = j.treatment; d.close(); renderOffers(); K.ui().toast('Salvat: ' + j.treatment.line + '.', 'success');
+          } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+        }));
+      },
+    });
+  }
+
   function openOffer(id) {
     const src = id ? O.list.find((x) => x.id === id) : null;
     const o = src ? JSON.parse(JSON.stringify(src)) : { title: '', description: '', priceNew: '', priceOld: '', category: 'remodelare', featured: false, imageKey: (O.images[0] || {}).key, active: true,
@@ -945,6 +989,7 @@
           '<div class="full of-flags">' + K.toggle('active', o.active, 'Activă (pe site și în portal)') + K.toggle('featured', o.featured, 'Card mare de pachet pe site') + '</div>' +
           K.field('Imagine', '<div class="of-imgs">' + O.images.map((img) => '<button type="button" data-img="' + esc(img.key) + '" class="' + (img.key === o.imageKey ? 'is-on' : '') + '" title="' + esc(img.label) + '" style="background-image:url(\'/' + esc(img.path) + '\')"></button>').join('') + '<input type="hidden" name="imageKey" value="' + esc(o.imageKey || '') + '"></div>', 'full') +
         '</form></section>' +
+        '<section class="k-section"><h4>' + icon('card') + 'Plata online cu cardul</h4>' + payBonusForm(o, 'data-payb') + '</section>' +
         '<section class="k-section of-ads"><h4>' + icon('sparkles') + 'Reclame · Creative</h4>' +
           '<div class="of-flags">' + K.toggle('ads', o.ads, 'Promovată în reclame (Creative face creative doar pentru ofertele bifate)') + '</div>' +
           '<form class="k-form" data-mk>' +
@@ -964,6 +1009,7 @@
       footer: (src ? '<button type="button" class="k-btn is-danger is-sm" data-del>' + icon('trash') + 'Șterge</button>' : '') + '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-accent" data-save>' + icon('check') + (src ? 'Salvează' : 'Publică oferta') + '</button>',
       onMount(el) {
         const site = el.querySelector('[data-site]'), mk = el.querySelector('[data-mk]');
+        wirePayBonus(el.querySelector('[data-payb]'));
         loadFbForms(el, o);
         el.addEventListener('change', async (ev) => {
           const sel = ev.target.closest('[data-oform]');
@@ -978,10 +1024,10 @@
           } catch (err) { K.ui().toast(K.errText(err), 'error'); }
         }, true);
         const collect = () => {
-          const s = K.formValues(site), m = K.formValues(mk);
+          const s = K.formValues(site), m = K.formValues(mk), pb = K.formValues(el.querySelector('[data-payb]'));
           const ads = el.querySelector('.of-ads input[name=ads]').checked;
           const split = (v) => String(v || '').split('\n').map((x) => x.trim()).filter(Boolean);
-          return Object.assign(o, s, m, {
+          return Object.assign(o, s, m, { payBonus: pb.payBonus === 'gift' ? 'gift' : 'pct', payPct: Number(pb.payPct) || 10, payGift: pb.payGift || '' }, {
             priceNew: Number(s.priceNew) || 0, priceOld: Number(s.priceOld) || 0, ads,
             locations: Object.keys(LOC).filter((l) => s['loc_' + l]), objections: split(m.objections), zones: split(m.zones),
           });
@@ -1008,6 +1054,7 @@
           if (!(x.priceNew > 0)) { K.ui().toast('Completează prețul nou.', 'error'); return; }
           if (x.priceOld && x.priceOld < x.priceNew) { K.ui().toast('Prețul vechi e mai mic decât cel nou.', 'error'); return; }
           if (!x.locations.length) { K.ui().toast('Alege cel puțin o locație.', 'error'); return; }
+          if (x.payBonus === 'gift' && !String(x.payGift || '').trim()) { K.ui().toast('Scrie tratamentul cadou la plata online.', 'error'); return; }
           try {
             const body = Object.assign(siteFields(x), { priceOld: x.priceOld || x.priceNew }, src ? { action: 'update', id: src.id, marketing: marketingFields(x) } : Object.assign({ action: 'create' }, marketingFields(x)));
             const j = await K.api('/api/portal-offers', body);
