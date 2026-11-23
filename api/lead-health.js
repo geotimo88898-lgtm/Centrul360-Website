@@ -314,7 +314,7 @@ module.exports = async (req, res) => {
     const op = String(req.query.cardblast);
     const r = req.method === 'POST' && op === 'pick' ? await CB.pick(req.query.n) : req.method === 'POST' && op === 'go' ? await CB.go()
       : req.method === 'POST' && op === 'stop' ? await CB.stop() : req.method === 'POST' && op === 'taps' ? await CB.backfillTaps() : req.method === 'POST' && op === 'chats' ? await CB.backfillChats() : req.method === 'POST' && op === 'tpl' ? await CB.useTemplate(String(req.query.v || '')) : req.method === 'POST' && op === 'more' ? await CB.pickMore(req.query.n, { trans: req.query.trans === '1', batch: Number(req.query.batch) || 2, leads: req.query.leads === '1', only: String(req.query.only || ''), pres: String(req.query.pres || '') })
-      : req.method === 'POST' && op === 'unpick' ? await CB.unpick(req.query.batch) : await CB.status();
+      : req.method === 'POST' && op === 'unpick' ? await CB.unpick(req.query.batch) : op === 'why' ? await CB.whyLeft() : await CB.status();
     res.status(200).json(r); return;
   }
   // ?fcleft=1: the Transformarea 360 list as it stands now (clients with a visit in the last 6 months and the leads of the

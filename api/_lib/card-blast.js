@@ -306,6 +306,20 @@ async function pickMore(n, opt) {
   const paidOf = list.map((p) => p.paid).sort((a, b) => a - b);
   return { ok: true, picked: list.length, byCity: by(), pool: pool.length, paidMedian: paidOf.length ? paidOf[Math.floor(paidOf.length / 2)] : 0, visits: { min: Math.min(...list.map((p) => p.visits)), max: Math.max(...list.map((p) => p.visits)) } };
 }
+// why the Transformarea list's people left (?fcleft) are not picked: counts only (the owner, 23.11)
+async function whyLeft() {
+  const st = await loadState();
+  const FC = require('./fc-campaign');
+  const [trans, orders, emps, sentMap] = await Promise.all([FC.buildAudience(), readJSON('data/card-sarbatori.json', []), readJSON('data/employees.json', []), readJSON(SENT, null)]);
+  const sent = sentMap || {};
+  const off = await require('./optout').set();
+  const inList = new Set(st.list.map((p) => p.k));
+  const bought = new Set(orders.map((o) => d9(o && o.phone)).filter((k) => k.length === 9));
+  const staff = new Set(emps.map((e) => d9(e && e.phone)).filter((x) => x.length === 9));
+  const c = { total: trans.length, sentCard: 0, inListNotSent: 0, optout: 0, ordered: 0, staff: 0, free: 0 };
+  trans.forEach((p) => { if (sent[p.k]) c.sentCard++; else if (inList.has(p.k)) c.inListNotSent++; else if (off.has(p.k)) c.optout++; else if (bought.has(p.k)) c.ordered++; else if (staff.has(p.k)) c.staff++; else c.free++; });
+  return c;
+}
 // a picked batch not sent yet, taken back (nothing went): only the ones still unsent of that batch
 async function unpick(batch) {
   const st = await loadState();
@@ -430,4 +444,4 @@ async function backfillTaps() {
   return out;
 }
 
-module.exports = { backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };
+module.exports = { whyLeft, backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };
