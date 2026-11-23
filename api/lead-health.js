@@ -260,6 +260,15 @@ module.exports = async (req, res) => {
       : req.method === 'POST' && op === 'unpick' ? await CB.unpick(req.query.batch) : await CB.status();
     res.status(200).json(r); return;
   }
+  // ?fcleft=1: the Transformarea 360 list as it stands now (clients with a visit in the last 6 months and the leads of the
+  // last 90 days), without the ones the card waves took and the opt-outs: counts per clinic and kind, never a name
+  if (req.query && req.query.fcleft) {
+    const FC = require('./_lib/fc-campaign');
+    const [left, all] = await Promise.all([FC.buildAudience(), FC.buildAudience({ all: true })]);
+    const by = (l) => { const o = {}; l.forEach((x) => { const c = o[x.city] = o[x.city] || { client: 0, lead: 0 }; c[x.seg] = (c[x.seg] || 0) + 1; }); return o; };
+    res.status(200).json({ left: left.length, all: all.length, byCity: by(left) });
+    return;
+  }
   if (req.query && req.query.fcaudience) {
     const [clients, appts, leads] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/appointments.json', []), readJSON('data/leads.json', [])]);
     const { normalizePhone } = require('./_lib/clients');
