@@ -87,14 +87,17 @@ async function copyOne(store, id, over, opts) {
   const j = await T.readForm(id, conn.pageAccessToken);
   if (!j || !j.thank_you_page) return { error: 'nu l-am putut citi de pe Facebook' };
   const name = String(j.name || r.name || 'Formular');
-  const city = cityOf(r, name);
+  // opts.location (23.11, the card form of Timișoara): the city of a form with none (the old card form asked the clinic)
+  const city = (opts && opts.location) || cityOf(r, name);
   if (!city) return { error: 'alege-i orașul (Formulare → Orașul)' };
   const num = nums[city];
   if (!num) return { error: 'lipsește numărul de WhatsApp pentru ' + city };
   const tp = j.thank_you_page;
   const old = T.phoneOf(tp.business_phone_number) || T.phoneOf(tp.website_url);
   // the questions exactly as they are (contact fields by their type; the others with their key, text and answers)
-  const questions = (j.questions || []).map((q) => (T.STANDARD.includes(q.type) || !q.label
+  // opts.questions (23.11, the card form: the cards on sale now): other questions, in the same shape; the rest as it is
+  const qs = opts && Array.isArray(opts.questions) && opts.questions.length ? opts.questions : (j.questions || []);
+  const questions = qs.map((q) => (T.STANDARD.includes(q.type) || !q.label
     ? { type: q.type }
     : Object.assign({ type: q.type, key: q.key, label: q.label }, Array.isArray(q.options) && q.options.length ? { options: q.options.map((o) => ({ value: o.value, key: o.key })) } : {})));
   if (!questions.some((q) => q.type === 'PHONE')) return { error: 'formularul nu cere telefonul' };
@@ -121,7 +124,7 @@ async function copyOne(store, id, over, opts) {
   const fresh = await store.readJSON(FORMS_KEY, {});
   fresh.forms = fresh.forms || {};
   const o = fresh.forms[id] || {};
-  fresh.forms[made.id] = { name: params.name, offerId: o.offerId || '', location: o.location || city, detected: o.detected || null, leads: 0, createdHere: now, whatsapp: num, copyOf: id,
+  fresh.forms[made.id] = { name: params.name, offerId: o.offerId || '', location: (opts && opts.location) || o.location || city, detected: o.detected || null, leads: 0, createdHere: now, whatsapp: num, copyOf: id,
     questions: params.questions.map((q) => ({ key: q.key || q.type.toLowerCase(), label: q.label || '', type: q.type, options: q.options || [] })) };
   // what routes its leads the same way: a lead-filter or card form keeps its kind, zone and variant
   ['kind', 'zone', 'variant', 'job'].forEach((k) => { if (o[k] !== undefined && o[k] !== '') fresh.forms[made.id][k] = o[k]; });
