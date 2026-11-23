@@ -211,11 +211,12 @@ main [hidden]{ display:none !important; }
 .cst-go .btn .csb-spin, .cs-c .btn .csb-spin, .cs-dock .btn .csb-spin{ margin-right:2px; }
 @media (max-width:400px){ .cst-city label{ padding:0 10px; font-size:13.5px; } .cst-in{ padding:0 13px; font-size:16.5px; } }
 @media (prefers-reduced-motion:reduce){ .cst-msg{ animation:none; } }
-/* the checkout in the page (v2/cs-buy.js mode(), the owner 24.11): no phone in the block (the payment sheet asks it, the
-   clinic's window too), only the clinic, the two of them across the whole row */
-.cst-go.cst-emb .cst-pl, .cst-go.cst-emb .cst-in, .cst-go.cst-emb .cst-note{ display:none; }
-.cst-go.cst-emb .cst-city{ flex:1; grid-template-columns:1fr 1fr; }
-.cst-go.cst-emb .cst-city label{ min-height:48px; }
+/* one block only (the owner, 24.11: „scapă de varianta veche”): no phone in it, written so in the page itself; her phone is
+   asked where she pays (the payment sheet, or the small window of v2/cs-buy.js). The clinic across the whole row. (A page
+   still cached with the old field: hidden the same.) */
+.cst-go .cst-pl, .cst-go .cst-pr > .cst-in, .cst-go .cst-note{ display:none; }
+.cst-go .cst-city{ flex:1; grid-template-columns:1fr 1fr; }
+.cst-go .cst-city label{ min-height:48px; }
 /* reserved, paid in the clinic: the field and the buttons give their place to one line with a tick (v2/cs-buy.js) */
 .cst-go.is-done > [data-cs-ph], .cst-go.is-done > .btn, .cst-go.is-done > .cst-or, .cst-go.is-done > .cst-sub:has([data-cs-reserve]), .cst-go.is-done > .cst-alt, .txt:has(.cst-go.is-done) .meta .cst-alt, .cst-go.is-done > .cst-help{ display:none; }
 .cst-done{ display:flex; align-items:flex-start; gap:14px; padding:16px 18px; border-radius:18px; text-align:left; background:linear-gradient(180deg,#f1fbf9,#fff);

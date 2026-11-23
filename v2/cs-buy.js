@@ -11,9 +11,12 @@
    The card's funnel (site-pulse.js, Admin → Campanii): 'cs-seen' the block came into view, 'cs-buy' / 'cs-res' a tap on
    „Plătesc online” / „Rezerv în clinică” (even when the phone is still missing), 'pay' sent to myPOS, 'cs-sent' the
    reservation made; the order carries her personal link's token (site-pulse.js C360P.tok), when she came with one.
-   With the checkout in the page (switched on, or the preview) the block asks no phone (the owner, 24.11: „cerem detaliile
-   în ecranul cu plata”): only the clinic; „Plătesc online” opens the payment sheet, which asks her name and phone itself;
-   „Rezerv și plătesc în clinică” asks her phone in a small window grown out of the button (askPhone). */
+   One block only (the owner, 24.11: „scapă de varianta veche, fă să meargă totul fluid”): no phone in it, written so in
+   the page itself (nothing changes after it loads); only the clinic and the two buttons. „Plătesc online” opens the payment
+   sheet at once (c360-pay.js), which asks her name and phone; with the sheet switched off (cardembed, the server's kill
+   switch) her phone is asked in a small window grown out of the button, then the card's PayLink as before. „Rezerv și
+   plătesc în clinică” asks her phone in the same small window (askPhone). The PayLinks stay the safety net behind the
+   sheet: myPOS's page not made at her tap, the server sends her to the card's PayLink, her order kept (api/pay.js go). */
 (function () {
   'use strict';
   // the 290 one is out of sale (22.11), still known here for an order of it (back from its PayLink); 9900: the VIP card
@@ -28,9 +31,8 @@
   var st = { open: true, left: 10, loaded: false, links: {}, vip: null };
   var busy = false;
   var K_ORDER = 'c360_cs_order', K_ASKED = 'c360_cs_asked', K_PHONE = 'c360_cs_phone', K_CITY = 'c360_cs_city';
-  // her name from the payment sheet (she gave it with the WhatsApp line ticked); the checkout's switch as last seen (the block
-  // drawn right before the answer comes); the order whose contact the sheet saved in this tab
-  var K_NAME = 'c360_cs_name', K_EMB = 'c360_cs_emb', K_CONT = 'c360_cs_cont';
+  // her name from the payment sheet (she gave it with the WhatsApp line ticked); the order whose contact the sheet saved here
+  var K_NAME = 'c360_cs_name', K_CONT = 'c360_cs_cont';
   var get = function (s, k) { try { return s.getItem(k) || ''; } catch (e) { return ''; } };
   var put = function (s, k, v) { try { if (v == null) s.removeItem(k); else s.setItem(k, v); } catch (e) {} };
   // Meta pixel (the owner, 21.11: „tracking cu absolut totul”): it only queues until „Accept” loads it (_shell.html);
@@ -51,33 +53,32 @@
   }
   function load() {
     return fetch('/api/card-sarbatori').then(function (r) { return r.json(); }).then(function (d) {
-      if (d && typeof d.left === 'number') { st.open = d.open !== false; st.left = d.left; st.links = d.links || {}; st.online = d.online || {}; st.vip = d.vip || null; st.embedded = !!d.embedded; st.loaded = true; put(localStorage, K_EMB, st.embedded ? '1' : null); }
+      if (d && typeof d.left === 'number') { st.open = d.open !== false; st.left = d.left; st.links = d.links || {}; st.online = d.online || {}; st.vip = d.vip || null; st.embedded = !!d.embedded; st.loaded = true; }
     }).catch(function () {}).then(function () { if (!st.loaded) st.failed = true; mode(); });
   }
-  // the block as the checkout wants it: with it, no phone (the payment sheet asks it), only the clinic
-  function mode() { var on = embedOn(); document.querySelectorAll('.cst-go').forEach(function (g) { g.classList.toggle('cst-emb', on); }); if (on) warm(); }
+  // the sheet on: loaded and asked ahead, so a tap opens it at once
+  function mode() { if (embedOn()) warm(); }
 
   // ------------------------------------------------------------------ her phone in the card block
-  // The block's own parts, written here once and put in by shape() on any page whose markup is older (the live pages
-  // until a swap), so every page has the same block: her phone and the clinic, the buttons, a few short lines with a tick.
+  // The block's own parts, written here once and put in by shape() on any page whose markup is older, so every page has the
+  // same block: the clinic, the buttons, a few short lines with a tick (no phone: it is asked where she pays).
   var TK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
   // under the buttons: short lines with a tick, nothing that reads like a warning (the saving follows the card chosen)
   var POINTS = '<ul class="cst-pts" data-cs-pts><li><i>' + TK + '</i><span>Economisești <b data-cs-v="save">1.510 lei</b></span></li>' +
     '<li><i>' + TK + '</i><span>La plata online: o ședință de BioLifting cadou și acces în Clubul 360</span></li>' +
     '<li><i>' + TK + '</i><span>Plătești cu cardul pe pagina securizată myPOS</span></li></ul>';
-  // the phone and the clinic, put in when a page does not have them
-  var FIELD = '<div class="cst-ph" data-cs-ph><label class="cst-pl" for="cst-tel">Telefonul tău · îți trimitem cardul pe WhatsApp</label>' +
-    '<div class="cst-pr"><input id="cst-tel" class="cst-in" type="tel" inputmode="numeric" autocomplete="tel" placeholder="07xx xxx xxx" maxlength="16" data-cs-phone>' +
+  // the clinic, put in when a page does not have it
+  var FIELD = '<div class="cst-ph" data-cs-ph><div class="cst-pr">' +
     '<div class="cst-city" role="radiogroup" aria-label="Clinica" data-cs-city><label><input type="radio" name="cst-city" value="Timișoara">Timișoara</label><label><input type="radio" name="cst-city" value="Arad">Arad</label></div></div>' +
-    '<p class="cst-msg" data-cs-phmsg role="alert"></p><p class="cst-note">Îți scriem pe WhatsApp doar pentru card.</p></div>';
+    '<p class="cst-msg" data-cs-phmsg role="alert"></p></div>';
   // any block brought to that shape (nothing changes when it already has it)
   function shape() {
     var g = document.querySelector('.cst-go'), pb0 = g && g.querySelector('[data-cs-buy]');
     if (!g || !pb0) return;
     if (!g.querySelector('[data-cs-ph]')) pb0.insertAdjacentHTML('beforebegin', FIELD);
     var ph = g.querySelector('[data-cs-ph]');
-    // no name field on the page (the owner, 21.11): an older one goes (her name comes from our files or on WhatsApp)
-    [].slice.call(ph.querySelectorAll('[data-cs-nmw], [data-cs-nm1]')).forEach(function (el) { el.parentNode.removeChild(el); });
+    // no name and no phone field in the block (the owner, 21.11 and 24.11): an older page's go (asked where she pays)
+    [].slice.call(ph.querySelectorAll('[data-cs-nmw], [data-cs-nm1], [data-cs-phone], .cst-pl, .cst-note')).forEach(function (el) { el.parentNode.removeChild(el); });
     // the long paragraph under the buttons gives its place to the short lines (in the same spot); a clinic link it held
     // stays, on its own short line under them
     var sub = g.querySelector('.cst-sub');
@@ -111,7 +112,6 @@
   function phMsg(text, el) {
     var b = blk(); if (!b) return;
     var m = b.querySelector('[data-cs-phmsg]'); m.textContent = ''; void m.offsetWidth; m.textContent = text || '';
-    b.querySelector('[data-cs-phone]').classList.toggle('bad', el === 'phone');
     b.querySelector('[data-cs-city]').classList.toggle('bad', el === 'city');
   }
   // the clinic's WhatsApp, read from the page's own contacts (the footer: „Timișoara … tel:”, „Arad … tel:”), never written here
@@ -140,12 +140,8 @@
     document.addEventListener('change', function (e) { if (e.target && (e.target.name === 'cst-city' || e.target.name === 'cst')) helpLink(); });
     document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('[data-cs-wa]')) helpLink(); }, true);
     var b = blk(); if (!b) return;
-    var inp = b.querySelector('[data-cs-phone]');
-    var ph = get(localStorage, K_PHONE), city = get(localStorage, K_CITY);
-    if (ph && !inp.value) inp.value = ph;
+    var city = get(localStorage, K_CITY);
     if (city) { var r = b.querySelector('input[name="cst-city"][value="' + city + '"]'); if (r) r.checked = true; }
-    inp.addEventListener('input', function () { phMsg(''); var m = mobile(inp.value); if (m) put(localStorage, K_PHONE, m); });
-    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); var pb = payBtn(); if (pb) pb.click(); } });
     b.querySelector('[data-cs-city]').addEventListener('change', function (e) { phMsg(''); put(localStorage, K_CITY, e.target.value); });
   }
   function spin(btn, on) {
@@ -177,8 +173,7 @@
       location.href = (location.pathname.indexOf('/v2/') === 0 ? '/v2/' : '/') + 'card-sarbatori#cumpara'; return;
     }
     if (tier && window.CSC && window.CSC.tier) window.CSC.tier(tier);
-    var inp = blk().querySelector('[data-cs-phone]');
-    var target = !embedOn() && !mobile(inp.value) ? inp : clinic ? g.querySelector('[data-cs-reserve]') : payBtn();
+    var target = clinic ? g.querySelector('[data-cs-reserve]') : payBtn();
     g.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
     setTimeout(function () { if (target) target.focus({ preventScroll: true }); }, reduce ? 0 : 520);
   }
@@ -190,38 +185,35 @@
     var o = city === 'Arad' ? 'Timișoara' : 'Arad', x = st.vip && st.vip[o];
     return 'Cardurile VIP din ' + city + ' s-au epuizat.' + (x && x.left > 0 ? ' La ' + o + ' mai sunt.' : '');
   };
-  // both buttons of the block: online → the PayLink; clinic → reserved here, said in place. With the checkout in the page:
-  // online → the payment sheet (it asks her name and phone); clinic → her phone in a small window first (askPhone), then
-  // here again with it (o: { phone, city, tier, say: where to write a word, done: the window's end })
+  // both buttons of the block. Online: the payment sheet (it asks her name and phone); the sheet switched off: her phone in
+  // the small window, then the PayLink. Clinic: her phone in the small window, then reserved, said in place. The window
+  // calls this again with her phone (o: { phone, city, tier, say: where to write a word, done: the window's end })
   function order(btn, clinic, o) {
     o = o || {};
     var b = blk(); if (!b || busy) return;
     if (!o.phone) fev(clinic ? 'cs-res' : 'cs-buy');
-    var inp = b.querySelector('[data-cs-phone]');
     var city = o.city || (b.querySelector('input[name="cst-city"]:checked') || {}).value || '';
     var tier = o.tier || (window.CSC && window.CSC.current) || Number(btn.getAttribute('data-cs-tier')) || 990;
     var say = o.say || phMsg;
     // (what cs-card.js already read when this file's own read is not back yet: the same answer)
     var cs = window.CSC && window.CSC.state;
     if (!st.loaded && cs && typeof cs.left === 'number') { st.open = cs.open !== false; st.left = cs.left; st.links = cs.links || {}; st.online = cs.online || {}; st.vip = cs.vip || null; st.embedded = !!cs.embedded; st.loaded = true; mode(); }
-    var emb = embedOn() && Number(tier) !== 290;
-    // the block drawn without the phone from the last visit, the switch not read yet: read it first
-    if (emb && !st.loaded && !PREVIEW && !o.waited) {
+    // the switch not read yet (a tap in the page's first moment): read it first
+    if (!st.loaded && !PREVIEW && !o.waited && !o.phone) {
       busy = true; spin(btn, true);
       load().then(function () { busy = false; spin(btn, false); order(btn, clinic, Object.assign({}, o, { waited: true })); });
       return;
     }
-    var phone = o.phone || (emb ? '' : mobile(inp.value));
-    // the block drawn without the phone (the new checkout on a visit before) while the PayLinks are back: the field comes back
-    if (!emb && !phone) { mode(); document.querySelectorAll('.cst-go').forEach(function (g) { g.classList.remove('cst-emb'); }); phMsg(inp.value.trim() ? PMSG.bad_phone : 'Scrie numărul tău de mobil: pe el îți trimitem cardul.', 'phone'); inp.focus(); return; }
+    var emb = embedOn() && Number(tier) !== 290;
+    var phone = o.phone || '';
     if (!city) { phMsg(PMSG.missing_city, 'city'); b.querySelector('input[name="cst-city"]').focus(); return; }
     if (phone) put(localStorage, K_PHONE, phone);
     put(localStorage, K_CITY, city);
     var vip = Number(tier) === VIP;
-    // the clinic, the checkout in the page: her phone in the small window, then this again
-    if (clinic && emb && !phone) { askPhone(btn, city, tier); return; }
-    // the checkout in the page (switched on, or the preview): no PayLink, a sheet over the page (embedPay below)
+    // the checkout in the page (switched on, or the preview): a sheet over the page at once (embedPay below)
     if (!clinic && emb) { embedPay(btn, tier, city, vip); return; }
+    // her phone first, in the small window (the clinic; online with the sheet off), then this again with it
+    if (!phone) { askPhone(btn, city, tier, !clinic); return; }
     // online, its PayLink known and a card there for her: to myPOS now, the order sent on the way (keepalive), not awaited
     var link = !clinic && st.loaded && st.links && st.links[tier], id = link ? uuid() : '';
     if (link && id && (vip ? !(st.vip && st.vip[city] && st.vip[city].left <= 0) : st.open && st.left > 0)) {
@@ -275,7 +267,7 @@
   // 8.910); the sheet pays it; closed unpaid, the window „Plata nu s-a finalizat?” as after a PayLink.
   var PREVIEW = /^\/v2\//.test(location.pathname) || /[?&]plata=test\b/.test(location.search);
   // (before the switch is read: as on her last visit, so the block is drawn once)
-  var embedOn = function () { return !!(PREVIEW || (st.loaded ? st.embedded : !st.failed && get(localStorage, K_EMB) === '1')); };
+  var embedOn = function () { return !!(PREVIEW || (st.loaded && st.embedded)); };
   var payP = null;
   function payLib() {
     if (window.C360Pay) return Promise.resolve(window.C360Pay);
@@ -446,13 +438,17 @@
     if (inp && !m) { inp.classList.add('bad'); if (er) er.textContent = inp.value.trim() ? PMSG.bad_phone : 'Scrie numărul tău de mobil.'; inp.focus(); }
     return m;
   };
-  // „Rezerv și plătesc în clinică” from the block: the window grows out of the button, her phone, then the reservation
+  // the window grows out of the button: her phone, then the reservation („Rezerv și plătesc în clinică”) or, with the sheet
+  // switched off, the card's PayLink („Plătesc online”)
   var askCtx = null;
-  function askPhone(btn, city, tier) {
+  function askPhone(btn, city, tier, online) {
     if (!root) build();
-    ret = null; askCtx = { city: city, tier: tier };
-    var t = tierOf(tier);
-    retScreen('<p class="csb-rl">' + cardOf(t[0]) + ', cu <b>' + lei(t[1]) + '</b> în tratamente. Îl plătești în clinică (' + (ADDR[city] || city) + '); te sunăm să stabilim când vii.</p>' +
+    ret = null; askCtx = { city: city, tier: tier, online: !!online };
+    var t = tierOf(tier), pay = Number((st.online || {})[t[0]]) || t[0];
+    if (online) retScreen('<p class="csb-rl">' + cardOf(t[0]) + ', cu <b>' + lei(t[1]) + '</b> în tratamente. Pe numărul tău îți trimitem cardul, pe WhatsApp.</p>' +
+      phoneField() + '<button type="button" class="btn book" data-ask="go">Plătesc online ' + lei(pay) + ARROW + '</button>' +
+      '<p class="csb-note">Plătești cu cardul pe pagina securizată myPOS.</p>', false, 'Plătește <em>online</em>');
+    else retScreen('<p class="csb-rl">' + cardOf(t[0]) + ', cu <b>' + lei(t[1]) + '</b> în tratamente. Îl plătești în clinică (' + (ADDR[city] || city) + '); te sunăm să stabilim când vii.</p>' +
       phoneField() + '<button type="button" class="btn book" data-ask="go">Rezerv cardul' + ARROW + '</button>' +
       '<p class="csb-note">Îți scriem pe WhatsApp doar pentru card.</p>', false, 'Rezervă <em>cardul</em>');
     open(btn);
@@ -464,7 +460,7 @@
     var ph = telOf(); if (!ph) return;
     var er = root.querySelector('.csb-ret .csb-err'), inp = root.querySelector('#csb-tel');
     if (inp) inp.disabled = true;
-    order(btn, true, { phone: ph, city: askCtx.city, tier: askCtx.tier,
+    order(btn, !askCtx.online, { phone: ph, city: askCtx.city, tier: askCtx.tier,
       say: function (t) { if (er) er.textContent = t || ''; if (t && inp) inp.disabled = false; },
       done: function (r) { askCtx = null; close().then(function () { reserved(r); }); } });
   }
@@ -541,7 +537,11 @@
   }
   function back(persisted) {
     // from the browser's memory: the button she tapped still turns
-    if (persisted) { busy = false; [].slice.call(document.querySelectorAll('[data-cs-buy][aria-busy], [data-cs-reserve][aria-busy]')).forEach(function (b) { spin(b, false); }); }
+    if (persisted) {
+      busy = false; [].slice.call(document.querySelectorAll('[data-cs-buy][aria-busy], [data-cs-reserve][aria-busy]')).forEach(function (b) { spin(b, false); });
+      // the small window she left from (her phone, then the PayLink): shut, as it was before the tap
+      if (root && root.classList.contains('open')) { askCtx = null; root.classList.remove('open', 'shown'); root.setAttribute('aria-hidden', 'true'); document.documentElement.classList.remove('csb-lock'); }
+    }
     var id = get(sessionStorage, K_ORDER);
     if (!id) return;
     if (!/^[0-9a-f-]{36}$/.test(id) || asked(id)) { forget(id); return; }
