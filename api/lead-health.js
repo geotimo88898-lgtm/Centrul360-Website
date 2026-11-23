@@ -92,6 +92,15 @@ module.exports = async (req, res) => {
   }
   // ?cardlinks=1: the Card de Sărbători's myPOS PayLinks, one per card; POST { 290, 490, 990, 9900 } sets them (9900: the VIP card); the 10% ones (paying online, 22.11): { "9900_online": url } or { "9900": { url, amount: 8910 } } (only https links of
   // mypos.com / mypos.eu; '' clears one), GET reads them (api/_lib/card-sarbatori.js)
+  // ?cardembed=1: „Plătesc online” of the Card de Sărbători in the page (the site's myPOS checkout) instead of the PayLinks;
+  // GET reads the switch, POST { on: true | false } sets it (api/_lib/card-sarbatori.js data/card-pay.json)
+  if (req.query && req.query.cardembed) {
+    const C = require('./_lib/card-sarbatori');
+    let b = req.body || {}; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
+    const r = req.method === 'POST' ? await C.setEmbedded(b.on === true, session ? session.employeeId : 'creative') : { embedded: await C.embedded() };
+    res.status(200).json(r);
+    return;
+  }
   if (req.query && req.query.cardlinks) {
     const C = require('./_lib/card-sarbatori');
     let b = req.body || {}; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }

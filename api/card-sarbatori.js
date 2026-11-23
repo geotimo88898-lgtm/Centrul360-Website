@@ -123,7 +123,8 @@ module.exports = async (req, res) => {
       // links: where „Plătesc online” goes, per card (its 10% link when set); online: the sum online, for those cards only
       const [list, sl] = await Promise.all([readJSON(C.KEY, []), C.siteLinks()]);
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=10, stale-while-revalidate=30');
-      res.status(200).json(Object.assign(C.publicCount(await C.count(list)), { links: sl.links, online: sl.online }));
+      // embedded: „Plătesc online” opens the checkout in the page (data/card-pay.json, the owner's switch)
+      res.status(200).json(Object.assign(C.publicCount(await C.count(list)), { links: sl.links, online: sl.online, embedded: await C.embedded() }));
       return;
     }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
@@ -168,7 +169,7 @@ module.exports = async (req, res) => {
         const all = Object.fromEntries(Object.entries(T.t || {}).map(([k, t]) => [k, t ? WT.overall(t) : 'LIPSĂ']));
         const tpl = Object.fromEntries(Object.entries(all).filter(([k]) => C.CORE.includes(k)));
         // the payments of one sum that could be two orders': the desk picks (its phone's last 3 digits, here only)
-        const checks = (await C.openChecks()).map((c) => ({ id: c.id, amount: c.amount, at: c.at, cands: c.cands.map((id) => list.find((r) => r.id === id)).filter(Boolean).map((r) => ({
+        const checks = (await C.openChecks()).map((c) => ({ id: c.id, amount: c.amount, at: c.at, why: c.why || '', cands: c.cands.map((id) => list.find((r) => r.id === id)).filter(Boolean).map((r) => ({
           id: r.id, created: r.created, city: r.city, tier: r.tier, name: r.name || '', last3: String(r.phone || '').replace(/\D/g, '').slice(-3), status: r.status })) }));
         const recTpl = Object.fromEntries(Object.entries(all).filter(([k]) => !C.CORE.includes(k)));
         res.status(200).json(Object.assign({ cards: cards.filter((c) => c.code).reverse(), orders, totals, templates: tpl, recTemplates: recTpl, checks, scan, treatments: await treatments(), team: emps.filter((e) => e.active !== false && ['cosmetician', 'manager'].includes(e.role)).map((e) => ({ id: e.id, name: e.name, city: e.location || '' })),
@@ -376,10 +377,12 @@ module.exports = async (req, res) => {
     const now = Date.now();
     if (now >= Date.parse(C.DEADLINE)) { res.status(409).json({ error: 'closed' }); return; }
     // online: 10% off when the card's 10% link is set (the 290 one never), else its full price and link
-    const op = online && Number(tier) !== 290 ? await C.onlinePay(tier) : null;
-    const lk = online ? (op ? op.link : (await C.links())[tier]) : null;
-    const payAmount = op && op.disc ? op.amount : tier * qty;
-    if (online && !lk) { res.status(409).json({ error: 'no_link' }); return; }
+    // the checkout in the page (switched on, or the preview): no PayLink, the sum of the checkout (the VIP 10% off)
+    const emb = online && b.embedded === true && Number(tier) !== 290 && (b.preview === true || await C.embedded());
+    const op = online && !emb && Number(tier) !== 290 ? await C.onlinePay(tier) : null;
+    const lk = online && !emb ? (op ? op.link : (await C.links())[tier]) : null;
+    const payAmount = emb ? C.checkoutAmount(tier, 1) : op && op.disc ? op.amount : tier * qty;
+    if (online && !emb && !lk) { res.status(409).json({ error: 'no_link' }); return; }
     let list = await readJSON(C.KEY, []);
     // the id made by her browser (an online order: she is on myPOS before this answer, the owner 22.11: „prea lent”), kept
     // when it is a UUID not used yet; else ours
@@ -397,14 +400,14 @@ module.exports = async (req, res) => {
     if (same) {
       // her browser's id of this tap, an other name of the same order (the window back from myPOS finds it: C.byId)
       if (online && newId === cid && cid) same.ids = (same.ids || []).concat(cid).slice(-10);
-      if (online) { C.mark(same, 'to_paylink'); await writeJSON(C.KEY, list); }
-      res.status(200).json(online ? { ok: true, again: true, id: same.id, link: lk, amount: same.amount } : { ok: true, again: true, reservation: publicOf(same), left: left0 }); return;
+      if (online && !emb) { C.mark(same, 'to_paylink'); await writeJSON(C.KEY, list); }
+      res.status(200).json(online ? (emb ? { ok: true, again: true, id: same.id, amount: C.checkoutAmount(same.tier, 1), embedded: true } : { ok: true, again: true, id: same.id, link: lk, amount: same.amount }) : { ok: true, again: true, reservation: publicOf(same), left: left0 }); return;
     }
     if (hers.reduce((n, r) => n + C.qtyOf(r), 0) + qty > 10) { res.status(409).json({ error: 'too_many_cards' }); return; }
     if (!st0.ok) { res.status(409).json(st0.error === 'not_enough' ? { error: 'not_enough', left: left0 } : { error: st0.error === 'closed' ? 'closed' : 'sold_out', vip: cnt0.vip }); return; }
 
     // nothing is issued now: the codes come when the payment is confirmed (the owner, 21.11)
-    const entry = { id: newId, created: new Date().toISOString(), name, phone, city, tier, qty, amount: payAmount, credit: C.TIERS[tier] * qty, forWho: gift ? 'cadou' : 'eu', disc: op && op.disc ? true : undefined,
+    const entry = { id: newId, created: new Date().toISOString(), name, phone, city, tier, qty, amount: payAmount, credit: C.TIERS[tier] * qty, forWho: gift ? 'cadou' : 'eu', disc: (op && op.disc) || (emb && C.isVip(tier)) ? true : undefined, checkout: emb ? { at: new Date().toISOString() } : undefined,
       cards: names.map((n) => ({ code: '', recipient: n })), recipient: names[0] || '', status: online ? 'asteptare' : 'rezervat', via: 'site', pay: online ? 'online' : 'clinica', page: clip(b.page, 200), track: trackOf(req, b.page, b.ct) };
     // where the name on the card comes from (the portal says it): typed on the site; else hers in our files (clients, then
     // leads, the newest first): her greeting and her card's name, nothing asked on WhatsApp; else asked once paid
@@ -412,7 +415,7 @@ module.exports = async (req, res) => {
     if (cardName) entry.nameFrom = 'site';
     C.mark(entry, 'created');
     if (replaced) C.mark(entry, 'replaced', String(replaced));
-    if (online) C.mark(entry, 'to_paylink');
+    if (online) C.mark(entry, emb ? 'to_checkout' : 'to_paylink');
     list.push(entry);
     await writeJSON(C.KEY, list);
     // two at the same second for the last cards: the later one gives way
@@ -437,7 +440,7 @@ module.exports = async (req, res) => {
       (names.some(Boolean) ? ' · pe numele: ' + names.map((n) => n || '(al ei)').join(', ') : '');
     if (online) {
       const c1 = await C.count(list);
-      res.status(200).json({ ok: true, id: entry.id, link: lk, amount: entry.amount, left: C.leftFor(c1, tier, city), vip: c1.vip });
+      res.status(200).json(Object.assign({ ok: true, id: entry.id, amount: entry.amount, left: C.leftFor(c1, tier, city), vip: c1.vip }, emb ? { embedded: true } : { link: lk }));
       await named();
       await lead(entry, b, req, note); // after the answer: she goes to myPOS at once
       try {

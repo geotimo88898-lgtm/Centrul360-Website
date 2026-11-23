@@ -32,6 +32,8 @@
 //    seq { id, i (0, 1 …), n }. Only the first (i 0) takes a slot; the others follow it on each of its networks, at its
 //    time plus i seconds (entries marked follow: they take no slot and no quota), and go out right after it, in order,
 //    never before the one before them is posted (due()), and only once the whole sequence is approved.
+//  - A story's own day (day: 'YYYY-MM-DD', set with move(id, week, day)): the re-plan puts it there when the day has a free
+//    story time (else on the nearest day of its week), so a week of sequences goes one a day, in the order chosen.
 //  - An evergreen story (evergreen: true) is never planned in a week: it is the reserve the coverage guard posts when a
 //    network would be left without a live story (content-story.js).
 //  - due() is the automatic poster's ('auto' networks only), appDue() the owner's ('app' networks: the slots due within
@@ -256,7 +258,8 @@ function replanWeek(items, week, settings, now) {
     const target = days.map((d, i) => Math.max(0, Math.min(free[i], ideal[i] - b.n(n, cls, d))));
     // the rotation day: reels two days apart per network; a photo on the day its network's spread gives it
     // a story: in the order handed in, spread over the week, the same day on both networks
-    const pref = (it) => prefOrder(cls === 'reel' ? (rank.get(it) + 2 * j) % 7 : cls === 'story' ? Math.min(6, Math.floor((rank.get(it) * 7) / Math.max(7, nStory)))
+    // a story with its own day (it.day, set with move: the owner, 23.11, one sequence a day, on the days he wants) prefers it
+    const pref = (it) => prefOrder(cls === 'reel' ? (rank.get(it) + 2 * j) % 7 : cls === 'story' ? (days.includes(it.day) ? days.indexOf(it.day) : Math.min(6, Math.floor((rank.get(it) * 7) / Math.max(7, nStory))))
       : (((6 - 2 * j + rank.get(it)) % 7) + 7) % 7);
     const at = assign(cands, pref, (it, i) => free[i] > 0 && (cls === 'story' || !b.has(it.id, days[i])), [target, free], need);
     // the times: per day, the main time first, the items in their order
