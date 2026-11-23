@@ -42,6 +42,12 @@
   // ---- the cards left
   CSC.on = function (fn) { CSC.subs.push(fn); if (CSC.state) fn(CSC.state); };
   CSC.set = function (s) {
+    // the checkout in the page (switched on, or the preview ?plata=test, /v2/): every card is paid online, the VIP 10% off
+    if (s && (s.embedded || /^\/v2\//.test(location.pathname) || /[?&]plata=test\b/.test(location.search))) {
+      s = Object.assign({}, s, { links: Object.assign({}, s.links), online: Object.assign({}, s.online) });
+      SALE.forEach(function (t) { if (!s.links[t]) s.links[t] = '#plata'; });
+      s.online[VIP] = Math.round(VIP * 0.9);
+    }
     CSC.state = s;
     $$('[data-cs-left]').forEach(function (el) { el.textContent = String(s.left); });
     $$('[data-cs-bar]').forEach(function (el) { el.style.setProperty('--k', (s.left / s.total).toFixed(3)); });

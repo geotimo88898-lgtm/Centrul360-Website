@@ -259,8 +259,11 @@ async function onlinePay(tier) {
 // the link of an order: the one of the sum it carries (a 10% order: its 10% link while it exists, else the full one; the
 // payment of the full sum is matched to it too: candsOf)
 async function linkOf(r) {
+  if (await embedded()) return checkoutUrl(r);
   const [full, on] = await Promise.all([links(), onlineLinks()]);
-  return (r.disc && on[r.tier]) || full[r.tier] || null;
+  const l = (r.disc && on[r.tier]) || full[r.tier] || null;
+  if (l && r.checkout) r.checkout.paylink = nowISO(); // a PayLink for an order of the checkout: its sum may be matched again
+  return l;
 }
 // the site's view: per card, the link she goes to online and, for a card with its 10% link, the sum she pays
 async function siteLinks() {
@@ -268,6 +271,74 @@ async function siteLinks() {
   const out = Object.assign({}, full), online = {};
   Object.keys(on).forEach((t) => { out[t] = on[t]; online[t] = discOf(t); });
   return { links: out, online };
+}
+// ---- „Plătesc online” in the page (the owner, 23.11): the site's own myPOS checkout (api/_lib/pay.js, c360-pay.js: the card
+// form and Apple Pay / Google Pay in a sheet, no redirect) in place of the PayLinks. Behind a switch the owner turns on after
+// he tried it (data/card-pay.json { embedded }; the preview: the card page with ?plata=test or /v2/). Off: the PayLinks, as
+// they are. The prices: 490 and 990 at their full price (with the BioLifting gift and the Club), the VIP 8.910 (10% off, no
+// gift), an old 290 at 290. An order paid there is paid only by myPOS's signed word (payPaid), never by matching sums.
+const PAYSW = 'data/card-pay.json';
+async function embedded() { const d = await readJSON(PAYSW, null).catch(() => null); return !!(d && d.embedded); }
+async function setEmbedded(on, by) { await writeJSON(PAYSW, { embedded: !!on, at: nowISO(), by: by || '' }); return { ok: true, embedded: !!on }; }
+const checkoutAmount = (tier, qty) => (isVip(tier) ? discOf(tier) : Number(tier)) * (qty || 1);
+// the card page that opens the checkout of her order again (the recovery messages, while the checkout is on)
+const checkoutUrl = (r) => 'https://www.centrul360.com/card-sarbatori?plata=' + encodeURIComponent(r.id);
+// api/_lib/pay.js kind 'card': her order, waiting for the money → its sum (from here, never the browser) and what it is
+async function payQuote({ ref }) {
+  const id = String(ref || '');
+  if (!/^[0-9a-f-]{36}$/.test(id)) return null;
+  const list = await readJSON(KEY, []);
+  const r = byId(list, id);
+  if (!r || r.pay !== 'online' || !['asteptare', 'anulat'].includes(r.status) || (r.status === 'anulat' && r.cancelledBy !== 'ea')) return r && r.status === 'platit' ? { error: 'already_paid' } : null;
+  norm(r);
+  // her card is still hers (a hold that is over takes one only when one is left)
+  const h = await rehold(list, r);
+  if (h !== 'ok') { await writeJSON(KEY, list); return { error: h === 'closed' ? 'closed' : 'sold_out' }; }
+  const amount = checkoutAmount(r.tier, qtyOf(r));
+  if (r.amount !== amount) { mark(r, 'amount', r.amount + ' → ' + amount); r.amount = amount; }
+  if (isVip(r)) r.disc = true; else delete r.disc;
+  r.checkout = Object.assign({}, r.checkout, { at: nowISO() });
+  delete r.checkout.paylink;
+  mark(r, 'to_checkout');
+  await writeJSON(KEY, list);
+  const title = (isVip(r) ? 'Cardul VIP Transformarea 360' : 'Cardul de Sărbători ' + lei(r.tier) + ' lei') + ' · ' + lei(r.credit) + ' lei în tratamente';
+  return { amount, full: isVip(r) ? Number(r.tier) * qtyOf(r) : amount, title, city: r.city, name: r.name || r.hint || '', phone: r.phone };
+}
+// myPOS's signed word that the checkout order is paid (api/_lib/pay.js, once per order, safe twice): the card as with any
+// payment (issued, her WhatsApp, Încasări, the desk); another sum than her order's → „De verificat”; the sandbox → a test,
+// never a card, nothing sent to her
+async function payPaid({ orderId, ref, amount, currency, myposRef, method, at, sandbox }) {
+  const list = await readJSON(KEY, []);
+  const r = byId(list, String(ref || ''));
+  if (!r) return { error: 'not_found' };
+  norm(r);
+  if (r.status === 'platit') return { ok: true, dup: true };
+  const payRef = 'checkout-' + String(orderId || '').slice(0, 60);
+  if (sandbox) {
+    if (!r.testPay) {
+      r.testPay = { at: nowISO(), orderId: String(orderId || '').slice(0, 60), amount: Number(amount) || 0 };
+      Object.assign(r, { status: 'anulat', cancelledAt: nowISO(), cancelledBy: 'test' });
+      recOf(r).stop = 'test';
+      mark(r, 'test_paid', String(orderId || '').slice(0, 40));
+      await writeJSON(KEY, list);
+    }
+    return { ok: true, test: true };
+  }
+  const sum = r2(amount);
+  if (Math.abs(sum - Number(r.amount)) >= 0.01 || String(currency || 'RON').toUpperCase() !== 'RON') {
+    const checks = await readJSON(CHECK, []).catch(() => []);
+    if (!checks.some((c) => c.ref === payRef)) {
+      checks.push({ id: crypto.randomUUID().slice(0, 12), ref: payRef, amount: sum, at: at || nowISO(), src: 'checkout', found: nowISO(), cands: [r.id], state: 'open', why: 'suma' });
+      await writeJSON(CHECK, checks);
+      mark(r, 'check', 'suma: ' + sum);
+      await writeJSON(KEY, list);
+    }
+    return { ok: false, mismatch: true };
+  }
+  r.checkout = Object.assign({}, r.checkout, { orderId: String(orderId || '').slice(0, 60), paidAt: nowISO() });
+  await writeJSON(KEY, list);
+  const x = await confirm(r.id, 'online', { by: 'myPOS', byName: 'myPOS (plata pe site)', amount: sum, method: 'card', match: { src: 'checkout', ref: payRef, at: at || nowISO(), myposRef: String(myposRef || '').slice(0, 80), method: String(method || '').slice(0, 20) } });
+  return x.error ? { error: x.error } : { ok: true, order: r.id, cards: (x.row.cards || []).map((c) => c.code) };
 }
 // ?cardlinks: { "990": url } the full one; { "990_online": url } or { "990": { url, amount: 891 } } the 10% one; '' clears
 async function setLinks(input, by) {
@@ -694,16 +765,16 @@ const waits = (x) => x.status === 'asteptare' || (x.status === 'anulat' && (x.ca
 const CHECK = 'data/card-sarbatori-check.json';
 // (a 10% order paid by the full link, or the other way, is hers too: both sums of her card)
 const sumOk = (x, amount) => { const a = Number(amount); if (Math.abs(Number(x.amount) - a) < 0.01) return true; if (qtyOf(x) !== 1 || !DISC_TIERS.includes(Number(x.tier))) return false; return a === Number(x.tier) || a === discOf(x.tier); };
-const candsOf = (list, amount, t) => list.filter((x) => waits(x) && sumOk(x, amount) && Date.parse(x.created) <= t + 5 * 60e3 && t - heldFrom(x) <= MATCH_MS)
+const candsOf = (list, amount, t) => list.filter((x) => waits(x) && !(x.checkout && !x.checkout.paylink) && sumOk(x, amount) && Date.parse(x.created) <= t + 5 * 60e3 && t - heldFrom(x) <= MATCH_MS)
   .sort((a, b) => Date.parse(a.created) - Date.parse(b.created));
 async function matchPayments(pays) {
   const list = await readJSON(KEY, []);
   const checks = await readJSON(CHECK, []).catch(() => []);
-  const used = new Set(list.filter((r) => r.match && r.match.ref).map((r) => r.match.ref).concat(checks.map((c) => c.ref)));
+  const used = new Set(list.filter((r) => r.match && r.match.ref).map((r) => r.match.ref).concat(checks.map((c) => c.ref), list.filter((r) => r.checkout && r.checkout.scan).map((r) => r.checkout.scan)));
   const done = [], marks = [];
   let checksChanged = false;
   // the payments waiting in „De verificat” whose orders came down to one (or none)
-  for (const c of checks.filter((x) => x.state === 'open')) {
+  for (const c of checks.filter((x) => x.state === 'open' && x.why !== 'suma')) { // another sum than the order's: the desk decides
     const still = c.cands.filter((id) => { const x = list.find((y) => y.id === id); return x && waits(x); });
     if (still.length > 1) continue;
     checksChanged = true;
@@ -711,9 +782,14 @@ async function matchPayments(pays) {
     const x = await confirm(still[0], 'online', { by: 'myPOS', byName: 'myPOS (automat)', amount: c.amount, match: { src: c.src || 'mypos', ref: c.ref, at: c.at } });
     if (x.row) { Object.assign(c, { state: 'done', order: still[0], doneAt: nowISO(), by: 'auto' }); done.push({ id: still[0], ref: c.ref }); const y = list.find((z) => z.id === still[0]); if (y) y.status = 'platit'; }
   }
+  // the checkout's payments (paid by myPOS's signed word, payPaid) show in the scans too: each one taken by its order, once
+  const scanned = [];
+  const viaCheckout = list.filter((x) => x.checkout && x.checkout.paidAt && x.match && x.match.src === 'checkout' && !x.checkout.scan);
   for (const p of (pays || []).slice().sort((a, b) => Date.parse(a.at) - Date.parse(b.at))) {
     if (!p.ref || used.has(p.ref) || !(Number(p.amount) > 0)) continue;
     const t = Date.parse(p.at) || Date.now();
+    const twin = viaCheckout.find((x) => !x.checkout.scan && Math.abs(Number(x.paidAmount) - Number(p.amount)) < 0.01 && Math.abs(Date.parse(x.checkout.paidAt) - t) < 6 * 3600e3);
+    if (twin) { twin.checkout.scan = p.ref; used.add(p.ref); scanned.push([twin.id, p.ref]); continue; }
     const cands = candsOf(list, p.amount, t);
     const r = cands[0];
     if (!r) continue;
@@ -729,6 +805,7 @@ async function matchPayments(pays) {
     if (x.row) done.push({ id: r.id, ref: p.ref });
   }
   if (checksChanged) await writeJSON(CHECK, checks.slice(-200));
+  if (scanned.length) { const l3 = await readJSON(KEY, []); scanned.forEach(([id, ref]) => { const x = l3.find((y) => y.id === id); if (x && x.checkout) x.checkout.scan = ref; }); await writeJSON(KEY, l3); }
   if (marks.length) {
     const l2 = await readJSON(KEY, []);
     marks.forEach(([id, n]) => { const x = l2.find((y) => y.id === id); if (x) mark(x, 'check', String(n)); });
@@ -1481,7 +1558,9 @@ async function leadReply(list, r, m) {
   if (kind === 'online') {
     const h = await rehold(list, r);
     // online: 10% off when its 10% link is set (the order's sum follows)
-    const op = h === 'ok' ? await onlinePay(r.tier) : null;
+    // the checkout in the page while it is on (its page with her order), else the PayLink
+    const emb = h === 'ok' && Number(r.tier) !== 290 && await embedded();
+    const op = h === 'ok' ? (emb ? { link: checkoutUrl(r), amount: checkoutAmount(r.tier, 1), disc: isVip(r) } : await onlinePay(r.tier)) : null;
     const link = op && op.link;
     if (link) {
       r.pay = 'online';
@@ -1675,7 +1754,7 @@ async function requestFromTap(i, opt) {
 }
 
 module.exports = { requestFromTap, deleteOrder, orderExtras,
-  KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT, GIFT_TM, GIFT_ARAD, giftOf, giftShort, giftFor, DISC_TIERS, discOf, onlineLinks, onlinePay, linkOf, siteLinks, sumOk, TPL,
+  KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT, GIFT_TM, GIFT_ARAD, giftOf, giftShort, giftFor, DISC_TIERS, discOf, onlineLinks, onlinePay, linkOf, siteLinks, sumOk, embedded, setEmbedded, checkoutAmount, checkoutUrl, payQuote, payPaid, TPL,
   byId, VIP, SALE, isVip, vipLeft, stockFor, leftFor, lostRace, sarb, norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
   supersede, supersedeOnce, request, editOrder, reserveFromLead, leadMsg, leadCall, leadReply, LEAD_BTN, CORE, REC_BTN, NAME_BTN, NONAME, CHECK, REASONS, needsName, knownName, nameLead, sendCards, askName, cleanName, pick, openCheckOf, openChecks, greetName, mark, recOf, heldFrom, rehold, back, answer, toClinic, recover, recoverIfIdle, onWhatsApp, abandonStats, cardsLeft, quiet, awake,

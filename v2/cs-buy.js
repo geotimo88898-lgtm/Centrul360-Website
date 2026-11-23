@@ -45,7 +45,7 @@
   }
   function load() {
     return fetch('/api/card-sarbatori').then(function (r) { return r.json(); }).then(function (d) {
-      if (d && typeof d.left === 'number') { st.open = d.open !== false; st.left = d.left; st.links = d.links || {}; st.online = d.online || {}; st.vip = d.vip || null; st.loaded = true; }
+      if (d && typeof d.left === 'number') { st.open = d.open !== false; st.left = d.left; st.links = d.links || {}; st.online = d.online || {}; st.vip = d.vip || null; st.embedded = !!d.embedded; st.loaded = true; }
     }).catch(function () {});
   }
 
@@ -195,7 +195,9 @@
     // online, its PayLink known and a card there for her: to myPOS now, the order sent on the way (keepalive), not awaited
     // (what cs-card.js already read when this file's own read is not back yet: the same answer)
     var cs = window.CSC && window.CSC.state;
-    if (!st.loaded && cs && typeof cs.left === 'number') { st.open = cs.open !== false; st.left = cs.left; st.links = cs.links || {}; st.online = cs.online || {}; st.vip = cs.vip || null; st.loaded = true; }
+    if (!st.loaded && cs && typeof cs.left === 'number') { st.open = cs.open !== false; st.left = cs.left; st.links = cs.links || {}; st.online = cs.online || {}; st.vip = cs.vip || null; st.embedded = !!cs.embedded; st.loaded = true; }
+    // the checkout in the page (switched on, or the preview): no PayLink, a sheet over the page (embedPay below)
+    if (!clinic && st.loaded && embedOn() && Number(tier) !== 290) { embedPay(btn, tier, phone, city, vip); return; }
     var link = !clinic && st.loaded && st.links && st.links[tier], id = link ? uuid() : '';
     if (link && id && (vip ? !(st.vip && st.vip[city] && st.vip[city].left <= 0) : st.open && st.left > 0)) {
       busy = true; pressed(btn); phMsg('');
@@ -239,6 +241,62 @@
       });
     }).catch(function () { stop('Nu am putut trimite. Încearcă din nou.'); });
   }
+  // ------------------------------------------------------------------ the checkout in the page (the owner, 23.11)
+  // The site's own myPOS checkout (c360-pay.js: the card form and Apple Pay / Google Pay in a sheet, no redirect) in place of
+  // the PayLinks, once the owner switches it on (api/card-sarbatori.js GET embedded); before that only on the preview: this
+  // page with ?plata=test, or /v2/. Our order is made first (the server prices it: 490 and 990 in full with the gift, the VIP
+  // 8.910); the sheet pays it; closed unpaid, the window „Plata nu s-a finalizat?” as after a PayLink.
+  var PREVIEW = /^\/v2\//.test(location.pathname) || /[?&]plata=test\b/.test(location.search);
+  var embedOn = function () { return !!(st.embedded || PREVIEW); };
+  var payP = null;
+  function payLib() {
+    if (window.C360Pay) return Promise.resolve(window.C360Pay);
+    if (!payP) payP = new Promise(function (ok, no) { var s = document.createElement('script'); s.src = '/c360-pay.js'; s.onload = function () { if (window.C360Pay) ok(window.C360Pay); else no(new Error('pay')); }; s.onerror = function () { payP = null; no(new Error('pay')); }; document.head.appendChild(s); });
+    return payP;
+  }
+  function paidBox(confirmed) {
+    var g = goBox(); if (!g) return;
+    var box = g.querySelector('.cst-done');
+    if (!box) { box = document.createElement('div'); box.className = 'cst-done'; box.setAttribute('role', 'status'); box.setAttribute('tabindex', '-1'); blk().insertAdjacentElement('beforebegin', box); }
+    box.innerHTML = '<span class="cst-tick">' + TICK + '</span><div><b>' + (confirmed ? 'Plata a ajuns.' : 'Plata se confirmă.') + '</b><span>Cardul îți vine pe WhatsApp în câteva minute.</span></div>';
+    g.classList.add('is-done');
+    box.focus({ preventScroll: true });
+  }
+  // the sheet for an order of ours (made now, or hers again: the recovery link, „Încerc din nou”)
+  function openCheckout(id, city, from) {
+    return payLib().then(function (P) {
+      return P.open({ kind: 'card', ref: id, city: city || '', contact: false, consent: true, page: location.href,
+        onPaid: function (x) { put(sessionStorage, K_ORDER, null); fev('paid'); paidBox(x && x.confirmed); },
+        onClose: function () { put(sessionStorage, K_ORDER, id); back(false); } });
+    });
+  }
+  function embedPay(btn, tier, phone, city, vip) {
+    if (busy) return;
+    busy = true; spin(btn, true); phMsg('');
+    var stop = function (text) { busy = false; spin(btn, false); if (text) phMsg(text); };
+    var body = { embedded: true, preview: PREVIEW, tier: tier, qty: 1, pay: 'online', forWho: 'eu', phone: phone, city: city, consent: true, website: '', page: location.href };
+    if (window.C360P && window.C360P.tok) body.ct = window.C360P.tok;
+    if (window.C360_CONSENT === true) body.event_id = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
+    var val = item(tier, vip ? (st.online || {})[tier] : 0);
+    px('InitiateCheckout', val); fev('start');
+    payLib().then(function (P) { return P.ready(); }).then(function (ok) {
+      if (!ok) { stop(PMSG.no_link); return; }
+      return post(body).then(function (d) {
+        if (!(d && d.ok && d.id)) {
+          if (vip && d && (d.error === 'sold_out' || d.error === 'not_enough')) { stop(vipOut(city)); return; }
+          stop(PMSG[d && d.error] || 'Nu am putut trimite. Încearcă din nou.'); return;
+        }
+        px('Lead', val, body.event_id); fev('pay');
+        put(sessionStorage, K_ORDER, d.id);
+        stop('');
+        return openCheckout(d.id, city, btn);
+      });
+    }).catch(function () { stop('Nu am putut trimite. Încearcă din nou.'); });
+  }
+  // the recovery message's link: ?plata=<her order> opens her checkout again
+  var reopen = (/[?&]plata=([0-9a-f-]{36})\b/.exec(location.search) || [])[1];
+  if (reopen) addEventListener('load', function () { setTimeout(function () { payLib().then(function (P) { return P.ready(); }).then(function (ok) { if (ok) openCheckout(reopen, ''); }).catch(function () {}); }, 400); });
+
   // reserved: the field and the buttons give their place to one line with a tick (the scarcity line stays)
   function reservedText(r) {
     var t = tierOf(r.tier);
@@ -326,6 +384,7 @@
     post({ action: 'answer', id: ret.id, reason: k }).then(function (d) {
       if (d && d.paid) { retScreen('<span class="csb-tick">' + TICK + '</span><h3>Plata a ajuns.</h3><p class="csb-rl">Cardul îți vine pe WhatsApp în câteva minute.</p><button type="button" class="btn ghost" data-ret="close">Gata</button>', true); return; }
       if (k === 'retry') {
+        if (d && d.link && embedOn()) { var rid = ret.id; close(); setTimeout(function () { openCheckout(rid, ret.city); }, 450); return; }
         if (d && d.link) { fev('pay'); location.href = d.link; return; }
         throw new Error(d && d.error === 'sold_out' ? 'Cardurile s-au terminat între timp.' : d && d.error === 'closed' ? 'Oferta s-a încheiat.' : 'Plata online nu merge acum. Îl poți rezerva și plăti în clinică.');
       }

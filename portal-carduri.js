@@ -88,6 +88,9 @@
       case 'choice': return 'a ales pe WhatsApp: ' + (n === 'online' ? 'plătește online' : 'plătește în clinică');
       case 'lead_call': return 'de sunat: ' + n;
       case 'to_paylink': return n === 'whatsapp' ? 'a primit linkul de plată pe WhatsApp' : 'a intrat pe pagina de plată';
+      case 'to_checkout': return 'a deschis plata pe site';
+      case 'test_paid': return 'plată de test (sandbox): nu e card';
+      case 'amount': return 'suma: ' + n;
       case 'returned': return 's-a întors pe site fără plată';
       case 'reason': return 's-a întors: ' + (REASON[n] || n);
       case 'expired': return 'au trecut 2 ore: cardul nu mai e ținut';
@@ -119,7 +122,7 @@
     if (!box) return;
     if (!list.length) { box.innerHTML = ''; return; }
     box.innerHTML = '<section class="k-card cd-orders cd-checks"><div class="k-card-head"><h3>De verificat în myPOS</h3><span class="k-muted">' + list.length + '</span></div>' +
-      list.map((c) => '<div class="cd-check"><p class="cd-check-h">' + icon('alert') + '<span>Plată online de <b>' + lei(c.amount) + '</b>, ' + esc(when(c.at)) + '. Se potrivește cu ' + c.cands.length + ' comenzi: uită-te în myPOS cine a plătit și alege-o pe a ei.</span></p>' +
+      list.map((c) => '<div class="cd-check"><p class="cd-check-h">' + icon('alert') + '<span>' + (c.why === 'suma' ? 'Plată pe site de <b>' + lei(c.amount) + '</b>, ' + esc(when(c.at)) + ', altă sumă decât comanda ei: vezi în myPOS și confirm-o doar dacă e corectă.' : 'Plată online de <b>' + lei(c.amount) + '</b>, ' + esc(when(c.at)) + '. Se potrivește cu ' + c.cands.length + ' comenzi: uită-te în myPOS cine a plătit și alege-o pe a ei.') + '</span></p>' +
         '<div class="k-list">' + c.cands.map((o) => '<div class="k-row cd-order"><div class="k-row-main"><div class="k-row-title">' + esc(o.name || 'Fără nume') + ' · telefon •••' + esc(o.last3) + '</div>' +
           '<div class="k-row-sub">comandată ' + esc(when(o.created)) + ' · ' + esc(o.city) + ' · ' + tierTxt(o.tier) + '</div></div>' +
           '<div class="k-row-end"><button type="button" class="k-btn is-primary is-sm" data-cd-pick="' + esc(c.id) + '" data-id="' + esc(o.id) + '">' + icon('check') + 'E a ei</button></div></div>').join('') + '</div></div>').join('') + '</section>';
