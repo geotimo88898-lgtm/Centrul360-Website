@@ -401,7 +401,7 @@ async function makeTemplate(o) {
   if (!img || img.length < 1000) return { error: 'no_image' };
   const d = await WT.load();
   const out = {};
-  for (const c of CITIES) {
+  for (const c of CITIES.filter((x) => !o.city || x === o.city)) {
     const tag = TAG[c];
     const fk = key + '_' + tag;
     const from = d.templates.find((t) => t.fastcash === 'card_sarbatori_bl_' + tag);
