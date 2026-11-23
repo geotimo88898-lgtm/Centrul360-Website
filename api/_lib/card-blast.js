@@ -392,6 +392,36 @@ async function allLeft() {
   });
   return out;
 }
+// a new message of the wave, made from the BioLifting one (its picture, buttons, footer) with a new text and picture, one
+// per clinic, sent to Meta for approval (the owner, 23.11: the offer in the first line, before „Citește mai mult”)
+async function makeTemplate(o) {
+  const key = String(o.key || '').replace(/[^\w]/g, '');
+  if (!/^card_sarbatori_\w+$/.test(key)) return { error: 'bad_key' };
+  const img = o.image ? Buffer.from(String(o.image), 'base64') : null;
+  if (!img || img.length < 1000) return { error: 'no_image' };
+  const d = await WT.load();
+  const out = {};
+  for (const c of CITIES) {
+    const tag = TAG[c];
+    const fk = key + '_' + tag;
+    const from = d.templates.find((t) => t.fastcash === 'card_sarbatori_bl_' + tag);
+    if (!from) { out[c] = 'lipsește șablonul de bază'; continue; }
+    const path = 'fastcash/' + fk + '.jpg';
+    await require('./store').writeBinary(path, img, 'image/jpeg');
+    let t = d.templates.find((x) => x.fastcash === fk);
+    if (!t) {
+      const buttons = (from.buttons || []).map((b) => Object.assign({}, b, b.url ? { url: String(b.url).replace(/utm_content=[^&#]*/, 'utm_content=' + key.replace('card_sarbatori_', '990')) } : {}));
+      const cl = WT.clean({ label: String(o.label || 'Cardul de Sărbători') + ' · ' + c, category: 'MARKETING', headerType: 'IMAGE', body: String(o.body || ''), footer: from.footer || '', buttons, only: [c] });
+      if (cl.error) return { error: cl.error };
+      t = Object.assign(cl.t, { fastcash: fk, samplePath: path, headerImagePath: path, only: [c] });
+      d.templates.push(t);
+    } else { t.samplePath = path; t.headerImagePath = path; }
+    const r = await WT.submit(d, t.id).catch((e) => ({ error: e.message }));
+    out[c] = r.error ? 'eroare: ' + r.error : 'trimis la Meta';
+  }
+  await WT.save(d);
+  return { ok: true, out };
+}
 // a picked batch not sent yet, taken back (nothing went): only the ones still unsent of that batch
 async function unpick(batch) {
   const st = await loadState();
@@ -406,7 +436,7 @@ async function unpick(batch) {
 async function useTemplate(v) {
   const st = await loadState();
   // 'bl' / 'bl490': the messages with the BioLifting gift for paying online (the owner, 22.11)
-  st.pre = ({ '290': 'card_sarbatori_290', '490': 'card_sarbatori_490', bl: 'card_sarbatori_bl', bl490: 'card_sarbatori_bl_490' })[v] || '';
+  st.pre = ({ '290': 'card_sarbatori_290', '490': 'card_sarbatori_490', bl: 'card_sarbatori_bl', bl490: 'card_sarbatori_bl_490', v4: 'card_sarbatori_v4' })[v] || '';
   await saveState(st);
   return { ok: true, template: st.pre || 'card_sarbatori' };
 }
@@ -516,4 +546,4 @@ async function backfillTaps() {
   return out;
 }
 
-module.exports = { allLeft, unresend, resend, whyLeft, backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };
+module.exports = { makeTemplate, allLeft, unresend, resend, whyLeft, backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };

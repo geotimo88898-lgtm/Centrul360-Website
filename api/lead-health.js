@@ -316,6 +316,7 @@ module.exports = async (req, res) => {
     const op = String(req.query.cardblast);
     const r = req.method === 'POST' && op === 'pick' ? await CB.pick(req.query.n) : req.method === 'POST' && op === 'go' ? await CB.go()
       : req.method === 'POST' && op === 'stop' ? await CB.stop() : req.method === 'POST' && op === 'taps' ? await CB.backfillTaps() : req.method === 'POST' && op === 'chats' ? await CB.backfillChats() : req.method === 'POST' && op === 'tpl' ? await CB.useTemplate(String(req.query.v || '')) : req.method === 'POST' && op === 'more' ? await CB.pickMore(req.query.n, { trans: req.query.trans === '1', batch: Number(req.query.batch) || 2, leads: req.query.leads === '1', only: String(req.query.only || ''), pres: String(req.query.pres || ''), dry: req.query.dry === '1' })
+      : req.method === 'POST' && op === 'mktpl' ? await CB.makeTemplate(typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {}))
       : req.method === 'POST' && op === 'unresend' ? await CB.unresend(req.query.batch)
       : req.method === 'POST' && op === 'resend' ? await CB.resend(req.query.batch, String(req.query.pre || ''))
       : req.method === 'POST' && op === 'unpick' ? await CB.unpick(req.query.batch) : op === 'left' ? await CB.allLeft() : op === 'why' ? await CB.whyLeft() : await CB.status();
