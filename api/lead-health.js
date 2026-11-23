@@ -732,7 +732,7 @@ module.exports = async (req, res) => {
   if (req.query && req.query.docfile) {
     const p = String(req.query.docfile);
     // the message templates' pictures too (what a wave sends, shown to the owner before it goes)
-    const img = /^wa-templates\/[\w.-]+\.(png|jpe?g|webp)$/.exec(p);
+    const img = /^(?:wa-templates|fastcash)\/[\w.-]+\.(png|jpe?g|webp)$/.exec(p);
     if (!img && !/^(?:regulament|fise-post|todo)\/[\w-]+\.pdf$/.test(p)) { res.status(400).json({ error: 'invalid_path' }); return; }
     const buf = await require('./_lib/store').readBinary(p);
     if (!buf) { res.status(404).json({ error: 'not_found' }); return; }
