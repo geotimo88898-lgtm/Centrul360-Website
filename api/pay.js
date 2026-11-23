@@ -7,7 +7,8 @@
 //        'test' (Integrări → myPOS → Test 1 leu)
 //        → { ok, orderId, key, amount, full, bonusPct, title, sandbox, sessionToken, params } | { error }
 //        'hold' (ref = the hour held by /api/booking { hold: true }: the booking is made once it is paid)
-//   POST { action: 'contact', orderId, key, name, phone, consent }   the payment screen's name and phone, before paying
+//   POST { action: 'contact', orderId, key, name, phone, consent, link? }   the payment screen's name and phone, before paying;
+//        link: true → also the order's myPOS page → { ok, url } (create takes name, phone, link: true the same way)
 //   POST { action: 'link', orderId, key }   the Partners way: the order's myPOS payment request page → { url } (new tab)
 //   POST { action: 'trace', orderId, key, step, code }   what the page saw at the tap (diagnostics, no contact data)
 //   POST { action: 'check', orderId, key }            myPOS is asked (signed answer) → { paid, status }
@@ -37,17 +38,23 @@ module.exports = async (req, res) => {
 
     if (b.action === 'check') { res.status(200).json(await P.check(String(b.orderId || ''), String(b.key || ''))); return; }
     if (b.action === 'link') { const r = await P.link(String(b.orderId || ''), String(b.key || '')); res.status(r.error ? 400 : 200).json(r); return; }
-    if (b.action === 'contact') { const r = await P.contact(String(b.orderId || ''), String(b.key || ''), b); res.status(r.error ? 400 : 200).json(r); return; }
+    // contact with link: true → the name and phone, then the order's myPOS page in the same call ({ ok, url } or { ok, linkError })
+    if (b.action === 'contact') { const r = b.link ? await P.contactLink(String(b.orderId || ''), String(b.key || ''), b) : await P.contact(String(b.orderId || ''), String(b.key || ''), b); delete r._order; res.status(r.error ? 400 : 200).json(r); return; }
     if (b.action === 'trace') { const r = await P.trace(String(b.orderId || ''), String(b.key || ''), b.step, b.code); res.status(r.error ? 400 : 200).json(r); return; }
     if (b.action === 'clinic') { const r = await P.toClinic(String(b.orderId || ''), String(b.key || '')); res.status(r.error ? 400 : 200).json(r); return; }
     if (b.action !== 'create') { res.status(400).json({ error: 'bad_action' }); return; }
     const kind = String(b.kind || '');
     if (!KINDS.includes(kind)) { res.status(400).json({ error: 'bad_kind' }); return; }
     const r = await P.createOrder({
-      kind, ref: b.ref, input: { city: b.city, name: b.name, phone: b.phone, page: b.page },
+      kind, ref: b.ref, input: { city: b.city, name: b.name, phone: b.phone, page: b.page, notice: b.notice },
       host: /^(www|admin)\.centrul360\.com$/.test(String(req.headers.host || '')) ? 'www.centrul360.com' : String(req.headers.host || 'www.centrul360.com'),
       track: kind === 'offer' || kind === 'treatment' ? capi.fromRequest(req, b.page) : null,
     });
+    // with her name and phone already (known on this device) and link: true → the myPOS page in the same call
+    if (!r.error && r.provider === 'requests' && b.link && b.name && b.phone) {
+      const l = await P.contactLink(r.orderId, r.key, { name: b.name, phone: b.phone, consent: true, notice: b.notice || 'whatsapp-confirmation' });
+      if (l.error) r.contactError = l.error; else if (l.url) r.url = l.url; else if (l.linkError) r.linkError = l.linkError;
+    }
     res.status(r.error ? (r.error === 'off' ? 409 : 400) : 200).json(r);
   } catch (err) {
     console.error('pay error:', err.message);

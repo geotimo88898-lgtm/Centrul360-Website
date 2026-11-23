@@ -33,9 +33,34 @@ async function active(store) {
 }
 
 const cache = new Map(); // 't|…' token, 's|…' session → { v, until } (per warm instance)
+// …and kept in the store too, with their expiry (23.11: every new instance asked myPOS for both again, ~2 s more per step;
+// fewer sessions asked also keeps the keys far from myPOS's lock after refused ones). Private store, never shown anywhere.
+const AUTH = 'data/mypos-requests-auth.json';
+let ST = null, authP = null;
+function useStore(store) { ST = store; }
+async function kept(k) {
+  if (!ST) return null;
+  if (!authP) { authP = ST.readJSON(AUTH, {}).catch(() => ({})); setTimeout(() => { authP = null; }, 5000); }
+  const d = (await authP) || {}, x = d[k];
+  if (x && x.v && x.until > Date.now() + 30e3) { cache.set(k, x); return x.v; }
+  return null;
+}
+function keep(k, v, until) {
+  cache.set(k, { v, until });
+  if (!ST) return null;
+  authP = null;
+  return ST.readJSON(AUTH, {}).then((d) => { d = d || {}; Object.keys(d).forEach((x) => { if (!(d[x] && d[x].until > Date.now())) delete d[x]; }); d[k] = { v, until }; return ST.writeJSON(AUTH, d, { quiet: true }); }).catch((e) => console.error('mypos auth keep:', e.message));
+}
+function drop1(keys) {
+  keys.forEach((k) => cache.delete(k));
+  if (!ST) return null;
+  authP = null;
+  return ST.readJSON(AUTH, {}).then((d) => { d = d || {}; keys.forEach((k) => delete d[k]); return ST.writeJSON(AUTH, d, { quiet: true }); }).catch(() => {});
+}
 async function token(c) {
   const k = 't|' + base(c) + c.clientId, x = cache.get(k);
   if (x && x.until > Date.now() + 30e3) return x.v;
+  const was = await kept(k); if (was) return was;
   let r;
   try {
     r = await fetch(base(c) + '/api/v1/oauth/token', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -43,12 +68,13 @@ async function token(c) {
   } catch (e) { throw new ReqError('mypos_down', 0, e.message); }
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.access_token) throw new ReqError(r.status >= 400 && r.status < 500 && r.status !== 429 ? 'req_partner' : 'mypos_down', r.status, msgOf(j));
-  cache.set(k, { v: j.access_token, until: Date.now() + (Number(j.expires_in) || 3600) * 1000 });
+  keep(k, j.access_token, Date.now() + (Number(j.expires_in) || 3600) * 1000);
   return j.access_token;
 }
 async function session(c, tok) {
   const k = 's|' + base(c) + c.merchantId, x = cache.get(k);
   if (x && x.until > Date.now() + 30e3) return x.v;
+  const was = await kept(k); if (was) return was;
   let r;
   try {
     r = await fetch(base(c) + '/api/v1/auth/session', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
@@ -56,7 +82,7 @@ async function session(c, tok) {
   } catch (e) { throw new ReqError('mypos_down', 0, e.message); }
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.session) throw new ReqError(r.status >= 400 && r.status < 500 && r.status !== 429 ? 'req_merchant' : 'mypos_down', r.status, msgOf(j));
-  cache.set(k, { v: j.session, until: Date.now() + Math.min(Number(j.expires_in) || 300, 3600) * 1000 });
+  keep(k, j.session, Date.now() + Math.min(Number(j.expires_in) || 300, 3600) * 1000);
   return j.session;
 }
 // a session myPOS let go before its time (401) is made again and the call tried once more; a „too many” (429) waits a moment
@@ -78,7 +104,7 @@ async function call1(c, method, path, body) {
   } catch (e) { throw new ReqError('mypos_down', 0, e.message); }
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
-    if (r.status === 401) { cache.delete('s|' + base(c) + c.merchantId); cache.delete('t|' + base(c) + c.clientId); }
+    if (r.status === 401) await drop1(['s|' + base(c) + c.merchantId, 't|' + base(c) + c.clientId]);
     throw new ReqError(r.status === 401 || r.status === 403 ? 'req_denied' : r.status === 429 ? 'mypos_busy' : 'mypos_failed', r.status, path.split('?')[0] + ': ' + msgOf(j));
   }
   return j;
@@ -207,4 +233,4 @@ async function probeCreate(store) {
   return { ok: true, tries: out };
 }
 
-module.exports = { findByOrder, probeCreate, active, KEY, FIELDS, ready, load, create, status, adminOf, save, check, setLive, drop, note, ReqError };
+module.exports = { useStore, findByOrder, probeCreate, active, KEY, FIELDS, ready, load, create, status, adminOf, save, check, setLive, drop, note, ReqError };

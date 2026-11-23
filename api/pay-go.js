@@ -67,22 +67,24 @@ module.exports = async (req, res) => {
   const failed = (code, extra) => { res.end('<style>#w{display:none}</style>' + failHtml(code, extra) + '</body></html>'); };
   try {
     // her name and phone (when the page sent them): saved first, as the screen would have (not again when already there)
+    let pre = await P.readOrder(id);
     if (b.name || b.phone) {
-      const { data: o } = await P.readOrder(id);
+      const o = pre.data;
       const d9 = (x) => String(x || '').replace(/\D/g, '').slice(-9);
       const same = o && o.phone && d9(o.phone) === d9(b.phone) && String(o.name || '') === String(b.name || '').trim().slice(0, 100);
       if (!same) {
         const c = await P.contact(id, key, { name: b.name, phone: b.phone, notice: String(b.notice || 'whatsapp-confirmation'), consent: true });
-        if (c.error && c.error !== 'not_open') { failed(c.error); await P.trace(id, key, 'go-contact', c.error).catch(() => null); return; }
+        if (c.error && c.error !== 'not_open') { failed(c.error); P.later(P.trace(id, key, 'go-contact', c.error)); return; }
+        if (c._order) pre = { data: c._order };
       }
     }
-    const r = await P.link(id, key);
+    const r = await P.link(id, key, pre);
     if (r.ok && okUrl(r.url)) { res.end(goTo(r.url)); return; }
     // a card: its own PayLink, same sum (never a dead end)
     const fb = r.error && !['not_found', 'already_paid', 'not_open'].includes(r.error) ? await P.cardFallback(id, key) : null;
-    if (fb) { res.end(goTo(fb)); await P.trace(id, key, 'go-paylink', r.error).catch(() => null); return; }
+    if (fb) { res.end(goTo(fb)); P.later(P.trace(id, key, 'go-paylink', r.error)); return; }
     failed(r.error || 'failed', r.status ? 'Cod myPOS: ' + r.status : '');
-    await P.trace(id, key, 'go-fail', r.error || 'failed').catch(() => null);
+    P.later(P.trace(id, key, 'go-fail', r.error || 'failed'));
   } catch (e) {
     console.error('pay-go:', e.message);
     failed('failed');

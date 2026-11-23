@@ -23,16 +23,29 @@ const RQ = require('./mypos-requests');
 
 // Which myPOS way pays: the online store's embedded form (mypos-ipc.js) when its keys are saved, else the Partners app's
 // payment requests (mypos-requests.js) when those are; none: the online payment is off.
+// work after the answer (the card's contact on its list, a trace): the Worker keeps it running (waitUntil), never awaited
+function later(p) {
+  const q = Promise.resolve(p).catch((e) => console.error('pay later:', e && e.message));
+  try { const c = globalThis[Symbol.for('@vercel/request-context')]; const ctx = c && typeof c.get === 'function' ? c.get() : null; if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(q); } catch (e) { /* runs on its own */ }
+  return q;
+}
+// the way in use, kept 20 s per instance (two reads of the store each time made every step a second slower, 23.11)
+let PV = { at: 0, v: null };
 async function provider() {
-  const c = await IPC.load(S);
+  if (PV.at && Date.now() - PV.at < 20e3) return PV.v;
+  const v = await provider1();
+  PV = { at: Date.now(), v };
+  return v;
+}
+async function provider1() {
+  const [c, r] = await Promise.all([IPC.load(S), RQ.active(S)]);
   if (IPC.ready(c) && !c.error) return { name: 'embedded', c, sandbox: !!c.sandbox, live: !!c.live && !c.sandbox };
-  const r = await RQ.active(S);
   if (r && !r.error) return { name: 'requests', c: r, sandbox: !!r.demo, live: !!r.live && !r.demo };
   return null;
 }
 // a refusal of the Partners keys stops that way at once (myPOS locks the clinic's keys after three refused sessions)
 async function rqFail(e) {
-  if (e && (e.code === 'req_merchant' || e.code === 'req_partner')) await RQ.note(S, { error: e.code, errorAt: nowISO() }).catch(() => {});
+  if (e && (e.code === 'req_merchant' || e.code === 'req_partner')) { PV = { at: 0, v: null }; await RQ.note(S, { error: e.code, errorAt: nowISO() }).catch(() => {}); }
 }
 const TEST = 'data/pay-test.json';
 const PAID = 'data/pay-paid.json'; // [{ id, amount, at, refs }]: the checkout's recent payments, for the old sum matchers to leave alone // { orderRef, at, by }: the 1 leu test the admin started
@@ -82,6 +95,7 @@ const validId = (id) => /^C360-[a-z0-9]{6,30}$/.test(String(id || ''));
 const WALLET = '-w';
 const baseOf = (id) => String(id || '').replace(/-w$/, '');
 const S = { readJSON, writeJSON };
+RQ.useStore(S); // myPOS's token and session kept in the store with their expiry (every instance)
 
 // ------------------------------------------------------------------ the price list (treatments)
 let PL = null;
@@ -262,12 +276,13 @@ async function listEdit(path, fn) {
 const openList = (fn) => listEdit(OPEN, fn);
 const RETRY = 'data/pay-retry.json';
 // change an order only over the version read; fn returns false to leave it
-async function update(id, fn) {
+// (pre: the order as just read, { data, etag }: its first round needs no read; the order's file is ours alone, no live sync)
+async function update(id, fn, pre) {
   for (let round = 0; round < 6; round++) {
-    const { data, etag } = await readOrder(id);
+    const { data, etag } = round === 0 && pre && pre.data && pre.etag ? { data: JSON.parse(JSON.stringify(pre.data)), etag: pre.etag } : await readOrder(id);
     if (!data) return null;
     if (fn(data) === false) return data;
-    if (await store.writeJSONIf(docOf(id), data, etag)) return data;
+    if (await store.writeJSONIf(docOf(id), data, etag, { quiet: true })) return data;
   }
   throw new Error('pay_order_busy');
 }
@@ -276,12 +291,11 @@ async function update(id, fn) {
 async function createOrder({ kind, ref, input, host, track }) {
   const K = KINDS[kind];
   if (!K) return { error: 'bad_kind' };
-  const pv = await provider();
-  if (!pv) return { error: 'off' };
-  const c = pv.c;
   ref = clip(ref, 120);
   if (!ref) return { error: 'missing_ref' };
-  const q = await K.quote({ ref, input: input || {} });
+  const [pv, q] = await Promise.all([provider(), K.quote({ ref, input: input || {} })]);
+  if (!pv) return { error: 'off' };
+  const c = pv.c;
   if (!q || q.error) return { error: (q && q.error) || 'not_found' };
   const amount = r2(q.amount);
   if (!(amount >= 1) || amount > 50000) return { error: 'bad_amount' };
@@ -291,13 +305,16 @@ async function createOrder({ kind, ref, input, host, track }) {
     id, key: crypto.randomBytes(16).toString('hex'), kind, ref, amount, full: r2(q.full || amount), bonusPct: q.bonus && q.bonus.type === 'pct' ? q.bonus.pct : q.bonusPct || 0,
     bonus: q.bonus ? { type: q.bonus.type, pct: q.bonus.pct || 0, gift: q.bonus.gift || '', line: q.bonus.line } : null, currency: 'RON',
     bonusText: clip(q.bonusText || (q.bonus && q.bonus.line) || '', 80),
-    title: clip(q.title, 120), city: q.city || '', name, phone, status: 'open', createdAt: nowISO(), paidAt: '', mypos: {}, handled: false,
+    title: clip(q.title, 120), city: q.city || '', name, phone, status: 'open',
+    ...(input && input.notice && name && phone ? { consent: true, notice: { kind: clip(input.notice, 40), text: 'Îți trimitem confirmarea pe WhatsApp.', at: nowISO() } } : {}), createdAt: nowISO(), paidAt: '', mypos: {}, handled: false,
     sandbox: pv.sandbox, test: kind === 'test', track: track || null, provider: pv.name,
   };
-  await writeJSON(docOf(id), o);
-  await openList((l) => l.concat({ id, at: o.createdAt, amount }));
-  if (kind === 'booking') await noteBooking(ref, id);
-  if (kind === 'hold') await require('./booking-holds').patch(ref, (h) => { h.orderIds = (h.orderIds || []).concat(id).slice(-10); });
+  await Promise.all([
+    writeJSON(docOf(id), o, { quiet: true }),
+    openList((l) => l.concat({ id, at: o.createdAt, amount })),
+    kind === 'booking' ? noteBooking(ref, id) : null,
+    kind === 'hold' ? require('./booking-holds').patch(ref, (h) => { h.orderIds = (h.orderIds || []).concat(id).slice(-10); }) : null,
+  ]);
   // the Partners way: the payment request is made once her name is known (action 'link'); its page opens in a new tab
   if (pv.name === 'requests') return { ok: true, provider: 'requests', orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, bonus: o.bonus, bonusText: o.bonusText, title: o.title, sandbox: pv.sandbox };
   // the wallets' session (Apple Pay / Google Pay): signed, the sum fixed here. Without it the card form still works.
@@ -396,7 +413,7 @@ async function check(orderId, key) {
   if (o.kind === 'card' && o.fallback) { const C = cardModule(); const r = C && C.KEY && C.byId ? C.byId(await readJSON(C.KEY, []), String(o.ref || '')) : null; if (r && r.status === 'platit') return { paid: true, status: 'paid', via: 'paylink' }; }
   let st = null;
   try {
-    if (o.provider === 'requests') { const r = await RQ.active(S); if (!r) return { paid: false, status: 'open' }; st = await askRequest(r, await recoverRequest(r, o)); }
+    if (o.provider === 'requests') { const r = await rqActive(); if (!r) return { paid: false, status: 'open' }; st = await askRequest(r, await recoverRequest(r, o)); }
     else { const c = await IPC.load(S); if (!IPC.ready(c)) return { paid: false, status: 'open' }; st = await askBoth(c, o); }
   } catch (e) { await rqFail(e); return { paid: false, status: 'open', error: e.code || 'mypos_failed' }; }
   if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(orderId, st, 'status'); return { paid: !!r.ok, status: r.ok ? 'paid' : r.double ? 'double' : 'open' }; }
@@ -418,7 +435,7 @@ const safeEq = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(Str
 // the payment screen's name and phone (and the WhatsApp consent), saved on the order (and its held hour) before she pays
 const normalizePhone = (p) => require('./clients').normalizePhone(p);
 async function contact(orderId, key, input) {
-  const { data: o } = await readOrder(orderId);
+  const pre = await readOrder(orderId), o = pre.data;
   if (!o || !key || !safeEq(o.key, key)) return { error: 'not_found' };
   if (o.status !== 'open') return { error: 'not_open' };
   const name = clip(String(input.name || '').replace(/[<>]/g, ''), 100);
@@ -431,31 +448,54 @@ async function contact(orderId, key, input) {
   if (!(input.consent === true || input.consent === 'true' || input.notice)) return { error: 'missing_consent' };
   const notice = { kind: clip(input.notice || 'consent', 40), text: input.notice ? 'Îți trimitem confirmarea pe WhatsApp.' : 'acord bifat', at: nowISO() };
   // already booked that day (the same rule as the form)
+  let holdPatch = null;
   if (o.kind === 'hold') {
-    const h = await require('./booking-holds').get(o.ref);
+    const H = require('./booking-holds');
+    const [h, appts] = await Promise.all([H.get(o.ref), readJSON('data/appointments.json', [])]);
     if (h) {
       const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
-      const same = (await readJSON('data/appointments.json', [])).find((a) => a && d9(a.clientPhone) === d9(phone) && a.date === h.date && !['anulata', 'concediu'].includes(a.status));
+      const same = appts.find((a) => a && d9(a.clientPhone) === d9(phone) && a.date === h.date && !['anulata', 'concediu'].includes(a.status));
       if (same) return { error: 'has_booking', at: { date: same.date, time: same.time, location: same.location } };
-      await require('./booking-holds').patch(h.id, (x) => { x.contact = { name, phone, consent: true, notice, at: nowISO() }; });
+      holdPatch = H.patch(h.id, (x) => { x.contact = { name, phone, consent: true, notice, at: nowISO() }; });
     }
   }
-  await update(orderId, (x) => { if (x.status !== 'open') return false; Object.assign(x, { name, phone, consent: true, notice }); });
-  // the card's order gets them too (it was made without them: the card block asks nothing, 24.11)
-  if (o.kind === 'card') { try { const C = cardModule(); if (C && typeof C.payContact === 'function') await C.payContact({ ref: o.ref, name, phone }); } catch (e) { console.error('pay card contact:', e.message); } }
-  return { ok: true };
+  // (the same name and phone already on the order, from its making: nothing to write). A card's order hands them to the
+  // card once per phone (cardContact): two calls at once (the screen and the tap's tab) never make two leads
+  const card = o.kind === 'card';
+  const same = o.name === name && o.phone === phone && o.consent === true && (!card || o.cardContact === phone);
+  let fire = false;
+  const [saved] = await Promise.all([same ? o : update(orderId, (x) => {
+    fire = false;
+    if (x.status !== 'open') return false;
+    if (card && x.cardContact !== phone) { x.cardContact = phone; fire = true; } else if (x.name === name && x.phone === phone && x.consent === true) return false;
+    Object.assign(x, { name, phone, consent: true, notice });
+  }, pre), holdPatch]);
+  // the card's order gets them too (it was made without them: the card block asks nothing, 24.11): after the answer, off
+  // the tap's way (its list, the lead, the desk's notice)
+  if (fire) later((async () => { const C = cardModule(); if (C && typeof C.payContact === 'function') await C.payContact({ ref: o.ref, name, phone }); })());
+  return { ok: true, _order: saved };
+}
+// the name and phone, then at once the order's myPOS page (one call from the payment screen: the page is ready ~1 s after)
+async function contactLink(orderId, key, input) {
+  const c = await contact(orderId, key, input);
+  if (c.error) return c;
+  const o = c._order;
+  if (!o || o.provider !== 'requests' || o.status !== 'open') return { ok: true };
+  const l = await link(orderId, key, { data: o });
+  return l.ok ? { ok: true, url: l.url } : { ok: true, linkError: l.error, status: l.status || 0 };
 }
 
 // the Partners way: the order's payment request (made once, kept), with the name she gave → { url }
-async function link(orderId, key) {
-  const { data: o } = await readOrder(orderId);
+async function link(orderId, key, pre) {
+  if (!pre || !pre.data) pre = await readOrder(orderId);
+  const o = pre.data;
   if (!o || !key || !safeEq(o.key, key)) return { error: 'not_found' };
   if (o.provider !== 'requests') return { error: 'bad_provider' };
   if (o.status === 'paid') return { error: 'already_paid' };
   if (o.status !== 'open') return { error: 'not_open' };
   if (o.request && o.request.code && o.request.url) return { ok: true, url: o.request.url };
   if (['hold', 'offer', 'treatment'].includes(o.kind) && !o.phone) return { error: 'missing_contact' };
-  const r = await RQ.active(S);
+  const r = await rqActive();
   if (!r || r.error) return { error: 'off' };
   // one request per order, saved before its page is given out: a request made before for this order (its answer lost, a
   // second tap) is found by the order id in its booking text and used again; a new one only when there is none
@@ -463,19 +503,21 @@ async function link(orderId, key) {
   try {
     if (o.requestTried) req = (await RQ.findByOrder(r, o.id)).find((x) => !['Expired', 'Cancelled'].includes(x.status) && Math.abs(x.amount - o.amount) < 0.005) || null;
     if (!req) {
-      await update(orderId, (x) => { x.requestTried = nowISO(); });
-      req = await RQ.create(r, { orderId: o.id, amount: o.amount, title: o.title, clientName: o.name });
+      // „tried” noted while myPOS makes it (a lost answer is then looked for by the order id, never made twice)
+      const tried = update(orderId, (x) => { x.requestTried = nowISO(); }, pre.etag ? pre : null).catch((e) => console.error('pay tried:', e.message));
+      try { req = await RQ.create(r, { orderId: o.id, amount: o.amount, title: o.title, clientName: o.name }); } finally { await tried; }
     }
   } catch (e) {
-    await rqFail(e); console.error('pay link:', e.code, e.status, e.message);
+    console.error('pay link:', e.code, e.status, e.message);
     // what myPOS answered, kept on the order (the diagnostics read it): the code, the HTTP status, myPOS's words
-    await update(orderId, (x) => { x.linkError = { code: e.code || 'mypos_failed', status: e.status || 0, message: String(e.message || '').slice(0, 300), at: nowISO() }; }).catch(() => {});
+    later(Promise.all([rqFail(e), update(orderId, (x) => { x.linkError = { code: e.code || 'mypos_failed', status: e.status || 0, message: String(e.message || '').slice(0, 300), at: nowISO() }; })]));
     return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' };
   }
   const saved = await update(orderId, (x) => { delete x.linkError; if (x.request && x.request.code) return; x.request = { code: req.code, url: req.url, at: nowISO() }; });
   if (!saved || !saved.request || !saved.request.code || !saved.request.url) return { error: 'mypos_failed', message: 'cererea nu s-a putut salva' };
   return { ok: true, url: saved.request.url };
 }
+const rqActive = async () => { const pv = await provider(); return pv && pv.name === 'requests' ? pv.c : await RQ.active(S); };
 // a card whose myPOS page could not be made: the card's own PayLink (made by the owner in myPOS, one per card), only when
 // it asks the very sum of the order; the card's record is told (its payment is then matched by the sum, as before)
 async function cardFallback(orderId, key) {
@@ -599,4 +641,4 @@ async function status() {
   return Object.assign(pv.name === 'embedded' ? IPC.publicOf(pv.c) : { on: true, live: pv.live, sandbox: pv.sandbox }, { provider: pv.name, bonusPct: BONUS_PCT });
 }
 
-module.exports = { cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
+module.exports = { later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };

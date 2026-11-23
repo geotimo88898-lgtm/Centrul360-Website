@@ -203,7 +203,12 @@
       try {
         const ref = await Promise.resolve(o.ref);
         const st = await status();
-        order = await post({ action: 'create', kind: o.kind, ref, city: o.city, name: ask ? fv('name') || who.name : o.name, phone: ask ? fv('phone') || who.phone : o.phone, page: o.page || location.pathname });
+        // her name and phone known already (this device): the myPOS page is made in the same call
+        const known = ask && valid() ? { name: fv('name'), phone: fv('phone') } : null;
+        order = await post(Object.assign({ action: 'create', kind: o.kind, ref, city: o.city, name: ask ? fv('name') || who.name : o.name, phone: ask ? fv('phone') || who.phone : o.phone, page: o.page || location.pathname },
+          known ? { link: true, notice: 'whatsapp-confirmation' } : {}));
+        if (known && order.url) link = order.url;
+        if (known && !order.contactError && known.name === fv('name') && known.phone === fv('phone')) saidContact(known);
         order.kind = o.kind;
         if (o.onOrder) o.onOrder({ orderId: order.orderId, key: order.key, amount: order.amount });
         if ((order.provider || st.provider) !== way) { way = order.provider; screen(); } else refreshSum();
@@ -219,23 +224,37 @@
     const ensureOrder = () => { if (!orderP) orderP = makeOrder(); return orderP; };
 
     // ---- her name and phone: saved as soon as they are right (a little after she stops typing), once per value
+    // (one call at a time per value: the order's making and her typing asked it twice at once before, 23.11; on the Partners
+    // way the same call makes the myPOS page too)
+    let contactP = null, contactK = '';
+    function saidContact(c) {
+      contactSaved = c.name + '|' + digits(c.phone);
+      store.set(ME, { name: c.name, phone: c.phone });
+      if (o.onContact) o.onContact({ name: c.name, phone: c.phone });
+      host.querySelectorAll('[data-cp-tap]').forEach((x) => { x.hidden = true; });
+    }
     async function saveContact() {
       if (!ask) return true;
-      const key = fv('name') + '|' + digits(fv('phone'));
+      const c = { name: fv('name'), phone: fv('phone') }, key = c.name + '|' + digits(c.phone);
       if (contactSaved === key) return true;
-      await ensureOrder();
-      await post({ action: 'contact', orderId: order.orderId, key: order.key, name: fv('name'), phone: fv('phone'), consent: true, notice: 'whatsapp-confirmation' });
-      contactSaved = key;
-      store.set(ME, { name: fv('name'), phone: fv('phone') });
-      if (o.onContact) o.onContact({ name: fv('name'), phone: fv('phone') });
-      const t = host.querySelectorAll('[data-cp-tap]'); t.forEach((x) => { x.hidden = true; });
-      return true;
+      if (contactP && contactK === key) return contactP;
+      contactK = key;
+      contactP = (async () => {
+        await ensureOrder();
+        if (contactSaved === key) return true;
+        const r = await post({ action: 'contact', orderId: order.orderId, key: order.key, name: c.name, phone: c.phone, consent: true, notice: 'whatsapp-confirmation', link: way === 'requests' && !link });
+        if (r.url) link = r.url;
+        saidContact(c);
+        return true;
+      })();
+      contactP.catch(() => {}).then(() => { if (contactK === key) contactP = null; });
+      return contactP;
     }
     // the myPOS page of this order, made in the background (the tap then only opens it)
     function getLink() {
       if (link) return Promise.resolve(link);
       if (!linkP) {
-        linkP = ensureOrder().then(() => saveContact()).then(() => post({ action: 'link', orderId: order.orderId, key: order.key })).then((r) => { link = r.url; return link; });
+        linkP = ensureOrder().then(() => saveContact()).then(() => link || post({ action: 'link', orderId: order.orderId, key: order.key }).then((r) => { link = r.url; return link; }));
         linkP.catch(() => { linkP = null; });
       }
       return linkP;
@@ -295,23 +314,18 @@
       if (c && c.name && c.phone) { who.name = c.name; who.phone = c.phone; store.set(ME, c); if (o.onContact && contactSaved !== c.name + '|' + digits(c.phone)) o.onContact(c); }
       store.set('c360-pay-pending', { orderId: order.orderId, key: order.key, amount: order.amount, title: order.title, at: Date.now() });
       const f = document.createElement('form');
-      f.method = 'POST'; f.action = '/api/pay-go'; f.target = target; f.style.display = 'none';
+      f.method = 'POST'; f.action = '/api/pay-go'; f.style.display = 'none';
       const add = (k, v) => { const i = document.createElement('input'); i.type = 'hidden'; i.name = k; i.value = v; f.appendChild(i); };
       add('orderId', order.orderId); add('key', order.key);
       if (c) { add('name', c.name || ''); add('phone', c.phone || ''); add('notice', 'whatsapp-confirmation'); }
       document.body.appendChild(f);
-      if (target === '_self') { f.submit(); return; }
-      let away = false;
-      const gone = () => { away = true; };
-      document.addEventListener('visibilitychange', gone, { once: true }); window.addEventListener('blur', gone, { once: true });
-      const t0 = Date.now();
+      // a new tab of its own, opened in the tap and named: the form goes into it. None given (an app's browser, a blocker):
+      // the same tab. Never guessed from the focus afterwards (two tabs on one payment, 23.11).
+      let w = null;
+      if (target !== '_self') { const nm = 'c360pay' + String(n).replace(/\W/g, ''); try { w = window.open('', nm); } catch (x) { w = null; } if (w) f.target = nm; }
+      if (!w) { note('tab', target === '_self' ? 'self' : 'none'); f.target = '_self'; f.submit(); return; }
       f.submit(); f.remove();
       waitPaid();
-      // still here, visible and in focus, on time (not a page stopped by iOS and woken later): no tab opened, the same tab
-      setTimeout(() => {
-        document.removeEventListener('visibilitychange', gone); window.removeEventListener('blur', gone);
-        if (!away && !document.hidden && Date.now() - t0 < 2800 && document.hasFocus()) { note('tab', 'none'); go('_self'); }
-      }, 1500);
     }
     // the browser didn't open a tab (an app's own browser): the same tab, and the site says „Plătit” when she comes back
     function sameTab(url) {
