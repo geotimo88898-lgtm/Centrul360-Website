@@ -74,7 +74,7 @@
 .td .td-all small{ font-size:.74rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
 .td .td-all b{ display:block; font-size:1.1rem; }
 .td .td-all p{ margin:2px 0 0; font-size:.86rem; color:var(--muted); }
-.td .td-all-b{ display:grid; grid-template-columns:1fr auto; gap:8px; }
+.td .td-all-b{ display:grid; grid-template-columns:1fr auto auto; gap:8px; }
 .td .td-all-b .k-btn{ justify-content:center; min-height:46px; }
 .td .td-total{ margin:4px 2px 10px; font-size:.84rem; color:var(--muted); }
 .td .td-group{ margin-bottom:10px; }
@@ -107,3 +107,7 @@
   .td .td-tabs{ max-width:760px; }
   .td .td-fact{ justify-content:flex-start; }
 }
+/* „Trimite” (share sheet): first on every file, full width under the copies on a phone */
+.td .td-share.is-ready{ box-shadow:0 0 0 2px var(--accent, #2dd4bf) inset; }
+.td .td-dlv + .td-dlv{ margin-top:8px; }
+@media (max-width:640px){ .td .td-all-b{ grid-template-columns:1fr 1fr; } .td .td-all-b .td-share{ grid-column:1/-1; } .td .td-fact .td-share{ flex-basis:100%; } }
