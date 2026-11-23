@@ -54,6 +54,11 @@ const JOBS = [
   // business Mellon Vision); if Meta refuses, the job stops there with Meta's words (no blind retries); if it works, the
   // same 2 campaigns made again, then the 2 broken ones paused. 01:30, George: only the two best
   // cases, 05 and 24, in both cities (SITE_CAMPAIGNS)
+  // 23.11 ~02:30, George: Mellon Vision is now a partner on the ad account (v2 was refused at 02:18: „the business 1107600260509887
+  // must have access to both the pixel and the ad account”, 200/1784039); v3 is the same job again
+  { id: 'site-results-v3-2026-11-23', why: 'Pixelul partajat cu contul și rezultatele reale refăcute (TM și AR, câte 2 reclame, 50 lei/zi)', site: {
+    pixelId: '2276074362800484', sharePixel: '1107600260509887', cta: 'LEARN_MORE', ages: [25, 64], campaigns: SITE_CAMPAIGNS,
+    pauseAfter: [{ campaignId: '120250718543790149', name: 'C360 · TM · Rezultate · site (fără pixel)' }, { campaignId: '120250718631180149', name: 'C360 · AR · Rezultate · site (fără pixel)' }] } },
   { id: 'site-results-v2-2026-11-23', why: 'Pixelul partajat cu contul și rezultatele reale refăcute (TM și AR, câte 2 reclame, 50 lei/zi)', site: {
     pixelId: '2276074362800484', sharePixel: '1107600260509887', cta: 'LEARN_MORE', ages: [25, 64], campaigns: SITE_CAMPAIGNS,
     pauseAfter: [{ campaignId: '120250718543790149', name: 'C360 · TM · Rezultate · site (fără pixel)' }, { campaignId: '120250718631180149', name: 'C360 · AR · Rezultate · site (fără pixel)' }] } },
