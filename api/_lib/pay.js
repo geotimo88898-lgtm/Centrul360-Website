@@ -182,7 +182,7 @@ const KINDS = {
       if (!C || typeof C.payQuote !== 'function') return { error: 'card_not_ready' };
       const q = await C.payQuote({ ref, input: input || {} });
       if (!q || !(Number(q.amount) > 0)) return { error: (q && q.error) || 'not_found' };
-      return { amount: r2(q.amount), full: r2(q.full || q.amount), bonusPct: 0, title: clip(q.title || 'Card de Sărbători', 120), city: cityOf(q.city), name: clip(q.name, 100), phone: clip(q.phone, 30) };
+      return { amount: r2(q.amount), full: r2(q.full || q.amount), bonusPct: 0, title: clip(q.title || 'Card de Sărbători', 120), city: cityOf(q.city), name: clip(q.name, 100), phone: clip(q.phone, 30), bonusText: clip(q.bonusText, 80) };
     },
     async paid(o) {
       const C = cardModule();
