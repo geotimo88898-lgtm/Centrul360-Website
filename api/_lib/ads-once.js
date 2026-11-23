@@ -48,6 +48,12 @@ const SITE_CAMPAIGNS = [
   ] },
 ];
 const JOBS = [
+  // 23.11: the v3 run of „Rezultate · site” left the HIFU gât ad twice in each campaign (a retried step); one of each goes
+  // off so each campaign has its 2 ads (Liposonix șolduri and HIFU gât), as George asked
+  { id: 'site-results-dupes-2026-11-23', why: 'Reclama HIFU gât apărea de două ori în fiecare campanie Rezultate · site', actions: [
+    { campaignId: '120250723826580149', name: 'TM · HIFU gât · caz 24 (dublură)', status: 'PAUSED', why: 'dublură' },
+    { campaignId: '120250724167180149', name: 'AR · HIFU gât · caz 24 (dublură)', status: 'PAUSED', why: 'dublură' },
+  ] },
   // 23.11, George: Liposonix in Arad, into the lead filter. The Arad abdomen-talie lead-filter form still ended on WhatsApp,
   // so it's copied as it is (questions, packages, privacy; registered with the same kind, zone and city, so its leads get
   // the same package messages), only the ending on the home page; then one campaign of one ad (the Arad name over case 05,
