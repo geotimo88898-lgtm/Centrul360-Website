@@ -299,3 +299,29 @@ w('data/card-sarbatori.json', [
 ]);
 console.log('Cardul de Sărbători campaign seeded');
 })();
+
+// 10. Pipeline's three tabs (23.11): Card de Sărbători leads (the Facebook form, the site, the desk) and job candidates,
+// so Cliente · Angajări · Carduri de Sărbători each have something
+(() => {
+const f = (p) => path.join(DATA, p.replace(/\//g, '__'));
+const r = (p, d) => { try { return JSON.parse(fs.readFileSync(f(p), 'utf8')); } catch (e) { return d; } };
+const w = (p, d) => fs.writeFileSync(f(p), JSON.stringify(d));
+const leads = r('data/leads.json', []);
+const now = Date.now(), iso = (m) => new Date(now - m * 60e3).toISOString();
+const tiers = [['490', 1000], ['990', 2500], ['9900', 30000], ['490', 1000], ['990', 2500], ['', 0], ['490', 1000]];
+tiers.forEach(([tier, credit], i) => {
+  const at = iso(30 + i * 170), city = i % 2 ? 'Arad' : 'Timișoara', form = i < 4;
+  leads.push({ id: 'l-card-' + i, name: 'Card Proba ' + (i + 1), phone: '07' + String(66000000 + i * 4111), source: form ? 'facebook' : i === 5 ? 'telefon' : 'site', createdBy: form ? 'facebook-webhook' : 'card-sarbatori',
+    location: city, stage: i < 3 ? 'lead_nou' : i < 5 ? 'contactat' : 'programare_stabilita', createdAt: at, updatedAt: at, stageChangedAt: at, value: Number(tier) || 0,
+    interest: form ? 'Cardul de Sărbători' + (tier ? ' · ' + tier + ' lei' : '') : 'Card de Sărbători',
+    card: form ? { tier, credit, forWhom: i % 3 ? 'pentru mine' : 'cadou', city, at, from: 'formular' } : undefined,
+    forms: form ? [{ id: '1134301339396504', name: 'Rezervă Cardul de Sărbători', ad: 'Card 990 · cadou', campaign: 'C360 Card de Sărbători', at, answers: [{ q: 'Ce card vrei?', a: tier + ' lei' }] }] : [],
+    activities: [{ id: 'ac-card-' + i, type: 'created', at, author: '' }] });
+});
+w('data/leads.json', leads);
+const cand = (i, name, status, loc, extra) => Object.assign({ id: 'cd-seed-' + i, at: iso(60 * (i + 1) * 7), name, phone: '07' + String(55000000 + i * 3001), status, job: 'Cosmeticiană', location: loc,
+  answers: [{ q: 'Ai diplomă de cosmeticiană?', a: 'Da' }, { q: 'Câtă experiență ai?', a: ['Sub 1 an', '1-3 ani', 'Peste 3 ani'][i % 3] }, { q: 'Când poți începe?', a: 'Imediat' }] }, extra || {});
+w('data/candidates.json', [cand(1, 'Candidată Proba Unu', 'nou', 'Timișoara'), cand(2, 'Candidată Proba Doi', 'nou', 'Timișoara'), cand(3, 'Candidată Proba Trei', 'cv', 'Timișoara', { cvFile: true }),
+  cand(4, 'Candidată Proba Patru', 'sunat', 'Arad', { notes: [{ at: iso(300), by: 'Ioana Proba', text: 'Vine la interviu joi la 11.' }] }), cand(5, 'Candidată Proba Cinci', 'interviu', 'Timișoara'), cand(6, 'Candidată Proba Șase', 'respins', 'Arad')]);
+console.log('Pipeline tabs seeded: card leads', tiers.length, '· candidates 6');
+})();

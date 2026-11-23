@@ -50,7 +50,7 @@ const ROUTES = {
   'portal-plati': { area: 'Cheltuieli', go: 'cheltuieli' },
   'portal-salariu': { area: 'Cheltuieli și bonus', go: 'cheltuieli' },
   'portal-content': { area: 'Content', go: 'continut' },
-  'portal-candidates': { area: 'Angajări', go: 'pipeline' },
+  'portal-candidates': { area: 'Angajări', go: 'pipeline/angajari' },
   'portal-booking': { area: 'Programări online', go: 'programari' },
 };
 // what is only read (never a line), and routes that are not changes of the clinic's work

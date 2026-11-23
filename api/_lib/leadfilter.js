@@ -234,7 +234,7 @@ async function afterLead(lead, x, city) {
     if (HOT.includes(x.tier)) {
       const N = require('./notify');
       const ids = await N.deskIds({ readJSON }, city);
-      await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'lead', tone: 'good', go: 'pipeline', tag: 'lf-' + lead.id, ownerPush: true,
+      await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'lead', tone: 'good', go: 'pipeline/cliente', tag: 'lf-' + lead.id, ownerPush: true,
         title: 'SUNĂ ACUM 🔥 ' + lei(x.tier) + ' lei · ' + (lead.name || 'lead nou'), text: summary(x) + ' · ' + (city || '') + '. A ales pachetul mare: sun-o în 5 minute.' }).catch((e) => console.error('lf notify:', e.message));
     }
     await sendFirst(l, x, city);
@@ -263,7 +263,7 @@ async function sendFirst(lead, x, city) {
     if (/test lead/i.test(String(lead.name || ''))) return;
     const N = require('./notify');
     const ids = await N.deskIds({ readJSON }, city).catch(() => []);
-    await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'lead', tone: 'warn', go: 'pipeline', tag: 'lf-nomsg-' + lead.id,
+    await N.notifyMany({ readJSON, writeJSON }, ids, { kind: 'lead', tone: 'warn', go: 'pipeline/cliente', tag: 'lf-nomsg-' + lead.id,
       title: 'Sun-o: ' + (lead.name || 'lead nou') + ' · ' + lei(x.tier) + ' lei', text: summary(x) + ' · ' + (city || '') + '. Mesajul pe WhatsApp n-a plecat încă: sun-o tu.' }).catch((e) => console.error('lf notify:', e.message));
   };
   if (!t) return once('Mesajul lead filter n-a plecat: lipsește șablonul ' + tplLabel(x.zone, x.tier, city, VER) + '.');

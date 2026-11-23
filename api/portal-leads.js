@@ -461,7 +461,8 @@ async function alertTeam(lead, returning, fromSite, alertWhat) {
   const what = alertWhat && alertWhat.title ? alertWhat.title : require('./_lib/offers').shortName(await require('./_lib/offers').loadOffers(readJSON), raw); // "Lipo 640"
   const city = ({ 'Timișoara': ' TM', Arad: ' AR' })[lead.location] || '';
   await notifyMany({ readJSON, writeJSON }, ids, {
-    kind: 'lead', tone: 'info', go: 'pipeline', tag: 'lead-' + lead.id + (returning ? ':again' : ''),
+    // straight to her tab of the Pipeline (Cliente / Carduri de Sărbători, portal-pipeline.js segOf, 23.11)
+    kind: 'lead', tone: 'info', go: /card(ul)? de s[aă]rb[aă]tori/i.test(lead.interest || '') ? 'pipeline/carduri' : 'pipeline/cliente', tag: 'lead-' + lead.id + (returning ? ':again' : ''),
     // the city, short, right after the kind (the owner, 19.10; „LEAD TM”, not „LEAD NOU TM”, 21.11): LEAD TM 🔥 - Lipo 640
     // a title of its own (the Card de Sărbători: „CARD 🎄 490 lei · CERERE TM”, told apart from the leads, the owner 21.11)
     title: alertWhat && alertWhat.full ? alertWhat.full + city : (fromSite ? (returning ? 'LEAD SITE REVENIT' + city + ' 🔁' : 'LEAD SITE' + city + ' 🌐') : returning ? 'LEAD REVENIT' + city + ' 🔁' : 'LEAD' + city + ' 🔥') + (what ? ' - ' + what : ''),

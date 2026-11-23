@@ -443,6 +443,7 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
 /* ---------------- Filtre ---------------- */
 .pl-fbtn{ position:relative; }
 .pl-fbtn em{ font-style:normal; font-size:.7rem; font-weight:700; min-width:18px; height:18px; padding:0 .3rem; border-radius:999px; display:inline-grid; place-items:center; background:var(--accent); color:var(--accent-fg); }
+.pl-fbtn em[hidden]{ display:none; } /* no filter on: no „0” on the button */
 .pl-fbtn.is-on{ border-color:color-mix(in srgb, var(--accent) 55%, var(--line)); color:var(--fg); }
 .pl-factive{ display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; margin:-.3rem 0 .9rem; }
 .pl-factive[hidden]{ display:none; }
@@ -522,10 +523,35 @@ html.pl-grabbing, html.pl-grabbing *{ cursor:grabbing !important; }
   .pl-team{ display:none; }
 }
 
+/* ---------------- the tabs on top: Cliente · Angajări · Carduri de Sărbători (23.11) ---------------- */
+/* one row of equal tabs, the thumb under the one on screen slides to the one tapped */
+.pl-kinds{ --n:3; --at:0; position:relative; display:grid; grid-template-columns:repeat(var(--n),minmax(0,1fr)); gap:0; padding:4px; margin:0 0 1rem;
+  border-radius:14px; background:var(--glass); max-width:620px; }
+.pl-kinds:empty{ display:none; }
+.pl-kinds-thumb{ position:absolute; top:4px; bottom:4px; left:4px; width:calc((100% - 8px) / var(--n)); border-radius:11px; background:var(--paper); box-shadow:var(--shadow-sm);
+  transform:translateX(calc(var(--at) * 100%)); transition:transform .32s var(--ease); pointer-events:none; }
+.pl-kinds button{ position:relative; z-index:1; min-width:0; min-height:44px; display:flex; align-items:center; justify-content:center; gap:.45rem; padding:.5rem .6rem;
+  border:0; background:transparent; color:var(--muted); font:inherit; font-size:.86rem; font-weight:620; line-height:1.2; cursor:pointer; border-radius:11px; transition:color .2s ease; }
+.pl-kinds button span{ min-width:0; text-align:center; overflow-wrap:anywhere; }
+.pl-kinds button b{ flex:none; min-width:22px; padding:.1rem .4rem; border-radius:999px; background:var(--glass-2, rgba(127,127,127,.14)); color:var(--fg); font-size:.74rem; font-weight:650; text-align:center; font-variant-numeric:tabular-nums; }
+.pl-kinds button.is-on{ color:var(--fg); }
+.pl-kinds button.is-on b{ background:var(--accent); color:var(--accent-fg); }
+.pl-kinds button:active{ transform:scale(.98); }
+.pl-kinds button:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
+/* phones: the name over its count, so „Carduri de Sărbători” stays whole */
+@media (max-width:560px){
+  .pl-kinds{ max-width:none; margin-bottom:.85rem; }
+  .pl-kinds button{ flex-direction:column; gap:.25rem; padding:.45rem .3rem; font-size:.8rem; }
+}
+/* the board of the tab tapped comes in from that tab's side */
+.pl-board.is-swap, .pl-hireboard.is-swap{ animation:pl-kind-in .32s var(--ease) both; }
+@keyframes pl-kind-in{ from{ opacity:0; transform:translateX(calc(var(--dir, 1) * 18px)); } to{ opacity:1; transform:none; } }
+@media (prefers-reduced-motion: reduce){ .pl-kinds-thumb{ transition:none; } .pl-board.is-swap, .pl-hireboard.is-swap{ animation:none; } }
+
 /* ---------------- Angajări: the candidates' own pipeline ---------------- */
-.pl-mode{ margin-left:.4rem; }
 .pl-panel.is-hire [data-stats], .pl-panel.is-hire [data-team], .pl-panel.is-hire .pl-toolbar, .pl-panel.is-hire [data-factive],
 .pl-panel.is-hire [data-stagebar], .pl-panel.is-hire [data-board], .pl-panel.is-hire .pl-head-actions{ display:none !important; }
+.pl-hireboard[hidden]{ display:none !important; } /* the candidates' board only in Angajări (it stayed under Cliente) */
 .pl-hireboard{ height:auto; min-height:60vh; align-items:flex-start; }
 .pl-hireboard .pl-list{ overflow:visible; }
 .hire-card{ cursor:default; }

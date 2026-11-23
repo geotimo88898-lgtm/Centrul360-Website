@@ -210,8 +210,28 @@
   // ------------------------------------------------------------------ derived data
   const stageById = (id) => S.stages.find((s) => s.id === id);
   const leadById = (id) => S.leads.find((l) => l.id === id);
-  // the pipeline of one city (Timișoara / Arad) or both: what every count and column starts from
-  const cityLeads = () => (S.location ? S.leads.filter((l) => l.location === S.location) : S.leads);
+  // the three tabs (the owner, 23.11: „separă clientele de angajate și de cele care sunt la cardurile de sărbători”).
+  // What decides is what she asked for last (lead.interest is always her newest form or offer, the older ones are in
+  // interestHistory): „Card de Sărbători” / „Cardul de Sărbători · 490 lei” → Carduri; a job ad's form → Angajări (those
+  // normally never become leads, they are candidates in api/portal-candidates.js; this only catches one that slipped in);
+  // everything else, unknowns too, → Cliente. Every lead lands in exactly one tab.
+  const CARD_RE = /\bcard(ul)? de sarbatori\b/, HIRE_RE = /\bangaj|\bcandidat/;
+  const segCache = new WeakMap();
+  function segOf(l) {
+    const c = segCache.get(l);
+    if (c && c[0] === l.interest) return c[1];
+    const what = norm(l.interest), form = what ? '' : norm(((l.forms || []).slice(-1)[0] || {}).name);
+    const seg = HIRE_RE.test(what) || HIRE_RE.test(form) ? 'angajari'
+      : CARD_RE.test(what) || CARD_RE.test(form) || (!what && (l.card || l.createdBy === 'card-sarbatori')) ? 'carduri' : 'clienti';
+    segCache.set(l, [l.interest, seg]);
+    return seg;
+  }
+  // without Angajări (reception, the cosmeticians) such a lead stays in Cliente, never hidden
+  const tabOf = (l) => { const g = segOf(l); return g === 'angajari' && !canHire() ? 'clienti' : g; };
+  const leadTab = () => (S.mode === 'carduri' ? 'carduri' : S.mode === 'angajari' ? 'angajari' : 'clienti');
+  const inCityF = (l) => !S.location || l.location === S.location;
+  // the pipeline of one city (Timișoara / Arad) or both, of the tab on screen: what every count and column starts from
+  const cityLeads = () => S.leads.filter((l) => inCityF(l) && tabOf(l) === leadTab());
   const CITY_KEY = () => 'c360_pl_city_' + ((S.ctx.me && S.ctx.me.id) || '');
   // owner and reception choose the city; a cosmetician only ever sees her own
   const pickCity = () => !!(S.ctx.isAdmin || (S.ctx.me && (S.ctx.me.role === 'receptie' || S.ctx.me.role === 'manager')));
@@ -227,8 +247,8 @@
   }
   const initials = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 
-  function queueList() {
-    const w = cityLeads().filter(isWorking);
+  function queueList(all) {
+    const w = (all ? S.leads.filter((l) => inCityF(l) && tabOf(l) !== 'angajari') : cityLeads()).filter(isWorking);
     const overdue = w.filter((l) => l.followUpState === 'overdue').sort((a, b) => (a.followUpAt < b.followUpAt ? -1 : 1));
     const fresh = w.filter((l) => l.neverContacted && l.followUpState !== 'overdue').sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
     const today = w.filter((l) => l.followUpState === 'today' && !l.neverContacted).sort((a, b) => (a.followUpAt < b.followUpAt ? -1 : 1));
@@ -287,10 +307,10 @@
     root.dataset.plMounted = '1';
     root.classList.add('pl-panel');
     root.innerHTML =
+      '<div class="pl-kinds" role="tablist" aria-label="Ce leaduri" data-kinds></div>' +
       '<div class="pl-head">' +
-        '<div><div class="k-eyebrow" data-pl-eyebrow>' + (S.mode === 'angajari' && canHire() ? 'Angajări' : 'Vânzări') + '</div><div class="pl-title"><h2>Pipeline</h2>' +
+        '<div><div class="k-eyebrow" data-pl-eyebrow>' + EYEBROW[leadTab()] + '</div><div class="pl-title"><h2>Pipeline</h2>' +
           (pickCity() ? K.seg('plcity', [['', 'Ambele'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']], S.location, 'pl-city') : '') +
-          (canHire() ? K.seg('plmode', [['clienti', 'Cliente'], ['angajari', 'Angajări']], S.mode === 'angajari' ? 'angajari' : 'clienti', 'pl-mode') : '') +
         '</div></div>' +
         '<div class="pl-head-actions">' +
           '<button type="button" class="pl-btn is-hot" data-act="queue">' + ic('zap') + '<span>Coada de apeluri</span><b class="pl-count" data-queue-count>0</b></button>' +
@@ -339,7 +359,6 @@
     root.querySelector('[data-search]').addEventListener('input', (e) => { S.q = e.target.value; renderBoard(); renderChips(); });
     root.querySelector('[data-filter-source]').addEventListener('change', (e) => { S.source = e.target.value; renderAll(); });
     root.addEventListener('change', (e) => {
-      if (e.target.name === 'plmode') return setMode(e.target.value);
       const hs = e.target.closest('[data-hire-st]');
       if (hs) return moveCandidate(hs.dataset.hireSt, hs.value, hs);
       if (e.target.name !== 'plcity') return;
@@ -353,7 +372,8 @@
     }, true);
     window.addEventListener('resize', fitBoard);
     document.addEventListener('keydown', onKey);
-    if (S.mode === 'angajari' && canHire()) setMode('angajari'); // opened from a „CANDIDAT NOU” notification
+    setMode(S.mode || 'clienti', true); // Cliente, or the tab a notification asked for („CANDIDAT NOU”, a card's request)
+    if (canHire()) loadCandidates(); // the Angajări tab shows its count from the start
     document.addEventListener('visibilitychange', () => { if (!document.hidden && isActive()) refresh(); });
   }
   const isActive = () => root && root.classList.contains('active');
@@ -388,23 +408,59 @@
   const canHire = () => !!(S.ctx.isAdmin || (S.ctx.me && S.ctx.me.role === 'manager'));
   const ownerHires = () => !!S.ctx.isAdmin; // only the owner sets „Angajat”
   let hireList = null;
-  function setMode(m) {
+  const KINDS = [['clienti', 'Cliente'], ['angajari', 'Angajări'], ['carduri', 'Carduri de Sărbători']];
+  const EYEBROW = { clienti: 'Vânzări', angajari: 'Angajări', carduri: 'Carduri de Sărbători' };
+  const kinds = () => KINDS.filter(([k]) => k !== 'angajari' || canHire());
+  // the tab bar: each kind with how many are in it (in the city chosen; the lost leads and the turned-down candidates not
+  // counted), the thumb slides to the tab tapped
+  function renderKinds() {
+    const bar = root && root.querySelector('[data-kinds]');
+    if (!bar) return;
+    const n = { clienti: 0, angajari: 0, carduri: 0 };
+    S.leads.forEach((l) => { if (inCityF(l) && l.kind !== 'lost') n[tabOf(l)]++; });
+    (hireList || []).forEach((c) => { if ((!S.location || !c.location || c.location === S.location) && c.status !== 'respins') n.angajari++; });
+    const cur = leadTab(), list = kinds();
+    const known = (k) => S.loaded && (k !== 'angajari' || hireList);
+    bar.style.setProperty('--n', list.length);
+    bar.style.setProperty('--at', Math.max(0, list.findIndex(([k]) => k === cur)));
+    bar.innerHTML = '<i class="pl-kinds-thumb" aria-hidden="true"></i>' + list.map(([k, label]) => '<button type="button" role="tab" data-kind="' + k + '" aria-selected="' + (k === cur) + '"' +
+      (k === cur ? ' class="is-on"' : '') + '><span>' + label + '</span><b>' + (known(k) ? n[k] : '…') + '</b></button>').join('');
+  }
+  function setMode(m, quiet) {
+    if (!KINDS.some(([k]) => k === m) || (m === 'angajari' && !canHire())) m = 'clienti';
+    const was = leadTab();
     S.mode = m;
     if (!root) return;
     root.classList.toggle('is-hire', m === 'angajari');
+    root.classList.toggle('is-cards', m === 'carduri');
     root.querySelector('[data-hire]').hidden = m !== 'angajari';
     const eb = root.querySelector('[data-pl-eyebrow]');
-    if (eb) eb.textContent = m === 'angajari' ? 'Angajări' : 'Vânzări';
-    const seg = root.querySelector('[data-k-seg="plmode"]');
-    if (seg) { seg.querySelectorAll('button').forEach((x) => x.classList.toggle('is-on', x.dataset.v === m)); seg.querySelector('input').value = m; }
-    if (m === 'angajari') loadCandidates();
+    if (eb) eb.textContent = EYEBROW[m];
+    if (m === 'angajari' && !quiet) loadCandidates();
+    if (was !== m) {
+      // another kind of lead: the filters made for the last tab's leads don't carry over
+      S.filter = 'all'; Object.keys(S.f).forEach((k) => { S.f[k] = ''; });
+      // the new tab's board slides in from the side of the tab tapped
+      if (!quiet && !reduceMotion) {
+        const pane = root.querySelector(m === 'angajari' ? '[data-hire]' : '[data-board]');
+        const order = kinds().map(([k]) => k);
+        pane.style.setProperty('--dir', order.indexOf(m) > order.indexOf(was) ? 1 : -1);
+        pane.classList.remove('is-swap'); void pane.offsetWidth; pane.classList.add('is-swap');
+        setTimeout(() => pane.classList.remove('is-swap'), 360);
+      }
+    }
+    if (S.loaded) renderAll(); else renderKinds(); // before the first list: only the tabs (the menu's number waits for the data)
+    if (m !== 'angajari') requestAnimationFrame(fitBoard);
   }
-  // a notification „CANDIDAT NOU” (#pipeline/angajari): straight to the candidates
-  if (window.K) window.K.on('pipeline:sub', (sub) => { if (sub === 'angajari' && canHire()) { S.mode = 'angajari'; if (root) setMode('angajari'); } });
+  // a notification („CANDIDAT NOU” → #pipeline/angajari, a card's request → #pipeline/carduri): straight to that tab
+  if (window.K) window.K.on('pipeline:sub', (sub) => {
+    const k = { angajari: 'angajari', carduri: 'carduri', cliente: 'clienti', clienti: 'clienti' }[String(sub || '').split('/')[0]];
+    if (k) { if (root) setMode(k); else S.mode = k; }
+  });
   // an account made from a candidate (Echipa's form): her card shows it
   if (window.K) window.K.on('candidates:changed', () => { if (root && S.mode === 'angajari') loadCandidates(); });
   async function loadCandidates() {
-    try { hireList = (await K.api('/api/portal-candidates')).candidates || []; renderHire(); }
+    try { hireList = (await K.api('/api/portal-candidates')).candidates || []; renderKinds(); if (S.mode === 'angajari') renderHire(); }
     catch (e) { root.querySelector('[data-hire]').innerHTML = '<div class="pl-empty-board">' + ic('alert') + '<b>Nu am putut încărca candidații.</b></div>'; }
   }
   async function moveCandidate(id, status, sel) {
@@ -434,7 +490,10 @@
     const left = box.scrollLeft;
     const options = (cur) => HIRE.filter(([v]) => ownerHires() || v !== 'angajat' || cur === 'angajat')
       .map(([v, l]) => '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' + l + '</option>').join('');
-    box.innerHTML = HIRE.map(([id, name, color]) => {
+    // a job application that came in as a lead (a form not marked as a job's): a column of its own, her sheet on a tap
+    const asLeads = S.leads.filter((l) => tabOf(l) === 'angajari' && inCityF(l) && l.kind !== 'lost');
+    box.innerHTML = (asLeads.length ? '<section class="pl-col" data-hstage="lead" style="--c:#8a8580"><header class="pl-col-head"><span class="pl-dot"></span><b>Venite ca lead</b><span class="pl-col-count">' + asLeads.length + '</span></header>' +
+      '<div class="pl-list">' + asLeads.map(cardHtml).join('') + '</div></section>' : '') + HIRE.map(([id, name, color]) => {
       const all = list.filter((c) => (c.status || 'nou') === id);
       return '<section class="pl-col" data-hstage="' + id + '" style="--c:' + color + '"><header class="pl-col-head"><span class="pl-dot"></span><b>' + name + '</b><span class="pl-col-count">' + all.length + '</span></header>' +
         '<div class="pl-list">' + (all.length ? all.map((c) => {
@@ -457,7 +516,7 @@
     }).join('');
     box.scrollLeft = left;
     // the stage row (phones): each stage with its count, the one on screen lit, a tap goes to it
-    root.querySelector('[data-hirebar]').innerHTML = HIRE.map(([id, name, color]) => '<button type="button" data-hgo="' + id + '" style="--c:' + color + '"><i></i>' + name +
+    root.querySelector('[data-hirebar]').innerHTML = (asLeads.length ? '<button type="button" data-hgo="lead" style="--c:#8a8580"><i></i>Venite ca lead<b>' + asLeads.length + '</b></button>' : '') + HIRE.map(([id, name, color]) => '<button type="button" data-hgo="' + id + '" style="--c:' + color + '"><i></i>' + name +
       '<b>' + list.filter((c) => (c.status || 'nou') === id).length + '</b></button>').join('');
     syncHirebar();
   }
@@ -473,7 +532,7 @@
   }
 
   // ------------------------------------------------------------------ render: stats / chips
-  function renderAll() { renderStats(); renderTeam(); renderChips(); renderFilters(); renderBoard(); if (S.mode === 'angajari' && hireList) renderHire(); }
+  function renderAll() { renderKinds(); renderStats(); renderTeam(); renderChips(); renderFilters(); renderBoard(); if (S.mode === 'angajari' && hireList) renderHire(); }
   // the filters in use, as chips (each one off with ✕) and what they find
   const PERIOD = { today: 'Azi', '7d': 'Ultimele 7 zile', '30d': 'Ultimele 30 de zile', month: 'Luna asta', lastmonth: 'Luna trecută' };
   const F_LABEL = { proc: 'Procedură', campaign: 'Campanie', ad: 'Reclamă', form: 'Formular', stage: 'Etapă', period: 'Creat', booked: 'Programare' };
@@ -578,7 +637,7 @@
     const qc = root.querySelector('[data-queue-count]');
     qc.textContent = q;
     qc.classList.toggle('is-zero', !q);
-    if (window.K) window.K.badge('pipeline', q, 'hot'); // the menu shows the same number
+    if (window.K) window.K.badge('pipeline', queueList(true).length, 'hot'); // the menu: the calls of Cliente and Carduri together
   }
 
   function renderChips() {
@@ -707,6 +766,8 @@
   // ------------------------------------------------------------------ events: panel
   function onRootClick(e) {
     const t = e.target;
+    const kb = t.closest('[data-kind]');
+    if (kb) { if (kb.dataset.kind !== leadTab()) setMode(kb.dataset.kind); return; }
     const hn = t.closest('[data-hire-note]');
     if (hn) { candidateNotes(hn.dataset.hireNote); return; }
     const ha = t.closest('[data-hire-acc]');
@@ -715,6 +776,8 @@
       if (c) K.emit('team:new', { name: c.name || '', location: c.location ? cityName(c.location) : '', role: /recep/i.test(c.job || '') ? 'receptie' : /manager/i.test(c.job || '') ? 'manager' : 'cosmetician', candidateId: c.id, from: ha });
       return;
     }
+    const hl = t.closest('[data-hire] .pl-card[data-id]');
+    if (hl && !t.closest('[data-quick]')) return openLead(hl.dataset.id);
     if (t.closest('[data-hire]')) return; // the candidates' board has its own controls (portal-whatsapp opens the chats)
     const fc = t.closest('[data-fclear]');
     if (fc) { if (fc.dataset.fclear === '*') Object.keys(S.f).forEach((k) => { S.f[k] = ''; }); else S.f[fc.dataset.fclear] = ''; return renderAll(); }
@@ -1058,7 +1121,9 @@
     if (card && card.scrollIntoView) { try { card.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) { /* old browser */ } }
   }
   function openLead(id, opts) {
-    if (!leadById(id)) return false;
+    const lead = leadById(id);
+    if (!lead) return false;
+    if (root && tabOf(lead) !== leadTab()) setMode(tabOf(lead), true);
     const o = opts || {};
     S.drawer = { mode: 'lead', id, section: o.section || '', tab: o.section === 'log' ? 'contact' : o.section === 'details' ? 'details' : '', channel: o.channel || 'call', queue: o.queue || (S.drawer && S.drawer.queue) || null, dirty: false };
     openDrawerShell();
@@ -1083,8 +1148,10 @@
     if (seg) { seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === city)); const i = seg.querySelector('input'); if (i) i.value = city; }
     renderAll();
   }
-  function openQueue() {
-    const q = queueList();
+  // the button on the board: the calls of the tab on screen; from Panou or a notification (all): every call due, Cliente
+  // and Carduri together (the same number they showed), each sheet over its own tab
+  function openQueue(all) {
+    const q = queueList(all === true);
     if (!q.length) { ui().toast('Coada e goală, toate leadurile au fost contactate la timp.', 'success'); return; }
     openLead(q[0].id, { queue: q.map((l) => l.id), section: 'log' });
   }
@@ -1147,7 +1214,7 @@
           field('Email (opțional)', '<input name="email" type="email" maxlength="150">') +
           field('Sursă', '<select name="source">' + sourceOptions('telefon') + '</select>') +
           field('Locație', '<select name="location">' + locationOptions('Timișoara') + '</select>') +
-          field('Interesată de', '<select name="interest">' + offerOptions('') + '</select>', 'full') +
+          field('Interesată de', '<select name="interest">' + offerOptions(S.mode === 'carduri' ? 'Card de Sărbători' : '') + '</select>', 'full') +
           '<div class="pl-field full is-hidden" data-custom-interest><span>Descrie interesul</span><input name="interestCustom" maxlength="120"></div>' +
           field('Valoare estimată (lei)', '<input name="value" type="number" min="0" step="10" placeholder="0">') +
           field('Etapă', '<select name="stageId">' + workStages.map((s) => '<option value="' + s.id + '"' + (s.id === d.stageId ? ' selected' : '') + '>' + esc(s.name) + '</option>').join('') + '</select>') +
@@ -1662,7 +1729,7 @@
     window.K.on('remote', () => { if (isActive()) refresh(); });
     window.K.on('pipeline:new', () => { if (window.C360_CTX) S.ctx = Object.assign(S.ctx, window.C360_CTX); mount(); openNew(); });
     // city (16.11, Panou → „TM 1 lead nesunat”): the queue of that clinic only, its city picked on the board too
-    window.K.on('pipeline:queue', (city) => { mount(); (S.loaded ? Promise.resolve() : load()).then(() => { queueCity(city); openQueue(); }); });
+    window.K.on('pipeline:queue', (city) => { mount(); (S.loaded ? Promise.resolve() : load()).then(() => { queueCity(city); openQueue(true); }); });
     window.K.on('pipeline:sub', (sub) => { const [p, c] = String(sub || '').split('/'); if (p === 'coada' && c) window.K.emit('pipeline:queue', c); });
     // booked from her card (or anywhere): her lead shows it at once
     window.K.on('appointment:created', (a) => { if (a && a.leadId && S.loaded) load(true); });
