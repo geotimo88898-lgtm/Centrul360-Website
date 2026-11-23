@@ -120,10 +120,12 @@
     x: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
   };
   function css() { if (!document.getElementById('cp-css')) { const s = document.createElement('style'); s.id = 'cp-css'; s.textContent = CSS; document.head.appendChild(s); } }
+  // an app's own browser (Facebook, Instagram, TikTok…): it may open no new tab; the payment goes on in the same one
+  const IN_APP = /FBAN|FBAV|FB_IAB|FBIOS|Instagram|musical_ly|TikTok|BytedanceWebview|Snapchat|Pinterest|LinkedInApp|\bLine\//i;
   const ERR = {
     off: 'Plata online nu e pornită acum.', already_paid: 'E deja plătită.', cancelled: 'Programarea nu mai e activă.', not_found: 'Nu am găsit ce vrei să plătești.', expired: 'Ora ținută a expirat. Alege din nou ora.',
     not_in_city: 'Asta nu se face în clinica aleasă.', missing_contact: 'Scrie numele și telefonul.', card_not_ready: 'Plata pentru card nu e gata încă.', net: 'Nu avem internet acum. Încearcă din nou.',
-    bad_phone: 'Numărul de telefon nu pare corect.', missing_name: 'Scrie numele tău.', has_booking: 'Ai deja o programare în ziua asta. Pentru încă una, scrie-ne pe WhatsApp.',
+    bad_phone: 'Numărul de telefon nu pare corect.', missing_name: 'Scrie numele tău.', has_booking: 'Ai deja o programare în ziua asta. Pentru încă una, scrie-ne pe WhatsApp.', no_url: 'Nu am putut deschide plata. Încearcă din nou.',
   };
 
   let seq = 0, active = null;
@@ -206,7 +208,7 @@
         if (o.onOrder) o.onOrder({ orderId: order.orderId, key: order.key, amount: order.amount });
         if ((order.provider || st.provider) !== way) { way = order.provider; screen(); } else refreshSum();
         if (way === 'embedded') embedded();
-        if (valid()) saveContact().then(() => { if (way === 'requests') getLink(); }, () => {});
+        if (valid()) saveContact().then(() => { if (way === 'requests') prep(); }, () => {});
         return order;
       } catch (e) {
         orderErr = e;
@@ -238,12 +240,15 @@
       }
       return linkP;
     }
+    // made ahead quietly: a failure here says nothing (the tap's own tab tries again, and says what failed)
+    const prep = () => getLink().catch((e) => { note('prep', e && (e.code || e.status)); });
+    const note = (step, code) => { if (order) post({ action: 'trace', orderId: order.orderId, key: order.key, step, code: String(code || '') }, true).catch(() => {}); };
     let typing = 0;
     host.addEventListener('input', (e) => {
       if (!e.target.closest('.cp-f')) return;
       const k = (e.target.name || '').replace('cp-', ''); flag(k, false); say('');
       clearTimeout(typing);
-      typing = setTimeout(() => { if (valid()) { saveContact().then(() => { if (way === 'requests') getLink(); }, (err) => showErr(err)); } }, 450);
+      typing = setTimeout(() => { if (valid()) { saveContact().then(() => { if (way === 'requests') prep(); }, (err) => showErr(err)); } }, 450);
     });
     function showErr(e) {
       if (e && e.code === 'bad_phone') flag('phone', true);
@@ -265,20 +270,52 @@
       if (b.hasAttribute('data-cp-done')) { closeSheet(); return; }
       if (b.hasAttribute('data-cp-clinic')) {
         b.disabled = true;
-        const go = () => { destroy(); if (sheet) closeSheet(); if (o.onClinic) o.onClinic({ name: fv('name') || who.name, phone: fv('phone') || who.phone }); finish({ paid: false, clinic: true }); };
-        if (order && (order.kind === 'booking' || order.kind === 'hold')) post({ action: 'clinic', orderId: order.orderId, key: order.key }).then(go, go); else go();
+        const leave = () => { destroy(); if (sheet) closeSheet(); if (o.onClinic) o.onClinic({ name: fv('name') || who.name, phone: fv('phone') || who.phone }); finish({ paid: false, clinic: true }); };
+        if (order && (order.kind === 'booking' || order.kind === 'hold')) post({ action: 'clinic', orderId: order.orderId, key: order.key }).then(leave, leave); else leave();
         return;
       }
       if (!b.hasAttribute('data-cp-pay') && !b.hasAttribute('data-cp-again')) return;
       e.preventDefault();
       if (b.hasAttribute('data-cp-pay') && !valid()) { needContact(); return; }
-      if (link) { const w = window.open(link, '_blank'); if (!w) sameTab(link); else waitPaid(); return; }
-      const w = window.open('', '_blank');
-      if (w) { try { w.document.write('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Plata</title><p style="font:16px system-ui;padding:40px 24px;color:#333">Se deschide plata securizată myPOS…</p>'); w.document.close(); } catch (x) { /* fine */ } }
-      getLink().then((url) => { if (w && !w.closed) { w.location.href = url; waitPaid(); } else sameTab(url); }, (err) => { if (w) w.close(); showErr(err); });
+      // the page of myPOS made already: opened in this very tap
+      const inApp = IN_APP.test(navigator.userAgent || '');
+      if (link) { note('tap', 'link'); if (inApp) { sameTab(link); return; } const w = window.open(link, '_blank'); if (!w) sameTab(link); else waitPaid(); return; }
+      // the order there, its page not yet: a new tab of ours makes it and goes there by itself (iOS stops this page as soon
+      // as the tab opens, so nothing is left to do here: 23.11); an app's browser that opens no tabs: the same tab
+      if (order) { note('tap', inApp ? 'go-self' : 'go'); go(inApp ? '_self' : '_blank'); return; }
+      // the order not made yet (a tap in the first second): it is waited for here, then the same tab (a tab opened now would
+      // stop this page before the order is made)
+      const label = b.textContent; b.disabled = true; b.textContent = 'Se pregătește plata…';
+      ensureOrder().then(() => { note('tap', 'late'); if (link) sameTab(link); else go('_self'); }, (err) => { b.disabled = false; b.textContent = label; showErr(err); });
     });
+    // the tap's tab: a form sent to /api/pay-go (her name and phone in the body, never in a URL); that tab saves them, makes
+    // the myPOS page and goes there by itself. A new tab that did not open (an app's browser): the same tab after a moment.
+    function go(target) {
+      const c = ask ? { name: fv('name') || who.name, phone: fv('phone') || who.phone } : null;
+      if (c && c.name && c.phone) { who.name = c.name; who.phone = c.phone; store.set(ME, c); if (o.onContact && contactSaved !== c.name + '|' + digits(c.phone)) o.onContact(c); }
+      store.set('c360-pay-pending', { orderId: order.orderId, key: order.key, amount: order.amount, title: order.title, at: Date.now() });
+      const f = document.createElement('form');
+      f.method = 'POST'; f.action = '/api/pay-go'; f.target = target; f.style.display = 'none';
+      const add = (k, v) => { const i = document.createElement('input'); i.type = 'hidden'; i.name = k; i.value = v; f.appendChild(i); };
+      add('orderId', order.orderId); add('key', order.key);
+      if (c) { add('name', c.name || ''); add('phone', c.phone || ''); add('notice', 'whatsapp-confirmation'); }
+      document.body.appendChild(f);
+      if (target === '_self') { f.submit(); return; }
+      let away = false;
+      const gone = () => { away = true; };
+      document.addEventListener('visibilitychange', gone, { once: true }); window.addEventListener('blur', gone, { once: true });
+      const t0 = Date.now();
+      f.submit(); f.remove();
+      waitPaid();
+      // still here, visible and in focus, on time (not a page stopped by iOS and woken later): no tab opened, the same tab
+      setTimeout(() => {
+        document.removeEventListener('visibilitychange', gone); window.removeEventListener('blur', gone);
+        if (!away && !document.hidden && Date.now() - t0 < 2800 && document.hasFocus()) { note('tab', 'none'); go('_self'); }
+      }, 1500);
+    }
     // the browser didn't open a tab (an app's own browser): the same tab, and the site says „Plătit” when she comes back
     function sameTab(url) {
+      if (!/^https:\/\//.test(String(url || '')) && !/^http:\/\/(localhost|127\.0\.0\.1)[:/]/.test(String(url || ''))) { showErr({ code: 'no_url' }); return; }
       store.set('c360-pay-pending', { orderId: order.orderId, key: order.key, amount: order.amount, title: order.title, at: Date.now() });
       location.assign(url);
     }

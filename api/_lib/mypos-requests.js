@@ -59,7 +59,16 @@ async function session(c, tok) {
   cache.set(k, { v: j.session, until: Date.now() + Math.min(Number(j.expires_in) || 300, 3600) * 1000 });
   return j.session;
 }
-async function call(c, method, path, body) {
+// a session myPOS let go before its time (401) is made again and the call tried once more; a „too many” (429) waits a moment
+async function call(c, method, path, body, again) {
+  try { return await call1(c, method, path, body); } catch (e) {
+    if (again) throw e;
+    if (e.status === 401) return call(c, method, path, body, true);
+    if (e.status === 429) { await new Promise((w) => setTimeout(w, 900)); return call(c, method, path, body, true); }
+    throw e;
+  }
+}
+async function call1(c, method, path, body) {
   const tok = await token(c);
   const ses = await session(c, tok);
   let r;

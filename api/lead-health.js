@@ -524,11 +524,13 @@ module.exports = async (req, res) => {
   // it, the booking text match), no names or phones; ?payopen=sweep runs the sweep once
   if (req.query && req.query.payopen) {
     const P = require('./_lib/pay'), RQ = require('./_lib/mypos-requests'), ST = require('./_lib/store');
-    // ?payopen=link&id=<order>: what the checkout answers when it makes that order's myPOS link (the error code, no keys)
+    // ?payopen=link&id=<order>: that order as the checkout left it (read only: it makes nothing at myPOS): contact given or
+    // not, its request code, the last error myPOS gave (linkError) and what the page and the tap's tab saw (trace)
     if (req.query.payopen === 'link') {
       const o = await ST.readJSON('data/pay/' + String(req.query.id || '').replace(/[^\w-]/g, '') + '.json', null).catch(() => null);
       if (!o) { res.status(404).json({ error: 'not_found' }); return; }
-      res.status(200).json({ kind: o.kind, ref: o.ref ? 'set' : 'none', phone: o.phone ? 'set' : 'none', name: o.name ? 'set' : 'none', status: o.status, answer: await P.link(o.id, o.key).catch((e) => ({ thrown: e.message })) });
+      res.status(200).json({ kind: o.kind, ref: o.ref ? 'set' : 'none', phone: o.phone ? 'set' : 'none', name: o.name ? 'set' : 'none', status: o.status, provider: o.provider,
+        code: (o.request && o.request.code) || null, requestAt: (o.request && o.request.at) || null, requestTried: o.requestTried || null, linkError: o.linkError || null, fallback: o.fallback || null, trace: o.trace || [] });
       return;
     }
     if (req.query.payopen === 'sweep') { res.status(200).json(await P.sweep().catch((e) => ({ error: e.message }))); return; }
@@ -536,7 +538,7 @@ module.exports = async (req, res) => {
     for (const it of (open || []).slice(0, 15)) {
       const o = (await ST.readJSON('data/pay/' + it.id + '.json', null).catch(() => null)) || {};
       let st = null; try { st = o.request && o.request.code && r ? await RQ.status(r, o.request.code) : null; } catch (e) { st = { error: e.code || e.message, status: e.status }; }
-      out.push({ id: it.id, at: it.at, kind: o.kind, amount: o.amount, provider: o.provider, status: o.status, code: o.request && o.request.code, mypos: st && { status: st.status, amount: st.amount, currency: st.currency, bookingMatch: st.bookingText === it.id, booking: String(st.bookingText || '').slice(0, 40), error: st.error } });
+      out.push({ id: it.id, at: it.at, kind: o.kind, amount: o.amount, provider: o.provider, status: o.status, code: o.request && o.request.code, contact: !!o.phone, linkError: o.linkError || undefined, fallback: o.fallback ? o.fallback.kind : undefined, trace: (o.trace || []).slice(-6).map((t) => t.step + (t.code ? ':' + t.code : '')).join(' ') || undefined, mypos: st && { status: st.status, amount: st.amount, currency: st.currency, bookingMatch: st.bookingText === it.id, booking: String(st.bookingText || '').slice(0, 40), error: st.error } });
     }
     res.status(200).json({ open: (open || []).length, out });
     return;

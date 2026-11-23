@@ -392,6 +392,8 @@ async function check(orderId, key) {
   if (!o || !key || !safeEq(o.key, key)) return { error: 'not_found' };
   if (o.status === 'paid') return { paid: true, status: 'paid', handled: !!o.handled };
   if (o.status !== 'open') return { paid: false, status: o.status };
+  // a card sent to its own PayLink: paid when the card's record says so (its payment is matched there)
+  if (o.kind === 'card' && o.fallback) { const C = cardModule(); const r = C && C.KEY && C.byId ? C.byId(await readJSON(C.KEY, []), String(o.ref || '')) : null; if (r && r.status === 'platit') return { paid: true, status: 'paid', via: 'paylink' }; }
   let st = null;
   try {
     if (o.provider === 'requests') { const r = await RQ.active(S); if (!r) return { paid: false, status: 'open' }; st = await askRequest(r, await recoverRequest(r, o)); }
@@ -464,10 +466,40 @@ async function link(orderId, key) {
       await update(orderId, (x) => { x.requestTried = nowISO(); });
       req = await RQ.create(r, { orderId: o.id, amount: o.amount, title: o.title, clientName: o.name });
     }
-  } catch (e) { await rqFail(e); console.error('pay link:', e.code, e.status, e.message); return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' }; }
-  const saved = await update(orderId, (x) => { if (x.request && x.request.code) return false; x.request = { code: req.code, url: req.url, at: nowISO() }; });
+  } catch (e) {
+    await rqFail(e); console.error('pay link:', e.code, e.status, e.message);
+    // what myPOS answered, kept on the order (the diagnostics read it): the code, the HTTP status, myPOS's words
+    await update(orderId, (x) => { x.linkError = { code: e.code || 'mypos_failed', status: e.status || 0, message: String(e.message || '').slice(0, 300), at: nowISO() }; }).catch(() => {});
+    return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' };
+  }
+  const saved = await update(orderId, (x) => { delete x.linkError; if (x.request && x.request.code) return; x.request = { code: req.code, url: req.url, at: nowISO() }; });
   if (!saved || !saved.request || !saved.request.code || !saved.request.url) return { error: 'mypos_failed', message: 'cererea nu s-a putut salva' };
   return { ok: true, url: saved.request.url };
+}
+// a card whose myPOS page could not be made: the card's own PayLink (made by the owner in myPOS, one per card), only when
+// it asks the very sum of the order; the card's record is told (its payment is then matched by the sum, as before)
+async function cardFallback(orderId, key) {
+  const { data: o } = await readOrder(orderId);
+  if (!o || !key || !safeEq(o.key, key) || o.kind !== 'card' || o.status !== 'open') return null;
+  const C = cardModule();
+  if (!C || typeof C.onlinePay !== 'function' || typeof C.byId !== 'function' || !C.KEY) return null;
+  try {
+    const list = await readJSON(C.KEY, []);
+    const r = C.byId(list, String(o.ref || ''));
+    if (!r || r.status === 'platit') return null;
+    const op = await C.onlinePay(r.tier);
+    if (!op || !op.link || !/^https:\/\//.test(op.link) || Math.abs(Number(op.amount) - Number(o.amount)) >= 0.01) return null;
+    if (r.checkout && !r.checkout.paylink) { r.checkout.paylink = nowISO(); await writeJSON(C.KEY, list); }
+    await update(o.id, (x) => { x.fallback = { at: nowISO(), kind: 'paylink' }; }).catch(() => {});
+    return op.link;
+  } catch (e) { console.error('pay card fallback:', e.message); return null; }
+}
+// what the page saw (the tap, the tab, an error code), kept on the order for the diagnostics: no names, no phones
+async function trace(orderId, key, step, code) {
+  const { data: o } = await readOrder(orderId);
+  if (!o || !key || !safeEq(o.key, key)) return { error: 'not_found' };
+  await update(orderId, (x) => { x.trace = (x.trace || []).concat({ at: nowISO(), step: clip(step, 30).replace(/[^\w:-]/g, ''), code: clip(code, 40).replace(/[^\w:.-]/g, '') }).slice(-25); });
+  return { ok: true };
 }
 // an open order of the Partners way without a saved code (its request made, the answer lost): found again at myPOS
 async function recoverRequest(r, o) {
@@ -567,4 +599,4 @@ async function status() {
   return Object.assign(pv.name === 'embedded' ? IPC.publicOf(pv.c) : { on: true, live: pv.live, sandbox: pv.sandbox }, { provider: pv.name, bonusPct: BONUS_PCT });
 }
 
-module.exports = { recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
+module.exports = { cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
