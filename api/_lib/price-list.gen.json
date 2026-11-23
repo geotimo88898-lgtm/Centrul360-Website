@@ -1,0 +1,1069 @@
+{
+ "from": "v2/src/preturi.html",
+ "note": "Generat de qa/price-list.cjs. Nu se editează de mână.",
+ "items": [
+  {
+   "id": "faciale-tratament-de-hidratare-profunda-1-sedinta",
+   "group": "faciale",
+   "title": "Tratamente faciale · Tratament de hidratare profundă · 1 ședință",
+   "price": 350,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 60,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-tratament-de-hidratare-profunda-2-sedinte",
+   "group": "faciale",
+   "title": "Tratamente faciale · Tratament de hidratare profundă · 2 ședințe",
+   "price": 620,
+   "old": 0,
+   "sessions": 2,
+   "minutes": 60,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-tratament-de-hidratare-profunda-4-sedinte",
+   "group": "faciale",
+   "title": "Tratamente faciale · Tratament de hidratare profundă · 4 ședințe",
+   "price": 1090,
+   "old": 0,
+   "sessions": 4,
+   "minutes": 60,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-tratament-intensiv-antirid-1-sedinta",
+   "group": "faciale",
+   "title": "Tratamente faciale · Tratament intensiv antirid · 1 ședință",
+   "price": 370,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 60,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-tratament-intensiv-antirid-2-sedinte",
+   "group": "faciale",
+   "title": "Tratamente faciale · Tratament intensiv antirid · 2 ședințe",
+   "price": 650,
+   "old": 0,
+   "sessions": 2,
+   "minutes": 60,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-tratament-intensiv-antirid-4-sedinte",
+   "group": "faciale",
+   "title": "Tratamente faciale · Tratament intensiv antirid · 4 ședințe",
+   "price": 1150,
+   "old": 0,
+   "sessions": 4,
+   "minutes": 60,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-redness-relief-protocol-1-sedinta",
+   "group": "faciale",
+   "title": "Tratamente faciale · Redness Relief Protocol · 1 ședință",
+   "price": 300,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 50,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-redness-relief-protocol-2-sedinte",
+   "group": "faciale",
+   "title": "Tratamente faciale · Redness Relief Protocol · 2 ședințe",
+   "price": 530,
+   "old": 0,
+   "sessions": 2,
+   "minutes": 50,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-redness-relief-protocol-4-sedinte",
+   "group": "faciale",
+   "title": "Tratamente faciale · Redness Relief Protocol · 4 ședințe",
+   "price": 940,
+   "old": 0,
+   "sessions": 4,
+   "minutes": 50,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-sebum-off-protocol-1-sedinta",
+   "group": "faciale",
+   "title": "Tratamente faciale · Sebum Off Protocol · 1 ședință",
+   "price": 420,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 110,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-sebum-off-protocol-2-sedinte",
+   "group": "faciale",
+   "title": "Tratamente faciale · Sebum Off Protocol · 2 ședințe",
+   "price": 740,
+   "old": 0,
+   "sessions": 2,
+   "minutes": 110,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-sebum-off-protocol-4-sedinte",
+   "group": "faciale",
+   "title": "Tratamente faciale · Sebum Off Protocol · 4 ședințe",
+   "price": 1310,
+   "old": 0,
+   "sessions": 4,
+   "minutes": 110,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-tratament-restart-2-sedinte",
+   "group": "faciale",
+   "title": "Tratamente faciale · Tratament Restart · 2 ședințe",
+   "price": 540,
+   "old": 0,
+   "sessions": 2,
+   "minutes": 50,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-microneedling-exozomi-pdrn-1-sedinta",
+   "group": "faciale",
+   "title": "Tratamente faciale · Microneedling Exozomi PDRN · 1 ședință",
+   "price": 520,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 60,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-microneedling-exozomi-pdrn-3-sedinte",
+   "group": "faciale",
+   "title": "Tratamente faciale · Microneedling Exozomi PDRN · 3 ședințe",
+   "price": 1290,
+   "old": 0,
+   "sessions": 3,
+   "minutes": 60,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-microneedling-corector-periocular-1-sedinta",
+   "group": "faciale",
+   "title": "Tratamente faciale · Microneedling Corector Periocular · 1 ședință",
+   "price": 520,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 30,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "faciale-microneedling-corector-periocular-3-sedinte",
+   "group": "faciale",
+   "title": "Tratamente faciale · Microneedling Corector Periocular · 3 ședințe",
+   "price": 1290,
+   "old": 0,
+   "sessions": 3,
+   "minutes": 30,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "hifu-o-zona-mica-faciala-1-sedinta",
+   "group": "hifu",
+   "title": "HIFU · O zonă mică facială · 1 ședință",
+   "price": 290,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "hifu-full-face-1-sedinta",
+   "group": "hifu",
+   "title": "HIFU · Full Face · 1 ședință",
+   "price": 1020,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 90,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "hifu-full-face-2-sedinte",
+   "group": "hifu",
+   "title": "HIFU · Full Face · 2 ședințe",
+   "price": 1790,
+   "old": 0,
+   "sessions": 2,
+   "minutes": 90,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "hifu-o-zona-corporala-1-sedinta",
+   "group": "hifu",
+   "title": "HIFU · O zonă corporală · 1 ședință",
+   "price": 620,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 50,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "hifu-o-zona-corporala-2-sedinte",
+   "group": "hifu",
+   "title": "HIFU · O zonă corporală · 2 ședințe",
+   "price": 1090,
+   "old": 0,
+   "sessions": 2,
+   "minutes": 50,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "radiofrecventa-o-zona-mica-faciala-1-sedinta",
+   "group": "radiofrecventa",
+   "title": "Radiofrecvență · O zonă mică facială · 1 ședință",
+   "price": 170,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "radiofrecventa-o-zona-mica-faciala-4-sedinte",
+   "group": "radiofrecventa",
+   "title": "Radiofrecvență · O zonă mică facială · 4 ședințe",
+   "price": 580,
+   "old": 0,
+   "sessions": 4,
+   "minutes": 15,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "radiofrecventa-full-face-1-sedinta",
+   "group": "radiofrecventa",
+   "title": "Radiofrecvență · Full Face · 1 ședință",
+   "price": 280,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 30,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "radiofrecventa-full-face-4-sedinte",
+   "group": "radiofrecventa",
+   "title": "Radiofrecvență · Full Face · 4 ședințe",
+   "price": 880,
+   "old": 0,
+   "sessions": 4,
+   "minutes": 30,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "radiofrecventa-o-zona-corporala-1-sedinta",
+   "group": "radiofrecventa",
+   "title": "Radiofrecvență · O zonă corporală · 1 ședință",
+   "price": 280,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 30,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "radiofrecventa-o-zona-corporala-4-sedinte",
+   "group": "radiofrecventa",
+   "title": "Radiofrecvență · O zonă corporală · 4 ședințe",
+   "price": 990,
+   "old": 0,
+   "sessions": 4,
+   "minutes": 30,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "radiofrecventa-o-zona-corporala-6-sedinte",
+   "group": "radiofrecventa",
+   "title": "Radiofrecvență · O zonă corporală · 6 ședințe",
+   "price": 1250,
+   "old": 0,
+   "sessions": 6,
+   "minutes": 30,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "rfsculpt-gusa-plus-contur-mandibular-1-sedinta",
+   "group": "rfsculpt",
+   "title": "RF Sculpt · Gușă + Contur Mandibular · 1 ședință",
+   "price": 210,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 30,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "rfsculpt-gusa-plus-contur-mandibular-4-sedinte",
+   "group": "rfsculpt",
+   "title": "RF Sculpt · Gușă + Contur Mandibular · 4 ședințe",
+   "price": 690,
+   "old": 0,
+   "sessions": 4,
+   "minutes": 30,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "rfsculpt-gusa-plus-contur-mandibular-6-sedinte",
+   "group": "rfsculpt",
+   "title": "RF Sculpt · Gușă + Contur Mandibular · 6 ședințe",
+   "price": 890,
+   "old": 0,
+   "sessions": 6,
+   "minutes": 30,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "rfsculpt-full-face-1-sedinta",
+   "group": "rfsculpt",
+   "title": "RF Sculpt · Full Face · 1 ședință",
+   "price": 350,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 90,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "rfsculpt-full-face-4-sedinte",
+   "group": "rfsculpt",
+   "title": "RF Sculpt · Full Face · 4 ședințe",
+   "price": 1090,
+   "old": 0,
+   "sessions": 4,
+   "minutes": 90,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "rfsculpt-full-face-6-sedinte",
+   "group": "rfsculpt",
+   "title": "RF Sculpt · Full Face · 6 ședințe",
+   "price": 1470,
+   "old": 0,
+   "sessions": 6,
+   "minutes": 90,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "liposonix-o-zona-corporala-2-sedinte",
+   "group": "liposonix",
+   "title": "Liposonix · O zonă corporală · 2 ședințe",
+   "price": 980,
+   "old": 0,
+   "sessions": 2,
+   "minutes": 45,
+   "cat": "corporale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
+   "id": "ems-o-zona-1-sedinta",
+   "group": "ems",
+   "title": "Electrostimulare Magnetică (EMS) · O zonă · 1 ședință",
+   "price": 250,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 30,
+   "cat": "corporale",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "ems-o-zona-6-sedinte",
+   "group": "ems",
+   "title": "Electrostimulare Magnetică (EMS) · O zonă · 6 ședințe",
+   "price": 1050,
+   "old": 0,
+   "sessions": 6,
+   "minutes": 30,
+   "cat": "corporale",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "ems-o-zona-8-sedinte",
+   "group": "ems",
+   "title": "Electrostimulare Magnetică (EMS) · O zonă · 8 ședințe",
+   "price": 1340,
+   "old": 0,
+   "sessions": 8,
+   "minutes": 30,
+   "cat": "corporale",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "ems-2-zone-1-sedinta",
+   "group": "ems",
+   "title": "Electrostimulare Magnetică (EMS) · 2 zone · 1 ședință",
+   "price": 390,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 60,
+   "cat": "corporale",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "ems-2-zone-6-sedinte",
+   "group": "ems",
+   "title": "Electrostimulare Magnetică (EMS) · 2 zone · 6 ședințe",
+   "price": 1640,
+   "old": 0,
+   "sessions": 6,
+   "minutes": 60,
+   "cat": "corporale",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "ems-2-zone-8-sedinte",
+   "group": "ems",
+   "title": "Electrostimulare Magnetică (EMS) · 2 zone · 8 ședințe",
+   "price": 2090,
+   "old": 0,
+   "sessions": 8,
+   "minutes": 60,
+   "cat": "corporale",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "impachetare-impachetare-la-cald-1-sedinta",
+   "group": "impachetare",
+   "title": "Împachetare la cald · Împachetare la cald · 1 ședință",
+   "price": 190,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 50,
+   "cat": "corporale",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "impachetare-impachetare-la-cald-6-sedinte",
+   "group": "impachetare",
+   "title": "Împachetare la cald · Împachetare la cald · 6 ședințe",
+   "price": 800,
+   "old": 0,
+   "sessions": 6,
+   "minutes": 50,
+   "cat": "corporale",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "impachetare-impachetare-la-cald-8-sedinte",
+   "group": "impachetare",
+   "title": "Împachetare la cald · Împachetare la cald · 8 ședințe",
+   "price": 1020,
+   "old": 0,
+   "sessions": 8,
+   "minutes": 50,
+   "cat": "corporale",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-full-body-1-sedinta",
+   "group": "epilare",
+   "title": "Epilare laser · Elysion Pro · Full Body · 1 ședință",
+   "price": 920,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 90,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-full-body-pachet-6-sedinte",
+   "group": "epilare",
+   "title": "Epilare laser · Elysion Pro · Full Body · Pachet 6 ședințe",
+   "price": 4968,
+   "old": 5520,
+   "sessions": 6,
+   "minutes": 90,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-axile-f",
+   "group": "epilare",
+   "title": "Epilare laser · Axile · femei · 1 ședință",
+   "price": 120,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-axile-m",
+   "group": "epilare",
+   "title": "Epilare laser · Axile · bărbați · 1 ședință",
+   "price": 140,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-antebrate-f",
+   "group": "epilare",
+   "title": "Epilare laser · Antebrațe · femei · 1 ședință",
+   "price": 150,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-antebrate-m",
+   "group": "epilare",
+   "title": "Epilare laser · Antebrațe · bărbați · 1 ședință",
+   "price": 200,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-brate-total-f",
+   "group": "epilare",
+   "title": "Epilare laser · Brațe total · femei · 1 ședință",
+   "price": 190,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 25,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-brate-total-m",
+   "group": "epilare",
+   "title": "Epilare laser · Brațe total · bărbați · 1 ședință",
+   "price": 240,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 25,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-maini-laba-piciorului-f",
+   "group": "epilare",
+   "title": "Epilare laser · Mâini / Laba piciorului · femei · 1 ședință",
+   "price": 80,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-maini-laba-piciorului-m",
+   "group": "epilare",
+   "title": "Epilare laser · Mâini / Laba piciorului · bărbați · 1 ședință",
+   "price": 90,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-areole-mamare-f",
+   "group": "epilare",
+   "title": "Epilare laser · Areole mamare · femei · 1 ședință",
+   "price": 70,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-piept-f",
+   "group": "epilare",
+   "title": "Epilare laser · Piept · femei · 1 ședință",
+   "price": 150,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-piept-m",
+   "group": "epilare",
+   "title": "Epilare laser · Piept · bărbați · 1 ședință",
+   "price": 210,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-umeri-m",
+   "group": "epilare",
+   "title": "Epilare laser · Umeri · bărbați · 1 ședință",
+   "price": 190,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-abdomen-f",
+   "group": "epilare",
+   "title": "Epilare laser · Abdomen · femei · 1 ședință",
+   "price": 170,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-abdomen-m",
+   "group": "epilare",
+   "title": "Epilare laser · Abdomen · bărbați · 1 ședință",
+   "price": 230,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-linie-bikini-f",
+   "group": "epilare",
+   "title": "Epilare laser · Linie bikini · femei · 1 ședință",
+   "price": 120,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-linia-alba-f",
+   "group": "epilare",
+   "title": "Epilare laser · Linia albă · femei · 1 ședință",
+   "price": 80,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-inghinal-total-f",
+   "group": "epilare",
+   "title": "Epilare laser · Inghinal total · femei · 1 ședință",
+   "price": 220,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-fese-f",
+   "group": "epilare",
+   "title": "Epilare laser · Fese · femei · 1 ședință",
+   "price": 160,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-labii-interfesieri-f",
+   "group": "epilare",
+   "title": "Epilare laser · Labii / Interfesieri · femei · 1 ședință",
+   "price": 90,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-zona-lombara-f",
+   "group": "epilare",
+   "title": "Epilare laser · Zona lombară · femei · 1 ședință",
+   "price": 160,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-zona-lombara-m",
+   "group": "epilare",
+   "title": "Epilare laser · Zona lombară · bărbați · 1 ședință",
+   "price": 220,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-spate-integral-f",
+   "group": "epilare",
+   "title": "Epilare laser · Spate integral · femei · 1 ședință",
+   "price": 250,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 25,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-spate-integral-m",
+   "group": "epilare",
+   "title": "Epilare laser · Spate integral · bărbați · 1 ședință",
+   "price": 400,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 25,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-picior-scurt-pana-la-genunchi-f",
+   "group": "epilare",
+   "title": "Epilare laser · Picior scurt (până la genunchi) · femei · 1 ședință",
+   "price": 240,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 20,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-picior-scurt-pana-la-genunchi-m",
+   "group": "epilare",
+   "title": "Epilare laser · Picior scurt (până la genunchi) · bărbați · 1 ședință",
+   "price": 350,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 20,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-picior-lung-complet-f",
+   "group": "epilare",
+   "title": "Epilare laser · Picior lung (complet) · femei · 1 ședință",
+   "price": 390,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 60,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-picior-lung-complet-m",
+   "group": "epilare",
+   "title": "Epilare laser · Picior lung (complet) · bărbați · 1 ședință",
+   "price": 530,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 60,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-o-zona-la-alegere-f",
+   "group": "epilare",
+   "title": "Epilare laser · O zonă la alegere · femei · 1 ședință",
+   "price": 70,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-o-zona-la-alegere-m",
+   "group": "epilare",
+   "title": "Epilare laser · O zonă la alegere · bărbați · 1 ședință",
+   "price": 90,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-fata-complet-f",
+   "group": "epilare",
+   "title": "Epilare laser · Față complet · femei · 1 ședință",
+   "price": 200,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 20,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-fata-complet-m",
+   "group": "epilare",
+   "title": "Epilare laser · Față complet · bărbați · 1 ședință",
+   "price": 240,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 20,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  },
+  {
+   "id": "epilare-contur-barba-gat-m",
+   "group": "epilare",
+   "title": "Epilare laser · Contur barbă / gât · bărbați · 1 ședință",
+   "price": 160,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 15,
+   "cat": "epilare",
+   "cities": [
+    "Timișoara"
+   ]
+  }
+ ]
+}

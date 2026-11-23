@@ -9,12 +9,26 @@
 //   POST { action: 'device', tid, city }      which clinic a terminal is in (Timișoara / Arad)
 //   POST { action: 'sync' }                   read the history now
 //   POST { action: 'disconnect' }             removes the webhook and the credentials (the payments read stay)
+//   POST { action: 'checkout', sid, walletNumber, keyIndex, privateKey, myposCert, sandbox }  the site's online payment
+//        (api/_lib/mypos-ipc.js): checked with myPOS (a 1 leu session, not a charge), kept only when right
+//   POST { action: 'checkout_test' }          a 1 leu test order → { url } to pay on the site with a real card
+//   POST { action: 'checkout_live', on }      the online payment on the site on / off (on only after the test passed)
+//   POST { action: 'checkout_off' }           removes the checkout keys
 //   POST { action: 'gateway', partnerId, appId, clientId, clientSecret, merchantId, merchantSecret }  the keys for the
 //        balance now (myPOS Partner Portal), saved once myPOS accepted them; { action: 'gateway_off' } removes them
 
 const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
 const M = require('./_lib/mypos');
+const IPC = require('./_lib/mypos-ipc');
+const crypto = require('crypto');
+
+// the site's checkout: the keys as the admin may see them, and the last online payments
+async function checkout() {
+  const c = IPC.adminOf(await IPC.load(store));
+  const open = await readJSON('data/pay-open.json', []);
+  return Object.assign(c, { waiting: (open || []).length });
+}
 
 const CITIES = ['Timișoara', 'Arad'];
 const isDay = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || '');
@@ -24,7 +38,8 @@ const origin = (req) => 'https://' + req.headers.host;
 async function status() {
   const conn = await M.loadConn(readJSON);
   const gateway = await M.loadGateway(store);
-  if (!M.connected(conn)) return { connected: false, gateway };
+  const co = await checkout();
+  if (!M.connected(conn)) return { connected: false, gateway, checkout: co };
   const pay = await readJSON(M.PAY, { list: [] });
   const log = await readJSON('data/mypos-webhook-log.json', []);
   const last = (pay.list || []).filter((p) => p.amount > 0).slice(-1)[0] || null;
@@ -41,6 +56,7 @@ async function status() {
     lastPayment: last ? { at: last.at, amount: last.amount, tid: last.tid } : null,
     lastHook: (log || [])[0] || null,
     gateway,
+    checkout: co,
   };
 }
 
@@ -139,6 +155,32 @@ module.exports = async (req, res) => {
       const r = await M.sync(store, {});
       if (!r.ok) { res.status(400).json({ error: r.error || 'mypos_failed' }); return; }
       res.status(200).json(Object.assign(await status(), { added: r.added }));
+      return;
+    }
+
+    if (b.action === 'checkout') {
+      const r = await IPC.save(store, b, session.employeeId);
+      if (r.error) { res.status(400).json(r); return; }
+      res.status(200).json(await status());
+      return;
+    }
+    if (b.action === 'checkout_off') {
+      await IPC.drop(store);
+      res.status(200).json(await status());
+      return;
+    }
+    if (b.action === 'checkout_live') {
+      const r = await IPC.setLive(store, !!b.on);
+      if (r.error) { res.status(400).json(r); return; }
+      res.status(200).json(await status());
+      return;
+    }
+    if (b.action === 'checkout_test') {
+      const c = await IPC.load(store);
+      if (!IPC.ready(c)) { res.status(400).json({ error: 'not_saved' }); return; }
+      const ref = crypto.randomBytes(9).toString('hex');
+      await IPC.note(store, { test: { orderRef: ref, at: new Date().toISOString(), by: session.employeeId } });
+      res.status(200).json({ ok: true, url: 'https://www.centrul360.com/plata-test?t=' + ref });
       return;
     }
 

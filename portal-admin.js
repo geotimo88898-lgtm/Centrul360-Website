@@ -1621,13 +1621,88 @@
         '<div class="st-int-row"><button type="submit" class="k-btn is-primary is-sm">' + icon('check') + 'Salvează</button>' +
           (has ? '<button type="button" class="k-btn is-ghost is-sm" data-mp-gw-off>Scoate cheile</button>' : '') + '</div></form></details>';
   }
+  // The site's online payment (myPOS Checkout, the embedded form): the online store's keys from the myPOS account. Checked
+  // with myPOS before they are kept; the private key never comes back. Off on the site until a real 1 leu test passed.
+  const CO_LABEL = { sid: 'Store ID (SID)', walletNumber: 'Număr client (Wallet)', keyIndex: 'Key Index', privateKey: 'Cheia privată (Private key)', myposCert: 'Certificatul public myPOS' };
+  const CO_ERR = {
+    ipc_own_cert: 'Ai pus cheia publică a magazinului. Aici trebuie certificatul public myPOS (al doilea fișier din cont).',
+    mypos_refused: 'myPOS a refuzat cheile', mypos_unsigned: 'Certificatul public myPOS nu se potrivește cu răspunsul myPOS. Ia-l din nou din cont.',
+    mypos_down: 'myPOS nu răspunde acum. Încearcă din nou în câteva minute.', mypos_bad_answer: 'myPOS a dat un răspuns ciudat. Încearcă din nou.',
+    test_first: 'Întâi testul de 1 leu, apoi pornirea pe site.', sandbox: 'Cu un cont de test nu se pornește pe site.', not_saved: 'Întâi cheile.',
+  };
+  function coStatus(c) {
+    c = c || { saved: false };
+    const st = !c.saved ? ['is-wait', 'clock', 'Oprită. Cu cheile magazinului online de mai jos plătește direct pe site, cu cardul, Apple Pay sau Google Pay.']
+      : c.error ? ['is-wait', 'alert', 'Oprită: ' + c.error]
+      : c.sandbox ? ['is-wait', 'clock', 'Cont de test myPOS: merge doar pe previzualizare (/v2), cu cardurile de test.']
+      : c.live ? ['is-ok', 'checkCircle', 'Pornită pe site · testul de 1 leu a trecut ' + mpWhen(c.testPassedAt)]
+      : c.testPassedAt ? ['is-ok', 'checkCircle', 'Testul de 1 leu a trecut. Merge pe previzualizare; pe site o pornești de aici.']
+      : ['is-wait', 'clock', 'Cheile sunt bune. Urmează testul de 1 leu, cu un card adevărat.'];
+    const last = c.lastNotify ? ' · ultima notificare myPOS ' + mpWhen(c.lastNotify.at) + (c.lastNotify.ok ? ', bună' : ', neverificată (' + c.lastNotify.why + ')') : '';
+    return '<div class="st-fb-status ' + st[0] + '">' + icon(st[1]) + '<div><b>Plata online pe site</b><span>' + esc(st[2] + last) + '</span></div></div>';
+  }
+  function coForm(c) {
+    c = c || {};
+    const inp = (k, v, ph) => '<label class="k-field"><span>' + CO_LABEL[k] + '</span><input name="' + k + '" type="text" inputmode="numeric" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore spellcheck="false" placeholder="' + ph + '" value="' + esc(v || '') + '"></label>';
+    const area = (k, ph) => '<label class="k-field full"><span>' + CO_LABEL[k] + '</span><textarea name="' + k + '" rows="3" autocomplete="off" spellcheck="false" placeholder="' + ph + '" style="font-family:ui-monospace,Menlo,monospace;font-size:.78rem"></textarea></label>';
+    return '<details class="st-fb-manual"' + (c.saved ? '' : ' open') + '><summary>' + (c.saved ? 'Schimbă cheile plății online' : 'Cheile plății online') + '</summary>' +
+      '<form class="st-manual" data-mp-co autocomplete="off"><div class="st-mp-gw-grid">' +
+        inp('sid', c.sid, '000000000000000') + inp('walletNumber', c.walletNumber, '40000000000') + inp('keyIndex', c.keyIndex || 1, '1') + '</div>' +
+        area('privateKey', c.saved ? 'Salvată. Lasă gol ca să rămână.' : '-----BEGIN RSA PRIVATE KEY----- …') +
+        area('myposCert', c.saved ? 'Salvat' + (c.certTill ? ', valabil până ' + c.certTill : '') + '. Lasă gol ca să rămână.' : '-----BEGIN CERTIFICATE----- …') +
+        '<label class="st-mp-sbx" style="display:flex;gap:.5rem;align-items:center;font-size:.85rem"><input type="checkbox" name="sandbox"' + (c.sandbox ? ' checked' : '') + '>Cont de test myPOS (sandbox)</label>' +
+        '<small class="k-muted">Din contul myPOS: Online → magazinul online → Setări → Chei (Store ID, număr client, Key Index, cheia privată și certificatul public myPOS). Tot acolo, la URL-uri: www.centrul360.com și notificările la https://www.centrul360.com/api/pay-notify.</small>' +
+        '<div class="st-int-row"><button type="submit" class="k-btn is-primary is-sm">' + icon('check') + 'Verifică și salvează</button>' +
+          (c.saved ? '<button type="button" class="k-btn is-ghost is-sm" data-mp-co-off>Scoate cheile</button>' : '') + '</div></form></details>';
+  }
+  function coRow(c) {
+    if (!c || !c.saved || c.error) return '';
+    return '<div class="st-int-row">' +
+      '<button type="button" class="k-btn is-outline is-sm" data-mp-co-test>' + icon('card') + (c.testPassedAt ? 'Încă un test de 1 leu' : 'Test 1 leu') + '</button>' +
+      (!c.sandbox && c.testPassedAt ? '<button type="button" class="k-btn ' + (c.live ? 'is-ghost' : 'is-primary') + ' is-sm" data-mp-co-live="' + (c.live ? '0' : '1') + '">' + (c.live ? 'Oprește pe site' : 'Pornește pe site') + '</button>' : '') +
+      (c.waiting ? '<span class="k-muted">' + esc(K.plural(c.waiting, 'plată așteaptă', 'plăți așteaptă') + ' răspunsul myPOS') + '</span>' : '') + '</div>';
+  }
+  function coWire(box) {
+    const cf = box.querySelector('[data-mp-co]');
+    if (cf) cf.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = K.formValues(cf);
+      K.busy(cf.querySelector('[type="submit"]'), async () => {
+        try {
+          await K.api('/api/portal-mypos', Object.assign({ action: 'checkout' }, v));
+          K.ui().toast('Cheile plății online sunt bune și salvate.', 'success');
+          loadMypos(box);
+        } catch (err) {
+          const f = err.data && err.data.field;
+          K.ui().toast(err.code === 'ipc_format' && f ? CO_LABEL[f] + (/privateKey|myposCert/.test(f) ? ' lipsește sau nu e întreg (copiază tot, cu BEGIN și END).' : ' nu arată bine (doar cifre).')
+            : (CO_ERR[err.code] || MP_ERR[err.code] || K.errText(err)) + (err.data && err.data.message ? ': ' + err.data.message : ''), 'error');
+        }
+      });
+    });
+    const off = box.querySelector('[data-mp-co-off]');
+    if (off) off.addEventListener('click', async () => {
+      if (!(await K.ui().confirm({ title: 'Scoți cheile plății online?', message: 'Plata online de pe site se oprește. Programările merg mai departe, cu plata în clinică.', confirmText: 'Scoate', danger: true }))) return;
+      try { await K.api('/api/portal-mypos', { action: 'checkout_off' }); K.ui().toast('Plata online e oprită.', 'success'); loadMypos(box); } catch (err) { mpFail(err); }
+    });
+    const t = box.querySelector('[data-mp-co-test]');
+    if (t) t.addEventListener('click', () => K.busy(t, async () => {
+      try { const r = await K.api('/api/portal-mypos', { action: 'checkout_test' }); window.open(r.url, '_blank', 'noopener'); K.ui().toast('Plătește 1 leu în pagina deschisă. Apoi revino aici.', 'success'); }
+      catch (err) { K.ui().toast(CO_ERR[err.code] || K.errText(err), 'error'); }
+    }));
+    const lv = box.querySelector('[data-mp-co-live]');
+    if (lv) lv.addEventListener('click', () => K.busy(lv, async () => {
+      try { await K.api('/api/portal-mypos', { action: 'checkout_live', on: lv.dataset.mpCoLive === '1' }); K.ui().toast(lv.dataset.mpCoLive === '1' ? 'Plata online e pornită pe site.' : 'Plata online e oprită pe site.', 'success'); loadMypos(box); }
+      catch (err) { K.ui().toast(CO_ERR[err.code] || K.errText(err), 'error'); }
+    }));
+  }
   async function loadMypos(box) {
     if (!box) return;
     let d;
     try { d = await K.api('/api/portal-mypos'); } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica myPOS.</span>'; return; }
     const errLine = (x) => (x && x.status ? 'myPOS a răspuns ' + x.status + (x.message ? ': ' + x.message : '') : (x && x.message) || 'myPOS n-a răspuns');
+    const co = coStatus(d.checkout) + coRow(d.checkout) + coForm(d.checkout);
     if (!d.connected) {
-      box.innerHTML = mpKeysForm(true, false);
+      box.innerHTML = mpKeysForm(true, false) + co;
     } else {
       const live = d.live && d.live.ok, hist = d.history;
       const devs = d.devices || [];
@@ -1644,9 +1719,11 @@
           '<button type="button" class="k-btn is-ghost is-sm" data-mp-sync>' + icon('refresh') + 'Citește acum</button>' +
           '<button type="button" class="k-btn is-outline is-sm" data-goto="incasari">Încasări' + icon('arrow') + '</button></div>' +
         gwForm(d.gateway) +
+        co +
         mpKeysForm(false, true) +
         '<button type="button" class="k-btn is-ghost is-sm st-mp-off" data-mp-off>Deconectează myPOS</button>';
     }
+    coWire(box);
     const f = box.querySelector('[data-mp-connect]');
     if (f) f.addEventListener('submit', (e) => {
       e.preventDefault();

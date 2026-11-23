@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Test plată online · Centrul360</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ color-scheme:dark; }
+  html,body{ margin:0; background:#0b0b0d; color:#f5f4f2; font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  main{ max-width:468px; margin:0 auto; padding:28px 16px 48px; box-sizing:border-box; }
+  .eye{ font-size:10.5px; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:rgba(245,244,242,.55); margin:0 0 10px; }
+  h1{ margin:0 0 8px; font-size:27px; line-height:1.1; font-weight:800; letter-spacing:-.035em; }
+  .lead{ margin:0 0 22px; font-size:14px; line-height:1.55; color:rgba(245,244,242,.6); }
+  .box{ padding:18px; border-radius:24px; background:linear-gradient(180deg,#17171c 0%,#111115 100%); border:1px solid rgba(255,255,255,.11); }
+  .msg{ text-align:center; color:rgba(245,244,242,.6); font-size:14px; padding:24px 0; }
+</style>
+</head>
+<body>
+<main>
+  <p class="eye">Integrări · myPOS</p>
+  <h1>Test plată online, 1 leu</h1>
+  <p class="lead">Plătește 1 leu cu un card adevărat, exact cum va plăti o clientă pe site. Când trece, în Integrări → myPOS apare „Testul de 1 leu a trecut” și poți porni plata pe site.</p>
+  <div class="box" id="pay"><p class="msg">Se pregătește…</p></div>
+</main>
+<script src="/c360-pay.js"></script>
+<script>
+(function () {
+  var t = new URLSearchParams(location.search).get('t') || '';
+  var box = document.getElementById('pay');
+  if (!/^[0-9a-f]{18}$/.test(t)) { box.innerHTML = '<p class="msg">Linkul de test nu e întreg. Pornește testul din nou din Integrări → myPOS.</p>'; return; }
+  window.C360Pay.open({ kind: 'test', ref: t, mount: box, onPaid: function (r) {
+    box.innerHTML = '<p class="msg">' + (r.confirmed ? 'Testul a trecut: myPOS a confirmat plata. Te poți întoarce în Integrări → myPOS.' : 'Plata e în confirmare la myPOS. Peste câteva minute apare în Integrări → myPOS.') + '</p>';
+  } });
+})();
+</script>
+</body>
+</html>

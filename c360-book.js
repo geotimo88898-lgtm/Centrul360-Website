@@ -41,8 +41,24 @@
   // The payment itself (myPOS) is not ready: startOnlinePay() below is where it plugs in. ON only on the /v2/ preview
   // pages for now; live = this one line (or window.C360_PAY_ONLINE = true set before this file runs).
   const PAY_ON = true; // live since 22.11 (the owner: „da, pune-o live”)
-  const PAY_OFF = 10; // percent off when paid online
+  let PAY_OFF = 10; // percent off when paid online (the server's BONUS_PCT, api/_lib/pay.js, comes with /api/pay?status=1)
   const payAmount = (full) => Math.floor((Number(full) || 0) * (100 - PAY_OFF) / 100); // whole lei, never less than 10% off
+  // The payment inside the slip (23.11, c360-pay.js: myPOS's embedded form, Apple Pay / Google Pay, no leaving the page). Used
+  // when the checkout's keys are saved and it is switched on (on the preview /v2 as soon as the keys are saved); until then the
+  // payment links below, as before. Asked once per page.
+  let embedP = null;
+  function embedOn() {
+    if (!embedP) {
+      embedP = new Promise((ok) => {
+        const go = () => window.C360Pay.ready().then((on) => window.C360Pay.status().then((st) => { if (st && st.bonusPct) PAY_OFF = st.bonusPct; ok(on); }), () => ok(false));
+        if (window.C360Pay) { go(); return; }
+        const sc = document.createElement('script'); sc.src = '/c360-pay.js'; sc.async = true;
+        sc.onload = () => (window.C360Pay ? go() : ok(false)); sc.onerror = () => ok(false);
+        document.head.appendChild(sc);
+      });
+    }
+    return embedP;
+  }
   window.C360_PAY_ON = PAY_ON;
   // The myPOS payment links (the owner, 22.11): one fixed-amount link per offer, its amount = the offer's price minus 10%.
   // The online option shows only when the offer has a link AND the link's amount is exactly what we would ask (Admin
@@ -299,7 +315,7 @@
   // ---------------------------------------------------------------- state & data
   function fresh(o) {
     const me = store.get('c360-book-me') || {};
-    return { step: 'svc', city: o.city || PAGE_CITY || store.get('c360-book-city') || '', svc: o.service || '', label: o.label || '', services: null, days: null, date: '', time: '', err: '', name: me.name || '', phone: me.phone || '', busy: false, done: null, dir: '', pay: '', payUrl: '' };
+    return { step: 'svc', city: o.city || PAGE_CITY || store.get('c360-book-city') || '', svc: o.service || '', label: o.label || '', services: null, days: null, date: '', time: '', err: '', name: me.name || '', phone: me.phone || '', busy: false, done: null, dir: '', pay: '', payUrl: '', embed: false, order: null, paid: null };
   }
   async function load(fresh) {
     const my = ++seq;
@@ -309,6 +325,7 @@
       const q = new URLSearchParams({ city: S.city || 'Timișoara', service: S.svc || 'consult' });
       if (fresh) q.set('t', Date.now()); // past the edge's few seconds: the hours as they are now
       if (S.svc === 'custom' && S.label) q.set('label', S.label);
+      if (S.svc === 'custom' && S.pick && S.pick.treatment) q.set('treatment', S.pick.treatment); // a row of the price list: its price is the server's
       const r = await fetch('/api/booking?' + q.toString(), { headers: { Accept: 'application/json' } });
       const d = await r.json();
       if (my !== seq) return;
@@ -389,7 +406,7 @@
     return '';
   }
   const fullBody = (t) => /full\s*body/.test(fold(t)) && /epil|laser/.test(fold(t)); // a full body laser: 90 minutes (api/_lib/booking.js custom)
-  const byId = (id) => (id === 'custom' ? { id: 'custom', title: S.label, minutes: fullBody(S.label) ? 90 : 60, price: (S.pick && S.pick.price) || 0, old: (S.pick && S.pick.old) || 0 } : (S.services || []).find((s) => s.id === id) || null);
+  const byId = (id) => (id === 'custom' ? { id: 'custom', title: S.label, minutes: fullBody(S.label) ? 90 : 60, price: (S.pick && S.pick.price) || 0, old: (S.pick && S.pick.old) || 0, treatment: (S.pick && S.pick.treatment) || '' } : (S.services || []).find((s) => s.id === id) || null);
 
   // ---------------------------------------------------------------- painting
   // the pay step: only for an offer with its price (not the free consultation, not a treatment priced at the clinic; a
@@ -399,7 +416,9 @@
     const l = s.id === 'custom' ? (fullBody(s.title) && /pachet|6\s*[sș]edin/i.test(s.title) ? PAY_LINKS['full-body-6'] : null) : PAY_LINKS[s.id];
     return l && l.amount === payAmount(s.price) ? l : null;
   };
-  const payable = () => PAY_ON && !!S.service && S.service.id !== 'consult' && !!linkOf(S.service);
+  // with the slip's own checkout every price can be paid online (an offer, a treatment of the price list); with the links only
+  // the offers that have one
+  const payable = () => PAY_ON && !!S.service && S.service.id !== 'consult' && (S.embed ? S.service.price > 0 && (S.service.id !== 'custom' || !!S.service.treatment || !!(S.pick && S.pick.treatment)) : !!linkOf(S.service));
   function prog(n) {
     const bar = root.querySelector('.bk-prog'), want = payable() ? 5 : 4;
     while (bar.children.length < want) bar.appendChild(document.createElement('i'));
@@ -410,14 +429,16 @@
     if (!root) return;
     body = root.querySelector('.bk-body');
     const back = root.querySelector('[data-bk-back]');
-    back.hidden = S.step === 'city' || S.step === 'done' || (S.step === 'when' && S.lock && !!S.proc);
-    const html = S.step === 'city' ? cityHtml() : S.step === 'svc' ? svcHtml() : S.step === 'when' ? whenHtml() : S.step === 'pay' ? payHtml() : S.step === 'you' ? youHtml() : doneHtml();
+    back.hidden = S.step === 'city' || S.step === 'done' || S.step === 'checkout' || (S.step === 'when' && S.lock && !!S.proc);
+    if (S.step === 'checkout' && body.querySelector('[data-bk-checkout]')) return; // the payment form stays as it is
+    const html = S.step === 'city' ? cityHtml() : S.step === 'svc' ? svcHtml() : S.step === 'when' ? whenHtml() : S.step === 'pay' ? payHtml() : S.step === 'you' ? youHtml() : S.step === 'checkout' ? checkoutHtml() : doneHtml();
     const last = payable() ? 5 : 4;
-    prog({ city: 1, svc: 2, when: 3, pay: 4, you: last, done: last }[S.step] || 1);
+    prog({ city: 1, svc: 2, when: 3, pay: 4, you: last, checkout: last, done: last }[S.step] || 1);
     const anim = S.dir;
     body.innerHTML = '<div class="bk-step' + (anim === 'back' ? ' back' : '') + '">' + html + '</div>';
     if (!anim) body.firstChild.style.animation = 'none';
     S.dir = '';
+    if (S.step === 'checkout') mountCheckout();
   }
   const segHtml = () => '<div class="bk-seg" role="tablist" aria-label="Clinica">' + ['Timișoara', 'Arad'].map((c) => '<button type="button" role="tab" aria-selected="' + (S.city === c) + '" class="' + (S.city === c ? 'on' : '') + '" data-city="' + c + '">' + c + '</button>').join('') + '</div>';
   function priceHtml(s) {
@@ -498,7 +519,7 @@
       // the appointment as plain text, so the only things that look tappable are the two buttons (the owner, 22.11)
       '<p class="bk-when">' + esc(niceDay(S.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(S.time) + '<small>' + esc(S.service.title || '') + ' · Centrul360 ' + esc(S.city) + '</small></p>' +
       '<div class="bk-pay" role="group" aria-label="Plata">' +
-      '<button type="button" class="bk-pb online' + (S.pay === 'online' ? ' on' : '') + '" data-pay="online"><span class="bk-pb-t"><b>Plătesc online ' + lei(now) + '</b><small><s>' + lei(full) + '</s> · toată oferta, acum</small></span><i class="bk-off">-' + PAY_OFF + '%</i>' + go + '</button>' +
+      '<button type="button" class="bk-pb online' + (S.pay === 'online' ? ' on' : '') + '" data-pay="online"><span class="bk-pb-t"><b>Plătesc online ' + lei(now) + '</b><small><s>' + lei(full) + '</s> · ' + (S.service.id === 'custom' ? 'tot, acum' : 'toată oferta, acum') + '</small></span><i class="bk-off">-' + PAY_OFF + '%</i>' + go + '</button>' +
       '<button type="button" class="bk-pb clinic' + (S.pay === 'clinic' ? ' on' : '') + '" data-pay="clinic"><span class="bk-pb-t"><b>Rezerv și plătesc în clinică</b><small>' + lei(full) + ', în ziua programării</small></span>' + go + '</button>' +
       '</div>';
   }
@@ -506,7 +527,7 @@
   function youHtml() {
     const s = S.service || {};
     const paid = payable() && S.pay ? '<div class="bk-paid"><div><b>' + (payOnline() ? 'Plătești online ' + lei(payAmount(s.price)) : 'Plătești în clinică ' + lei(s.price)) + '</b><small>' +
-      (payOnline() ? 'Cu ' + PAY_OFF + '% reducere, toată oferta' : 'În ziua programării') + '</small></div><button type="button" class="bk-link" data-go="pay">Schimbă' + ICON.next + '</button></div>' : '';
+      (payOnline() ? 'Cu ' + PAY_OFF + '% reducere' + (s.id === 'custom' ? '' : ', toată oferta') : 'În ziua programării') + '</small></div><button type="button" class="bk-link" data-go="pay">Schimbă' + ICON.next + '</button></div>' : '';
     return '<p class="bk-eyebrow">Ultimul pas</p><h2 class="bk-h">Unde îți trimitem <em>confirmarea?</em></h2>' + sumHtml() + paid +
       (S.err && S.err !== 'net' ? '<div class="bk-alert">' + S.err + '</div>' : '') +
       '<form novalidate data-bk-form>' +
@@ -517,8 +538,37 @@
       '<button type="submit" class="bk-cta"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '<span class="spin"></span>Se programează…' : payOnline() ? 'Programează-mă și plătesc ' + lei(payAmount(s.price)) : 'Programează-mă') + '</button>' +
       '<p class="bk-note">Îți trimitem imediat un mesaj pe WhatsApp. Ca programarea să rămână valabilă, confirm-o răspunzând „Confirm”.</p></form>';
   }
+  // the payment, in the same sheet, right after the booking was made (the booking is kept whatever happens: paid online, or at
+  // the clinic if she chooses so)
+  function checkoutHtml() {
+    const a = S.done || {};
+    return '<p class="bk-eyebrow">Plata</p><h2 class="bk-h">Programarea e făcută. <em>Acum plata.</em></h2>' +
+      '<p class="bk-when">' + esc(niceDay(a.date || S.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(a.time || S.time) + '<small>' + esc(a.treatment || (S.service || {}).title || '') + ' · Centrul360 ' + esc(a.location || S.city) + '</small></p>' +
+      '<div data-bk-checkout></div>';
+  }
+  function mountCheckout() {
+    const el = body.querySelector('[data-bk-checkout]');
+    if (!el || !S.done || !S.done.id || !window.C360Pay) return;
+    const mine = S;
+    window.C360Pay.open({
+      kind: 'booking', ref: S.done.id, city: S.city, page: PAGE, mount: el,
+      onOrder: (o) => { mine.order = o; },
+      onPaid: (r) => { if (S !== mine) return; S.paid = r; go('done'); },
+      onClinic: () => { if (S !== mine) return; S.pay = 'clinic'; S.order = null; go('done'); },
+    });
+  }
   function doneHtml() {
     const a = S.done || {};
+    if (S.paid) {
+      const day = esc(niceDay(a.date).replace(/^./, (c) => c.toUpperCase()));
+      return '<div class="bk-done"><div class="bk-check">' + ICON.check + '</div><p class="bk-eyebrow" style="justify-content:center">' + (S.paid.confirmed ? 'Plătit' : 'Plată în confirmare') + '</p>' +
+        '<h2 class="bk-h">Plătit. Ne vedem <em>' + esc(niceDay(a.date)) + '.</em></h2><p>' + (S.paid.confirmed ? 'Programarea e confirmată. Îți trimitem și pe WhatsApp.' : 'Banca mai confirmă plata câteva clipe. Îți scriem pe WhatsApp imediat ce vine.') + '</p>' +
+        '<div class="bk-card">' +
+        '<div class="bk-row">' + ICON.cal + '<div><b>' + day + ', ora ' + esc(a.time) + '</b><small>' + mins(minsBetween(a.time, a.endTime)) + '</small></div></div>' +
+        '<div class="bk-row">' + ICON.spark + '<div><b>' + esc(a.treatment) + '</b><small>' + lei(S.paid.amount) + ', plătit online, cu ' + PAY_OFF + '% reducere</small></div></div>' +
+        '<div class="bk-row">' + ICON.pin + '<div><b>Centrul360 ' + esc(a.location) + '</b><small>' + esc(ADDR[a.location]) + '</small></div></div></div>' +
+        '<div class="bk-two"><button type="button" class="bk-ghost" data-ics>' + ICON.cal + 'În calendar</button><a class="bk-ghost" href="' + MAPS[a.location] + '" target="_blank" rel="noopener">' + ICON.pin + 'Vezi pe hartă</a></div></div>';
+    }
     if (payOnline() && S.payUrl) {
       const n = lei(payAmount(S.service.price));
       return '<div class="bk-done"><div class="bk-check">' + ICON.check + '</div><p class="bk-eyebrow" style="justify-content:center">Programare făcută</p>' +
@@ -602,16 +652,20 @@
     const eid = 'bk.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
     const booking = { city: S.city, service: S.svc, label: S.svc === 'custom' ? S.label : '', date: S.date, time: S.time, name: S.name, phone: S.phone, consent: true, page: PAGE, src: SRC, event_id: window.C360_CONSENT === true ? eid : '' };
     if (payable() && S.pay === 'clinic') booking.pay = 'clinic';
-    (payOnline() ? startOnlinePay({ offer: S.service, amount: payAmount(S.service.price), booking }) : book(booking)).then(({ r, d }) => {
+    if (S.svc === 'custom' && S.pick && S.pick.treatment) booking.treatment = S.pick.treatment;
+    const viaCheckout = payOnline() && S.embed;
+    if (viaCheckout) booking.pay = 'online-checkout';
+    (viaCheckout ? book(booking) : payOnline() ? startOnlinePay({ offer: S.service, amount: payAmount(S.service.price), booking }) : book(booking)).then(({ r, d }) => {
       S.busy = false;
       if (r.ok && d.ok) {
         store.set('c360-book-me', { name: S.name, phone: S.phone });
         Object.keys(early).forEach((k) => delete early[k]);
         S.done = d.appointment || { date: S.date, time: S.time, location: S.city, treatment: (S.service || {}).title };
         track(eid);
-        go('done');
+        go(viaCheckout && S.done.id ? 'checkout' : 'done');
         return;
       }
+      if (d.error === 'pay_off') { S.embed = false; S.pay = ''; embedP = null; go('pay', 'back'); return; } // switched off meanwhile: the old way
       const e2 = d.error;
       if (e2 === 'taken') { Object.keys(early).forEach((k) => delete early[k]); S.err = ''; S.time = ''; go('when', 'back'); load(true); setTimeout(() => { const b = root.querySelector('.bk-body .bk-step'); if (b) b.insertAdjacentHTML('afterbegin', '<div class="bk-alert">Ora aleasă tocmai a fost ocupată. Alege, te rog, altă oră.</div>'); }, 400); return; }
       S.err = e2 === 'has_booking' && d.at ? 'Ai deja o programare ' + esc(d.at.nice) + ', la ora ' + esc(d.at.time) + '. Pentru a o muta, <a href="' + waLink() + '" target="_blank" rel="noopener">scrie-ne pe WhatsApp</a>.'
@@ -663,11 +717,15 @@
   // ---------------------------------------------------------------- open / close
   function start(o) {
     S = fresh(o || {});
-    S.pick = S.svc ? { svc: S.svc, label: S.label, price: (o && o.price) || 0, old: (o && o.old) || 0 } : null; // what the button named
+    S.pick = S.svc ? { svc: S.svc, label: S.label, price: (o && o.price) || 0, old: (o && o.old) || 0, treatment: (o && o.treatment) || '' } : null; // what the button named
+    // the Full Body package booked by its name (it had its own payment link): the same row of the price list
+    if (S.pick && S.pick.svc === 'custom' && !S.pick.treatment && fullBody(S.label) && /pachet|6\s*[sș]edin/i.test(S.label)) S.pick.treatment = 'epilare-full-body-pachet-6-sedinte';
     S.svc = '';
     // an offer's button with its clinic (an offer of one city): only that clinic (the owner, 21.11)
     S.lock = !!(o && o.city) && !!(S.pick && S.pick.svc !== 'consult');
     ['Timișoara', 'Arad'].forEach((c) => cityData(c).catch(() => {}));
+    const mine = S;
+    embedOn().then((on) => { if (S === mine && on !== S.embed && ['city', 'svc', 'when'].includes(S.step)) { S.embed = on; paint(); } else if (S === mine) S.embed = on; });
     if (!S.city) { S.step = 'city'; paint(); return; }
     S.step = 'when';
     paint();
@@ -684,20 +742,27 @@
     if (!pushed) { try { history.pushState({ bk: 1 }, '', location.href.replace(/#programare$/, '')); pushed = true; } catch (e) { /* no history */ } }
     setTimeout(() => { const f = root.querySelector('.bk-svc, .bk-cd.on, [data-bk-close]'); if (f) f.focus({ preventScroll: true }); }, 60);
   }
+  // closed while the payment form was open and nothing was paid: the booking stays, paid at the clinic (full price)
+  function leaveCheckout() {
+    if (!S || S.step !== 'checkout' || S.paid || !S.order) return;
+    try { fetch('/api/pay', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clinic', orderId: S.order.orderId, key: S.order.key }) }); } catch (e) { /* the clock lets it go */ }
+    S.order = null;
+  }
   function close() {
     if (!root || inline) return;
+    leaveCheckout();
     root.classList.remove('open'); document.documentElement.style.overflow = '';
     if (pushed) { pushed = false; try { history.back(); } catch (e) { /* nothing */ } }
     if (lastFocus && lastFocus.focus) try { lastFocus.focus({ preventScroll: true }); } catch (e) { /* gone */ }
   }
-  window.addEventListener('popstate', () => { if (pushed) { pushed = false; if (root && !inline) { root.classList.remove('open'); document.documentElement.style.overflow = ''; } } });
+  window.addEventListener('popstate', () => { if (pushed) { pushed = false; if (root && !inline) { leaveCheckout(); root.classList.remove('open'); document.documentElement.style.overflow = ''; } } });
   function mount(el, o) { inline = true; root = build(el); start(o || {}); }
 
   // ---------------------------------------------------------------- the buttons of the site
   // what a button books: from data-book-* first, else from the WhatsApp text it carried (the offer, the city)
   function intentOf(a) {
     // data-book-price / data-book-old: a fixed price the Admin offers don't carry (the Full Body package, booked by its name)
-    if (a.hasAttribute('data-book')) return { service: a.dataset.bookService || '', city: a.dataset.bookCity || '', label: a.dataset.bookLabel || '', price: +a.dataset.bookPrice || 0, old: +a.dataset.bookOld || 0 };
+    if (a.hasAttribute('data-book')) return { service: a.dataset.bookService || '', city: a.dataset.bookCity || '', label: a.dataset.bookLabel || '', price: +a.dataset.bookPrice || 0, old: +a.dataset.bookOld || 0, treatment: a.dataset.bookTreatment || '' };
     if (a.hasAttribute('data-sim-consult')) return { service: 'consult', city: '', label: '' }; // the home page's results: the free consultation
     const href = a.getAttribute('href') || '';
     if (!/wa\.me\//.test(href)) return null;
@@ -734,7 +799,7 @@
   }
   document.addEventListener('click', (e) => {
     if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button > 0) return;
-    const a = e.target.closest('a[href], button[data-book], button[data-sim-consult]');
+    const a = e.target.closest('a[href], button[data-book], [data-book][role="button"], button[data-sim-consult]');
     if (!a || (root && root.contains(a))) return;
     const o = intentOf(a);
     if (!o) return;

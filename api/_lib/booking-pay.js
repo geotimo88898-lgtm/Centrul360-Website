@@ -26,7 +26,9 @@ const roDay = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucha
 const madeAt = (a) => Date.parse(a.createdAt) || 0;
 const waits = (a) => !!a && a.pay === 'online-pending' && Number(a.payAmount) > 0 && !a.paidOnline && !['anulata', 'concediu'].includes(a.status);
 const same = (x, y) => Math.abs(Number(x) - Number(y)) < 0.01;
-const candsOf = (appts, amount, t) => appts.filter((a) => waits(a) && same(a.payAmount, amount) && madeAt(a) <= t + 5 * 60e3 && t - madeAt(a) <= MATCH_MS)
+// a booking paid through the site's own checkout (payVia 'checkout', api/_lib/pay.js) is paid only on myPOS's signed word for
+// its order, never by a matching sum: only the old link payments are paired here
+const candsOf = (appts, amount, t) => appts.filter((a) => waits(a) && a.payVia !== 'checkout' && same(a.payAmount, amount) && madeAt(a) <= t + 5 * 60e3 && t - madeAt(a) <= MATCH_MS)
   .sort((a, b) => madeAt(a) - madeAt(b));
 const desk = (loc) => require('./notify').deskIds({ readJSON }, loc || '');
 
@@ -39,8 +41,9 @@ async function recordSale(a, p) {
     id: crypto.randomUUID(), source: 'incasare', bookingPay: true, label: 'Plată online programare', appointmentId: a.id, online: true, // a myPOS link, never a POS terminal's
     employeeId: 'site-booking', performedBy: '', clientId: a.clientId || '', client: a.clientName || '', clientPhone: a.clientPhone || '',
     date: roDay(Date.parse(p.at) || Date.now()), location: a.location || '', categories: a.categories || [], category: a.category || '',
-    treatment: (a.treatment || 'Programare') + ' · plătită online, cu 10% reducere', amount: r2(p.amount), bookedAmount: 0, upsell: 0,
-    method: 'card', split: null, status: 'recorded', commission: 0, note: 'Online (myPOS) · programarea din ' + a.date + ' ' + (a.time || ''),
+    treatment: (a.treatment || 'Programare') + ' · plătită online, cu ' + (Number(a.payBonus) || 10) + '% reducere', amount: r2(p.amount), bookedAmount: 0, upsell: 0,
+    method: 'card', split: null, status: 'recorded', commission: 0, note: 'Online (myPOS) · programarea din ' + a.date + ' ' + (a.time || '') + (p.orderId ? ' · comanda ' + p.orderId : ''),
+    ...(p.orderId ? { payOrderId: p.orderId } : {}),
     createdAt: nowISO(), decidedAt: null,
   };
   sales.push(entry);
@@ -70,7 +73,7 @@ async function markPaid(apptId, p, by) {
     if (!waits(a)) return null;
     const sale = await recordSale(a, p);
     const confirmNow = a.status === 'programata';
-    Object.assign(a, { pay: 'online-paid', paidOnline: { amount: r2(p.amount), ref: p.ref, at: p.at || nowISO(), src: p.src || 'mypos', saleId: sale.id, by: by || 'auto' }, updatedAt: nowISO() });
+    Object.assign(a, { pay: 'online-paid', paidOnline: { amount: r2(p.amount), ref: p.ref, at: p.at || nowISO(), src: p.src || 'mypos', saleId: sale.id, by: by || 'auto', ...(p.orderId ? { orderId: p.orderId } : {}) }, updatedAt: nowISO() });
     delete a.payCheck;
     if (confirmNow) Object.assign(a, { status: 'confirmata', statusBy: 'Automat: plătită online' });
     if (!(await store.writeJSONIf('data/appointments.json', appts, etag))) continue;
@@ -135,10 +138,13 @@ async function matchPays(pays) {
   for (const p of (pays || []).slice().sort((a, b) => Date.parse(a.at) - Date.parse(b.at))) {
     if (!p.ref || used.has(p.ref) || !(Number(p.amount) > 0)) continue;
     const t = Date.parse(p.at) || Date.now();
+    // the same sum as a booking paid through the site's checkout (still waiting for myPOS's word, or just paid): that
+    // payment is surely the checkout's own, left alone (asked about again on the next scan, when the checkout has settled)
+    if (fresh.some((a) => a && a.payVia === 'checkout' && same(a.payAmount, p.amount) && (a.paidOnline ? Math.abs(t - (Date.parse(a.paidOnline.at) || 0)) < 30 * 60e3 : waits(a) && t - madeAt(a) <= MATCH_MS && madeAt(a) <= t + 5 * 60e3))) continue;
     const cands = candsOf(fresh, p.amount, t);
     if (!cands.length) {
       // the sum of a recent online booking that waits for nothing (cancelled before she paid): the desk looks at it
-      const near = fresh.find((a) => a && (a.pay === 'online-pending' || a.pay === 'online-paid') && same(a.payAmount, p.amount) && Math.abs(t - madeAt(a)) <= 7 * 864e5);
+      const near = fresh.find((a) => a && a.payVia !== 'checkout' && (a.pay === 'online-pending' || a.pay === 'online-paid') && same(a.payAmount, p.amount) && Math.abs(t - madeAt(a)) <= 7 * 864e5);
       if (near && !refs.some((x) => x.ref === p.ref)) {
         used.add(p.ref); changed = true;
         refs.push({ id: crypto.randomUUID().slice(0, 12), ref: p.ref, amount: r2(p.amount), at: p.at, src: p.src || 'mypos', found: nowISO(), cands: [], state: 'orphan' });
@@ -182,7 +188,7 @@ async function openChecks() { return (await readJSON(KEY, []).catch(() => [])).f
 // on the clock: only while a booking waits for its payment (or a payment waits in „De verificat”), at most every 3 minutes
 async function autoMatch(force) {
   const appts = await readJSON('data/appointments.json', []);
-  const waiting = appts.filter((a) => waits(a) && Date.now() - madeAt(a) < MATCH_MS);
+  const waiting = appts.filter((a) => waits(a) && a.payVia !== 'checkout' && Date.now() - madeAt(a) < MATCH_MS);
   const checks = await openChecks();
   if (!waiting.length && !checks.length && !force) return { waiting: 0 };
   const last = await readJSON(SCAN, {}).catch(() => ({}));

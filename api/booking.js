@@ -24,8 +24,14 @@ const DAYS = ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmb
 const MONTHS = ['ian.', 'feb.', 'mar.', 'apr.', 'mai', 'iun.', 'iul.', 'aug.', 'sept.', 'oct.', 'nov.', 'dec.'];
 const nice = (d) => { const x = new Date(d + 'T12:00:00Z'); return DAYS[x.getUTCDay()] + ' ' + x.getUTCDate() + ' ' + MONTHS[x.getUTCMonth()]; };
 
-async function pick(city, id, label) {
+async function pick(city, id, label, treatmentId) {
   const list = await B.services(city, { site: true }); // the site's booking: only the offers of the site
+  // a treatment of the price list (Prețuri), by its id: its name, its fixed price and its length from the list, never the page's
+  if (id === 'custom' && treatmentId) {
+    const t = require('./_lib/pay').treatment(clip(treatmentId, 120), city);
+    if (t) return { list, svc: { id: 'custom', title: t.group === 'faciale' ? t.title.replace(/^[^·]+·\s*/, '') : t.title, sub: '', price: t.price, old: t.old || 0, minutes: t.minutes, cat: t.cat === 'epilare' ? 'epilare' : t.cat, treatment: t.id } };
+    return { list, svc: null };
+  }
   if (id === 'custom') return { list, svc: B.custom(label, city) };
   return { list, svc: list.find((s) => s.id === id) || null };
 }
@@ -38,7 +44,7 @@ module.exports = async (req, res) => {
       const q = req.query || {};
       const city = cityOf(q.city) || 'Timișoara';
       // read together; the edge keeps the answer a few seconds (a booking checks the hour again, fresh)
-      const [cfg, picked, appts] = await Promise.all([B.settings({ team: true }), pick(city, clip(q.service, 60) || 'consult', q.label), readJSON('data/appointments.json', [])]);
+      const [cfg, picked, appts] = await Promise.all([B.settings({ team: true }), pick(city, clip(q.service, 60) || 'consult', q.label, q.treatment), readJSON('data/appointments.json', [])]);
       const { list, svc } = picked;
       const s = svc || list[0];
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=10, stale-while-revalidate=50');
@@ -68,15 +74,21 @@ module.exports = async (req, res) => {
     if (!/^07\d{8}$/.test(phone) && !/^[1-9]\d{10,14}$/.test(phone)) { res.status(400).json({ error: 'bad_phone' }); return; }
     if (!city) { res.status(400).json({ error: 'missing_city' }); return; }
     if (!(b.consent === true || b.consent === 'true' || b.consent === 'on')) { res.status(400).json({ error: 'missing_consent' }); return; }
-    const { svc } = await pick(city, clip(b.service, 60), b.label);
+    const { svc } = await pick(city, clip(b.service, 60), b.label, b.treatment);
     if (!svc) { res.status(400).json({ error: 'bad_service' }); return; }
     const date = clip(b.date, 10), time = clip(b.time, 5);
     if (!B.isDate(date) || B.toMin(time) == null) { res.status(400).json({ error: 'bad_time' }); return; }
 
     // how she chose to pay (the site's pay step, c360-book.js): 'online-pending' (she is sent to the myPOS link, the team
     // checks the money in myPOS) with what she pays, or 'clinic'. Old pages send nothing: nothing is saved.
-    const pay = b.pay === 'online-pending' || b.pay === 'clinic' ? b.pay : '';
-    const payAmount = pay === 'online-pending' && Number.isInteger(Number(b.payAmount)) && Number(b.payAmount) > 0 &&
+    // 'online-checkout' (23.11): paid in the slip itself through the site's checkout (api/pay.js); the sum is the server's (the
+    // price minus the online bonus), the booking is paid only on myPOS's signed word for its order (api/_lib/pay.js)
+    const P = require('./_lib/pay');
+    const viaCheckout = b.pay === 'online-checkout' && svc.price > 0 && svc.id !== 'consult';
+    if (b.pay === 'online-checkout' && !viaCheckout) { res.status(400).json({ error: 'not_payable' }); return; }
+    if (viaCheckout && !(await P.status()).on) { res.status(409).json({ error: 'pay_off' }); return; }
+    const pay = viaCheckout ? 'online-pending' : b.pay === 'online-pending' || b.pay === 'clinic' ? b.pay : '';
+    const payAmount = viaCheckout ? P.bonusPrice(svc.price) : pay === 'online-pending' && Number.isInteger(Number(b.payAmount)) && Number(b.payAmount) > 0 &&
       Number(b.payAmount) <= (svc.price > 0 ? svc.price : svc.id === 'custom' ? 20000 : 0) ? Number(b.payAmount) : 0;
     const appts = await readJSON('data/appointments.json', []);
     const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
@@ -101,8 +113,10 @@ module.exports = async (req, res) => {
       clientId: client.id, clientName: client.name || name, clientPhone: client.phone || phone,
       treatment: svc.title, categories: [svc.cat || 'corporale'], category: svc.cat || 'corporale',
       amount: svc.price || 0, location: city, cosmeticianId: who ? who.id : '', cosmeticianName: who ? who.name : '', status: 'programata', package: false,
-      note: clip(['Programare online pe site', svc.id === 'consult' ? '' : svc.price ? svc.price + ' lei' : '', payAmount ? 'Plată online ' + payAmount + ' lei, de verificat în myPOS' : '', clip(b.page, 120)].filter(Boolean).join(' · '), 500),
-      ...(payAmount ? { pay, payAmount, track: capi.fromRequest(req, b.page) } : pay === 'clinic' ? { pay } : {}), // track: her browser's ids, for the Purchase when she pays
+      note: clip(['Programare online pe site', svc.id === 'consult' ? '' : svc.price ? svc.price + ' lei' : '', payAmount ? 'Plată online ' + payAmount + ' lei' + (viaCheckout ? ', pe site' : ', de verificat în myPOS') : '', clip(b.page, 120)].filter(Boolean).join(' · '), 500),
+      // track: her browser's ids, for the Purchase when she pays
+      ...(payAmount ? { pay, payAmount, track: capi.fromRequest(req, b.page), ...(viaCheckout ? { payVia: 'checkout', payBonus: P.BONUS_PCT } : {}) } : pay === 'clinic' ? { pay } : {}),
+      ...(svc.treatment ? { priceListId: svc.treatment } : {}),
       online: true, createdBy: 'site', createdAt: at, updatedAt: at,
       src: B.sourceOf(b.src, req.headers && req.headers.cookie), // where she came from: saved, not shown in the Calendar
     };
@@ -162,7 +176,7 @@ module.exports = async (req, res) => {
       await require('./_lib/site-confirm').start(entry, asked ? '' : sent.length ? 'tpl' : 'nowa');
     } catch (e) { console.error('booking site-confirm:', e.message); }
 
-    res.status(200).json({ ok: true, appointment: { date, time, endTime: entry.endTime, nice: nice(date), location: city, treatment: svc.title } });
+    res.status(200).json({ ok: true, appointment: { id: entry.id, date, time, endTime: entry.endTime, nice: nice(date), location: city, treatment: svc.title, ...(viaCheckout ? { payAmount } : {}) } });
     // the booking's Schedule, from the server too (Conversions API), with the event_id the page gave its pixel: counted once
     await capi.soon(() => capi.siteEvent(req, { name: 'Schedule', eventId: b.event_id, phone: entry.clientPhone, leadId: lead && lead.id, custom: { value: svc.price || 0 } }));
   } catch (err) {

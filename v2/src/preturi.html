@@ -68,6 +68,14 @@ description: Prețuri transparente pentru tratamente faciale, HIFU, radiofrecven
 .prt-epi[data-g="f"] .prt-f0, .prt-epi[data-g="m"] .prt-m0{ display:none; }
 .prt-epo .prt-z{ grid-template-columns:minmax(0,1fr) auto; }
 .prt-fbn{ flex-basis:100%; font-size:13px; color:var(--mute); }
+/* every fixed price can be booked (and paid online) from its row: the row is the button, a small arrow after the price */
+.prt-tr > div[data-book], .prt-z[data-book]{ cursor:pointer; -webkit-tap-highlight-color:transparent; border-radius:12px; transition:background-color .35s var(--e); }
+.prt-tr > div[data-book]:not(.prt-of){ margin:0 -10px; padding:6px 10px; }
+.prt-tr > div[data-book]:hover, .prt-z[data-book]:hover{ background:rgba(20,165,150,.06); }
+.prt-tr > div[data-book]:focus-visible, .prt-z[data-book]:focus-visible{ outline:2px solid rgba(20,165,150,.5); outline-offset:2px; }
+.prt-tr > div[data-book] > b::after, .prt-z[data-book] > b::after{ content:''; display:inline-block; width:7px; height:7px; margin-left:9px; vertical-align:2px; border:solid var(--teal2); border-width:2px 2px 0 0; transform:rotate(45deg); opacity:.55; transition:transform .5s var(--e), opacity .3s; }
+.prt-tr > div[data-book]:hover > b::after, .prt-z[data-book]:hover > b::after{ opacity:1; transform:translateX(3px) rotate(45deg); }
+.prt-z[data-book]{ margin:0 -10px; padding:15px 10px; }
 .prt-epo .prt-bk{ grid-column:1 / -1; padding:0; }
 .prt-fn{ display:grid; gap:12px; margin-top:24px; }
 .prt-fn p{ display:flex; gap:12px; align-items:flex-start; font-size:15px; color:var(--mute); line-height:1.55; }
@@ -425,5 +433,49 @@ description: Prețuri transparente pentru tratamente faciale, HIFU, radiofrecven
     });
   });
   settle(); place();
+
+  // every fixed price is a booking (and, with the online payment on, paid in the slip with the online bonus): the row books
+  // that treatment by its id in the price list (api/_lib/price-list.gen.json, made from this page by qa/price-list.cjs); the
+  // price itself is always the server's
+  var slug = function (x) { return String(x).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\+/g, ' plus ').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
+  var own = function (el) { return [].slice.call(el.childNodes).filter(function (n) { return n.nodeType === 3; }).map(function (n) { return n.textContent; }).join(' ').replace(/\s+/g, ' ').trim(); };
+  var TM = { ems: 1, impachetare: 1, epilare: 1 };
+  var mark = function (el, id, label, city) {
+    el.setAttribute('data-book', ''); el.setAttribute('data-book-service', 'custom'); el.setAttribute('data-book-treatment', id); el.setAttribute('data-book-label', label);
+    el.setAttribute('role', 'button'); el.setAttribute('tabindex', '0');
+    if (city) el.setAttribute('data-book-city', city);
+  };
+  groups.forEach(function (g) {
+    var gname = own(g.querySelector('h3') || g) || g.id, city = TM[g.id] ? 'Timișoara' : '';
+    $$('.prt-it', g).forEach(function (it) {
+      var nm = it.querySelector('.prt-nm b'); if (!nm) return;
+      $$('.prt-tr > div', it).forEach(function (t) {
+        if (t.hasAttribute('data-prt-offer')) return; // an Admin offer: its own „Rezervă oferta”
+        var sp = t.querySelector('span'), b = t.querySelector(':scope > b');
+        if (!sp || !b) return;
+        var tier = own(sp);
+        mark(t, slug(g.id + ' ' + nm.textContent.trim() + ' ' + tier), (g.id === 'faciale' ? '' : gname + ' · ') + nm.textContent.trim() + ' · ' + tier, city);
+      });
+    });
+    $$('.prt-epi[data-g] .prt-z', g).forEach(function (z) {
+      var sp = z.querySelector('span'); if (!sp) return;
+      var zone = own(sp);
+      z.setAttribute('data-id-f', slug(g.id + ' ' + zone + ' f')); z.setAttribute('data-id-m', slug(g.id + ' ' + zone + ' m'));
+      mark(z, '', 'Epilare laser · ' + zone, 'Timișoara');
+    });
+  });
+  // the laser rows book the price shown: women's or men's
+  function zoneIds() {
+    var gg = gender() || 'f';
+    $$('.prt-z[data-id-f]').forEach(function (z) {
+      z.setAttribute('data-book-treatment', z.getAttribute('data-id-' + gg));
+      z.setAttribute('data-book-label', z.getAttribute('data-book-label').replace(/ · (femei|bărbați)$/, '') + ' · ' + (gg === 'm' ? 'bărbați' : 'femei'));
+    });
+  }
+  zoneIds();
+  if (seg) seg.addEventListener('click', zoneIds);
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[data-book][role=button]')) { e.preventDefault(); e.target.click(); }
+  });
 })();
 </script>
