@@ -128,8 +128,8 @@
 .tf .cp-rec-l i{ width:8px; height:8px; border-radius:2px; display:inline-block; }
 .tf .r0{ background:var(--good); } .tf .r1{ background:var(--accent); } .tf .r2{ background:var(--info); } .tf .r3{ background:var(--warn); } .tf .r4{ background:var(--muted); } .tf .r5{ background:var(--line); }
 .tf .cp-scroll{ overflow-x:auto; margin:0 -.2rem; padding:0 .2rem; }
-.tf .cp-lots{ min-width:980px; display:flex; flex-direction:column; }
-.tf .cp-lr{ display:grid; grid-template-columns:minmax(0,13rem) repeat(11,minmax(0,1fr)); gap:.5rem; align-items:center; padding:.55rem .5rem; border:0; border-top:1px solid var(--line); background:none; color:inherit; font:inherit; font-size:.82rem; text-align:right; border-radius:10px; cursor:pointer; }
+.tf .cp-lots{ min-width:1060px; display:flex; flex-direction:column; }
+.tf .cp-lr{ display:grid; grid-template-columns:minmax(0,13rem) repeat(12,minmax(0,1fr)); gap:.5rem; align-items:center; padding:.55rem .5rem; border:0; border-top:1px solid var(--line); background:none; color:inherit; font:inherit; font-size:.82rem; text-align:right; border-radius:10px; cursor:pointer; }
 .tf .cp-lr > span{ font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
 .tf .cp-lr .cp-ln{ text-align:left; display:flex; flex-wrap:wrap; align-items:baseline; gap:.15rem .45rem; white-space:normal; }
 .tf .cp-lr .cp-ln small{ flex-basis:100%; color:var(--muted); font-size:.72rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -165,3 +165,6 @@
   .tf .cp-lr.cp-lh > :first-child{ display:none; }
   .tf .cp-lr.cp-lh{ font-size:.66rem; }
 }
+
+/* five money tiles (the messages' cost added, 23.11): five in a row on a wide screen */
+@media (min-width:1101px){ .tf .k-grid.tf-top5{ grid-template-columns:repeat(5,minmax(0,1fr)); } }

@@ -96,4 +96,47 @@ async function probe(month) {
   return out;
 }
 
-module.exports = { monthCost, costIn, probe, monthBounds };
+
+// a campaign's own spend (the owner, 23.11: „cât am cheltuit pe mesaje”): the MARKETING messages Meta charged between two
+// moments (Unix seconds), every WhatsApp account summed, in lei: { lei, volume, unit, byCity, readAt } or { error }. A
+// marketing message is charged when it is delivered, so lei / volume is what one delivered message cost.
+async function rangeMarketing(readJSON, start, end) {
+  const WA = require('./whatsapp');
+  const cfg = await WA.loadConfig().catch(() => null);
+  const accounts = new Map();
+  (WA.CITIES || []).forEach((city) => {
+    const n = cfg && cfg.numbers && cfg.numbers[city];
+    if (!n || !n.wabaId || !n.token) return;
+    const a = accounts.get(String(n.wabaId)) || { token: n.token, cities: [] };
+    a.cities.push(city);
+    accounts.set(String(n.wabaId), a);
+  });
+  if (!accounts.size) return { lei: 0, volume: 0, unit: 0, byCity: {}, none: true };
+  end = Math.min(end, Math.floor(Date.now() / 1000));
+  start = Math.floor(start / 86400) * 86400; // Meta's DAILY points start at a day's 00:00 UTC
+  if (end <= start) return { lei: 0, volume: 0, unit: 0, byCity: {} };
+  return require('./ads-cache').cached('wa-mkt-' + start, 3600e3, async () => {
+    const { writeJSON } = require('./store');
+    const eur = await require('./eur-rate').eurToday(readJSON, writeJSON).catch(() => null);
+    const toLei = (cost, cur) => (/^RON$/i.test(cur) ? cost : /^EUR$/i.test(cur) && eur && eur.rate ? cost * eur.rate : /^USD$/i.test(cur) && eur && eur.usd ? cost * eur.usd : null);
+    let lei = 0, volume = 0;
+    const byCity = {};
+    for (const [id, a] of accounts) {
+      const range = '.start(' + start + ').end(' + end + ').granularity(DAILY).dimensions(["PRICING_CATEGORY"])';
+      const p = await graph(id, a.token, 'currency,pricing_analytics' + range);
+      if (p.error) return { error: p.error };
+      let cost = 0, vol = 0;
+      ((p.pricing_analytics && p.pricing_analytics.data) || []).forEach((d) => ((d && d.data_points) || []).forEach((x) => {
+        if (x && x.pricing_category && String(x.pricing_category).toUpperCase() !== 'MARKETING') return;
+        cost += Number(x && x.cost) || 0; vol += Number(x && x.volume) || 0;
+      }));
+      const l = toLei(cost, p.currency);
+      if (l == null) return { error: 'costul vine în ' + (p.currency || 'moneda necunoscută') + ' și cursul lui lipsește acum' };
+      lei += l; volume += vol;
+      a.cities.forEach((c) => { byCity[c] = r2((byCity[c] || 0) + l / a.cities.length); });
+    }
+    return { lei: r2(lei), volume, unit: volume ? Math.round((lei / volume) * 1000) / 1000 : 0, byCity, readAt: new Date().toISOString() };
+  }, { keep: true });
+}
+
+module.exports = { monthCost, costIn, probe, monthBounds, rangeMarketing };
