@@ -508,6 +508,18 @@ module.exports = async (req, res) => {
     res.status(200).json({ at: aud && aud.at, days: aud && aud.ig && aud.ig.online && aud.ig.online.days ? aud.ig.online.days.length : 0, grid: g });
     return;
   }
+  // ?cardrecent=1: the card orders of the last 2 days, no name and no phone (id, when, tier, clinic, status, how it came, the
+  // page path it came from, the trail's kinds and times), to check a case without opening the portal
+  if (req.query && req.query.cardrecent) {
+    const C = require('./_lib/card-sarbatori');
+    const list = await readJSON(C.KEY, []);
+    const since = Date.now() - 2 * 864e5;
+    const path = (u) => { try { const x = new URL(String(u || '')); return x.pathname + (x.search ? '?' + [...x.searchParams.keys()].join('&') : ''); } catch (e) { return ''; } };
+    res.status(200).json((list || []).filter((r) => Date.parse(r.created) > since).map((r) => ({ id: r.id, created: r.created, tier: r.tier, amount: r.amount, city: r.city, status: r.status, via: r.via, pay: r.pay,
+      page: path(r.page), ref: path(r.referrer || r.ref), utm: r.utm || null, batch: r.batch || r.lot || null, trail: (r.trail || r.log || []).map((t) => ({ at: t.at, kind: t.kind || t.what || t.type || '' })).slice(0, 20),
+      checkout: r.checkout ? { opened: r.checkout.openedAt || r.checkout.at || '', back: r.checkout.backAt || '' } : null })));
+    return;
+  }
   // ?mprlive=1: the payment requests route's state (no keys); POST {"on": true|false} switches it on the site (the owner)
   if (req.query && req.query.mprlive) {
     const RQ = require('./_lib/mypos-requests'), ST = require('./_lib/store');
