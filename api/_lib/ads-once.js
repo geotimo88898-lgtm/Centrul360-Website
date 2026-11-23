@@ -12,6 +12,16 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 23.11 ~00:20, the first copy (1713044987053623) was made with a draft ending, before George's final words; the final
+  // one: copied from it as it is, only the ending in George's words; every C360 ad on the first copy or on the old WhatsApp
+  // form moves to it, the template too, and the draft copy is archived once no ad sends into it
+  { id: 'form-home-hifu-tm-v2-2026-11-23', why: 'Finalul formularului HIFU gușă TM, în cuvintele lui George', formSite: {
+    formId: '1713044987053623', name: 'HIFU Gușă 190 · Timișoara · site', moveFrom: ['1713044987053623', '1604290084129939'], archive: '1713044987053623',
+    page: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un pas 👇 Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.', button_type: 'VIEW_WEBSITE', button_text: 'VEZI MAI MULTE 👉',
+      website_url: 'https://www.centrul360.com/?utm_source=facebook&utm_medium=leadform&utm_campaign=hifu-gusa-tm' } } },
+  { id: 'form-template-home-v2-2026-11-23', why: 'Formularele noi se termină pe site, în cuvintele lui George', template: {
+    ending: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un pas 👇 Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.' },
+    cta: { type: 'VIEW_WEBSITE', text: 'VEZI MAI MULTE 👉', url: 'https://www.centrul360.com/?utm_source=facebook&utm_medium=leadform' } } },
   // 23.11, George: „ACUM ÎN RECLAME FIECARE FINAL DE FORMULAR VREAU SĂ DUCĂ PE SITE, PE HOMEPAGE”. A published form can't
   // change: HIFU Gușă 190 · Timișoara is copied as it is (questions, answers, privacy, language, title of the questions
   // page), only its ending now sends her to the home page; the running ad moves to the copy (same texts, same picture)
@@ -22,7 +32,7 @@ const JOBS = [
   // 23.11, George: every HIFU gușă campaign sends into the site form; Arad gets its twin (the same questions and ending,
   // Arad's routing), so an Arad HIFU gușă campaign can use it
   { id: 'form-home-hifu-ar-2026-11-23', why: 'Finalul formularului duce pe site: HIFU gușă Arad', formSite: {
-    formId: '1532605858616346', name: 'HIFU Gușă 190 · Arad · site',
+    formId: '1532605858616346', name: 'HIFU Gușă 190 · Arad · site', moveFrom: ['1532605858616346'],
     page: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un pas 👇 Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.', button_type: 'VIEW_WEBSITE', button_text: 'VEZI MAI MULTE 👉',
       website_url: 'https://www.centrul360.com/?utm_source=facebook&utm_medium=leadform&utm_campaign=hifu-gusa-ar' } } },
   // 23.11, George: every new form ends the same way, on the home page (Formulare → Setări formulare)
@@ -626,10 +636,60 @@ async function run() {
         await save();
         out.push(f.adId);
       }
+      // every ad of ours (C360 …, running or paused) still sending into one of these forms moves to the new one too; a
+      // running ad Meta refuses holds the job (tried again next hour), a paused one is only written down
+      if (Array.isArray(f.moveFrom) && f.moveFrom.length && !st.movedAll) {
+        const AE = require('./ads-edit');
+        const list = await ads.adForms(conn);
+        if (list.error) { await fail('reclamele: ' + list.error); continue; }
+        st.moved = st.moved || {};
+        let hold = '';
+        for (const a of (list.rows || []).filter((x) => f.moveFrom.includes(x.formId))) {
+          if (st.moved[a.adId] && st.moved[a.adId].ok) continue;
+          const info = await ads.call('GET', '/' + a.adId, conn.userToken, { fields: 'campaign{name}' });
+          const cname = (info.ok && info.j.campaign && info.j.campaign.name) || '';
+          if (!cname || !ads.ours(conn, cname)) continue;
+          const tries = (st.moved[a.adId] && st.moved[a.adId].tries) || 0;
+          if (tries >= 2) { if (a.status === 'ACTIVE') hold = hold || short(cname) + ': nu a trecut pe formularul nou'; continue; }
+          const cr = await AE.creativeOf(conn, a.adId);
+          if (cr.error) { st.moved[a.adId] = { tries: tries + 1, error: cr.error, campaign: cname }; await save(); if (a.status === 'ACTIVE') hold = hold || short(cname) + ': ' + cr.error; continue; }
+          const p = AE.partsOf({ object_story_spec: cr.spec || {}, asset_feed_spec: cr.feed || null });
+          const fd = cr.feed || null;
+          const words = (k) => (fd && Array.isArray(fd[k]) ? fd[k].map((x) => x.text).filter(Boolean) : null);
+          st.moved[a.adId] = { tries: tries + 1, campaign: cname, from: a.formId }; await save();
+          const r = await AE.editAd(conn, { adId: a.adId, texts: words('bodies') || p.texts, headlines: words('titles') || p.headlines, descriptions: words('descriptions') || p.descriptions, cta: p.cta, formId: st.newId });
+          if (r.error) { st.moved[a.adId].error = r.error; await save(); if (a.status === 'ACTIVE') hold = hold || short(cname) + ': ' + r.error; continue; }
+          const back = await AE.creativeOf(conn, a.adId);
+          const p2 = back.error ? {} : AE.partsOf({ object_story_spec: back.spec || {}, asset_feed_spec: back.feed || null });
+          st.moved[a.adId] = Object.assign(st.moved[a.adId], { ok: p2.formId === st.newId, creativeId: r.creativeId, status: a.status });
+          doc.log.push({ job: j.id, at: new Date().toISOString(), adId: a.adId, campaignName: cname, formId: st.newId, from: a.formId, why: 'reclama trimite în formularul nou' });
+          await save();
+          out.push(a.adId);
+          if (!st.moved[a.adId].ok && a.status === 'ACTIVE') hold = hold || short(cname) + ': arată încă formularul vechi';
+        }
+        if (hold) { await fail(hold); continue; }
+        st.movedAll = new Date().toISOString();
+        await save();
+      }
+      // a copy made before this one (with an ending that changed since): archived on the Page once no ad of the account
+      // sends into it, and in the portal it points to the new one
+      if (f.archive && !st.archived) {
+        const list = await ads.adForms(conn);
+        if (!list.error && !(list.rows || []).some((x) => x.formId === f.archive)) {
+          const r = await require('./fb-form-copy').archive({ readJSON, writeJSON }, f.archive);
+          if (!r.error) {
+            const d2 = await readJSON('data/fb-forms.json', {});
+            const old = (d2.forms || {})[f.archive] || {};
+            if (old.copyOf && d2.forms[old.copyOf]) { d2.forms[old.copyOf].replacedBy = st.newId; await writeJSON('data/fb-forms.json', d2); }
+            st.archived = new Date().toISOString(); await save();
+          } else st.archiveError = r.error;
+        } else st.archiveError = list.error || 'o reclamă încă trimite în el';
+        await save();
+      }
       doc.done[j.id] = new Date().toISOString();
       delete st.error;
       await save();
-      await tell({ tone: 'good', tag: 'once-done-' + j.id, title: 'FĂCUT ✅ - ' + j.why, text: f.name + ' (' + st.newId + ')' + (f.adId ? ' · reclama ' + short(f.campaign) + ' trimite acum în el' : '') });
+      await tell({ tone: 'good', tag: 'once-done-' + j.id, title: 'FĂCUT ✅ - ' + j.why, text: f.name + ' (' + st.newId + ')' + (f.adId ? ' · reclama ' + short(f.campaign) + ' trimite acum în el' : '') + (st.moved ? ' · reclame mutate: ' + Object.values(st.moved).filter((x) => x.ok).length : '') });
     }
     // the template every new form starts from (Formulare → Setări formulare)
     for (const j of todo.filter((x) => x.template)) {
