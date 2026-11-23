@@ -205,6 +205,30 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, account: acc.ok ? { status: acc.j.account_status, disableReason: acc.j.disable_reason, spendCap: acc.j.spend_cap, spent: acc.j.amount_spent, funding: fs } : { error: acc.j }, campaign: camp });
       return;
     }
+    // read only (23.11): a website campaign's numbers as Reclame shows them (?id, ?period or ?since&until), beside Meta's
+    // own reading of the same campaign and period (its raw actions and the cost / CTR / ROAS Meta works out), to check them
+    if (req.method === 'GET' && req.query && req.query.action === 'site_kpi') {
+      const AM = require('./ads-manager');
+      const { conn, problem } = await AM.connection();
+      if (problem) { res.status(200).json({ ok: false, reason: problem }); return; }
+      const id = /^\d+$/.test(String(req.query.id || '')) ? String(req.query.id) : '';
+      if (!id) { res.status(400).json({ error: 'id' }); return; }
+      const period = ads.PERIODS[req.query.period] ? req.query.period : 'today';
+      const range = AM.dayRange(req.query);
+      const when = range ? { time_range: JSON.stringify(range) } : { date_preset: ads.PERIODS[period] };
+      const [view, meta] = await Promise.all([
+        AM.readView(conn, period, range),
+        ads.call('GET', '/' + id + '/insights', conn.userToken, Object.assign({ fields: 'campaign_name,spend,impressions,clicks,inline_link_clicks,inline_link_click_ctr,cost_per_inline_link_click,actions,action_values,cost_per_action_type,purchase_roas' }, when)),
+      ]);
+      const c = view && !view.error ? (view.campaigns || []).find((x) => x.id === id) : null;
+      const row = meta.ok ? (meta.j.data || [])[0] || null : null;
+      const pick = (o) => o && { name: o.name, objective: o.objective, site: o.site, status: o.status, spend: o.spend, impressions: o.impressions, clicks: o.clicks, linkClicks: o.linkClicks,
+        visits: o.visits, carts: o.carts, checkouts: o.checkouts, purchases: o.purchases, purchaseValue: o.purchaseValue, leads: o.leads,
+        ads: (o.adsets || []).reduce((n, s) => n + (s.ads || []).length, 0), adsOn: (o.adsets || []).reduce((n, s) => n + (s.status === 'ACTIVE' ? (s.ads || []).filter((a) => a.status === 'ACTIVE').length : 0), 0) };
+      res.status(200).json({ ok: true, id, period: range ? 'custom' : period, range, fx: ads.FX(conn), readAt: view && view.readAt, reclame: pick(c), viewError: view && view.error ? ME.ui(view.error) : '',
+        meta: row, metaError: meta.ok ? '' : ME.ui(meta.j && meta.j.error && meta.j.error.message) });
+      return;
+    }
     if (req.method === 'GET' && req.query && req.query.action === 'daily') { res.status(200).json(await daily(req.query.since)); return; }
     // read only (23.11): an old ad account's ads of ours (the accounts the port reads from), with Meta's spend / leads and
     // what came after the form (portal), to pick the proven ones worth porting; never a change there

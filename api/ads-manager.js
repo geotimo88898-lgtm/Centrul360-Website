@@ -138,6 +138,19 @@ function dayRange(qs) {
   return { since, until };
 }
 
+// the period's campaigns from Meta, kept a while: at most every 3 minutes for today, every 20 for past days (the same for
+// every open portal, and for the read-only checks of api/ads-publish.js)
+function readView(conn, period, range) {
+  const today = bucharestDay(Date.now());
+  const past = range ? range.until < today : ['yesterday', '7d', '30d'].includes(period);
+  return AC.cached('ov-' + (range ? range.since + '_' + range.until : period) + '-' + today, past ? 20 * 60e3 : 3 * 60e3, async () => {
+    const recent = await AC.cached('recent-campaigns', 30 * 60e3, () => ads.recentCampaigns(conn), { keep: true });
+    if (recent.error) return { error: recent.error };
+    const noted = await guard.recent().then((g) => g.log.map((e) => e.campaignId)).catch(() => []);
+    return ads.overview(conn, period, range, (recent.ids || []).concat(noted));
+  });
+}
+
 async function connection() {
   const conn = await loadConnection(readJSON);
   if (!conn.pageId) return { conn, problem: 'not_connected' };
@@ -169,17 +182,9 @@ module.exports = async (req, res) => {
       if (problem) { res.status(200).json({ ok: true, ready: false, reason: problem, message: REASONS[problem], defaults, scope }); return; }
       const period = ads.PERIODS[req.query && req.query.period] ? req.query.period : '7d';
       const range = dayRange(req.query || {});
-      // read from Meta at most every 3 minutes for today, every 20 for past days (the same for every open portal)
-      const today = bucharestDay(Date.now());
-      const past = range ? range.until < today : ['yesterday', '7d', '30d'].includes(period);
       const creds = await appCreds(readJSON);
       const [view, token] = await Promise.all([
-        AC.cached('ov-' + (range ? range.since + '_' + range.until : period) + '-' + today, past ? 20 * 60e3 : 3 * 60e3, async () => {
-          const recent = await AC.cached('recent-campaigns', 30 * 60e3, () => ads.recentCampaigns(conn), { keep: true });
-          if (recent.error) return { error: recent.error };
-          const noted = await guard.recent().then((g) => g.log.map((e) => e.campaignId)).catch(() => []);
-          return ads.overview(conn, period, range, (recent.ids || []).concat(noted));
-        }),
+        readView(conn, period, range),
         AC.cached('token', 10 * 60e3, () => ads.tokenInfo(conn.userToken, creds)),
       ]);
       if (view.error) {
@@ -272,6 +277,8 @@ module.exports.config = { maxDuration: 60 };
 // for Creative's results (api/ads-publish.js ?action=results)
 module.exports.withFunnel = withFunnel;
 module.exports.connection = connection;
+module.exports.readView = readView;
+module.exports.dayRange = dayRange;
 // (api/_lib tests)
 module.exports.standing = standing;
 module.exports.notices = notices;
