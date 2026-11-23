@@ -50,6 +50,33 @@ const SITE_CAMPAIGNS = [
 // the reel „Nu promitem. Îți arătăm.” of Conținut: its clean video (no music) and its cover, public links (api/content-file.js)
 const REEL_ARATAM = { url: 'https://admin.centrul360.com/api/content-file?i=dd7a54f3-7464-4cd7-adb8-2e903006f48d&n=clean.mp4', thumb: 'https://admin.centrul360.com/api/content-file?i=dd7a54f3-7464-4cd7-adb8-2e903006f48d&n=cover.jpg' };
 const JOBS = [
+  // 23.11 ~22:40, George („da, fă-le”): does the Card de Sărbători sell straight from the ads? Per city one campaign of two
+  // ads (A/B, as „Rezultate · site”), Purchase on the site's pixel, women 25-64, the city's radius, no lookalike, 50 lei a
+  // day, to the card's page (990 chosen on every visit). A: the picture of the 990 card's WhatsApp message (template v4),
+  // as it is; B: the three cards on sale (490, 990 the most bought, 9.900 VIP), „Plătești” before „Primești” everywhere
+  { id: 'card-site-2026-11-23', why: 'Cardul de Sărbători direct din reclame: TM și AR, câte 2 reclame, 50 lei/zi', site: {
+    pixelId: '2276074362800484', cta: 'SHOP_NOW', ages: [25, 64],
+    campaigns: ['TM', 'AR'].map((k) => {
+      const CITY = k === 'TM' ? 'TIMIȘOARA' : 'ARAD';
+      return { name: 'C360 · ' + k + ' · Card · site', path: 'card-sarbatori', utm: 'card990-' + k.toLowerCase(), city: k === 'TM' ? 'Timișoara' : 'Arad', budget: 50, ads: [
+        { name: 'C360 · ' + k + ' · Card 990 · WhatsApp', image: 'card-990-wa.jpg',
+          text: CITY + '! Cum să ai 2.500 lei în tratamente fără să plătești prețul întreg, chiar dacă nu știi încă ce tratament vrei.\n\n' +
+            '✅ Plătești 990 lei și primești 2.500 lei în tratamente.\n' +
+            '✅ Valabil până pe 30.06.2027, la orice tratament din lista de prețuri.\n' +
+            '✅ Plătești online, pe site, și primești o ședință de BioLifting cadou și acces în Clubul 360.\n\n' +
+            '⏰ Doar până pe 24 decembrie. Cardurile sunt puține: pe site vezi câte au mai rămas.\n\n' +
+            '👉 Ia-ți cardul acum, pe site:\ncentrul360.com',
+          headlines: ['PLĂTEȘTI 990 LEI, PRIMEȘTI 2.500 LEI 👉', 'DOAR PÂNĂ PE 24 DECEMBRIE ⏰💨', 'BIOLIFTING CADOU LA PLATA ONLINE 👉'], description: 'Valabil până pe 30.06.2027' },
+        { name: 'C360 · ' + k + ' · Card · toate 3', image: 'card-toate-4x5.jpg',
+          text: CITY + '! Cum să ai de până la 3 ori mai mult în tratamente fără să plătești prețul întreg, chiar dacă nu știi încă ce tratament vrei.\n\n' +
+            '✅ Plătești 490 lei și primești 1.000 lei. Plătești 990 lei și primești 2.500 lei, cardul cel mai cumpărat.\n' +
+            '✅ Cardul VIP Transformarea 360: plătești 9.900 lei și primești 30.000 lei, pentru tine și cei dragi.\n' +
+            '✅ Valabil până pe 30.06.2027, la orice tratament. La plata online a cardului de 490 sau 990 lei: BioLifting cadou și Clubul 360.\n\n' +
+            '⏰ Doar până pe 24 decembrie. Cardurile sunt puține: pe site vezi câte au mai rămas.\n\n' +
+            '👉 Alege-ți cardul pe site:\ncentrul360.com',
+          headlines: ['ALEGE CARDUL: PLĂTEȘTI 490, PRIMEȘTI 1.000 👉', 'DOAR PÂNĂ PE 24 DECEMBRIE ⏰💨', 'PLĂTEȘTI 990 LEI, PRIMEȘTI 2.500 LEI 👉'], description: 'Valabil până pe 30.06.2027' },
+      ] };
+    }) } },
   // 23.11 ~19:50, George: no HIFU gât result on a HIFU gușă ad: the AR campaign with case 24 goes off at once, and is made
   // again with case 16 (HIFU gușă, from the approved set) under „ARAD”, the words about gușă; same audience, lookalike, 50 lei
   { id: 'ar-caz24-off-2026-11-23', why: 'HIFU gușă AR: reclama cu cazul 24 (HIFU gât) oprită', actions: [
@@ -981,7 +1008,8 @@ async function run() {
         // a lead-form campaign (c.formJob): the form a formSite job above made, once it's there; else a page of the site
         const formId = c.formId || (c.formJob ? ((doc.forms || {})[c.formJob] || {}).newId || '' : '');
         if (c.formJob && !formId) { failed = c.name + ': formularul nu e gata încă'; break; }
-        const link = formId ? '' : 'https://www.centrul360.com/?utm_source=facebook&utm_medium=paid&utm_campaign=' + c.utm;
+        // c.path: another page of the site (the card's own page, 23.11), else the home page
+        const link = formId ? '' : 'https://www.centrul360.com/' + (c.path || '') + '?utm_source=facebook&utm_medium=paid&utm_campaign=' + c.utm;
         // the audience of a running campaign (c.like), exactly (women only), for the new ad set; with the smallest lookalike
         // of c.lal whose reach Meta estimates at c.minReach at least, else without one (written down why)
         if (c.like && !sc.adsetId && !sc.targeting) {
