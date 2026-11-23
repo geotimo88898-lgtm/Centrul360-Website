@@ -52,7 +52,9 @@ module.exports = async (req, res) => {
   const m = /^academy\/[\w-]{6,80}\.(jpg|png|webp)$/.exec(p) || /^contacts\/[\w-]+\/[\w-]+\.(jpg|png|webp|pdf)$/.exec(p) || /^wa-media\/[\w-]+\.(jpg|png|webp|pdf|mp4|3gp|ogg|mp3|m4a|aac|amr|doc|docx|xls|xlsx|txt)$/.exec(p)
     || /^wa-out\/[\w-]+\.(jpe?g|png|webp|pdf|docx?|xlsx?|mp4|mov)$/.exec(p) // the big files sent from Mesaje
     || /^legal\/[\w-]+\/[\w-]+\.(jpg|png|webp|pdf|docx?|xlsx?)$/.exec(p) // Acte și autorizații: the salons' and the team's papers
-    || /^(?:regulament|fise-post)\/[\w-]+\.(pdf)$/.exec(p); // Regulament intern, Fișa postului (api/portal-regulament.js): everyone signed in reads them
+    || /^(?:regulament|fise-post)\/[\w-]+\.(pdf)$/.exec(p) // Regulament intern, Fișa postului (api/portal-regulament.js): everyone signed in reads them
+    || /^todo\/[\w-]+\.(pdf)$/.exec(p); // „De făcut” (api/portal-todo.js): the owner's print files, his only
+  if (p.startsWith('todo/') && session.role !== 'admin') { res.status(403).json({ error: 'forbidden' }); return; }
   if (!m) { res.status(400).json({ error: 'invalid_path' }); return; }
   // the legal papers (authorizations, contracts, IDs, medical fitness): the admins only
   if (p.startsWith('legal/') && !require('./_lib/roles').canManage(session)) { res.status(403).json({ error: 'forbidden' }); return; }
@@ -76,7 +78,8 @@ module.exports = async (req, res) => {
   res.setHeader('Content-Type', TYPES[m[1]]);
   res.setHeader('Cache-Control', 'private, max-age=604800, immutable'); // file names are unique; a replaced photo gets a new name
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  if (m[1] === 'pdf') res.setHeader('Content-Disposition', 'inline');
+  // a PDF opens in the browser; &dl=1 saves it, named &n= (De făcut → La print shop: „Descarcă”)
+  if (m[1] === 'pdf') res.setHeader('Content-Disposition', req.query && req.query.dl ? 'attachment; filename="' + String(req.query.n || 'document.pdf').replace(/[^\w.\- ]+/g, '_').slice(0, 80) + '"' : 'inline');
   else if (/^(doc|docx|xls|xlsx|txt)$/.test(m[1])) res.setHeader('Content-Disposition', 'attachment; filename="' + String((req.query && req.query.n) || 'fisier.' + m[1]).replace(/[^\w.\- ]+/g, '_').slice(0, 100) + '"');
   res.status(200).send(buf);
 };

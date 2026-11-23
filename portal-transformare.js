@@ -14,7 +14,7 @@
   const { esc, icon } = K;
   // the campaigns: one line here and one in api/_lib/campaigns.js for a new one (its screen in VIEWS, below)
   const CAMPAIGNS = [
-    { key: 'transformarea', name: 'Transformarea 360', short: 'Transformarea' },
+    // Transformarea 360: dropped by the owner (23.11), no longer in the picker (its screen stays in VIEWS)
     { key: 'card', name: 'Cardul de Sărbători', short: 'Card Sărbători' },
   ];
   const PICK_KEY = 'c360_campaign_pick';

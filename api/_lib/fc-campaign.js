@@ -55,6 +55,9 @@ const safeId = (id) => String(id || '').replace(/[^\w.-]/g, '_').slice(0, 160);
 const tplKey = (k, city) => 'fc360_' + k + '_' + TAG[city];
 
 // ---------------------------------------------------------------- state
+// dropped by the owner (23.11): only the Card de Sărbători campaign stays. Never armed (0 sent): it can not be armed any
+// more and its clock does nothing; the code stays for what reads it (the audience, the inbound answers)
+const DROPPED = true;
 const blankState = () => ({ armed: false, paused: false, frozenAt: '', testPhone: '', steps: {}, media: {}, log: [] });
 async function loadState() { return Object.assign(blankState(), (await readJSON(STATE, null)) || {}); }
 const saveState = (st) => writeJSON(STATE, st, { quiet: true });
@@ -180,6 +183,7 @@ function stepStatus(st, s) {
 }
 
 async function tick(opts) {
+  if (DROPPED) return { armed: false, paused: false, idle: true, dropped: true };
   const o = opts || {};
   const t0 = Date.now(), budget = o.budgetMs || 40e3;
   let st = await loadState();
@@ -523,6 +527,7 @@ async function kpi(maxAgeMs) {
 // ---------------------------------------------------------------- the section's actions
 async function setFlags(f) {
   const st = await loadState();
+  if (DROPPED) f = Object.assign({}, f, { armed: f.armed != null ? false : f.armed }); // dropped: it never starts
   if (f.armed != null) { st.armed = !!f.armed; note(st, NAME + (st.armed ? ': pornită.' : ': oprită.')); if (st.armed) st.paused = false; }
   if (f.paused != null) { st.paused = !!f.paused; note(st, NAME + (st.paused ? ': pauză.' : ': continuă.')); }
   await saveState(st);
@@ -615,4 +620,4 @@ async function view() {
     templates, agg, people: list, stops: Object.values(people).filter((p) => p.optout).length, lists: Object.values(people).filter((p) => p.list).length, seatsMax: SEATS, prices: { full: FULL, monthly: MONTHLY } };
 }
 
-module.exports = { NAME, STEPS, CITIES, SEATS, CLOSE_AT, tick, aggregate, kpi, view, onStatus, onInbound, tellDesk, setFlags, sendTest, setPerson, addPerson, extend, buildAudience, firstName, kindOf };
+module.exports = { DROPPED, NAME, STEPS, CITIES, SEATS, CLOSE_AT, tick, aggregate, kpi, view, onStatus, onInbound, tellDesk, setFlags, sendTest, setPerson, addPerson, extend, buildAudience, firstName, kindOf };
