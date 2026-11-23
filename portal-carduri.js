@@ -79,7 +79,7 @@
   const BTN = { pay: '„Finalizez plata” (i-a plecat linkul)', clinic: '„Plătesc în clinică”', no: '„Nu mai vreau”', text: 'a scris (vezi Mesaje)' };
   const NAMEFOR = { me: 'e pentru ea', gift: 'e cadou' };
   // where the name on the card came from
-  const NAMEFROM = { formular: 'din formularul reclamei', site: 'scris pe site', fisa: 'din fișa clientei', whatsapp: 'întrebat pe WhatsApp', receptie: 'pus de recepție' };
+  const NAMEFROM = { formular: 'din formularul reclamei', site: 'scris pe site', fisa: 'din fișa clientei', whatsapp: 'întrebat pe WhatsApp', receptie: 'pus de recepție', plata: 'scris la plată' };
   function trailLine(e, o) {
     const n = e.note || '', failed = /^netrimis/.test(n), why = n.replace(/^netrimis:?\s*/, '');
     switch (e.ev) {
@@ -89,6 +89,7 @@
       case 'lead_call': return 'de sunat: ' + n;
       case 'to_paylink': return n === 'whatsapp' ? 'a primit linkul de plată pe WhatsApp' : 'a intrat pe pagina de plată';
       case 'to_checkout': return 'a deschis plata pe site';
+      case 'contact': return n === 'la rezervare' ? 'și-a lăsat telefonul la rezervare' : n === 'telefon schimbat' ? 'alt telefon, scris la plată' : 'și-a scris numele și telefonul la plată';
       case 'test_paid': return 'plată de test (sandbox): nu e card';
       case 'amount': return 'suma: ' + n;
       case 'returned': return 's-a întors pe site fără plată';

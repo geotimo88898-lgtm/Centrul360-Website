@@ -537,7 +537,17 @@ module.exports = async (req, res) => {
   // ?mprlive=1: the payment requests route's state (no keys); POST {"on": true|false} switches it on the site (the owner)
   if (req.query && req.query.mprlive) {
     const RQ = require('./_lib/mypos-requests'), ST = require('./_lib/store');
-    if (req.method === 'POST') { const r = await RQ.setLive(ST, !!(req.body && req.body.on)); res.status(r.error ? 400 : 200).json(Object.assign(r, { state: RQ.adminOf(await RQ.active(ST)) })); return; }
+    // the owner's 1 leu test was paid but its order lost the request's code (23.11): taken as passed when myPOS shows a real
+    // 1 leu online payment in the last day (the account's own transactions)
+    if (req.method === 'POST' && req.body && req.body.testSeen) {
+      const pays = await require('./_lib/card-sarbatori').scanMypos(2).catch(() => null);
+      const list = Array.isArray(pays) ? pays : (pays && (pays.pays || pays.online)) || [];
+      const one = list.find((p) => Math.abs(Number(p.amount) - 1) < 0.01 && Date.now() - Date.parse(p.at) < 864e5);
+      if (!one) { res.status(409).json({ error: 'no_1_leu_payment_seen' }); return; }
+      await RQ.note(ST, { testPassedAt: new Date().toISOString(), testOrder: 'seen ' + one.at });
+    }
+    if (req.method === 'POST' && req.body && 'on' in req.body) { const r = await RQ.setLive(ST, !!req.body.on); res.status(r.error ? 400 : 200).json(Object.assign(r, { state: RQ.adminOf(await RQ.active(ST)) })); return; }
+    if (req.method === 'POST') { res.status(200).json({ ok: true, state: RQ.adminOf(await RQ.active(ST)) }); return; }
     res.status(200).json(RQ.adminOf(await RQ.active(ST)));
     return;
   }

@@ -25,6 +25,11 @@
 .csb-tick{ width:56px; height:56px; border-radius:50%; display:grid; place-items:center; color:#fff; background:linear-gradient(180deg,#1bb9a9,#0f9083); box-shadow:0 14px 28px -12px rgba(16,145,132,.8); }
 .csb-tick svg{ width:24px; height:24px; }
 html.csb-lock{ overflow:hidden; }
+/* her phone in the window (the clinic, with the checkout in the page) */
+.csb-ph{ display:grid; gap:7px; }
+.csb-pl{ font-size:13.5px; font-weight:600; color:var(--ink2); }
+.csb-ph .cst-in{ width:100%; }
+.csb-ph .cst-in:disabled{ opacity:.7; }
 /* „Plata nu s-a finalizat?”: her answer in one tap */
 .csb-ret{ display:flex; flex-direction:column; padding:2px 24px calc(22px + env(safe-area-inset-bottom)); overflow-y:auto; }
 .csb-rs{ display:flex; flex-direction:column; gap:14px; animation:csbIn .6s var(--e); }

@@ -1915,6 +1915,11 @@
       });
       return;
     }
+    // the client's number and a call button on the booking itself, on a phone too (George, 23.11: reception and the
+    // cosmeticians call her straight from the booking)
+    const contactHtml = (x) => (x.clientPhone ? '<div class="cal-contact">' +
+      '<a class="k-btn is-primary cal-call" href="' + K.tel(x.clientPhone) + '">' + icon('phone') + '<span>Sună <b>' + esc(x.clientPhone) + '</b></span></a>' +
+      '<a class="k-btn is-outline cal-wa" href="#mesaje" data-chat="' + esc(x.clientPhone) + '" data-chat-name="' + esc(x.clientName || '') + '" data-chat-city="' + esc(x.location || '') + '">' + icon('chat') + 'Mesaje</a></div>' : '');
     if (!canEdit()) {
       K.drawer({
         title: a.clientName || 'Programare', lead: K.avatar(a.clientName, 42),
@@ -1922,6 +1927,7 @@
         body: '<dl class="k-kv cal-kv"><dt>Tratament</dt><dd>' + esc(a.treatment || '-') + '</dd>' + (pkgOf(a) ? '<dt>Pachet</dt><dd>' + esc(pkgOf(a)) + '</dd>' : '') + '<dt>Categorie</dt><dd>' + esc(K.catLabel(a) || '-') + '</dd>' + (a.amount ? '<dt>Sumă</dt><dd>' + K.lei(a.amount) + '</dd>' : '') +
           '<dt>Data</dt><dd>' + esc(K.dateLong(a.date)) + '</dd><dt>Ora</dt><dd>' + esc(span(a) || '-') + '</dd><dt>Locație</dt><dd>' + esc(a.location) + '</dd>' +
           '<dt>Cosmeticiană</dt><dd>' + esc(a.cosmeticianName || 'neasignat') + '</dd></dl>' +
+          contactHtml(a) +
           payNote(a) + markHtml(a) +
           (a.clientId ? '<section class="k-section cal-client" data-client-brief><h4>' + icon('user') + 'Clienta</h4><div class="k-skel" style="height:56px"></div></section>' : '') +
           '<div class="mo-note">' + icon('info') + 'Programările le face și le modifică recepția.</div>' +
@@ -1945,9 +1951,7 @@
         payNote(a, true) +
         '<div class="cal-status' + (pickFor(a).length > 4 ? ' is-5' : '') + '" role="group" aria-label="Status" style="--n:' + pickFor(a).length + '">' + pickFor(a).map((s) =>
           '<button type="button" class="is-' + STATUS[s].tone + (s === a.status ? ' is-on' : '') + '" data-status="' + s + '">' + icon(STATUS[s].ic) + '<span>' + STATUS[s].label + '</span></button>').join('') + '</div>' +
-        (a.clientPhone ? '<div class="cal-contact">' +
-          '<a class="k-btn is-outline" href="' + K.tel(a.clientPhone) + '">' + icon('phone') + 'Sună</a>' +
-          '<a class="k-btn is-outline cal-wa" href="#mesaje" data-chat="' + esc(a.clientPhone) + '" data-chat-name="' + esc(a.clientName || '') + '" data-chat-city="' + esc(a.location || '') + '">' + icon('chat') + 'Mesaje</a></div>' : '') +
+        contactHtml(a) +
         (a.clientId ? '<section class="k-section cal-client" data-client><h4>' + icon('user') + 'Clienta</h4><div class="k-skel" style="height:72px"></div></section>' : '') +
         '<section class="k-section"><h4>' + icon('pen') + 'Detalii</h4>' + formHtml(a, false) + '</section>' +
         '<div class="k-muted">' + esc(a.clientPhone || 'Fără telefon salvat') + (a.cosmeticianName ? ' · cu ' + esc(a.cosmeticianName) : '') + (pkgOf(a) ? ' · ' + esc(pkgOf(a)) : '') + '</div>',
