@@ -199,6 +199,9 @@ function cleanSettings(x) {
   s.link = /^https:\/\/(www\.)?centrul360\.com\/[\w\-\/.?=&%]*$/.test(String(x.link || '')) ? String(x.link).slice(0, 500) : '';
   s.goal = x.goal === 'purchase' ? 'purchase' : 'views';
   s.pixelId = /^\d{10,20}$/.test(String(x.pixelId || '')) ? String(x.pixelId) : '';
+  // 23.11 (the card's traffic ads): Meta's URL parameters of the ad, with its dynamic ones (e.g. c360_ad={{ad.id}}), added
+  // to the link; and a traffic ad (goal views) still counts the pixel's events (Purchase, Lead, Schedule) per ad
+  s.urlTags = /^[\w{}.=&-]{1,200}$/.test(String(x.urlTags || '')) ? String(x.urlTags) : '';
   // several cities in one ad set (the card: Timișoara and Arad together)
   s.cities = (Array.isArray(x.cities) ? x.cities : []).filter((c) => CITIES[c]);
   if (s.cities.length && !s.city) s.city = s.cities[0];
@@ -364,7 +367,7 @@ async function publish(conn, image, s) {
     const multi = bodies.length > 1 || titles.length > 1;
     const feed = multi ? { bodies: bodies.map((text) => ({ text })), titles: titles.map((text) => ({ text })), descriptions: s.description ? [{ text: s.description }] : undefined, optimization_type: 'DEGREES_OF_FREEDOM' } : null;
     // a link that names its own UTM tags (23.11: utm_source=facebook on the site ads) keeps them, without Meta's second set
-    const tags = s.link && !/[?&]utm_source=/.test(s.link) ? { url_tags: 'utm_source=meta&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}' } : {};
+    const tags = s.link && s.urlTags ? { url_tags: s.urlTags } : s.link && !/[?&]utm_source=/.test(s.link) ? { url_tags: 'utm_source=meta&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}' } : {};
     let creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name: s.adName, object_story_spec: spec }, tags, feed ? { asset_feed_spec: feed } : {}));
     let textNote = '';
     // Meta refusing the second text: the ad goes with the first one, and says so
@@ -377,7 +380,16 @@ async function publish(conn, image, s) {
     made.push(creative.j.id);
 
     // in a new campaign the ad goes on with it; in an existing ad set it follows the choice
-    const ad = await call('POST', '/' + act + '/ads', tok, { name: s.adName, adset_id: adsetId, creative: { creative_id: creative.j.id }, status: s.paused || (s.adsetId && !s.startNow) ? 'PAUSED' : 'ACTIVE' });
+    const adBody = { name: s.adName, adset_id: adsetId, creative: { creative_id: creative.j.id }, status: s.paused || (s.adsetId && !s.startNow) ? 'PAUSED' : 'ACTIVE' };
+    // a traffic ad to the site: the pixel's events tracked on the ad, so its results columns show them (refused: without)
+    const track = s.link && s.goal !== 'purchase' && s.pixelId ? { tracking_specs: [{ 'action.type': ['offsite_conversion'], fb_pixel: [s.pixelId] }] } : null;
+    let trackNote = '';
+    let ad = await call('POST', '/' + act + '/ads', tok, Object.assign({}, adBody, track || {}));
+    if (!ad.ok && track) {
+      const why = metaError(ad.j, '');
+      ad = await call('POST', '/' + act + '/ads', tok, adBody);
+      if (ad.ok) trackNote = 'Meta n-a primit urmărirea pixelului pe reclamă (' + why + ').';
+    }
     if (!ad.ok) { await undo(); return { error: metaError(ad.j, 'Reclama') }; }
 
     // a new campaign: the ad set goes on now, the campaign too unless she starts it herself later,
@@ -385,9 +397,10 @@ async function publish(conn, image, s) {
     if (!s.adsetId && !s.paused) {
       const a = await call('POST', '/' + adsetId, tok, { status: 'ACTIVE' });
       const c = s.startNow ? await call('POST', '/' + campaignId, tok, { status: 'ACTIVE' }) : { ok: true };
-      if (!a.ok || !c.ok) return { ok: true, campaignId, adsetId, adId: ad.j.id, started: false, warning: [metaError(!a.ok ? a.j : c.j, 'Pornirea'), textNote].filter(Boolean).join(' ') };
+      if (!a.ok || !c.ok) return { ok: true, campaignId, adsetId, adId: ad.j.id, started: false, warning: [metaError(!a.ok ? a.j : c.j, 'Pornirea'), textNote, trackNote].filter(Boolean).join(' ') };
     }
-    return Object.assign({ ok: true, campaignId, adsetId, adId: ad.j.id, started: s.startNow, paused: !!s.paused, texts: textNote ? 1 : Math.max(bodies.length, titles.length) }, textNote ? { warning: textNote } : {});
+    const note = [textNote, trackNote].filter(Boolean).join(' ');
+    return Object.assign({ ok: true, campaignId, adsetId, adId: ad.j.id, started: s.startNow, paused: !!s.paused, texts: textNote ? 1 : Math.max(bodies.length, titles.length) }, note ? { warning: note } : {});
   } catch (err) {
     await undo();
     return { error: 'Rețea: ' + err.message };
