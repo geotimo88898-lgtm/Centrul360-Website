@@ -9,8 +9,9 @@
 //   POST { action: 'device', tid, city }      which clinic a terminal is in (Timișoara / Arad)
 //   POST { action: 'sync' }                   read the history now
 //   POST { action: 'disconnect' }             removes the webhook and the credentials (the payments read stay)
-//   POST { action: 'checkout', sid, walletNumber, keyIndex, privateKey, myposCert, sandbox }  the site's online payment
+//   POST { action: 'checkout', pack | sid, walletNumber, keyIndex, privateKey, myposCert, mode: 'live'|'sandbox' }  the site's online payment
 //        (api/_lib/mypos-ipc.js): checked with myPOS (a 1 leu session, not a charge), kept only when right
+//   POST { action: 'checkout_check' }         „Testează conexiunea”: the saved keys asked at myPOS (not a charge)
 //   POST { action: 'checkout_test' }          a 1 leu test order → { url } to pay on the site with a real card
 //   POST { action: 'checkout_live', on }      the online payment on the site on / off (on only after the test passed)
 //   POST { action: 'checkout_off' }           removes the checkout keys
@@ -160,6 +161,12 @@ module.exports = async (req, res) => {
 
     if (b.action === 'checkout') {
       const r = await IPC.save(store, b, session.employeeId);
+      if (r.error) { res.status(400).json(r); return; }
+      res.status(200).json(await status());
+      return;
+    }
+    if (b.action === 'checkout_check') {
+      const r = await IPC.check(store);
       if (r.error) { res.status(400).json(r); return; }
       res.status(200).json(await status());
       return;

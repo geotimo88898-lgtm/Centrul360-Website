@@ -106,23 +106,41 @@ function adminOf(c) {
   if (!ready(c)) return { saved: false };
   let certTill = '';
   try { certTill = new crypto.X509Certificate(c.myposCert).validTo; } catch (e) { /* a bare public key */ }
-  return { saved: true, sid: c.sid, walletNumber: c.walletNumber, keyIndex: Number(c.keyIndex) || 1, sandbox: !!c.sandbox, live: !!c.live, savedAt: c.savedAt || '', certTill,
+  const last4 = (v) => '···' + String(v || '').slice(-4);
+  return { saved: true, sid: last4(c.sid), walletNumber: last4(c.walletNumber), keyIndex: Number(c.keyIndex) || 1, sandbox: !!c.sandbox, live: !!c.live, savedAt: c.savedAt || '', certTill,
     checkedAt: c.checkedAt || '', error: c.error || '', test: c.test || null, testPassedAt: c.testPassedAt || '', lastNotify: c.lastNotify || null };
 }
 
 // Integrări → myPOS → „Plata online pe site”: the keys checked once with myPOS (a payment session of 1 leu: not a charge, it proves
 // the Store ID, the client number, the key and its index, and that the certificate is myPOS's), kept only when all is right.
 // An empty private key / certificate with the same Store ID keeps the saved one.
+// myPOS's „Configuration Pack” (Stores → the store → Integration → New Configuration → Custom integration (API checkout) →
+// Private & Public Key): one base64 JSON string { sid, cn, pk, pc, idx } (as myPOS's PHP SDK reads it, Config::
+// loadConfigurationPackage). Pasted instead of the five fields.
+function unpack(text) {
+  try {
+    const j = JSON.parse(Buffer.from(String(text || '').replace(/\s+/g, ''), 'base64').toString('utf8'));
+    if (!j || typeof j !== 'object') return null;
+    return { sid: j.sid, walletNumber: j.cn, privateKey: j.pk, myposCert: j.pc, keyIndex: j.idx };
+  } catch (e) { return null; }
+}
 async function save(store, input, by) {
   const prev = await load(store);
-  const i = input || {};
-  const c = { sid: clean(i.sid), walletNumber: clean(i.walletNumber), keyIndex: clean(i.keyIndex) || '1', sandbox: !!i.sandbox };
+  let i = Object.assign({}, input || {});
+  if (String(i.pack || '').trim()) {
+    const u = unpack(i.pack);
+    if (!u || !u.sid) return { error: 'ipc_format', field: 'pack' };
+    i = Object.assign(i, u);
+  }
+  const sandbox = i.mode ? i.mode === 'sandbox' : !!i.sandbox;
+  // empty Store ID / client number / key: the saved ones (they never come back to the browser)
+  const c = { sid: clean(i.sid) || prev.sid || '', walletNumber: clean(i.walletNumber) || prev.walletNumber || '', keyIndex: clean(i.keyIndex) || prev.keyIndex || '1', sandbox };
   if (!/^\d{6,20}$/.test(c.sid)) return { error: 'ipc_format', field: 'sid' };
   if (!/^\d{6,20}$/.test(c.walletNumber)) return { error: 'ipc_format', field: 'walletNumber' };
   if (!/^\d{1,4}$/.test(c.keyIndex)) return { error: 'ipc_format', field: 'keyIndex' };
   const same = prev.sid === c.sid && prev.walletNumber === c.walletNumber;
-  c.privateKey = String(i.privateKey || '').trim() ? pem(i.privateKey, PRIV) : same ? prev.privateKey : '';
-  c.myposCert = String(i.myposCert || '').trim() ? pem(i.myposCert, CERT) : same ? prev.myposCert : '';
+  c.privateKey = String(i.privateKey || '').trim() ? pem(i.privateKey, PRIV) : same ? prev.privateKey || '' : '';
+  c.myposCert = String(i.myposCert || '').trim() ? pem(i.myposCert, CERT) : same ? prev.myposCert || '' : '';
   if (!c.privateKey) return { error: 'ipc_format', field: 'privateKey' };
   if (!c.myposCert) return { error: 'ipc_format', field: 'myposCert' };
   try { crypto.createPrivateKey(c.privateKey); } catch (e) { return { error: 'ipc_format', field: 'privateKey' }; }
@@ -143,6 +161,19 @@ async function save(store, input, by) {
   await store.writeJSON(KEY, c);
   return { ok: true, checkout: adminOf(c) };
 }
+// „Testează conexiunea”: the saved keys asked once at myPOS (a payment session of 1 leu, not a charge; its answer's signature
+// checked with the certificate). Nothing changes but the check's mark.
+async function check(store) {
+  const c = await load(store);
+  if (!ready(c)) return { error: 'not_saved' };
+  let err = '', message = '';
+  try { await sessionCreate(c, { orderId: 'check-' + Date.now().toString(36) + '-' + crypto.randomBytes(3).toString('hex'), amount: 1, title: 'Verificare' }); }
+  catch (e) { err = e.code || 'mypos_failed'; message = e.message || ''; }
+  // only a refusal (or an answer not signed by myPOS) stops the payment on the site; myPOS not answering a moment doesn't
+  const hard = err === 'mypos_refused' || err === 'mypos_unsigned';
+  await note(store, Object.assign({ checkedAt: new Date().toISOString() }, hard || !err ? { error: hard ? err + (message ? ': ' + message : '') : '' } : {}));
+  return err ? { error: err, message } : { ok: true, checkout: adminOf(await load(store)) };
+}
 async function setLive(store, on) {
   const c = await load(store);
   if (!ready(c)) return { error: 'not_saved' };
@@ -160,4 +191,4 @@ async function note(store, patch) {
   await store.writeJSON(KEY, c, { quiet: true });
 }
 
-module.exports = { KEY, ready, load, sign, verifyPairs, pairsOfForm, call, sessionCreate, paymentStatus, publicOf, adminOf, save, setLive, drop, note, endpoint, pem, IpcError, amt };
+module.exports = { check, unpack, KEY, ready, load, sign, verifyPairs, pairsOfForm, call, sessionCreate, paymentStatus, publicOf, adminOf, save, setLive, drop, note, endpoint, pem, IpcError, amt };

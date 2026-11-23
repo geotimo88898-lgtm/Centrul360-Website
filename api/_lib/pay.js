@@ -67,6 +67,43 @@ const KINDS = {
       return { appt: o.ref, sale: sale.id, orphan: true };
     },
   },
+  // the slip's online payment (23.11): the hour is held (booking-holds.js), she gives her name and phone on the payment
+  // screen; paid → the booking is made from the hold, then paid like any booking (Încasări, WhatsApp, Purchase)
+  hold: {
+    async quote({ ref }) {
+      const H = require('./booking-holds');
+      const h = await H.get(ref);
+      if (!h) return { error: 'not_found' };
+      if (h.bookingId) return { error: 'already_paid' };
+      if (!H.live(h)) return { error: 'expired' };
+      const full = Number(h.svc && h.svc.price) || 0;
+      if (!(full > 0)) return { error: 'not_payable' };
+      return { amount: bonusPrice(full), full, bonusPct: BONUS_PCT, title: h.svc.title, city: h.city, name: (h.contact || {}).name || '', phone: (h.contact || {}).phone || '' };
+    },
+    async paid(o) {
+      const H = require('./booking-holds');
+      const h = await H.get(o.ref);
+      const c = (h && h.contact) || { name: o.name, phone: o.phone };
+      if (!h || !c.phone) {
+        const sale = await recordSale(o, 'fără programare');
+        await ring(o, 'PLATĂ ONLINE DE VERIFICAT 💳', 'Plătit pe site, dar fără ' + (h ? 'telefon' : 'ora ținută') + '. Vezi în myPOS cine a plătit (comanda ' + o.id + ') și sun-o.');
+        return { sale: sale.id, orphan: true };
+      }
+      let apptId = h.bookingId || ((await readJSON('data/appointments.json', [])).find((a) => a && a.holdId === h.id) || {}).id;
+      if (!apptId) {
+        const B = require('./booking');
+        const r = await require('../booking').place({ cfg: await B.settings({ team: true }), city: h.city, svc: h.svc, date: h.date, time: h.time, name: c.name || 'Clientă site', phone: c.phone,
+          page: h.page, src: h.src, cookie: h.cookie, track: h.track, pay: 'online-pending', payAmount: o.amount, viaCheckout: true, paid: true, holdId: h.id });
+        if (!r || !r.entry) throw new Error('hold_booking_failed');
+        apptId = r.entry.id;
+        if (r.entry.overbooked) await ring(o, 'PLĂTITĂ ONLINE, ORA S-A OCUPAT ⚠️', (c.name || '') + ' a plătit ' + h.date + ' ' + h.time + ', dar ora s-a ocupat între timp. Sun-o să mutați ora.');
+      }
+      await H.patch(h.id, (x) => { if (x.bookingId === apptId) return false; x.bookingId = apptId; });
+      const BP = require('./booking-pay');
+      const x = await BP.markPaid(apptId, { amount: o.amount, ref: o.mypos.ref || o.id, at: o.mypos.at || o.paidAt, src: 'mypos-checkout', orderId: o.id }, 'myPOS');
+      return { appt: apptId, sale: x && x.sale && x.sale.id, msg: x && x.msg && (x.msg.sent || x.msg.dup) ? 'sent' : 'no' };
+    },
+  },
   offer: {
     async quote({ ref, input }) {
       const city = cityOf(input.city);
@@ -156,7 +193,7 @@ async function ring(o, title, text, ownerOnly) {
 }
 // an offer or a treatment paid before it is booked: Încasări, the desk calls her to pick the hour, Meta hears the Purchase
 async function prepaid(o) {
-  const sale = await recordSale(o, '');
+  const sale = await recordSale(o, o.phone ? '' : 'fără telefon');
   await ring(o, 'PLĂTIT ONLINE ' + ({ 'Timișoara': 'TM', Arad: 'AR' }[o.city] || '') + ' 💳', (o.name || '') + ' · ' + o.title + ' · sun-o să-și aleagă ora');
   try {
     const capi = require('./meta-capi');
@@ -201,7 +238,6 @@ async function createOrder({ kind, ref, input, host, track }) {
   const amount = r2(q.amount);
   if (!(amount >= 1) || amount > 50000) return { error: 'bad_amount' };
   const name = clip(q.name || (input && input.name), 100).replace(/[<>]/g, ''), phone = clip(q.phone || (input && input.phone), 30);
-  if ((kind === 'offer' || kind === 'treatment') && (name.length < 2 || String(phone).replace(/\D/g, '').length < 9)) return { error: 'missing_contact' };
   const id = 'C360-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
   const o = {
     id, key: crypto.randomBytes(16).toString('hex'), kind, ref, amount, full: r2(q.full || amount), bonusPct: q.bonusPct || 0, currency: 'RON',
@@ -214,6 +250,7 @@ async function createOrder({ kind, ref, input, host, track }) {
   let session = { token: '', expires: '' };
   try { session = await IPC.sessionCreate(c, { orderId: id + WALLET, amount, title: o.title }); } catch (e) { console.error('pay session:', e.code, e.message); }
   if (kind === 'booking') await noteBooking(ref, id);
+  if (kind === 'hold') await require('./booking-holds').patch(ref, (h) => { h.orderIds = (h.orderIds || []).concat(id).slice(-10); });
   return {
     ok: true, orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, title: o.title, sandbox: !!c.sandbox,
     sessionToken: session.token,
@@ -248,8 +285,10 @@ async function markPaid(orderId, info, src) {
     return { mismatch: true };
   }
   // a booking already paid by another order: this second payment is a double (the notify answers so that myPOS reverses it)
-  if (first.status === 'open' && first.kind === 'booking') {
-    const a = (await readJSON('data/appointments.json', [])).find((x) => x && x.id === first.ref);
+  if (first.status === 'open' && (first.kind === 'booking' || first.kind === 'hold')) {
+    let apptRef = first.ref;
+    if (first.kind === 'hold') { const h = await require('./booking-holds').get(first.ref); apptRef = h && h.bookingId; }
+    const a = apptRef && (await readJSON('data/appointments.json', [])).find((x) => x && x.id === apptRef);
     if (a && a.paidOnline && a.paidOnline.orderId && a.paidOnline.orderId !== orderId) {
       await update(orderId, (o) => { if (o.status !== 'open') return false; Object.assign(o, { status: 'failed', failWhy: 'double', mypos: { ref: clip(info.ref, 80), src, at: clip(info.at, 40) } }); });
       await openList((l) => l.filter((x) => x.id !== orderId));
@@ -318,11 +357,44 @@ async function askBoth(c, o) {
 }
 const safeEq = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 
+// the payment screen's name and phone (and the WhatsApp consent), saved on the order (and its held hour) before she pays
+const normalizePhone = (p) => require('./clients').normalizePhone(p);
+async function contact(orderId, key, input) {
+  const { data: o } = await readOrder(orderId);
+  if (!o || !key || !safeEq(o.key, key)) return { error: 'not_found' };
+  if (o.status !== 'open') return { error: 'not_open' };
+  const name = clip(String(input.name || '').replace(/[<>]/g, ''), 100);
+  let phone = normalizePhone(clip(input.phone, 30));
+  if (/^7\d{8}$/.test(phone)) phone = '0' + phone;
+  if (name.length < 2) return { error: 'missing_name' };
+  if (!/^07\d{8}$/.test(phone) && !/^[1-9]\d{10,14}$/.test(phone)) return { error: 'bad_phone' };
+  if (!(input.consent === true || input.consent === 'true')) return { error: 'missing_consent' };
+  // already booked that day (the same rule as the form)
+  if (o.kind === 'hold') {
+    const h = await require('./booking-holds').get(o.ref);
+    if (h) {
+      const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+      const same = (await readJSON('data/appointments.json', [])).find((a) => a && d9(a.clientPhone) === d9(phone) && a.date === h.date && !['anulata', 'concediu'].includes(a.status));
+      if (same) return { error: 'has_booking', at: { date: same.date, time: same.time, location: same.location } };
+      await require('./booking-holds').patch(h.id, (x) => { x.contact = { name, phone, consent: true, at: nowISO() }; });
+    }
+  }
+  await update(orderId, (x) => { if (x.status !== 'open') return false; Object.assign(x, { name, phone, consent: true }); });
+  return { ok: true };
+}
+
 // she gives up paying online: the booking goes back to „plătesc în clinică” at the full price (only while nothing was paid)
 async function toClinic(orderId, key) {
   const { data: o } = await readOrder(orderId);
-  if (!o || !safeEq(o.key, key) || o.kind !== 'booking') return { error: 'not_found' };
+  if (!o || !safeEq(o.key, key) || !['booking', 'hold'].includes(o.kind)) return { error: 'not_found' };
   if (o.status === 'paid') return { error: 'paid' };
+  if (o.kind === 'hold') {
+    // nothing was booked yet: the held hour is let go (the slip books it at the clinic with her name and phone)
+    await require('./booking-holds').release(o.ref);
+    await update(orderId, (x) => { if (x.status !== 'open') return false; x.status = 'expired'; x.failWhy = 'clinic'; });
+    await openList((l) => l.filter((x) => x.id !== orderId));
+    return { ok: true };
+  }
   for (let round = 0; round < 5; round++) {
     const { data: appts, etag } = await store.readJSONTagged('data/appointments.json', []);
     const a = appts.find((x) => x && x.id === o.ref);
@@ -374,4 +446,4 @@ async function status() {
   return Object.assign(IPC.publicOf(c), { bonusPct: BONUS_PCT });
 }
 
-module.exports = { baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
+module.exports = { contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };

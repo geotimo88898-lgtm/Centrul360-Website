@@ -12,6 +12,9 @@
        onClinic(): she chose to pay at the clinic after all (shown only when given)
        onClose(): the sheet was closed without paying
        onOrder({ orderId, key, amount }): the order was made (key: to tell the server „at the clinic” for a booking)
+       contact: false to not ask (the caller has her name and phone already); { name, phone } to fill them in; consent: true
+         when she already ticked the WhatsApp line (then a filled contact is saved at once)
+       onContact({ name, phone }): her name and phone were saved (the slip keeps them for „Plătesc în clinică”)
      → Promise<{ paid, orderId, amount, confirmed }>
    ============================================================ */
 (function () {
@@ -59,6 +62,24 @@
   .cp-load{ position:absolute; inset:0; display:grid; place-items:center; background:#fff; color:#646b75; font-size:14px; text-align:center; }
   .cp-load i{ width:22px; height:22px; border-radius:50%; border:2.5px solid rgba(20,165,150,.18); border-top-color:#14a596; animation:cpSp .8s linear infinite; display:block; margin:0 auto 10px; }
   @keyframes cpSp{ to{ transform:rotate(360deg); } }
+  .cp-who{ margin:0 0 14px; }
+  .cp-two{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
+  @media (max-width:340px){ .cp-two{ grid-template-columns:1fr; } }
+  .cp-f{ display:block; min-width:0; }
+  .cp-f span{ display:block; font-size:12.5px; font-weight:500; color:#646b75; margin:0 0 5px; }
+  .cp-f input{ width:100%; height:48px; padding:0 14px; border:0; border-radius:14px; background:#f5f7f7; color:#0b0b0d; font:inherit; font-size:16px; box-shadow:0 0 0 1px rgba(11,11,13,.08) inset; box-sizing:border-box; }
+  .cp-f input:focus{ outline:none; background:#fff; box-shadow:0 0 0 1.5px #14a596 inset, 0 0 0 5px rgba(20,165,150,.12); }
+  .cp-f.err input{ box-shadow:0 0 0 1.5px #d9534f inset; }
+  .cp-ok{ display:flex; gap:9px; align-items:flex-start; margin:10px 0 0; font-size:12.5px; line-height:1.45; color:#646b75; cursor:pointer; }
+  .cp-ok input{ width:18px; height:18px; margin:0; flex:none; accent-color:#14a596; }
+  .cp-ok.err{ color:#c8443f; }
+  .cp-msg{ margin:8px 0 0; font-size:13px; color:#a2352f; }
+  .cp-msg[hidden]{ display:none; }
+  .cp-wbox{ position:relative; }
+  .cp-lock{ position:absolute; inset:0; z-index:2; border:0; padding:0; background:rgba(255,255,255,.6); -webkit-backdrop-filter:blur(1.5px); backdrop-filter:blur(1.5px); cursor:pointer; border-radius:14px; }
+  .cp-card + .cp-lock{ border-radius:18px; }
+  .cp-lock[hidden]{ display:none; }
+  .cp-w:empty + .cp-lock{ display:none; }
   .cp-safe{ display:flex; align-items:center; justify-content:center; gap:6px; margin:12px 0 0; font-size:12.5px; color:#9aa1aa; text-align:center; }
   .cp-state{ text-align:center; padding:18px 4px 6px; }
   .cp-state h3{ margin:0 0 8px; font-size:22px; font-weight:800; letter-spacing:-.03em; color:#0b0b0d; }
@@ -144,8 +165,8 @@
       if (b.hasAttribute('data-cp-retry')) start();
       if (b.hasAttribute('data-cp-clinic')) {
         b.disabled = true;
-        const go = () => { destroy(); if (sheet) closeSheet(); if (o.onClinic) o.onClinic(); finish({ paid: false, clinic: true }); };
-        if (order && order.kind === 'booking') post({ action: 'clinic', orderId: order.orderId, key: order.key }).then(go, go); else go();
+        const go = () => { destroy(); if (sheet) closeSheet(); if (o.onClinic) o.onClinic({ name: last.name, phone: last.phone }); finish({ paid: false, clinic: true }); };
+        if (order && (order.kind === 'booking' || order.kind === 'hold')) post({ action: 'clinic', orderId: order.orderId, key: order.key }).then(go, go); else go();
       }
       if (b.hasAttribute('data-cp-done')) closeSheet();
     });
@@ -168,25 +189,76 @@
       finish(out);
     }
 
+    // her name and phone on the payment screen itself (the owner, 23.11: no step before it). Saved at the server before any
+    // payment can start: the wallets and the card form stay veiled until then (a tap on the veil says what is missing).
+    const ask = o.contact !== false;
+    const pre = (o.contact && typeof o.contact === 'object') ? o.contact : {};
+    let contactOk = false, n = '';
+    const last = { name: pre.name || '', phone: pre.phone || '' }; // what she typed, kept for a new try or the clinic
+    const fv = (k) => { const x = host.querySelector('[name="cp-' + k + '"]'); return x ? (x.type === 'checkbox' ? x.checked : x.value.trim()) : ''; };
+    const flag = (k, bad) => { const x = host.querySelector('[data-cp-f="' + k + '"]'); if (x) x.classList.toggle('err', !!bad); };
+    const say = (t) => { const x = host.querySelector('.cp-msg'); if (x) { x.textContent = t || ''; x.hidden = !t; } };
+    const lock = (on) => { ['cpL', 'cpK'].forEach((p) => { const x = document.getElementById(p + n); if (x) x.hidden = !on; }); };
+    function contactBad() {
+      const bad = { name: fv('name').length < 2, phone: fv('phone').replace(/\D/g, '').length < 9, ok: !fv('ok') };
+      Object.keys(bad).forEach((k) => flag(k, bad[k]));
+      return bad.name || bad.phone || bad.ok;
+    }
+    async function saveContact() {
+      if (!ask || contactOk) return true;
+      if (contactBad()) { say(''); const f = host.querySelector('.cp-f.err input'); if (f) f.focus(); return false; }
+      try {
+        await post({ action: 'contact', orderId: order.orderId, key: order.key, name: fv('name'), phone: fv('phone'), consent: true });
+        contactOk = true; lock(false); say('');
+        if (o.onContact) o.onContact({ name: fv('name'), phone: fv('phone') });
+        return true;
+      } catch (e) {
+        if (e.code === 'bad_phone') { flag('phone', true); say('Numărul de telefon nu pare corect.'); }
+        else if (e.code === 'has_booking') say('Ai deja o programare în ziua asta. Pentru încă una sau ca s-o muți, scrie-ne pe WhatsApp.');
+        else say(ERR[e.code] || 'Nu am putut salva datele. Încearcă din nou.');
+        return false;
+      }
+    }
+    host.addEventListener('input', (e) => {
+      if (!e.target.closest('.cp-who')) return;
+      contactOk = false; lock(true);
+      const k = (e.target.name || '').replace('cp-', ''); if (k) flag(k, false);
+      if (k === 'name' || k === 'phone') last[k] = e.target.value.trim();
+    });
+    host.addEventListener('focusout', (e) => { if (e.target.closest('.cp-who') && !host.querySelector('.cp-who').contains(e.relatedTarget) && !contactBad()) saveContact(); });
+    host.addEventListener('change', (e) => { if (e.target.name === 'cp-ok' && !contactBad()) saveContact(); });
+    host.addEventListener('click', (e) => {
+      if (e.target.closest('.cp-lock')) { if (!contactBad()) saveContact(); else { say('Scrie întâi numele și telefonul, apoi bifează acordul.'); const f = host.querySelector('.cp-f.err input'); if (f) f.focus(); } }
+    });
+
     async function start() {
       paint('<div class="cp-card"><div class="cp-load"><div><i></i>Pregătim plata…</div></div></div>');
-      let s;
+      contactOk = false;
       try {
-        [order, s] = await Promise.all([post({ action: 'create', kind: o.kind, ref: o.ref, city: o.city, name: o.name, phone: o.phone, page: o.page || location.pathname }), status()]);
+        [order] = await Promise.all([post({ action: 'create', kind: o.kind, ref: o.ref, city: o.city, name: o.name, phone: o.phone, page: o.page || location.pathname }), status()]);
         order.kind = o.kind;
         if (o.onOrder) o.onOrder({ orderId: order.orderId, key: order.key, amount: order.amount });
         await sdk();
       } catch (e) { fail(ERR[e.code] || 'Nu am putut porni plata. Încearcă din nou.'); return; }
       if (active !== me) return;
-      const n = me.id + '-' + Date.now().toString(36);
+      n = me.id + '-' + Date.now().toString(36);
+      const keep = last;
       const save = order.full > order.amount ? '<small><s>' + lei(order.full) + '</s> · ' + esc(order.title) + '</small>' : '<small>' + esc(order.title) + '</small>';
       paint((order.sandbox ? '<p class="cp-test">Cont de test myPOS: plătește doar cu un card de test.</p>' : '') +
         '<div class="cp-sum"><div><b>' + lei(order.amount) + '</b>' + save + '</div>' + (order.bonusPct ? '<i class="cp-off">-' + order.bonusPct + '%</i>' : '') + '</div>' +
-        '<div class="cp-w" id="cpW' + n + '"></div><p class="cp-or" id="cpO' + n + '" hidden>sau cu cardul</p>' +
-        '<div class="cp-card" id="cpC' + n + '"><div class="cp-load"><div><i></i>Se încarcă formularul securizat…</div></div></div>' +
+        (ask ? '<div class="cp-who"><div class="cp-two">' +
+          '<label class="cp-f" data-cp-f="name"><span>Nume</span><input name="cp-name" autocomplete="name" placeholder="Maria Popescu" value="' + esc(keep.name) + '"></label>' +
+          '<label class="cp-f" data-cp-f="phone"><span>Telefon (WhatsApp)</span><input name="cp-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07xx xxx xxx" value="' + esc(keep.phone) + '"></label></div>' +
+          '<label class="cp-ok" data-cp-f="ok"><input type="checkbox" name="cp-ok"><span>Sunt de acord să primesc pe WhatsApp sau telefonic confirmarea și reamintirile de la Centrul360.</span></label>' +
+          '<p class="cp-msg" hidden></p></div>' : '') +
+        '<div class="cp-wbox"><div class="cp-w" id="cpW' + n + '"></div><button type="button" class="cp-lock" id="cpL' + n + '"' + (ask ? '' : ' hidden') + ' aria-label="Scrie întâi numele și telefonul"></button></div>' +
+        '<p class="cp-or" id="cpO' + n + '" hidden>sau cu cardul</p>' +
+        '<div class="cp-wbox"><div class="cp-card" id="cpC' + n + '"><div class="cp-load"><div><i></i>Se încarcă formularul securizat…</div></div></div>' +
+          '<button type="button" class="cp-lock" id="cpK' + n + '"' + (ask ? '' : ' hidden') + ' aria-label="Scrie întâi numele și telefonul"></button></div>' +
         '<p class="cp-safe">' + ICON.lock + 'Plată securizată prin myPOS. Datele cardului nu ajung la noi.</p>');
       const M = window.MyPOSEmbedded, sandbox = !!order.sandbox;
-      // Apple Pay / Google Pay first, when the phone has them (a session signed by our server: the sum can't change)
+      // Apple Pay / Google Pay first, when the phone has them (a session signed by our server: the sum can't change); they
+      // open once her name and phone are saved (the lock over them asks for them)
       const ti = order.sessionToken ? tokenInfo(order.sessionToken) : {};
       const wallet = { isSandbox: sandbox, onSuccess: () => confirm(), onDecline: () => fail() };
       const showOr = () => { const x = document.getElementById('cpO' + n); if (x) x.hidden = false; };
@@ -196,7 +268,8 @@
           M.isGooglePayPaymentAvailable(order.sessionToken, { isSandbox: sandbox, onAvailable: () => { M.createGooglePayButton('cpW' + n, order.sessionToken, wallet).then(showOr).catch(() => {}); }, onUnavailable: () => {} }).catch(() => {});
         }
       } catch (e) { /* the card form is enough */ }
-      // the card, in myPOS's frame
+      // the card, in myPOS's frame, with myPOS's own pay button (the one button; a form paid by our own button did not work with
+      // every payment method of the store). Locked like the wallets until her name and phone are saved.
       const params = Object.assign({}, order.params, { urlOk: location.href.split('#')[0], urlCancel: location.href.split('#')[0] });
       const look = { formBackgroundColor: '#ffffff', labelColor: '#646b75', labelFontSize: '14px', inputBorderRadius: '14px', payButtonBackgroundColor: '#0f9083', payButtonBorderColor: '#0f9083',
         payButtonColor: '#ffffff', payButtonBackgroundColorHover: '#0b7f74', payButtonBorderColorHover: '#0b7f74', payButtonColorHover: '#ffffff', payButtonFontSize: '16px' };
@@ -206,6 +279,7 @@
         onError: () => fail(),
         onDecline: () => fail(),
       }, look).then(() => { const l = host.querySelector('.cp-load'); if (l) l.remove(); }).catch(() => fail('Formularul de plată nu s-a încărcat. Încearcă din nou.'));
+      if (ask && keep.name && keep.phone) { const c = host.querySelector('[name="cp-ok"]'); if (c && o.consent) { c.checked = true; saveContact(); } }
     }
     start();
     return result;

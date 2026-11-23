@@ -315,7 +315,7 @@
   // ---------------------------------------------------------------- state & data
   function fresh(o) {
     const me = store.get('c360-book-me') || {};
-    return { step: 'svc', city: o.city || PAGE_CITY || store.get('c360-book-city') || '', svc: o.service || '', label: o.label || '', services: null, days: null, date: '', time: '', err: '', name: me.name || '', phone: me.phone || '', busy: false, done: null, dir: '', pay: '', payUrl: '', embed: false, order: null, paid: null };
+    return { step: 'svc', city: o.city || PAGE_CITY || store.get('c360-book-city') || '', svc: o.service || '', label: o.label || '', services: null, days: null, date: '', time: '', err: '', name: me.name || '', phone: me.phone || '', busy: false, done: null, dir: '', pay: '', payUrl: '', embed: false, hold: null, paid: null };
   }
   async function load(fresh) {
     const my = ++seq;
@@ -429,7 +429,7 @@
     if (!root) return;
     body = root.querySelector('.bk-body');
     const back = root.querySelector('[data-bk-back]');
-    back.hidden = S.step === 'city' || S.step === 'done' || S.step === 'checkout' || (S.step === 'when' && S.lock && !!S.proc);
+    back.hidden = S.step === 'city' || S.step === 'done' || (S.step === 'when' && S.lock && !!S.proc);
     if (S.step === 'checkout' && body.querySelector('[data-bk-checkout]')) return; // the payment form stays as it is
     const html = S.step === 'city' ? cityHtml() : S.step === 'svc' ? svcHtml() : S.step === 'when' ? whenHtml() : S.step === 'pay' ? payHtml() : S.step === 'you' ? youHtml() : S.step === 'checkout' ? checkoutHtml() : doneHtml();
     const last = payable() ? 5 : 4;
@@ -538,23 +538,51 @@
       '<button type="submit" class="bk-cta"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '<span class="spin"></span>Se programează…' : payOnline() ? 'Programează-mă și plătesc ' + lei(payAmount(s.price)) : 'Programează-mă') + '</button>' +
       '<p class="bk-note">Îți trimitem imediat un mesaj pe WhatsApp. Ca programarea să rămână valabilă, confirm-o răspunzând „Confirm”.</p></form>';
   }
-  // the payment, in the same sheet, right after the booking was made (the booking is kept whatever happens: paid online, or at
-  // the clinic if she chooses so)
+  // „Plătesc online” (the owner, 23.11: no name / phone step before paying): the hour is held for her a few minutes and the
+  // payment opens right here; her name and phone are on the payment screen. Paid: the booking is made (by the server, on
+  // myPOS's signed word) and confirmed. Not paid: the hold runs out, nothing is booked.
   function checkoutHtml() {
-    const a = S.done || {};
-    return '<p class="bk-eyebrow">Plata</p><h2 class="bk-h">Programarea e făcută. <em>Acum plata.</em></h2>' +
-      '<p class="bk-when">' + esc(niceDay(a.date || S.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(a.time || S.time) + '<small>' + esc(a.treatment || (S.service || {}).title || '') + ' · Centrul360 ' + esc(a.location || S.city) + '</small></p>' +
-      '<div data-bk-checkout></div>';
+    return '<p class="bk-eyebrow">Plata online</p><h2 class="bk-h">Plătești acum, <em>cu ' + PAY_OFF + '% mai puțin.</em></h2>' +
+      '<p class="bk-when">' + esc(niceDay(S.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(S.time) + '<small>' + esc((S.service || {}).title || '') + ' · Centrul360 ' + esc(S.city) + '</small></p>' +
+      '<div data-bk-checkout><div class="bk-skel" style="height:96px;border-radius:18px;margin-bottom:12px"></div><div class="bk-skel" style="height:300px;border-radius:18px"></div></div>';
   }
-  function mountCheckout() {
+  const holdBody = () => ({ hold: true, city: S.city, service: S.svc, label: S.svc === 'custom' ? S.label : '', treatment: S.svc === 'custom' && S.pick ? S.pick.treatment || '' : '', date: S.date, time: S.time, page: PAGE, src: SRC });
+  function releaseHold(beacon) {
+    const h = S && S.hold;
+    if (!h || S.paid) return;
+    S.hold = null;
+    try { fetch('/api/booking', { method: 'POST', keepalive: !!beacon, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ release: h.id, key: h.key }) }); } catch (e) { /* it runs out by itself */ }
+  }
+  async function mountCheckout() {
     const el = body.querySelector('[data-bk-checkout]');
-    if (!el || !S.done || !S.done.id || !window.C360Pay) return;
+    if (!el || !window.C360Pay) return;
     const mine = S;
+    let d = null;
+    try { const r = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(holdBody()) }); d = await r.json(); } catch (e) { d = { error: 'net' }; }
+    if (S !== mine || S.step !== 'checkout') { if (d && d.hold) { S.hold = d.hold; releaseHold(); } return; }
+    if (!d || !d.hold) {
+      const e2 = d && d.error;
+      if (e2 === 'taken') { Object.keys(early).forEach((k) => delete early[k]); S.time = ''; go('when', 'back'); load(true); setTimeout(() => { const b2 = root.querySelector('.bk-body .bk-step'); if (b2) b2.insertAdjacentHTML('afterbegin', '<div class="bk-alert">Ora aleasă tocmai a fost ocupată. Alege, te rog, altă oră.</div>'); }, 400); return; }
+      if (e2 === 'pay_off') { S.embed = false; embedP = null; S.pay = ''; go('pay', 'back'); return; }
+      el.innerHTML = '<div class="bk-alert">Nu am putut porni plata. Verifică internetul și încearcă din nou, sau <a href="' + waLink() + '" target="_blank" rel="noopener">scrie-ne pe WhatsApp</a>.</div><button type="button" class="bk-ghost" data-go="pay" style="width:100%">Înapoi</button>';
+      return;
+    }
+    S.hold = d.hold;
+    el.innerHTML = '';
     window.C360Pay.open({
-      kind: 'booking', ref: S.done.id, city: S.city, page: PAGE, mount: el,
-      onOrder: (o) => { mine.order = o; },
-      onPaid: (r) => { if (S !== mine) return; S.paid = r; go('done'); },
-      onClinic: () => { if (S !== mine) return; S.pay = 'clinic'; S.order = null; go('done'); },
+      kind: 'hold', ref: d.hold.id, city: S.city, page: PAGE, mount: el,
+      contact: { name: S.name, phone: S.phone }, consent: !!S.ok,
+      onContact: (c) => { if (S !== mine) return; S.name = c.name; S.phone = c.phone; S.ok = true; store.set('c360-book-me', { name: c.name, phone: c.phone }); },
+      onPaid: (r) => {
+        if (S !== mine) return;
+        S.paid = r; S.hold = null;
+        S.done = { date: S.date, time: S.time, endTime: '', location: S.city, treatment: (S.service || {}).title };
+        Object.keys(early).forEach((k) => delete early[k]);
+        track('');
+        go('done');
+      },
+      // she pays at the clinic after all: the held hour was let go; the usual last step books it, her name and phone filled in
+      onClinic: (c) => { if (S !== mine) return; S.hold = null; S.pay = 'clinic'; if (c && c.name) S.name = c.name; if (c && c.phone) S.phone = c.phone; go('you'); },
     });
   }
   function doneHtml() {
@@ -564,12 +592,12 @@
       return '<div class="bk-done"><div class="bk-check">' + ICON.check + '</div><p class="bk-eyebrow" style="justify-content:center">' + (S.paid.confirmed ? 'Plătit' : 'Plată în confirmare') + '</p>' +
         '<h2 class="bk-h">Plătit. Ne vedem <em>' + esc(niceDay(a.date)) + '.</em></h2><p>' + (S.paid.confirmed ? 'Programarea e confirmată. Îți trimitem și pe WhatsApp.' : 'Banca mai confirmă plata câteva clipe. Îți scriem pe WhatsApp imediat ce vine.') + '</p>' +
         '<div class="bk-card">' +
-        '<div class="bk-row">' + ICON.cal + '<div><b>' + day + ', ora ' + esc(a.time) + '</b><small>' + mins(minsBetween(a.time, a.endTime)) + '</small></div></div>' +
+        '<div class="bk-row">' + ICON.cal + '<div><b>' + day + ', ora ' + esc(a.time) + '</b><small>' + mins((S.service && S.service.minutes) || 60) + '</small></div></div>' +
         '<div class="bk-row">' + ICON.spark + '<div><b>' + esc(a.treatment) + '</b><small>' + lei(S.paid.amount) + ', plătit online, cu ' + PAY_OFF + '% reducere</small></div></div>' +
         '<div class="bk-row">' + ICON.pin + '<div><b>Centrul360 ' + esc(a.location) + '</b><small>' + esc(ADDR[a.location]) + '</small></div></div></div>' +
         '<div class="bk-two"><button type="button" class="bk-ghost" data-ics>' + ICON.cal + 'În calendar</button><a class="bk-ghost" href="' + MAPS[a.location] + '" target="_blank" rel="noopener">' + ICON.pin + 'Vezi pe hartă</a></div></div>';
     }
-    if (payOnline() && S.payUrl) {
+    if (payOnline() && S.payUrl && !S.embed) {
       const n = lei(payAmount(S.service.price));
       return '<div class="bk-done"><div class="bk-check">' + ICON.check + '</div><p class="bk-eyebrow" style="justify-content:center">Programare făcută</p>' +
         '<h2 class="bk-h">Programarea e făcută. Mai ai <em>un pas:</em> plata de ' + n + '.</h2><p>După plată îți confirmăm pe WhatsApp.</p>' +
@@ -604,6 +632,7 @@
     if (!t || !root.contains(t)) { if (e.target.closest('[data-bk-close]')) close(); return; }
     if (t.hasAttribute('data-bk-close')) { close(); return; }
     if (t.hasAttribute('data-bk-back')) {
+      if (S.step === 'checkout') { releaseHold(); go('pay', 'back'); return; }
       if (S.step === 'you') go(payable() ? 'pay' : 'when', 'back');
       else if (S.step === 'pay') go('when', 'back');
       else if (S.step === 'when') go(S.note ? 'svc' : 'city', 'back');
@@ -628,7 +657,7 @@
     if (t.dataset.go === 'city') { go('city', 'back'); return; }
     if (t.dataset.go === 'svc') { go('svc', 'back'); return; }
     if (t.dataset.go === 'pay') { go('pay', 'back'); return; }
-    if (t.dataset.pay) { S.pay = t.dataset.pay; paint(); setTimeout(() => go('you'), 160); return; }
+    if (t.dataset.pay) { S.pay = t.dataset.pay; paint(); setTimeout(() => go(S.pay === 'online' && S.embed ? 'checkout' : 'you'), 160); return; }
     if (t.hasAttribute('data-retry')) { if (S.service) load(); else loadServices('enter'); return; }
     if (t.dataset.date) { S.date = t.dataset.date; S.time = ''; paint(); return; }
     if (t.dataset.time) { S.time = t.dataset.time; paint(); setTimeout(() => go(payable() ? 'pay' : 'you'), 160); return; }
@@ -653,19 +682,16 @@
     const booking = { city: S.city, service: S.svc, label: S.svc === 'custom' ? S.label : '', date: S.date, time: S.time, name: S.name, phone: S.phone, consent: true, page: PAGE, src: SRC, event_id: window.C360_CONSENT === true ? eid : '' };
     if (payable() && S.pay === 'clinic') booking.pay = 'clinic';
     if (S.svc === 'custom' && S.pick && S.pick.treatment) booking.treatment = S.pick.treatment;
-    const viaCheckout = payOnline() && S.embed;
-    if (viaCheckout) booking.pay = 'online-checkout';
-    (viaCheckout ? book(booking) : payOnline() ? startOnlinePay({ offer: S.service, amount: payAmount(S.service.price), booking }) : book(booking)).then(({ r, d }) => {
+    (payOnline() && !S.embed ? startOnlinePay({ offer: S.service, amount: payAmount(S.service.price), booking }) : book(booking)).then(({ r, d }) => {
       S.busy = false;
       if (r.ok && d.ok) {
         store.set('c360-book-me', { name: S.name, phone: S.phone });
         Object.keys(early).forEach((k) => delete early[k]);
         S.done = d.appointment || { date: S.date, time: S.time, location: S.city, treatment: (S.service || {}).title };
         track(eid);
-        go(viaCheckout && S.done.id ? 'checkout' : 'done');
+        go('done');
         return;
       }
-      if (d.error === 'pay_off') { S.embed = false; S.pay = ''; embedP = null; go('pay', 'back'); return; } // switched off meanwhile: the old way
       const e2 = d.error;
       if (e2 === 'taken') { Object.keys(early).forEach((k) => delete early[k]); S.err = ''; S.time = ''; go('when', 'back'); load(true); setTimeout(() => { const b = root.querySelector('.bk-body .bk-step'); if (b) b.insertAdjacentHTML('afterbegin', '<div class="bk-alert">Ora aleasă tocmai a fost ocupată. Alege, te rog, altă oră.</div>'); }, 400); return; }
       S.err = e2 === 'has_booking' && d.at ? 'Ai deja o programare ' + esc(d.at.nice) + ', la ora ' + esc(d.at.time) + '. Pentru a o muta, <a href="' + waLink() + '" target="_blank" rel="noopener">scrie-ne pe WhatsApp</a>.'
@@ -742,12 +768,8 @@
     if (!pushed) { try { history.pushState({ bk: 1 }, '', location.href.replace(/#programare$/, '')); pushed = true; } catch (e) { /* no history */ } }
     setTimeout(() => { const f = root.querySelector('.bk-svc, .bk-cd.on, [data-bk-close]'); if (f) f.focus({ preventScroll: true }); }, 60);
   }
-  // closed while the payment form was open and nothing was paid: the booking stays, paid at the clinic (full price)
-  function leaveCheckout() {
-    if (!S || S.step !== 'checkout' || S.paid || !S.order) return;
-    try { fetch('/api/pay', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clinic', orderId: S.order.orderId, key: S.order.key }) }); } catch (e) { /* the clock lets it go */ }
-    S.order = null;
-  }
+  // closed while the payment was open and nothing was paid: the held hour is let go at once (else it runs out by itself)
+  function leaveCheckout() { if (S && S.step === 'checkout') releaseHold(true); }
   function close() {
     if (!root || inline) return;
     leaveCheckout();
