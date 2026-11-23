@@ -32,7 +32,7 @@
 // owner: a refund row in Încasări, dated that day (the month's reports stay as they were).
 
 const crypto = require('crypto');
-const { readJSON, writeJSON, readBinary, writeBinary } = require('./store');
+const { readJSON, writeJSON, readBinary, writeBinary, createOnce } = require('./store');
 const N = require('./notify');
 
 const KEY = 'data/card-sarbatori.json';
@@ -454,6 +454,10 @@ const TPL = {
   // (no name in them: an online order is only her phone and her card, 21.11)
   rec1: { label: 'Card de Sărbători plată neterminată', category: 'MARKETING', headerType: 'IMAGE', map: ['credit'], buttons: 'rec', sample: { code: '', name: '' },
     body: 'Bună! Am văzut că ai vrut Cardul de Sărbători de {{1}} lei în tratamente, dar plata nu s-a finalizat. S-a blocat ceva? Îl poți plăti online sau îl rezervi și plătești în clinică. Alege mai jos ce preferi.' },
+  // the first one, warmer and 10 minutes after her last step (the owner, 23.11: „scurt, drăguț, cu un emoji cute la final”);
+  // used once Meta approves it, until then rec1
+  rec1b: { label: 'Card de Sărbători plată neterminată 2', category: 'MARKETING', headerType: 'IMAGE', map: ['credit'], buttons: 'rec', sample: { code: '', name: '' },
+    body: 'Hei! Am văzut că plata pentru Cardul tău de Sărbători de {{1}} lei în tratamente nu s-a terminat. Dacă ai avut vreo problemă, scrie-ne aici sau alege mai jos și te ajutăm imediat 🥰' },
   rec2: { label: 'Card de Sărbători mai sunt carduri', category: 'MARKETING', headerType: 'IMAGE', map: ['credit', 'carduri'], buttons: 'rec', sample: { code: '', name: '' },
     body: 'Bună! Încă poți lua Cardul de Sărbători de {{1}} lei în tratamente. Mai avem doar {{2}}, iar oferta se încheie pe 24 decembrie. Îl plătești online sau îl rezervi și plătești în clinică, alege mai jos.' },
   // paid online, the name comes after (the owner, 21.11): the payment received, „pe ce nume să fie cardul?” (askName)
@@ -1309,6 +1313,50 @@ function mergeInto(x, r) {
   const seen = new Set((x.trail || []).map((e) => e.at + e.ev + (e.note || '')));
   x.trail = (x.trail || []).concat((r.trail || []).filter((e) => !seen.has(e.at + e.ev + (e.note || '')))).sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).slice(-TRAIL_MAX);
 }
+// her last step on the order: made, sent to the checkout or the PayLink, her phone given, back on the page
+const STEP_EVS = ['created', 'to_checkout', 'to_paylink', 'contact', 'back', 'returned', 'choice', 'reason', 'edited'];
+function lastStep(r) {
+  let t = Math.max(heldFrom(r) || 0, Date.parse(r.created) || 0, Date.parse(r.checkout && r.checkout.at) || 0);
+  (r.trail || []).forEach((e) => { if (STEP_EVS.includes(e.ev)) t = Math.max(t, Date.parse(e.at) || 0); });
+  return t;
+}
+// the checks before a recovery message (the owner, 23.11: „doar când e 100% sigur că nu a plătit”): her order read again
+// (still waiting, nothing stopped it, no other card of hers paid or newer), the checkout's own orders of this card asked at
+// myPOS now (paid, or no clear answer: nothing goes), myPOS's payments of the last hours (one of her sum not yet matched to
+// an order: nothing goes, the matching or „De verificat” takes it first), and a mark made once, so two runs at the same
+// time send it once. { ok } or { ok: false, why, stop? }
+async function recoverSafe(r, step, scan) {
+  const list = await readJSON(KEY, []);
+  const x = byId(list, r.id);
+  if (!x || x.status !== 'asteptare') return { ok: false, why: 'comanda nu mai așteaptă', stop: 'changed' };
+  const rc = recOf(x);
+  if (rc.stop || rc[step]) return { ok: false, why: 'oprit sau trimis deja' };
+  const k = d9(x.phone);
+  const mine = list.filter((y) => y.id !== x.id && k.length === 9 && d9(y.phone) === k);
+  if (mine.some((y) => y.status === 'platit' && Date.now() - Date.parse(y.paidAt || y.created) < 7 * 86400e3)) return { ok: false, why: 'alt card al ei plătit', stop: 'paid_other' };
+  if (mine.some((y) => Date.parse(y.created) > Date.parse(x.created))) return { ok: false, why: 'comandă mai nouă', stop: 'newer' };
+  // the checkout's orders of this card: asked at myPOS now
+  const PAY = require('./pay');
+  const open = await readJSON('data/pay-open.json', []);
+  for (const e of open.filter((o) => Date.parse(o.at) >= Date.parse(x.created) - 60e3)) {
+    const o = (await PAY.readOrder(e.id).catch(() => ({ data: null }))).data;
+    if (!o || o.kind !== 'card' || String(o.ref || '') !== x.id) continue;
+    // her last sign of life on the checkout (the tap, the payment page): 10 minutes from that too
+    if (typeof PAY.lastActivity === 'function' && Date.now() - PAY.lastActivity(o) < 10 * 60e3) return { ok: false, why: 'încă activă pe plată' };
+    const c = await PAY.check(o.id, o.key).catch((er) => ({ error: er.message }));
+    if (c.paid) return { ok: false, why: 'plătit prin checkout', stop: 'paid' };
+    if (c.error || c.status !== 'open' && c.status !== 'failed') return { ok: false, why: 'myPOS fără răspuns clar: ' + (c.error || c.status) };
+  }
+  // myPOS's payments of the last 3 hours: one of her sum, not matched to any order yet
+  if (!scan.done) { scan.done = true; const s = await scanMypos(1).catch((er) => ({ ok: false, error: er.message })); scan.pays = s.ok ? s.pays : null; }
+  if (!scan.pays) return { ok: false, why: 'tranzacțiile myPOS nu s-au putut citi' };
+  const used = new Set(list.filter((y) => y.match && y.match.ref).map((y) => y.match.ref).concat(list.filter((y) => y.checkout && y.checkout.scan).map((y) => y.checkout.scan)));
+  const since = Math.min(heldFrom(x) || Date.parse(x.created), Date.parse(x.created)) - 5 * 60e3;
+  if (scan.pays.some((p) => !used.has(p.ref) && Date.parse(p.at) >= since && sumOk(x, p.amount))) return { ok: false, why: 'o plată cu suma ei încă nepotrivită' };
+  // once only
+  if (!(await createOnce('data/card-rec-lock/' + x.id.replace(/[^\w-]/g, '') + '-' + step + '.txt', new Date().toISOString()))) return { ok: false, why: 'trimis deja (lock)' };
+  return { ok: true };
+}
 async function recover(now) {
   const t = now || Date.now();
   const stamp = await readJSON(REC_KEY, {}).catch(() => ({}));
@@ -1353,11 +1401,12 @@ async function recover(now) {
     const rc = recOf(r);
     if (t >= Date.parse(DEADLINE)) { stop(r, 'deadline'); continue; }
     if (list.some((x) => x.id !== r.id && x.status !== 'draft' && d9(x.phone) === d9(r.phone) && Date.parse(x.created) > Date.parse(r.created))) { stop(r, 'newer'); continue; }
-    // the step due now: rec1 from 30 minutes after the order (until 90, or an hour after 09:00 when that fell at night),
+    // the step due now: rec1 10 minutes after her last step (the order, the checkout, her phone; until an hour later, or an
+    // hour after 09:00 when that fell at night),
     if (!r.phone) continue; // an order of the checkout closed before her phone came: nobody to write to
     // rec2 about 24 h after rec1
     let step = '', from = 0, end = 0;
-    if (!rc.wa1) { step = 'wa1'; from = awake(heldFrom(r) + 30 * 60e3); end = Math.max(heldFrom(r) + 90 * 60e3, from + 60 * 60e3); }
+    if (!rc.wa1) { step = 'wa1'; from = awake(lastStep(r) + 10 * 60e3); end = from + 60 * 60e3; }
     else if (rc.wa1.ok && !rc.wa2) { step = 'wa2'; from = awake(Date.parse(rc.wa1.at) + 24 * 3600e3 - 10 * 60e3); end = from + 3 * 3600e3; }
     if (!step) { stop(r, 'done'); continue; }
     if (t < from || quiet(t)) continue;
@@ -1371,10 +1420,16 @@ async function recover(now) {
     if (c && (c.messages || []).some((m) => m.direction === 'in' && Date.parse(m.timestamp) > heldFrom(r))) { rc.replied = rc.replied || { at: nowISO(), what: 'text' }; mark(r, 'replied', 'text'); stop(r, 'replied'); continue; }
     due.push({ r, step });
   }
-  let sent = 0, failed = 0, waiting = 0;
+  let sent = 0, failed = 0, waiting = 0, held = 0;
+  const T2 = due.length ? await templates().catch(() => ({ t: {} })) : { t: {} };
+  const warm = T2.t && T2.t.rec1b && require('./wa-templates').overall(T2.t.rec1b) === 'APPROVED';
+  const scan = { done: false, pays: null };
   for (const { r, step } of due.slice(0, 6)) {
     const rc = recOf(r);
-    const k = step === 'wa1' ? 'rec1' : 'rec2';
+    // only when it is sure she has not paid (the owner, 23.11): any doubt waits for the next run
+    const g = await recoverSafe(r, step, scan).catch((e) => ({ ok: false, why: 'eroare: ' + e.message }));
+    if (!g.ok) { if (g.stop) stop(r, g.stop); held++; rc[step + 'Held'] = String(g.why || '').slice(0, 120); changed.add(r); continue; }
+    const k = step === 'wa1' ? (warm ? 'rec1b' : 'rec1') : 'rec2';
     const vars = { credit: lei(r.credit), carduri: cardsLeft(leftFor(cnt, r.tier, r.city)) };
     let png = null, path = 'wa-out/card-rec-' + String(r.id).replace(/[^\w-]/g, '').slice(0, 36) + '.png';
     try {
@@ -1395,7 +1450,7 @@ async function recover(now) {
     for (const r of changed) { const x = l2.find((y) => y.id === r.id); if (x) mergeInto(x, r); }
     await writeJSON(KEY, l2);
   }
-  return { open: open.length, due: due.length, sent, failed, waiting, named, calls };
+  return { open: open.length, due: due.length, sent, failed, waiting, held, named, calls };
 }
 // on the hourly clock too, only when the 5-minute one did not run lately (the Worker's minute clock is off)
 async function recoverIfIdle() {
