@@ -142,7 +142,7 @@ async function setStock(input, by) {
 async function openNext(list, by) {
   const cfg = await settings();
   const c = counter(list, Date.now(), cfg);
-  if (c.wave.soldOut || c.wave.n >= c.wave.of) return { error: 'last_wave' };
+  if (c.wave.soldOut) return { error: 'last_wave' };
   if (c.wave.left >= cfg.wave) return { error: 'just_opened' };
   const skip = cfg.skip + c.wave.left;
   await writeJSON(STOCK, { wave: cfg.wave, max: cfg.max, skip, vip: cfg.vip, by: by || '', at: nowISO() });
@@ -164,10 +164,12 @@ function counter(list, now, cfg) {
   const t = now || Date.now();
   const W = (cfg && cfg.wave) || WAVE, max = cfg && Number.isInteger(cfg.max) ? cfg.max : MAX, skip = (cfg && cfg.skip) || 0;
   const sold = ordered(list, t), eff = sold + skip;
-  const soldOut = sold >= max;
-  const left = soldOut ? 0 : Math.max(0, Math.min(W - (eff % W), max - sold));
+  // never sold out before the deadline (the owner, 23.11: „să nu rămână vreo clientă fără card”): a wave at 0 opens the
+  // next one at once, and past the planned total (max) the waves go on the same way; the page only ever says the wave's N
+  const soldOut = false;
+  const left = W - (eff % W);
   const n = Math.floor(eff / W) + 1;
-  const of = n + Math.ceil(Math.max(0, max - sold - left) / W);
+  const of = Math.max(n, n + Math.ceil(Math.max(0, max - sold - left) / W));
   const open = t < Date.parse(DEADLINE) && !soldOut && left > 0;
   return { total: W, left, deadline: DEADLINE, open, tiers: TIERS, sale: SALE, maxQty: MAXQ, validUntil: VALID_UNTIL, vip: vipLeft(list, t, cfg),
     sold, wave: { n, of, size: W, max, sold: eff % W, left, soldOut } };
@@ -182,8 +184,8 @@ async function stockFor(list, tier, city, qty, now, cnt) {
   if (t >= Date.parse(DEADLINE)) return { ok: false, left: 0, error: 'closed' };
   const c = cnt || await count(list, t);
   if (isVip(tier)) { const v = c.vip[city] || { left: 0 }; return v.left >= (qty || 1) ? { ok: true, left: v.left } : { ok: false, left: v.left, error: v.left > 0 ? 'not_enough' : 'sold_out' }; }
-  if (!c.open || c.wave.soldOut) return { ok: false, left: 0, error: 'sold_out' };
-  return c.left >= (qty || 1) ? { ok: true, left: c.left } : { ok: false, left: c.left, error: c.left > 0 ? 'not_enough' : 'sold_out' };
+  // the regular cards: always there before the deadline (more than the wave holds: the next wave takes the rest)
+  return { ok: true, left: Math.max(c.left, qty || 1) };
 }
 // what is left for her card: the VIP ones of her clinic, else the wave's
 const leftFor = (c, tier, city) => (isVip(tier) ? ((c.vip || {})[city] || { left: 0 }).left : c.left);
@@ -194,7 +196,7 @@ async function lostRace(list, entry) {
   const before = list.filter((r) => mine(r) && live(r));
   const upTo = before.slice(0, before.findIndex((r) => r.id === entry.id) + 1).reduce((n, r) => n + qtyOf(r), 0);
   if (isVip(entry)) return upTo > ((cfg.vip || {})[entry.city] != null ? cfg.vip[entry.city] : VIP_MAX);
-  return upTo > cfg.max || (await count(list.filter((r) => r.id !== entry.id))).wave.left < qtyOf(entry);
+  return false; // the regular cards never run out (the waves go on), so nobody gives way
 }
 // the notifications' title: „C. SARB 🎄 990 lei · …”, a VIP one „C. SARB 💎 VIP 9.900 lei · …” (the owner, 22.11)
 const sarb = (tier, amount) => 'C. SARB ' + (isVip(tier) ? '💎 VIP ' : '🎄 ') + N.leiTxt(amount != null ? amount : tier);
