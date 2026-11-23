@@ -304,10 +304,10 @@
         '<span class="cp-ln"><b>Lotul ' + esc(l.b) + '</b>' + (S.c.best === l.b ? '<em>cel mai bun</em>' : '') + '<small>' + esc(MSG(l.msg)) + ' · ' + esc(segLine(l.segs, true)) + '</small></span>' +
         '<span>' + n0(x.sent) + '</span><span class="cp-x">' + n0(x.delivered) + '</span><span>' + esc(pct(x.read, x.sent) || '—') + '</span><span class="cp-x">' + n0(x.replied) + '</span><span class="cp-x">' + n0(x.taps) + '</span>' +
         '<span>' + n0(x.requests) + '</span><span class="cp-x">' + n0(x.paidOnline) + '</span><span class="cp-x">' + n0(x.paidClinic) + '</span><span>' + lei0(x.cash) + '</span><span class="cp-x">' + lei0(x.potential) + '</span>' +
-        '<span class="cp-conv">' + (x.conv == null ? DASH : esc(String(x.conv).replace('.', ',')) + '%') + '</span></button>';
+        '<span class="cp-x">' + (x.spend == null ? DASH : lei0(x.spend)) + '</span><span class="cp-conv">' + (x.conv == null ? DASH : esc(String(x.conv).replace('.', ',')) + '%') + '</span></button>';
     }).join('');
-    const head = ['Trimise', 'Livrate', 'Citite', 'Răspuns', '„Rezerv”', 'Cereri', 'Online', 'Clinică', 'Încasat', 'Potențial', 'Conversie'];
-    const extra = new Set(['Livrate', 'Răspuns', '„Rezerv”', 'Online', 'Clinică', 'Potențial']); // behind a tap on a phone (the lot's card)
+    const head = ['Trimise', 'Livrate', 'Citite', 'Răspuns', '„Rezerv”', 'Cereri', 'Online', 'Clinică', 'Încasat', 'Potențial', 'Cost mesaje', 'Conversie'];
+    const extra = new Set(['Livrate', 'Răspuns', '„Rezerv”', 'Online', 'Clinică', 'Potențial', 'Cost mesaje']); // behind a tap on a phone (the lot's card)
     return '<section class="k-card tf-card"><div class="k-card-head"><h3>' + icon('layers') + 'Loturile</h3><span class="k-sub">conversie = plătite sau cerute / trimise</span></div>' +
       '<div class="cp-scroll"><div class="cp-lots"><div class="cp-lr cp-lh"><span>Lot</span>' + head.map((h) => '<span' + (extra.has(h) ? ' class="cp-x"' : '') + '>' + esc(h) + '</span>').join('') + '</div>' + rowsH + '</div></div></section>';
   }
@@ -329,11 +329,23 @@
   // the money, in four tiles: cashed, still to come (open requests), the credit sold, who to call
   function cTop() {
     const m = campOf().by.total, w = waOf().total;
-    return '<div class="k-grid c4 tf-top">' +
+    return '<div class="k-grid c4 tf-top tf-top5">' +
       stat('is-good', 'wallet', 'Încasat', esc(K.lei(m.cash)), esc(K.plural(m.cards, 'card', 'carduri')) + ' · ' + esc(K.num(w.sent)) + ' trimise') +
       stat('is-warn', 'trend', 'Potențial', esc(K.lei(m.potential)), esc(K.plural(m.open, 'cerere deschisă', 'cereri deschise'))) +
       stat('is-info', 'gift', 'Credit vândut', esc(K.lei(m.credit)), 'în tratamente') +
-      stat('is-accent', 'phone', 'De sunat', esc(K.num(m.resvOpen)), '<button type="button" class="cp-go" data-cp="carduri">Carduri ' + icon('arrow') + '</button>') + '</div>';
+      stat('is-accent', 'phone', 'De sunat', esc(K.num(m.resvOpen)), '<button type="button" class="cp-go" data-cp="carduri">Carduri ' + icon('arrow') + '</button>') + cSpend(m, w) + '</div>';
+  }
+  // what the messages cost (the owner, 23.11): Meta's own charges for the marketing messages since the first send (in lei);
+  // a lot's share at the same price per delivered message; with it, what one card sold cost in messages
+  function cSpend(m, w) {
+    const sp = S.c.spend;
+    if (!sp) return '';
+    if (sp.error) return stat('is-bad', 'chat', 'Cheltuit pe mesaje', DASH, 'Meta nu a răspuns acum');
+    const lot = !bAll() ? (S.c.lots || []).find((l) => l.b === S.batch) : null;
+    const lei = lot ? lot.stats.spend || 0 : sp.lei || 0;
+    const per = m.cards ? ' · ' + K.lei(Math.round(lei / m.cards)) + ' / card' : '';
+    const roi = lei && m.cash ? ' · ' + String(Math.round((m.cash / lei) * 10) / 10).replace('.', ',') + 'x înapoi' : '';
+    return stat('is-warn', 'chat', 'Cheltuit pe mesaje', esc(K.lei(Math.round(lei))), esc((sp.unit ? String(sp.unit.toFixed(2)).replace('.', ',') + ' lei / mesaj livrat' : 'de la Meta') + per + roi));
   }
   // a block that opens in place (its open state kept across the refresh)
   const fold = (key, title, html) => (html ? '<details class="k-card tf-card cp-fold" data-cpfold="' + key + '"' + (S.open && S.open[key] ? ' open' : '') + '><summary>' + esc(title) + icon('down') + '</summary><div class="cp-fbody">' + html.replace(/^<section class="k-card tf-card">/, '<div>').replace(/<\/section>$/, '</div>') + '</div></details>' : '');

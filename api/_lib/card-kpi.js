@@ -337,8 +337,14 @@ async function view(opts) {
   const ranked = lots.filter((l) => l.stats.sent >= 20 && l.stats.conv != null).sort((a, b) => b.stats.conv - a.stats.conv || b.stats.cash - a.stats.cash);
   const best = ranked.length > 1 && ranked[0].stats.conv > 0 ? ranked[0].b : '';
 
+  // ---- what the messages cost (the owner, 23.11): Meta's MARKETING charges from the first send to now, in lei; a lot's
+  // share is its delivered messages at the same price per delivered message
+  const spend = from ? await require('./wa-cost').rangeMarketing(readJSON, Math.floor(from / 1000), Math.floor(now / 1000)).catch((e) => ({ error: e.message })) : null;
+  if (spend && !spend.error && spend.unit) lots.forEach((l) => { l.stats.spend = Math.round((l.stats.delivered || 0) * spend.unit); });
+
   await writeJSON(CACHE, cache, { quiet: true }).catch(() => {});
   return {
+    spend,
     ok: true, key: KEY, name: NAME, at: nowISO(),
     state: { armed: !!st.armed, pickedAt: st.pickedAt || '', doneAt: st.doneAt || '', note: st.note || '', from: from ? new Date(from).toISOString() : '', to: to ? new Date(to).toISOString() : '', tracked: tracked ? new Date(tracked).toISOString() : '' },
     wa, waBy, batches, lots, best, fails: Object.values(reasons).sort((a, b) => b.n - a.n), meta,
