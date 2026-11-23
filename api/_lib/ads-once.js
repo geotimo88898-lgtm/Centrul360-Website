@@ -17,12 +17,12 @@ const JOBS = [
   // page), only its ending now sends her to the home page; the running ad moves to the copy (same texts, same picture)
   { id: 'form-home-hifu-tm-2026-11-23', why: 'Finalul formularului duce pe site: HIFU gușă TM', formSite: {
     formId: '1604290084129939', name: 'HIFU Gușă 190 · Timișoara · site', adId: '120250715948280149', campaign: 'C360 · TM · HIFU G · sezon',
-    page: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un pas 👇 Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.', button_type: 'VIEW_WEBSITE', button_text: 'VREAU SĂ PROFIT 🎁',
+    page: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un pas 👇 Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.', button_type: 'VIEW_WEBSITE', button_text: 'VEZI MAI MULTE 👉',
       website_url: 'https://www.centrul360.com/?utm_source=facebook&utm_medium=leadform&utm_campaign=hifu-gusa-tm' } } },
   // 23.11, George: every new form ends the same way, on the home page (Formulare → Setări formulare)
   { id: 'form-template-home-2026-11-23', why: 'Formularele noi se termină pe site', template: {
     ending: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un pas 👇 Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.' },
-    cta: { type: 'VIEW_WEBSITE', text: 'VREAU SĂ PROFIT 🎁', url: 'https://www.centrul360.com/?utm_source=facebook&utm_medium=leadform' } } },
+    cta: { type: 'VIEW_WEBSITE', text: 'VEZI MAI MULTE 👉', url: 'https://www.centrul360.com/?utm_source=facebook&utm_medium=leadform' } } },
   // 21.11 ~20:45, George: always „Plătești 990 lei” first, then „Primești 2.500 lei”: the A6 ads with the reversed
   // order go off (their corrected v2 is already live in the same ad sets)
   { id: 'card-a6-order-2026-11-21', why: 'Întâi ce plătești, apoi ce primești: A6 cu ordinea inversă se oprește', actions: [
