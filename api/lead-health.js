@@ -520,6 +520,20 @@ module.exports = async (req, res) => {
       checkout: r.checkout ? { opened: r.checkout.openedAt || r.checkout.at || '', back: r.checkout.backAt || '' } : null })));
     return;
   }
+  // ?payopen=1: the checkout's open orders and what myPOS says of each payment request now (kind, sum, status as myPOS writes
+  // it, the booking text match), no names or phones; ?payopen=sweep runs the sweep once
+  if (req.query && req.query.payopen) {
+    const P = require('./_lib/pay'), RQ = require('./_lib/mypos-requests'), ST = require('./_lib/store');
+    if (req.query.payopen === 'sweep') { res.status(200).json(await P.sweep().catch((e) => ({ error: e.message }))); return; }
+    const open = await readJSON('data/pay-open.json', []), r = await RQ.active(ST), out = [];
+    for (const it of (open || []).slice(0, 15)) {
+      const o = (await ST.readJSON('data/pay/' + it.id + '.json', null).catch(() => null)) || {};
+      let st = null; try { st = o.request && o.request.code && r ? await RQ.status(r, o.request.code) : null; } catch (e) { st = { error: e.code || e.message, status: e.status }; }
+      out.push({ id: it.id, at: it.at, kind: o.kind, amount: o.amount, provider: o.provider, status: o.status, code: o.request && o.request.code, mypos: st && { status: st.status, amount: st.amount, currency: st.currency, bookingMatch: st.bookingText === it.id, booking: String(st.bookingText || '').slice(0, 40), error: st.error } });
+    }
+    res.status(200).json({ open: (open || []).length, out });
+    return;
+  }
   // ?mprlive=1: the payment requests route's state (no keys); POST {"on": true|false} switches it on the site (the owner)
   if (req.query && req.query.mprlive) {
     const RQ = require('./_lib/mypos-requests'), ST = require('./_lib/store');
