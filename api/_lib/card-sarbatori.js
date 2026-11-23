@@ -138,6 +138,19 @@ async function setStock(input, by) {
   await writeJSON(STOCK, { wave, max, skip: cur.skip, vip, by: by || '', at: nowISO() });
   return { ok: true, wave, max, vip };
 }
+// the wave's size changed, the new wave starting full now (the owner, 23.11: „fiecare val să înceapă de la 4”, the same
+// number as the WhatsApp picture): the skip moves so that the cards sold so far end a wave of the new size
+async function setWave(size, by) {
+  const W = Number(size);
+  if (!Number.isInteger(W) || W < 1 || W > 200) return { error: 'bad_wave' };
+  const cfg = await settings();
+  const list = await readJSON(KEY, []);
+  const eff = ordered(list, Date.now()) + cfg.skip;
+  const skip = cfg.skip + ((W - (eff % W)) % W);
+  await writeJSON(STOCK, { wave: W, max: cfg.max, skip, vip: cfg.vip, by: by || '', at: nowISO() });
+  const c = counter(list, Date.now(), Object.assign({}, cfg, { wave: W, skip }));
+  return { ok: true, wave: W, left: c.left };
+}
 // „Deschide acum următorul val”: the cards left in the wave of now are skipped, the next wave starts now
 async function openNext(list, by) {
   const cfg = await settings();
@@ -1865,7 +1878,7 @@ async function requestFromTap(i, opt) {
   return { ok: true, id: entry.id };
 }
 
-module.exports = { requestFromTap, deleteOrder, orderExtras,
+module.exports = { setWave, requestFromTap, deleteOrder, orderExtras,
   KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT, GIFT_TM, GIFT_ARAD, giftOf, giftShort, giftFor, DISC_TIERS, discOf, onlineLinks, onlinePay, linkOf, siteLinks, sumOk, embedded, setEmbedded, checkoutAmount, checkoutUrl, payQuote, payPaid, payContact, TPL,
   byId, VIP, SALE, isVip, vipLeft, stockFor, leftFor, lostRace, sarb, norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,

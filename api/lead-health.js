@@ -240,6 +240,8 @@ module.exports = async (req, res) => {
     res.status(200).json({ ok: !!(x && x.row), order: r.id, amount: pay.amount, closed: others.map((y) => y.id), error: x && x.error });
     return;
   }
+  // POST ?cardwave=<size>: the waves of the regular cards are <size> each from now, the one of now starting full
+  if (req.query && req.query.cardwave && req.method === 'POST') { res.status(200).json(await require('./_lib/card-sarbatori').setWave(req.query.cardwave, 'claude')); return; }
   // POST ?cardtest=purge&id=<card id>: a test card paid for real (the owner's own test, 23.11) taken out of everything:
   // the order, its sale and refund lines in Încasări, its Club row, its card lead. Counts back, never a name or phone.
   if (req.query && req.query.cardtest === 'purge' && req.method === 'POST') {
