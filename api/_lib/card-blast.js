@@ -82,10 +82,12 @@ async function pick(n) {
     visits: { min: Math.min(...list.map((p) => p.visits)), max: Math.max(...list.map((p) => p.visits)) }, transformareaAfter: all.length - list.length, audienceBefore: all.length };
 }
 
-async function go() {
+async function go(late) {
   const st = await loadState();
   if (!st.list.length) return { error: 'no_list' };
   st.armed = true; st.note = '';
+  // the owner asked for it now, past 21:00 (23.11: „trimite 250 azi”): the evening hour is let through for 40 minutes
+  st.lateUntil = late ? new Date(Date.now() + 40 * 60e3).toISOString() : '';
   await saveState(st);
   return { ok: true, list: st.list.length };
 }
@@ -142,7 +144,7 @@ async function tick(opts) {
   const st = await loadState();
   if (!st.armed || st.doneAt) return { idle: true };
   const roH = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', hour: '2-digit', hour12: false }).format(new Date()));
-  if (roH < 9 || roH >= 21) return { idle: true, quiet: true };
+  if ((roH < 9 || roH >= 21) && !(st.lateUntil && Date.now() < Date.parse(st.lateUntil))) return { idle: true, quiet: true };
   const [tpls, cfg] = [(await WT.load()).templates, await WA.loadConfig(true)];
   const sent = (await readJSON(SENT, null)) || {};
   let halt = '', count = 0, failed = 0;
