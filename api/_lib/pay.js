@@ -468,7 +468,7 @@ async function contact(orderId, key, input) {
     fire = false;
     if (x.status !== 'open') return false;
     if (card && x.cardContact !== phone) { x.cardContact = phone; fire = true; } else if (x.name === name && x.phone === phone && x.consent === true) return false;
-    Object.assign(x, { name, phone, consent: true, notice });
+    Object.assign(x, { name, phone, consent: true, notice, activityAt: nowISO() });
   }, pre), holdPatch]);
   // the card's order gets them too (it was made without them: the card block asks nothing, 24.11): after the answer, off
   // the tap's way (its list, the lead, the desk's notice)
@@ -540,7 +540,7 @@ async function cardFallback(orderId, key) {
 async function trace(orderId, key, step, code) {
   const { data: o } = await readOrder(orderId);
   if (!o || !key || !safeEq(o.key, key)) return { error: 'not_found' };
-  await update(orderId, (x) => { x.trace = (x.trace || []).concat({ at: nowISO(), step: clip(step, 30).replace(/[^\w:-]/g, ''), code: clip(code, 40).replace(/[^\w:.-]/g, '') }).slice(-25); });
+  await update(orderId, (x) => { x.activityAt = nowISO(); x.trace = (x.trace || []).concat({ at: nowISO(), step: clip(step, 30).replace(/[^\w:-]/g, ''), code: clip(code, 40).replace(/[^\w:.-]/g, '') }).slice(-25); });
   return { ok: true };
 }
 // an open order of the Partners way without a saved code (its request made, the answer lost): found again at myPOS
@@ -588,7 +588,7 @@ async function toClinic(orderId, key) {
 
 // on the clock (every 5 minutes): the orders still open are asked about once they are 2 minutes old (a lost notification
 // still ends paid), forgotten after 48 hours; a paid order whose handler failed is tried again
-// fresh (every minute, api/pay-tick.js): only the orders of the last 2 hours whose myPOS page was made, newest first, at
+// fresh (every minute, api/pay-tick.js): only the orders active in the last 15 minutes whose myPOS page was made, newest first, at
 // most 12 asked (myPOS has no return or notification for these pages: a payment is seen within a minute, 23.11); the full
 // round (every 5 minutes) asks the older ones and finds lost codes again
 async function sweep(opts) {
@@ -598,7 +598,7 @@ async function sweep(opts) {
   const list = await readJSON(OPEN, []);
   const now = Date.now();
   const out = { open: list.length, paid: 0, gone: 0, retried: 0, asked: 0 };
-  const items = fresh ? list.filter((it) => { const a = now - Date.parse(it.at); return a >= 20e3 && a < 2 * 3600e3; }).sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 25) : list.slice(0, 25);
+  const items = fresh ? list.filter((it) => { const a = now - Date.parse(it.at); return a >= 20e3 && a < 3 * 3600e3; }).sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 25) : list.slice(0, 25);
   for (const it of items) {
     const age = now - Date.parse(it.at);
     if (!fresh && age < 120e3) continue;
@@ -606,6 +606,8 @@ async function sweep(opts) {
     const { data: o } = await readOrder(it.id);
     if (!o || o.status !== 'open') { if (!fresh) { await openList((l) => l.filter((x) => x.id !== it.id)); out.gone++; } continue; }
     if (fresh && o.provider === 'requests' && !(o.request && o.request.code)) continue;
+    // (every minute only for the 15 minutes after her last sign of life: then the 5-minute round, George 23.11)
+    if (fresh && now - lastActivity(o) > 15 * 60e3) continue;
     out.asked++;
     let st = null;
     try {
@@ -654,4 +656,31 @@ async function status() {
   return Object.assign(pv.name === 'embedded' ? IPC.publicOf(pv.c) : { on: true, live: pv.live, sandbox: pv.sandbox }, { provider: pv.name, bonusPct: BONUS_PCT });
 }
 
-module.exports = { later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
+// her last sign of life on the order (the screen's contact, a tap, the tab of the tap): the recovery message waits 10
+// minutes from it (api/_lib/pay-recovery.js)
+async function touch(orderId) { return update(orderId, (x) => { if (x.status !== 'open') return false; x.activityAt = nowISO(); }); }
+const lastActivity = (o) => Math.max(Date.parse(o.createdAt) || 0, Date.parse(o.activityAt) || 0, Date.parse(o.notice && o.notice.at) || 0, Date.parse(o.request && o.request.at) || 0,
+  ...(o.trace || []).map((t) => Date.parse(t.at) || 0));
+// the recovery mark on the order; claim: only when it has none yet (two clocks at once: one gets it) → true when set
+async function markRecovery(orderId, patch, claim) {
+  let mine = false;
+  await update(orderId, (x) => {
+    mine = false;
+    if (claim && (x.recovery || x.status !== 'open')) return false;
+    x.recovery = Object.assign({}, claim ? {} : x.recovery || {}, patch);
+    mine = true;
+  });
+  return mine;
+}
+// what myPOS says of the order's payment request, word for word ('Pending' | 'Seen' | 'Expired' | 'Paid' | …); none made:
+// what myPOS has under the order's id (a request whose answer was lost); throws on any error of myPOS
+async function requestWords(o) {
+  const r = await rqActive();
+  if (!r) throw new Error('requests_off');
+  if (o.request && o.request.code) { const st = await RQ.status(r, o.request.code); return { words: [String(st.status || '')], amount: st.amount }; }
+  if (!o.requestTried) return { words: [], none: true };
+  const found = await RQ.findByOrder(r, o.id);
+  return { words: found.map((x) => x.status), found: found.length };
+}
+
+module.exports = { touch, lastActivity, markRecovery, requestWords, later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };

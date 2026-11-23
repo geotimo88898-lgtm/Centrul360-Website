@@ -78,6 +78,7 @@ module.exports = async (req, res) => {
         if (c._order) pre = { data: c._order };
       }
     }
+    if (pre.data && pre.data.key === key) P.later(P.touch(id)); // her last sign of life (the recovery message waits from it)
     const r = await P.link(id, key, pre);
     if (r.ok && okUrl(r.url)) { res.end(goTo(r.url)); return; }
     // a card: its own PayLink, same sum (never a dead end)
