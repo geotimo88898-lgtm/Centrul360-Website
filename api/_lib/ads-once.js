@@ -50,11 +50,12 @@ const SITE_CAMPAIGNS = [
 // the reel „Nu promitem. Îți arătăm.” of Conținut: its clean video (no music) and its cover, public links (api/content-file.js)
 const REEL_ARATAM = { url: 'https://admin.centrul360.com/api/content-file?i=dd7a54f3-7464-4cd7-adb8-2e903006f48d&n=clean.mp4', thumb: 'https://admin.centrul360.com/api/content-file?i=dd7a54f3-7464-4cd7-adb8-2e903006f48d&n=cover.jpg' };
 // 23.11 ~22:50, George: the Card de Sărbători straight from the ads, ONLY Timișoara: one campaign of two ads (A/B, as
-// „Rezultate · site”), Purchase on the site's pixel, men and women 28-58, Timișoara 8 km, no lookalike, 100 lei a day, to
+// „Rezultate · site”; a third, C, 23.11 ~23:00), Purchase on the site's pixel, men and women 28-58, Timișoara 8 km, no lookalike, 100 lei a day, to
 // the home page (its card block, 990 chosen on every visit). A: the picture of the 990 card's WhatsApp message (template
-// v4), as it is; B: the same picture with the cards on sale fanned in place of the one card. Held out of JOBS (not run)
+// v4), as it is; B: the same picture with the cards on sale fanned in place of the one card (its headline: George picks);
+// C: each card on its own, with what paying online adds (the site's words). Held out of JOBS (not run)
 // until George says go on picture B; nothing was made from its first version (TM and AR, 50 lei, to the card page)
-const CARD_SITE = { id: 'card-site-tm-2026-11-23', why: 'Cardul de Sărbători direct din reclame: TM, 2 reclame, 100 lei/zi', site: {
+const CARD_SITE = { id: 'card-site-tm-2026-11-23', why: 'Cardul de Sărbători direct din reclame: TM, 3 reclame, 100 lei/zi', site: {
   pixelId: '2276074362800484', cta: 'SHOP_NOW', ages: [28, 58],
   campaigns: [{ name: 'C360 · TM · Card · site', utm: 'card-tm', city: 'Timișoara', radiusKm: 8, everyone: true, budget: 100,
     adsetName: 'Timișoara 8 km · femei și bărbați 28-58', ads: [
@@ -76,6 +77,16 @@ const CARD_SITE = { id: 'card-site-tm-2026-11-23', why: 'Cardul de Sărbători d
           '🗓️ Până pe 24 decembrie. Valabil până pe 30.06.2027.\n\n' +
           '👉 Alege-ți cardul pe site:\ncentrul360.com\n📍 Timișoara',
         headlines: ['PLĂTEȘTI 990 LEI, PRIMEȘTI 2.500 LEI 👉', 'AU MAI RĂMAS DOAR 4 CARDURI ⏰💨', 'ALEGE CARDUL: PLĂTEȘTI 490, PRIMEȘTI 1.000 👉'], description: 'Valabil până pe 30.06.2027' },
+      { name: 'C360 · TM · Card · fiecare card', image: 'card-trei-c.jpg',
+        text: 'TIMIȘOARA! 🎁 Cum să primești de până la 3 ori mai mult în tratamente 💆‍♀️ fără să plătești prețul întreg, chiar dacă nu știi încă ce tratament vrei.\n\n' +
+          '✅ Plătești 490 lei și primești 1.000 lei 💳\n' +
+          '✅ Plătești 990 lei și primești 2.500 lei, cardul cel mai cumpărat 🎄\n' +
+          '✅ Cardul VIP Transformarea 360: plătești 9.900 lei și primești 30.000 lei, pentru tine și cei dragi 💎\n\n' +
+          '✨ La plata online, pe site: BioLifting cadou și Clubul 360 la cardurile de 490 și 990 lei; la cardul VIP, 10% reducere (8.910 lei) și Clubul 360.\n\n' +
+          '🔥 Au mai rămas doar 4 carduri.\n' +
+          '🗓️ Până pe 24 decembrie. Valabil până pe 30.06.2027.\n\n' +
+          '👉 Alege-ți cardul pe site:\ncentrul360.com\n📍 Timișoara',
+        headlines: ['ALEGE CARDUL: PLĂTEȘTI 990, PRIMEȘTI 2.500 👉', 'AU MAI RĂMAS DOAR 4 CARDURI ⏰💨', 'CARDUL VIP: PLĂTEȘTI 9.900, PRIMEȘTI 30.000 👉'], description: 'Valabil până pe 30.06.2027' },
     ] }] } };
 void CARD_SITE;
 const JOBS = [
