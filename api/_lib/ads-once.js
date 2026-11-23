@@ -82,12 +82,6 @@ const JOBS = [
   // business Mellon Vision); if Meta refuses, the job stops there with Meta's words (no blind retries); if it works, the
   // same 2 campaigns made again, then the 2 broken ones paused. 01:30, George: only the two best
   // cases, 05 and 24, in both cities (SITE_CAMPAIGNS)
-  // 23.11 10:45: a run of the v3 job cut short right after Meta made an ad (before it was written down) made the HIFU gât ad
-  // twice in each campaign; the second copy of each goes off, so each campaign keeps its 2 ads (05 and 24)
-  { id: 'site-results-dups-2026-11-23', why: 'Rezultate · site: dublura reclamei HIFU gât oprită (TM și AR)', actions: [
-    { campaignId: '120250724045060149', name: 'C360 · TM · Rezultate · site · HIFU gât (dublură)', status: 'PAUSED', why: 'a doua copie a aceleiași reclame' },
-    { campaignId: '120250724167180149', name: 'C360 · AR · Rezultate · site · HIFU gât (dublură)', status: 'PAUSED', why: 'a doua copie a aceleiași reclame' },
-  ] },
   // 23.11 ~02:30, George: Mellon Vision is now a partner on the ad account (v2 was refused at 02:18: „the business 1107600260509887
   // must have access to both the pixel and the ad account”, 200/1784039); v3 is the same job again
   { id: 'site-results-v3-2026-11-23', why: 'Pixelul partajat cu contul și rezultatele reale refăcute (TM și AR, câte 2 reclame, 50 lei/zi)', site: {
