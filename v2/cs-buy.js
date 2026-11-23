@@ -55,7 +55,7 @@
     }).catch(function () {}).then(function () { if (!st.loaded) st.failed = true; mode(); });
   }
   // the block as the checkout wants it: with it, no phone (the payment sheet asks it), only the clinic
-  function mode() { var g = goBox(); if (g) g.classList.toggle('cst-emb', embedOn()); }
+  function mode() { var on = embedOn(); document.querySelectorAll('.cst-go').forEach(function (g) { g.classList.toggle('cst-emb', on); }); }
 
   // ------------------------------------------------------------------ her phone in the card block
   // The block's own parts, written here once and put in by shape() on any page whose markup is older (the live pages
@@ -212,7 +212,8 @@
       return;
     }
     var phone = o.phone || (emb ? '' : mobile(inp.value));
-    if (!emb && !phone) { phMsg(inp.value.trim() ? PMSG.bad_phone : 'Scrie numărul tău de mobil: pe el îți trimitem cardul.', 'phone'); inp.focus(); return; }
+    // the block drawn without the phone (the new checkout on a visit before) while the PayLinks are back: the field comes back
+    if (!emb && !phone) { mode(); document.querySelectorAll('.cst-go').forEach(function (g) { g.classList.remove('cst-emb'); }); phMsg(inp.value.trim() ? PMSG.bad_phone : 'Scrie numărul tău de mobil: pe el îți trimitem cardul.', 'phone'); inp.focus(); return; }
     if (!city) { phMsg(PMSG.missing_city, 'city'); b.querySelector('input[name="cst-city"]').focus(); return; }
     if (phone) put(localStorage, K_PHONE, phone);
     put(localStorage, K_CITY, city);
