@@ -53,7 +53,8 @@ module.exports = async (req, res) => {
     || /^wa-out\/[\w-]+\.(jpe?g|png|webp|pdf|docx?|xlsx?|mp4|mov)$/.exec(p) // the big files sent from Mesaje
     || /^legal\/[\w-]+\/[\w-]+\.(jpg|png|webp|pdf|docx?|xlsx?)$/.exec(p) // Acte și autorizații: the salons' and the team's papers
     || /^(?:regulament|fise-post)\/[\w-]+\.(pdf)$/.exec(p) // Regulament intern, Fișa postului (api/portal-regulament.js): everyone signed in reads them
-    || /^todo\/[\w-]+\.(pdf)$/.exec(p); // „De făcut” (api/portal-todo.js): the owner's print files, his only
+    || /^todo\/[\w-]+\.(pdf)$/.exec(p) // „De făcut” (api/portal-todo.js): the owner's print files, his only
+    || /^wa-templates\/[\w.-]+\.(png|jpg|webp)$/.exec(p); // a WhatsApp template's picture (Admin → Campanii, a lot's thumbnail)
   if (p.startsWith('todo/') && session.role !== 'admin') { res.status(403).json({ error: 'forbidden' }); return; }
   if (!m) { res.status(400).json({ error: 'invalid_path' }); return; }
   // the legal papers (authorizations, contracts, IDs, medical fitness): the admins only
