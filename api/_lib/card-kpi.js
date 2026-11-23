@@ -340,7 +340,8 @@ async function view(opts) {
   // ---- what the messages cost (the owner, 23.11): Meta's MARKETING charges from the first send to now, in lei; a lot's
   // share is its delivered messages at the same price per delivered message
   const spend = from ? await require('./wa-cost').rangeMarketing(readJSON, Math.floor(from / 1000), Math.floor(now / 1000)).catch((e) => ({ error: e.message })) : null;
-  if (spend && !spend.error && spend.unit) lots.forEach((l) => { l.stats.spend = Math.round((l.stats.delivered || 0) * spend.unit); });
+  // (the delivered marks only exist since the webhook was tracked: an early lot counts its sent ones that did not fail)
+  if (spend && !spend.error && spend.unit) lots.forEach((l) => { const f = (waBy[l.b] && waBy[l.b].total.failed) || 0; l.stats.spend = Math.round(Math.max(l.stats.delivered || 0, (l.stats.sent || 0) - f) * spend.unit); });
 
   // the interested ones (Carduri → Interesate, no request yet): the desk calls them too (the owner, 23.11), counted in
   // „De sunat” beside the open requests; per lot by the lot she came from (her chat answers only here, so no loop back)
