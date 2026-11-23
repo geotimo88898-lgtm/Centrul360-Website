@@ -790,6 +790,10 @@ async function matchPayments(pays) {
     const t = Date.parse(p.at) || Date.now();
     const twin = viaCheckout.find((x) => !x.checkout.scan && Math.abs(Number(x.paidAmount) - Number(p.amount)) < 0.01 && Math.abs(Date.parse(x.checkout.paidAt) - t) < 6 * 3600e3);
     if (twin) { twin.checkout.scan = p.ref; used.add(p.ref); scanned.push([twin.id, p.ref]); continue; }
+    // a payment of the shared checkout (its rows in the scan carry no order id of ours): left alone, judged again at the
+    // next scan once the checkout has settled it (api/_lib/pay.js isCheckoutPayment, when that version is live)
+    const PAY = require('./pay');
+    if (typeof PAY.isCheckoutPayment === 'function' && await PAY.isCheckoutPayment({ ref: p.ref, amount: p.amount, at: p.at }).catch(() => false)) continue;
     const cands = candsOf(list, p.amount, t);
     const r = cands[0];
     if (!r) continue;
