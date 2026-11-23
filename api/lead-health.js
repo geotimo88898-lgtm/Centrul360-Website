@@ -171,7 +171,8 @@ module.exports = async (req, res) => {
         b.list++; if (p.sent) b.sent++; if (p.read) b.read++; if ((p.answers || []).length) b.answered++;
         (p.orders || []).forEach((o) => { b.orders++; if (o.status === 'platit') { b.paid++; b.lei += Number(o.amount) || 0; } else if (o.status === 'rezervat') b.reserved++; else if (o.status === 'asteptare' || o.status === 'lead') b.online++; });
       });
-      res.status(200).json({ ok: true, at: v.at, byBatch: by, money: v.money && { campBy: v.money.campBy, all: v.money.all }, stock: v.stock, tracked: v.state && v.state.tracked });
+      res.status(200).json({ ok: true, at: v.at, byBatch: by, money: v.money && { campBy: v.money.campBy, all: v.money.all }, stock: v.stock, tracked: v.state && v.state.tracked,
+        spend: v.spend, interested: v.interested, lots: (v.lots || []).map((l) => ({ b: l.b, sent: l.stats.sent, delivered: l.stats.delivered, spend: l.stats.spend })) });
     }
     catch (e) { res.status(200).json({ ok: false, error: String(e && e.message || e), stack: String(e && e.stack || '').split('\n').slice(0, 6) }); }
     return;
