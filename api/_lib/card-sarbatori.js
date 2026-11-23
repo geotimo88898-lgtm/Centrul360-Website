@@ -456,6 +456,10 @@ const TPL = {
   // no mark) and two buttons, online or in the clinic (reserveFromLead, leadReply)
   lead: { label: 'Card de Sărbători din reclamă', category: 'MARKETING', headerType: 'IMAGE', map: ['suma', 'credit', 'cadoul'], buttons: 'lead', sample: { code: '', name: '' },
     body: 'Bună! Ți-am pregătit Cardul de Sărbători de {{1}} lei, cu {{2}} lei în tratamente, valabil până pe 30 iunie 2027. Cum vrei să-l plătești? Online, cu cardul, primești în plus {{3}} și acces în Clubul 360. Sau îl plătești în clinică, cash sau card. Alege mai jos.' },
+  // the same, stronger (the owner, 23.11): put aside for her, the wave's real count, held 2 hours (HOLD_MS), the online gift,
+  // the clinic choice reserved until she comes (toClinic: „rezervat”, the desk calls to book); used once Meta approves it
+  lead2: { label: 'Card de Sărbători din reclamă 2', category: 'MARKETING', headerType: 'IMAGE', map: ['suma', 'credit', 'cadoul', 'ramase'], buttons: 'lead', sample: { code: '', name: '' },
+    body: 'Bună! 🎁 Ți-am pus deoparte Cardul de Sărbători: plătești {{1}} lei și primești {{2}} lei în tratamente, valabil până pe 30 iunie 2027.\n\n🔥 Au mai rămas doar {{4}} carduri, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus {{3}} și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
   rezervat: { label: 'Card de Sărbători rezervat', headerType: 'IMAGE', map: ['suma', 'credit', 'locatie'], sample: { code: '', mark: 'Rezervat', name: '' },
     body: 'Bună! Ți-am rezervat Cardul de Sărbători de {{1}} lei, cu {{2}} lei în tratamente. Te sunăm în curând să stabilim când treci să-l plătești în clinica din {{3}}, cash sau card. Mulțumim!' },
   // the same, shorter and ending with a question, so the chat goes on (the owner, 21.11: „să se termine cu o întrebare ca să putem să-i dăm close”);
@@ -1639,7 +1643,11 @@ async function leadMsg(id) {
     png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: r.forWho === 'cadou' ? '' : r.name || '', code: '', valid: VALID_TXT, vip: isVip(r) });
     await writeBinary(path, png, 'image/png').catch(() => { path = ''; });
   } catch (e) { console.error('card lead image:', e.message); }
-  const m = png ? await say('lead', r, vars, fill('lead', vars), png, '', { path, only: 'template', tag: { cardOrder: r.id, cardStep: 'lead' } }).catch((e) => ({ sent: false, error: e.message }))
+  // the stronger one once Meta approves it (with the wave's count of now, the VIP its clinic's), until then the first
+  const T2 = await templates().catch(() => ({ t: {} }));
+  const kind = T2.t && T2.t.lead2 && require('./wa-templates').overall(T2.t.lead2) === 'APPROVED' ? 'lead2' : 'lead';
+  if (kind === 'lead2') { const cnt = await count(list).catch(() => null); vars.ramase = String(Math.max(1, cnt ? (isVip(r) ? (cnt.vip[r.city] || {}).left || 1 : cnt.left) : 1)); }
+  const m = png ? await say(kind, r, vars, fill(kind, vars), png, '', { path, only: 'template', tag: { cardOrder: r.id, cardStep: 'lead' } }).catch((e) => ({ sent: false, error: e.message }))
     : { sent: false, error: 'poza cardului' };
   const res = m.sent ? { at: nowISO(), how: m.how, sent: true } : { at: nowISO(), skipped: m.tpl ? 'șablonul nu e aprobat încă' : String(m.error || 'netrimis').slice(0, 160) };
   const l2 = await readJSON(KEY, []);
