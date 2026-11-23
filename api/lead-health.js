@@ -524,6 +524,13 @@ module.exports = async (req, res) => {
   // it, the booking text match), no names or phones; ?payopen=sweep runs the sweep once
   if (req.query && req.query.payopen) {
     const P = require('./_lib/pay'), RQ = require('./_lib/mypos-requests'), ST = require('./_lib/store');
+    // ?payopen=link&id=<order>: what the checkout answers when it makes that order's myPOS link (the error code, no keys)
+    if (req.query.payopen === 'link') {
+      const o = await ST.readJSON('data/pay/' + String(req.query.id || '').replace(/[^\w-]/g, '') + '.json', null).catch(() => null);
+      if (!o) { res.status(404).json({ error: 'not_found' }); return; }
+      res.status(200).json({ kind: o.kind, ref: o.ref ? 'set' : 'none', phone: o.phone ? 'set' : 'none', name: o.name ? 'set' : 'none', status: o.status, answer: await P.link(o.id, o.key).catch((e) => ({ thrown: e.message })) });
+      return;
+    }
     if (req.query.payopen === 'sweep') { res.status(200).json(await P.sweep().catch((e) => ({ error: e.message }))); return; }
     const open = await readJSON('data/pay-open.json', []), r = await RQ.active(ST), out = [];
     for (const it of (open || []).slice(0, 15)) {
