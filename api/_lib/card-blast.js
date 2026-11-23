@@ -110,6 +110,24 @@ async function resend(batch, pre) {
   await saveState(st);
   return { ok: true, again: n, byCity: by, pre: pre || 'card_sarbatori' };
 }
+// the resend taken back before anything went (the owner, 23.11): her first message is hers again, the batch's message as it was
+async function unresend(batch) {
+  const st = await loadState();
+  if (st.armed && !st.doneAt) return { error: 'still_sending' };
+  const sent = (await readJSON(SENT, null)) || {};
+  const prev = (await readJSON(P + 'sent-prev.json', null)) || {};
+  let n = 0;
+  st.list.forEach((p) => {
+    if ((p.batch || 1) !== Number(batch) || sent[p.k] || !(prev[p.k] || []).length) return;
+    sent[p.k] = prev[p.k].pop(); if (!prev[p.k].length) delete prev[p.k];
+    delete p.pre; n++;
+  });
+  await writeJSON(SENT, sent, { quiet: true });
+  await writeJSON(P + 'sent-prev.json', prev, { quiet: true });
+  if (!st.list.some((p) => !sent[p.k])) st.doneAt = new Date().toISOString();
+  await saveState(st);
+  return { ok: true, back: n };
+}
 async function stop() { const st = await loadState(); st.armed = false; await saveState(st); return { ok: true }; }
 
 function tplFor(tpls, cfg, city, pre) {
@@ -471,4 +489,4 @@ async function backfillTaps() {
   return out;
 }
 
-module.exports = { resend, whyLeft, backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };
+module.exports = { unresend, resend, whyLeft, backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };
