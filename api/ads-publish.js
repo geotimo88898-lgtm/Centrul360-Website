@@ -237,6 +237,13 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, act, since, until: today, currency: view.account && view.account.currency, ads: out });
       return;
     }
+    // read only (23.11): what a one-time job of api/_lib/ads-once.js did (done, its steps, its last refusal); ids only
+    if (req.method === 'GET' && req.query && req.query.action === 'once_state') {
+      const job = String(req.query.job || '').slice(0, 80);
+      const d = (await readJSON('data/ads-once.json', {})) || {};
+      res.status(200).json({ ok: true, job, done: (d.done || {})[job] || '', state: (d.forms || {})[job] || null, log: (d.log || []).filter((e) => e.job === job).slice(-20), running: d.running || null });
+      return;
+    }
     // read only, a dry run (23.11): what a new lead on this form would become, the way api/_lib/fb-leads.js and
     // workflows.welcome read it (the form's procedure and city → the lead's interest → the offer's new-lead WhatsApp
     // templates, from the city's number): the template, Meta's approval, its text with a sample name, its picture.

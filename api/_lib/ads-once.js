@@ -65,8 +65,9 @@ const JOBS = [
   // 23.11 ~00:20, the first copy (1713044987053623) was made with a draft ending, before George's final words; the final
   // one: copied from it as it is, only the ending in George's words; every C360 ad on the first copy or on the old WhatsApp
   // form moves to it, the template too, and the draft copy is archived once no ad sends into it
-  { id: 'form-home-hifu-tm-v2-2026-11-23', why: 'Finalul formularului HIFU gușă TM, în cuvintele lui George', formSite: {
-    formId: '1713044987053623', name: 'HIFU Gușă 190 · Timișoara · site', moveFrom: ['1713044987053623', '1604290084129939'], archive: '1713044987053623',
+  // (v2 was refused by Meta at 00:32 and 01:18; v3: another name, Meta keeps a form's name unique on the Page)
+  { id: 'form-home-hifu-tm-v3-2026-11-23', why: 'Finalul formularului HIFU gușă TM, în cuvintele lui George', formSite: {
+    formId: '1713044987053623', name: 'HIFU Gușă 190 · Timișoara · site 2', moveFrom: ['1713044987053623', '1604290084129939'], archive: '1713044987053623',
     page: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un pas 👇 Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.', button_type: 'VIEW_WEBSITE', button_text: 'VEZI MAI MULTE 👉',
       website_url: 'https://www.centrul360.com/?utm_source=facebook&utm_medium=leadform&utm_campaign=hifu-gusa-tm' } } },
   { id: 'form-template-home-v2-2026-11-23', why: 'Formularele noi se termină pe site, în cuvintele lui George', template: {
