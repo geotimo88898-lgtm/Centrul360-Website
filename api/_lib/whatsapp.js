@@ -101,6 +101,8 @@ async function sendWhatsApp({ phone, text, template, params, language, from, hea
   const n = cfg.numbers[city];
   const to = toE164(phone);
   if (!to) return { sent: false, error: 'telefon invalid', fromCity: city };
+  // the test number (07 0000 0000, the site's tests): never sent to (23.11)
+  if (String(to).replace(/\D/g, '').slice(-9) === '700000000') return { sent: false, error: 'număr de test', fromCity: city };
   const body = template
     ? { messaging_product: 'whatsapp', to, type: 'template', template: { name: template, language: { code: language || 'ro' },
         components: [].concat(headerImageId ? [{ type: 'header', parameters: [{ type: 'image', image: { id: String(headerImageId) } }] }] : [],
@@ -184,6 +186,8 @@ async function sendMedia({ phone, from, buf, mime, filename, caption }) {
   const n = cfg.numbers[city];
   const to = toE164(phone);
   if (!to) return { sent: false, error: 'telefon invalid', fromCity: city };
+  // the test number (07 0000 0000, the site's tests): never sent to (23.11)
+  if (String(to).replace(/\D/g, '').slice(-9) === '700000000') return { sent: false, error: 'număr de test', fromCity: city };
   try {
     const fd = new FormData();
     fd.append('messaging_product', 'whatsapp');

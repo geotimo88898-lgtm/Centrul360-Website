@@ -542,6 +542,24 @@ module.exports = async (req, res) => {
         code: (o.request && o.request.code) || null, requestAt: (o.request && o.request.at) || null, requestTried: o.requestTried || null, linkError: o.linkError || null, fallback: o.fallback || null, trace: o.trace || [] });
       return;
     }
+    // POST ?payopen=cleantest: the checkout's test orders out of the open list (cancelled, test): the ones with the test
+    // number 0700000000 (the speed tests, 23.11) and the two card test orders made without a phone (23.11). Counts back.
+    if (req.query.payopen === 'cleantest' && req.method === 'POST') {
+      const TEST_IDS = ['C360-mwtea6st13ada332', 'C360-mwtf6k1u70e7b99d'];
+      const open = (await ST.readJSON('data/pay-open.json', [])) || [], gone = new Set();
+      for (const it of open) {
+        const o = await ST.readJSON('data/pay/' + it.id + '.json', null).catch(() => null);
+        if (!o || o.status !== 'open') continue;
+        const t = String(o.phone || '').replace(/\D/g, '').slice(-9) === '700000000' || (TEST_IDS.includes(o.id) && !o.phone);
+        if (!t) continue;
+        Object.assign(o, { status: 'cancelled', test: true, cancelledBy: 'test', cancelledAt: new Date().toISOString() });
+        await ST.writeJSON('data/pay/' + o.id + '.json', o, { quiet: true });
+        gone.add(o.id);
+      }
+      if (gone.size) { const l = (await ST.readJSON('data/pay-open.json', [])) || []; await ST.writeJSON('data/pay-open.json', l.filter((x) => !gone.has(x.id)), { quiet: true }); }
+      res.status(200).json({ ok: true, cancelled: gone.size, open: open.length - gone.size });
+      return;
+    }
     if (req.query.payopen === 'sweep') { res.status(200).json(await P.sweep().catch((e) => ({ error: e.message }))); return; }
     const open = await readJSON('data/pay-open.json', []), r = await RQ.active(ST), out = [];
     for (const it of (open || []).slice(0, 15)) {
