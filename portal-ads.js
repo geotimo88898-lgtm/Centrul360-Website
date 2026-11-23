@@ -184,16 +184,29 @@
     frequency: { label: 'Frecvență', group: 'Meta', fmt: 'dec', val: (x) => per(x.impressions, x.reach) },
     cpm: { label: 'CPM', group: 'Meta', fmt: 'money', val: (x) => (x.impressions ? x.spend / x.impressions * 1000 : null), hint: 'Cost pe 1000 de afișări' },
     clicks: { label: 'Clickuri', group: 'Meta', fmt: 'num', val: (x) => x.clicks },
-    linkClicks: { label: 'Clickuri pe link', group: 'Meta', fmt: 'num', val: (x) => x.linkClicks },
+    linkClicks: { label: 'Clickuri pe link', short: 'Clickuri', group: 'Meta', fmt: 'num', hint: 'Doar clickurile pe link, cum le numără Meta', val: (x) => x.linkClicks },
     ctr: { label: 'CTR', group: 'Meta', fmt: 'pct', val: (x) => per(x.clicks, x.impressions) },
     linkCtr: { label: 'CTR link', group: 'Meta', fmt: 'pct', val: (x) => per(x.linkClicks, x.impressions) },
-    cpc: { label: 'Cost / click', group: 'Meta', fmt: 'money', val: (x) => per(x.spend, x.linkClicks || x.clicks) },
+    cpc: { label: 'CPC', group: 'Meta', fmt: 'money', val: (x) => per(x.spend, x.linkClicks || x.clicks), hint: 'Cost pe click pe link' },
+    visits: { label: 'Vizite pe site', group: 'Site', fmt: 'num', strong: true, val: (x) => x.visits || 0, hint: 'Pagina s-a deschis după click (landing page view)' },
+    costVisit: { label: 'Cost / vizită', group: 'Site', fmt: 'money', val: (x) => per(x.spend, x.visits) },
+    carts: { label: 'Adăugări în coș', group: 'Site', fmt: 'num', val: (x) => x.carts || 0 },
+    checkouts: { label: 'Începe plata', group: 'Site', fmt: 'num', val: (x) => x.checkouts || 0 },
+    purchases: { label: 'Achiziții', group: 'Site', fmt: 'num', strong: true, val: (x) => x.purchases || 0, hint: 'Plăți pe site, cum le numără Meta (pixel și server)' },
+    costPurchase: { label: 'Cost / achiziție', group: 'Site', fmt: 'money', val: (x) => per(x.spend, x.purchases) },
+    purchaseValue: { label: 'Valoare achiziții', group: 'Site', fmt: 'money', val: (x) => x.purchaseValue || 0 },
+    siteRoas: { label: 'ROAS site', group: 'Site', fmt: 'x', val: (x) => per(x.purchaseValue, x.spend), hint: 'Valoarea achizițiilor de pe site / cheltuit' },
     campaignsOn: { label: 'Campanii pornite', group: 'Meta', fmt: 'num', only: ['cards'], val: (x) => x.on },
   };
-  const GROUPS = ['Bani', 'Leaduri și programări', 'Rate', 'Meta'];
+  const GROUPS = ['Bani', 'Leaduri și programări', 'Rate', 'Meta', 'Site'];
+  // a campaign that sends to the website (not to a lead form): its own numbers, the same on every account (the lead-form
+  // ones, leads and bookings, don't apply to it); first the three big ones, then the rest
+  const SITE_KEY = ['linkClicks', 'cpc', 'spend'];
+  const SITE_COLS = ['budget', 'linkCtr', 'visits', 'costVisit', 'carts', 'checkouts', 'purchases', 'costPurchase', 'purchaseValue', 'siteRoas'];
+  const SITE_CARDS = ['spend', 'linkClicks', 'cpc', 'linkCtr', 'visits', 'costVisit', 'purchases', 'costPurchase', 'purchaseValue', 'siteRoas'];
   const DEF_COLS = ['budget', 'spend', 'leads', 'cpl', 'booked', 'costBooked', 'showed', 'costShowed', 'revenue', 'roas'];
   const DEF_CARDS = ['spend', 'leads', 'cpl', 'booked', 'costBooked', 'showed', 'costShowed', 'revenue'];
-  const SUMS = ['spend', 'spendNew', 'leads', 'impressions', 'reach', 'clicks', 'linkClicks', 'pLeads', 'booked', 'showed', 'clients', 'revenue', 'upsells', 'upsellValue'];
+  const SUMS = ['spend', 'spendNew', 'leads', 'impressions', 'reach', 'clicks', 'linkClicks', 'pLeads', 'booked', 'showed', 'clients', 'revenue', 'upsells', 'upsellValue', 'visits', 'carts', 'checkouts', 'purchases', 'purchaseValue'];
   // what the ads spent in the days our own data counts (from 16.10.2026, 22:05): the costs after the form use it
   const sNew = (x) => (x.spendNew != null ? x.spendNew : x.spend);
   // a card's icon: by what it counts
@@ -204,6 +217,9 @@
     if (/^(clients|costClient)$/.test(id)) return 'users';
     if (/^(leads|pLeads|cpl)$/.test(id)) return 'userPlus';
     if (/^(impressions|reach|frequency|cpm)$/.test(id)) return 'eye';
+    if (/^(visits|costVisit)$/.test(id)) return 'globe';
+    if (/^(carts|checkouts)$/.test(id)) return 'tag';
+    if (/^(purchases|costPurchase)$/.test(id)) return 'card';
     if (m.fmt === 'money' || m.fmt === 'x') return 'wallet';
     return 'zap';
   };
@@ -293,11 +309,14 @@
     const picked = A.d.campaigns.filter((c) => A.sel.has(c.id));
     const t = sumOf(picked.length ? picked : A.d.campaigns);
     const un = A.d.unmatched && !picked.length ? A.d.unmatched.pLeads : 0;
+    // only website campaigns picked: their numbers on top (clicks, visits, purchases), not the lead form's
+    const site = picked.length && picked.every((c) => c.site);
+    const hero = site ? SITE_KEY : KEY, list = site ? SITE_CARDS : cards();
     box.innerHTML =
       (picked.length ? '<div class="ad-scope">' + icon('check') + '<span>Cifrele sunt pentru <b>' + K.plural(picked.length, 'campanie selectată', 'campanii selectate') + '</b></span><button type="button" class="k-btn is-ghost is-sm" data-pick-clear>Toate campaniile</button></div>' : '') +
-      '<div class="ad-hero">' + KEY.map((id) => '<div><small>' + esc(M[id].label) + '</small><b>' + esc(fmt(id, M[id].val(t))) + '</b></div>').join('') + '</div>' +
-      '<div class="ad-stats" style="--ad-n:' + cards().length + ';--ad-half:' + Math.ceil(cards().length / 2) + '">' + cards().map((id) => stat(iconOf(id), id === 'campaignsOn' && picked.length ? 'Pornite din cele alese' : M[id].label, fmt(id, M[id].val(t)), M[id].hint, id)).join('') + '</div>' +
-      (reachesBack() ? '<p class="k-muted ad-partial">Programările, prezentările, clienții, încasările și costurile lor: de pe 16 oct, 22:05 (datele din portal), cu cheltuiala din aceleași zile.</p>' : '') +
+      '<div class="ad-hero">' + hero.map((id) => '<div><small>' + esc(M[id].short || M[id].label) + '</small><b>' + esc(fmt(id, M[id].val(t))) + '</b></div>').join('') + '</div>' +
+      '<div class="ad-stats" style="--ad-n:' + list.length + ';--ad-half:' + Math.ceil(list.length / 2) + '">' + list.map((id) => stat(iconOf(id), id === 'campaignsOn' && picked.length ? 'Pornite din cele alese' : M[id].label, fmt(id, M[id].val(t)), M[id].hint, id, hero)).join('') + '</div>' +
+      (reachesBack() && !site ? '<p class="k-muted ad-partial">Programările, prezentările, clienții, încasările și costurile lor: de pe 16 oct, 22:05 (datele din portal), cu cheltuiala din aceleași zile.</p>' : '') +
       (un ? '<p class="k-muted ad-partial">' + K.plural(un, 'lead din reclame care nu mai sunt în listă nu intră', 'leaduri din reclame care nu mai sunt în listă nu intră') + ' în cifre.</p>' : '');
     syncPickAll();
   }
@@ -314,7 +333,7 @@
   }
   // on a phone these three come first and big, for the account and for every campaign
   const KEY = ['leads', 'cpl', 'spend'];
-  const stat = (ic, label, val, hint, id) => '<div class="k-card ad-stat' + (KEY.includes(id) ? ' is-key' : '') + '"' + (hint ? ' title="' + esc(hint) + '"' : '') + '><span class="k-icon-chip is-accent">' + icon(ic) + '</span><div><small>' + esc(label) + '</small><b>' + esc(val) + '</b></div></div>';
+  const stat = (ic, label, val, hint, id, hero) => '<div class="k-card ad-stat' + ((hero || KEY).includes(id) ? ' is-key' : '') + '"' + (hint ? ' title="' + esc(hint) + '"' : '') + '><span class="k-icon-chip is-accent">' + icon(ic) + '</span><div><small>' + esc(label) + '</small><b>' + esc(val) + '</b></div></div>';
 
   // a campaign is found by its own name or by the name of one of its ad sets or ads
   const hay = (c) => K.norm([c.name].concat(c.adsets.map((s) => s.name + ' ' + s.ads.map((x) => x.name).join(' '))).join(' '));
@@ -352,14 +371,21 @@
   }
   // the chosen columns of one row
   function cellsOf(x, kind, c) {
-    return cols().map((id) => {
-      if (id === 'budget') {
-        const v = kind === 'ad' ? '' : kind === 'adset' && c.cbo ? '<span class="ad-budget k-muted">al campaniei</span>' : budgetCell(x, kind);
-        return '<div class="ad-cell' + (kind === 'ad' ? ' is-none' : '') + '" data-l="' + esc(M[id].label) + '">' + v + '</div>';
-      }
-      const v = fmt(id, M[id].val(x));
-      return '<div class="ad-cell' + (KEY.includes(id) ? ' is-key' : '') + '" data-l="' + esc(M[id].label) + '">' + (M[id].strong ? '<b>' + esc(v) + '</b>' : esc(v)) + '</div>';
-    }).join('');
+    // a website campaign: its own numbers, each with its name (the table's headings are the lead form's), across the columns
+    // (over the first 7 at most: a wide table scrolls sideways, they stay in view)
+    if (kind === 'campaign' && x.site) {
+      const n = cols().length, span = Math.min(n, 7);
+      return '<div class="ad-site" style="grid-column:span ' + span + ';--ad-site-n:' + Math.max(span, 3) + '">' + SITE_KEY.concat(SITE_COLS).map((id) => cellOf(x, kind, c, id, SITE_KEY)).join('') + '</div>' + '<div class="ad-cell is-none"></div>'.repeat(n - span);
+    }
+    return cols().map((id) => cellOf(x, kind, c, id, KEY)).join('');
+  }
+  function cellOf(x, kind, c, id, key) {
+    if (id === 'budget') {
+      const v = kind === 'ad' ? '' : kind === 'adset' && c.cbo ? '<span class="ad-budget k-muted">al campaniei</span>' : budgetCell(x, kind);
+      return '<div class="ad-cell' + (kind === 'ad' ? ' is-none' : '') + '" data-l="' + esc(M[id].label) + '">' + v + '</div>';
+    }
+    const v = fmt(id, M[id].val(x));
+    return '<div class="ad-cell' + (key.includes(id) ? ' is-key' : '') + '" data-l="' + esc(M[id].label) + '">' + (M[id].strong ? '<b>' + esc(v) + '</b>' : esc(v)) + '</div>';
   }
   // a phone: the period sits at the bottom of the screen, beside "Meniu" (on <body>: the panel's animation would carry a
   // fixed bar along with the page); its changes go to the same handler
@@ -391,11 +417,17 @@
   // the campaign's picture: its first ad's (the running one first)
   const thumbOf = (c) => { const ads = (c.adsets || []).flatMap((s) => s.ads || []); const a = ads.find((x) => x.thumb && x.status === 'ACTIVE') || ads.find((x) => x.thumb); return a ? a.thumb : ''; };
   const thumbHtml = (u) => '<span class="ad-thumb">' + (u ? '<img src="' + esc(u) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : icon('image')) + '</span>';
+  // how many ads it has; on a running campaign with some ads paused, the running ones („2 reclame active”)
+  const adsCount = (c) => {
+    const all = c.adsets.reduce((n, s) => n + s.ads.length, 0);
+    const on = c.adsets.reduce((n, s) => n + (s.status === 'ACTIVE' ? s.ads.filter((a) => a.status === 'ACTIVE').length : 0), 0);
+    return c.status === 'ACTIVE' && on < all ? K.plural(on, 'reclamă activă', 'reclame active') : K.plural(all, 'reclamă', 'reclame');
+  };
   function campHtml(c) {
     return '<article class="k-card ad-camp' + (c.status === 'ACTIVE' ? '' : ' is-off') + (A.sel.has(c.id) ? ' is-picked' : '') + '" data-camp="' + esc(c.id) + '">' +
       '<div class="ad-row is-camp">' +
-        '<div class="ad-name"><label class="ad-pick" title="Selectează campania"><input type="checkbox" data-pick="' + esc(c.id) + '"' + (A.sel.has(c.id) ? ' checked' : '') + '></label>' + sw(c.id, c.status === 'ACTIVE', 'campaign') + thumbHtml(thumbOf(c)) + '<button type="button" class="ad-title" data-preview="' + esc(c.id) + '" title="Previzualizare"><b>' + esc(c.name) + '</b><small>' + tag(c.effective) + K.plural(c.adsets.length, 'set', 'seturi') + ' · ' + K.plural(c.adsets.reduce((n, s) => n + s.ads.length, 0), 'reclamă', 'reclame') + made(c) + '</small></button></div>' +
-        '<div class="ad-mkpis">' + KEY.map((id) => '<div><small>' + esc(M[id].label) + '</small><b>' + esc(fmt(id, M[id].val(c))) + '</b></div>').join('') + '</div>' +
+        '<div class="ad-name"><label class="ad-pick" title="Selectează campania"><input type="checkbox" data-pick="' + esc(c.id) + '"' + (A.sel.has(c.id) ? ' checked' : '') + '></label>' + sw(c.id, c.status === 'ACTIVE', 'campaign') + thumbHtml(thumbOf(c)) + '<button type="button" class="ad-title" data-preview="' + esc(c.id) + '" title="Previzualizare"><b>' + esc(c.name) + '</b><small>' + tag(c.effective) + K.plural(c.adsets.length, 'set', 'seturi') + ' · ' + adsCount(c) + made(c) + '</small></button></div>' +
+        '<div class="ad-mkpis">' + (c.site ? SITE_KEY : KEY).map((id) => '<div' + (M[id].hint ? ' title="' + esc(M[id].hint) + '"' : '') + '><small>' + esc(M[id].short || M[id].label) + '</small><b>' + esc(fmt(id, M[id].val(c))) + '</b></div>').join('') + '</div>' +
         cellsOf(c, 'campaign') +
         '<div class="ad-acts"><button type="button" class="k-icon-btn" data-preview="' + esc(c.id) + '" title="Previzualizare">' + icon('eye') + '</button>' +
           '<button type="button" class="k-icon-btn" data-more="campaign" data-id="' + esc(c.id) + '" data-name="' + esc(c.name) + '" title="Mai mult">' + icon('more') + '</button></div>' +

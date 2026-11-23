@@ -41,7 +41,8 @@ async function recordSale(a, p) {
     id: crypto.randomUUID(), source: 'incasare', bookingPay: true, label: 'Plată online programare', appointmentId: a.id, online: true, // a myPOS link, never a POS terminal's
     employeeId: 'site-booking', performedBy: '', clientId: a.clientId || '', client: a.clientName || '', clientPhone: a.clientPhone || '',
     date: roDay(Date.parse(p.at) || Date.now()), location: a.location || '', categories: a.categories || [], category: a.category || '',
-    treatment: (a.treatment || 'Programare') + ' · plătită online, cu ' + (Number(a.payBonus) || 10) + '% reducere', amount: r2(p.amount), bookedAmount: 0, upsell: 0,
+    treatment: (a.treatment || 'Programare') + (a.payGift ? ' · plătită online · cadou: ' + a.payGift : ' · plătită online, cu ' + (Number(a.payBonus) || 10) + '% reducere'), amount: r2(p.amount), bookedAmount: 0, upsell: 0,
+    ...(a.payGift ? { gift: a.payGift } : {}),
     method: 'card', split: null, status: 'recorded', commission: 0, note: 'Online (myPOS) · programarea din ' + a.date + ' ' + (a.time || '') + (p.orderId ? ' · comanda ' + p.orderId : ''),
     ...(p.orderId ? { payOrderId: p.orderId } : {}),
     createdAt: nowISO(), decidedAt: null,

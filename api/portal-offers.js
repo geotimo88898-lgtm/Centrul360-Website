@@ -39,7 +39,14 @@ module.exports = async (req, res) => {
     const offers = await loadOffers(readJSON, writeJSON);
 
     if (action === 'list') {
-      res.status(200).json({ ok: true, offers, images: OFFER_IMAGES });
+      const P = require('./_lib/pay');
+      res.status(200).json({ ok: true, offers, images: OFFER_IMAGES, payTreatment: await P.bonusOfTreatment() });
+      return;
+    }
+    // the online payment's bonus for the treatments of the price list (the offers have their own, in each offer)
+    if (action === 'pay_settings') {
+      const r = await require('./_lib/pay').saveSettings({ treatment: (req.body || {}).treatment }, session && session.employeeId);
+      res.status(200).json(r);
       return;
     }
 

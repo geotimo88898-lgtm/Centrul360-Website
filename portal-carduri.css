@@ -111,7 +111,7 @@
 .cd-o-main{ flex:1 1 auto; min-width:0; display:grid; gap:.3rem; padding:0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .cd-o-t{ display:flex; align-items:baseline; gap:.5rem; min-width:0; }
 .cd-o-t b{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.92rem; }
-.cd-o-m{ flex:none; font-size:.8rem; color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; }
+.cd-o-m{ flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; font-size:.8rem; color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; }
 .cd-o-c{ display:flex; flex-wrap:wrap; gap:.3rem; min-width:0; }
 .cd-o-c .k-tag{ max-width:100%; overflow:hidden; text-overflow:ellipsis; }
 .cd-lot{ background:var(--glass-2); color:var(--fg); }

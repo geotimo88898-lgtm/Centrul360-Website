@@ -302,7 +302,9 @@ async function payQuote({ ref }) {
   mark(r, 'to_checkout');
   await writeJSON(KEY, list);
   const title = (isVip(r) ? 'Cardul VIP Transformarea 360' : 'Cardul de Sărbători ' + lei(r.tier) + ' lei') + ' · ' + lei(r.credit) + ' lei în tratamente';
-  return { amount, full: isVip(r) ? Number(r.tier) * qtyOf(r) : amount, title, city: r.city, name: r.name || r.hint || '', phone: r.phone };
+  // the reason to pay online, one line under the sum in the checkout's sheet (the owner, 23.11)
+  const bonusText = isVip(r) ? '−10% și Clubul 360 la plata online' : '+ BioLifting cadou și Clubul 360 la plata online';
+  return { amount, full: isVip(r) ? Number(r.tier) * qtyOf(r) : amount, title, city: r.city, name: r.name || r.hint || '', phone: r.phone, bonusText };
 }
 // her phone and name from the checkout's own screen (api/_lib/pay.js contact, the owner 24.11): on the order made without
 // them, then what an online order gets at once (her lead, the desk's notice); once

@@ -37,8 +37,35 @@ async function rqFail(e) {
 const TEST = 'data/pay-test.json';
 const PAID = 'data/pay-paid.json'; // [{ id, amount, at, refs }]: the checkout's recent payments, for the old sum matchers to leave alone // { orderRef, at, by }: the 1 leu test the admin started
 
-const BONUS_PCT = 10; // percent off when paid online by card (offers and treatments). One number, everywhere.
-const bonusPrice = (full) => Math.floor((Number(full) || 0) * (100 - BONUS_PCT) / 100); // whole lei, never less than BONUS_PCT off
+const BONUS_PCT = 10; // percent off when paid online by card, where nothing else is set (Admin → Oferte). One number.
+const bonusPrice = (full, pct) => Math.floor((Number(full) || 0) * (100 - (pct == null ? BONUS_PCT : pct)) / 100); // whole lei
+// The online bonus of what is sold (23.11, the owner: „la unele 10%, la altele tratamente gratis”): an offer's own (Admin →
+// Oferte: payBonus 'pct' with payPct, or 'gift' with payGift), the price list's default for the treatments (data/pay-settings.json
+// { treatment: { type, pct, gift } }), else BONUS_PCT. → { type: 'pct', pct, line } | { type: 'gift', gift, line }
+const SETTINGS = 'data/pay-settings.json';
+function bonusLine(b) { return b.type === 'gift' ? '+ ' + b.gift + ' cadou la plata online' : '-' + b.pct + '% la plata online'; }
+function bonusOfRaw(type, pct, gift) {
+  const b = type === 'gift' && String(gift || '').trim() ? { type: 'gift', gift: String(gift).trim().slice(0, 80) } : { type: 'pct', pct: Number(pct) > 0 && Number(pct) <= 50 ? Math.round(Number(pct)) : BONUS_PCT };
+  b.line = bonusLine(b);
+  return b;
+}
+const bonusOfOffer = (o) => bonusOfRaw(o && o.payBonus, o && o.payPct, o && o.payGift);
+async function bonusOfTreatment() { const t = ((await readJSON(SETTINGS, null)) || {}).treatment || {}; return bonusOfRaw(t.type, t.pct, t.gift); }
+// a service of the booking (an offer by its key, a treatment of the price list by its id) → its bonus and what she pays online
+async function bonusFor(svc, offers) {
+  if (!svc || svc.id === 'consult' || !(Number(svc.price) > 0)) return null;
+  let b;
+  if (svc.id === 'custom') b = await bonusOfTreatment();
+  else { const list = offers || await require('./offers').loadOffers(readJSON, null); b = bonusOfOffer(list.find((x) => x && x.key === svc.id)); }
+  return Object.assign(b, { amount: b.type === 'pct' ? bonusPrice(svc.price, b.pct) : Number(svc.price) });
+}
+async function saveSettings(input, by) {
+  const t = input && input.treatment || {};
+  const b = bonusOfRaw(t.type, t.pct, t.gift);
+  const doc = { treatment: { type: b.type, pct: b.pct || 0, gift: b.gift || '' }, savedAt: nowISO(), by: by || '' };
+  await writeJSON(SETTINGS, doc);
+  return { ok: true, treatment: Object.assign(doc.treatment, { line: b.line }) };
+}
 const OPEN = 'data/pay-open.json';
 const docOf = (id) => 'data/pay/' + id + '.json';
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
@@ -95,7 +122,8 @@ const KINDS = {
       if (!H.live(h)) return { error: 'expired' };
       const full = Number(h.svc && h.svc.price) || 0;
       if (!(full > 0)) return { error: 'not_payable' };
-      return { amount: bonusPrice(full), full, bonusPct: BONUS_PCT, title: h.svc.title, city: h.city, name: (h.contact || {}).name || '', phone: (h.contact || {}).phone || '' };
+      const b = await bonusFor(h.svc);
+      return { amount: b.amount, full, bonus: b, title: h.svc.title, city: h.city, name: (h.contact || {}).name || '', phone: (h.contact || {}).phone || '' };
     },
     async paid(o) {
       const H = require('./booking-holds');
@@ -110,7 +138,7 @@ const KINDS = {
       if (!apptId) {
         const B = require('./booking');
         const r = await require('../booking').place({ cfg: await B.settings({ team: true }), city: h.city, svc: h.svc, date: h.date, time: h.time, name: c.name || 'Clientă site', phone: c.phone,
-          page: h.page, src: h.src, cookie: h.cookie, track: h.track, pay: 'online-pending', payAmount: o.amount, viaCheckout: true, paid: true, holdId: h.id });
+          page: h.page, src: h.src, cookie: h.cookie, track: h.track, pay: 'online-pending', payAmount: o.amount, viaCheckout: true, paid: true, holdId: h.id, bonus: o.bonus });
         if (!r || !r.entry) throw new Error('hold_booking_failed');
         apptId = r.entry.id;
         if (r.entry.overbooked) await ring(o, 'PLĂTITĂ ONLINE, ORA S-A OCUPAT ⚠️', (c.name || '') + ' a plătit ' + h.date + ' ' + h.time + ', dar ora s-a ocupat între timp. Sun-o să mutați ora.');
@@ -129,8 +157,8 @@ const KINDS = {
       const o = offers.find((x) => x && x.key === ref && x.active && x.site !== false);
       if (!o || !(Number(o.priceNew) > 0)) return { error: 'not_found' };
       if (Array.isArray(o.locations) && o.locations.length && !o.locations.includes(CITY_KEY[city])) return { error: 'not_in_city' };
-      const full = Number(o.priceNew);
-      return { amount: bonusPrice(full), full, bonusPct: BONUS_PCT, title: String(o.title || '').replace(/\s+/g, ' ').slice(0, 120), city };
+      const full = Number(o.priceNew), b = bonusOfOffer(o);
+      return { amount: b.type === 'pct' ? bonusPrice(full, b.pct) : full, full, bonus: b, title: String(o.title || '').replace(/\s+/g, ' ').slice(0, 120), city };
     },
     async paid(o) { return prepaid(o); },
   },
@@ -140,7 +168,8 @@ const KINDS = {
       if (!city) return { error: 'missing_city' };
       const t = treatment(ref, city);
       if (!t) return { error: treatment(ref) ? 'not_in_city' : 'not_found' };
-      return { amount: bonusPrice(t.price), full: t.price, bonusPct: BONUS_PCT, title: t.title, city };
+      const b = await bonusOfTreatment();
+      return { amount: b.type === 'pct' ? bonusPrice(t.price, b.pct) : t.price, full: t.price, bonus: b, title: t.title, city };
     },
     async paid(o) { return prepaid(o); },
   },
@@ -153,7 +182,7 @@ const KINDS = {
       if (!C || typeof C.payQuote !== 'function') return { error: 'card_not_ready' };
       const q = await C.payQuote({ ref, input: input || {} });
       if (!q || !(Number(q.amount) > 0)) return { error: (q && q.error) || 'not_found' };
-      return { amount: r2(q.amount), full: r2(q.full || q.amount), bonusPct: 0, title: clip(q.title || 'Card de Sărbători', 120), city: cityOf(q.city), name: clip(q.name, 100), phone: clip(q.phone, 30) };
+      return { amount: r2(q.amount), full: r2(q.full || q.amount), bonusPct: 0, title: clip(q.title || 'Card de Sărbători', 120), city: cityOf(q.city), name: clip(q.name, 100), phone: clip(q.phone, 30), bonusText: clip(q.bonusText, 80) };
     },
     async paid(o) {
       const C = cardModule();
@@ -193,7 +222,8 @@ async function recordSale(o, note) {
     id: crypto.randomUUID(), source: 'incasare', onlinePay: true, payOrderId: o.id, label: 'Plată online pe site', online: true,
     employeeId: 'site-pay', performedBy: '', clientId: '', client: o.name || '', clientPhone: o.phone || '',
     date: roDay(Date.parse(o.paidAt) || Date.now()), location: o.city || '', categories: [], category: '',
-    treatment: o.title + (o.bonusPct ? ' · plătit online, cu ' + o.bonusPct + '% reducere' : ' · plătit online'), amount: r2(o.amount), bookedAmount: 0, upsell: 0,
+    treatment: o.title + (o.bonus && o.bonus.type === 'gift' ? ' · plătit online · cadou: ' + o.bonus.gift : o.bonusPct ? ' · plătit online, cu ' + o.bonusPct + '% reducere' : ' · plătit online'), amount: r2(o.amount), bookedAmount: 0, upsell: 0,
+    ...(o.bonus && o.bonus.type === 'gift' ? { gift: o.bonus.gift } : {}),
     method: 'card', split: null, status: 'recorded', commission: 0, note: 'Online (myPOS) · comanda ' + o.id + (note ? ' · ' + note : ''),
     createdAt: nowISO(), decidedAt: null,
   };
@@ -258,7 +288,9 @@ async function createOrder({ kind, ref, input, host, track }) {
   const name = clip(q.name || (input && input.name), 100).replace(/[<>]/g, ''), phone = clip(q.phone || (input && input.phone), 30);
   const id = 'C360-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
   const o = {
-    id, key: crypto.randomBytes(16).toString('hex'), kind, ref, amount, full: r2(q.full || amount), bonusPct: q.bonusPct || 0, currency: 'RON',
+    id, key: crypto.randomBytes(16).toString('hex'), kind, ref, amount, full: r2(q.full || amount), bonusPct: q.bonus && q.bonus.type === 'pct' ? q.bonus.pct : q.bonusPct || 0,
+    bonus: q.bonus ? { type: q.bonus.type, pct: q.bonus.pct || 0, gift: q.bonus.gift || '', line: q.bonus.line } : null, currency: 'RON',
+    bonusText: clip(q.bonusText || (q.bonus && q.bonus.line) || '', 80),
     title: clip(q.title, 120), city: q.city || '', name, phone, status: 'open', createdAt: nowISO(), paidAt: '', mypos: {}, handled: false,
     sandbox: pv.sandbox, test: kind === 'test', track: track || null, provider: pv.name,
   };
@@ -267,12 +299,12 @@ async function createOrder({ kind, ref, input, host, track }) {
   if (kind === 'booking') await noteBooking(ref, id);
   if (kind === 'hold') await require('./booking-holds').patch(ref, (h) => { h.orderIds = (h.orderIds || []).concat(id).slice(-10); });
   // the Partners way: the payment request is made once her name is known (action 'link'); its page opens in a new tab
-  if (pv.name === 'requests') return { ok: true, provider: 'requests', orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, title: o.title, sandbox: pv.sandbox };
+  if (pv.name === 'requests') return { ok: true, provider: 'requests', orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, bonus: o.bonus, bonusText: o.bonusText, title: o.title, sandbox: pv.sandbox };
   // the wallets' session (Apple Pay / Google Pay): signed, the sum fixed here. Without it the card form still works.
   let session = { token: '', expires: '' };
   try { session = await IPC.sessionCreate(c, { orderId: id + WALLET, amount, title: o.title }); } catch (e) { console.error('pay session:', e.code, e.message); }
   return {
-    ok: true, provider: 'embedded', orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, title: o.title, sandbox: !!c.sandbox,
+    ok: true, provider: 'embedded', orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, bonus: o.bonus, bonusText: o.bonusText, title: o.title, sandbox: !!c.sandbox,
     sessionToken: session.token,
     params: { sid: c.sid, ipcLanguage: 'ro', walletNumber: c.walletNumber, amount, currency: 'RON', orderID: id, urlNotify: process.env.PAY_NOTIFY_URL || 'https://' + (host || 'www.centrul360.com') + '/api/pay-notify',
       keyIndex: Number(c.keyIndex) || 1, cartItems: [{ article: o.title, quantity: 1, price: amount, currency: 'RON' }] },
@@ -362,7 +394,7 @@ async function check(orderId, key) {
   if (o.status !== 'open') return { paid: false, status: o.status };
   let st = null;
   try {
-    if (o.provider === 'requests') { const r = await RQ.active(S); if (!r) return { paid: false, status: 'open' }; st = await askRequest(r, o); }
+    if (o.provider === 'requests') { const r = await RQ.active(S); if (!r) return { paid: false, status: 'open' }; st = await askRequest(r, await recoverRequest(r, o)); }
     else { const c = await IPC.load(S); if (!IPC.ready(c)) return { paid: false, status: 'open' }; st = await askBoth(c, o); }
   } catch (e) { await rqFail(e); return { paid: false, status: 'open', error: e.code || 'mypos_failed' }; }
   if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(orderId, st, 'status'); return { paid: !!r.ok, status: r.ok ? 'paid' : r.double ? 'double' : 'open' }; }
@@ -392,7 +424,10 @@ async function contact(orderId, key, input) {
   if (/^7\d{8}$/.test(phone)) phone = '0' + phone;
   if (name.length < 2) return { error: 'missing_name' };
   if (!/^07\d{8}$/.test(phone) && !/^[1-9]\d{10,14}$/.test(phone)) return { error: 'bad_phone' };
-  if (!(input.consent === true || input.consent === 'true')) return { error: 'missing_consent' };
+  // the WhatsApp confirmation and reminders serve the booking or purchase itself (transactional, 23.11): she is told so on the
+  // payment screen („Îți trimitem confirmarea pe WhatsApp.”); the notice she saw is kept on the order
+  if (!(input.consent === true || input.consent === 'true' || input.notice)) return { error: 'missing_consent' };
+  const notice = { kind: clip(input.notice || 'consent', 40), text: input.notice ? 'Îți trimitem confirmarea pe WhatsApp.' : 'acord bifat', at: nowISO() };
   // already booked that day (the same rule as the form)
   if (o.kind === 'hold') {
     const h = await require('./booking-holds').get(o.ref);
@@ -400,10 +435,10 @@ async function contact(orderId, key, input) {
       const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
       const same = (await readJSON('data/appointments.json', [])).find((a) => a && d9(a.clientPhone) === d9(phone) && a.date === h.date && !['anulata', 'concediu'].includes(a.status));
       if (same) return { error: 'has_booking', at: { date: same.date, time: same.time, location: same.location } };
-      await require('./booking-holds').patch(h.id, (x) => { x.contact = { name, phone, consent: true, at: nowISO() }; });
+      await require('./booking-holds').patch(h.id, (x) => { x.contact = { name, phone, consent: true, notice, at: nowISO() }; });
     }
   }
-  await update(orderId, (x) => { if (x.status !== 'open') return false; Object.assign(x, { name, phone, consent: true }); });
+  await update(orderId, (x) => { if (x.status !== 'open') return false; Object.assign(x, { name, phone, consent: true, notice }); });
   // the card's order gets them too (it was made without them: the card block asks nothing, 24.11)
   if (o.kind === 'card') { try { const C = cardModule(); if (C && typeof C.payContact === 'function') await C.payContact({ ref: o.ref, name, phone }); } catch (e) { console.error('pay card contact:', e.message); } }
   return { ok: true };
@@ -416,15 +451,31 @@ async function link(orderId, key) {
   if (o.provider !== 'requests') return { error: 'bad_provider' };
   if (o.status === 'paid') return { error: 'already_paid' };
   if (o.status !== 'open') return { error: 'not_open' };
-  if (o.request && o.request.url) return { ok: true, url: o.request.url };
+  if (o.request && o.request.code && o.request.url) return { ok: true, url: o.request.url };
   if (['hold', 'offer', 'treatment'].includes(o.kind) && !o.phone) return { error: 'missing_contact' };
   const r = await RQ.active(S);
   if (!r || r.error) return { error: 'off' };
-  let req;
-  try { req = await RQ.create(r, { orderId: o.id, amount: o.amount, title: o.title, clientName: o.name }); }
-  catch (e) { await rqFail(e); console.error('pay link:', e.code, e.status, e.message); return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' }; }
+  // one request per order, saved before its page is given out: a request made before for this order (its answer lost, a
+  // second tap) is found by the order id in its booking text and used again; a new one only when there is none
+  let req = null;
+  try {
+    if (o.requestTried) req = (await RQ.findByOrder(r, o.id)).find((x) => !['Expired', 'Cancelled'].includes(x.status) && Math.abs(x.amount - o.amount) < 0.005) || null;
+    if (!req) {
+      await update(orderId, (x) => { x.requestTried = nowISO(); });
+      req = await RQ.create(r, { orderId: o.id, amount: o.amount, title: o.title, clientName: o.name });
+    }
+  } catch (e) { await rqFail(e); console.error('pay link:', e.code, e.status, e.message); return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' }; }
   const saved = await update(orderId, (x) => { if (x.request && x.request.code) return false; x.request = { code: req.code, url: req.url, at: nowISO() }; });
-  return { ok: true, url: (saved && saved.request && saved.request.url) || req.url };
+  if (!saved || !saved.request || !saved.request.code || !saved.request.url) return { error: 'mypos_failed', message: 'cererea nu s-a putut salva' };
+  return { ok: true, url: saved.request.url };
+}
+// an open order of the Partners way without a saved code (its request made, the answer lost): found again at myPOS
+async function recoverRequest(r, o) {
+  if (o.request && o.request.code) return o;
+  const found = (await RQ.findByOrder(r, o.id)).find((x) => Math.abs(x.amount - o.amount) < 0.005) || null;
+  if (!found) return o;
+  const saved = await update(o.id, (x) => { if (x.request && x.request.code) return false; x.request = { code: found.code, url: found.url, at: nowISO(), recovered: true }; });
+  return saved || o;
 }
 // what myPOS says of the order's payment request, as the embedded way's answer (status 1 paid, 3 failed, 4 gone)
 async function askRequest(r, o) {
@@ -476,7 +527,7 @@ async function sweep() {
     if (!o || o.status !== 'open') { await openList((l) => l.filter((x) => x.id !== it.id)); out.gone++; continue; }
     let st = null;
     try {
-      if (o.provider === 'requests') { if (!r || r.error) continue; st = await askRequest(r, o); }
+      if (o.provider === 'requests') { if (!r || r.error) continue; st = await askRequest(r, await recoverRequest(r, o)); }
       else { if (!IPC.ready(c)) continue; st = await askBoth(c, o); }
     } catch (e) { await rqFail(e); continue; }
     if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(o.id, st, 'status'); if (r.ok) out.paid++; continue; }
@@ -516,4 +567,4 @@ async function status() {
   return Object.assign(pv.name === 'embedded' ? IPC.publicOf(pv.c) : { on: true, live: pv.live, sandbox: pv.sandbox }, { provider: pv.name, bonusPct: BONUS_PCT });
 }
 
-module.exports = { isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
+module.exports = { recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };

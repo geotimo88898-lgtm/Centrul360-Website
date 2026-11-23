@@ -51,7 +51,9 @@ const ADDED = [
   },
 ];
 
-const MARKETING_DEFAULTS = { ads: false, locations: ['timisoara', 'arad'], short: '', forms: {}, adName: '', mechanic: '', includes: '', device: '', dreamOutcome: '', mechanism: '', objections: [], zones: [], guarantee: '', notes: '' };
+// the bonus when paid online by card (23.11, Admin → Oferte): payBonus 'pct' (payPct % off, 10 when empty) or 'gift' (the full
+// price, with payGift, e.g. „BioLifting”, as a gift). Nothing set: 10% (api/_lib/pay.js bonusOf).
+const MARKETING_DEFAULTS = { payBonus: '', payPct: 0, payGift: '', ads: false, locations: ['timisoara', 'arad'], short: '', forms: {}, adName: '', mechanic: '', includes: '', device: '', dreamOutcome: '', mechanism: '', objections: [], zones: [], guarantee: '', notes: '' };
 
 // Clinic rule: laser hair removal and EMS exist only in Timișoara. Offers that never had their
 // locations set default to that, until the owner picks otherwise in Oferte.
@@ -144,6 +146,9 @@ function cleanMarketing(body) {
     short: str(body.short, 40), forms: cleanForms(body.forms), adName: str(body.adName, 120), mechanic: str(body.mechanic), includes: str(body.includes), device: str(body.device, 160),
     dreamOutcome: str(body.dreamOutcome), mechanism: str(body.mechanism), objections: list(body.objections), zones: list(body.zones),
     guarantee: str(body.guarantee, 160), notes: str(body.notes, 600),
+    payBonus: ['pct', 'gift'].includes(body.payBonus) ? body.payBonus : '',
+    payPct: Math.max(0, Math.min(50, Math.round(Number(body.payPct) || 0))),
+    payGift: str(body.payGift, 80).replace(/[<>]/g, ''),
   };
 }
 

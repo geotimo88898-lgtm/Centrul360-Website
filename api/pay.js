@@ -26,10 +26,12 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
     let b = req.body || {};
     if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
-    const ip = String(req.headers['x-forwarded-for'] || req.headers['cf-connecting-ip'] || '').split(',')[0].trim() || 'x';
+    // a few tries per address; the page's „is it paid?” every few seconds while she pays has its own, larger allowance
+    const poll = b.action === 'check';
+    const ip = (poll ? 'c|' : '') + (String(req.headers['x-forwarded-for'] || req.headers['cf-connecting-ip'] || '').split(',')[0].trim() || 'x');
     const now = Date.now();
     const mine = (tries.get(ip) || []).filter((t) => now - t < 10 * 60e3);
-    if (mine.length >= 40) { res.status(429).json({ error: 'too_many' }); return; }
+    if (mine.length >= (poll ? 400 : 60)) { res.status(429).json({ error: 'too_many' }); return; }
     tries.set(ip, mine.concat(now));
 
     if (b.action === 'check') { res.status(200).json(await P.check(String(b.orderId || ''), String(b.key || ''))); return; }

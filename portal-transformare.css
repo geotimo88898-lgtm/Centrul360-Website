@@ -110,6 +110,8 @@
 /* the lots (Cardul de Sărbători): the chosen one, all side by side; the details open in place */
 .tf .cp-go{ display:inline-flex; align-items:center; gap:.3rem; margin-top:.1rem; padding:.3rem .7rem; border:0; border-radius:999px; background:var(--glass-2, var(--glass)); color:var(--fg); font:inherit; font-size:.76rem; font-weight:650; cursor:pointer; }
 .tf .cp-go .k-ic{ width:13px; height:13px; }
+/* „De sunat”: the counts and the Carduri button wrap onto two lines when the card is narrow (nothing pushed out of it) */
+.tf .k-stat-sub:has(.cp-go){ flex-wrap:wrap; white-space:normal; row-gap:.3rem; }
 .tf .cp-lot-h{ display:flex; align-items:center; gap:.8rem; min-width:0; }
 .tf .cp-lot-h > div{ display:flex; flex-direction:column; gap:.15rem; min-width:0; }
 .tf .cp-lot-h b{ font-size:.95rem; }
