@@ -12,6 +12,17 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 23.11, George: „ACUM ÎN RECLAME FIECARE FINAL DE FORMULAR VREAU SĂ DUCĂ PE SITE, PE HOMEPAGE”. A published form can't
+  // change: HIFU Gușă 190 · Timișoara is copied as it is (questions, answers, privacy, language, title of the questions
+  // page), only its ending now sends her to the home page; the running ad moves to the copy (same texts, same picture)
+  { id: 'form-home-hifu-tm-2026-11-23', why: 'Finalul formularului duce pe site: HIFU gușă TM', formSite: {
+    formId: '1604290084129939', name: 'HIFU Gușă 190 · Timișoara · site', adId: '120250715948280149', campaign: 'C360 · TM · HIFU G · sezon',
+    page: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un singur pas 👇 Apasă butonul de jos și vezi pe site cum poți ajunge la încă 10% reducere. Te sunăm în curând ca să stabilim ora.', button_type: 'VIEW_WEBSITE', button_text: 'Vezi reducerea ta 🎁',
+      website_url: 'https://www.centrul360.com/?utm_source=facebook&utm_medium=leadform&utm_campaign=hifu-gusa-tm' } } },
+  // 23.11, George: every new form ends the same way, on the home page (Formulare → Setări formulare)
+  { id: 'form-template-home-2026-11-23', why: 'Formularele noi se termină pe site', template: {
+    ending: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un singur pas 👇 Apasă butonul de jos și vezi pe site cum poți ajunge la încă 10% reducere. Te sunăm în curând ca să stabilim ora.' },
+    cta: { type: 'VIEW_WEBSITE', text: 'Vezi reducerea ta 🎁', url: 'https://www.centrul360.com/?utm_source=facebook&utm_medium=leadform' } } },
   // 21.11 ~20:45, George: always „Plătești 990 lei” first, then „Primești 2.500 lei”: the A6 ads with the reversed
   // order go off (their corrected v2 is already live in the same ad sets)
   { id: 'card-a6-order-2026-11-21', why: 'Întâi ce plătești, apoi ce primești: A6 cu ordinea inversă se oprește', actions: [
@@ -541,9 +552,92 @@ async function run() {
         await tell({ tone: 'bad', tag: 'once-fail-' + j.id, title: 'NU ÎNCĂ ⚠️ - ' + (j.why || 'ce ați cerut'), text: 'Meta a refuzat, mai încerc din oră în oră: ' + failed.join(' · ') });
       }
     }
+    // a form's ending changed (23.11): the form copied with the new ending, registered like the old one (its leads come in
+    // the same way), the offer's form for that city moved to it, then the ad switched to it (same texts and picture)
+    for (const j of todo.filter((x) => x.formSite)) {
+      const f = j.formSite;
+      doc.forms = doc.forms || {};
+      const st = doc.forms[j.id] = doc.forms[j.id] || {};
+      const store = { readJSON, writeJSON };
+      const fail = async (why) => {
+        st.error = why; st.tries = (st.tries || 0) + 1; await save();
+        console.error('ads-once form:', j.id, why);
+        if (expired(j) || st.tries >= 6) {
+          doc.done[j.id] = new Date().toISOString(); doc.log.push({ job: j.id, at: new Date().toISOString(), expired: true, why }); await save();
+          await tell({ tone: 'bad', tag: 'once-expired-' + j.id, title: 'NEFĂCUT ⚠️ - ' + j.why, text: why });
+        } else { problems.push(why); await tell({ tone: 'bad', tag: 'once-fail-' + j.id, title: 'NU ÎNCĂ ⚠️ - ' + j.why, text: 'Mai încerc din oră în oră: ' + why }); }
+      };
+      if (!st.newId) {
+        const reg = ((await readJSON('data/fb-forms.json', {})).forms || {})[f.formId] || {};
+        if (reg.replacedBy && reg.replacedBy !== f.formId) st.newId = reg.replacedBy; // made on a run cut short
+        else {
+          const FCp = require('./fb-form-copy');
+          let r = await FCp.copyOne(store, f.formId, null, { name: f.name, page: f.page });
+          // a button Meta doesn't take with the emoji: the same words without it
+          if (r.error && !/are deja copie/.test(r.error)) r = await FCp.copyOne(store, f.formId, null, { name: f.name, page: Object.assign({}, f.page, { button_text: String(f.page.button_text).replace(/[^\p{L}\p{N} .,!?]/gu, '').trim() }) });
+          if (r.error) { await fail('formularul: ' + r.error); continue; }
+          st.newId = r.id; st.button = r.button;
+        }
+        st.madeAt = new Date().toISOString();
+        await save();
+        doc.log.push({ job: j.id, at: new Date().toISOString(), formId: f.formId, newFormId: st.newId, why: 'formularul copiat, finalul pe site' });
+        await save();
+      }
+      if (!st.offers) {
+        // the offer's form for this city (the publish window offers it; the leads keep the procedure by the form's own offerId)
+        const offers = await readJSON('data/offers.json', null);
+        const moved = [];
+        if (Array.isArray(offers)) offers.forEach((o) => Object.keys((o && o.forms) || {}).forEach((c) => { if (String(o.forms[c]) === f.formId) { o.forms[c] = st.newId; moved.push(o.id + '/' + c); } }));
+        if (moved.length) await writeJSON('data/offers.json', offers);
+        const lf = await readJSON('data/leadfilter.json', null);
+        if (lf && lf.forms) {
+          let ch = false;
+          Object.keys(lf.forms).forEach((c) => Object.keys(lf.forms[c] || {}).forEach((k) => { if (String(lf.forms[c][k]) === f.formId) { lf.forms[c][k] = st.newId; moved.push('leadfilter/' + c + '/' + k); ch = true; } }));
+          if (ch) await writeJSON('data/leadfilter.json', lf);
+        }
+        st.offers = moved.length ? moved : ['-'];
+        await save();
+      }
+      if (f.adId && !st.adDone) {
+        const AE = require('./ads-edit');
+        const cr = await AE.creativeOf(conn, f.adId);
+        if (cr.error) { await fail('reclama: ' + cr.error); continue; }
+        const p = AE.partsOf({ object_story_spec: cr.spec || {}, asset_feed_spec: cr.feed || null });
+        if (p.formId !== st.newId) {
+          if ((st.edits || 0) >= 2) { await fail('reclama nu a trecut pe formularul nou (' + p.formId + ')'); continue; }
+          const fd = cr.feed || null;
+          const list = (k) => (fd && Array.isArray(fd[k]) ? fd[k].map((x) => x.text).filter(Boolean) : null);
+          st.edits = (st.edits || 0) + 1; await save();
+          const r = await AE.editAd(conn, { adId: f.adId, texts: list('bodies') || p.texts, headlines: list('titles') || p.headlines, descriptions: list('descriptions') || p.descriptions, cta: p.cta, formId: st.newId });
+          if (r.error) { await fail('reclama: ' + r.error); continue; }
+          st.creativeId = r.creativeId;
+          const back = await AE.creativeOf(conn, f.adId);
+          const p2 = back.error ? {} : AE.partsOf({ object_story_spec: back.spec || {}, asset_feed_spec: back.feed || null });
+          if (p2.formId !== st.newId) { await fail('reclama arată încă formularul ' + (p2.formId || '?')); continue; }
+        }
+        st.adDone = new Date().toISOString();
+        doc.log.push({ job: j.id, at: new Date().toISOString(), adId: f.adId, campaignName: f.campaign, formId: st.newId, why: 'reclama trimite în formularul nou' });
+        await save();
+        out.push(f.adId);
+      }
+      doc.done[j.id] = new Date().toISOString();
+      delete st.error;
+      await save();
+      await tell({ tone: 'good', tag: 'once-done-' + j.id, title: 'FĂCUT ✅ - ' + j.why, text: f.name + ' (' + st.newId + ')' + (f.adId ? ' · reclama ' + short(f.campaign) + ' trimite acum în el' : '') });
+    }
+    // the template every new form starts from (Formulare → Setări formulare)
+    for (const j of todo.filter((x) => x.template)) {
+      const T = require('./fb-form-template');
+      await T.getTemplate({ readJSON, writeJSON }); // kept once, so the save starts from what runs
+      const r = await T.saveTemplate({ readJSON, writeJSON }, j.template);
+      if (r.error) { problems.push(r.error); console.error('ads-once template:', r.error); if (expired(j)) { doc.done[j.id] = new Date().toISOString(); await save(); } continue; }
+      doc.done[j.id] = new Date().toISOString();
+      doc.log.push({ job: j.id, at: new Date().toISOString(), template: { cta: r.template.cta, ending: r.template.ending }, why: j.why });
+      await save();
+    }
     // a rule over the campaigns that spent this week (the running ones and those paused a moment ago): its budget times a
     // factor, up to a cap
-    const rules = todo.filter((x) => !x.actions);
+    const rules = todo.filter((x) => !x.actions && !x.formSite && !x.template);
     if (rules.length) {
       const days = await ads.campaignDays(conn, { since: day(Date.now() - 6 * 864e5), until: day(Date.now()) });
       if (days.error) return { changed: out.length, error: days.error };

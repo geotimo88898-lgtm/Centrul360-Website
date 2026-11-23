@@ -107,7 +107,8 @@ function formInput(pk, city, zone, opts) {
     intro: z && z.intro ? z.intro : null,
     // a door form (o.volume): no review screen, more of them finish it
     quality: !o.volume,
-    ending: { title: 'Mulțumim! 🤍', body: 'Am primit alegerea ta. Te sunăm în cel mai scurt timp ca să-ți găsim o oră pentru consultație, iar pe WhatsApp îți trimitem acum tot ce primești.', button: 'Scrie-ne pe WhatsApp' },
+    // the ending: the template's (23.11, George: every form ends on the site's home page, Formulare → Setări formulare)
+    ending: null,
   };
 }
 // what would be sent to Meta, for each clinic and zone, without sending (the owner approves the offer first)

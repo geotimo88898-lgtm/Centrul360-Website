@@ -98,11 +98,13 @@ async function copyOne(store, id, over, opts) {
     ? { type: q.type }
     : Object.assign({ type: q.type, key: q.key, label: q.label }, Array.isArray(q.options) && q.options.length ? { options: q.options.map((o) => ({ value: o.value, key: o.key })) } : {})));
   if (!questions.some((q) => q.type === 'PHONE')) return { error: 'formularul nu cere telefonul' };
-  const page = { title: swapIn(tp.title, old, num) || 'Mulțumim!', body: swapIn(tp.body, old, num), button_type: tp.button_type || 'WHATSAPP', button_text: tp.button_text || 'Scrie-ne pe WhatsApp' };
+  let page = { title: swapIn(tp.title, old, num) || 'Mulțumim!', body: swapIn(tp.body, old, num), button_type: tp.button_type || 'WHATSAPP', button_text: tp.button_text || 'Scrie-ne pe WhatsApp' };
   if (['WHATSAPP', 'CALL_BUSINESS'].includes(page.button_type)) page.business_phone_number = '+' + num;
   if (tp.website_url) page.website_url = /wa\.me\/|whatsapp\.com\/send/.test(tp.website_url) ? tp.website_url.replace(/(wa\.me\/)\+?\d+/, '$1' + num).replace(/([?&]phone=)\+?\d+/, '$1' + num) : tp.website_url;
   if (tp.country_code) page.country_code = tp.country_code;
   if (tp.enable_messenger) page.enable_messenger = true;
+  // another ending (23.11, George: the ending sends her to the site's home page): everything else stays as it is
+  if (opts && opts.page) page = Object.assign({}, opts.page);
   const params = {
     name: String((opts && opts.name) || name + SUFFIX).replace(/\s+/g, ' ').trim().slice(0, 200), questions, locale: String(j.locale || 'RO_RO').toUpperCase(),
     privacy_policy: { url: j.privacy_policy_url || PRIVACY, link_text: 'Politica de confidențialitate' },
@@ -121,6 +123,8 @@ async function copyOne(store, id, over, opts) {
   const o = fresh.forms[id] || {};
   fresh.forms[made.id] = { name: params.name, offerId: o.offerId || '', location: o.location || city, detected: o.detected || null, leads: 0, createdHere: now, whatsapp: num, copyOf: id,
     questions: params.questions.map((q) => ({ key: q.key || q.type.toLowerCase(), label: q.label || '', type: q.type, options: q.options || [] })) };
+  // what routes its leads the same way: a lead-filter or card form keeps its kind, zone and variant
+  ['kind', 'zone', 'variant', 'job'].forEach((k) => { if (o[k] !== undefined && o[k] !== '') fresh.forms[made.id][k] = o[k]; });
   fresh.forms[id] = Object.assign(o, { replacedBy: made.id });
   const p = await store.readJSON(POLL_KEY, {});
   p.forms = [{ id: made.id, name: params.name, status: 'ACTIVE', count: 0, created: now, lastAt: 0 }].concat((p.forms || []).filter((f) => f.id !== made.id));

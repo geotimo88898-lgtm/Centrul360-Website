@@ -127,6 +127,17 @@ async function saveTemplate(store, input) {
   }
   if (i.ending) cur.ending = { title: clip(i.ending.title, 60) || cur.ending.title, body: clip(i.ending.body, 500) };
   if (i.cta && i.cta.text !== undefined) cur.cta = Object.assign({}, cur.cta, { text: clip(i.cta.text, 30) || cur.cta.text });
+  // the button's kind (23.11, George: every form ends on the site's home page): a WhatsApp message, or a link to our site
+  if (i.cta && i.cta.type !== undefined) {
+    if (!['WHATSAPP', 'VIEW_WEBSITE'].includes(i.cta.type)) return { error: 'Butonul de la final: WhatsApp sau site.' };
+    cur.cta = Object.assign({}, cur.cta, { type: i.cta.type });
+  }
+  if (i.cta && i.cta.url !== undefined) {
+    let ok = '';
+    try { const u = new URL(String(i.cta.url)); ok = u.protocol === 'https:' && /(^|\.)centrul360\.com$/.test(u.hostname) ? u.href : ''; } catch (e) { ok = ''; }
+    if (i.cta.url && !ok) return { error: 'Linkul de la final trebuie să fie pe https://www.centrul360.com' };
+    cur.cta = Object.assign({}, cur.cta, { url: ok });
+  }
   if (i.privacy && i.privacy.url) { if (!/^https:\/\//.test(i.privacy.url)) return { error: 'Adresa politicii de confidențialitate trebuie să înceapă cu https://' }; cur.privacy = Object.assign({}, cur.privacy, { url: String(i.privacy.url).slice(0, 300) }); }
   if (Array.isArray(i.fields)) { const f = i.fields.filter((x) => STANDARD.includes(x)); if (f.length) cur.fields = f; }
   cur.savedAt = new Date().toISOString();
@@ -139,7 +150,8 @@ function endingFor(t, city, over) {
   const o = over || {};
   const num = phoneOf(o.whatsapp) || ((t.cities || {})[city] || {}).whatsapp || '';
   const cta = t.cta || {};
-  const type = cta.type || 'WHATSAPP';
+  // a form can keep its own kind of button (a job ad's form: WhatsApp to the clinic), else the template's
+  const type = ['WHATSAPP', 'VIEW_WEBSITE'].includes(o.type) ? o.type : cta.type || 'WHATSAPP';
   const page = { title: clip(o.title, 60) || t.ending.title, body: clip(o.body, 500) || t.ending.body, button_type: type, button_text: clip(o.button, 30) || cta.text || 'Scrie-ne pe WhatsApp' };
   if (type === 'WHATSAPP' || type === 'CALL_BUSINESS') {
     if (!num) return { error: 'Nu am numărul de WhatsApp pentru ' + city + '. Pune-l în Formulare → Setări formulare.' };
