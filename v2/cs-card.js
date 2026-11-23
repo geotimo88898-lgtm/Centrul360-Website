@@ -77,7 +77,7 @@
   var TIERS = { 290: [500, '1,7'], 490: [1000, '2'], 990: [2500, '2,5'], 9900: [30000, '3'] }, SALE = [490, 990, 9900], VIP = 9900, KEY = 'c360_cs_tier';
   var fmt = function (n) { return Math.round(n).toLocaleString('ro-RO'); };
   var saved = 990;
-  try { var v = Number(localStorage.getItem(KEY)); if (SALE.indexOf(v) >= 0) saved = v; } catch (e) {}
+  // every visit starts on 990 (the owner, 23.11: „preselectat cel de 990”), not on the card chosen last time
   var VIP_K = 'VIP · Transformarea 360', VIP_SUB = 'pentru tine și cei dragi';
   var tierBox = function (t, best) {
     var g = TIERS[t];
