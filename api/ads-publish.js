@@ -206,6 +206,37 @@ module.exports = async (req, res) => {
       return;
     }
     if (req.method === 'GET' && req.query && req.query.action === 'daily') { res.status(200).json(await daily(req.query.since)); return; }
+    // read only (23.11): an old ad account's ads of ours (the accounts the port reads from), with Meta's spend / leads and
+    // what came after the form (portal), to pick the proven ones worth porting; never a change there
+    if (req.method === 'GET' && req.query && req.query.action === 'old_results') {
+      const OLD = ['act_4502494523405059', 'act_1136609638911845'];
+      const act = OLD.includes(String(req.query.act || '')) ? String(req.query.act) : '';
+      if (!act) { res.status(400).json({ error: 'act' }); return; }
+      const AM = require('./ads-manager');
+      const { conn, problem } = await AM.connection();
+      if (problem) { res.status(200).json({ ok: false, reason: problem }); return; }
+      const SCOPE = require('./_lib/ads-scope');
+      // the old account's own money: its known currency's rate (RON: 1), never the connected account's
+      const old = Object.assign({}, conn, { adAccountId: act, scope: SCOPE.forAccount(SCOPE.DEFAULT, act) });
+      Object.defineProperty(old, 'fx', { value: 0, enumerable: false });
+      const today = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+      const since = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.since || '')) && req.query.since <= today ? String(req.query.since) : '2026-10-16';
+      const range = { since, until: today };
+      const AC = require('./_lib/ads-cache');
+      const view = await AC.cached('old-' + act + '-' + since + '_' + today, 30 * 60e3, () => ads.overview(old, 'custom', range));
+      if (view.error) { res.status(200).json({ ok: false, reason: 'meta_error', message: ME.ui(view.error) }); return; }
+      await AM.withFunnel(view, 'custom', range, old).catch((e) => { console.error('old_results funnel:', e.message); });
+      let re = null;
+      try { re = req.query.match ? new RegExp(String(req.query.match).slice(0, 80), 'i') : null; } catch (e) { re = null; }
+      const out = [];
+      (view.campaigns || []).filter((c) => !re || re.test(c.name)).forEach((c) => (c.adsets || []).forEach((s) => (s.ads || []).forEach((a) => out.push({
+        campaignId: c.id, campaign: c.name, adsetId: s.id, audience: s.audience, adId: a.id, name: a.name, status: a.effective || a.status, created: a.created,
+        thumb: a.thumb, text: String(a.text || '').slice(0, 200), spend: a.spend, leads: a.leads, spendNew: a.spendNew || 0, pLeads: a.pLeads || 0,
+        booked: a.booked || 0, showed: a.showed || 0, clients: a.clients || 0, revenue: a.revenue || 0,
+      }))));
+      res.status(200).json({ ok: true, act, since, until: today, currency: view.account && view.account.currency, ads: out });
+      return;
+    }
     // read only (23.11): one lead form in full as Meta keeps it (intro, questions, privacy, ending) and how the portal
     // has it registered (procedure, city, kind), so a copy can be made the same; never a token
     if (req.method === 'GET' && req.query && req.query.action === 'form_full') {
