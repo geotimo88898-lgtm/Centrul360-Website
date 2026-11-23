@@ -508,6 +508,13 @@ module.exports = async (req, res) => {
     res.status(200).json({ at: aud && aud.at, days: aud && aud.ig && aud.ig.online && aud.ig.online.days ? aud.ig.online.days.length : 0, grid: g });
     return;
   }
+  // ?mprlive=1: the payment requests route's state (no keys); POST {"on": true|false} switches it on the site (the owner)
+  if (req.query && req.query.mprlive) {
+    const RQ = require('./_lib/mypos-requests'), ST = require('./_lib/store');
+    if (req.method === 'POST') { const r = await RQ.setLive(ST, !!(req.body && req.body.on)); res.status(r.error ? 400 : 200).json(Object.assign(r, { state: RQ.adminOf(await RQ.active(ST)) })); return; }
+    res.status(200).json(RQ.adminOf(await RQ.active(ST)));
+    return;
+  }
   // ?mprprobe=1: myPOS payment requests, a few forms of a 1 leu request and myPOS's answers (api/_lib/mypos-requests.js)
   if (req.query && req.query.mprprobe) {
     res.status(200).json(await require('./_lib/mypos-requests').probeCreate(require('./_lib/store')).catch((e) => ({ error: e.code || e.message, status: e.status || 0, message: e.message })));
