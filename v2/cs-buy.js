@@ -218,7 +218,7 @@
     var link = !clinic && st.loaded && st.links && st.links[tier], id = link ? uuid() : '';
     if (link && id && (vip ? !(st.vip && st.vip[city] && st.vip[city].left <= 0) : st.open && st.left > 0)) {
       busy = true; pressed(btn); phMsg('');
-      var fb = { id: id, tier: tier, qty: 1, pay: 'online', forWho: 'eu', phone: phone, city: city, consent: true, website: '', page: location.href };
+      var fb = { id: id, tier: tier, qty: 1, pay: 'online', forWho: 'eu', phone: phone, city: city, consent: true, website: '', page: location.href, src: window.C360Src ? window.C360Src() : undefined };
       if (window.C360P && window.C360P.tok) fb.ct = window.C360P.tok;
       if (window.C360_CONSENT === true) fb.event_id = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
       var v0 = item(tier, (st.online || {})[tier]);
@@ -236,7 +236,7 @@
       if (vip && st.vip && st.vip[city] && st.vip[city].left <= 0) { stop(vipOut(city)); return; }
       if (!vip && !st.open) { stop(st.left <= 0 ? PMSG.sold_out : PMSG.closed); return; }
       if (!clinic && !(st.links && st.links[tier])) { stop(PMSG.no_link); return; }
-      var body = { tier: tier, qty: 1, pay: clinic ? 'clinica' : 'online', forWho: 'eu', phone: phone, city: city, consent: true, website: '', page: location.href };
+      var body = { tier: tier, qty: 1, pay: clinic ? 'clinica' : 'online', forWho: 'eu', phone: phone, city: city, consent: true, website: '', page: location.href, src: window.C360Src ? window.C360Src() : undefined };
       if (window.C360P && window.C360P.tok) body.ct = window.C360P.tok;
       if (window.C360_CONSENT === true) body.event_id = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
       var val = item(tier);
@@ -337,7 +337,7 @@
   function embedPay(btn, tier, city, vip) {
     phMsg('');
     // no phone here: the sheet asks it (contactLater; the server makes the order without it)
-    var body = { embedded: true, preview: PREVIEW, contactLater: true, tier: tier, qty: 1, pay: 'online', forWho: 'eu', phone: '', city: city, website: '', page: location.href };
+    var body = { embedded: true, preview: PREVIEW, contactLater: true, tier: tier, qty: 1, pay: 'online', forWho: 'eu', phone: '', city: city, website: '', page: location.href, src: window.C360Src ? window.C360Src() : undefined };
     if (window.C360P && window.C360P.tok) body.ct = window.C360P.tok;
     if (window.C360_CONSENT === true) body.event_id = 'lead.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2, 10);
     var val = item(tier, vip ? (st.online || {})[tier] : 0);

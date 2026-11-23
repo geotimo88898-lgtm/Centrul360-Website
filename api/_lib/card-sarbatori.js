@@ -343,7 +343,7 @@ async function payContact({ ref, name, phone }) {
   const st = { readJSON, writeJSON };
   try {
     const note = 'Card de Sărbători trimis la plata online (pe site), de confirmat plata: ' + r.tier + ' lei, credit ' + lei(r.credit) + ' lei, de plată ' + lei(r.amount) + ' lei';
-    const L = await require('../portal-leads').createLead({ name: nm || NONAME, phone: p, source: 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: 'Site · Card de Sărbători', welcome: false });
+    const L = await require('../portal-leads').createLead({ name: nm || NONAME, phone: p, source: 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: 'Site · Card de Sărbători', welcome: false, src: r.src });
     if (L && L.lead) {
       const l2 = await readJSON(KEY, []); const x = byId(l2, r.id); if (x && !x.leadId) { x.leadId = L.lead.id; await writeJSON(KEY, l2); }
       // Meta's Lead now (her browser's pixel sends the same event id when the contact is saved: counted once)
@@ -774,7 +774,7 @@ async function confirm(id, via, o) {
   try {
     const note = (isVip(r) ? 'Card VIP Transformarea 360' : 'Card de Sărbători') + ' plătit ' + (r.paidVia === 'online' ? 'online' : 'în clinică') + ': ' + r.qty + ' × ' + r.tier + ' lei, credit ' + lei(r.credit) + ' lei · ' +
       r.cards.map((c) => c.code + (c.recipient ? ' (' + c.recipient + ')' : '')).join(', ') + (r.bonus ? (isVip(r) ? (r.disc ? ' · 10% reducere online' : '') : ' · cadou: ' + giftShort(r.city)) + ' · Clubul 360' : '');
-    const L = await require('../portal-leads').createLead({ name: r.name || r.hint || NONAME, phone: r.phone, source: 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: 'Card de Sărbători', welcome: false });
+    const L = await require('../portal-leads').createLead({ name: r.name || r.hint || NONAME, phone: r.phone, source: 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: 'Card de Sărbători', welcome: false, src: r.src });
     if (L && L.lead && !r.leadId) r.leadId = L.lead.id;
   } catch (e) { console.error('card lead:', e.message); }
   // her client file once we know her name (an online order: when she says it, nameLead)
@@ -1311,7 +1311,7 @@ async function toClinic(id, how) {
   try {
     const note = 'Card de Sărbători rezervat, plata în clinică (' + (how === 'lead' ? 'din reclamă, formularul Meta; a ales clinica pe WhatsApp' : 'a început plata online, apoi a ales clinica' + (how === 'whatsapp' ? ', din WhatsApp' : how === 'site' ? ', pe site' : '')) + '): ' +
       r.qty + ' × ' + r.tier + ' lei (credit ' + TIERS[r.tier] + ' lei fiecare), de plată ' + r.amount + ' lei' + (r.cards.some((c) => c.recipient) ? ' · pe numele: ' + r.cards.map((c) => c.recipient || '(al ei)').join(', ') : '');
-    await require('../portal-leads').createLead({ name: r.name || r.hint || NONAME, phone: r.phone, source: r.via === 'meta-form' ? 'facebook' : 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: r.via === 'meta-form' ? 'Reclamă · Card de Sărbători' : 'Site · Card de Sărbători', welcome: false });
+    await require('../portal-leads').createLead({ name: r.name || r.hint || NONAME, phone: r.phone, source: r.via === 'meta-form' ? 'facebook' : 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: r.via === 'meta-form' ? 'Reclamă · Card de Sărbători' : 'Site · Card de Sărbători', welcome: false, src: r.src });
   } catch (e) { console.error('card clinic lead:', e.message); }
   try {
     await N.notifyMany(st, await N.deskIds(st, r.city), { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-clinic-' + r.id,
