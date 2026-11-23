@@ -145,6 +145,8 @@ const CARD_FORM = { id: 'card-form-tm-2026-11-23', why: 'Cardul de Sărbători p
 const JOBS = [
   // 23.11 ~23:30, George: the card's new form for Timișoara (its campaign CARD_FORM held above until George says go)
   CARD_FORM_TM,
+  // 24.11 ~02:00, George: „da, pornește campania pe formular”
+  CARD_FORM,
   // 23.11 ~23:20, George: go (traffic, 3 ads, per-ad tags)
   CARD_SITE,
   // 23.11 ~22:55, George changed the card campaigns (only TM, 100 lei, men and women, the home page) after the first
