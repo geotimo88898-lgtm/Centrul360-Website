@@ -365,6 +365,33 @@ async function whyLeft() {
   trans.forEach((p) => { if (sent[p.k]) c.sentCard++; else if (inList.has(p.k)) c.inListNotSent++; else if (off.has(p.k)) c.optout++; else if (bought.has(p.k)) c.ordered++; else if (staff.has(p.k)) c.staff++; else c.free++; });
   return c;
 }
+// everyone in our files not reached by the card yet (the owner, 23.11: „mai avem contacte?”): counts only, by city and kind
+async function allLeft() {
+  const st = await loadState();
+  const { normalizePhone } = require('./clients');
+  const C = require('./clinic');
+  const [clients, leads, appts, orders, emps, sentMap] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/leads.json', []), readJSON('data/appointments.json', []), readJSON('data/card-sarbatori.json', []), readJSON('data/employees.json', []), readJSON(SENT, null)]);
+  const sent = sentMap || {};
+  const off = await require('./optout').set();
+  const inList = new Set(st.list.map((p) => p.k));
+  const bought = new Set(orders.map((o) => d9(o && o.phone)).filter((k) => k.length === 9));
+  const staff = new Set(emps.map((e) => d9(e && e.phone)).filter((x) => x.length === 9));
+  const vis = new Map();
+  appts.forEach((a) => { if (a && a.clientId && a.status === 'finalizata') { const v = vis.get(a.clientId) || { n: 0, city: '' }; v.n++; v.city = C.clinicOf(a.location) || v.city; vis.set(a.clientId, v); } });
+  const seen = new Map(); // k -> { kind, city }
+  const leadCity = new Map(); leads.forEach((l) => { const k = d9(normalizePhone(l && l.phone)); if (k.length === 9 && !leadCity.has(k)) leadCity.set(k, C.clinicOf(l.location)); });
+  clients.forEach((c) => { const ph = normalizePhone(c && c.phone); const k = d9(ph); if (!ph || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(c.name || ''))) return; const v = vis.get(c.id); seen.set(k, { kind: v ? 'client' : 'fisa-fara-vizita', city: (v && v.city) || leadCity.get(k) || C.clinicOf(c.location) || '' }); });
+  leads.forEach((l) => { const ph = normalizePhone(l && l.phone); const k = d9(ph); if (!ph || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(l.name || ''))) return; seen.set(k, { kind: 'lead', city: C.clinicOf(l.location) || '' }); });
+  const out = { total: seen.size, reached: 0, optout: 0, ordered: 0, staff: 0, left: {} };
+  seen.forEach((x, k) => {
+    if (sent[k] || inList.has(k)) return out.reached++;
+    if (off.has(k)) return out.optout++;
+    if (bought.has(k)) return out.ordered++;
+    if (staff.has(k)) return out.staff++;
+    const key = (CITIES.includes(x.city) ? x.city : 'fără oraș') + ' · ' + x.kind; out.left[key] = (out.left[key] || 0) + 1;
+  });
+  return out;
+}
 // a picked batch not sent yet, taken back (nothing went): only the ones still unsent of that batch
 async function unpick(batch) {
   const st = await loadState();
@@ -489,4 +516,4 @@ async function backfillTaps() {
   return out;
 }
 
-module.exports = { unresend, resend, whyLeft, backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };
+module.exports = { allLeft, unresend, resend, whyLeft, backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };
