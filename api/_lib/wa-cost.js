@@ -113,9 +113,11 @@ async function rangeMarketing(readJSON, start, end) {
   });
   if (!accounts.size) return { lei: 0, volume: 0, unit: 0, byCity: {}, none: true };
   end = Math.min(end, Math.floor(Date.now() / 1000));
-  start = Math.floor(start / 86400) * 86400; // Meta's DAILY points start at a day's 00:00 UTC
+  // Meta's DAILY points are the account's days (US Pacific, 8 h behind UTC) and a point counts only when its day starts at
+  // or after `start`: the day before is taken too, else the first send's day goes missing
+  start = Math.floor(start / 86400) * 86400 - 86400;
   if (end <= start) return { lei: 0, volume: 0, unit: 0, byCity: {} };
-  return require('./ads-cache').cached('wa-mkt2-' + start, 3600e3, async () => {
+  return require('./ads-cache').cached('wa-mkt3-' + start, 3600e3, async () => {
     const { writeJSON } = require('./store');
     const eur = await require('./eur-rate').eurToday(readJSON, writeJSON).catch(() => null);
     const toLei = (cost, cur) => (/^RON$/i.test(cur) ? cost : /^EUR$/i.test(cur) && eur && eur.rate ? cost * eur.rate : /^USD$/i.test(cur) && eur && eur.usd ? cost * eur.usd : null);
