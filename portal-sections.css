@@ -320,7 +320,10 @@
 .cal-status button.is-on.is-warn{ background:var(--warn); }
 .cal-status button.is-on.is-bad{ background:var(--bad); }
 .cal-status button.is-on.is-mute{ background:var(--fg); color:var(--ink); }
-.cal-contact{ display:grid; grid-template-columns:1fr 1.6fr; gap:.5rem; }
+.cal-contact{ display:grid; grid-template-columns:1.6fr 1fr; gap:.5rem; margin:.25rem 0 .75rem; }
+.cal-contact .cal-call span{ display:inline-flex; gap:.35em; align-items:baseline; white-space:nowrap; }
+.cal-contact .cal-call b{ font-variant-numeric:tabular-nums; letter-spacing:.01em; }
+@media (max-width:380px){ .cal-contact{ grid-template-columns:1fr; } }
 /* the appointment's client, in short */
 .cal-client-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:.6rem; flex-wrap:wrap; }
 .cal-client-top > div:first-child, .cal-client-top > .cal-client-who{ display:flex; flex-direction:column; min-width:0; }
