@@ -290,6 +290,7 @@ async function createOrder({ kind, ref, input, host, track }) {
   const o = {
     id, key: crypto.randomBytes(16).toString('hex'), kind, ref, amount, full: r2(q.full || amount), bonusPct: q.bonus && q.bonus.type === 'pct' ? q.bonus.pct : q.bonusPct || 0,
     bonus: q.bonus ? { type: q.bonus.type, pct: q.bonus.pct || 0, gift: q.bonus.gift || '', line: q.bonus.line } : null, currency: 'RON',
+    bonusText: clip(q.bonusText || (q.bonus && q.bonus.line) || '', 80),
     title: clip(q.title, 120), city: q.city || '', name, phone, status: 'open', createdAt: nowISO(), paidAt: '', mypos: {}, handled: false,
     sandbox: pv.sandbox, test: kind === 'test', track: track || null, provider: pv.name,
   };
@@ -298,12 +299,12 @@ async function createOrder({ kind, ref, input, host, track }) {
   if (kind === 'booking') await noteBooking(ref, id);
   if (kind === 'hold') await require('./booking-holds').patch(ref, (h) => { h.orderIds = (h.orderIds || []).concat(id).slice(-10); });
   // the Partners way: the payment request is made once her name is known (action 'link'); its page opens in a new tab
-  if (pv.name === 'requests') return { ok: true, provider: 'requests', orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, bonus: o.bonus, title: o.title, sandbox: pv.sandbox };
+  if (pv.name === 'requests') return { ok: true, provider: 'requests', orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, bonus: o.bonus, bonusText: o.bonusText, title: o.title, sandbox: pv.sandbox };
   // the wallets' session (Apple Pay / Google Pay): signed, the sum fixed here. Without it the card form still works.
   let session = { token: '', expires: '' };
   try { session = await IPC.sessionCreate(c, { orderId: id + WALLET, amount, title: o.title }); } catch (e) { console.error('pay session:', e.code, e.message); }
   return {
-    ok: true, provider: 'embedded', orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, bonus: o.bonus, title: o.title, sandbox: !!c.sandbox,
+    ok: true, provider: 'embedded', orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, bonus: o.bonus, bonusText: o.bonusText, title: o.title, sandbox: !!c.sandbox,
     sessionToken: session.token,
     params: { sid: c.sid, ipcLanguage: 'ro', walletNumber: c.walletNumber, amount, currency: 'RON', orderID: id, urlNotify: process.env.PAY_NOTIFY_URL || 'https://' + (host || 'www.centrul360.com') + '/api/pay-notify',
       keyIndex: Number(c.keyIndex) || 1, cartItems: [{ article: o.title, quantity: 1, price: amount, currency: 'RON' }] },
@@ -423,7 +424,10 @@ async function contact(orderId, key, input) {
   if (/^7\d{8}$/.test(phone)) phone = '0' + phone;
   if (name.length < 2) return { error: 'missing_name' };
   if (!/^07\d{8}$/.test(phone) && !/^[1-9]\d{10,14}$/.test(phone)) return { error: 'bad_phone' };
-  if (!(input.consent === true || input.consent === 'true')) return { error: 'missing_consent' };
+  // the WhatsApp confirmation and reminders serve the booking or purchase itself (transactional, 23.11): she is told so on the
+  // payment screen („Îți trimitem confirmarea pe WhatsApp.”); the notice she saw is kept on the order
+  if (!(input.consent === true || input.consent === 'true' || input.notice)) return { error: 'missing_consent' };
+  const notice = { kind: clip(input.notice || 'consent', 40), text: input.notice ? 'Îți trimitem confirmarea pe WhatsApp.' : 'acord bifat', at: nowISO() };
   // already booked that day (the same rule as the form)
   if (o.kind === 'hold') {
     const h = await require('./booking-holds').get(o.ref);
@@ -431,10 +435,10 @@ async function contact(orderId, key, input) {
       const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
       const same = (await readJSON('data/appointments.json', [])).find((a) => a && d9(a.clientPhone) === d9(phone) && a.date === h.date && !['anulata', 'concediu'].includes(a.status));
       if (same) return { error: 'has_booking', at: { date: same.date, time: same.time, location: same.location } };
-      await require('./booking-holds').patch(h.id, (x) => { x.contact = { name, phone, consent: true, at: nowISO() }; });
+      await require('./booking-holds').patch(h.id, (x) => { x.contact = { name, phone, consent: true, notice, at: nowISO() }; });
     }
   }
-  await update(orderId, (x) => { if (x.status !== 'open') return false; Object.assign(x, { name, phone, consent: true }); });
+  await update(orderId, (x) => { if (x.status !== 'open') return false; Object.assign(x, { name, phone, consent: true, notice }); });
   // the card's order gets them too (it was made without them: the card block asks nothing, 24.11)
   if (o.kind === 'card') { try { const C = cardModule(); if (C && typeof C.payContact === 'function') await C.payContact({ ref: o.ref, name, phone }); } catch (e) { console.error('pay card contact:', e.message); } }
   return { ok: true };

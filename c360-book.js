@@ -550,7 +550,7 @@
     const b = bonusOf(S.service);
     return '<p class="bk-eyebrow">Plata online</p><h2 class="bk-h">Plătești acum, <em>' + (b.type === 'gift' ? 'cu ' + esc(b.gift) + ' cadou.' : 'cu ' + b.pct + '% mai puțin.') + '</em></h2>' +
       '<p class="bk-when">' + esc(niceDay(S.date).replace(/^./, (c) => c.toUpperCase())) + ', ora ' + esc(S.time) + '<small>' + esc((S.service || {}).title || '') + ' · Centrul360 ' + esc(S.city) + '</small></p>' +
-      '<div data-bk-checkout><div class="bk-skel" style="height:96px;border-radius:18px;margin-bottom:12px"></div><div class="bk-skel" style="height:300px;border-radius:18px"></div></div>';
+      '<div data-bk-checkout></div>';
   }
   const holdBody = () => ({ hold: true, city: S.city, service: S.svc, label: S.svc === 'custom' ? S.label : '', treatment: S.svc === 'custom' && S.pick ? S.pick.treatment || '' : '', date: S.date, time: S.time, page: PAGE, src: SRC });
   function releaseHold(beacon) {
@@ -559,25 +559,30 @@
     S.hold = null;
     try { fetch('/api/booking', { method: 'POST', keepalive: !!beacon, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ release: h.id, key: h.key }) }); } catch (e) { /* it runs out by itself */ }
   }
-  async function mountCheckout() {
+  // the payment opens at once (the owner, 23.11: „fluid”): the sum and the bonus are known here, the hour is held and the order
+  // made in the background; a taken hour sends her back to the hours
+  function mountCheckout() {
     const el = body.querySelector('[data-bk-checkout]');
     if (!el || !window.C360Pay) return;
-    const mine = S;
-    let d = null;
-    try { const r = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(holdBody()) }); d = await r.json(); } catch (e) { d = { error: 'net' }; }
-    if (S !== mine || S.step !== 'checkout') { if (d && d.hold) { S.hold = d.hold; releaseHold(); } return; }
-    if (!d || !d.hold) {
-      const e2 = d && d.error;
-      if (e2 === 'taken') { Object.keys(early).forEach((k) => delete early[k]); S.time = ''; go('when', 'back'); load(true); setTimeout(() => { const b2 = root.querySelector('.bk-body .bk-step'); if (b2) b2.insertAdjacentHTML('afterbegin', '<div class="bk-alert">Ora aleasă tocmai a fost ocupată. Alege, te rog, altă oră.</div>'); }, 400); return; }
-      if (e2 === 'pay_off') { S.embed = false; embedP = null; S.pay = ''; go('pay', 'back'); return; }
-      el.innerHTML = '<div class="bk-alert">Nu am putut porni plata. Verifică internetul și încearcă din nou, sau <a href="' + waLink() + '" target="_blank" rel="noopener">scrie-ne pe WhatsApp</a>.</div><button type="button" class="bk-ghost" data-go="pay" style="width:100%">Înapoi</button>';
-      return;
-    }
-    S.hold = d.hold;
-    el.innerHTML = '';
+    const mine = S, b = bonusOf(S.service);
+    const holdP = fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(holdBody()) })
+      .then((r) => r.json(), () => ({ error: 'net' }))
+      .then((d) => {
+        if (S !== mine || S.step !== 'checkout') { if (d && d.hold) fetch('/api/booking', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ release: d.hold.id, key: d.hold.key }) }).catch(() => {}); return Promise.reject({ code: 'gone' }); }
+        if (!d || !d.hold) return Promise.reject({ code: (d && d.error) || 'net' });
+        S.hold = d.hold;
+        return d.hold.id;
+      });
     window.C360Pay.open({
-      kind: 'hold', ref: d.hold.id, city: S.city, page: PAGE, mount: el,
-      contact: { name: S.name, phone: S.phone }, consent: !!S.ok,
+      kind: 'hold', ref: holdP, city: S.city, page: PAGE, mount: el,
+      preview: { amount: b.amount, full: b.type === 'pct' ? S.service.price : 0, title: (S.service || {}).title || '', bonusText: b.line },
+      contact: { name: S.name, phone: S.phone },
+      onError: (code) => {
+        if (S !== mine || code === 'gone') return;
+        if (code === 'taken') { Object.keys(early).forEach((k) => delete early[k]); S.time = ''; go('when', 'back'); load(true); setTimeout(() => { const b2 = root.querySelector('.bk-body .bk-step'); if (b2) b2.insertAdjacentHTML('afterbegin', '<div class="bk-alert">Ora aleasă tocmai a fost ocupată. Alege, te rog, altă oră.</div>'); }, 400); return; }
+        if (code === 'pay_off') { S.embed = false; embedP = null; S.pay = ''; go('pay', 'back'); return; }
+        el.innerHTML = '<div class="bk-alert">Nu am putut porni plata. Verifică internetul și încearcă din nou, sau <a href="' + waLink() + '" target="_blank" rel="noopener">scrie-ne pe WhatsApp</a>.</div><button type="button" class="bk-ghost" data-go="pay" style="width:100%">Înapoi</button>';
+      },
       onContact: (c) => { if (S !== mine) return; S.name = c.name; S.phone = c.phone; S.ok = true; store.set('c360-book-me', { name: c.name, phone: c.phone }); },
       onPaid: (r) => {
         if (S !== mine) return;
@@ -663,7 +668,9 @@
     if (t.dataset.go === 'city') { go('city', 'back'); return; }
     if (t.dataset.go === 'svc') { go('svc', 'back'); return; }
     if (t.dataset.go === 'pay') { go('pay', 'back'); return; }
-    if (t.dataset.pay) { S.pay = t.dataset.pay; paint(); setTimeout(() => go(S.pay === 'online' && S.embed ? 'checkout' : 'you'), 160); return; }
+    // online: the payment at once, no fade or slide (the owner, 23.11: „fluid”); at the clinic: the last step as before
+    if (t.dataset.pay === 'online' && S.embed) { S.pay = 'online'; S.step = 'checkout'; S.dir = ''; S.err = S.err === 'net' ? S.err : ''; paint(); body.scrollTop = 0; return; }
+    if (t.dataset.pay) { S.pay = t.dataset.pay; paint(); setTimeout(() => go('you'), 160); return; }
     if (t.hasAttribute('data-retry')) { if (S.service) load(); else loadServices('enter'); return; }
     if (t.dataset.date) { S.date = t.dataset.date; S.time = ''; paint(); return; }
     if (t.dataset.time) { S.time = t.dataset.time; paint(); setTimeout(() => go(payable() ? 'pay' : 'you'), 160); return; }
@@ -872,6 +879,9 @@
     if (location.hash === '#programare') open({});
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auto); else auto();
+  // the payment ready before the tap (c360-pay.js and its status, 23.11: the sheet must open at once)
+  const warm = () => embedOn().then((on) => { if (on && window.C360Pay && window.C360Pay.preload) window.C360Pay.preload(); });
+  if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 2500 }); else setTimeout(warm, 1200);
   // back on the site with a payment made on myPOS's page (the Partners way) not yet confirmed, or /?plata=<order>&k=<key>:
   // c360-pay.js says „Plătit” as soon as myPOS does
   try {
