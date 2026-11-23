@@ -50,6 +50,18 @@ const SITE_CAMPAIGNS = [
 // the reel „Nu promitem. Îți arătăm.” of Conținut: its clean video (no music) and its cover, public links (api/content-file.js)
 const REEL_ARATAM = { url: 'https://admin.centrul360.com/api/content-file?i=dd7a54f3-7464-4cd7-adb8-2e903006f48d&n=clean.mp4', thumb: 'https://admin.centrul360.com/api/content-file?i=dd7a54f3-7464-4cd7-adb8-2e903006f48d&n=cover.jpg' };
 const JOBS = [
+  // 23.11 ~19:00, George („pune-le pe toate 4 live”, the lookalike „la toate”): lookalikes of „C360 · Clientele noastre”
+  // (the clinic's clients and the Transformarea 360 list), Romania, 1 to 10%; each new campaign takes the smallest one that
+  // still reaches enough people in its city, or none
+  { id: 'lal-clientele-2026-11-23', why: 'Publicuri asemănătoare clientelor noastre (România, 1-10%)', lookalike: {
+    origin: '120250716547410149', country: 'RO', ratios: [1, 2, 3, 5, 10], name: 'C360 · Asemănător RO {p}% · Clientele noastre' } },
+  // 23.11, George: Liposonix TM back on a simple lead form, ending like the HIFU ones (on the site's home page): the form the
+  // old Liposonix TM campaigns used (Lipo 640 · Timișoara) copied as it is, only the ending; registered with the same offer
+  // and city, so its leads get the same WhatsApp
+  { id: 'form-site-lipo-tm-2026-11-23', why: 'Finalul formularului Liposonix TM duce pe site', formSite: {
+    formId: '1471161508313617', name: 'Lipo 640 · Timișoara · site',
+    page: { title: '⚠️ ÎNCĂ NU AI TERMINAT!', body: 'Mai ai un pas 👇 Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.', button_type: 'VIEW_WEBSITE', button_text: 'VEZI MAI MULTE 👉',
+      website_url: 'https://www.centrul360.com/?utm_source=facebook&utm_medium=leadform&utm_campaign=liposonix-tm' } } },
   // 23.11 ~18:00, George: the brand reel „Nu promitem. Îți arătăm.” (Conținut, the clean video: no music, only real cases
   // of the clinic, untouched) as the site's ad, in place of „Rezultate · site”: two campaigns, TM and AR, Purchase on the
   // site's pixel, women 25-64, 50 lei a day each, one video ad each to the home page (api/_lib/meta-ads.js videoUpload)
@@ -649,7 +661,7 @@ async function siteSummary() {
   const out = {};
   for (const j of JOBS.filter((x) => x.site)) {
     const st = (doc.site || {})[j.id] || {};
-    out[j.id] = { done: !!(doc.done || {})[j.id], campaigns: j.site.campaigns.map((c) => { const sc = st[c.name] || {}; return { name: c.name, campaignId: sc.campaignId || '', adsetId: sc.adsetId || '', ads: sc.ads || {}, error: sc.error || '', warning: sc.warning || '' }; }), pixel: st.pixelAnswer || null, paused: st.paused || null };
+    out[j.id] = { done: !!(doc.done || {})[j.id], campaigns: j.site.campaigns.map((c) => { const sc = st[c.name] || {}; return { name: c.name, campaignId: sc.campaignId || '', adsetId: sc.adsetId || '', ads: sc.ads || {}, error: sc.error || '', warning: sc.warning || '', lal: sc.lal || undefined, reach: sc.reach || undefined }; }), pixel: st.pixelAnswer || null, paused: st.paused || null };
   }
   return out;
 }
@@ -721,6 +733,33 @@ async function run() {
         problems.push(...failed);
         await tell({ tone: 'bad', tag: 'once-fail-' + j.id, title: 'NU ÎNCĂ ⚠️ - ' + (j.why || 'ce ați cerut'), text: 'Meta a refuzat, mai încerc din oră în oră: ' + failed.join(' · ') });
       }
+    }
+    // lookalikes of a custom audience of ours (23.11, George: „la toate”): one per ratio, in one country, made once (an
+    // audience of the same name already in the account is taken); the campaigns that use them pick the smallest ratio
+    // with enough reach, or go without (never held for it)
+    for (const j of todo.filter((x) => x.lookalike)) {
+      const L = j.lookalike;
+      doc.lal = doc.lal || {};
+      const st = doc.lal[j.id] = doc.lal[j.id] || { ids: {} };
+      const have = await ads.audienceList(conn);
+      let failed = have.error ? 'publicurile: ' + have.error : '';
+      for (const p of failed ? [] : L.ratios) {
+        if (st.ids[p]) continue;
+        const name = L.name.replace('{p}', p);
+        const ex = (have.audiences || []).find((a) => a.name === name);
+        if (ex) { st.ids[p] = ex.id; await save(); continue; }
+        const r = await ads.lookalikeCreate(conn, { origin: L.origin, ratio: p / 100, country: L.country, name });
+        if (r.error) { failed = p + '%: ' + r.error; break; }
+        st.ids[p] = r.id; st.madeAt = st.madeAt || new Date().toISOString();
+        doc.log.push({ job: j.id, at: new Date().toISOString(), audienceId: r.id, why: 'public asemănător ' + name });
+        await save();
+      }
+      st.tries = (st.tries || 0) + (failed ? 1 : 0);
+      if (!failed || expired(j) || st.tries >= 3) {
+        if (failed) { st.error = failed; doc.log.push({ job: j.id, at: new Date().toISOString(), expired: true, why: failed }); }
+        doc.done[j.id] = new Date().toISOString();
+        await save();
+      } else { st.error = failed; await save(); problems.push(failed); console.error('ads-once lookalike:', failed); }
     }
     // a form's ending changed (23.11): the form copied with the new ending, registered like the old one (its leads come in
     // the same way), the offer's form for that city moved to it, then the ad switched to it (same texts and picture)
@@ -870,9 +909,33 @@ async function run() {
         if (!ads.ours(conn, c.name)) { failed = c.name + ': numele nu e al nostru în contul conectat'; break; }
         const sc = st[c.name] = st[c.name] || { ads: {} };
         // a lead-form campaign (c.formJob): the form a formSite job above made, once it's there; else a page of the site
-        const formId = c.formJob ? ((doc.forms || {})[c.formJob] || {}).newId || '' : '';
+        const formId = c.formId || (c.formJob ? ((doc.forms || {})[c.formJob] || {}).newId || '' : '');
         if (c.formJob && !formId) { failed = c.name + ': formularul nu e gata încă'; break; }
         const link = formId ? '' : 'https://www.centrul360.com/?utm_source=facebook&utm_medium=paid&utm_campaign=' + c.utm;
+        // the audience of a running campaign (c.like), exactly (women only), for the new ad set; with the smallest lookalike
+        // of c.lal whose reach Meta estimates at c.minReach at least, else without one (written down why)
+        if (c.like && !sc.adsetId && !sc.targeting) {
+          const w = await ads.targetingOf(conn, c.like);
+          if (w.error) { failed = c.name + ': publicul: ' + w.error; break; }
+          const t = w.targeting;
+          t.genders = [2];
+          if (!t.targeting_automation) t.targeting_automation = { advantage_audience: 0 };
+          const min = c.minReach || 10000;
+          const lal = c.lal ? (((doc.lal || {})[c.lal] || {}).ids || {}) : {};
+          const base = await ads.reachEstimate(conn, t);
+          sc.reach = { base: base.error ? { error: base.error } : base };
+          let pick = '';
+          for (const p of Object.keys(lal).map(Number).sort((a, b) => a - b)) {
+            const e = await ads.reachEstimate(conn, Object.assign({}, t, { custom_audiences: (t.custom_audiences || []).concat([{ id: lal[p] }]) }));
+            sc.reach[p + '%'] = e.error ? { error: e.error } : e;
+            if (!e.error && e.ready && (e.lower + e.upper) / 2 >= min) { pick = p; break; }
+          }
+          if (pick) { t.custom_audiences = (t.custom_audiences || []).concat([{ id: lal[pick] }]); sc.lal = pick + '% (' + lal[pick] + ')'; }
+          else sc.lal = !c.lal ? 'fără' : Object.keys(lal).length ? 'fără: sub ' + min + ' de persoane cu oricare' : 'fără: publicul asemănător nu e făcut';
+          sc.targeting = t;
+          doc.log.push({ job: j.id, at: new Date().toISOString(), campaignName: c.name, why: 'publicul copiat din ' + c.like + ', asemănător: ' + sc.lal });
+          await save();
+        }
         for (const a of c.ads) {
           if (sc.ads[a.name]) continue;
           if (sc.making && Date.now() - Date.parse(sc.making) < 10 * 60e3) { failed = c.name + ': se face deja'; break; }
@@ -898,12 +961,13 @@ async function run() {
             media = { base64: pic.base64, name: a.image };
           }
           const v = ads.cleanSettings({
-            adsetId: sc.adsetId || '', campaignName: c.name, adsetName: c.city + ' ' + (c.radiusKm || d.radiusKm) + ' km · femei ' + j.site.ages.join('-'), adName: a.name,
+            adsetId: sc.adsetId || '', campaignName: c.name, adsetName: c.adsetName || (c.city + ' ' + (c.radiusKm || d.radiusKm) + ' km · femei ' + j.site.ages.join('-')), adName: a.name,
             city: c.city, radiusKm: c.radiusKm || d.radiusKm, women: true, ageMin: j.site.ages[0], ageMax: j.site.ages[1], placements: d.placements, budget: c.budget,
             link, formId, goal: formId ? '' : 'purchase', pixelId: j.site.pixelId, primaryText: a.text, headline: a.headlines[0], headline2: a.headlines[1], headline3: a.headlines[2],
             description: a.description, cta: j.site.cta, startNow: true,
           });
           if (v.error) { failed = a.name + ': ' + v.error; break; }
+          if (sc.targeting && !sc.adsetId) v.s.rawTargeting = sc.targeting;
           sc.making = new Date().toISOString(); await save();
           const r = await ads.publish(conn, media, v.s);
           delete sc.making;
@@ -959,7 +1023,7 @@ async function run() {
     }
     // a rule over the campaigns that spent this week (the running ones and those paused a moment ago): its budget times a
     // factor, up to a cap
-    const rules = todo.filter((x) => !x.actions && !x.formSite && !x.template && !x.site);
+    const rules = todo.filter((x) => !x.actions && !x.formSite && !x.template && !x.site && !x.lookalike);
     if (rules.length) {
       const days = await ads.campaignDays(conn, { since: day(Date.now() - 6 * 864e5), until: day(Date.now()) });
       if (days.error) return { changed: out.length, error: days.error };

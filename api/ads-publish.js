@@ -193,6 +193,22 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, sent: n });
       return;
     }
+    // read only (23.11): a running campaign's audience as a new ad set would copy it (?like=<campaign id>), and Meta's reach
+    // estimate for it, alone and with each audience of ?aud=<id>,<id> added (a lookalike)
+    if (req.method === 'GET' && req.query && req.query.action === 'reach') {
+      const AM = require('./ads-manager');
+      const { conn, problem } = await AM.connection();
+      if (problem) { res.status(200).json({ ok: false, reason: problem }); return; }
+      const like = /^\d{5,25}$/.test(String(req.query.like || '')) ? String(req.query.like) : '';
+      if (!like) { res.status(400).json({ error: 'like' }); return; }
+      const w = await ads.targetingOf(conn, like);
+      if (w.error) { res.status(200).json({ ok: false, error: w.error }); return; }
+      const auds = String(req.query.aud || '').split(',').filter((x) => /^\d{5,25}$/.test(x)).slice(0, 6);
+      const out = { ok: true, like, targeting: w.full, base: await ads.reachEstimate(conn, w.targeting), with: {} };
+      for (const a of auds) out.with[a] = await ads.reachEstimate(conn, Object.assign({}, w.targeting, { custom_audiences: (w.targeting.custom_audiences || []).concat([{ id: a }]) }));
+      res.status(200).json(out);
+      return;
+    }
     // read only: why an ad doesn't deliver (Meta's issues_info, review), and the ad account's state (status, why disabled)
     if (req.method === 'GET' && req.query && req.query.action === 'diag') {
       const AM = require('./ads-manager');

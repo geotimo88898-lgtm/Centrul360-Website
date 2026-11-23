@@ -260,9 +260,36 @@ async function audienceCreate(conn, kind, days, igId) {
 }
 // the account's audiences (id, name, size), to pick from
 async function audienceList(conn) {
-  const x = await call('GET', '/' + conn.adAccountId + '/customaudiences', conn.userToken, { fields: 'id,name,approximate_count_lower_bound,approximate_count_upper_bound,subtype,time_created', limit: '100' });
+  const x = await call('GET', '/' + conn.adAccountId + '/customaudiences', conn.userToken, { fields: 'id,name,approximate_count_lower_bound,approximate_count_upper_bound,subtype,time_created,operation_status,delivery_status', limit: '100' });
   if (!x.ok) return { error: metaError(x.j, 'Publicurile') };
-  return { audiences: (x.j.data || []).map((a) => ({ id: a.id, name: a.name, subtype: a.subtype, min: a.approximate_count_lower_bound, max: a.approximate_count_upper_bound, created: a.time_created })) };
+  return { audiences: (x.j.data || []).map((a) => ({ id: a.id, name: a.name, subtype: a.subtype, min: a.approximate_count_lower_bound, max: a.approximate_count_upper_bound, created: a.time_created,
+    state: a.operation_status ? a.operation_status.description || a.operation_status.code : '', delivery: a.delivery_status ? a.delivery_status.description || a.delivery_status.code : '' })) };
+}
+// a lookalike (23.11, George: „la toate”): people like a custom audience of ours, in one country, the top ratio (0.01 = 1%)
+async function lookalikeCreate(conn, o) {
+  const x = await call('POST', '/' + conn.adAccountId + '/customaudiences', conn.userToken, { name: String(o.name).slice(0, 200), subtype: 'LOOKALIKE', origin_audience_id: String(o.origin),
+    lookalike_spec: JSON.stringify({ ratio: o.ratio, country: o.country || 'RO' }) });
+  if (!x.ok || x.j.error) return { error: metaError(x.j, 'Publicul asemănător') };
+  return { id: x.j.id };
+}
+// what Meta estimates an audience reaches (monthly people, lower and upper), for a lead ad set
+async function reachEstimate(conn, t) {
+  const x = await call('GET', '/' + conn.adAccountId + '/delivery_estimate', conn.userToken, { targeting_spec: JSON.stringify(t), optimization_goal: 'LEAD_GENERATION', promoted_object: JSON.stringify({ page_id: conn.pageId }) });
+  if (!x.ok || x.j.error) return { error: metaError(x.j, 'Estimarea') };
+  const e = (x.j.data || [])[0] || {};
+  return { lower: Number(e.estimate_mau_lower_bound) || 0, upper: Number(e.estimate_mau_upper_bound) || 0, ready: e.estimate_ready !== false };
+}
+// a running campaign's audience, as Meta keeps it (its first live ad set), to give a new ad set exactly the same
+async function targetingOf(conn, campaignId) {
+  const SAME_T = KEEP_T.concat(['custom_audiences', 'excluded_custom_audiences', 'flexible_spec', 'exclusions']);
+  const r = await call('GET', '/' + campaignId, conn.userToken, { fields: 'name,account_id,adsets.limit(10){effective_status,targeting}' });
+  if (!r.ok) return { error: metaError(r.j, 'Campania de copiat') };
+  if ('act_' + r.j.account_id !== conn.adAccountId || !ours(conn, r.j.name)) return { error: 'campania de copiat nu e a noastră' };
+  const sets = (r.j.adsets && r.j.adsets.data) || [];
+  const s = sets.find((x) => x.effective_status === 'ACTIVE') || sets[0];
+  if (!s || !s.targeting) return { error: 'campania de copiat n-are public' };
+  const t = {}; SAME_T.forEach((k) => { if (s.targeting[k] !== undefined) t[k] = JSON.parse(JSON.stringify(s.targeting[k])); });
+  return { targeting: t, full: s.targeting };
 }
 
 // The whole publish. image = { base64, name } (a picture) or { videoId, thumbUrl } (a video). Returns ids or { error }.
@@ -308,7 +335,7 @@ async function publish(conn, image, s) {
       made.push(campaignId);
       const adset = await call('POST', '/' + act + '/adsets', tok, {
         name: s.adsetName, campaign_id: campaignId, daily_budget: cents(conn, s.budget), billing_event: 'IMPRESSIONS',
-        bid_strategy: 'LOWEST_COST_WITHOUT_CAP', targeting: targeting(s), status: 'PAUSED', ...(await dsaOf(conn)),
+        bid_strategy: 'LOWEST_COST_WITHOUT_CAP', targeting: s.rawTargeting || targeting(s), status: 'PAUSED', ...(await dsaOf(conn)),
         ...(s.link
           ? (s.goal === 'purchase'
             ? { optimization_goal: 'OFFSITE_CONVERSIONS', destination_type: 'WEBSITE', promoted_object: { pixel_id: s.pixelId, custom_event_type: 'PURCHASE' } }
@@ -822,9 +849,9 @@ async function recentCampaigns(conn) {
 
 // why a campaign barely spends (Claude's report): its ad sets' and ads' delivery as Meta tells it
 async function delivery(conn, id) {
-  const r = await call('GET', '/' + id, conn.userToken, { fields: 'name,objective,effective_status,adsets{effective_status,daily_budget,optimization_goal,destination_type,learning_stage_info,start_time,promoted_object,targeting{age_min,age_max,genders,geo_locations}},ads{name,effective_status,issues_info,ad_review_feedback,creative{call_to_action_type,object_story_spec{link_data{link,call_to_action}},asset_feed_spec{titles,link_urls,call_to_action_types}}}' });
+  const r = await call('GET', '/' + id, conn.userToken, { fields: 'name,objective,effective_status,adsets{effective_status,daily_budget,optimization_goal,destination_type,learning_stage_info,start_time,promoted_object,targeting},ads{name,effective_status,issues_info,ad_review_feedback,creative{call_to_action_type,object_story_spec{link_data{link,call_to_action}},asset_feed_spec{titles,link_urls,call_to_action_types}}}' });
   return r.ok ? r.j : { error: metaError(r.j) };
 }
 // whether the account is shared (some campaigns are left out), so its own totals can't be used as ours
 const scoped = (conn) => { const s = scopeOf(conn); return !!(s.include || (s.exclude || []).length); };
-module.exports = { siteOf, inLei, budLei, cents, FX, port, audienceCreate, audienceList, ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, videoUpload, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };
+module.exports = { siteOf, inLei, budLei, cents, FX, port, audienceCreate, audienceList, lookalikeCreate, reachEstimate, targetingOf, ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, videoUpload, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };
