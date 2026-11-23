@@ -550,6 +550,30 @@ module.exports = async (req, res) => {
   }
   // ?cardrecent=1: the card orders of the last 2 days, no name and no phone (id, when, tier, clinic, status, how it came, the
   // page path it came from, the trail's kinds and times), to check a case without opening the portal
+  // ?cardmsg=<card id>: did her card go out on WhatsApp: each card's sent note, and the messages to her number of the last
+  // 2 days as Meta's statuses left them (id end, type, status, error, which clinic's number); never a text, name or phone.
+  // POST ?cardmsg=<id>&resend=1: her cards sent again (the same message)
+  if (req.query && req.query.cardmsg) {
+    const C = require('./_lib/card-sarbatori');
+    const list = await readJSON(C.KEY, []);
+    const r = C.byId(list, String(req.query.cardmsg));
+    if (!r) { res.status(404).json({ error: 'not_found' }); return; }
+    if (req.method === 'POST' && req.query.resend) {
+      if (r.status !== 'platit') { res.status(400).json({ error: 'not_paid' }); return; }
+      const ok = await C.sendCards(r, 'retrimis');
+      await require('./_lib/store').writeJSON(C.KEY, list);
+      res.status(200).json({ ok, sent: r.cards.map((c) => c.sent) });
+      return;
+    }
+    const d9 = (x) => String(x || '').replace(/\D/g, '').slice(-9);
+    const convos = await readJSON('data/whatsapp-conversations.json', []);
+    const since = Date.now() - 2 * 864e5;
+    const msgs = convos.filter((c) => d9(c.phone) === d9(r.phone)).flatMap((c) => (c.messages || []).map((m) => Object.assign({ loc: c.location }, m)))
+      .filter((m) => Date.parse(m.timestamp) > since)
+      .map((m) => ({ at: m.timestamp, dir: m.direction, type: m.type, status: m.status, error: m.error || m.errorTitle || m.errors || '', id: String(m.id || '').slice(-10), loc: m.loc, auto: !!m.auto, tpl: m.template || m.templateName || '' }));
+    res.status(200).json({ status: r.status, city: r.city, cards: (r.cards || []).map((c) => ({ sent: c.sent || null })), rec: Object.keys(C.recOf(r)), convos: convos.filter((c) => d9(c.phone) === d9(r.phone)).length, msgs });
+    return;
+  }
   // ?cardsrc=<card id>: where one order came from (the utm values and the referrer's host, the card message's lot and
   // personal-link token if any) and whether her card message went out; never a name or phone
   if (req.query && req.query.cardsrc) {
