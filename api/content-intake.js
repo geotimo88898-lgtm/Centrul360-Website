@@ -116,8 +116,9 @@ module.exports = async (req, res) => {
     }
     // { action:'skip', id, net? }: out of its week (one network, or the whole item); what it posted stays
     if (action === 'skip') { res.status(200).json({ ok: true, n: await C.skip(String(body.id || ''), ['tt', 'yt', 'ig', 'fb'].includes(body.net) ? body.net : '') }); return; }
-    // { action:'move', id, week }: an item nothing posted yet goes to another week (its review stays)
-    if (action === 'move') { res.status(200).json(Object.assign({ ok: true }, await C.move(String(body.id || ''), body.week))); return; }
+    // { action:'move', id, week }: an item nothing posted yet goes to another week (its review stays); { action:'move', id,
+    // day: 'YYYY-MM-DD' } a story to its own day (its week is that day's; the re-plan keeps it there)
+    if (action === 'move') { res.status(200).json(Object.assign({ ok: true }, await C.move(String(body.id || ''), body.week, body.day ? String(body.day) : ''))); return; }
     if (action === 'approve') { res.status(200).json({ ok: true, approved: await C.approveAll(Array.isArray(body.ids) ? body.ids : []) }); return; }
     if (action === 'redo') { res.status(200).json({ ok: true, item: await C.setReview(String(body.id || ''), 'redo', String(body.note || '').slice(0, 1000), {}) }); return; }
     if (action === 'ready') {

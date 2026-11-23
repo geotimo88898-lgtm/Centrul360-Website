@@ -695,20 +695,25 @@ async function skip(id, net) {
 
 // Another week for an item nothing posted yet (21.11: a week's lighter slots make room for a sale's posts): its entries
 // not posted go, it keeps its review, both weeks are planned again (it takes the free slots of its new week).
-async function move(id, week) {
+// A story may get its own day (day: 'YYYY-MM-DD', not past): its week is that day's, the re-plan puts it on that day
+// (content-plan.js); a move without a day drops the one it had.
+async function move(id, week, day) {
   if (!isId(id)) throw fail('invalid_id');
   const [st, now] = [await settings(), Date.now()];
-  const to = weekFor(week, now);
+  if (day != null && day !== '' && (!P.isDay(day) || day < P.roDay(now))) throw fail('invalid_day');
+  const to = weekFor(day ? P.mondayOf(String(day)) : week, now);
   const { out } = await update((list) => {
     const it = findItem(list, id);
     if (!it || it.removed || it.dropped) throw fail('not_found', 404);
     if ((it.plan || []).some((e) => e.state === 'posted' || e.state === 'posting')) throw fail('already_posted', 409);
+    if (day && it.kind !== 'story') throw fail('invalid_day');
     const from = it.week;
     it.plan = [];
     it.week = to;
+    if (day) it.day = String(day); else delete it.day;
     if (from && from !== to) P.replanWeek(list, from, st, now);
     P.replanWeek(list, to, st, now);
-    return { from, week: to, plan: it.plan };
+    return { from, week: to, day: it.day || '', plan: it.plan };
   });
   return out;
 }
