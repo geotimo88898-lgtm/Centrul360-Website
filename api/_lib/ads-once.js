@@ -48,6 +48,11 @@ const SITE_CAMPAIGNS = [
   ] },
 ];
 const JOBS = [
+  // 23.11 10:47: my duplicate job (removed) ran next to site-results-dupes and paused the other TM HIFU gât copy too, so TM
+  // had no HIFU gât ad left; that copy goes back on (AR was paused by both, the same ad: nothing to undo there)
+  { id: 'site-results-undo-2026-11-23', why: 'Rezultate · site TM: reclama HIFU gât pornită la loc', actions: [
+    { campaignId: '120250724045060149', name: 'C360 · TM · Rezultate · site · HIFU gât', status: 'ACTIVE', why: 'oprită din greșeală, a doua oprire a dublurii' },
+  ] },
   // 23.11: the v3 run of „Rezultate · site” left the HIFU gât ad twice in each campaign (a retried step); one of each goes
   // off so each campaign has its 2 ads (Liposonix șolduri and HIFU gât), as George asked
   { id: 'site-results-dupes-2026-11-23', why: 'Reclama HIFU gât apărea de două ori în fiecare campanie Rezultate · site', actions: [
