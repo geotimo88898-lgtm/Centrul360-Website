@@ -268,6 +268,8 @@ async function pickMore(n, opt) {
     const ph = normalizePhone(c && c.phone); const k = d9(ph);
     if (opt && opt.only === 'leads') { if (ph && k.length === 9) seen.add(k); return; }
     if (opt && opt.only === 'trans' && !inTrans.has(k)) return;
+    // a client file with no finished visit is a lead of the list (as fc-campaign.js counts her): the leads below take her
+    if (opt && opt.only === 'trans' && !vis.get(c && c.id)) return;
     if (!ph || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(c.name || ''))) return no(k, 'c-seen');
     seen.add(k);
     if (!withTrans && inTrans.has(k)) return no(k, 'c-trans'); if (already.has(k)) return no(k, 'c-already'); if (bought.has(k)) return no(k, 'c-bought'); if (staff.has(k)) return no(k, 'c-staff'); if (recentPay.has(c.id)) return no(k, 'c-recentpay');
