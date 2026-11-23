@@ -264,6 +264,8 @@ function sourceOf(raw, cookie, ua) {
   const tag = {};
   ['source', 'medium', 'campaign', 'content'].forEach((k) => { if (t[k]) tag[k] = clip(String(t[k]).replace(/[<>]/g, ''), 80); });
   ['fbclid', 'gclid', 'gbraid', 'wbraid', 'ttclid', 'msclkid'].forEach((k) => { if (t[k]) tag[k] = 1; });
+  // Meta's ad id of the website ads (their link's c360_ad={{ad.id}}, 23.11): which ad brought her, for Admin → Reclame
+  if (/^\d{5,25}$/.test(String(t.ad || ''))) tag.ad = String(t.ad);
   const fbc = /(^|;\s*)_fbc=fb\./.test(String(cookie || '')) || x.fbc === true;
   const app = appOf(ua || x.app);
   const us = fold(tag.source), um = fold(tag.medium);

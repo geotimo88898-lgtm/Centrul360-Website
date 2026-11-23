@@ -97,11 +97,20 @@ async function results(sinceQ) {
   const view = await AC.cached('results-' + since + '_' + today, 30 * 60e3, () => ads.overview(conn, 'custom', range));
   if (view.error) { ME.log('ads results', view.error); return { ok: false, reason: 'meta_error', message: ME.ui(view.error), ads: [] }; }
   await AM.withFunnel(view, 'custom', range, conn).catch((e) => { console.error('results funnel:', e.message); });
+  const touches = await AM.withSite(view, 'custom', range, conn).catch((e) => { console.error('results site:', e.message); return []; });
+  await AM.withOutcomes(view, 'custom', range, touches).catch((e) => { console.error('results outcomes:', e.message); });
   const out = [];
   (view.campaigns || []).forEach((c) => (c.adsets || []).forEach((s) => (s.ads || []).forEach((a) => out.push({
     adId: a.id, name: a.name, campaign: c.name, status: a.effective || a.status, created: a.created, text: String(a.text || '').slice(0, 300),
     spend: a.spend, leads: a.leads, clicks: a.linkClicks, impressions: a.impressions,
     spendNew: a.spendNew || 0, pLeads: a.pLeads || 0, contacted: a.contacted || 0, lost: a.lost || 0, booked: a.booked || 0, showed: a.showed || 0, clients: a.clients || 0, revenue: a.revenue || 0,
+    // what she did later, by her phone, 30 days, for her first ad touch (a form lead or a website ad's record; ad-outcomes.js)
+    after: { booked: a.oBooked || 0, showed: a.oShowed || 0, cardsReserved: a.oCardRes || 0, cardsPaid: a.oCardPaid || 0, cardsPaidLei: a.oCardPaidLei || 0, cardsPending: a.oCardOpen || 0,
+      cashed: a.oCashed || 0, cashedOnline: a.oCashedOnline || 0 },
+    // a website ad (23.11): Meta's steps on the site and what its visitors did there (our records, by the ad's tags)
+    ...(c.site ? { site: true, visits: a.visits || 0, checkouts: a.checkouts || 0, purchases: a.purchases || 0, purchaseValue: a.purchaseValue || 0, schedules: a.schedules || 0, pixelLeads: a.pixelLeads || 0,
+      cardsPaid: a.sCardPaid || 0, cardsPaidLei: a.sCardPaidLei || 0, cardsReserved: a.sCardRes || 0, cardsReservedLei: a.sCardResLei || 0, cardsStarted: a.sCardOpen || 0,
+      siteBookings: a.sBook || 0, sitePaid: a.sPay || 0, sitePaidLei: a.sPayLei || 0, siteLeads: a.sLead || 0 } : {}),
   }))));
   return { ok: true, since, until: today, ads: out };
 }
@@ -233,16 +242,20 @@ module.exports = async (req, res) => {
       const range = AM.dayRange(req.query);
       const when = range ? { time_range: JSON.stringify(range) } : { date_preset: ads.PERIODS[period] };
       const [view, meta] = await Promise.all([
-        AM.readView(conn, period, range),
+        AM.readView(conn, period, range).then(async (v) => { if (v && !v.error) await AM.withSite(v, period, range, conn).catch(() => {}); return v; }),
         ads.call('GET', '/' + id + '/insights', conn.userToken, Object.assign({ fields: 'campaign_name,spend,impressions,clicks,inline_link_clicks,inline_link_click_ctr,cost_per_inline_link_click,actions,action_values,cost_per_action_type,purchase_roas' }, when)),
       ]);
       const c = view && !view.error ? (view.campaigns || []).find((x) => x.id === id) : null;
       const row = meta.ok ? (meta.j.data || [])[0] || null : null;
       const pick = (o) => o && { name: o.name, objective: o.objective, site: o.site, status: o.status, spend: o.spend, impressions: o.impressions, clicks: o.clicks, linkClicks: o.linkClicks,
-        visits: o.visits, carts: o.carts, checkouts: o.checkouts, purchases: o.purchases, purchaseValue: o.purchaseValue, leads: o.leads,
+        visits: o.visits, carts: o.carts, checkouts: o.checkouts, purchases: o.purchases, purchaseValue: o.purchaseValue, leads: o.leads, schedules: o.schedules, pixelLeads: o.pixelLeads,
+        ours: { cardsPaid: o.sCardPaid, cardsPaidLei: o.sCardPaidLei, cardsReserved: o.sCardRes, cardsReservedLei: o.sCardResLei, cardsStarted: o.sCardOpen, bookings: o.sBook, paid: o.sPay, paidLei: o.sPayLei, leads: o.sLead },
+        perAd: (o.adsets || []).flatMap((s) => (s.ads || []).map((a) => ({ id: a.id, name: a.name, status: a.status, spend: a.spend, impressions: a.impressions, linkClicks: a.linkClicks, visits: a.visits,
+          purchases: a.purchases, checkouts: a.checkouts, schedules: a.schedules, pixelLeads: a.pixelLeads, cardsPaid: a.sCardPaid, cardsPaidLei: a.sCardPaidLei, cardsReserved: a.sCardRes, cardsReservedLei: a.sCardResLei,
+          cardsStarted: a.sCardOpen, bookings: a.sBook, paid: a.sPay, paidLei: a.sPayLei, leads: a.sLead }))),
         ads: (o.adsets || []).reduce((n, s) => n + (s.ads || []).length, 0), adsOn: (o.adsets || []).reduce((n, s) => n + (s.status === 'ACTIVE' ? (s.ads || []).filter((a) => a.status === 'ACTIVE').length : 0), 0) };
       res.status(200).json({ ok: true, id, period: range ? 'custom' : period, range, fx: ads.FX(conn), readAt: view && view.readAt, reclame: pick(c), viewError: view && view.error ? ME.ui(view.error) : '',
-        meta: row, metaError: meta.ok ? '' : ME.ui(meta.j && meta.j.error && meta.j.error.message) });
+        siteMatch: view && view.siteMatch, meta: row, metaError: meta.ok ? '' : ME.ui(meta.j && meta.j.error && meta.j.error.message) });
       return;
     }
     if (req.method === 'GET' && req.query && req.query.action === 'daily') { res.status(200).json(await daily(req.query.since)); return; }

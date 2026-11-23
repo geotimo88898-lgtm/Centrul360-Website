@@ -1355,6 +1355,48 @@ html[data-role="cosmetician"] .cal-col{ cursor:default; }
 .ad-row{ padding:.7rem 1rem; }
 .ad-row.is-camp{ padding:.85rem 1rem; }
 .ad-flags{ display:flex; flex-direction:column; gap:.35rem; padding:0 1rem .85rem; }
+.ad-sx-grid{ display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); gap:.5rem; }
+.ad-sx-t{ display:flex; flex-direction:column; gap:.12rem; min-width:0; padding:.65rem .8rem; border-radius:12px; background:var(--glass); border:1px solid var(--line); }
+.ad-sx-t small{ font-size:.64rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted-2); overflow-wrap:anywhere; line-height:1.25; }
+.ad-sx-t b{ font-size:1.25rem; letter-spacing:-.02em; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ad-sx-t.is-none b, .ad-sx-row .is-none b{ color:var(--muted-2); }
+.ad-sx-t i{ font-style:normal; font-size:.72rem; color:var(--muted); line-height:1.3; overflow-wrap:anywhere; }
+/* the rest, compact: label over the number, as many on a line as fit */
+.ad-sx-row{ display:grid; grid-template-columns:repeat(auto-fill, minmax(112px, 1fr)); gap:.35rem .8rem; margin-top:.55rem; padding:.55rem .8rem; border-radius:12px; border:1px dashed var(--line); }
+.ad-sx-row span{ display:flex; flex-direction:column; min-width:0; }
+.ad-sx-row small{ font-size:.6rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted-2); overflow-wrap:anywhere; line-height:1.25; }
+.ad-sx-row b{ font-size:.92rem; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ad-sx-px{ margin:.5rem 0 0; font-size:.76rem; color:var(--muted); overflow-wrap:anywhere; }
+.ad-sx.is-sum{ margin-bottom:1rem; }
+.ad-sxc{ padding:0 1rem .85rem; }
+/* a wide table scrolls sideways: a campaign's tiles stay as wide as what is in view, and in view (cqw: .ad-scroll) */
+@supports (container-type:inline-size){
+  .ad-scroll{ container-type:inline-size; }
+  .ad-sxc{ position:sticky; left:0; box-sizing:border-box; max-width:calc(100cqw - .6rem); }
+}
+.ad-sx-more{ margin-top:.55rem; }
+.ad-sx-ads{ display:flex; flex-direction:column; gap:.7rem; margin-top:.55rem; }
+.ad-sx-ad{ padding:.75rem; border-radius:14px; border:1px solid var(--line); }
+.ad-sx-ad.is-off{ opacity:.72; }
+.ad-sx-ad .ad-sx-t{ padding:.5rem .65rem; }
+.ad-sx-ad .ad-sx-t b{ font-size:1.05rem; }
+.ad-sx-name{ display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; margin:0 0 .5rem; font-size:.86rem; min-width:0; }
+.ad-sx-name b{ min-width:0; overflow-wrap:anywhere; }
+@media (max-width:1100px){ .ad-sx-grid{ grid-template-columns:repeat(3, minmax(0, 1fr)); } }
+@media (max-width:640px){
+  .ad-sx-grid{ gap:.4rem; }
+  .ad-sx-t{ padding:.5rem .55rem; }
+  .ad-sx-t b{ font-size:1.02rem; }
+  .ad-sx-row{ grid-template-columns:repeat(3, minmax(0, 1fr)); padding:.5rem .6rem; gap:.35rem .5rem; }
+  .ad-sxc{ padding:0 .75rem .75rem; }
+  .ad-sx-ad{ padding:.6rem; }
+  /* an ad's tiles, one box deeper: two a line */
+  .ad-sx.is-ad .ad-sx-grid, .ad-sx.is-ad .ad-sx-row{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  .ad-sx-row small, .ad-sx-t small{ letter-spacing:.01em; }
+  /* the campaign's row: the name on its line, the budget under it (the numbers are the tiles) */
+  .ad-camp .ad-row.is-camp > .ad-cell{ flex:1 1 100%; }
+}
+}
 .ad-flag{ --nc:var(--accent); display:flex; flex-wrap:wrap; align-items:baseline; gap:.2rem .5rem; margin:0; padding:.45rem .7rem; border-radius:10px; font-size:.8rem; line-height:1.35;
   background:color-mix(in srgb, var(--nc) 10%, transparent); box-shadow:inset 3px 0 0 var(--nc); }
 .ad-flag b{ color:var(--nc); font-weight:700; white-space:nowrap; }

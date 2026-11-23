@@ -34,10 +34,26 @@ function out(box) {
   return { n: all.reduce((s, c) => s + c.n, 0), lei: r2(all.reduce((s, c) => s + c.lei, 0)), by };
 }
 
-async function report(days) {
-  const d = Math.max(1, Math.min(366, Math.round(Number(days) || 30)));
-  const since = Date.now() - d * 86400e3;
-  const inWin = (iso) => (Date.parse(iso) || 0) >= since;
+// the ad tags of a source saved earlier: utm_campaign, utm_content (lower case) and Meta's ad id (c360_ad={{ad.id}})
+const tagsOf = (s) => {
+  const t = (s && s.tag) || {};
+  const low = (v) => String(v || '').trim().toLowerCase().slice(0, 80);
+  return { source: low(t.source), campaign: low(t.campaign), content: low(t.content), ad: /^\d{5,25}$/.test(String(t.ad || '')) ? String(t.ad) : '' };
+};
+// a Meta ad's link (utm_source facebook / instagram / meta, or its ad id): not a WhatsApp or Google link of the same name
+const fromMeta = (m) => !!(m && (m.ad || (m.campaign && /facebook|^fb$|instagram|^ig$|meta/.test(m.source))));
+const tagged = (m) => !!(m && (m.campaign || m.ad));
+// a card order's page tags (api/card-sarbatori.js trackOf) and its page's address (the ad id is only there)
+function tagsOfCard(r) {
+  const x = r.track || {};
+  let ad = '';
+  try { ad = new URL(String(r.page || ''), 'https://www.centrul360.com').searchParams.get('c360_ad') || ''; } catch (e) { /* not an address */ }
+  return tagsOf({ tag: { source: x.utm_source, campaign: x.utm_campaign, content: x.utm_content, ad } });
+}
+
+// every booking, checkout order, lead and card order of the site made in the window (inWin(iso)), each with where she
+// came from (`from`) and the ad's tags (`m`); the same walk for the report by source and the numbers per ad
+async function collect(inWin) {
   const P = require('./pay');
   const [appts, leads, holds, cards, index, open, paidList] = await Promise.all([
     readJSON('data/appointments.json', []), readJSON('data/leads.json', []), readJSON('data/booking-holds.json', []),
@@ -45,14 +61,13 @@ async function report(days) {
   ]);
   const apptById = new Map(appts.filter((a) => a && a.id).map((a) => [a.id, a]));
   const holdById = new Map(holds.filter((h) => h && h.id).map((h) => [h.id, h]));
+  const items = [];
 
   // bookings
-  const booking = {}, bookingSaved = { yes: 0, no: 0 };
   appts.forEach((a) => {
     if (!a || a.createdBy !== 'site' || a.block || !inWin(a.createdAt)) return;
-    const f = fromOf(a.src);
-    bookingSaved[f ? 'yes' : 'no']++;
-    add(booking, f || NONE, a.amount);
+    const s = B.sourceAgain(a.src);
+    items.push({ kind: 'booking', from: s ? s.from : '', m: tagsOf(s), lei: a.amount, phone: a.clientPhone, at: a.createdAt });
   });
 
   // the checkout's orders: from the index (every order since it exists) and the open and paid lists (the ones before it)
@@ -64,43 +79,63 @@ async function report(days) {
     const part = await Promise.all(list.slice(i, i + 25).map((id) => P.readOrder(id).then((r) => r.data, () => null)));
     part.forEach((o) => { if (o && !o.test && inWin(o.createdAt)) orders.push(o); });
   }
-  const payPaid = {}, payOpen = {}, payKinds = {}, paySaved = { yes: 0, no: 0 };
   const cardSrc = new Map(); // card order id → the source of its checkout order (the paid one first)
   orders.sort((a, b) => (a.status === 'paid') - (b.status === 'paid'));
   orders.forEach((o) => {
-    let f = fromOf(o.src);
-    paySaved[f ? 'yes' : 'no']++;
-    if (!f && o.kind === 'hold') { const h = holdById.get(o.ref); f = h ? B.sourceOf(h.src, h.cookie, h.app).from : ''; if (!f && h && h.bookingId) f = fromOf((apptById.get(h.bookingId) || {}).src); }
-    if (!f && o.kind === 'booking') f = fromOf((apptById.get(o.ref) || {}).src);
-    if (o.kind === 'card' && f) cardSrc.set(o.ref, f);
-    const paid = o.status === 'paid';
-    add(paid ? payPaid : payOpen, f || NONE, o.amount);
-    const k = payKinds[o.kind] || (payKinds[o.kind] = { paid: 0, unpaid: 0 });
-    k[paid ? 'paid' : 'unpaid']++;
+    let s = B.sourceAgain(o.src);
+    const saved = !!(s && s.from);
+    if (!saved && o.kind === 'hold') { const h = holdById.get(o.ref); s = h ? B.sourceOf(h.src, h.cookie, h.app) : null; if (!(s && s.from) && h && h.bookingId) s = B.sourceAgain((apptById.get(h.bookingId) || {}).src); }
+    if (!(s && s.from) && o.kind === 'booking') s = B.sourceAgain((apptById.get(o.ref) || {}).src);
+    if (o.kind === 'card' && s && s.from) cardSrc.set(o.ref, s);
+    items.push({ kind: 'pay', saved, from: s ? s.from : '', m: tagsOf(s), paid: o.status === 'paid', payKind: o.kind, lei: o.amount, phone: o.phone, at: o.createdAt });
   });
 
   // leads of the site's forms
-  const lead = {}, leadSaved = { yes: 0, no: 0 };
-  let leadFilter = 0;
   leads.forEach((l) => {
     if (!l || l.createdBy !== 'site-form' || !inWin(l.createdAt)) return;
-    const f = fromOf(l.src);
-    leadSaved[f ? 'yes' : 'no']++;
-    if (l.lf) leadFilter++;
-    add(lead, f || (l.siteSource ? 'sursa: ' + String(l.siteSource).slice(0, 40) : NONE), l.lf ? Number(l.lf.tier) || 0 : 0);
+    const s = B.sourceAgain(l.src);
+    items.push({ kind: 'lead', saved: !!(s && s.from), from: s ? s.from : '', m: tagsOf(s), lf: !!l.lf, siteSource: l.siteSource, lei: l.lf ? Number(l.lf.tier) || 0 : 0, phone: l.phone, at: l.createdAt });
   });
 
   // the Card de Sărbători orders of the site
-  const cardPaid = {}, cardOpen = {}, cardHow = { checkout: 0, page: 0 };
   cards.forEach((r) => {
     if (!r || r.via !== 'site' || r.test || !inWin(r.created)) return;
-    if (r.status === 'anulat') return;
-    let f = (r.src && fromOf(r.src)) || cardSrc.get(r.id) || (r.ids || []).map((x) => cardSrc.get(x)).find(Boolean) || '';
-    if (f) cardHow.checkout++; else { f = fromTrack(r.track); cardHow.page++; }
+    if (r.status === 'anulat' || r.status === 'draft') return;
+    const own = r.src ? B.sourceAgain(r.src) : null;
+    const s = (own && own.from ? own : null) || cardSrc.get(r.id) || (r.ids || []).map((x) => cardSrc.get(x)).find(Boolean) || null;
+    // the ad's tags: the order's own source, else its checkout order's, else the page's address
+    const m = [own, s].map(tagsOf).find(tagged) || tagsOfCard(r);
     const paid = r.status === 'platit';
-    add(paid ? cardPaid : cardOpen, f, paid ? Number(r.paidAmount) || Number(r.amount) : r.amount);
+    items.push({ kind: 'card', how: s ? 'checkout' : 'page', from: s ? s.from : fromTrack(r.track), m, paid, status: r.status, pay: r.pay,
+      lei: paid ? Number(r.paidAmount) || Number(r.amount) : r.amount, phone: r.phone, at: r.created });
   });
+  return items;
+}
 
+async function report(days) {
+  const d = Math.max(1, Math.min(366, Math.round(Number(days) || 30)));
+  const since = Date.now() - d * 86400e3;
+  const items = await collect((iso) => (Date.parse(iso) || 0) >= since);
+  const booking = {}, bookingSaved = { yes: 0, no: 0 };
+  const payPaid = {}, payOpen = {}, payKinds = {}, paySaved = { yes: 0, no: 0 };
+  const lead = {}, leadSaved = { yes: 0, no: 0 };
+  let leadFilter = 0;
+  const cardPaid = {}, cardOpen = {}, cardHow = { checkout: 0, page: 0 };
+  items.forEach((x) => {
+    if (x.kind === 'booking') { bookingSaved[x.from ? 'yes' : 'no']++; add(booking, x.from || NONE, x.lei); }
+    if (x.kind === 'pay') {
+      paySaved[x.saved ? 'yes' : 'no']++;
+      add(x.paid ? payPaid : payOpen, x.from || NONE, x.lei);
+      const k = payKinds[x.payKind] || (payKinds[x.payKind] = { paid: 0, unpaid: 0 });
+      k[x.paid ? 'paid' : 'unpaid']++;
+    }
+    if (x.kind === 'lead') {
+      leadSaved[x.saved ? 'yes' : 'no']++;
+      if (x.lf) leadFilter++;
+      add(lead, x.from || (x.siteSource ? 'sursa: ' + String(x.siteSource).slice(0, 40) : NONE), x.lei);
+    }
+    if (x.kind === 'card') { cardHow[x.how]++; add(x.paid ? cardPaid : cardOpen, x.from, x.lei); }
+  });
   return {
     ok: true, days: d, since: new Date(since).toISOString(),
     booking: Object.assign(out(booking), { saved: bookingSaved }),
@@ -110,4 +145,50 @@ async function report(days) {
   };
 }
 
-module.exports = { report };
+// What the website ads brought, per ad (Admin → Reclame, 23.11): the site's records of the days { since, until } (the
+// Bucharest days, both in; null: every day) that carry an ad's tags, grouped by Meta's ad id (c360_ad) or, without it, by
+// utm_campaign + utm_content. Counts and sums in lei only.
+//   cardPaid / cardPaidLei   cards paid online         cardRes / cardResLei   cards to pay at the clinic (reserved, or paid there)
+//   cardOpen                 cards started online, not paid
+//   book                     bookings of any treatment  pay / payLei           the checkout's paid orders, the cards' apart
+//   lead                     the site's forms
+const SITE_ZERO = () => ({ cardPaid: 0, cardPaidLei: 0, cardRes: 0, cardResLei: 0, cardOpen: 0, book: 0, pay: 0, payLei: 0, lead: 0 });
+function count(box, x) {
+  const lei = Number(x.lei) || 0;
+  if (x.kind === 'card') {
+    if (x.paid && x.pay !== 'clinica') { box.cardPaid++; box.cardPaidLei = r2(box.cardPaidLei + lei); }
+    else if (x.status === 'rezervat' || (x.paid && x.pay === 'clinica')) { box.cardRes++; box.cardResLei = r2(box.cardResLei + lei); }
+    else box.cardOpen++;
+  } else if (x.kind === 'booking') box.book++;
+  else if (x.kind === 'pay') { if (x.paid && x.payKind !== 'card') { box.pay++; box.payLei = r2(box.payLei + lei); } }
+  else if (x.kind === 'lead') box.lead++;
+}
+const MEMO = { at: 0, p: null };
+async function byAd(days) {
+  const { bucharestDay } = require('./ads-funnel');
+  const inWin = (iso) => {
+    const t = Date.parse(iso);
+    if (!Number.isFinite(t)) return false;
+    if (!days) return true;
+    const d = bucharestDay(t);
+    return d >= days.since && d <= days.until;
+  };
+  // every day read once: the period's records counted, all of them kept as touches
+  // (the same reading for 90 seconds in this worker: Reclame asks for several periods one after another)
+  if (!MEMO.at || Date.now() - MEMO.at > 90e3) MEMO.p = collect((iso) => Number.isFinite(Date.parse(iso))).then((l) => l.filter((x) => fromMeta(x.m))), MEMO.at = Date.now();
+  let all;
+  try { all = await MEMO.p; } catch (e) { MEMO.at = 0; throw e; }
+  // who came from which ad, and when (only for the matching by phone in api/ads-manager.js, never in an answer)
+  const touches = all.filter((x) => x.phone).map((x) => ({ phone: x.phone, t: Date.parse(x.at), ad: x.m.ad, campaign: x.m.campaign, content: x.m.content, kind: x.kind }));
+  const items = all.filter((x) => inWin(x.at));
+  const ads = {}, pairs = {};
+  items.forEach((x) => {
+    const k = x.m.ad ? x.m.ad : '';
+    const box = k ? (ads[k] = ads[k] || Object.assign(SITE_ZERO(), { campaign: x.m.campaign, content: x.m.content }))
+      : (pairs[x.m.campaign + '|' + x.m.content] = pairs[x.m.campaign + '|' + x.m.content] || Object.assign(SITE_ZERO(), { campaign: x.m.campaign, content: x.m.content }));
+    count(box, x);
+  });
+  return { ok: true, days: days || null, ads, pairs: Object.values(pairs), touches };
+}
+
+module.exports = { report, byAd, SITE_ZERO };

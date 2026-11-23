@@ -30,6 +30,8 @@
     const tag = {};
     ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'].forEach((k) => { const v = q.get(k); if (v) tag[k.slice(4)] = v.slice(0, 80); });
     ['fbclid', 'gclid', 'gbraid', 'wbraid', 'ttclid', 'msclkid'].forEach((k) => { if (q.get(k)) tag[k] = 1; });
+    // the ad's id, from the website ads' link (c360_ad={{ad.id}}): which ad brought her
+    if (/^\d{5,25}$/.test(q.get('c360_ad') || '')) tag.ad = q.get('c360_ad');
     const now = { ref, tag, land: location.pathname.slice(0, 80), at: new Date().toISOString() };
     let kept = null;
     try { kept = JSON.parse(sessionStorage.getItem('c360-src') || 'null'); } catch (e) { /* private mode */ }

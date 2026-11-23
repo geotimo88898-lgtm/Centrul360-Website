@@ -66,6 +66,78 @@ async function withFunnel(view, period, range, conn) {
   view.since = new Date(START).toISOString();
   return view;
 }
+// the website campaigns (23.11): what each of their ads brought on the site (cards paid / reserved / started, bookings, the
+// checkout's paid orders, leads), from the site's own records of the same days (api/_lib/site-sources.js byAd). A record
+// goes to one ad only: the ad of its c360_ad (Meta's ad id in the link), else the ad whose link has its utm_campaign and
+// utm_content; one with only a campaign's utm_campaign counts for that campaign, not for an ad.
+const SITE_KEYS = { cardPaid: 'sCardPaid', cardPaidLei: 'sCardPaidLei', cardRes: 'sCardRes', cardResLei: 'sCardResLei', cardOpen: 'sCardOpen', book: 'sBook', pay: 'sPay', payLei: 'sPayLei', lead: 'sLead' };
+async function withSite(view, period, range, conn) {
+  const SS = require('./_lib/site-sources');
+  const camps = view.campaigns.filter((c) => c.site);
+  const zero = (x) => { Object.values(SITE_KEYS).forEach((k) => { x[k] = 0; }); return x; };
+  const addTo = (x, box) => { Object.keys(SITE_KEYS).forEach((k) => { x[SITE_KEYS[k]] = Math.round(((Number(x[SITE_KEYS[k]]) || 0) + (Number(box[k]) || 0)) * 100) / 100; }); };
+  camps.forEach((c) => { zero(c); c.adsets.forEach((s) => { zero(s); s.ads.forEach(zero); }); });
+  if (!camps.length) return [];
+  const adsOf = (c) => c.adsets.flatMap((s) => s.ads.map((a) => ({ a, s, c })));
+  const all = camps.flatMap(adsOf);
+  const key = require('crypto').createHash('sha1').update(all.map((x) => x.a.id).sort().join('.')).digest('hex').slice(0, 16);
+  const [ours, linked] = await Promise.all([
+    SS.byAd(periodRange(period, range)),
+    AC.cached('site-links-' + key, 12 * 3600e3, () => ads.adLinks(conn, camps.map((c) => c.id)), { keep: true }).catch((e) => ({ error: e.message })),
+  ]);
+  const links = (linked && linked.links) || {};
+  const byId = new Map(all.map((x) => [x.a.id, x]));
+  // the ads of a utm_campaign + utm_content, and the campaigns of a utm_campaign (the running ads first)
+  const on = (x) => (x.a.status === 'ACTIVE' ? 0 : 1);
+  const tagged = all.filter((x) => links[x.a.id]).sort((p, q) => on(p) - on(q));
+  const adOf = (camp, content) => tagged.find((x) => links[x.a.id].campaign === camp && content && links[x.a.id].content === content);
+  const campOf = (camp) => { const x = tagged.find((y) => links[y.a.id].campaign === camp); return x ? x.c : null; };
+  let unmatched = 0;
+  const give = (x, box) => { addTo(x.a, box); addTo(x.s, box); addTo(x.c, box); };
+  Object.keys(ours.ads || {}).forEach((id) => {
+    const box = ours.ads[id], x = byId.get(id) || adOf(box.campaign, box.content);
+    if (x) give(x, box);
+    else { const c = campOf(box.campaign); if (c) addTo(c, box); else unmatched++; }
+  });
+  (ours.pairs || []).forEach((box) => {
+    const x = adOf(box.campaign, box.content);
+    if (x) give(x, box);
+    else { const c = campOf(box.campaign); if (c) addTo(c, box); else unmatched++; }
+  });
+  view.siteMatch = { linksRead: !(linked && linked.error), unmatched };
+  // the site's touches, each with its ad (or only its campaign), for the matching by phone (withOutcomes; never sent)
+  return (ours.touches || []).map((t) => {
+    const x = (t.ad && byId.get(t.ad)) || adOf(t.campaign, t.content);
+    const c = x ? x.c : campOf(t.campaign);
+    return x ? { phone: t.phone, t: t.t, adId: x.a.id, campaignId: x.c.id } : c ? { phone: t.phone, t: t.t, adId: '', campaignId: c.id } : null;
+  }).filter(Boolean);
+}
+// every ad's outcome by her phone (api/_lib/ad-outcomes.js): o* on every ad, ad set and campaign, for the same tiles on a
+// lead-form ad and a website ad. From 16.10.2026, 22:05 on, like withFunnel (the leads, the bookings and their payments).
+const O_KEYS = { booked: 'oBooked', showed: 'oShowed', cardRes: 'oCardRes', cardPaid: 'oCardPaid', cardPaidLei: 'oCardPaidLei', cardOpen: 'oCardOpen', cashed: 'oCashed', cashedOnline: 'oCashedOnline' };
+async function withOutcomes(view, period, range, siteTouches) {
+  const O = require('./_lib/ad-outcomes');
+  const [allLeads, allAppts, allSales, cards, clients] = await Promise.all([
+    readJSON('data/leads.json', []), readJSON('data/appointments.json', []), readJSON('data/sales.json', []), readJSON('data/card-sarbatori.json', []), readJSON('data/clients.json', []),
+  ]);
+  const START = KPI.cfg.start, at = (x) => Date.parse(x) || 0;
+  const flat = [];
+  view.campaigns.forEach((c) => c.adsets.forEach((s) => s.ads.forEach((a) => flat.push({ id: a.id, name: a.name, campaignId: c.id, campaignName: c.name }))));
+  const o = O.outcomes({
+    leads: allLeads.filter((l) => at(l.createdAt) >= START || (l.forms || []).some((f) => at(f.sentAt || f.at) >= START)),
+    appointments: allAppts.filter((a) => at(a.createdAt) >= START && a.createdBy !== 'highlevel' && !a.importedAt && !a.ghlId),
+    sales: allSales.filter((x) => at(x.createdAt || x.date) >= START), cards: Array.isArray(cards) ? cards : [], clients: Array.isArray(clients) ? clients : [],
+    siteTouches: siteTouches || [], ads: flat, range: periodRange(period, range),
+  });
+  const zero = (x) => { Object.values(O_KEYS).forEach((k) => { x[k] = 0; }); };
+  const addTo = (x, box) => { if (box) Object.keys(O_KEYS).forEach((k) => { x[O_KEYS[k]] = Math.round(((x[O_KEYS[k]] || 0) + (box[k] || 0)) * 100) / 100; }); };
+  view.campaigns.forEach((c) => {
+    zero(c);
+    c.adsets.forEach((s) => { zero(s); s.ads.forEach((a) => { zero(a); addTo(a, o.ads.get(a.id)); addTo(s, o.ads.get(a.id)); addTo(c, o.ads.get(a.id)); }); });
+    addTo(c, o.campaigns.get(c.id)); // the touches of its campaign without an ad of the list
+  });
+  return view;
+}
 // what the guard saw on each campaign (api/_lib/ads-guard.js: TOP / ATENȚIE / DE URMĂRIT on the days it really ran,
 // the same as its notifications), laid on the campaign in Reclame: only on a running campaign and only a fresh one
 function adNotes(view, verdicts, at) {
@@ -202,6 +274,8 @@ module.exports = async (req, res) => {
       // without ads_management the page only reads (the switches would be refused)
       const readOnly = !!(token && token.valid && !(token.scopes || []).includes('ads_management'));
       await withFunnel(view, period, range, conn).catch((e) => { console.error('ads-manager funnel:', e.message); });
+      const touches = await withSite(view, period, range, conn).catch((e) => { console.error('ads-manager site:', e.message); return []; });
+      await withOutcomes(view, period, range, touches).catch((e) => { console.error('ads-manager outcomes:', e.message); });
       const stopped = await guard.recent().catch(() => null);
       adNotes(view, stopped && stopped.verdicts, stopped && stopped.verdictsAt);
       // the one-off changes asked for (api/_lib/ads-once.js) show with the guard's, under their campaign
@@ -276,6 +350,8 @@ module.exports = async (req, res) => {
 module.exports.config = { maxDuration: 60 };
 // for Creative's results (api/ads-publish.js ?action=results)
 module.exports.withFunnel = withFunnel;
+module.exports.withSite = withSite;
+module.exports.withOutcomes = withOutcomes;
 module.exports.connection = connection;
 module.exports.readView = readView;
 module.exports.dayRange = dayRange;

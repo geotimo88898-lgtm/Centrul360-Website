@@ -542,6 +542,9 @@ const SITE_ACTIONS = {
   carts: ['omni_add_to_cart', 'add_to_cart', 'offsite_conversion.fb_pixel_add_to_cart'],
   checkouts: ['omni_initiated_checkout', 'initiate_checkout', 'offsite_conversion.fb_pixel_initiate_checkout'],
   purchases: ['omni_purchase', 'purchase', 'offsite_conversion.fb_pixel_purchase'],
+  // the pixel's Schedule (a booking on the site) and Lead (a form of the site), 23.11
+  schedules: ['schedule_total', 'schedule_website', 'offsite_conversion.fb_pixel_schedule'],
+  pixelLeads: ['offsite_conversion.fb_pixel_lead', 'lead'],
 };
 const firstOf = (list, types) => {
   for (const t of types) { const a = (list || []).find((x) => x.action_type === t); if (a) return Number(a.value) || 0; }
@@ -550,6 +553,7 @@ const firstOf = (list, types) => {
 const siteOf = (conn, row) => ({
   visits: firstOf(row.actions, SITE_ACTIONS.visits), carts: firstOf(row.actions, SITE_ACTIONS.carts),
   checkouts: firstOf(row.actions, SITE_ACTIONS.checkouts), purchases: firstOf(row.actions, SITE_ACTIONS.purchases),
+  schedules: firstOf(row.actions, SITE_ACTIONS.schedules), pixelLeads: firstOf(row.actions, SITE_ACTIONS.pixelLeads),
   purchaseValue: inLei(conn, firstOf(row.action_values, SITE_ACTIONS.purchases)),
 });
 // the objectives whose ads send to a website, when the ad sets don't say where they send
@@ -635,9 +639,9 @@ async function overview(conn, period, range, recentIds) {
     clicks: Number(r.clicks) || 0, linkClicks: Number(r.inline_link_clicks) || 0, ...siteOf(conn, r),
   }]));
   const rC = res(iC, 'campaign_id'), rS = res(iS, 'adset_id'), rA = res(iA, 'ad_id');
-  const zero = { spend: 0, leads: 0, impressions: 0, reach: 0, clicks: 0, linkClicks: 0, visits: 0, carts: 0, checkouts: 0, purchases: 0, purchaseValue: 0 };
+  const zero = { spend: 0, leads: 0, impressions: 0, reach: 0, clicks: 0, linkClicks: 0, visits: 0, carts: 0, checkouts: 0, purchases: 0, purchaseValue: 0, schedules: 0, pixelLeads: 0 };
   const results = (r) => ({ spend: r.spend, leads: r.leads, impressions: r.impressions, reach: r.reach, clicks: r.clicks, linkClicks: r.linkClicks,
-    visits: r.visits, carts: r.carts, checkouts: r.checkouts, purchases: r.purchases, purchaseValue: r.purchaseValue });
+    visits: r.visits, carts: r.carts, checkouts: r.checkouts, purchases: r.purchases, purchaseValue: r.purchaseValue, schedules: r.schedules, pixelLeads: r.pixelLeads });
   const money = (v) => budLei(conn, v);
   const adsBySet = new Map();
   (ads.data || []).forEach((a) => {
@@ -673,6 +677,34 @@ async function overview(conn, period, range, recentIds) {
     ok: true, period: range ? 'custom' : period, range: range || null, account: { id: act, name: (acc.ok && acc.j.name) || conn.adAccountName || act, currency: (acc.ok && acc.j.currency) || 'RON', status: acc.ok ? acc.j.account_status : null },
     totals, campaigns, partial: [iC, iS, iA, sets, ads].some((x) => x.truncated) ? 'Lista e lungă: Meta n-a dat tot, unele cifre pot lipsi.' : '',
   };
+}
+
+// the website ads' tags (Admin → Reclame, 23.11): the utm_campaign and utm_content of each ad's link, to find the site's
+// records of it (api/_lib/site-sources.js byAd). { adId: { campaign, content } } for the ads of these campaigns.
+function tagsOfLink(u) {
+  try {
+    const q = new URL(String(u || '')).searchParams;
+    const low = (v) => String(v || '').trim().toLowerCase().slice(0, 80);
+    return { campaign: low(q.get('utm_campaign')), content: low(q.get('utm_content')) };
+  } catch (e) { return { campaign: '', content: '' }; }
+}
+async function adLinks(conn, campaignIds) {
+  const ids = (campaignIds || []).filter((id) => /^\d+$/.test(String(id)));
+  if (!ids.length) return { links: {} };
+  const r = await childrenOf(conn, 'ads', 'id,creative{object_story_spec,asset_feed_spec,url_tags}', ids, '100');
+  if (r.error) return { error: r.error };
+  const links = {};
+  (r.data || []).forEach((a) => {
+    const c = a.creative || {}, o = c.object_story_spec || {}, f = c.asset_feed_spec || {};
+    const ld = o.link_data || {}, vd = o.video_data || {};
+    const cta = (x) => (x && x.call_to_action && x.call_to_action.value && x.call_to_action.value.link) || '';
+    const u = ld.link || cta(ld) || cta(vd) || ((f.link_urls || [])[0] || {}).website_url || '';
+    const t = tagsOfLink(u);
+    // the tags Meta adds to the link (url_tags) count too, when the link has none
+    const extra = tagsOfLink('https://x/?' + String(c.url_tags || ''));
+    links[a.id] = { campaign: t.campaign || extra.campaign, content: t.content || extra.content };
+  });
+  return { links };
 }
 
 // On / off, budget, name, delete: for a campaign, an ad set or an ad of this account.
@@ -854,4 +886,4 @@ async function delivery(conn, id) {
 }
 // whether the account is shared (some campaigns are left out), so its own totals can't be used as ours
 const scoped = (conn) => { const s = scopeOf(conn); return !!(s.include || (s.exclude || []).length); };
-module.exports = { siteOf, inLei, budLei, cents, FX, port, audienceCreate, audienceList, lookalikeCreate, reachEstimate, targetingOf, ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, videoUpload, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };
+module.exports = { siteOf, adLinks, tagsOfLink, inLei, budLei, cents, FX, port, audienceCreate, audienceList, lookalikeCreate, reachEstimate, targetingOf, ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, videoUpload, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };
