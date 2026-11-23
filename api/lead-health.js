@@ -240,6 +240,32 @@ module.exports = async (req, res) => {
     res.status(200).json({ ok: !!(x && x.row), order: r.id, amount: pay.amount, closed: others.map((y) => y.id), error: x && x.error });
     return;
   }
+  // POST ?cardtest=purge&id=<card id>: a test card paid for real (the owner's own test, 23.11) taken out of everything:
+  // the order, its sale and refund lines in Încasări, its Club row, its card lead. Counts back, never a name or phone.
+  if (req.query && req.query.cardtest === 'purge' && req.method === 'POST') {
+    const { writeJSON } = require('./_lib/store');
+    const C = require('./_lib/card-sarbatori');
+    const id = String(req.query.id || '');
+    if (!/^[0-9a-f-]{36}$/.test(id)) { res.status(400).json({ error: 'bad_id' }); return; }
+    const list = await readJSON(C.KEY, []);
+    const r = list.find((x) => x && x.id === id);
+    if (!r) { res.status(404).json({ error: 'not_found' }); return; }
+    const k = String(r.phone || '').replace(/\D/g, '').slice(-9);
+    const codes = (r.cards || []).map((c) => c.code).filter(Boolean);
+    await writeJSON(C.KEY, list.filter((x) => x !== r));
+    const sales = await readJSON('data/sales.json', []);
+    const s2 = sales.filter((x) => !(x && x.cardOrderId === id));
+    if (s2.length !== sales.length) await writeJSON('data/sales.json', s2);
+    const club = await readJSON(C.CLUB, []).catch(() => []);
+    const c2 = club.filter((x) => !(x && (codes.includes(x.code) || (x.source === 'card' && k.length === 9 && String(x.phone || '').replace(/\D/g, '').slice(-9) === k))));
+    if (c2.length !== club.length) await writeJSON(C.CLUB, c2);
+    const others = list.some((x) => x !== r && k.length === 9 && String(x.phone || '').replace(/\D/g, '').slice(-9) === k);
+    const leads = await readJSON('data/leads.json', []);
+    const l2 = others ? leads : leads.filter((l) => !(l && k.length === 9 && String(l.phone || '').replace(/\D/g, '').slice(-9) === k && (l.createdBy === 'card-sarbatori' || /card de s/i.test(String(l.interest || '')))));
+    if (l2.length !== leads.length) await writeJSON('data/leads.json', l2);
+    res.status(200).json({ ok: true, order: 1, sales: sales.length - s2.length, club: club.length - c2.length, leads: leads.length - l2.length });
+    return;
+  }
   // POST ?cardtest=remove&phone=0700000000: a test order taken out of Carduri for good (only a not-paid one, only that
   // exact phone), with its lead in the Pipeline; counts back
   if (req.query && req.query.cardtest === 'remove' && req.method === 'POST') {
