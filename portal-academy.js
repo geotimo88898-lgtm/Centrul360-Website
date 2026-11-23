@@ -1176,7 +1176,10 @@
     let v = ''; try { v = localStorage.getItem('c360_pl_city_' + ((K.data && K.data.me && K.data.me.id) || '')) || ''; } catch (e) { /* private mode */ }
     return v === 'Arad' ? 'ar' : 'tm';
   };
-  const calcCity = () => { const l = K.data && K.data.me && K.data.me.location; return l === 'Arad' ? 'ar' : l === 'Timișoara' ? 'tm' : isMgr() ? mgrCity() : ''; };
+  // the owner and the manager pick the clinic above the calculator (23.11: an admin with a clinic of her own was stuck on
+  // it, Arad could not be pressed); everyone else works with her own clinic's prices
+  const canPickCity = () => isMgr() || isAdmin();
+  const calcCity = () => { if (canPickCity()) return mgrCity(); const l = K.data && K.data.me && K.data.me.location; return l === 'Arad' ? 'ar' : l === 'Timișoara' ? 'tm' : ''; };
   const priceOk = (p) => { const c = calcCity(); return !c || p.city === 'both' || p.city === c; };
   function calcHtml() {
     const s = calcState(), city = calcCity();
@@ -1188,7 +1191,7 @@
       // made for a client from her booking („Fă oferta”, the cosmetician's appointment sheet, 16.11)
       (s.client && s.client.id ? '<div class="tr-c2-for">' + icon('user') + '<span>Oferta pentru <b>' + esc(s.client.name || 'clientă') + '</b>' + (s.client.when ? ' · ' + esc(s.client.when) : '') + '</span>' +
         '<button type="button" class="k-icon-btn" data-calc-unfor aria-label="Altă clientă">' + icon('x') + '</button></div>' : '') +
-      '<div class="tr-c2-top">' + (isMgr() ? '<div class="k-seg tr-c2-cities" role="tablist" aria-label="Prețurile clinicii">' + [['tm', 'Timișoara'], ['ar', 'Arad']].map(([v, l]) => '<button type="button" role="tab" aria-selected="' + (city === v) + '" class="' + (city === v ? 'is-on' : '') + '" data-ccity="' + v + '">' + l + '</button>').join('') + '</div>'
+      '<div class="tr-c2-top">' + (canPickCity() ? '<div class="k-seg tr-c2-cities" role="tablist" aria-label="Prețurile clinicii">' + [['tm', 'Timișoara'], ['ar', 'Arad']].map(([v, l]) => '<button type="button" role="tab" aria-selected="' + (city === v) + '" class="' + (city === v ? 'is-on' : '') + '" data-ccity="' + v + '">' + l + '</button>').join('') + '</div>'
         : '<span class="tr-c2-city">' + icon('pin') + (city === 'ar' ? 'Prețuri Arad' : city === 'tm' ? 'Prețuri Timișoara' : 'Prețuri Timișoara și Arad') + '</span>') + '<span class="k-grow"></span>' +
         (isAdmin() ? '<button type="button" class="k-btn is-ghost is-sm" data-prices>' + icon('tag') + 'Prețuri și reguli</button>' : '') +
         '<button type="button" class="k-btn is-ghost is-sm" data-calc-clear>' + icon('refresh') + 'De la capăt</button></div>' +
