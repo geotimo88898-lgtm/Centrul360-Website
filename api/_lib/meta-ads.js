@@ -265,7 +265,7 @@ async function audienceList(conn) {
   return { audiences: (x.j.data || []).map((a) => ({ id: a.id, name: a.name, subtype: a.subtype, min: a.approximate_count_lower_bound, max: a.approximate_count_upper_bound, created: a.time_created })) };
 }
 
-// The whole publish. image = { base64, name }. Returns ids or { error }.
+// The whole publish. image = { base64, name } (a picture) or { videoId, thumbUrl } (a video). Returns ids or { error }.
 // who the ad is for and who pays for it (Meta asks every ad set shown in the EU, the DSA): the connected account's own
 // defaults; an account without them (the CAD account Centrul360 uses since 21.11, another business's) takes the old
 // Centrul360 account's, else the Page's name. Read once per run.
@@ -286,11 +286,15 @@ async function publish(conn, image, s) {
   const made = [];
   const undo = async () => { for (const id of made.slice().reverse()) await call('DELETE', '/' + id, tok).catch(() => {}); };
   try {
-    const img = await call('POST', '/' + act + '/adimages', tok, { bytes: image.base64, name: image.name || 'creative.jpg' });
-    if (!img.ok) return { error: metaError(img.j, 'Imaginea') };
-    const imgs = img.j.images || {};
-    const hash = (imgs[Object.keys(imgs)[0]] || {}).hash;
-    if (!hash) return { error: 'Imaginea: Meta n-a întors codul imaginii' };
+    // a video already in the account (image = { videoId, thumbUrl }, made by videoUpload) or a picture uploaded now
+    let hash = '';
+    if (!image.videoId) {
+      const img = await call('POST', '/' + act + '/adimages', tok, { bytes: image.base64, name: image.name || 'creative.jpg' });
+      if (!img.ok) return { error: metaError(img.j, 'Imaginea') };
+      const imgs = img.j.images || {};
+      hash = (imgs[Object.keys(imgs)[0]] || {}).hash;
+      if (!hash) return { error: 'Imaginea: Meta n-a întors codul imaginii' };
+    }
 
     let campaignId = '', adsetId = s.adsetId;
     if (!adsetId) {
@@ -320,14 +324,10 @@ async function publish(conn, image, s) {
       campaignId = a.j.campaign_id || '';
     }
 
-    const spec = {
-      page_id: conn.pageId,
-      link_data: {
-        image_hash: hash, link: s.link || 'https://fb.me/', message: s.primaryText,
-        name: s.headline || undefined, description: s.description || undefined,
-        call_to_action: s.link ? { type: s.cta, value: { link: s.link } } : { type: s.cta, value: { lead_gen_form_id: s.formId } },
-      },
-    };
+    const button = s.link ? { type: s.cta, value: { link: s.link } } : { type: s.cta, value: { lead_gen_form_id: s.formId } };
+    const spec = image.videoId
+      ? { page_id: conn.pageId, video_data: Object.assign({ video_id: image.videoId, message: s.primaryText, title: s.headline || undefined, link_description: s.description || undefined, call_to_action: button }, image.thumbUrl ? { image_url: image.thumbUrl } : {}) }
+      : { page_id: conn.pageId, link_data: { image_hash: hash, link: s.link || 'https://fb.me/', message: s.primaryText, name: s.headline || undefined, description: s.description || undefined, call_to_action: button } };
     // the Instagram account linked to the Page signs the ad on Instagram (without one, Meta uses the Page)
     const ig = await call('GET', '/' + conn.pageId, conn.pageAccessToken, { fields: 'instagram_business_account' });
     if (ig.ok && ig.j.instagram_business_account) spec.instagram_user_id = ig.j.instagram_business_account.id;
@@ -365,6 +365,27 @@ async function publish(conn, image, s) {
     await undo();
     return { error: 'Rețea: ' + err.message };
   }
+}
+
+// A video into the connected account from a public link (23.11: a reel of Conținut, api/content-file.js), then Meta's
+// processing waited on for a while: { videoId } once it's ready, { pending, videoId } while Meta still works on it (the
+// same call with that videoId goes on from there), { error } with Meta's words.
+async function videoUpload(conn, url, name, videoId) {
+  const tok = conn.userToken;
+  let vid = String(videoId || '');
+  if (!vid) {
+    const up = await call('POST', '/' + conn.adAccountId + '/advideos', tok, { file_url: url, name: String(name || 'video').slice(0, 100) });
+    if (!up.ok || !up.j.id) return { error: metaError(up.j, 'Videoul') };
+    vid = String(up.j.id);
+  }
+  for (let i = 0; i < 10; i++) {
+    const st = await call('GET', '/' + vid, tok, { fields: 'status' });
+    const vs = st.ok && st.j.status && st.j.status.video_status;
+    if (vs === 'ready') return { videoId: vid };
+    if (vs === 'error') return { error: 'Meta n-a putut procesa videoul', videoId: vid };
+    await new Promise((res) => setTimeout(res, 4000));
+  }
+  return { pending: true, videoId: vid };
 }
 
 // ---------------------------------------------------------------- the move to another ad account (21.11)
@@ -806,4 +827,4 @@ async function delivery(conn, id) {
 }
 // whether the account is shared (some campaigns are left out), so its own totals can't be used as ours
 const scoped = (conn) => { const s = scopeOf(conn); return !!(s.include || (s.exclude || []).length); };
-module.exports = { siteOf, inLei, budLei, cents, FX, port, audienceCreate, audienceList, ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };
+module.exports = { siteOf, inLei, budLei, cents, FX, port, audienceCreate, audienceList, ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, videoUpload, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };

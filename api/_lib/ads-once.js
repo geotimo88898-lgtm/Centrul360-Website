@@ -47,7 +47,25 @@ const SITE_CAMPAIGNS = [
           headlines: ['GÂT MAI NETED, FĂRĂ OPERAȚIE 👉', 'SE VEDE DIN PRIMA ȘEDINȚĂ ⏰💨', 'PLĂTEȘTI 990 LEI, PRIMEȘTI 2.500 👉'], description: 'Consultația e gratuită' },
   ] },
 ];
+// the reel „Nu promitem. Îți arătăm.” of Conținut: its clean video (no music) and its cover, public links (api/content-file.js)
+const REEL_ARATAM = { url: 'https://admin.centrul360.com/api/content-file?i=dd7a54f3-7464-4cd7-adb8-2e903006f48d&n=clean.mp4', thumb: 'https://admin.centrul360.com/api/content-file?i=dd7a54f3-7464-4cd7-adb8-2e903006f48d&n=cover.jpg' };
 const JOBS = [
+  // 23.11 ~18:00, George: the brand reel „Nu promitem. Îți arătăm.” (Conținut, the clean video: no music, only real cases
+  // of the clinic, untouched) as the site's ad, in place of „Rezultate · site”: two campaigns, TM and AR, Purchase on the
+  // site's pixel, women 25-64, 50 lei a day each, one video ad each to the home page (api/_lib/meta-ads.js videoUpload)
+  { id: 'reel-aratam-site-2026-11-23', why: 'Reelul „Nu promitem. Îți arătăm.” spre site: TM și AR, câte o reclamă, 50 lei/zi', site: {
+    pixelId: '2276074362800484', cta: 'LEARN_MORE', ages: [25, 64],
+    campaigns: ['TM', 'AR'].map((k) => ({ name: 'C360 · ' + k + ' · Reel Nu promitem · site', utm: 'reel-aratam-' + k.toLowerCase(), city: k === 'TM' ? 'Timișoara' : 'Arad', budget: 50, ads: [
+      { name: k + ' · Reel Nu promitem · site', video: REEL_ARATAM,
+        text: (k === 'TM' ? 'TIMIȘOARA' : 'ARAD') + '! Cum să alegi un tratament fără operație și fără ace, chiar dacă ai auzit deja prea multe promisiuni.\n\n' +
+          'Noi nu promitem. Îți arătăm.\n\n' +
+          '✅ Fiecare caz din video e real, fotografiat la noi în clinică, înainte și după.\n' +
+          '✅ 5,0 pe Google, din peste 300 de recenzii.\n' +
+          '✅ Cu Cardul de Sărbători plătești 990 lei și primești 2.500 lei în tratamente.\n\n' +
+          '⏰ Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\n' +
+          '👉 Intră pe site și vezi toate ofertele:\ncentrul360.com\n\nRezultatele diferă de la o persoană la alta.',
+        headlines: ['NU PROMITEM. ÎȚI ARĂTĂM 👉', 'DE PÂNĂ LA 3 ORI MAI MULT, PÂNĂ PE 24 DECEMBRIE ⏰💨', 'PLĂTEȘTI 990 LEI, PRIMEȘTI 2.500 LEI 👉'], description: '5,0 pe Google, peste 300 de recenzii' },
+    ] })) } },
   // 23.11 ~17:50, George: „stinge toate cele pe achiziție și lead filter” (the reel „Nu promitem. Îți arătăm.” takes the
   // site's place, TM and AR); the two HIFU gușă „sezon” lead-form campaigns stay on (his answer)
   { id: 'stop-site-lf-2026-11-23', why: 'George: oprite toate cele pe achiziție și lead filter', actions: [
@@ -847,7 +865,7 @@ async function run() {
         st.pixel = new Date().toISOString(); await save();
       }
       const d = await ads.loadDefaults(readJSON);
-      let failed = '';
+      let failed = '', waiting = false;
       for (const c of j.site.campaigns) {
         if (!ads.ours(conn, c.name)) { failed = c.name + ': numele nu e al nostru în contul conectat'; break; }
         const sc = st[c.name] = st[c.name] || { ads: {} };
@@ -864,8 +882,21 @@ async function run() {
             const same = have.ok && (have.j.data || []).find((x) => x.name === a.name);
             if (same) { sc.ads[a.name] = same.id; await save(); continue; }
           }
-          const pic = await sitePicture(a.image);
-          if (pic.error) { failed = a.name + ': ' + pic.error; break; }
+          // a video (a reel of Conținut, by its public link): into the account once, shared by the job's ads, and Meta's
+          // processing waited on; still processing: tried again next hour without a word (it isn't a refusal)
+          let media;
+          if (a.video) {
+            st.videos = st.videos || {};
+            const vu = await ads.videoUpload(conn, a.video.url, a.name, st.videos[a.video.url]);
+            if (vu.error) { delete st.videos[a.video.url]; await save(); failed = a.name + ': ' + vu.error; break; }
+            st.videos[a.video.url] = vu.videoId; await save();
+            if (vu.pending) { failed = a.name + ': videoul se procesează încă la Meta'; waiting = true; break; }
+            media = { videoId: vu.videoId, thumbUrl: a.video.thumb || '' };
+          } else {
+            const pic = await sitePicture(a.image);
+            if (pic.error) { failed = a.name + ': ' + pic.error; break; }
+            media = { base64: pic.base64, name: a.image };
+          }
           const v = ads.cleanSettings({
             adsetId: sc.adsetId || '', campaignName: c.name, adsetName: c.city + ' ' + (c.radiusKm || d.radiusKm) + ' km · femei ' + j.site.ages.join('-'), adName: a.name,
             city: c.city, radiusKm: c.radiusKm || d.radiusKm, women: true, ageMin: j.site.ages[0], ageMax: j.site.ages[1], placements: d.placements, budget: c.budget,
@@ -874,7 +905,7 @@ async function run() {
           });
           if (v.error) { failed = a.name + ': ' + v.error; break; }
           sc.making = new Date().toISOString(); await save();
-          const r = await ads.publish(conn, { base64: pic.base64, name: a.image }, v.s);
+          const r = await ads.publish(conn, media, v.s);
           delete sc.making;
           if (r.error) { sc.error = r.error; await save(); failed = a.name + ': ' + r.error; break; }
           if (r.campaignId) sc.campaignId = r.campaignId;
@@ -912,6 +943,7 @@ async function run() {
         await tell({ tone: 'bad', tag: 'once-expired-' + j.id, title: 'NEFĂCUT ⚠️ - ' + j.why, text: failed });
       } else {
         problems.push(failed);
+        if (waiting) continue;
         await tell({ tone: 'bad', tag: 'once-fail-' + j.id, title: 'NU ÎNCĂ ⚠️ - ' + j.why, text: 'Meta a refuzat, mai încerc din oră în oră: ' + failed });
       }
     }
