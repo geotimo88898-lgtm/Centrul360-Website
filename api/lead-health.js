@@ -731,10 +731,12 @@ module.exports = async (req, res) => {
   // for the owner's own copies outside the portal (same reach as the portal's owner; nothing else in the store)
   if (req.query && req.query.docfile) {
     const p = String(req.query.docfile);
-    if (!/^(?:regulament|fise-post|todo)\/[\w-]+\.pdf$/.test(p)) { res.status(400).json({ error: 'invalid_path' }); return; }
+    // the message templates' pictures too (what a wave sends, shown to the owner before it goes)
+    const img = /^wa-templates\/[\w.-]+\.(png|jpe?g|webp)$/.exec(p);
+    if (!img && !/^(?:regulament|fise-post|todo)\/[\w-]+\.pdf$/.test(p)) { res.status(400).json({ error: 'invalid_path' }); return; }
     const buf = await require('./_lib/store').readBinary(p);
     if (!buf) { res.status(404).json({ error: 'not_found' }); return; }
-    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Type', img ? (img[1] === 'png' ? 'image/png' : img[1] === 'webp' ? 'image/webp' : 'image/jpeg') : 'application/pdf');
     res.setHeader('Cache-Control', 'private, no-store');
     res.status(200).send(Buffer.from(buf));
     return;

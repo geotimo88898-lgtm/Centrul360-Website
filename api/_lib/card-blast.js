@@ -205,7 +205,7 @@ async function status() {
   Object.values(sent).filter((x) => x.e).forEach((x) => { const k = x.code || x.e.slice(0, 40); reasons[k] = (reasons[k] || 0) + 1; });
   // the message the list gets (st.pre) and the wave's templates as Meta has them (no names)
   const d = await WT.load().catch(() => ({ templates: [] }));
-  const tpls = (d.templates || []).filter((t) => /^card_sarbatori/.test(String(t.fastcash || ''))).map((t) => ({ key: t.fastcash, label: t.label, state: WT.overall(t), body: String(t.body || '').slice(0, 2000), buttons: (t.buttons || []).map((b) => b.text + (b.url ? ' → ' + b.url : '')) }));
+  const tpls = (d.templates || []).filter((t) => /^card_sarbatori/.test(String(t.fastcash || ''))).map((t) => ({ key: t.fastcash, label: t.label, state: WT.overall(t), body: String(t.body || '').slice(0, 2000), buttons: (t.buttons || []).map((b) => b.text + (b.url ? ' → ' + b.url : '')), image: WT.imageOf(t) }));
   const batches = {}; st.list.forEach((p) => { const b = p.batch || 1; batches[b] = batches[b] || { n: 0, sent: 0 }; batches[b].n++; if (sent[p.k]) batches[b].sent++; });
   return { ok: true, armed: st.armed, pickedAt: st.pickedAt, doneAt: st.doneAt, note: st.note, excluded: ex.size, byCity: by, failReasons: reasons, pre: st.pre || 'card_sarbatori', batches, tpls };
 }
