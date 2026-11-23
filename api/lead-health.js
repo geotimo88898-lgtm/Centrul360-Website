@@ -550,6 +550,20 @@ module.exports = async (req, res) => {
   }
   // ?cardrecent=1: the card orders of the last 2 days, no name and no phone (id, when, tier, clinic, status, how it came, the
   // page path it came from, the trail's kinds and times), to check a case without opening the portal
+  // ?cardsrc=<card id>: where one order came from (the utm values and the referrer's host, the card message's lot and
+  // personal-link token if any) and whether her card message went out; never a name or phone
+  if (req.query && req.query.cardsrc) {
+    const C = require('./_lib/card-sarbatori');
+    const r = C.byId(await readJSON(C.KEY, []), String(req.query.cardsrc));
+    if (!r) { res.status(404).json({ error: 'not_found' }); return; }
+    const q = (u) => { try { const x = new URL(String(u || '')); const o = {}; x.searchParams.forEach((v, k) => { if (/^(utm_|fbclid|c$|gclid)/.test(k)) o[k] = /fbclid|gclid/.test(k) ? 'set' : v.slice(0, 80); }); return { path: x.pathname, q: o }; } catch (e) { return null; } };
+    const t = r.track || {};
+    const host = (u) => { try { return new URL(String(u || '')).host; } catch (e) { return ''; } };
+    res.status(200).json({ status: r.status, created: r.created, page: q(r.page), trackUrl: q(t.url), referrer: host(r.referrer || t.referrer), utm: r.utm || null, batch: r.batch || r.lot || null, token: r.token ? 'set' : '',
+      fbc: t.fbc ? 'set' : '', sent: Object.keys(C.recOf(r)), delivered: r.delivered || r.sentAt || (r.cards || []).map((c) => c.sentAt || c.delivered || '').filter(Boolean),
+      trail: (r.trail || []).map((x) => [String(x.at || '').slice(11, 19), x.ev || x.kind || '', String(x.note || '').slice(0, 40)]) });
+    return;
+  }
   if (req.query && req.query.cardrecent) {
     const C = require('./_lib/card-sarbatori');
     const list = await readJSON(C.KEY, []);
