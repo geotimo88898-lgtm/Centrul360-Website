@@ -115,27 +115,37 @@ async function rangeMarketing(readJSON, start, end) {
   end = Math.min(end, Math.floor(Date.now() / 1000));
   start = Math.floor(start / 86400) * 86400; // Meta's DAILY points start at a day's 00:00 UTC
   if (end <= start) return { lei: 0, volume: 0, unit: 0, byCity: {} };
-  return require('./ads-cache').cached('wa-mkt-' + start, 3600e3, async () => {
+  return require('./ads-cache').cached('wa-mkt2-' + start, 3600e3, async () => {
     const { writeJSON } = require('./store');
     const eur = await require('./eur-rate').eurToday(readJSON, writeJSON).catch(() => null);
     const toLei = (cost, cur) => (/^RON$/i.test(cur) ? cost : /^EUR$/i.test(cur) && eur && eur.rate ? cost * eur.rate : /^USD$/i.test(cur) && eur && eur.usd ? cost * eur.usd : null);
-    let lei = 0, volume = 0;
-    const byCity = {};
+    let lei = 0, volume = 0, pages = 0;
+    const byCity = {}, cats = {};
     for (const [id, a] of accounts) {
       const range = '.start(' + start + ').end(' + end + ').granularity(DAILY).dimensions(["PRICING_CATEGORY"])';
       const p = await graph(id, a.token, 'currency,pricing_analytics' + range);
       if (p.error) return { error: p.error };
       let cost = 0, vol = 0;
-      ((p.pricing_analytics && p.pricing_analytics.data) || []).forEach((d) => ((d && d.data_points) || []).forEach((x) => {
-        if (x && x.pricing_category && String(x.pricing_category).toUpperCase() !== 'MARKETING') return;
-        cost += Number(x && x.cost) || 0; vol += Number(x && x.volume) || 0;
-      }));
+      // Meta pages a long answer (every day times every category): every page is read, else the sum is a fraction
+      let page = p.pricing_analytics, guard = 0;
+      while (page && guard++ < 40) {
+        pages++;
+        ((page.data) || []).forEach((d) => ((d && d.data_points) || []).forEach((x) => {
+          const cat = String((x && x.pricing_category) || '?').toUpperCase();
+          cats[cat] = r2((cats[cat] || 0) + (Number(x && x.cost) || 0));
+          if (x && x.pricing_category && cat !== 'MARKETING') return;
+          cost += Number(x && x.cost) || 0; vol += Number(x && x.volume) || 0;
+        }));
+        const next = page.paging && page.paging.next;
+        if (!next) break;
+        try { const r = await fetch(next); page = await r.json(); if (page && page.error) return { error: clean(page.error.message) }; } catch (e) { return { error: clean(e.message) }; }
+      }
       const l = toLei(cost, p.currency);
       if (l == null) return { error: 'costul vine în ' + (p.currency || 'moneda necunoscută') + ' și cursul lui lipsește acum' };
       lei += l; volume += vol;
       a.cities.forEach((c) => { byCity[c] = r2((byCity[c] || 0) + l / a.cities.length); });
     }
-    return { lei: r2(lei), volume, unit: volume ? Math.round((lei / volume) * 1000) / 1000 : 0, byCity, readAt: new Date().toISOString() };
+    return { lei: r2(lei), volume, unit: volume ? Math.round((lei / volume) * 1000) / 1000 : 0, byCity, pages, cats, readAt: new Date().toISOString() };
   }, { keep: true });
 }
 
