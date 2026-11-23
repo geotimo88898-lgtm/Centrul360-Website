@@ -40,7 +40,7 @@ const PERIODS = { today: 'today', yesterday: 'yesterday', '7d': 'last_7d', '30d'
 // everything that is not deleted or archived (the edges' own effective_status filter)
 const LIVE = ['ACTIVE', 'PAUSED', 'PENDING_REVIEW', 'DISAPPROVED', 'PREAPPROVED', 'PENDING_BILLING_INFO', 'CAMPAIGN_PAUSED', 'ADSET_PAUSED', 'IN_PROCESS', 'WITH_ISSUES'];
 // what Meta counts for every row (the rest is worked out from these on the page)
-const RESULTS = 'spend,actions,impressions,reach,clicks,inline_link_clicks';
+const RESULTS = 'spend,actions,action_values,impressions,reach,clicks,inline_link_clicks';
 const LEAD_ACTIONS = ['onsite_conversion.lead_grouped', 'lead', 'leadgen_grouped', 'onsite_conversion.lead'];
 
 const DEFAULTS = {
@@ -487,6 +487,25 @@ const leadsOf = (row) => {
   for (const t of LEAD_ACTIONS) { const a = acts.find((x) => x.action_type === t); if (a) return Number(a.value) || 0; }
   return 0;
 };
+// a campaign that sends to the website (centrul360.com): its steps there, as Meta counts them (the first type found; the
+// omni_ ones add the app and the conversions API to the pixel, the same number Ads Manager shows in its own columns)
+const SITE_ACTIONS = {
+  visits: ['landing_page_view', 'omni_landing_page_view'],
+  carts: ['omni_add_to_cart', 'add_to_cart', 'offsite_conversion.fb_pixel_add_to_cart'],
+  checkouts: ['omni_initiated_checkout', 'initiate_checkout', 'offsite_conversion.fb_pixel_initiate_checkout'],
+  purchases: ['omni_purchase', 'purchase', 'offsite_conversion.fb_pixel_purchase'],
+};
+const firstOf = (list, types) => {
+  for (const t of types) { const a = (list || []).find((x) => x.action_type === t); if (a) return Number(a.value) || 0; }
+  return 0;
+};
+const siteOf = (conn, row) => ({
+  visits: firstOf(row.actions, SITE_ACTIONS.visits), carts: firstOf(row.actions, SITE_ACTIONS.carts),
+  checkouts: firstOf(row.actions, SITE_ACTIONS.checkouts), purchases: firstOf(row.actions, SITE_ACTIONS.purchases),
+  purchaseValue: inLei(conn, firstOf(row.action_values, SITE_ACTIONS.purchases)),
+});
+// the objectives whose ads send to a website, when the ad sets don't say where they send
+const SITE_OBJECTIVES = ['OUTCOME_SALES', 'OUTCOME_TRAFFIC', 'LINK_CLICKS', 'CONVERSIONS', 'PRODUCT_CATALOG_SALES'];
 function nearCity(lat, lng) {
   const k = Object.keys(CITIES).find((c) => Math.abs(CITIES[c].lat - lat) < 0.08 && Math.abs(CITIES[c].lng - lng) < 0.1);
   return k || '';
@@ -553,7 +572,7 @@ async function overview(conn, period, range, recentIds) {
   camps.data = camps.data.filter((c) => ours(conn, c.name));
   const ids = camps.data.map((c) => c.id);
   const [sets, ads, iS, iA, acc] = await Promise.all([
-    childrenOf(conn, 'adsets', 'id,name,campaign_id,status,effective_status,daily_budget,lifetime_budget,targeting,created_time', ids, '200'),
+    childrenOf(conn, 'adsets', 'id,name,campaign_id,status,effective_status,daily_budget,lifetime_budget,targeting,destination_type,created_time', ids, '200'),
     childrenOf(conn, 'ads', 'id,name,adset_id,campaign_id,status,effective_status,created_time,ad_review_feedback,creative{thumbnail_url,image_url,body,title}', ids, '200'),
     all('/' + act + '/insights', tok, Object.assign({ level: 'adset', fields: 'adset_id,' + RESULTS, limit: '500' }, when), 3),
     all('/' + act + '/insights', tok, Object.assign({ level: 'ad', fields: 'ad_id,' + RESULTS, limit: '500' }, when), 3),
@@ -565,11 +584,12 @@ async function overview(conn, period, range, recentIds) {
   if (sets.error || ads.error || iS.error || iA.error) return { error: sets.error || ads.error || iS.error || iA.error };
   const res = (rows, key) => new Map((rows.data || []).map((r) => [r[key], {
     spend: inLei(conn, r.spend), leads: leadsOf(r), impressions: Number(r.impressions) || 0, reach: Number(r.reach) || 0,
-    clicks: Number(r.clicks) || 0, linkClicks: Number(r.inline_link_clicks) || 0,
+    clicks: Number(r.clicks) || 0, linkClicks: Number(r.inline_link_clicks) || 0, ...siteOf(conn, r),
   }]));
   const rC = res(iC, 'campaign_id'), rS = res(iS, 'adset_id'), rA = res(iA, 'ad_id');
-  const zero = { spend: 0, leads: 0, impressions: 0, reach: 0, clicks: 0, linkClicks: 0 };
-  const results = (r) => ({ spend: r.spend, leads: r.leads, impressions: r.impressions, reach: r.reach, clicks: r.clicks, linkClicks: r.linkClicks });
+  const zero = { spend: 0, leads: 0, impressions: 0, reach: 0, clicks: 0, linkClicks: 0, visits: 0, carts: 0, checkouts: 0, purchases: 0, purchaseValue: 0 };
+  const results = (r) => ({ spend: r.spend, leads: r.leads, impressions: r.impressions, reach: r.reach, clicks: r.clicks, linkClicks: r.linkClicks,
+    visits: r.visits, carts: r.carts, checkouts: r.checkouts, purchases: r.purchases, purchaseValue: r.purchaseValue });
   const money = (v) => budLei(conn, v);
   const adsBySet = new Map();
   (ads.data || []).forEach((a) => {
@@ -586,14 +606,17 @@ async function overview(conn, period, range, recentIds) {
     const r = rS.get(s.id) || zero;
     const list = setsByCamp.get(s.campaign_id) || [];
     list.push(Object.assign({ id: s.id, name: s.name, status: s.status, effective: s.effective_status, created: s.created_time,
-      daily: money(s.daily_budget), lifetime: money(s.lifetime_budget), audience: audience(s.targeting),
+      daily: money(s.daily_budget), lifetime: money(s.lifetime_budget), audience: audience(s.targeting), dest: s.destination_type || '',
       campaignId: s.campaign_id, ads: (adsBySet.get(s.id) || []).sort((a, b) => (a.created < b.created ? 1 : -1)) }, results(r)));
     setsByCamp.set(s.campaign_id, list);
   });
   const campaigns = (camps.data || []).map((c) => {
     const r = rC.get(c.id) || zero;
     const adsets = (setsByCamp.get(c.id) || []).sort((a, b) => (a.created < b.created ? 1 : -1));
-    return { id: c.id, name: c.name, status: c.status, effective: c.effective_status, objective: c.objective, created: c.created_time,
+    // sends to the website (not to a lead form): the page shows its website numbers (clicks, visits, purchases)
+    const dests = adsets.map((s) => s.dest).filter(Boolean);
+    const site = dests.length ? dests.includes('WEBSITE') : SITE_OBJECTIVES.includes(c.objective);
+    return { id: c.id, name: c.name, status: c.status, effective: c.effective_status, objective: c.objective, site, created: c.created_time,
       daily: money(c.daily_budget) || setsBudget(adsets), cbo: !!c.daily_budget,
       lifetime: money(c.lifetime_budget), adsets, ...results(r) };
   }).sort((a, b) => (a.status === 'ACTIVE') === (b.status === 'ACTIVE') ? (a.created < b.created ? 1 : -1) : a.status === 'ACTIVE' ? -1 : 1);
@@ -783,4 +806,4 @@ async function delivery(conn, id) {
 }
 // whether the account is shared (some campaigns are left out), so its own totals can't be used as ours
 const scoped = (conn) => { const s = scopeOf(conn); return !!(s.include || (s.exclude || []).length); };
-module.exports = { inLei, budLei, cents, FX, port, audienceCreate, audienceList, ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };
+module.exports = { siteOf, inLei, budLei, cents, FX, port, audienceCreate, audienceList, ours, scoped, call, delivery, accountStatus, CITIES, PLACEMENTS, CTAS, PERIODS, DEFAULTS, DEFAULTS_KEY, tokenInfo, cleanDefaults, loadDefaults, accountInfo, listAdsets, cleanSettings, publish, overview, recentCampaigns, adResults, campaignDays, campaignReach, budgetOf, runningAdsOf, act, adsManagerUrl, adSpend, adStats, adStatsDaily, adForms, adDays };

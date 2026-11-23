@@ -520,10 +520,34 @@ module.exports = async (req, res) => {
       checkout: r.checkout ? { opened: r.checkout.openedAt || r.checkout.at || '', back: r.checkout.backAt || '' } : null })));
     return;
   }
+  // ?payopen=1: the checkout's open orders and what myPOS says of each payment request now (kind, sum, status as myPOS writes
+  // it, the booking text match), no names or phones; ?payopen=sweep runs the sweep once
+  if (req.query && req.query.payopen) {
+    const P = require('./_lib/pay'), RQ = require('./_lib/mypos-requests'), ST = require('./_lib/store');
+    if (req.query.payopen === 'sweep') { res.status(200).json(await P.sweep().catch((e) => ({ error: e.message }))); return; }
+    const open = await readJSON('data/pay-open.json', []), r = await RQ.active(ST), out = [];
+    for (const it of (open || []).slice(0, 15)) {
+      const o = (await ST.readJSON('data/pay/' + it.id + '.json', null).catch(() => null)) || {};
+      let st = null; try { st = o.request && o.request.code && r ? await RQ.status(r, o.request.code) : null; } catch (e) { st = { error: e.code || e.message, status: e.status }; }
+      out.push({ id: it.id, at: it.at, kind: o.kind, amount: o.amount, provider: o.provider, status: o.status, code: o.request && o.request.code, mypos: st && { status: st.status, amount: st.amount, currency: st.currency, bookingMatch: st.bookingText === it.id, booking: String(st.bookingText || '').slice(0, 40), error: st.error } });
+    }
+    res.status(200).json({ open: (open || []).length, out });
+    return;
+  }
   // ?mprlive=1: the payment requests route's state (no keys); POST {"on": true|false} switches it on the site (the owner)
   if (req.query && req.query.mprlive) {
     const RQ = require('./_lib/mypos-requests'), ST = require('./_lib/store');
-    if (req.method === 'POST') { const r = await RQ.setLive(ST, !!(req.body && req.body.on)); res.status(r.error ? 400 : 200).json(Object.assign(r, { state: RQ.adminOf(await RQ.active(ST)) })); return; }
+    // the owner's 1 leu test was paid but its order lost the request's code (23.11): taken as passed when myPOS shows a real
+    // 1 leu online payment in the last day (the account's own transactions)
+    if (req.method === 'POST' && req.body && req.body.testSeen) {
+      const pays = await require('./_lib/card-sarbatori').scanMypos(2).catch(() => null);
+      const list = Array.isArray(pays) ? pays : (pays && (pays.pays || pays.online)) || [];
+      const one = list.find((p) => Math.abs(Number(p.amount) - 1) < 0.01 && Date.now() - Date.parse(p.at) < 864e5);
+      if (!one) { res.status(409).json({ error: 'no_1_leu_payment_seen' }); return; }
+      await RQ.note(ST, { testPassedAt: new Date().toISOString(), testOrder: 'seen ' + one.at });
+    }
+    if (req.method === 'POST' && req.body && 'on' in req.body) { const r = await RQ.setLive(ST, !!req.body.on); res.status(r.error ? 400 : 200).json(Object.assign(r, { state: RQ.adminOf(await RQ.active(ST)) })); return; }
+    if (req.method === 'POST') { res.status(200).json({ ok: true, state: RQ.adminOf(await RQ.active(ST)) }); return; }
     res.status(200).json(RQ.adminOf(await RQ.active(ST)));
     return;
   }
