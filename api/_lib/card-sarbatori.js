@@ -1652,22 +1652,24 @@ async function leadMsg(id) {
   const op = await onlinePay(r.tier).catch(() => ({ disc: false }));
   // („Online, cu cardul, primești în plus {{3}} și acces în Clubul 360”: the gift; the VIP: 10% off, or its card at once)
   const vars = { suma: lei(r.amount), credit: lei(r.credit), cadoul: !isVip(r) ? giftOf(r.city) : op.disc ? '10% reducere (' + lei(op.amount) + ' lei)' : 'cardul pe loc, aici pe WhatsApp' };
+  // the cards left of now (her own lead is already on the counter: status „lead”, held 2 hours): the same number in the
+  // picture, in the text and on the site (the VIP: its clinic's)
+  const cnt = await count(await readJSON(KEY, [])).catch(() => null);
+  const leftN = Math.max(1, cnt ? Number(leftFor(cnt, r.tier, r.city)) || 1 : 1);
   let png = null, path = 'wa-out/card-lead-' + String(r.id).replace(/[^\w-]/g, '').slice(0, 36) + '.png';
-  try {
-    png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: r.forWho === 'cadou' ? '' : r.name || '', code: '', valid: VALID_TXT, vip: isVip(r) });
-    await writeBinary(path, png, 'image/png').catch(() => { path = ''; });
-  } catch (e) { console.error('card lead image:', e.message); }
+  const who = r.forWho === 'cadou' ? '' : r.name || '';
+  // the creative in the style of ad A (the owner, 23.11), with her name and the count; the plain card when it can't be made
+  try { png = await require('./card-creative').png({ tier: Number(r.tier), name: who, left: leftN }); } catch (e) { console.error('card lead creative:', e.message); png = null; }
+  if (!png) { try { png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: who, code: '', valid: VALID_TXT, vip: isVip(r) }); } catch (e) { console.error('card lead image:', e.message); } }
+  if (png) await writeBinary(path, png, 'image/png').catch(() => { path = ''; });
   // the new one of her card (490 / 990 or VIP, with her first name or without) once Meta approves it, with the wave's count
   // of now (the VIP: its clinic's); until then the first
   const T2 = await templates().catch(() => ({ t: {} }));
   const nm = leadFirst(r);
   const want = isVip(r) ? (nm ? 'vip3n' : 'vip3') : [490, 990].includes(Number(r.tier)) ? (nm ? 'lead3n' : 'lead3') : '';
   const kind = want && T2.t && T2.t[want] && require('./wa-templates').overall(T2.t[want]) === 'APPROVED' ? want : 'lead';
-  if (kind !== 'lead') {
-    const cnt = await count(list).catch(() => null);
-    vars.ramase = String(Math.max(1, cnt ? (isVip(r) ? (cnt.vip[r.city] || {}).left || 1 : cnt.left) : 1));
-    vars.prenume = nm;
-  }
+  vars.ramase = String(leftN);
+  if (kind !== 'lead') vars.prenume = nm;
   const m = png ? await say(kind, r, vars, fill(kind, vars), png, '', { path, only: 'template', tag: { cardOrder: r.id, cardStep: 'lead' } }).catch((e) => ({ sent: false, error: e.message }))
     : { sent: false, error: 'poza cardului' };
   const res = m.sent ? { at: nowISO(), how: m.how, sent: true } : { at: nowISO(), skipped: m.tpl ? 'șablonul nu e aprobat încă' : String(m.error || 'netrimis').slice(0, 160) };
