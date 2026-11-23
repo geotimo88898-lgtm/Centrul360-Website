@@ -48,6 +48,15 @@ const SITE_CAMPAIGNS = [
   ] },
 ];
 const JOBS = [
+  // 23.11 ~17:50, George: „stinge toate cele pe achiziție și lead filter” (the reel „Nu promitem. Îți arătăm.” takes the
+  // site's place, TM and AR); the two HIFU gușă „sezon” lead-form campaigns stay on (his answer)
+  { id: 'stop-site-lf-2026-11-23', why: 'George: oprite toate cele pe achiziție și lead filter', actions: [
+    { campaignId: '120250723824760149', name: 'TM · Rezultate · site · Liposonix șolduri', status: 'PAUSED', why: 'George' },
+    { campaignId: '120250724045060149', name: 'TM · Rezultate · site · HIFU gât', status: 'PAUSED', why: 'George' },
+    { campaignId: '120250724049700149', name: 'AR · Rezultate · site · Liposonix șolduri', status: 'PAUSED', why: 'George' },
+    { campaignId: '120250724053080149', name: 'AR · Rezultate · site · HIFU gât', status: 'PAUSED', why: 'George' },
+    { campaignId: '120250724015450149', name: 'AR · LF · Liposonix șolduri', status: 'PAUSED', why: 'George' },
+  ] },
   // 23.11 10:47: my duplicate job (removed) ran next to site-results-dupes and paused the other TM HIFU gât copy too, so TM
   // had no HIFU gât ad left; that copy goes back on (AR was paused by both, the same ad: nothing to undo there)
   { id: 'site-results-undo-2026-11-23', why: 'Rezultate · site TM: reclama HIFU gât pornită la loc', actions: [
