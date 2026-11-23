@@ -631,6 +631,9 @@ async function isCheckoutPayment(p) {
   if (ref && paid.some((x) => (x.refs || []).includes(ref))) return true;
   if (paid.some((x) => same(x.amount) && Math.abs(t - (Date.parse(x.at) || 0)) < 30 * 60e3)) return true;
   const open = await readJSON(OPEN, []).catch(() => []);
+  // an open order of that sum holds the payment only while the checkout can still settle it (30 min); after that the
+  // card's own matching (or „De verificat”) takes it: a PayLink payment made next to an open order is never lost (23.11)
+  if (Date.now() - t > 30 * 60e3) return false;
   return open.some((x) => same(x.amount) && Date.parse(x.at) <= t + 5 * 60e3 && t - Date.parse(x.at) <= 48 * 3600e3);
 }
 

@@ -211,6 +211,35 @@ module.exports = async (req, res) => {
     }));
     res.status(200).json({ ok: true, since, hits }); return;
   }
+  // POST ?cardpaid=1 { phone, at }: a card paid in myPOS that reached no order (seen by the owner in myPOS): the online
+  // payment of that time (±3 min, by the scan's own ref, so it is never matched twice) given to her newest waiting order;
+  // her other waiting orders of the same phone closed (no reminders). Counts and ids back, never a name or phone.
+  if (req.query && req.query.cardpaid && req.method === 'POST') {
+    let b = req.body || {}; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
+    const C = require('./_lib/card-sarbatori');
+    const { writeJSON } = require('./_lib/store');
+    const k = String(b.phone || '').replace(/\D/g, '').slice(-9), t = Date.parse(b.at);
+    if (k.length !== 9 || !Number.isFinite(t)) { res.status(400).json({ error: 'phone_at' }); return; }
+    const s = await C.scanMypos(3);
+    if (!s.ok) { res.status(502).json({ error: s.error || 'scan' }); return; }
+    const list = await readJSON(C.KEY, []);
+    const used = new Set(list.filter((r) => r.match && r.match.ref).map((r) => r.match.ref));
+    const mine = list.filter((r) => r && String(r.phone || '').replace(/\D/g, '').slice(-9) === k).sort((a, x) => Date.parse(x.created) - Date.parse(a.created));
+    if (mine.some((r) => r.status === 'platit')) { res.status(200).json({ ok: true, already: mine.filter((r) => r.status === 'platit').map((r) => r.id) }); return; }
+    const wait = mine.filter((r) => ['asteptare', 'anulat'].includes(r.status) && r.pay === 'online');
+    const pays = s.pays.filter((x) => !used.has(x.ref) && Math.abs(Date.parse(x.at) - t) < 3 * 60e3);
+    const r = wait.find((x) => pays.some((y) => C.sumOk(x, y.amount)));
+    if (!r) { res.status(404).json({ error: 'no_match', orders: wait.map((x) => x.id), pays: pays.map((x) => x.amount) }); return; }
+    const pay = pays.find((y) => C.sumOk(r, y.amount));
+    const x = await C.confirm(r.id, 'online', { by: 'myPOS', byName: 'myPOS (verificat)', amount: pay.amount, match: { src: pay.src || 'mypos', ref: pay.ref, at: pay.at } });
+    // her other waiting orders: closed, no reminders
+    const l2 = await readJSON(C.KEY, []);
+    const others = l2.filter((y) => y.id !== r.id && String(y.phone || '').replace(/\D/g, '').slice(-9) === k && y.status === 'asteptare');
+    others.forEach((y) => { y.status = 'anulat'; y.cancelledBy = 'dublura'; y.cancelledAt = new Date().toISOString(); C.recOf(y).stop = 'paid'; C.mark(y, 'dup', r.id); });
+    if (others.length) await writeJSON(C.KEY, l2);
+    res.status(200).json({ ok: !!(x && x.row), order: r.id, amount: pay.amount, closed: others.map((y) => y.id), error: x && x.error });
+    return;
+  }
   // POST ?cardtest=remove&phone=0700000000: a test order taken out of Carduri for good (only a not-paid one, only that
   // exact phone), with its lead in the Pipeline; counts back
   if (req.query && req.query.cardtest === 'remove' && req.method === 'POST') {
