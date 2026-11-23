@@ -59,20 +59,22 @@ const CARD_SITE = { id: 'card-site-tm-2026-11-23', why: 'Cardul de Sărbători d
   campaigns: [{ name: 'C360 · TM · Card · site', utm: 'card-tm', city: 'Timișoara', radiusKm: 8, everyone: true, budget: 100,
     adsetName: 'Timișoara 8 km · femei și bărbați 28-58', ads: [
       { name: 'C360 · TM · Card 990 · WhatsApp', image: 'card-990-wa.jpg',
-        text: 'TIMIȘOARA! Cum să ai 2.500 lei în tratamente fără să plătești prețul întreg, chiar dacă nu știi încă ce tratament vrei.\n\n' +
-          '✅ Plătești 990 lei și primești 2.500 lei în tratamente.\n' +
-          '✅ Valabil până pe 30.06.2027, la orice tratament din lista de prețuri.\n' +
-          '✅ Plătești online, pe site, și primești o ședință de BioLifting cadou și acces în Clubul 360.\n\n' +
-          '⏰ Cardurile sunt puține: pe site vezi câte au mai rămas. Oferta ține până pe 24 decembrie.\n\n' +
-          '👉 Ia-ți cardul acum, pe site:\ncentrul360.com',
+        text: 'TIMIȘOARA! 🎁 Cum să ai 2.500 lei în tratamente 💆‍♀️ fără să plătești prețul întreg, chiar dacă nu știi încă ce tratament vrei.\n\n' +
+          '✅ Plătești 990 lei și primești 2.500 lei în tratamente 💳\n' +
+          '✅ Valabil până pe 30.06.2027, la orice tratament din lista de prețuri 💆‍♀️\n' +
+          '✅ Plătești online, pe site, și primești o ședință de BioLifting cadou ✨ și acces în Clubul 360\n\n' +
+          '🔥 Au mai rămas doar 4 carduri.\n' +
+          '🗓️ Până pe 24 decembrie.\n\n' +
+          '👉 Ia-ți cardul acum, pe site:\ncentrul360.com\n📍 Timișoara',
         headlines: ['PLĂTEȘTI 990 LEI, PRIMEȘTI 2.500 LEI 👉', 'AU MAI RĂMAS DOAR 4 CARDURI ⏰💨', 'BIOLIFTING CADOU LA PLATA ONLINE 👉'], description: 'Valabil până pe 30.06.2027' },
       { name: 'C360 · TM · Card 990 · mai multe carduri', image: 'card-990-evantai.jpg',
-        text: 'TIMIȘOARA! Cum să faci un cadou de 2.500 lei în tratamente fără să plătești prețul întreg, chiar dacă nu știi încă ce i-ar plăcea.\n\n' +
-          '✅ Plătești 990 lei și primești 2.500 lei în tratamente, pentru tine sau cadou.\n' +
-          '✅ Valabil până pe 30.06.2027, la orice tratament din lista de prețuri.\n' +
-          '✅ Plătești online, pe site, și primești o ședință de BioLifting cadou și acces în Clubul 360.\n\n' +
-          '⏰ Cardurile sunt puține: pe site vezi câte au mai rămas. Oferta ține până pe 24 decembrie.\n\n' +
-          '👉 Alege-ți cardul pe site:\ncentrul360.com',
+        text: 'TIMIȘOARA! 🎁 Cum să faci un cadou de 2.500 lei în tratamente 💆‍♀️ fără să plătești prețul întreg, chiar dacă nu știi încă ce i-ar plăcea.\n\n' +
+          '✅ Plătești 990 lei și primești 2.500 lei în tratamente, pentru tine sau cadou 🎄\n' +
+          '✅ Altă sumă? Plătești 490 lei și primești 1.000 lei, sau cardul VIP: plătești 9.900 lei și primești 30.000 lei 💎\n' +
+          '✅ Plătești online, pe site, și primești o ședință de BioLifting cadou ✨ la cardurile de 490 și 990 lei 💳\n\n' +
+          '🔥 Au mai rămas doar 4 carduri.\n' +
+          '🗓️ Până pe 24 decembrie. Valabil până pe 30.06.2027.\n\n' +
+          '👉 Alege-ți cardul pe site:\ncentrul360.com\n📍 Timișoara',
         headlines: ['PLĂTEȘTI 990 LEI, PRIMEȘTI 2.500 LEI 👉', 'AU MAI RĂMAS DOAR 4 CARDURI ⏰💨', 'ALEGE CARDUL: PLĂTEȘTI 490, PRIMEȘTI 1.000 👉'], description: 'Valabil până pe 30.06.2027' },
     ] }] } };
 void CARD_SITE;
