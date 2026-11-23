@@ -50,6 +50,26 @@ const SITE_CAMPAIGNS = [
 // the reel „Nu promitem. Îți arătăm.” of Conținut: its clean video (no music) and its cover, public links (api/content-file.js)
 const REEL_ARATAM = { url: 'https://admin.centrul360.com/api/content-file?i=dd7a54f3-7464-4cd7-adb8-2e903006f48d&n=clean.mp4', thumb: 'https://admin.centrul360.com/api/content-file?i=dd7a54f3-7464-4cd7-adb8-2e903006f48d&n=cover.jpg' };
 const JOBS = [
+  // 23.11 ~19:50, George: no HIFU gât result on a HIFU gușă ad: the AR campaign with case 24 goes off at once, and is made
+  // again with case 16 (HIFU gușă, from the approved set) under „ARAD”, the words about gușă; same audience, lookalike, 50 lei
+  { id: 'ar-caz24-off-2026-11-23', why: 'HIFU gușă AR: reclama cu cazul 24 (HIFU gât) oprită', actions: [
+    { campaignId: '120250730029690149', name: 'C360 · AR · HIFU G · caz 24', status: 'PAUSED', why: 'George: fără HIFU gât pe o reclamă de HIFU gușă' },
+  ] },
+  { id: 'ar-caz16-2026-11-23', why: 'HIFU gușă AR refăcută cu cazul 16, 50 lei/zi', site: {
+    cta: 'SIGN_UP', ages: [28, 64],
+    campaigns: [
+      { name: 'C360 · AR · HIFU G · caz 16', city: 'Arad', radiusKm: 7, budget: 50, formId: '2726705401061098', like: '120250718340060149', lal: 'lal-clientele-2026-11-23', adsetName: 'C360 · AR · HIFU G · caz 16', ads: [
+        { name: 'C360 · AR · HIFU G · caz 16', image: 'rezultate-ar-gusa-16.jpg',
+          text: 'ARAD! Cum să ai o bărbie mai definită în poze, fără ace și fără operație, chiar dacă ai încercat deja de toate.\n\n' +
+            '✅ Poza e reală: aceeași persoană, înainte și după HIFU gușă, la noi în clinică.\n' +
+            '✅ HIFU: ultrasunete care strâng pielea de sub bărbie. Te întorci la treburile tale în aceeași zi.\n' +
+            '✅ 5,0 pe Google, din peste 300 de recenzii.\n\n' +
+            'HIFU gușă în Arad: 190 lei în loc de 290.\n\n' +
+            '⏰ Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\n' +
+            '👉 Completează formularul și îți scriem noi pe WhatsApp.\ncentrul360.com\n\nRezultatele diferă de la o persoană la alta.',
+          headlines: ['BĂRBIE MAI DEFINITĂ, FĂRĂ OPERAȚIE 👉', 'MAI E PUȚIN PÂNĂ PE 24 DECEMBRIE ⏰💨', 'HIFU GUȘĂ ÎN ARAD: 190 LEI 👉'], description: '5,0 pe Google, peste 300 de recenzii' },
+      ] },
+    ] } },
   // 23.11 ~19:00, George: „pune-le pe toate 4 live”: four lead-form campaigns of one ad each, 50 lei a day, the audience of
   // the running winners copied exactly (TM: „C360 · TM · HIFU G · sezon”, AR: „C360 · AR · HIFU G · sezon (2)”), women only,
   // with the clients' lookalike where it leaves enough people; the picture: a real case of the homepage, untouched, under
