@@ -194,7 +194,7 @@
           ? '<div class="cp-box"><div class="cp-w" id="cpW' + n + '"></div><button type="button" class="cp-tap" data-cp-tap hidden aria-label="Scrie întâi numele și telefonul"></button></div><p class="cp-or" id="cpO' + n + '" hidden>sau cu cardul</p>' +
             '<div class="cp-box"><div class="cp-card" id="cpC' + n + '"><div class="cp-load"><div><i></i>Se încarcă formularul securizat…</div></div></div><button type="button" class="cp-tap" data-cp-tap aria-label="Scrie întâi numele și telefonul"' + (ask ? '' : ' hidden') + '></button></div>'
           : '<button type="button" class="cp-btn" data-cp-pay>Plătesc ' + lei((order || view).amount) + '</button>') +
-        '<p class="cp-safe">' + ICON.lock + (way === 'embedded' ? 'Plată securizată prin myPOS. Datele cardului nu ajung la noi.' : 'Plătești pe pagina securizată myPOS, cu suma completată.') + '</p>');
+        '<p class="cp-safe">' + ICON.lock + (way === 'embedded' ? 'Plată securizată prin myPOS. Datele cardului nu ajung la noi.' : 'Pe pagina securizată myPOS completezi doar cardul. Emailul și telefonul de acolo nu sunt obligatorii.') + '</p>');
     }
     const refreshSum = () => { const s = $('[data-cp-sum]'); if (s && order) s.innerHTML = sumInner(order); const b = $('[data-cp-pay]'); if (b && order) b.textContent = 'Plătesc ' + lei(order.amount); };
 
