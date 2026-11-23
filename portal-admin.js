@@ -1721,14 +1721,14 @@
         catch (err) {
           const fl = err.data && err.data.field;
           K.ui().toast(err.code === 'req_format' && fl ? (err.data.same ? 'Merchant Secret e același cu Client Secret. E altă cheie.' : RQ_LABEL[fl] + ' lipsește sau nu arată bine (începe cu ' + RQ_PH[fl].replace('…', '') + ').')
-            : (RQ_ERR[err.code] || MP_ERR[err.code] || K.errText(err)) + (err.data && err.data.status ? ' [myPOS ' + err.data.status + ']' : ''), 'error');
+            : (RQ_ERR[err.code] || MP_ERR[err.code] || K.errText(err)) + (err.data && err.data.status ? ' [myPOS ' + err.data.status + (err.data.message ? ': ' + err.data.message : '') + ']' : ''), 'error');
         }
       });
     });
     const ck = box.querySelector('[data-mp-rq-check]');
     if (ck) ck.addEventListener('click', () => K.busy(ck, async () => {
       try { await K.api('/api/portal-mypos', { action: 'requests_check' }); K.ui().toast('Conexiunea merge: myPOS a primit cheile aplicației de parteneri.', 'success'); loadMypos(box); }
-      catch (err) { K.ui().toast((RQ_ERR[err.code] || MP_ERR[err.code] || K.errText(err)) + (err.data && err.data.status ? ' [myPOS ' + err.data.status + ']' : ''), 'error'); loadMypos(box); }
+      catch (err) { K.ui().toast((RQ_ERR[err.code] || MP_ERR[err.code] || K.errText(err)) + (err.data && err.data.status ? ' [myPOS ' + err.data.status + (err.data.message ? ': ' + err.data.message : '') + ']' : ''), 'error'); loadMypos(box); }
     }));
     const lv = box.querySelector('[data-mp-rq-live]');
     if (lv) lv.addEventListener('click', () => K.busy(lv, async () => {

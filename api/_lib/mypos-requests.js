@@ -16,7 +16,12 @@ const SECRET = { clientSecret: 'clientId', merchantSecret: 'merchantId' };
 const clean = (v) => String(v == null ? '' : v).replace(/[\s​-‍⁠﻿]/g, '');
 const ready = (c) => !!c && Object.keys(FIELDS).every((k) => c[k]);
 const base = (c) => (c && c.demo ? BASE.demo : BASE.live);
-const msgOf = (j) => String((j && (j.message || j.error_description || j.error || j.title || (j.errors && JSON.stringify(j.errors)))) || '').slice(0, 200);
+// myPOS's words: ASP.NET problem details ({ title, detail, errors: { field: [why] } }) or an OAuth error
+const msgOf = (j) => {
+  if (!j || typeof j !== 'object') return '';
+  const errs = j.errors && typeof j.errors === 'object' ? Object.keys(j.errors).map((k) => k + ': ' + [].concat(j.errors[k]).join(' ')).join('; ') : '';
+  return String([j.message || j.error_description || j.error || j.title || '', j.detail || '', errs].filter(Boolean).join(' · ')).slice(0, 300);
+};
 class ReqError extends Error { constructor(code, status, message) { super(message || code); this.code = code; this.status = status || 0; } }
 
 async function load(store) { return (await store.readJSON(KEY, null)) || {}; }
@@ -60,7 +65,7 @@ async function call(c, method, path, body) {
   let r;
   try {
     r = await fetch(base(c) + path, { method, headers: Object.assign({ Accept: 'application/json', Authorization: 'Bearer ' + tok, 'X-Session': ses, 'X-Partner-Id': c.partnerId, 'X-Application-Id': c.appId },
-      body ? { 'Content-Type': 'application/json' } : {}), body: body ? JSON.stringify(body) : undefined });
+      body ? { 'Content-Type': 'application/json; x-api-version=1' } : {}), body: body ? JSON.stringify(body) : undefined });
   } catch (e) { throw new ReqError('mypos_down', 0, e.message); }
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
@@ -95,9 +100,10 @@ function adminOf(c) {
     savedAt: c.savedAt || '', checkedAt: c.checkedAt || '', error: c.error || '', testPassedAt: c.testPassedAt || '' };
 }
 
-// token + session must work; the read after them only counts when myPOS refuses it (401 / 403)
+// token + session must work; then the list of payment requests (the very thing the checkout uses; page and size are required
+// by myPOS: without them settlement-data answered 400, 23.11), read only. The read only counts when myPOS refuses it (401 / 403).
 async function readProbe(c) {
-  try { await call(c, 'GET', '/ecommerce/v1/common/settlement-data'); }
+  try { await call(c, 'GET', '/ecommerce/v1/payment-requests?page=1&size=1'); }
   catch (e) { if (e.code === 'mypos_failed' && e.status >= 400 && e.status < 500 && e.status !== 429) return; throw e; }
 }
 // Integrări → myPOS → „Aplicația de parteneri”: the six keys checked once (token, session, a harmless read), kept only when

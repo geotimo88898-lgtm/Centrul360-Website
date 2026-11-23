@@ -25,7 +25,7 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const lei = (n) => (Math.round(n * 100) % 100 ? (Math.round(n * 100) / 100).toFixed(2).replace('.', ',') : Math.round(n).toLocaleString('ro-RO')) + ' lei';
   const post = (body) => fetch('/api/pay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    .then((r) => r.json().then((d) => (r.ok ? d : Promise.reject(Object.assign(new Error(d.error || 'failed'), { code: d.error })))), (e) => Promise.reject(Object.assign(e, { code: 'net' })));
+    .then((r) => r.json().then((d) => (r.ok ? d : Promise.reject(Object.assign(new Error(d.error || 'failed'), { code: d.error, said: d.message || '', status: d.status || 0 })))), (e) => Promise.reject(Object.assign(e, { code: 'net' })));
 
   let statusP = null;
   function status() {
@@ -247,7 +247,11 @@
         link = r.url;
         const b = host.querySelector('[data-cp-go]');
         if (b) { b.href = link; b.classList.remove('wait'); }
-      } catch (e) { say(ERR[e.code] || 'Nu am putut pregăti plata. Încearcă din nou.'); const b = host.querySelector('[data-cp-go]'); if (b) b.classList.remove('wait'); }
+      } catch (e) {
+        // the 1 leu test shows myPOS's own words (to fix the keys); a client sees a plain line
+        say(ERR[e.code] || (o.kind === 'test' && e.said ? 'myPOS ' + (e.status || '') + ': ' + e.said : 'Nu am putut pregăti plata. Încearcă din nou.'));
+        const b = host.querySelector('[data-cp-go]'); if (b) b.classList.remove('wait');
+      }
     }
     function startRequest() {
       const save = order.full > order.amount ? '<small><s>' + lei(order.full) + '</s> · ' + esc(order.title) + '</small>' : '<small>' + esc(order.title) + '</small>';

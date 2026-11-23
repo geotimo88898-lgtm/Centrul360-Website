@@ -420,7 +420,7 @@ async function link(orderId, key) {
   if (!r || r.error) return { error: 'off' };
   let req;
   try { req = await RQ.create(r, { orderId: o.id, amount: o.amount, title: o.title, clientName: o.name }); }
-  catch (e) { await rqFail(e); console.error('pay link:', e.code, e.status, e.message); return { error: e.code || 'mypos_failed' }; }
+  catch (e) { await rqFail(e); console.error('pay link:', e.code, e.status, e.message); return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' }; }
   const saved = await update(orderId, (x) => { if (x.request && x.request.code) return false; x.request = { code: req.code, url: req.url, at: nowISO() }; });
   return { ok: true, url: (saved && saved.request && saved.request.url) || req.url };
 }

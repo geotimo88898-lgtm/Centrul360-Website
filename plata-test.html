@@ -31,7 +31,7 @@
   var t = new URLSearchParams(location.search).get('t') || '';
   var box = document.getElementById('pay');
   if (!/^[0-9a-f]{18}$/.test(t)) { box.innerHTML = '<p class="msg">Linkul de test nu e întreg. Pornește testul din nou din Integrări → myPOS.</p>'; return; }
-  window.C360Pay.open({ kind: 'test', ref: t, mount: box, onPaid: function (r) {
+  window.C360Pay.open({ kind: 'test', ref: t, mount: box, contact: false, onPaid: function (r) {
     box.innerHTML = '<p class="msg">' + (r.confirmed ? 'Testul a trecut: myPOS a confirmat plata. Te poți întoarce în Integrări → myPOS.' : 'Plata e în confirmare la myPOS. Peste câteva minute apare în Integrări → myPOS.') + '</p>';
   } });
 })();
