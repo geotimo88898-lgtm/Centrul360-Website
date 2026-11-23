@@ -1317,6 +1317,9 @@ html[data-role="cosmetician"] .cal-col{ cursor:default; }
 .ad-search input{ flex:1; min-width:0; border:0; background:transparent; color:var(--fg); font:inherit; font-size:.9rem; padding:.55rem 0; outline:none; }
 .ad-stats{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:.7rem; margin-bottom:1rem; }
 .ad-stat{ display:flex; align-items:center; gap:.75rem; padding:.9rem 1rem; }
+/* the website campaigns' own line under the account's numbers */
+.ad-sitesum-h{ display:flex; align-items:center; gap:.4rem; margin:-.2rem 0 .5rem; font-size:.72rem; font-weight:650; letter-spacing:.05em; text-transform:uppercase; color:var(--muted-2); }
+.ad-sitesum-h .k-ic{ width:14px; height:14px; }
 .ad-stat div{ display:flex; flex-direction:column; min-width:0; }
 .ad-stat small{ font-size:.72rem; font-weight:650; letter-spacing:.05em; text-transform:uppercase; color:var(--muted-2); }
 .ad-stat b{ font-size:1.3rem; letter-spacing:-.02em; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

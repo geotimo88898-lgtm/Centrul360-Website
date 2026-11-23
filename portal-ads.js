@@ -165,7 +165,8 @@
     roas: { label: 'ROAS', group: 'Bani', fmt: 'x', val: (x) => per(x.revenue, sNew(x)), hint: 'Câți lei încasați pe 1 leu cheltuit (de pe 16 oct)' },
     upsellValue: { label: 'Valoare upsell', group: 'Bani', fmt: 'money', val: (x) => x.upsellValue },
     leads: { label: 'Leaduri', group: 'Leaduri și programări', fmt: 'num', strong: true, val: (x) => x.leads, hint: 'Cum le numără Meta' },
-    cpl: { label: 'Cost / lead', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(x.spend, x.leads) },
+    // (the account's summary: only the lead-form campaigns' spend, the website ones bring no form leads)
+    cpl: { label: 'Cost / lead', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(x.spendLead != null ? x.spendLead : x.spend, x.leads) },
     pLeads: { label: 'Leaduri în portal', group: 'Leaduri și programări', fmt: 'num', val: (x) => x.pLeads, hint: 'Leadurile intrate în Pipeline din reclamă' },
     booked: { label: 'Programări', group: 'Leaduri și programări', fmt: 'num', strong: true, val: (x) => x.booked },
     costBooked: { label: 'Cost / programare', group: 'Leaduri și programări', fmt: 'money', val: (x) => per(sNew(x), x.booked), hint: 'Cheltuiala de pe 16 oct încoace / programările de atunci' },
@@ -301,6 +302,7 @@
   function sumOf(list) {
     const t = { on: list.filter((c) => c.status === 'ACTIVE').length };
     SUMS.forEach((k) => { t[k] = list.reduce((n, c) => n + (Number(c[k]) || 0), 0); });
+    t.spendLead = list.reduce((n, c) => n + (c.site ? 0 : Number(c.spend) || 0), 0);
     return t;
   }
   function paintStats() {
@@ -316,9 +318,18 @@
       (picked.length ? '<div class="ad-scope">' + icon('check') + '<span>Cifrele sunt pentru <b>' + K.plural(picked.length, 'campanie selectată', 'campanii selectate') + '</b></span><button type="button" class="k-btn is-ghost is-sm" data-pick-clear>Toate campaniile</button></div>' : '') +
       '<div class="ad-hero">' + hero.map((id) => '<div><small>' + esc(M[id].short || M[id].label) + '</small><b>' + esc(fmt(id, M[id].val(t))) + '</b></div>').join('') + '</div>' +
       '<div class="ad-stats" style="--ad-n:' + list.length + ';--ad-half:' + Math.ceil(list.length / 2) + '">' + list.map((id) => stat(iconOf(id), id === 'campaignsOn' && picked.length ? 'Pornite din cele alese' : M[id].label, fmt(id, M[id].val(t)), M[id].hint, id, hero)).join('') + '</div>' +
+      siteSum(site ? [] : (picked.length ? picked : A.d.campaigns).filter((c) => c.site)) +
       (reachesBack() && !site ? '<p class="k-muted ad-partial">Programările, prezentările, clienții, încasările și costurile lor: de pe 16 oct, 22:05 (datele din portal), cu cheltuiala din aceleași zile.</p>' : '') +
       (un ? '<p class="k-muted ad-partial">' + K.plural(un, 'lead din reclame care nu mai sunt în listă nu intră', 'leaduri din reclame care nu mai sunt în listă nu intră') + ' în cifre.</p>' : '');
     syncPickAll();
+  }
+  // the website campaigns among the ones summed: their own line (spend, clicks, CPC, purchases), apart from the leads
+  const SITE_SUM = [['spend', 'Cheltuit site'], ['linkClicks', 'Clickuri'], ['cpc', 'CPC'], ['purchases', 'Achiziții']];
+  function siteSum(list) {
+    if (!list.length) return '';
+    const t = sumOf(list);
+    return '<p class="ad-sitesum-h">' + icon('globe') + '<span>' + esc(K.plural(list.length, 'campanie pe site', 'campanii pe site')) + '</span></p>' +
+      '<div class="ad-stats ad-sitesum">' + SITE_SUM.map(([id, label]) => stat(iconOf(id === 'spend' ? 'visits' : id), label, fmt(id, M[id].val(t)), M[id].hint, id, [])).join('') + '</div>';
   }
   // the period starts before the portal's own data (16.10.2026): the after-form numbers cover only part of it
   const reachesBack = () => (A.range ? A.range.since < '2026-10-16' : A.period === '30d' || A.period === 'max');
