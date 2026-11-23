@@ -456,10 +456,18 @@ const TPL = {
   // no mark) and two buttons, online or in the clinic (reserveFromLead, leadReply)
   lead: { label: 'Card de Sărbători din reclamă', category: 'MARKETING', headerType: 'IMAGE', map: ['suma', 'credit', 'cadoul'], buttons: 'lead', sample: { code: '', name: '' },
     body: 'Bună! Ți-am pregătit Cardul de Sărbători de {{1}} lei, cu {{2}} lei în tratamente, valabil până pe 30 iunie 2027. Cum vrei să-l plătești? Online, cu cardul, primești în plus {{3}} și acces în Clubul 360. Sau îl plătești în clinică, cash sau card. Alege mai jos.' },
-  // the same, stronger (the owner, 23.11): put aside for her, the wave's real count, held 2 hours (HOLD_MS), the online gift,
-  // the clinic choice reserved until she comes (toClinic: „rezervat”, the desk calls to book); used once Meta approves it
-  lead2: { label: 'Card de Sărbători din reclamă 2', category: 'MARKETING', headerType: 'IMAGE', map: ['suma', 'credit', 'cadoul', 'ramase'], buttons: 'lead', sample: { code: '', name: '' },
-    body: 'Bună! 🎁 Ți-am pus deoparte Cardul de Sărbători: plătești {{1}} lei și primești {{2}} lei în tratamente, valabil până pe 30 iunie 2027.\n\n🔥 Au mai rămas doar {{4}} carduri, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus {{3}} și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
+  // the new first messages of a lead (the owner, 23.11): her card reserved, the wave's real count, held 2 hours (HOLD_MS),
+  // the online gift, the clinic choice reserved until she comes (toClinic: „rezervat”, the desk calls to book); one for the
+  // 490 / 990 cards and one for the VIP, each with her first name and without (a name missing or odd: „Bună! …”); the
+  // picture is her own card (leadMsg); used once Meta approves them, until then „lead”
+  lead3n: { label: 'Card de Sărbători rezervat din reclamă', category: 'MARKETING', headerType: 'IMAGE', map: ['prenume', 'suma', 'credit', 'ramase'], buttons: 'lead', sample: { code: '', name: '' },
+    body: 'Bună {{1}}! 🎁 Cardul tău de Sărbători este rezervat:\nPlătești {{2}} lei și primești {{3}} lei în tratamente, valabil până pe 30 iunie 2027.\n\n🔥 Au mai rămas doar {{4}} carduri, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
+  lead3: { label: 'Card de Sărbători rezervat din reclamă fără nume', category: 'MARKETING', headerType: 'IMAGE', map: ['suma', 'credit', 'ramase'], buttons: 'lead', sample: { code: '', name: '' },
+    body: 'Bună! 🎁 Cardul tău de Sărbători este rezervat:\nPlătești {{1}} lei și primești {{2}} lei în tratamente, valabil până pe 30 iunie 2027.\n\n🔥 Au mai rămas doar {{3}} carduri, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
+  vip3n: { label: 'Card VIP rezervat din reclamă', category: 'MARKETING', headerType: 'IMAGE', map: ['prenume', 'ramase'], buttons: 'lead', sample: { code: '', name: '', vip: true, credit: 30000 },
+    body: 'Bună {{1}}! 💎 Cardul tău VIP Transformarea 360 este rezervat:\nPlătești 9.900 lei și primești 30.000 lei în tratamente, pentru tine și cei dragi, valabil până pe 30 iunie 2027.\n\n🔥 Au mai rămas doar {{2}} carduri VIP, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, ai 10% reducere: plătești 8.910 lei, plus acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
+  vip3: { label: 'Card VIP rezervat din reclamă fără nume', category: 'MARKETING', headerType: 'IMAGE', map: ['ramase'], buttons: 'lead', sample: { code: '', name: '', vip: true, credit: 30000 },
+    body: 'Bună! 💎 Cardul tău VIP Transformarea 360 este rezervat:\nPlătești 9.900 lei și primești 30.000 lei în tratamente, pentru tine și cei dragi, valabil până pe 30 iunie 2027.\n\n🔥 Au mai rămas doar {{1}} carduri VIP, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, ai 10% reducere: plătești 8.910 lei, plus acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
   rezervat: { label: 'Card de Sărbători rezervat', headerType: 'IMAGE', map: ['suma', 'credit', 'locatie'], sample: { code: '', mark: 'Rezervat', name: '' },
     body: 'Bună! Ți-am rezervat Cardul de Sărbători de {{1}} lei, cu {{2}} lei în tratamente. Te sunăm în curând să stabilim când treci să-l plătești în clinica din {{3}}, cash sau card. Mulțumim!' },
   // the same, shorter and ending with a question, so the chat goes on (the owner, 21.11: „să se termine cu o întrebare ca să putem să-i dăm close”);
@@ -1630,6 +1638,12 @@ async function reserveFromLead(o) {
   return { ok: true, id: entry.id, sent: !!m.sent };
 }
 // the template „lead”, from her clinic's number, once; not sent (not approved yet, or Meta refused): reception calls her
+// her first name from the form for „Bună Maria!”: the first word, letters only, capital first; odd or missing: ''
+function leadFirst(r) {
+  const w = String((r && (r.name || (r.hint !== NONAME ? r.hint : ''))) || '').trim().split(/\s+/)[0] || '';
+  if (!/^[\p{L}]+(?:-[\p{L}]+)?$/u.test(w) || w.replace(/-/g, '').length < 2) return '';
+  return w.slice(0, 30).toLowerCase().replace(/(^|-)(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
+}
 async function leadMsg(id) {
   const list = await readJSON(KEY, []);
   const r = list.find((x) => x.id === id);
@@ -1643,10 +1657,17 @@ async function leadMsg(id) {
     png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: r.forWho === 'cadou' ? '' : r.name || '', code: '', valid: VALID_TXT, vip: isVip(r) });
     await writeBinary(path, png, 'image/png').catch(() => { path = ''; });
   } catch (e) { console.error('card lead image:', e.message); }
-  // the stronger one once Meta approves it (with the wave's count of now, the VIP its clinic's), until then the first
+  // the new one of her card (490 / 990 or VIP, with her first name or without) once Meta approves it, with the wave's count
+  // of now (the VIP: its clinic's); until then the first
   const T2 = await templates().catch(() => ({ t: {} }));
-  const kind = T2.t && T2.t.lead2 && require('./wa-templates').overall(T2.t.lead2) === 'APPROVED' ? 'lead2' : 'lead';
-  if (kind === 'lead2') { const cnt = await count(list).catch(() => null); vars.ramase = String(Math.max(1, cnt ? (isVip(r) ? (cnt.vip[r.city] || {}).left || 1 : cnt.left) : 1)); }
+  const nm = leadFirst(r);
+  const want = isVip(r) ? (nm ? 'vip3n' : 'vip3') : [490, 990].includes(Number(r.tier)) ? (nm ? 'lead3n' : 'lead3') : '';
+  const kind = want && T2.t && T2.t[want] && require('./wa-templates').overall(T2.t[want]) === 'APPROVED' ? want : 'lead';
+  if (kind !== 'lead') {
+    const cnt = await count(list).catch(() => null);
+    vars.ramase = String(Math.max(1, cnt ? (isVip(r) ? (cnt.vip[r.city] || {}).left || 1 : cnt.left) : 1));
+    vars.prenume = nm;
+  }
   const m = png ? await say(kind, r, vars, fill(kind, vars), png, '', { path, only: 'template', tag: { cardOrder: r.id, cardStep: 'lead' } }).catch((e) => ({ sent: false, error: e.message }))
     : { sent: false, error: 'poza cardului' };
   const res = m.sent ? { at: nowISO(), how: m.how, sent: true } : { at: nowISO(), skipped: m.tpl ? 'șablonul nu e aprobat încă' : String(m.error || 'netrimis').slice(0, 160) };
