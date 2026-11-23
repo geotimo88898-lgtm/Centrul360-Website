@@ -499,6 +499,18 @@ module.exports = async (req, res) => {
     res.status(200).json({ at: aud && aud.at, days: aud && aud.ig && aud.ig.online && aud.ig.online.days ? aud.ig.online.days.length : 0, grid: g });
     return;
   }
+  // ?docfile=<path>: one of the owner's documents (Regulament intern, Fișa postului, „De făcut”'s print files) as a file,
+  // for the owner's own copies outside the portal (same reach as the portal's owner; nothing else in the store)
+  if (req.query && req.query.docfile) {
+    const p = String(req.query.docfile);
+    if (!/^(?:regulament|fise-post|todo)\/[\w-]+\.pdf$/.test(p)) { res.status(400).json({ error: 'invalid_path' }); return; }
+    const buf = await require('./_lib/store').readBinary(p);
+    if (!buf) { res.status(404).json({ error: 'not_found' }); return; }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.status(200).send(Buffer.from(buf));
+    return;
+  }
   // ?wamkt=<from Unix seconds>: the marketing messages' cost from then to now (api/_lib/wa-cost.js rangeMarketing), a check
   if (req.query && req.query.wamkt) {
     res.status(200).json(await require('./_lib/wa-cost').rangeMarketing(readJSON, Number(req.query.wamkt) || 0, Math.floor(Date.now() / 1000)).catch((e) => ({ error: e.message })));

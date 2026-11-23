@@ -171,10 +171,11 @@ function fonts() {
   if (!fontBufs) fontBufs = require('./card-fonts.gen.js').map((b64) => new Uint8Array(Buffer.from(b64, 'base64')));
   return fontBufs;
 }
-async function png(o) {
-  const svg = svgOf(o);
+async function png(o) { return render(svgOf(o)); }
+// any SVG drawn with these fonts → PNG (the offer's PDF, api/portal-offer-pdf.js, uses it: Romanian letters right everywhere)
+async function render(svg) {
   if (typeof globalThis.__C360_SVG2PNG === 'function') return Buffer.from(await globalThis.__C360_SVG2PNG(svg, fonts()));
   return nodeRender(svg, fonts());
 }
 
-module.exports = { svgOf, png, hollySvg, W, H };
+module.exports = { svgOf, png, render, hollySvg, W, H };

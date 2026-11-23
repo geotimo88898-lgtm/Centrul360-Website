@@ -938,7 +938,8 @@
   // half a program: half of each procedure's sessions, rounded up (the owner, 7.11: „1,5 ședințe nu există, se rotunjește”)
   function offer(lines, low) {
     const R = rules();
-    const rows = lines.map((l) => { const p = priceOf(l.price); const s = Number(l.sessions) || 0; return { l, p, s, unit: p ? p.price : 0, sub: p ? s * p.price : 0, half: Math.ceil(s / 2), halfSub: p ? Math.ceil(s / 2) * p.price : 0 }; }).filter((r) => r.p);
+    const rows = lines.map((l) => { const p = priceOf(l.price); const s = Number(l.sessions) || 0; const u = p ? (Number(l.unit) > 0 ? Number(l.unit) : p.price) : 0;
+      return { l, p, s, unit: u, list: p ? p.price : 0, custom: !!p && u !== p.price, sub: p ? s * u : 0, half: Math.ceil(s / 2), halfSub: p ? Math.ceil(s / 2) * u : 0 }; }).filter((r) => r.p);
     const total = rows.reduce((a, r) => a + r.sub, 0), half = rows.reduce((a, r) => a + r.halfSub, 0);
     const groups = new Set(rows.map((r) => r.p.group));
     const kind = groups.has('corp') ? 'corp' : groups.has('fata') ? 'fata' : groups.has('epilare') ? 'epilare' : '';
@@ -1156,6 +1157,23 @@
     if (!C || !Array.isArray(C.lines)) C = { lines: [], low: false, duration: '', result: '', grp: 'corp' };
     return C;
   }
+  // „Editează” on an offer (the owner, 23.11, admin and manager): its discount (0-70%), its installments (1 = all today) or a fixed
+  // final price (its % computed); none: the offer as the rules make it. C.ed[k] = { off, parts, fixed }
+  const canEditOffer = () => isAdmin() || isMgr();
+  const offerName = (k, parts) => (k < 2 ? 'Tot programul' : 'Jumătate de program') + (parts ? ', în ' + parts + ' rate' : ', plătit azi');
+  function calcOffer() {
+    const s = calcState(), o = offer(s.lines, s.low), ed = Array.isArray(s.ed) ? s.ed : [];
+    o.pages = o.pages.map((p, k) => {
+      const e = ed[k];
+      if (!e) return Object.assign({}, p, { name: offerName(k, p.parts) });
+      const parts = e.parts != null ? (Number(e.parts) > 1 ? Math.min(6, Math.round(Number(e.parts))) : 0) : p.parts;
+      let off = e.off != null ? Math.max(0, Math.min(70, Number(e.off))) : p.off, pay = p.base * (1 - off / 100);
+      if (Number(e.fixed) > 0) { pay = Number(e.fixed); off = p.base ? Math.round((1 - pay / p.base) * 1000) / 10 : 0; }
+      const title = (k < 2 ? 'Pachet complet' : 'Jumătate de pachet') + (parts ? ', ' + parts + ' tranșe' : ', plată integrală');
+      return Object.assign({}, p, { off, pay, parts, k: 1 - off / 100, title, name: offerName(k, parts), edited: true, fixed: Number(e.fixed) > 0 });
+    });
+    return o;
+  }
   const keepCalc = () => { try { localStorage.setItem(CALC_KEY, JSON.stringify(C)); } catch (e) { /* private mode */ } };
   function toCalc(c) {
     C = { city: c.city === 'ar' ? 'ar' : 'tm', lines: (c.program || []).map((l) => Object.assign({}, l)), low: !!c.low, duration: c.duration || '', result: c.result || '' };
@@ -1176,7 +1194,10 @@
     let v = ''; try { v = localStorage.getItem('c360_pl_city_' + ((K.data && K.data.me && K.data.me.id) || '')) || ''; } catch (e) { /* private mode */ }
     return v === 'Arad' ? 'ar' : 'tm';
   };
-  const calcCity = () => { const l = K.data && K.data.me && K.data.me.location; return l === 'Arad' ? 'ar' : l === 'Timișoara' ? 'tm' : isMgr() ? mgrCity() : ''; };
+  // the owner and the manager pick the clinic above the calculator (23.11: an admin with a clinic of her own was stuck on
+  // it, Arad could not be pressed); everyone else works with her own clinic's prices
+  const canPickCity = () => isMgr() || isAdmin();
+  const calcCity = () => { if (canPickCity()) return mgrCity(); const l = K.data && K.data.me && K.data.me.location; return l === 'Arad' ? 'ar' : l === 'Timișoara' ? 'tm' : ''; };
   const priceOk = (p) => { const c = calcCity(); return !c || p.city === 'both' || p.city === c; };
   function calcHtml() {
     const s = calcState(), city = calcCity();
@@ -1188,7 +1209,7 @@
       // made for a client from her booking („Fă oferta”, the cosmetician's appointment sheet, 16.11)
       (s.client && s.client.id ? '<div class="tr-c2-for">' + icon('user') + '<span>Oferta pentru <b>' + esc(s.client.name || 'clientă') + '</b>' + (s.client.when ? ' · ' + esc(s.client.when) : '') + '</span>' +
         '<button type="button" class="k-icon-btn" data-calc-unfor aria-label="Altă clientă">' + icon('x') + '</button></div>' : '') +
-      '<div class="tr-c2-top">' + (isMgr() ? '<div class="k-seg tr-c2-cities" role="tablist" aria-label="Prețurile clinicii">' + [['tm', 'Timișoara'], ['ar', 'Arad']].map(([v, l]) => '<button type="button" role="tab" aria-selected="' + (city === v) + '" class="' + (city === v ? 'is-on' : '') + '" data-ccity="' + v + '">' + l + '</button>').join('') + '</div>'
+      '<div class="tr-c2-top">' + (canPickCity() ? '<div class="k-seg tr-c2-cities" role="tablist" aria-label="Prețurile clinicii">' + [['tm', 'Timișoara'], ['ar', 'Arad']].map(([v, l]) => '<button type="button" role="tab" aria-selected="' + (city === v) + '" class="' + (city === v ? 'is-on' : '') + '" data-ccity="' + v + '">' + l + '</button>').join('') + '</div>'
         : '<span class="tr-c2-city">' + icon('pin') + (city === 'ar' ? 'Prețuri Arad' : city === 'tm' ? 'Prețuri Timișoara' : 'Prețuri Timișoara și Arad') + '</span>') + '<span class="k-grow"></span>' +
         (isAdmin() ? '<button type="button" class="k-btn is-ghost is-sm" data-prices>' + icon('tag') + 'Prețuri și reguli</button>' : '') +
         '<button type="button" class="k-btn is-ghost is-sm" data-calc-clear>' + icon('refresh') + 'De la capăt</button></div>' +
@@ -1212,7 +1233,7 @@
     const rows = s.lines.map((l, i) => [l, i, priceOf(l.price)]).filter((x) => x[2]);
     if (!rows.length) return '<div class="tr-c2-empty">' + icon('sparkles') + '<span>Programul ei e gol. Apasă pe un tratament de mai sus.</span></div>';
     return '<h4 class="tr-c2-h">Programul ei</h4>' + rows.map(([l, i, p]) => '<div class="tr-c2-line" data-ci="' + i + '">' +
-      '<div class="tr-c2-ln"><b>' + esc(p.name) + '</b><small>' + esc(K.lei(p.price)) + ' o ședință</small>' +
+      '<div class="tr-c2-ln"><b>' + esc(p.name) + '</b><small>' + (Number(l.unit) > 0 && Number(l.unit) !== p.price ? '<s>' + esc(K.lei(p.price)) + '</s> ' + esc(K.lei(l.unit)) : esc(K.lei(p.price))) + ' o ședință</small>' +
         '<input data-cz maxlength="60" value="' + esc(l.zone || '') + '" placeholder="Zona (ex. abdomen)" aria-label="Zona"></div>' +
       '<div class="tr-c2-stp"><button type="button" data-cstep="' + i + '|-1" aria-label="Mai puține">−</button><input data-cs inputmode="decimal" value="' + esc(l.sessions === '' ? '' : l.sessions) + '" aria-label="Ședințe"><button type="button" data-cstep="' + i + '|1" aria-label="Mai multe">+</button><small>ședințe</small></div>' +
       '<div class="tr-c2-sum" data-csum="' + i + '"></div>' +
@@ -1230,9 +1251,9 @@
     const out = panel.querySelector('[data-calc-out]');
     if (!out) return;
     const s = calcState();
-    const o = offer(s.lines, s.low);
-    s.lines.forEach((l, i) => { const p = priceOf(l.price); const cell = panel.querySelector('[data-csum="' + i + '"]'); if (cell) cell.innerHTML = p ? '<small>' + dec(Number(l.sessions) || 0) + ' × ' + lei(p.price) + ' =</small><b>' + lei((Number(l.sessions) || 0) * p.price) + '</b>' : ''; });
-    if (!o.rows.length) { out.innerHTML = ''; return; }
+    const o = calcOffer();
+    s.lines.forEach((l, i) => { const p = priceOf(l.price); const u = p && Number(l.unit) > 0 ? Number(l.unit) : p ? p.price : 0; const cell = panel.querySelector('[data-csum="' + i + '"]'); if (cell) cell.innerHTML = p ? '<small>' + dec(Number(l.sessions) || 0) + ' × ' + lei(u) + ' =</small><b>' + lei((Number(l.sessions) || 0) * u) + '</b>' : ''; });
+    if (!o.rows.length) { out.innerHTML = ''; out._html = ''; return; }
     const minBox = (o.kind === 'corp' || o.kind === 'fata') ? (() => {
       const pct = Math.min(100, o.total / o.min * 100);
       const ok = o.total >= o.min || s.low;
@@ -1241,15 +1262,19 @@
           icon('alert') + '<span>Programul pentru ' + (o.kind === 'corp' ? 'corp' : 'față') + ' trebuie să fie de cel puțin ' + lei(o.min) + '. Mai adaugă ședințe sau tratamente: lipsesc <b>' + lei(o.short) + '</b>.</span>') + '</span></div>';
     })() : '';
     const SAY = SAYS;
-    const NAME = ['Tot programul, plătit azi', 'Tot programul, în ' + o.R.parts + ' rate', 'Jumătate de program, plătit azi', 'Jumătate de program, în ' + o.R.parts + ' rate'];
-    out.innerHTML =
+    const NAME = o.pages.map((p) => p.name);
+    // drawn again only when it changed: a field left (its „change”) must not swap the button being tapped (PDF, 23.11)
+    const html =
       '<section class="tr-c2-step"><h3><i>2</i>Cât costă tot programul<small>Prețul întreg, fără reducere. Îl scrii pe pagina 1 a fișei.</small></h3>' +
         '<div class="tr-c2-total"><b>' + lei(o.total) + '</b><span>Jumătate de program: ' + lei(o.half) + '</span></div>' + minBox + '</section>' +
       '<section class="tr-c2-step"><h3><i>3</i>Cele 4 oferte, pe rând<small>Le arăți una câte una, în ordinea asta. Pe masă e doar una.</small></h3>' +
         '<ol class="tr-c2-offers">' + o.pages.map((p, k) => '<li class="tr-c2-off is-' + 'abcd'[k] + '" style="--k:' + k + '">' +
-          '<div class="tr-c2-oh"><span class="tr-c2-on">' + (k + 1) + '</span><div><b>' + esc(NAME[k]) + '</b><small>' + esc(SAY[k]) + '</small></div><em>-' + dec(p.off) + '%</em></div>' +
+          '<div class="tr-c2-oh"><span class="tr-c2-on">' + (k + 1) + '</span><div><b>' + esc(NAME[k]) + (p.edited ? ' <i class="tr-c2-ed">modificată</i>' : '') + '</b>' + (p.edited ? '' : '<small>' + esc(SAY[k]) + '</small>') + '</div><em>-' + dec(p.off) + '%</em></div>' +
           '<div class="tr-c2-op"><b>' + lei(p.pay) + '</b>' + (p.parts ? '<span>adică <b>' + lei(p.pay / p.parts) + '</b> la fiecare din primele ' + p.parts + ' ședințe</span>' : '<span>plătește tot azi</span>') + '</div>' +
-          '<small class="tr-c2-how">Cum am calculat: ' + lei(p.base) + ' − ' + dec(p.off) + '% = ' + lei(p.pay) + (p.parts ? ', împărțit la ' + p.parts : '') + ' · fișa, pagina ' + p.page + '</small></li>').join('') + '</ol></section>';
+          '<small class="tr-c2-how">Cum am calculat: ' + lei(p.base) + ' − ' + dec(p.off) + '% = ' + lei(p.pay) + (p.parts ? ', împărțit la ' + p.parts : '') + ' · fișa, pagina ' + p.page + '</small>' +
+          '<div class="tr-c2-acts">' + (canEditOffer() ? '<button type="button" class="k-btn is-ghost is-sm" data-coed="' + k + '">' + icon('pen') + 'Editează</button>' : '') +
+          '<button type="button" class="k-btn is-outline is-sm tr-c2-pdf" data-cpdf="' + k + '">' + icon('download') + 'PDF</button></div></li>').join('') + '</ol></section>';
+    if (out._html !== html) { out.innerHTML = html; out._html = html; }
   }
   function onCalcInput(e) {
     const t = e.target;
@@ -1270,7 +1295,7 @@
   }
   function calcText() {
     const s = calcState();
-    const o = offer(s.lines, s.low);
+    const o = calcOffer();
     const me = (K.data && K.data.me && K.data.me.name) || '';
     return ['Program recomandat (' + K.dateShort(K.today()) + ', ' + (calcCity() === 'ar' ? 'Arad' : calcCity() === 'tm' ? 'Timișoara' : '') + (me ? ', ' + me : '') + '):']
       .concat(o.rows.map((r) => '• ' + r.p.name + (r.l.zone ? ', ' + r.l.zone : '') + ': ' + dec(r.s) + ' ședințe × ' + lei(r.unit) + ' = ' + lei(r.sub) + (r.l.interval ? ' (' + r.l.interval + ')' : '')))
@@ -1279,10 +1304,85 @@
   }
   // the offer as data (16.11): her sheet keeps it, the booking it was made for too, and „Încasează” offers its options
   function offerData() {
-    const s = calcState(), o = offer(s.lines, s.low), r2 = (n) => Math.round(Number(n) * 100) / 100;
+    const s = calcState(), o = calcOffer(), r2 = (n) => Math.round(Number(n) * 100) / 100;
     return { city: calcCity(), total: r2(o.total), half: r2(o.half), duration: s.duration || '', result: s.result || '',
-      lines: o.rows.map((r) => ({ name: r.p.name, zone: r.l.zone || '', sessions: r.s, unit: r.unit, sub: r.sub })),
-      pages: o.pages.map((p) => ({ page: p.page, title: p.title, off: p.off, pay: r2(p.pay), parts: p.parts })) };
+      lines: o.rows.map((r) => ({ name: r.p.name, zone: r.l.zone || '', sessions: r.s, unit: r.unit, sub: r.sub, custom: !!r.custom })),
+      pages: o.pages.map((p) => ({ page: p.page, title: p.title, name: p.name, off: p.off, pay: r2(p.pay), parts: p.parts })) };
+  }
+  // „Editează” an offer: its discount, its installments, a fixed final price; the prices per session of the program (all offers)
+  function editOffer(k, from) {
+    const s = calcState(), o0 = offer(s.lines, s.low), d = o0.pages[k], ed = (Array.isArray(s.ed) ? s.ed : [])[k] || {};
+    const rows = o0.rows;
+    K.drawer({
+      from, title: 'Editează oferta ' + (k + 1), icon: 'pen', width: 520,
+      subtitle: offerName(k, d.parts) + ' · standard: -' + dec(d.off) + '%' + (d.parts ? ', ' + d.parts + ' rate' : ', plătit azi'),
+      body: '<form class="k-form tr-oed" data-f>' +
+        '<div class="k-grid c2">' + K.field('Reducere (%)', '<input name="off" type="number" min="0" max="70" step="1" inputmode="decimal" placeholder="' + dec(d.off) + '" value="' + (ed.off != null && !(Number(ed.fixed) > 0) ? esc(ed.off) : '') + '">') +
+          K.field('Rate', '<input name="parts" type="number" min="1" max="6" step="1" inputmode="numeric" placeholder="' + (d.parts || 1) + '" value="' + (ed.parts != null ? esc(Math.max(1, ed.parts)) : '') + '">') + '</div>' +
+        '<p class="tr-oed-n">1 rată = plătește tot azi.</p>' +
+        K.field('Preț final fix (opțional)', '<input name="fixed" type="number" min="0" step="1" inputmode="numeric" placeholder="în loc de reducere" value="' + (Number(ed.fixed) > 0 ? esc(ed.fixed) : '') + '">') +
+        '<p class="tr-oed-n" data-oed-calc></p>' +
+        (rows.length ? '<h4 class="tr-oed-h">Preț pe ședință <small>pentru toate ofertele</small></h4>' + rows.map((r) => '<div class="tr-oed-l"><span>' + esc(r.p.name) + (r.l.zone ? ' <small>' + esc(r.l.zone) + '</small>' : '') + '</span>' +
+          '<input type="number" min="0" step="1" inputmode="numeric" data-oed-u="' + s.lines.indexOf(r.l) + '" placeholder="' + r.list + '" value="' + (r.custom ? r.unit : '') + '" aria-label="Preț pe ședință"><small>lei</small></div>').join('') : '') + '</form>',
+      footer: '<button type="button" class="k-btn is-ghost" data-std>' + icon('refresh') + 'Înapoi la standard</button><span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Renunță</button><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Aplică</button>',
+      onMount(root, h) {
+        const f = root.querySelector('[data-f]'), calc = root.querySelector('[data-oed-calc]');
+        // what she pays with what is typed now (the prices per session included)
+        const show = () => {
+          const units = {}; root.querySelectorAll('[data-oed-u]').forEach((i) => { units[i.dataset.oedU] = Number(i.value) || 0; });
+          const lines = s.lines.map((l, i) => Object.assign({}, l, { unit: units[i] != null ? units[i] : l.unit }));
+          const base = offer(lines, s.low).pages[k].base;
+          const fx = Number(f.fixed.value) || 0, off = f.off.value === '' ? d.off : Math.max(0, Math.min(70, Number(f.off.value) || 0));
+          const parts = f.parts.value === '' ? d.parts : (Number(f.parts.value) > 1 ? Math.min(6, Math.round(Number(f.parts.value))) : 0);
+          const pay = fx > 0 ? fx : base * (1 - off / 100), pct = fx > 0 && base ? Math.round((1 - fx / base) * 1000) / 10 : off;
+          calc.innerHTML = 'Plătește <b>' + lei(pay) + '</b> (-' + dec(pct) + '% din ' + lei(base) + ')' + (parts ? ', adică ' + lei(pay / parts) + ' la fiecare din primele ' + parts + ' ședințe' : ', tot azi');
+          f.off.disabled = fx > 0;
+        };
+        f.addEventListener('input', show); show();
+        root.querySelector('[data-cancel]').addEventListener('click', () => h.close());
+        root.querySelector('[data-std]').addEventListener('click', () => {
+          const st = calcState(); if (Array.isArray(st.ed)) st.ed[k] = null; // this offer only (the prices per session stay as set)
+          keepCalc(); h.close(); recalcCalc();
+        });
+        root.querySelector('[data-save]').addEventListener('click', () => {
+          const st = calcState();
+          if (!Array.isArray(st.ed)) st.ed = [null, null, null, null];
+          const e = {};
+          if (Number(f.fixed.value) > 0) e.fixed = Math.round(Number(f.fixed.value));
+          else if (f.off.value !== '') e.off = Math.max(0, Math.min(70, Number(f.off.value) || 0));
+          if (f.parts.value !== '') e.parts = Math.max(1, Math.min(6, Math.round(Number(f.parts.value) || 1)));
+          st.ed[k] = Object.keys(e).length ? e : null;
+          root.querySelectorAll('[data-oed-u]').forEach((i) => { const l = st.lines[+i.dataset.oedU]; if (!l) return; const v = Number(i.value) || 0; const p = priceOf(l.price); if (v > 0 && (!p || v !== p.price)) l.unit = v; else delete l.unit; });
+          keepCalc(); h.close(); recalcCalc();
+        });
+      },
+    });
+  }
+  // the program's lines and the offers drawn again (a price per session changed)
+  function recalcCalc() { const box = panel && panel.querySelector('[data-lines]'); if (box) box.innerHTML = linesHtml(); paintCalcResults(); }
+  // one offer as a PDF for her (the owner, 23.11): made on the server (api/portal-offer-pdf.js), a real .pdf file; on the phone
+  // the share sheet (WhatsApp) when it can take a file, else it is saved
+  async function offerPdf(k, btn) {
+    const s = calcState();
+    if (!calcOffer().rows.length) { K.ui().toast('Alege întâi procedurile.', 'error'); return; }
+    return K.busy(btn, async () => {
+      try {
+        const r = await fetch('/api/portal-offer-pdf', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ offer: offerData(), page: k, client: (s.client && s.client.name) || '' }) });
+        if (!r.ok) throw new Error('pdf');
+        const blob = await r.blob();
+        const name = (/filename="([^"]+)"/.exec(r.headers.get('Content-Disposition') || '') || [])[1] || 'Oferta-Centrul360-' + (k + 1) + '.pdf';
+        const file = new File([blob], name, { type: 'application/pdf' });
+        const phone = matchMedia('(pointer: coarse)').matches;
+        if (phone && navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file], title: 'Oferta ta personalizată' }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+        }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      } catch (err) { K.ui().toast('Nu am putut face PDF-ul. Încearcă din nou.', 'error'); }
+    });
   }
   async function saveOffer(id, appointmentId) {
     return K.api('/api/portal-contacts', { action: 'offer_save', id, offer: offerData(), text: calcText(), appointmentId: appointmentId || '' });
@@ -1660,6 +1760,8 @@
     const sm = t.closest('[data-summary]'); if (sm) return openSummary(sm.dataset.summary);
     const ce2 = t.closest('[data-cb-edit],[data-cb-new]'); if (ce2) return editCombo(ce2.dataset.cbEdit ? (D().combos || []).find((x) => x.id === ce2.dataset.cbEdit) : null);
     if (t.closest('[data-calc-copy]')) return K.copy(calcText());
+    if (t.closest('[data-cpdf]')) { const b = t.closest('[data-cpdf]'); return offerPdf(Number(b.dataset.cpdf), b); }
+    if (t.closest('[data-coed]')) { const b = t.closest('[data-coed]'); if (canEditOffer()) editOffer(Number(b.dataset.coed), b); return; }
     if (t.closest('[data-calc-client]')) return saveToClient();
     if (t.closest('[data-calc-unfor]')) { const st = calcState(); delete st.client; keepCalc(); return recalc(); }
     if (t.closest('[data-prices]')) return editPrices();
@@ -2046,12 +2148,18 @@
 .tr-c2-oh em{ font-style:normal; font-weight:800; font-size:.85rem; padding:.25rem .6rem; border-radius:999px; color:var(--g1); background:color-mix(in srgb, var(--g1) 15%, transparent); }
 .tr-c2-op{ display:flex; flex-wrap:wrap; align-items:baseline; gap:.2rem .8rem; margin:.7rem 0 .3rem 2.9rem; } .tr-c2-op > b{ font-size:1.7rem; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; } .tr-c2-op span{ color:var(--muted); } .tr-c2-op span b{ color:var(--fg); }
 .tr-c2-how{ display:block; margin-left:2.9rem; color:var(--muted); font-size:.74rem; }
+.tr-c2-acts{ display:flex; flex-wrap:wrap; gap:.5rem; margin:.7rem 0 0 2.9rem; }
+.tr-c2-ed{ font-style:normal; font-size:.7rem; font-weight:700; padding:.1rem .45rem; border-radius:999px; color:var(--warn, #c98a1b); background:color-mix(in srgb, var(--warn, #c98a1b) 14%, transparent); vertical-align:middle; }
+.tr-oed-n{ margin:-.3rem 0 .2rem; font-size:.84rem; color:var(--muted); } .tr-oed-n b{ color:var(--fg); }
+.tr-oed-h{ margin:.9rem 0 .2rem; font-size:.95rem; } .tr-oed-h small{ font-weight:500; color:var(--muted); font-size:.78rem; }
+.tr-oed-l{ display:grid; grid-template-columns:minmax(0,1fr) 110px auto; align-items:center; gap:.5rem; padding:.35rem 0; border-top:1px solid var(--line); }
+.tr-oed-l span{ min-width:0; overflow-wrap:anywhere; font-size:.9rem; } .tr-oed-l span small{ color:var(--muted); } .tr-oed-l input{ width:100%; } .tr-oed-l > small{ color:var(--muted); font-size:.8rem; }
 .tr-c2-more{ border-radius:20px; border:1px solid var(--line); padding:.2rem 1rem; } .tr-c2-more summary{ cursor:pointer; padding:.7rem 0; font-weight:600; }
 @media (max-width:760px){
   .tr-c2-step{ padding:1rem; border-radius:22px; } .tr-c2-tiles{ grid-template-columns:repeat(2, minmax(0,1fr)); } .tr-c2-tile{ min-height:96px; min-width:0; overflow-wrap:anywhere; }
   .tr-c2-line{ grid-template-columns:1fr; gap:.7rem; padding-right:1rem; } .tr-c2-ln{ padding-right:1.8rem; } .tr-c2-ln input{ max-width:none; }
   .tr-c2-sum{ flex-direction:row; align-items:baseline; justify-content:space-between; gap:.5rem; min-width:0; padding-top:.6rem; border-top:1px solid var(--line); } .tr-c2-sum small{ white-space:nowrap; }
-  .tr-c2-total b{ font-size:2.1rem; } .tr-c2-op{ margin-left:0; } .tr-c2-how{ margin-left:0; }
+  .tr-c2-total b{ font-size:2.1rem; } .tr-c2-op{ margin-left:0; } .tr-c2-how{ margin-left:0; } .tr-c2-acts{ margin-left:0; } .tr-c2-acts .k-btn{ flex:1; justify-content:center; min-height:44px; }
 }
 .tr-vsl{ display:flex; align-items:center; gap:1rem; padding:1rem 1.2rem; margin-bottom:1rem; border-radius:24px; border:1.5px dashed color-mix(in srgb, var(--fg) 16%, transparent); background:var(--glass); }
 .tr-vsl-play{ flex:none; width:52px; height:52px; border-radius:50%; display:grid; place-items:center; color:#fff; background:linear-gradient(145deg,#5b8cff,#a855f7); box-shadow:0 12px 26px -12px #7c6cff; }

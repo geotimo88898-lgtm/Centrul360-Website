@@ -65,7 +65,8 @@
     const cap = (c.captions && c.captions[S.net]) || '';
     return '<div class="td-post"><div class="td-vid">' + (c.video ? '<video controls playsinline preload="none"' + (c.poster ? ' poster="' + esc(c.poster) + '"' : '') + ' src="' + esc(c.video) + '"></video>' : '') + '</div>' +
       (c.title ? '<p class="td-post-t">' + esc(c.title) + '</p>' : '') +
-      (c.download ? '<a class="k-btn is-primary td-dlv" href="' + esc(c.download) + '" download>' + icon('download') + 'Descarcă video</a>' : '') +
+      (c.download ? '<button type="button" class="k-btn is-primary td-dlv td-share" data-share="' + esc(c.download) + '" data-share-name="' + esc((c.title || 'reel').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').slice(0, 60) + '.mp4') + '" data-share-type="video/mp4">' + icon('share') + 'Trimite / salvează video</button>' +
+        '<a class="k-btn is-outline td-dlv" href="' + esc(c.download) + '" download>' + icon('download') + 'Descarcă video</a>' : '') +
       '<div class="td-cap"><div class="k-seg td-nets">' + NET.map(([k, l]) => '<button type="button" data-net="' + k + '" class="' + (S.net === k ? 'is-on' : '') + '"><span>' + l + '</span></button>').join('') + '</div>' +
       '<p class="td-cap-t">' + (cap ? esc(cap).replace(/\n/g, '<br>') : '<i>Fără text pentru rețeaua asta.</i>') + '</p>' +
       (cap ? '<button type="button" class="k-btn is-outline td-copy" data-copy="' + esc(S.net) + '" data-post="' + esc(id) + '">' + icon('copy') + 'Copiază textul</button>' : '') + '</div></div>';
@@ -126,7 +127,8 @@
       '<span class="td-meta"><span class="k-tag">' + esc(f.size || 'A4') + '</span>' + (f.bytes ? '<span class="td-mb">' + mb(f.bytes) + '</span>' : '') + (f.missing ? '<span class="k-tag is-warn">lipsește</span>' : '') + '</span></div></div>' +
       '<div class="td-fact"><div class="td-copies" role="group" aria-label="Bucăți"><button type="button" data-cp="' + esc(f.id) + '" data-d="-1" aria-label="Mai puține">' + icon('minus') + '</button><b data-cpn="' + esc(f.id) + '">' + (f.copies || 0) + '</b><small>buc.</small>' +
         '<button type="button" data-cp="' + esc(f.id) + '" data-d="1" aria-label="Mai multe">' + icon('plus') + '</button></div>' +
-        (f.open ? '<a class="k-btn is-outline is-sm" href="' + esc(f.open) + '" target="_blank" rel="noopener">' + icon('eye') + 'Deschide</a><a class="k-btn is-outline is-sm" href="' + esc(f.dl) + '" download="' + esc(f.file) + '">' + icon('download') + 'Descarcă</a>' : '') + '</div></div>';
+        (f.open ? '<button type="button" class="k-btn is-primary is-sm td-share" data-share="' + esc(f.dl) + '" data-share-name="' + esc(f.file || 'fisier.pdf') + '" data-share-type="application/pdf">' + icon('share') + 'Trimite</button>' +
+          '<a class="k-btn is-outline is-sm" href="' + esc(f.open) + '" target="_blank" rel="noopener">' + icon('eye') + 'Deschide</a><a class="k-btn is-outline is-sm" href="' + esc(f.dl) + '" download="' + esc(f.file) + '">' + icon('download') + 'Descarcă</a>' : '') + '</div></div>';
   }
   function printView() {
     const files = S.d.files || [];
@@ -135,7 +137,7 @@
     const by = (g) => files.filter((f) => f.group === g);
     const total = files.filter((f) => f.group !== 'tot' && f.group !== 'alte').reduce((n, f) => n + (f.copies || 0), 0);
     return (all ? '<section class="k-card td-all" data-file="' + esc(all.key) + '"><div><small>La print shop</small><b>' + esc(all.name) + '</b><p>' + esc(all.what || '') + (all.bytes ? ' · ' + mb(all.bytes) : '') + '</p></div>' +
-        '<div class="td-all-b"><a class="k-btn is-primary" href="' + esc(all.dl) + '" download="' + esc(all.file) + '">' + icon('download') + 'Descarcă tot</a><a class="k-btn is-outline" href="' + esc(all.open) + '" target="_blank" rel="noopener">' + icon('eye') + 'Deschide</a></div></section>' : '') +
+        '<div class="td-all-b"><button type="button" class="k-btn is-primary td-share" data-share="' + esc(all.dl) + '" data-share-name="' + esc(all.file || 'tot-pentru-print.pdf') + '" data-share-type="application/pdf">' + icon('share') + 'Trimite tot</button><a class="k-btn is-outline" href="' + esc(all.dl) + '" download="' + esc(all.file) + '">' + icon('download') + 'Descarcă</a><a class="k-btn is-outline" href="' + esc(all.open) + '" target="_blank" rel="noopener">' + icon('eye') + 'Deschide</a></div></section>' : '') +
       '<p class="td-total">' + total + ' bucăți de printat, pe lista de mai jos</p>' +
       ['flyere', 'carti', 'fise', 'acte'].filter((g) => by(g).length).map((g) => '<section class="k-card td-group"><h3>' + GROUP[g] + '</h3>' + by(g).map(fileRow).join('') + '</section>').join('') +
       (by('alte').length ? '<details class="k-card td-group td-alt"><summary>' + GROUP.alte + ' · ' + by('alte').length + '</summary>' + by('alte').map(fileRow).join('') + '</details>' : '');
@@ -144,12 +146,42 @@
   // ------------------------------------------------------------------ actions
   const closeMenus = (except) => S.box.querySelectorAll('.td-mw.open').forEach((m) => { if (m !== except) { m.classList.remove('open'); m.querySelector('[data-td-menu]').setAttribute('aria-expanded', 'false'); } });
   const saveCopies = {};
+  // „Trimite” (the owner, 23.11: on the phone the PDFs would not download): the file goes to the phone's share sheet
+  // (save to Files / Photos, WhatsApp, AirDrop to the print shop). The file is fetched first; when the phone wants the share
+  // right on the tap (iPhone), the first tap only gets it ready and the button says to tap again.
+  const SHARED = new Map();
+  async function shareFile(b) {
+    const url = b.dataset.share, name = b.dataset.shareName || 'fisier', type = b.dataset.shareType || 'application/octet-stream';
+    const label = b.innerHTML;
+    let file = SHARED.get(url);
+    if (!file) {
+      b.disabled = true; b.innerHTML = icon('refresh') + 'Se pregătește…';
+      try {
+        const r = await fetch(url, { credentials: 'same-origin' });
+        if (!r.ok) throw new Error(r.status);
+        file = new File([await r.blob()], name, { type });
+        SHARED.set(url, file);
+      } catch (err) { b.disabled = false; b.innerHTML = label; K.ui().toast('Nu am putut lua fișierul. Încearcă din nou.', 'error'); return; }
+      b.disabled = false; b.innerHTML = label;
+    }
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: name }); return; }
+      catch (err) {
+        if (err && err.name === 'AbortError') return;
+        if (err && err.name === 'NotAllowedError') { b.innerHTML = icon('share') + 'Gata, apasă din nou'; b.classList.add('is-ready'); return; }
+      }
+    }
+    // no share sheet (a computer): saved as a file
+    const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+  }
   async function onClick(e) {
     const b = e.target.closest('button, a');
     if (!b || !S.box.contains(b)) { closeMenus(); return; }
     if (b.hasAttribute('data-td-menu')) { const mw = b.closest('.td-mw'), on = !mw.classList.contains('open'); closeMenus(mw); mw.classList.toggle('open', on); b.setAttribute('aria-expanded', String(on)); return; }
     if (!b.closest('.td-menu')) closeMenus(); else closeMenus();
     if (b.dataset.tdTab) { S.tab = b.dataset.tdTab; paint(); S.box.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
+    if (b.hasAttribute('data-share')) { shareFile(b); return; }
     if (b.dataset.go) { K.go(b.dataset.go); return; }
     if (b.dataset.fileGo) { S.tab = 'print'; S.hi = b.dataset.fileGo; paint(); return; }
     if (b.dataset.net) { S.net = b.dataset.net; paint(); return; }

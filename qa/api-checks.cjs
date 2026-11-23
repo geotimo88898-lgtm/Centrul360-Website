@@ -1851,7 +1851,7 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const wEnd = await pub({ tier: 290, qty: 1, name: 'Proba Final', phone: '0755000303', city: 'Arad', consent: true, pay: 'clinica' });
     const gEnd = await pub();
     const actS = rd('data/activity/' + day(0) + '.json', []).filter((e) => e.area === 'Carduri de Sărbători' && /valurile/.test(e.verb));
-    check('CS', 'the total: 13 → 2 left (the last wave); 11 → sold out, closed, a reservation refused; Activitate has the changes', stMax.ok && stMax.left === 2 && stMax.wave.n === stMax.wave.of && stEnd.ok && stEnd.open === false && stEnd.wave.soldOut && wEnd.error === 'sold_out' && gEnd.open === false && gEnd.left === 0 && actS.length === 2 && /maxim 13/.test(actS[0].detail), { stMax: stMax.wave, stEnd: stEnd.wave, wEnd, actS: actS.map((x) => x.detail) });
+    check('CS', 'past the planned total the waves go on (the owner, 23.11: never sold out before the deadline): 13 → a full wave on, 11 → still open, a reservation goes through; Activitate has the changes', stMax.ok && stMax.left > 0 && stMax.open !== false && stEnd.ok && stEnd.open !== false && !stEnd.wave.soldOut && wEnd.ok && gEnd.open && gEnd.left > 0 && actS.length >= 2, { stMax, stEnd, wEnd, gEnd, actS: actS.length });
     const ntOff = await pub({ action: 'notify', name: 'Proba Anunt', phone: '0755000304', consent: true });
     check('CS', 'no public „Anunță-mă” for a wave (the waves stay inside)', ntOff._status === 401, ntOff);
     wr(CSK, rd(CSK, []).filter((r) => r.id !== 'wave-fill' && r.phone !== '0755000301')); wr('data/card-sarbatori-stock.json', {});
