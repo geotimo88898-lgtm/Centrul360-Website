@@ -77,10 +77,12 @@ async function call(c, method, path, body) {
 
 // a payment request for one order: its sum, in lei, the order id in the booking text; paid within 2 days at most
 const day = (ms) => new Date(ms).toISOString().slice(0, 10);
+// myPOS answered 500 to a request with Romanian letters in its texts (23.11; the same request without them: 201): plain letters
+const plain = (v) => String(v == null ? '' : v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7E]/g, ' ').replace(/\s+/g, ' ').trim();
 async function create(c, { orderId, amount, title, clientName }) {
   const j = await call(c, 'POST', '/ecommerce/v1/payment-requests', {
-    amount: Math.round(Number(amount) * 100) / 100, currency: 'RON', client_name: String(clientName || 'Clientă Centrul360').slice(0, 60),
-    reason: String(title || 'Centrul360').slice(0, 100), booking_text: orderId, dba: 'Centrul360', expiry_date: day(Date.now() + 2 * 86400e3),
+    amount: Math.round(Number(amount) * 100) / 100, currency: 'RON', client_name: plain(clientName || 'Clienta Centrul360').slice(0, 60) || 'Clienta Centrul360',
+    reason: plain(title || 'Centrul360').slice(0, 100) || 'Centrul360', booking_text: plain(orderId), dba: 'Centrul360', expiry_date: day(Date.now() + 2 * 86400e3),
     payment_request_lang: 'ro', qr_generated: false,
   });
   if (!j.code || !j.payment_request_url) throw new ReqError('mypos_failed', 0, 'fără cod sau link');
@@ -164,6 +166,7 @@ async function probeCreate(store) {
   const tok = await token(c), ses = await session(c, tok);
   const base0 = { amount: 1, currency: 'RON', client_name: 'Test Centrul360', reason: 'Test plata online Centrul360', booking_text: 'probe-' + Date.now().toString(36), dba: 'Centrul360', expiry_date: day(Date.now() + 2 * 86400e3) };
   const tries = [
+    ['diacritice', 'application/json', Object.assign({}, base0, { client_name: 'Clientă Centrul360', reason: 'Test plată online Centrul360', payment_request_lang: 'ro', qr_generated: false })],
     ['as now', 'application/json', Object.assign({}, base0, { payment_request_lang: 'ro', qr_generated: false })],
     ['versioned type', 'application/json; x-api-version=1', Object.assign({}, base0, { payment_request_lang: 'ro', qr_generated: false })],
     ['lang en', 'application/json; x-api-version=1', Object.assign({}, base0, { payment_request_lang: 'en', qr_generated: false })],
