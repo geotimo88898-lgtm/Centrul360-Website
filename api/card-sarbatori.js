@@ -153,7 +153,8 @@ module.exports = async (req, res) => {
         const gaveUp = (r) => r.status === 'anulat' && r.cancelledBy === 'ea' && now - Date.parse(r.cancelledAt || r.created) < 3 * 86400e3;
         // and the cancelled orders never paid (shown under „Anulate”, to be deleted for good)
         const dead = (r) => r.status === 'anulat' && !r.cards.some((c) => c.code) && r.cancelledBy !== 'interesate';
-        const orders = list.filter((r) => r.status === 'asteptare' || r.status === 'rezervat' || r.status === 'lead' || gaveUp(r) || dead(r)).map((r) => ({ id: r.id, created: r.created, name: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit,
+        // (an order of the checkout closed before she gave her phone: nobody to call, not shown)
+        const orders = list.filter((r) => r.phone && (r.status === 'asteptare' || r.status === 'rezervat' || r.status === 'lead' || gaveUp(r) || dead(r))).map((r) => ({ id: r.id, created: r.created, name: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit,
           pay: r.pay, status: r.status, forWho: r.forWho || '', names: r.cards.map((c) => c.recipient), held: C.live(r, now), heldUntil: r.status === 'asteptare' || r.status === 'lead' ? new Date(C.heldFrom(r) + C.HOLD_MS).toISOString() : '',
           online: r.via === 'site' && (r.pay === 'online' || !!r.convertedAt), converted: r.convertedAt || '', byHer: gaveUp(r), nameFrom: r.nameFrom || '', via: r.via || '', note: r.note || '', leadCall: r.leadCall ? r.leadCall.at : '', cancelled: dead(r) && !gaveUp(r), clientId: r.clientId || '', trail: trailOf(r), rec: recView(r) })).reverse();
         // her next appointment and the campaign wave, next to each order and each card
@@ -344,7 +345,7 @@ module.exports = async (req, res) => {
       if (limited(b.action, ip, b.action === 'back' ? 30 : 20)) { res.status(429).json({ error: 'too_many' }); return; }
       const id = clip(b.id, 60).toLowerCase();
       if (!UUID.test(id)) { res.status(404).json({ error: 'not_found' }); return; }
-      const x = b.action === 'back' ? await C.back(id) : await C.answer(id, String(b.reason || ''));
+      const x = b.action === 'back' ? await C.back(id) : await C.answer(id, String(b.reason || ''), b.phone);
       if (x.error) { res.status(x.error === 'not_found' ? 404 : x.error === 'bad_reason' ? 400 : 409).json(x); return; }
       res.status(200).json(Object.assign({ ok: true }, x, x.reservation ? { left: (await C.count(await readJSON(C.KEY, []))).left } : {}));
       // moved to the clinic from that window: her WhatsApp „Ți-am rezervat Cardul…”, as for a reservation from the block
@@ -370,15 +371,19 @@ module.exports = async (req, res) => {
     if (cardName && !names[0]) names[0] = cardName;
     // only her phone and the clinic (the card block's field, both ways: the owner, 21.11); the name on the card comes on
     // WhatsApp after the payment
-    if (!phoneOk(phone)) { res.status(400).json({ error: 'bad_phone' }); return; }
+    // with the checkout in the page her phone and name come from its own screen (the owner, 24.11: „cerem detaliile în ecranul
+    // cu plata”): the order is made without them and gets them from there (_lib payContact)
+    const later = online && !phone && b.contactLater === true && b.embedded === true;
+    if (!later && !phoneOk(phone)) { res.status(400).json({ error: 'bad_phone' }); return; }
     if (!city) { res.status(400).json({ error: 'missing_city' }); return; }
-    if (!(b.consent === true || b.consent === 'true' || b.consent === 'on')) { res.status(400).json({ error: 'missing_consent' }); return; }
+    if (!later && !(b.consent === true || b.consent === 'true' || b.consent === 'on')) { res.status(400).json({ error: 'missing_consent' }); return; }
 
     const now = Date.now();
     if (now >= Date.parse(C.DEADLINE)) { res.status(409).json({ error: 'closed' }); return; }
     // online: 10% off when the card's 10% link is set (the 290 one never), else its full price and link
     // the checkout in the page (switched on, or the preview): no PayLink, the sum of the checkout (the VIP 10% off)
     const emb = online && b.embedded === true && Number(tier) !== 290 && (b.preview === true || await C.embedded());
+    if (later && !emb) { res.status(400).json({ error: 'bad_phone' }); return; }
     const op = online && !emb && Number(tier) !== 290 ? await C.onlinePay(tier) : null;
     const lk = online && !emb ? (op ? op.link : (await C.links())[tier]) : null;
     const payAmount = emb ? C.checkoutAmount(tier, 1) : op && op.disc ? op.amount : tier * qty;
@@ -393,7 +398,7 @@ module.exports = async (req, res) => {
     const cnt0 = await C.count(list, now);
     const st0 = await C.stockFor(list, tier, city, qty, now, cnt0);
     const left0 = st0.left; // what is left of the wave of now (the next opens at once); a VIP one: of her clinic
-    const hers = list.filter((r) => C.live(r, now) && d9(r.phone) === d9(phone));
+    const hers = later ? [] : list.filter((r) => C.live(r, now) && d9(r.phone) === d9(phone));
     // the same order again within 10 minutes (a second tap, back from the PayLink): the one she has
     const same = hers.find((r) => C.norm(r).tier === tier && r.qty === qty && r.pay === (online ? 'online' : 'clinica') && ['rezervat', 'asteptare'].includes(r.status) && now - Date.parse(r.created) < 10 * 60e3 &&
       r.cards.map((c) => fold(c.recipient)).join('|') === names.map(fold).join('|'));
@@ -407,7 +412,7 @@ module.exports = async (req, res) => {
     if (!st0.ok) { res.status(409).json(st0.error === 'not_enough' ? { error: 'not_enough', left: left0 } : { error: st0.error === 'closed' ? 'closed' : 'sold_out', vip: cnt0.vip }); return; }
 
     // nothing is issued now: the codes come when the payment is confirmed (the owner, 21.11)
-    const entry = { id: newId, created: new Date().toISOString(), name, phone, city, tier, qty, amount: payAmount, credit: C.TIERS[tier] * qty, forWho: gift ? 'cadou' : 'eu', disc: (op && op.disc) || (emb && C.isVip(tier)) ? true : undefined, checkout: emb ? { at: new Date().toISOString() } : undefined,
+    const entry = { id: newId, created: new Date().toISOString(), name, phone, city, tier, qty, amount: payAmount, credit: C.TIERS[tier] * qty, forWho: gift ? 'cadou' : 'eu', disc: (op && op.disc) || (emb && C.isVip(tier)) ? true : undefined, checkout: emb ? { at: new Date().toISOString() } : undefined, leadEv: later && /^[A-Za-z0-9._-]{8,80}$/.test(String(b.event_id || '')) ? String(b.event_id) : undefined,
       cards: names.map((n) => ({ code: '', recipient: n })), recipient: names[0] || '', status: online ? 'asteptare' : 'rezervat', via: 'site', pay: online ? 'online' : 'clinica', page: clip(b.page, 200), track: trackOf(req, b.page, b.ct) };
     // where the name on the card comes from (the portal says it): typed on the site; else hers in our files (clients, then
     // leads, the newest first): her greeting and her card's name, nothing asked on WhatsApp; else asked once paid
@@ -441,6 +446,7 @@ module.exports = async (req, res) => {
     if (online) {
       const c1 = await C.count(list);
       res.status(200).json(Object.assign({ ok: true, id: entry.id, amount: entry.amount, left: C.leftFor(c1, tier, city), vip: c1.vip }, emb ? { embedded: true } : { link: lk }));
+      if (later) return; // her lead and the desk's notice when her phone comes (payContact)
       await named();
       await lead(entry, b, req, note); // after the answer: she goes to myPOS at once
       try {

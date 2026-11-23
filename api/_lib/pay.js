@@ -158,7 +158,7 @@ const KINDS = {
     async paid(o) {
       const C = cardModule();
       if (!C || typeof C.payPaid !== 'function') throw new Error('card_hook_missing');
-      return (await C.payPaid({ orderId: o.id, ref: o.ref, amount: o.amount, currency: o.currency, myposRef: o.mypos.ref, method: o.mypos.method, at: o.mypos.at || o.paidAt, sandbox: !!o.sandbox })) || { ok: true };
+      return (await C.payPaid({ orderId: o.id, ref: o.ref, amount: o.amount, currency: o.currency, myposRef: o.mypos.ref, method: o.mypos.method, at: o.mypos.at || o.paidAt, sandbox: !!o.sandbox, name: o.name || '', phone: o.phone || '' })) || { ok: true };
     },
   },
   // Integrări → myPOS → „Test 1 leu”: the first real payment before the site may use it
@@ -404,6 +404,8 @@ async function contact(orderId, key, input) {
     }
   }
   await update(orderId, (x) => { if (x.status !== 'open') return false; Object.assign(x, { name, phone, consent: true }); });
+  // the card's order gets them too (it was made without them: the card block asks nothing, 24.11)
+  if (o.kind === 'card') { try { const C = cardModule(); if (C && typeof C.payContact === 'function') await C.payContact({ ref: o.ref, name, phone }); } catch (e) { console.error('pay card contact:', e.message); } }
   return { ok: true };
 }
 

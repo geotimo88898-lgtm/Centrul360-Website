@@ -304,10 +304,49 @@ async function payQuote({ ref }) {
   const title = (isVip(r) ? 'Cardul VIP Transformarea 360' : 'Cardul de Sărbători ' + lei(r.tier) + ' lei') + ' · ' + lei(r.credit) + ' lei în tratamente';
   return { amount, full: isVip(r) ? Number(r.tier) * qtyOf(r) : amount, title, city: r.city, name: r.name || r.hint || '', phone: r.phone };
 }
+// her phone and name from the checkout's own screen (api/_lib/pay.js contact, the owner 24.11): on the order made without
+// them, then what an online order gets at once (her lead, the desk's notice); once
+async function payContact({ ref, name, phone }) {
+  const { normalizePhone } = require('./clients');
+  let p = normalizePhone(String(phone || '').slice(0, 30)) || '';
+  if (/^7\d{8}$/.test(p)) p = '0' + p;
+  if (!(/^07\d{8}$/.test(p) || /^[1-9]\d{10,14}$/.test(p))) return { error: 'bad_phone' };
+  const nm = cleanText(name, 100);
+  const list = await readJSON(KEY, []);
+  const r = byId(list, String(ref || ''));
+  if (!r) return { error: 'not_found' };
+  const first = !r.phone;
+  if (r.phone && d9(r.phone) !== d9(p)) mark(r, 'contact', 'telefon schimbat');
+  r.phone = p;
+  // her name, written by her on the payment screen: the card's name too (a card for her: nothing asked on WhatsApp)
+  if (nm && !r.name && !(r.cards || []).some((c) => c.recipient) && r.forWho !== 'cadou') { r.name = nm; r.nameFrom = 'plata'; }
+  if (nm) r.hint = r.hint || nm;
+  if (first) mark(r, 'contact', 'din plată');
+  await writeJSON(KEY, list);
+  if (!first) return { ok: true };
+  const st = { readJSON, writeJSON };
+  try {
+    const note = 'Card de Sărbători trimis la plata online (pe site), de confirmat plata: ' + r.tier + ' lei, credit ' + lei(r.credit) + ' lei, de plată ' + lei(r.amount) + ' lei';
+    const L = await require('../portal-leads').createLead({ name: nm || NONAME, phone: p, source: 'site', location: r.city, createdBy: 'card-sarbatori', interest: 'Card de Sărbători', note, authorLabel: 'Site · Card de Sărbători', welcome: false });
+    if (L && L.lead) {
+      const l2 = await readJSON(KEY, []); const x = byId(l2, r.id); if (x && !x.leadId) { x.leadId = L.lead.id; await writeJSON(KEY, l2); }
+      // Meta's Lead now (her browser's pixel sends the same event id when the contact is saved: counted once)
+      const capi = require('./meta-capi'), t = r.track || {};
+      if (r.leadEv) await capi.soon(() => capi.laterEvent({ name: 'Lead', eventId: r.leadEv, phone: p, leadId: L.lead.id, url: t.url || r.page, custom: { value: r.amount, currency: 'RON' } }, t));
+    }
+  } catch (e) { console.error('card pay contact lead:', e.message); }
+  try {
+    await N.notifyMany(st, await N.deskIds(st, r.city), { kind: 'money', tone: 'info', go: 'carduri', tag: 'card-wait-' + r.id,
+      title: sarb(r.tier, r.amount) + ' · LA PLATĂ ONLINE' + N.cityTag(r.city), text: (nm || 'fără nume') + ' · se confirmă singur când plata vine din myPOS' });
+  } catch (e) { /* the order stands */ }
+  return { ok: true };
+}
 // myPOS's signed word that the checkout order is paid (api/_lib/pay.js, once per order, safe twice): the card as with any
 // payment (issued, her WhatsApp, Încasări, the desk); another sum than her order's → „De verificat”; the sandbox → a test,
 // never a card, nothing sent to her
-async function payPaid({ orderId, ref, amount, currency, myposRef, method, at, sandbox }) {
+async function payPaid({ orderId, ref, amount, currency, myposRef, method, at, sandbox, name, phone }) {
+  // her phone and name, when the contact step's own call to us did not come (pay.js keeps them on its order)
+  if (phone) { const l0 = await readJSON(KEY, []); const r0 = byId(l0, String(ref || '')); if (r0 && !r0.phone) await payContact({ ref, name, phone }).catch(() => null); }
   const list = await readJSON(KEY, []);
   const r = byId(list, String(ref || ''));
   if (!r) return { error: 'not_found' };
@@ -1077,10 +1116,11 @@ async function back(id) {
   if ((await openChecks()).some((c) => c.cands.includes(r.id))) return { ok: true, checking: true }; // maybe hers: no question
   const t = Date.now(), last = (r.trail || []).slice(-1)[0];
   if (!(last && last.ev === 'returned' && t - Date.parse(last.at) < 10 * 60e3)) { mark(r, 'returned'); await writeJSON(KEY, list); }
-  return { ok: true, ask: !hasReason(r), tier: r.tier, credit: r.credit, amount: r.amount, city: r.city, held: live(r, t), until: live(r, t) ? new Date(heldFrom(r) + HOLD_MS).toISOString() : '' };
+  return { ok: true, ask: !hasReason(r), nophone: !r.phone, tier: r.tier, credit: r.credit, amount: r.amount, city: r.city, held: live(r, t), until: live(r, t) ? new Date(heldFrom(r) + HOLD_MS).toISOString() : '' };
 }
-// her answer in that window: retry → { link }; clinic → { reservation }; the others are only written down
-async function answer(id, reason) {
+// her answer in that window: retry → { link }; clinic → { reservation }; the others are only written down. An order of the
+// checkout closed before her phone came: „clinic” takes the phone she writes in that window (else { error: 'bad_phone' })
+async function answer(id, reason, phone) {
   if (!REASONS.includes(reason)) return { error: 'bad_reason' };
   const list = await readJSON(KEY, []);
   const r = byId(list, id);
@@ -1093,7 +1133,16 @@ async function answer(id, reason) {
   const again = !!(last && last.note === reason && Date.now() - Date.parse(last.at) < 60e3); // a second tap: written once
   if (!again) mark(r, 'reason', reason);
   // the same order, now paid in the clinic (no form: her phone is on it), the desk hears it
-  if (reason === 'clinic') { await writeJSON(KEY, list); return toClinic(id, 'site'); }
+  if (reason === 'clinic') {
+    if (!r.phone) {
+      const { normalizePhone } = require('./clients');
+      let p = normalizePhone(cleanText(phone, 30)) || '';
+      if (/^7\d{8}$/.test(p)) p = '0' + p;
+      if (!/^07\d{8}$/.test(p)) { await writeJSON(KEY, list); return { error: 'bad_phone' }; }
+      r.phone = p; mark(r, 'contact', 'la rezervare');
+    }
+    await writeJSON(KEY, list); return toClinic(id, 'site');
+  }
   if (reason === 'retry') {
     const h = await rehold(list, r);
     const link = h === 'ok' ? await linkOf(r) : null;
@@ -1302,6 +1351,7 @@ async function recover(now) {
     if (t >= Date.parse(DEADLINE)) { stop(r, 'deadline'); continue; }
     if (list.some((x) => x.id !== r.id && x.status !== 'draft' && d9(x.phone) === d9(r.phone) && Date.parse(x.created) > Date.parse(r.created))) { stop(r, 'newer'); continue; }
     // the step due now: rec1 from 30 minutes after the order (until 90, or an hour after 09:00 when that fell at night),
+    if (!r.phone) continue; // an order of the checkout closed before her phone came: nobody to write to
     // rec2 about 24 h after rec1
     let step = '', from = 0, end = 0;
     if (!rc.wa1) { step = 'wa1'; from = awake(heldFrom(r) + 30 * 60e3); end = Math.max(heldFrom(r) + 90 * 60e3, from + 60 * 60e3); }
@@ -1758,7 +1808,7 @@ async function requestFromTap(i, opt) {
 }
 
 module.exports = { requestFromTap, deleteOrder, orderExtras,
-  KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT, GIFT_TM, GIFT_ARAD, giftOf, giftShort, giftFor, DISC_TIERS, discOf, onlineLinks, onlinePay, linkOf, siteLinks, sumOk, embedded, setEmbedded, checkoutAmount, checkoutUrl, payQuote, payPaid, TPL,
+  KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT, GIFT_TM, GIFT_ARAD, giftOf, giftShort, giftFor, DISC_TIERS, discOf, onlineLinks, onlinePay, linkOf, siteLinks, sumOk, embedded, setEmbedded, checkoutAmount, checkoutUrl, payQuote, payPaid, payContact, TPL,
   byId, VIP, SALE, isVip, vipLeft, stockFor, leftFor, lostRace, sarb, norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
   supersede, supersedeOnce, request, editOrder, reserveFromLead, leadMsg, leadCall, leadReply, LEAD_BTN, CORE, REC_BTN, NAME_BTN, NONAME, CHECK, REASONS, needsName, knownName, nameLead, sendCards, askName, cleanName, pick, openCheckOf, openChecks, greetName, mark, recOf, heldFrom, rehold, back, answer, toClinic, recover, recoverIfIdle, onWhatsApp, abandonStats, cardsLeft, quiet, awake,
