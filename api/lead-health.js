@@ -634,7 +634,7 @@ module.exports = async (req, res) => {
   }
   // ?mprprobe=1: myPOS payment requests, a few forms of a 1 leu request and myPOS's answers (api/_lib/mypos-requests.js)
   if (req.query && req.query.mprprobe) {
-    res.status(200).json(await require('./_lib/mypos-requests').probeCreate(require('./_lib/store')).catch((e) => ({ error: e.code || e.message, status: e.status || 0, message: e.message })));
+    res.status(200).json(await require('./_lib/mypos-requests').probeCreate(require('./_lib/store'), String(req.query.mprprobe)).catch((e) => ({ error: e.code || e.message, status: e.status || 0, message: e.message })));
     return;
   }
   // ?docfile=<path>: one of the owner's documents (Regulament intern, Fișa postului, „De făcut”'s print files) as a file,

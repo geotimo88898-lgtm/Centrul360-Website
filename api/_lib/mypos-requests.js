@@ -207,12 +207,17 @@ async function note(store, patch) { const c = await load(store); Object.assign(c
 
 // a check for the owner (23.11: myPOS answered 500 to the payment request): a few forms of the same 1 leu request, each
 // answer's status and text (no keys), the first that myPOS takes is kept as its link. Nothing is paid.
-async function probeCreate(store) {
+async function probeCreate(store, what) {
   const c = await active(store);
   if (!c) return { error: 'not_saved' };
   const tok = await token(c), ses = await session(c, tok);
   const base0 = { amount: 1, currency: 'RON', client_name: 'Test Centrul360', reason: 'Test plata online Centrul360', booking_text: 'probe-' + Date.now().toString(36), dba: 'Centrul360', expiry_date: day(Date.now() + 2 * 86400e3) };
-  const tries = [
+  // what='contact' (23.11): does myPOS take her e-mail / phone on the request (the page's „Informații de contact”)? Test
+  // values only: a reserved e-mail domain and the test number; stops at the first one taken (at most two requests made)
+  const tries = what === 'contact' ? [
+    ['email+gsm', 'application/json; x-api-version=1', Object.assign({}, base0, { payment_request_lang: 'ro', qr_generated: false, email: 'test@example.com', gsm: '+40700000000' })],
+    ['customer_*', 'application/json; x-api-version=1', Object.assign({}, base0, { payment_request_lang: 'ro', qr_generated: false, customer_email: 'test@example.com', customer_phone: '+40700000000' })],
+  ] : [
     ['diacritice', 'application/json', Object.assign({}, base0, { client_name: 'Clientă Centrul360', reason: 'Test plată online Centrul360', payment_request_lang: 'ro', qr_generated: false })],
     ['as now', 'application/json', Object.assign({}, base0, { payment_request_lang: 'ro', qr_generated: false })],
     ['versioned type', 'application/json; x-api-version=1', Object.assign({}, base0, { payment_request_lang: 'ro', qr_generated: false })],
@@ -228,7 +233,12 @@ async function probeCreate(store) {
       st = r.status; text = (await r.text()).slice(0, 400);
     } catch (e) { text = 'fetch: ' + e.message; }
     out.push({ name, status: st, text });
-    if (st >= 200 && st < 300) break;
+    if (st >= 200 && st < 300) {
+      // what myPOS kept of it (its e-mail and phone fields)
+      let code = ''; try { code = JSON.parse(text).code || ''; } catch (e) { code = ''; }
+      if (code) { try { const d = await call(c, 'GET', '/ecommerce/v1/payment-requests/' + encodeURIComponent(code)); out.push({ name: 'details', code, email: d.email == null ? null : String(d.email), gsm: d.gsm == null ? null : String(d.gsm), url: d.url }); } catch (e) { out.push({ name: 'details', error: e.message }); } }
+      break;
+    }
   }
   return { ok: true, tries: out };
 }
