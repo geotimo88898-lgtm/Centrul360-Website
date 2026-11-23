@@ -300,7 +300,8 @@ async function payQuote({ ref }) {
   r.checkout = Object.assign({}, r.checkout, { at: nowISO() });
   delete r.checkout.paylink;
   mark(r, 'to_checkout');
-  await writeJSON(KEY, list);
+  // quiet: the open portals don't need a refresh for this mark (it kept the checkout ~3 s slower, 23.11)
+  await writeJSON(KEY, list, { quiet: true });
   const title = (isVip(r) ? 'Cardul VIP Transformarea 360' : 'Cardul de Sărbători ' + lei(r.tier) + ' lei') + ' · ' + lei(r.credit) + ' lei în tratamente';
   // the reason to pay online, one line under the sum in the checkout's sheet (the owner, 23.11)
   const bonusText = isVip(r) ? '−10% și Clubul 360 la plata online' : '+ BioLifting cadou și Clubul 360 la plata online';

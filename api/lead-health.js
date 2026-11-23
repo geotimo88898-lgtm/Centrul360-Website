@@ -217,13 +217,15 @@ module.exports = async (req, res) => {
     const { writeJSON } = require('./_lib/store');
     const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
     const k = d9(req.query.phone);
-    if (k.length !== 9) { res.status(400).json({ error: 'bad_phone' }); return; }
+    // &id=<card id>: one test order without a phone (only a not-paid one, that exact id)
+    const tid = /^[0-9a-f-]{36}$/.test(String(req.query.id || '')) ? String(req.query.id) : '';
+    if (k.length !== 9 && !tid) { res.status(400).json({ error: 'bad_phone' }); return; }
     const C = require('./_lib/card-sarbatori');
     const list = await readJSON(C.KEY, []);
-    const keep = list.filter((r) => !(r && d9(r.phone) === k && r.status !== 'platit'));
+    const keep = list.filter((r) => !(r && r.status !== 'platit' && (tid ? r.id === tid : d9(r.phone) === k)));
     if (keep.length !== list.length) await writeJSON(C.KEY, keep);
     const leads = await readJSON('data/leads.json', []);
-    const lk = leads.filter((l) => !(l && d9(l.phone) === k && /card de s/i.test(String(l.interest || ''))));
+    const lk = tid ? leads : leads.filter((l) => !(l && d9(l.phone) === k && /card de s/i.test(String(l.interest || ''))));
     if (lk.length !== leads.length) await writeJSON('data/leads.json', lk);
     res.status(200).json({ ok: true, orders: list.length - keep.length, leads: leads.length - lk.length });
     return;
