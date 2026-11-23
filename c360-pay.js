@@ -80,6 +80,8 @@
   .cp-card + .cp-lock{ border-radius:18px; }
   .cp-lock[hidden]{ display:none; }
   .cp-w:empty + .cp-lock{ display:none; }
+  .cp-go{ display:flex; align-items:center; justify-content:center; text-decoration:none; box-sizing:border-box; }
+  .cp-go.wait{ opacity:.6; pointer-events:none; }
   .cp-safe{ display:flex; align-items:center; justify-content:center; gap:6px; margin:12px 0 0; font-size:12.5px; color:#9aa1aa; text-align:center; }
   .cp-state{ text-align:center; padding:18px 4px 6px; }
   .cp-state h3{ margin:0 0 8px; font-size:22px; font-weight:800; letter-spacing:-.03em; color:#0b0b0d; }
@@ -155,6 +157,7 @@
       return '<div class="cp-state"><div class="cp-ico' + (kind === 'bad' ? ' bad' : '') + '">' + (kind === 'wait' ? '<i class="spin"></i>' : kind === 'bad' ? ICON.bad : ICON.check) + '</div><h3>' + title + '</h3>' + (text ? '<p>' + text + '</p>' : '') + (buttons || '') + '</div>';
     }
     function fail(msg) {
+      polling++;
       destroy();
       active = me;
       paint(stateHtml('bad', 'Plata nu a trecut', esc(msg || 'Banca nu a aprobat plata. Banii nu au fost luați.'),
@@ -211,6 +214,7 @@
         await post({ action: 'contact', orderId: order.orderId, key: order.key, name: fv('name'), phone: fv('phone'), consent: true });
         contactOk = true; lock(false); say('');
         if (o.onContact) o.onContact({ name: fv('name'), phone: fv('phone') });
+        if (order.provider === 'requests') getLink();
         return true;
       } catch (e) {
         if (e.code === 'bad_phone') { flag('phone', true); say('Numărul de telefon nu pare corect.'); }
@@ -231,6 +235,71 @@
       if (e.target.closest('.cp-lock')) { if (!contactBad()) saveContact(); else { say('Scrie întâi numele și telefonul, apoi bifează acordul.'); const f = host.querySelector('.cp-f.err input'); if (f) f.focus(); } }
     });
 
+    // ---- the Partners way (until the online store is approved): myPOS's own payment page for this order, in a new tab (it
+    // can't work inside a frame); this tab asks the server every few seconds and turns to „Plătit” by itself
+    let link = '', polling = 0;
+    const PEND = 'c360-pay-pending';
+    async function getLink() {
+      const a = host.querySelector('[data-cp-go]');
+      if (a) { a.classList.add('wait'); a.removeAttribute('href'); }
+      try {
+        const r = await post({ action: 'link', orderId: order.orderId, key: order.key });
+        link = r.url;
+        const b = host.querySelector('[data-cp-go]');
+        if (b) { b.href = link; b.classList.remove('wait'); }
+      } catch (e) { say(ERR[e.code] || 'Nu am putut pregăti plata. Încearcă din nou.'); const b = host.querySelector('[data-cp-go]'); if (b) b.classList.remove('wait'); }
+    }
+    function startRequest() {
+      const save = order.full > order.amount ? '<small><s>' + lei(order.full) + '</s> · ' + esc(order.title) + '</small>' : '<small>' + esc(order.title) + '</small>';
+      n = me.id + '-' + Date.now().toString(36);
+      paint((order.sandbox ? '<p class="cp-test">Cont demo myPOS: plătește doar cu un card de test.</p>' : '') +
+        '<div class="cp-sum"><div><b>' + lei(order.amount) + '</b>' + save + '</div>' + (order.bonusPct ? '<i class="cp-off">-' + order.bonusPct + '%</i>' : '') + '</div>' +
+        (ask ? '<div class="cp-who"><div class="cp-two">' +
+          '<label class="cp-f" data-cp-f="name"><span>Nume</span><input name="cp-name" autocomplete="name" placeholder="Maria Popescu" value="' + esc(last.name) + '"></label>' +
+          '<label class="cp-f" data-cp-f="phone"><span>Telefon (WhatsApp)</span><input name="cp-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07xx xxx xxx" value="' + esc(last.phone) + '"></label></div>' +
+          '<label class="cp-ok" data-cp-f="ok"><input type="checkbox" name="cp-ok"><span>Sunt de acord să primesc pe WhatsApp sau telefonic confirmarea și reamintirile de la Centrul360.</span></label>' +
+          '<p class="cp-msg" hidden></p></div>' : '<p class="cp-msg" hidden></p>') +
+        '<div class="cp-wbox"><a class="cp-btn cp-go" data-cp-go target="_blank" rel="noopener">Plătesc ' + lei(order.amount) + ' cu cardul</a>' +
+          '<button type="button" class="cp-lock" id="cpL' + n + '"' + (ask ? '' : ' hidden') + ' aria-label="Scrie întâi numele și telefonul"></button></div>' +
+        '<p class="cp-safe">' + ICON.lock + 'Se deschide pagina securizată myPOS, cu suma completată. Apoi revii aici.</p>');
+      if (!ask) getLink();
+      else if (last.name && last.phone && o.consent) { const c = host.querySelector('[name="cp-ok"]'); if (c) { c.checked = true; saveContact(); } }
+    }
+    // she tapped „Plătesc”: the myPOS tab opens; here, the wait (and a way back to that tab)
+    host.addEventListener('click', (e) => {
+      const a = e.target.closest('[data-cp-go]');
+      if (!a) return;
+      if (!a.getAttribute('href')) { e.preventDefault(); return; }
+      try { localStorage.setItem(PEND, JSON.stringify({ orderId: order.orderId, key: order.key, amount: order.amount, title: order.title, at: Date.now() })); } catch (x) { /* private mode */ }
+      setTimeout(waitPaid, 300);
+    });
+    function waitPaid() {
+      paint(stateHtml('wait', 'Plătește în pagina myPOS', 'S-a deschis într-o filă nouă, cu ' + lei(order.amount) + ' completat. Când ai plătit, revino aici: pagina se actualizează singură.',
+        '<a class="cp-btn" data-cp-go target="_blank" rel="noopener" href="' + esc(link) + '">Deschide din nou plata</a>' + (o.onClinic ? '<button type="button" class="cp-ghost" data-cp-clinic>Plătesc în clinică</button>' : '')));
+      const mine = ++polling, t0 = Date.now();
+      const tick = async () => {
+        if (mine !== polling || done) return;
+        let r = {};
+        try { r = await post({ action: 'check', orderId: order.orderId, key: order.key }); } catch (e) { r = {}; }
+        if (mine !== polling || done) return;
+        if (r.paid) {
+          polling++;
+          try { localStorage.removeItem(PEND); } catch (x) { /* private mode */ }
+          const out = { paid: true, orderId: order.orderId, amount: order.amount, confirmed: true };
+          if (o.onPaid) o.onPaid(out);
+          if (!o.mount) paint(stateHtml('ok', 'Plătit', 'Mulțumim! Confirmarea vine și pe WhatsApp.', '<button type="button" class="cp-btn" data-cp-done>Gata</button>'));
+          finish(out);
+          return;
+        }
+        if (r.status === 'failed' || r.status === 'mismatch' || r.status === 'double') { polling++; fail(r.status === 'double' ? 'E deja plătită. A doua plată se întoarce singură pe card.' : 'Plata a expirat sau a fost anulată. Banii nu au fost luați.'); return; }
+        if (Date.now() - t0 < 45 * 60e3) setTimeout(tick, document.hidden ? 8000 : 3000);
+      };
+      setTimeout(tick, 2500);
+      // back from the myPOS tab: asked at once
+      const vis = () => { if (!document.hidden && mine === polling && !done) { document.removeEventListener('visibilitychange', vis); tick(); } };
+      document.addEventListener('visibilitychange', vis);
+    }
+
     async function start() {
       paint('<div class="cp-card"><div class="cp-load"><div><i></i>Pregătim plata…</div></div></div>');
       contactOk = false;
@@ -238,9 +307,10 @@
         [order] = await Promise.all([post({ action: 'create', kind: o.kind, ref: o.ref, city: o.city, name: o.name, phone: o.phone, page: o.page || location.pathname }), status()]);
         order.kind = o.kind;
         if (o.onOrder) o.onOrder({ orderId: order.orderId, key: order.key, amount: order.amount });
-        await sdk();
+        if (order.provider !== 'requests') await sdk();
       } catch (e) { fail(ERR[e.code] || 'Nu am putut porni plata. Încearcă din nou.'); return; }
       if (active !== me) return;
+      if (order.provider === 'requests') { startRequest(); return; }
       n = me.id + '-' + Date.now().toString(36);
       const keep = last;
       const save = order.full > order.amount ? '<small><s>' + lei(order.full) + '</s> · ' + esc(order.title) + '</small>' : '<small>' + esc(order.title) + '</small>';
@@ -285,5 +355,36 @@
     return result;
   }
 
-  window.C360Pay = { ready, status, open, preview: PREVIEW };
+  // She comes back to the site with a payment on myPOS's page still unconfirmed (the same tab, an in-app browser that
+  // opened it in place, or a link /?plata=<order>&k=<key>): a small sheet asks the server and says „Plătit” when it is.
+  function resume() {
+    let p = null;
+    try { p = JSON.parse(localStorage.getItem('c360-pay-pending') || 'null'); } catch (e) { p = null; }
+    const q = new URLSearchParams(location.search);
+    if (q.get('plata') && q.get('k')) p = { orderId: q.get('plata'), key: q.get('k'), at: Date.now() };
+    if (!p || !p.orderId || !p.key || Date.now() - (p.at || 0) > 3 * 3600e3) return;
+    css();
+    const sheet = document.createElement('div');
+    sheet.className = 'cp-root';
+    sheet.innerHTML = '<div class="cp-bg" data-cp-x></div><div class="cp-sheet" role="dialog" aria-modal="true" aria-label="Plata"><div class="cp-head"><p>Plata online</p><button type="button" class="cp-x" data-cp-x aria-label="Închide">' + ICON.x + '</button></div><div class="cp"></div></div>';
+    const box = sheet.querySelector('.cp');
+    const say = (k, t, x) => { box.innerHTML = '<div class="cp-state"><div class="cp-ico' + (k === 'bad' ? ' bad' : '') + '">' + (k === 'wait' ? '<i class="spin"></i>' : k === 'bad' ? ICON.bad : ICON.check) + '</div><h3>' + t + '</h3><p>' + x + '</p><button type="button" class="cp-btn" data-cp-x>Gata</button></div>'; };
+    let stop = false;
+    const shut = () => { stop = true; sheet.classList.remove('open'); document.documentElement.style.overflow = ''; setTimeout(() => sheet.remove(), 400); };
+    sheet.addEventListener('click', (e) => { if (e.target.closest('[data-cp-x]')) shut(); });
+    const check = (n) => post({ action: 'check', orderId: p.orderId, key: p.key }).then((r) => {
+      if (stop) return;
+      if (r.paid) { try { localStorage.removeItem('c360-pay-pending'); } catch (e) { /* private mode */ } say('ok', 'Plătit', (p.amount ? lei(p.amount) + ' · ' : '') + 'Programarea e confirmată. Confirmarea vine și pe WhatsApp.'); return; }
+      if (r.status && r.status !== 'open') { try { localStorage.removeItem('c360-pay-pending'); } catch (e) { /* private mode */ } if (q.get('plata')) say('bad', 'Plata nu a trecut', 'Banii nu au fost luați. Poți încerca din nou din programare.'); else shut(); return; }
+      if (n < 20) setTimeout(() => check(n + 1), 3000);
+    }, () => {});
+    // shown only once there is something to say (a payment still waiting on her side shows nothing until it is paid)
+    post({ action: 'check', orderId: p.orderId, key: p.key }).then((r) => {
+      if (!r.paid && !q.get('plata') && (!r.status || r.status === 'open')) { const t = setInterval(() => post({ action: 'check', orderId: p.orderId, key: p.key }).then((x) => { if (x.paid) { clearInterval(t); show(); check(0); } }, () => {}), 5000); setTimeout(() => clearInterval(t), 10 * 60e3); return; }
+      show(); say('wait', 'Verificăm plata…', 'Durează câteva secunde.'); check(0);
+    }, () => {});
+    function show() { if (sheet.isConnected) return; document.body.appendChild(sheet); sheet.offsetWidth; sheet.classList.add('open'); document.documentElement.style.overflow = 'hidden'; }
+  }
+
+  window.C360Pay = { ready, status, open, resume, preview: PREVIEW };
 })();

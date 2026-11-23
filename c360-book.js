@@ -866,5 +866,14 @@
     if (location.hash === '#programare') open({});
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auto); else auto();
+  // back on the site with a payment made on myPOS's page (the Partners way) not yet confirmed, or /?plata=<order>&k=<key>:
+  // c360-pay.js says „Plătit” as soon as myPOS does
+  try {
+    const pend = JSON.parse(localStorage.getItem('c360-pay-pending') || 'null');
+    if ((pend && Date.now() - (pend.at || 0) < 3 * 3600e3) || /[?&]plata=/.test(location.search)) {
+      const go = () => window.C360Pay && window.C360Pay.resume && window.C360Pay.resume();
+      if (window.C360Pay) go(); else { const sc = document.createElement('script'); sc.src = '/c360-pay.js'; sc.async = true; sc.onload = go; document.head.appendChild(sc); }
+    }
+  } catch (e) { /* private mode */ }
   window.addEventListener('hashchange', () => { if (location.hash === '#programare') open({}); });
 })();

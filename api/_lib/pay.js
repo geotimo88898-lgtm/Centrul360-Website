@@ -19,6 +19,23 @@ const crypto = require('crypto');
 const store = require('./store');
 const { readJSON, writeJSON } = store;
 const IPC = require('./mypos-ipc');
+const RQ = require('./mypos-requests');
+
+// Which myPOS way pays: the online store's embedded form (mypos-ipc.js) when its keys are saved, else the Partners app's
+// payment requests (mypos-requests.js) when those are; none: the online payment is off.
+async function provider() {
+  const c = await IPC.load(S);
+  if (IPC.ready(c) && !c.error) return { name: 'embedded', c, sandbox: !!c.sandbox, live: !!c.live && !c.sandbox };
+  const r = await RQ.active(S);
+  if (r && !r.error) return { name: 'requests', c: r, sandbox: !!r.demo, live: !!r.live && !r.demo };
+  return null;
+}
+// a refusal of the Partners keys stops that way at once (myPOS locks the clinic's keys after three refused sessions)
+async function rqFail(e) {
+  if (e && (e.code === 'req_merchant' || e.code === 'req_partner')) await RQ.note(S, { error: e.code, errorAt: nowISO() }).catch(() => {});
+}
+const TEST = 'data/pay-test.json';
+const PAID = 'data/pay-paid.json'; // [{ id, amount, at, refs }]: the checkout's recent payments, for the old sum matchers to leave alone // { orderRef, at, by }: the 1 leu test the admin started
 
 const BONUS_PCT = 10; // percent off when paid online by card (offers and treatments). One number, everywhere.
 const bonusPrice = (full) => Math.floor((Number(full) || 0) * (100 - BONUS_PCT) / 100); // whole lei, never less than BONUS_PCT off
@@ -147,12 +164,12 @@ const KINDS = {
   // Integrări → myPOS → „Test 1 leu”: the first real payment before the site may use it
   test: {
     async quote({ ref }) {
-      const c = await IPC.load(S);
-      if (!c.test || c.test.orderRef !== ref) return { error: 'not_found' };
+      const t = (await readJSON(TEST, null)) || {};
+      if (!t.orderRef || t.orderRef !== ref) return { error: 'not_found' };
       return { amount: 1, full: 1, bonusPct: 0, title: 'Test plată online Centrul360', city: '' };
     },
     async paid(o) {
-      await IPC.note(S, { testPassedAt: nowISO(), testOrder: o.id });
+      await (o.provider === 'requests' ? RQ : IPC).note(S, { testPassedAt: nowISO(), testOrder: o.id });
       await ring(o, 'TEST PLATĂ ONLINE REUȘIT 💳', 'Plata de 1 leu a trecut. Poți porni plata online pe site din Integrări → myPOS.', true);
       return { ok: true };
     },
@@ -229,8 +246,9 @@ async function update(id, fn) {
 async function createOrder({ kind, ref, input, host, track }) {
   const K = KINDS[kind];
   if (!K) return { error: 'bad_kind' };
-  const c = await IPC.load(S);
-  if (!IPC.ready(c) || c.error) return { error: 'off' };
+  const pv = await provider();
+  if (!pv) return { error: 'off' };
+  const c = pv.c;
   ref = clip(ref, 120);
   if (!ref) return { error: 'missing_ref' };
   const q = await K.quote({ ref, input: input || {} });
@@ -242,17 +260,19 @@ async function createOrder({ kind, ref, input, host, track }) {
   const o = {
     id, key: crypto.randomBytes(16).toString('hex'), kind, ref, amount, full: r2(q.full || amount), bonusPct: q.bonusPct || 0, currency: 'RON',
     title: clip(q.title, 120), city: q.city || '', name, phone, status: 'open', createdAt: nowISO(), paidAt: '', mypos: {}, handled: false,
-    sandbox: !!c.sandbox, test: kind === 'test', track: track || null,
+    sandbox: pv.sandbox, test: kind === 'test', track: track || null, provider: pv.name,
   };
   await writeJSON(docOf(id), o);
-  await openList((l) => l.concat({ id, at: o.createdAt }));
+  await openList((l) => l.concat({ id, at: o.createdAt, amount }));
+  if (kind === 'booking') await noteBooking(ref, id);
+  if (kind === 'hold') await require('./booking-holds').patch(ref, (h) => { h.orderIds = (h.orderIds || []).concat(id).slice(-10); });
+  // the Partners way: the payment request is made once her name is known (action 'link'); its page opens in a new tab
+  if (pv.name === 'requests') return { ok: true, provider: 'requests', orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, title: o.title, sandbox: pv.sandbox };
   // the wallets' session (Apple Pay / Google Pay): signed, the sum fixed here. Without it the card form still works.
   let session = { token: '', expires: '' };
   try { session = await IPC.sessionCreate(c, { orderId: id + WALLET, amount, title: o.title }); } catch (e) { console.error('pay session:', e.code, e.message); }
-  if (kind === 'booking') await noteBooking(ref, id);
-  if (kind === 'hold') await require('./booking-holds').patch(ref, (h) => { h.orderIds = (h.orderIds || []).concat(id).slice(-10); });
   return {
-    ok: true, orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, title: o.title, sandbox: !!c.sandbox,
+    ok: true, provider: 'embedded', orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, title: o.title, sandbox: !!c.sandbox,
     sessionToken: session.token,
     params: { sid: c.sid, ipcLanguage: 'ro', walletNumber: c.walletNumber, amount, currency: 'RON', orderID: id, urlNotify: process.env.PAY_NOTIFY_URL || 'https://' + (host || 'www.centrul360.com') + '/api/pay-notify',
       keyIndex: Number(c.keyIndex) || 1, cartItems: [{ article: o.title, quantity: 1, price: amount, currency: 'RON' }] },
@@ -299,11 +319,14 @@ async function markPaid(orderId, info, src) {
   const o = await update(orderId, (x) => {
     if (x.status === 'paid') return false;
     if (!['open', 'expired', 'failed'].includes(x.status) || x.failWhy === 'double') return false;
-    Object.assign(x, { status: 'paid', paidAt: nowISO(), mypos: { ref: clip(info.ref, 80), method: clip(info.method, 20), src, at: clip(info.at, 40) } });
+    Object.assign(x, { status: 'paid', paidAt: nowISO(), mypos: { ref: clip(info.ref, 80), payRef: clip(info.payRef, 80), method: clip(info.method, 20), src, at: clip(info.at, 40) } });
     mine = true;
   });
   if (!o || o.status !== 'paid') return { ok: false, status: o && o.status };
-  if (mine) await openList((l) => l.filter((x) => x.id !== orderId));
+  if (mine) {
+    await openList((l) => l.filter((x) => x.id !== orderId));
+    await listEdit(PAID, (l) => l.concat({ id: orderId, amount: o.amount, at: o.paidAt, refs: [o.mypos.ref, o.mypos.payRef, o.request && o.request.code].filter(Boolean) }).slice(-300));
+  }
   if (o.handled) return { ok: true, dup: !mine };
   // the handler, once: the one who marked it paid runs it; a later call only when it failed before (handled stays false)
   const lock = mine ? await store.createOnce('data/pay/run-' + orderId + '-1', nowISO()) : false;
@@ -337,12 +360,13 @@ async function check(orderId, key) {
   if (!o || !key || !safeEq(o.key, key)) return { error: 'not_found' };
   if (o.status === 'paid') return { paid: true, status: 'paid', handled: !!o.handled };
   if (o.status !== 'open') return { paid: false, status: o.status };
-  const c = await IPC.load(S);
-  if (!IPC.ready(c)) return { paid: false, status: 'open' };
   let st = null;
-  try { st = await askBoth(c, o); } catch (e) { return { paid: false, status: 'open', error: e.code || 'mypos_failed' }; }
+  try {
+    if (o.provider === 'requests') { const r = await RQ.active(S); if (!r) return { paid: false, status: 'open' }; st = await askRequest(r, o); }
+    else { const c = await IPC.load(S); if (!IPC.ready(c)) return { paid: false, status: 'open' }; st = await askBoth(c, o); }
+  } catch (e) { await rqFail(e); return { paid: false, status: 'open', error: e.code || 'mypos_failed' }; }
   if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(orderId, st, 'status'); return { paid: !!r.ok, status: r.ok ? 'paid' : r.double ? 'double' : 'open' }; }
-  if (st && (st.status === 3 || st.status === 4)) return { paid: false, status: 'failed' };
+  if (st && (st.status === 3 || st.status === 4) && baseOf(st.orderId) === o.id) return { paid: false, status: 'failed' };
   return { paid: false, status: 'open' };
 }
 // myPOS's answer about an order is about this order, for its sum, in lei (else it is not taken: a made-up answer of the test
@@ -383,6 +407,31 @@ async function contact(orderId, key, input) {
   return { ok: true };
 }
 
+// the Partners way: the order's payment request (made once, kept), with the name she gave → { url }
+async function link(orderId, key) {
+  const { data: o } = await readOrder(orderId);
+  if (!o || !key || !safeEq(o.key, key)) return { error: 'not_found' };
+  if (o.provider !== 'requests') return { error: 'bad_provider' };
+  if (o.status === 'paid') return { error: 'already_paid' };
+  if (o.status !== 'open') return { error: 'not_open' };
+  if (o.request && o.request.url) return { ok: true, url: o.request.url };
+  if (['hold', 'offer', 'treatment'].includes(o.kind) && !o.phone) return { error: 'missing_contact' };
+  const r = await RQ.active(S);
+  if (!r || r.error) return { error: 'off' };
+  let req;
+  try { req = await RQ.create(r, { orderId: o.id, amount: o.amount, title: o.title, clientName: o.name }); }
+  catch (e) { await rqFail(e); console.error('pay link:', e.code, e.status, e.message); return { error: e.code || 'mypos_failed' }; }
+  const saved = await update(orderId, (x) => { if (x.request && x.request.code) return false; x.request = { code: req.code, url: req.url, at: nowISO() }; });
+  return { ok: true, url: (saved && saved.request && saved.request.url) || req.url };
+}
+// what myPOS says of the order's payment request, as the embedded way's answer (status 1 paid, 3 failed, 4 gone)
+async function askRequest(r, o) {
+  if (!o.request || !o.request.code) return null;
+  const st = await RQ.status(r, o.request.code);
+  const map = { Paid: 1, Pending: 2, Seen: 2, Failed: 2, Expired: 4, Cancelled: 4 }; // a failed try can be tried again on the same page
+  return { orderId: st.bookingText === o.id ? o.id : st.bookingText, status: map[st.status] || 0, amount: st.amount, currency: st.currency, ref: o.request.code, method: 'request', at: nowISO(), raw: st.status };
+}
+
 // she gives up paying online: the booking goes back to „plătesc în clinică” at the full price (only while nothing was paid)
 async function toClinic(orderId, key) {
   const { data: o } = await readOrder(orderId);
@@ -413,8 +462,8 @@ async function toClinic(orderId, key) {
 // on the clock (every 5 minutes): the orders still open are asked about once they are 2 minutes old (a lost notification
 // still ends paid), forgotten after 48 hours; a paid order whose handler failed is tried again
 async function sweep() {
-  const c = await IPC.load(S);
-  if (!IPC.ready(c)) return { open: 0 };
+  const c = await IPC.load(S), r = await RQ.active(S);
+  if (!IPC.ready(c) && !r) return { open: 0 };
   const list = await readJSON(OPEN, []);
   const now = Date.now();
   const out = { open: list.length, paid: 0, gone: 0, retried: 0 };
@@ -424,7 +473,10 @@ async function sweep() {
     const { data: o } = await readOrder(it.id);
     if (!o || o.status !== 'open') { await openList((l) => l.filter((x) => x.id !== it.id)); out.gone++; continue; }
     let st = null;
-    try { st = await askBoth(c, o); } catch (e) { continue; }
+    try {
+      if (o.provider === 'requests') { if (!r || r.error) continue; st = await askRequest(r, o); }
+      else { if (!IPC.ready(c)) continue; st = await askBoth(c, o); }
+    } catch (e) { await rqFail(e); continue; }
     if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(o.id, st, 'status'); if (r.ok) out.paid++; continue; }
     if (age > 48 * 3600e3 || (st && baseOf(st.orderId) === o.id && (st.status === 3 || st.status === 4) && age > 30 * 60e3)) {
       await update(o.id, (x) => { if (x.status !== 'open') return false; x.status = st && st.status === 4 ? 'failed' : 'expired'; });
@@ -440,10 +492,26 @@ async function sweep() {
   return out;
 }
 
-// what the browser may know (the embedded form's public fields, whether it is on, the bonus)
-async function status() {
-  const c = await IPC.load(S);
-  return Object.assign(IPC.publicOf(c), { bonusPct: BONUS_PCT });
+// Is this myPOS payment (seen in the account's transactions by an old matcher: the card's PayLinks, booking-pay's links) one of
+// the checkout's? p: { ref ('mypos-<payment_reference>' or the bare reference), amount, at }. True when its reference is a
+// checkout payment's, or when a checkout order of the same sum still waits (made up to 48 h before it) or was paid within
+// 30 minutes of it: then it is left alone (asked again on the next scan, when the checkout has settled).
+async function isCheckoutPayment(p) {
+  const ref = String((p && p.ref) || '').replace(/^mypos-/, '');
+  const amt = Number(p && p.amount), t = Date.parse(p && p.at) || Date.now();
+  const same = (x) => Math.abs(Number(x) - amt) < 0.01;
+  const paid = await readJSON(PAID, []).catch(() => []);
+  if (ref && paid.some((x) => (x.refs || []).includes(ref))) return true;
+  if (paid.some((x) => same(x.amount) && Math.abs(t - (Date.parse(x.at) || 0)) < 30 * 60e3)) return true;
+  const open = await readJSON(OPEN, []).catch(() => []);
+  return open.some((x) => same(x.amount) && Date.parse(x.at) <= t + 5 * 60e3 && t - Date.parse(x.at) <= 48 * 3600e3);
 }
 
-module.exports = { contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
+// what the browser may know (the embedded form's public fields, whether it is on, the bonus)
+async function status() {
+  const pv = await provider();
+  if (!pv) return { on: false, bonusPct: BONUS_PCT };
+  return Object.assign(pv.name === 'embedded' ? IPC.publicOf(pv.c) : { on: true, live: pv.live, sandbox: pv.sandbox }, { provider: pv.name, bonusPct: BONUS_PCT });
+}
+
+module.exports = { isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };

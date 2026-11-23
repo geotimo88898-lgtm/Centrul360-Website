@@ -15,6 +15,9 @@
 //   POST { action: 'checkout_test' }          a 1 leu test order → { url } to pay on the site with a real card
 //   POST { action: 'checkout_live', on }      the online payment on the site on / off (on only after the test passed)
 //   POST { action: 'checkout_off' }           removes the checkout keys
+//   POST { action: 'requests', partnerId, appId, clientId, clientSecret, merchantId, merchantSecret, mode: 'live'|'demo' }
+//        the Partners app's keys (payment requests until the online store is approved); 'requests_check', 'requests_live'
+//        { on }, 'requests_off' as for the checkout
 //   POST { action: 'gateway', partnerId, appId, clientId, clientSecret, merchantId, merchantSecret }  the keys for the
 //        balance now (myPOS Partner Portal), saved once myPOS accepted them; { action: 'gateway_off' } removes them
 
@@ -22,13 +25,15 @@ const { readJSON, writeJSON } = require('./_lib/store');
 const { requireAdmin } = require('./_lib/auth');
 const M = require('./_lib/mypos');
 const IPC = require('./_lib/mypos-ipc');
+const RQ = require('./_lib/mypos-requests');
 const crypto = require('crypto');
 
 // the site's checkout: the keys as the admin may see them, and the last online payments
 async function checkout() {
   const c = IPC.adminOf(await IPC.load(store));
   const open = await readJSON('data/pay-open.json', []);
-  return Object.assign(c, { waiting: (open || []).length });
+  const pv = await require('./_lib/pay').provider();
+  return Object.assign(c, { waiting: (open || []).length, provider: pv ? pv.name : '', requests: RQ.adminOf(await RQ.active(store)), requestsError: ((await RQ.load(store)) || {}).error || '' });
 }
 
 const CITIES = ['Timișoara', 'Arad'];
@@ -183,11 +188,35 @@ module.exports = async (req, res) => {
       return;
     }
     if (b.action === 'checkout_test') {
-      const c = await IPC.load(store);
-      if (!IPC.ready(c)) { res.status(400).json({ error: 'not_saved' }); return; }
+      if (!(await require('./_lib/pay').provider())) { res.status(400).json({ error: 'not_saved' }); return; }
       const ref = crypto.randomBytes(9).toString('hex');
-      await IPC.note(store, { test: { orderRef: ref, at: new Date().toISOString(), by: session.employeeId } });
+      await writeJSON(require('./_lib/pay').TEST, { orderRef: ref, at: new Date().toISOString(), by: session.employeeId });
       res.status(200).json({ ok: true, url: 'https://www.centrul360.com/plata-test?t=' + ref });
+      return;
+    }
+
+    // the Partners app („Centrul360 checkout”): payment requests until the online store is approved
+    if (b.action === 'requests') {
+      const r = await RQ.save(store, b, session.employeeId);
+      if (r.error) { res.status(400).json(r); return; }
+      res.status(200).json(await status());
+      return;
+    }
+    if (b.action === 'requests_check') {
+      const r = await RQ.check(store);
+      if (r.error) { res.status(400).json(r); return; }
+      res.status(200).json(await status());
+      return;
+    }
+    if (b.action === 'requests_live') {
+      const r = await RQ.setLive(store, !!b.on);
+      if (r.error) { res.status(400).json(r); return; }
+      res.status(200).json(await status());
+      return;
+    }
+    if (b.action === 'requests_off') {
+      await RQ.drop(store);
+      res.status(200).json(await status());
       return;
     }
 

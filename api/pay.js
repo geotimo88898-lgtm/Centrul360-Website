@@ -8,6 +8,7 @@
 //        → { ok, orderId, key, amount, full, bonusPct, title, sandbox, sessionToken, params } | { error }
 //        'hold' (ref = the hour held by /api/booking { hold: true }: the booking is made once it is paid)
 //   POST { action: 'contact', orderId, key, name, phone, consent }   the payment screen's name and phone, before paying
+//   POST { action: 'link', orderId, key }   the Partners way: the order's myPOS payment request page → { url } (new tab)
 //   POST { action: 'check', orderId, key }            myPOS is asked (signed answer) → { paid, status }
 //   POST { action: 'clinic', orderId, key }           she pays at the clinic after all (a booking, nothing paid yet)
 const P = require('./_lib/pay');
@@ -32,6 +33,7 @@ module.exports = async (req, res) => {
     tries.set(ip, mine.concat(now));
 
     if (b.action === 'check') { res.status(200).json(await P.check(String(b.orderId || ''), String(b.key || ''))); return; }
+    if (b.action === 'link') { const r = await P.link(String(b.orderId || ''), String(b.key || '')); res.status(r.error ? 400 : 200).json(r); return; }
     if (b.action === 'contact') { const r = await P.contact(String(b.orderId || ''), String(b.key || ''), b); res.status(r.error ? 400 : 200).json(r); return; }
     if (b.action === 'clinic') { const r = await P.toClinic(String(b.orderId || ''), String(b.key || '')); res.status(r.error ? 400 : 200).json(r); return; }
     if (b.action !== 'create') { res.status(400).json({ error: 'bad_action' }); return; }

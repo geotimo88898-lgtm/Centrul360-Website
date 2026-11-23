@@ -1632,7 +1632,8 @@
   };
   function coStatus(c) {
     c = c || { saved: false };
-    const st = !c.saved ? ['is-wait', 'clock', 'Oprită. Cu cheile magazinului online de mai jos plătește direct pe site, cu cardul, Apple Pay sau Google Pay.']
+    const st = !c.saved && c.provider === 'requests' ? ['is-ok', 'checkCircle', 'Magazinul online nu are încă chei: acum plata merge prin aplicația de parteneri (mai jos), pe pagina myPOS. Când îl aprobă myPOS, pune aici cheile lui și plata trece în pagină, cu Apple Pay și Google Pay.']
+      : !c.saved ? ['is-wait', 'clock', 'Oprită. Cu cheile magazinului online de mai jos plătește direct pe site, cu cardul, Apple Pay sau Google Pay.']
       : c.error ? ['is-wait', 'alert', 'Oprită: ' + c.error]
       : c.sandbox ? ['is-wait', 'clock', 'Cont de test myPOS: merge doar pe previzualizare (/v2), cu cardurile de test.']
       : c.live ? ['is-ok', 'checkCircle', 'Pornită pe site · testul de 1 leu a trecut ' + mpWhen(c.testPassedAt)]
@@ -1656,7 +1657,7 @@
     const hint = (k) => '<em class="k-muted" style="display:block;margin-top:5px;font-style:normal;font-size:.76rem;line-height:1.45">' + esc(CO_HINT[k]) + '</em>';
     const inp = (k, ph) => '<label class="k-field"><span>' + CO_LABEL[k] + '</span><input name="' + k + '" type="text" inputmode="numeric" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore spellcheck="false" placeholder="' + esc(ph) + '">' + hint(k) + '</label>';
     const area = (k, ph) => '<label class="k-field full"><span>' + CO_LABEL[k] + '</span><textarea name="' + k + '" rows="3" autocomplete="off" spellcheck="false" placeholder="' + esc(ph) + '" style="font-family:ui-monospace,Menlo,monospace;font-size:.78rem"></textarea>' + hint(k) + '</label>';
-    return '<details class="st-fb-manual"' + (c.saved ? '' : ' open') + '><summary>' + (c.saved ? 'Schimbă cheile plății online' : 'Cheile plății online') + '</summary>' +
+    return '<details class="st-fb-manual"' + (c.saved || c.provider === 'requests' ? '' : ' open') + '><summary>' + (c.saved ? 'Schimbă cheile magazinului online' : 'Cheile magazinului online (Embedded, când e aprobat)') + '</summary>' +
       '<form class="st-manual" data-mp-co autocomplete="off">' +
         '<div class="k-field"><span>Mod</span>' + K.seg('mode', [['live', 'Live'], ['sandbox', 'Test (sandbox)']], c.sandbox ? 'sandbox' : 'live') + '</div>' +
         area('pack', c.saved ? 'Lasă gol ca să rămână cheile salvate.' : 'eyJzaWQiOi…') +
@@ -1667,12 +1668,85 @@
         '<div class="st-int-row"><button type="submit" class="k-btn is-primary is-sm">' + icon('check') + 'Verifică și salvează</button>' +
           (c.saved ? '<button type="button" class="k-btn is-ghost is-sm" data-mp-co-off>Scoate cheile</button>' : '') + '</div></form></details>';
   }
+  // The Partners app („Centrul360 checkout”, partners.mypos.com): payment requests until the online store is approved. Six
+  // keys, the same kinds as for the balance but of the checkout integration (Remote Payments / Online); stored on the server.
+  const RQ_LABEL = { partnerId: 'Partner ID', appId: 'Application ID', clientId: 'Client ID', clientSecret: 'Client Secret', merchantId: 'Merchant Client ID', merchantSecret: 'Merchant Secret' };
+  const RQ_PH = { partnerId: 'mps-p-…', appId: 'mps-app-…', clientId: 'client_…', clientSecret: 'secret_…', merchantId: 'cli_…', merchantSecret: 'sec_…' };
+  const RQ_HINT = {
+    partnerId: 'partners.mypos.com: ID-ul contului de partener, începe cu mps-p-.',
+    appId: 'partners.mypos.com → integrarea „Centrul360 checkout”: Application ID, începe cu mps-app-.',
+    clientId: 'Aceeași integrare, la credențiale: Client ID, începe cu client_.',
+    clientSecret: 'Lângă Client ID: Client Secret, începe cu secret_ (se arată o singură dată când îl generezi).',
+    merchantId: 'După ce contul myPOS al clinicii aprobă integrarea: Merchants → clinica → Generate. Începe cu cli_.',
+    merchantSecret: 'Împreună cu Merchant Client ID: Merchant Secret, începe cu sec_. Atenție: după 3 încercări greșite myPOS blochează accesul.',
+  };
+  const RQ_ERR = {
+    req_partner: 'myPOS n-a primit cheile integrării (Client ID / Client Secret).', req_merchant: 'myPOS n-a primit cheile clinicii (Merchant Client ID / Merchant Secret). Verifică-le bine: după 3 încercări greșite myPOS blochează accesul.',
+    req_denied: 'myPOS nu dă voie integrării la plăți. Trebuie să fie Channel „Remote Payments”, Type „Online”, aprobată de clinică.',
+  };
+  function rqBlock(c, co) {
+    c = c || { saved: false };
+    const err = co && co.requestsError;
+    const st = !c.saved ? ['is-wait', 'clock', 'Fără chei. Cu ele, plata online merge de acum, pe pagina myPOS, deschisă într-o filă nouă.']
+      : err ? ['is-wait', 'alert', 'Oprită: ' + (RQ_ERR[err] || err) + ' Pune cheile din nou mai jos.']
+      : co && co.provider === 'embedded' ? ['is-ok', 'checkCircle', 'Salvată, de rezervă: acum plătește prin magazinul online (în pagină).']
+      : c.demo ? ['is-wait', 'clock', 'Cont demo myPOS: merge doar pe previzualizare (/v2).']
+      : c.live ? ['is-ok', 'checkCircle', 'Pornită pe site · testul de 1 leu a trecut ' + mpWhen(c.testPassedAt)]
+      : c.testPassedAt ? ['is-ok', 'checkCircle', 'Testul de 1 leu a trecut. Merge pe previzualizare; pe site o pornești de aici.']
+      : ['is-wait', 'clock', 'Cheile sunt bune. Urmează testul de 1 leu, cu un card adevărat.'];
+    const mine = co && co.provider === 'requests';
+    const row = c.saved && !err ? '<div class="st-int-row"><button type="button" class="k-btn is-outline is-sm" data-mp-rq-check>' + icon('refresh') + 'Testează conexiunea</button>' +
+      (mine ? '<button type="button" class="k-btn is-outline is-sm" data-mp-co-test>' + icon('card') + (c.testPassedAt ? 'Încă un test de 1 leu' : 'Test 1 leu') + '</button>' : '') +
+      (mine && !c.demo && c.testPassedAt ? '<button type="button" class="k-btn ' + (c.live ? 'is-ghost' : 'is-primary') + ' is-sm" data-mp-rq-live="' + (c.live ? '0' : '1') + '">' + (c.live ? 'Oprește pe site' : 'Pornește pe site') + '</button>' : '') + '</div>' : '';
+    const hint = (k) => '<em class="k-muted" style="display:block;margin-top:5px;font-style:normal;font-size:.76rem;line-height:1.45">' + esc(RQ_HINT[k]) + '</em>';
+    const ph = (k) => (c.saved ? (k === 'partnerId' || k === 'appId' ? c[k] : /Secret/.test(k) ? 'salvat ✓' : 'salvat ✓ ' + (c[k] || '')) : RQ_PH[k]);
+    return '<div class="st-fb-status ' + st[0] + '">' + icon(st[1]) + '<div><b>Aplicația de parteneri (până se aprobă magazinul online)</b><span>' + esc(st[2]) + '</span></div></div>' + row +
+      '<details class="st-fb-manual"' + (c.saved ? '' : ' open') + '><summary>' + (c.saved ? 'Schimbă cheile aplicației de parteneri' : 'Cheile aplicației de parteneri') + '</summary>' +
+      '<form class="st-manual" data-mp-rq autocomplete="off">' +
+        '<div class="k-field"><span>Mod</span>' + K.seg('mode', [['live', 'Live'], ['demo', 'Demo']], c.demo ? 'demo' : 'live') + '</div>' +
+        '<div class="st-mp-gw-grid">' + Object.keys(RQ_LABEL).map((k) => '<label class="k-field"><span>' + RQ_LABEL[k] + '</span><input name="' + k + '" type="text" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore spellcheck="false" placeholder="' + esc(ph(k)) + '">' + hint(k) + '</label>').join('') + '</div>' +
+        '<small class="k-muted">Integrarea „Centrul360 checkout” din partners.mypos.com (Channel: Remote Payments, Type: Online). Nu sunt cheile de la „Sold în timp real”: acelea nu pot face plăți. Câmpurile goale păstrează ce e salvat.</small>' +
+        '<div class="st-int-row"><button type="submit" class="k-btn is-primary is-sm">' + icon('check') + 'Verifică și salvează</button>' +
+          (c.saved ? '<button type="button" class="k-btn is-ghost is-sm" data-mp-rq-off>Scoate cheile</button>' : '') + '</div></form></details>';
+  }
+  function rqWire(box) {
+    const f = box.querySelector('[data-mp-rq]');
+    if (f) f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const v = K.formValues(f);
+      const ms = String(v.merchantSecret || '').replace(/[\s​-‍⁠﻿]/g, '');
+      if (ms && !/^sec_/.test(ms) && !(await K.ui().confirm({ title: 'Merchant Secret nu începe cu sec_', message: 'Un secret greșit se numără la cele 3 încercări după care myPOS blochează accesul. Îl trimit oricum?', confirmText: 'Trimite oricum', cancelText: 'Verific întâi' }))) return;
+      K.busy(f.querySelector('[type="submit"]'), async () => {
+        try { await K.api('/api/portal-mypos', Object.assign({ action: 'requests' }, v)); K.ui().toast('Cheile aplicației de parteneri sunt bune și salvate.', 'success'); loadMypos(box); }
+        catch (err) {
+          const fl = err.data && err.data.field;
+          K.ui().toast(err.code === 'req_format' && fl ? (err.data.same ? 'Merchant Secret e același cu Client Secret. E altă cheie.' : RQ_LABEL[fl] + ' lipsește sau nu arată bine (începe cu ' + RQ_PH[fl].replace('…', '') + ').')
+            : (RQ_ERR[err.code] || MP_ERR[err.code] || K.errText(err)) + (err.data && err.data.status ? ' [myPOS ' + err.data.status + ']' : ''), 'error');
+        }
+      });
+    });
+    const ck = box.querySelector('[data-mp-rq-check]');
+    if (ck) ck.addEventListener('click', () => K.busy(ck, async () => {
+      try { await K.api('/api/portal-mypos', { action: 'requests_check' }); K.ui().toast('Conexiunea merge: myPOS a primit cheile aplicației de parteneri.', 'success'); loadMypos(box); }
+      catch (err) { K.ui().toast((RQ_ERR[err.code] || MP_ERR[err.code] || K.errText(err)) + (err.data && err.data.status ? ' [myPOS ' + err.data.status + ']' : ''), 'error'); loadMypos(box); }
+    }));
+    const lv = box.querySelector('[data-mp-rq-live]');
+    if (lv) lv.addEventListener('click', () => K.busy(lv, async () => {
+      try { await K.api('/api/portal-mypos', { action: 'requests_live', on: lv.dataset.mpRqLive === '1' }); K.ui().toast(lv.dataset.mpRqLive === '1' ? 'Plata online e pornită pe site.' : 'Plata online e oprită pe site.', 'success'); loadMypos(box); }
+      catch (err) { K.ui().toast(CO_ERR[err.code] || K.errText(err), 'error'); }
+    }));
+    const off = box.querySelector('[data-mp-rq-off]');
+    if (off) off.addEventListener('click', async () => {
+      if (!(await K.ui().confirm({ title: 'Scoți cheile aplicației de parteneri?', message: 'Plata online prin pagina myPOS se oprește.', confirmText: 'Scoate', danger: true }))) return;
+      try { await K.api('/api/portal-mypos', { action: 'requests_off' }); K.ui().toast('Cheile sunt scoase.', 'success'); loadMypos(box); } catch (err) { mpFail(err); }
+    });
+  }
   function coRow(c) {
     if (!c || !c.saved) return '';
     if (c.error) return '<div class="st-int-row"><button type="button" class="k-btn is-outline is-sm" data-mp-co-check>' + icon('refresh') + 'Testează conexiunea</button></div>';
     return '<div class="st-int-row">' +
       '<button type="button" class="k-btn is-outline is-sm" data-mp-co-check>' + icon('refresh') + 'Testează conexiunea</button>' +
-      '<button type="button" class="k-btn is-outline is-sm" data-mp-co-test>' + icon('card') + (c.testPassedAt ? 'Încă un test de 1 leu' : 'Test 1 leu') + '</button>' +
+      (c.provider === 'embedded' ? '<button type="button" class="k-btn is-outline is-sm" data-mp-co-test>' + icon('card') + (c.testPassedAt ? 'Încă un test de 1 leu' : 'Test 1 leu') + '</button>' : '') +
       (!c.sandbox && c.testPassedAt ? '<button type="button" class="k-btn ' + (c.live ? 'is-ghost' : 'is-primary') + ' is-sm" data-mp-co-live="' + (c.live ? '0' : '1') + '">' + (c.live ? 'Oprește pe site' : 'Pornește pe site') + '</button>' : '') +
       (c.waiting ? '<span class="k-muted">' + esc(K.plural(c.waiting, 'plată așteaptă', 'plăți așteaptă') + ' răspunsul myPOS') + '</span>' : '') + '</div>';
   }
@@ -1720,7 +1794,7 @@
     let d;
     try { d = await K.api('/api/portal-mypos'); } catch (e) { box.innerHTML = '<span class="k-muted">Nu am putut verifica myPOS.</span>'; return; }
     const errLine = (x) => (x && x.status ? 'myPOS a răspuns ' + x.status + (x.message ? ': ' + x.message : '') : (x && x.message) || 'myPOS n-a răspuns');
-    const co = coStatus(d.checkout) + coRow(d.checkout) + coForm(d.checkout);
+    const co = coStatus(d.checkout) + coRow(d.checkout) + coForm(d.checkout) + rqBlock(d.checkout && d.checkout.requests, d.checkout);
     if (!d.connected) {
       box.innerHTML = mpKeysForm(true, false) + co;
     } else {
@@ -1743,7 +1817,7 @@
         mpKeysForm(false, true) +
         '<button type="button" class="k-btn is-ghost is-sm st-mp-off" data-mp-off>Deconectează myPOS</button>';
     }
-    coWire(box);
+    coWire(box); rqWire(box);
     const f = box.querySelector('[data-mp-connect]');
     if (f) f.addEventListener('submit', (e) => {
       e.preventDefault();

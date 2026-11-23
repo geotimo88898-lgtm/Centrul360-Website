@@ -93,7 +93,7 @@ async function paymentStatus(c, orderId) {
   }
   // the test environment makes up a payment for any order id (another sum, in EUR): only an answer about this very order,
   // with its sum in lei, is believed (api/_lib/pay.js)
-  return { orderId: String(j.OrderID || ''), status: Number(j.PaymentStatus) || 0, amount: Number(j.Amount) || 0, currency: String(j.Currency || ''), ref: String(j.IPC_Trnref || j.PaymentReference || ''), method: String(j.PaymentMethod || ''), at: String(j.DateTime || ''), signed: true };
+  return { orderId: String(j.OrderID || ''), status: Number(j.PaymentStatus) || 0, amount: Number(j.Amount) || 0, currency: String(j.Currency || ''), ref: String(j.IPC_Trnref || j.PaymentReference || ''), payRef: String(j.PaymentReference || ''), method: String(j.PaymentMethod || ''), at: String(j.DateTime || ''), signed: true };
 }
 
 // what the browser may know: the embedded form needs the Store ID, the client number and the key index (they are not secret)

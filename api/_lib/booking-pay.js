@@ -141,6 +141,8 @@ async function matchPays(pays) {
     // the same sum as a booking paid through the site's checkout (still waiting for myPOS's word, or just paid): that
     // payment is surely the checkout's own, left alone (asked about again on the next scan, when the checkout has settled)
     if (fresh.some((a) => a && a.payVia === 'checkout' && same(a.payAmount, p.amount) && (a.paidOnline ? Math.abs(t - (Date.parse(a.paidOnline.at) || 0)) < 30 * 60e3 : waits(a) && t - madeAt(a) <= MATCH_MS && madeAt(a) <= t + 5 * 60e3))) continue;
+    // and any payment of the checkout itself (its reference, or the sum of one of its orders still waiting or just paid)
+    if (await require('./pay').isCheckoutPayment(p).catch(() => false)) continue;
     const cands = candsOf(fresh, p.amount, t);
     if (!cands.length) {
       // the sum of a recent online booking that waits for nothing (cancelled before she paid): the desk looks at it
