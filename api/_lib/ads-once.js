@@ -77,6 +77,12 @@ const CARD_SITE = { id: 'card-site-tm-2026-11-23', why: 'Cardul de Sărbători d
     ] }] } };
 void CARD_SITE;
 const JOBS = [
+  // 23.11 ~22:55, George changed the card campaigns (only TM, 100 lei, men and women, the home page) after the first
+  // version had already made „C360 · TM · Card · site” (two ads, to the card page): it goes off at once; the new one comes
+  // from CARD_SITE above once George says go
+  { id: 'card-site-v1-off-2026-11-23', why: 'Prima versiune a campaniei cardului (TM, pagina cardului) oprită', actions: [
+    { campaignId: '120250732165590149', name: 'C360 · TM · Card · site (v1)', status: 'PAUSED', why: 'George a schimbat campania: doar TM, 100 lei, prima pagină' },
+  ] },
   // 23.11 ~19:50, George: no HIFU gât result on a HIFU gușă ad: the AR campaign with case 24 goes off at once, and is made
   // again with case 16 (HIFU gușă, from the approved set) under „ARAD”, the words about gușă; same audience, lookalike, 50 lei
   { id: 'ar-caz24-off-2026-11-23', why: 'HIFU gușă AR: reclama cu cazul 24 (HIFU gât) oprită', actions: [
