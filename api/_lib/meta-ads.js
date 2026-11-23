@@ -336,7 +336,8 @@ async function publish(conn, image, s) {
     const titles = [s.headline, s.headline2, s.headline3].filter(Boolean);
     const multi = bodies.length > 1 || titles.length > 1;
     const feed = multi ? { bodies: bodies.map((text) => ({ text })), titles: titles.map((text) => ({ text })), descriptions: s.description ? [{ text: s.description }] : undefined, optimization_type: 'DEGREES_OF_FREEDOM' } : null;
-    const tags = s.link ? { url_tags: 'utm_source=meta&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}' } : {};
+    // a link that names its own UTM tags (23.11: utm_source=facebook on the site ads) keeps them, without Meta's second set
+    const tags = s.link && !/[?&]utm_source=/.test(s.link) ? { url_tags: 'utm_source=meta&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}' } : {};
     let creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name: s.adName, object_story_spec: spec }, tags, feed ? { asset_feed_spec: feed } : {}));
     let textNote = '';
     // Meta refusing the second text: the ad goes with the first one, and says so
@@ -777,7 +778,7 @@ async function recentCampaigns(conn) {
 
 // why a campaign barely spends (Claude's report): its ad sets' and ads' delivery as Meta tells it
 async function delivery(conn, id) {
-  const r = await call('GET', '/' + id, conn.userToken, { fields: 'effective_status,adsets{effective_status,daily_budget,learning_stage_info,start_time,promoted_object,targeting{age_min,age_max,genders,geo_locations}},ads{effective_status,issues_info,ad_review_feedback}' });
+  const r = await call('GET', '/' + id, conn.userToken, { fields: 'name,objective,effective_status,adsets{effective_status,daily_budget,optimization_goal,destination_type,learning_stage_info,start_time,promoted_object,targeting{age_min,age_max,genders,geo_locations}},ads{name,effective_status,issues_info,ad_review_feedback,creative{call_to_action_type,object_story_spec{link_data{link,call_to_action}},asset_feed_spec{titles,link_urls,call_to_action_types}}}' });
   return r.ok ? r.j : { error: metaError(r.j) };
 }
 // whether the account is shared (some campaigns are left out), so its own totals can't be used as ours

@@ -12,6 +12,46 @@ const { notifyMany } = require('./notify');
 
 const KEY = 'data/ads-once.json';
 const JOBS = [
+  // 23.11, George: two campaigns of real results to the home page (Purchase on the site's pixel), 50 lei a day each, women
+  // only, the button „Află mai multe”: Timișoara with cases 16 and 05, Arad with cases 24 and 11 (the homepage's approved
+  // cases, untouched, under the city's name). The pictures: brand_asset/ads/rezultate-*.jpg. Made once (api/_lib/ads-once.js
+  // `site`): the first ad makes the campaign and its ad set, the second joins that ad set; each step written down at once.
+  { id: 'site-results-2026-11-23', why: 'Rezultate reale spre prima pagină: TM și AR, câte 2 reclame, 50 lei/zi', site: {
+    pixelId: '2276074362800484', cta: 'LEARN_MORE', ages: [25, 64],
+    campaigns: [
+      { name: 'C360 · TM · Rezultate · site', utm: 'c360-tm-rezultate-site', city: 'Timișoara', budget: 50, ads: [
+        { name: 'TM · HIFU gușă · caz 16', image: 'rezultate-tm-gusa.jpg',
+          text: 'TIMIȘOARA! Uite cum poți scăpa de gușă fără ace și fără operație, chiar dacă ai încercat deja tot.\n\n' +
+            '✅ O singură ședință. Poza e reală, făcută la noi în clinică.\n' +
+            '✅ Fără ace și fără operație. Doar ultrasunete care strâng pielea de sub bărbie.\n' +
+            '✅ HIFU gușă costă acum 190 lei în loc de 290, de Black Friday.\n\n' +
+            'Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\nIntră pe site și alege ce ți se potrivește.\n👉 centrul360.com\n\nRezultatele diferă de la o persoană la alta.',
+          headlines: ['SCAPĂ DE GUȘĂ FĂRĂ ACE 👉', 'REZULTAT DUPĂ O ȘEDINȚĂ ⏰💨', '190 LEI ÎN LOC DE 290 👉'], description: '5,0 pe Google, peste 300 de recenzii' },
+        { name: 'TM · Liposonix șolduri · caz 05', image: 'rezultate-tm-solduri.jpg',
+          text: 'TIMIȘOARA! Uite cum poți obține un asemenea rezultat fără operație și fără diete stricte, chiar dacă sala nu te-a ajutat până acum.\n\n' +
+            '✅ O singură ședință de Liposonix. Poza e reală, făcută la noi în clinică.\n' +
+            '✅ Stai întinsă, iar ultrasunetele lucrează pe grăsimea de pe șolduri. Tu nu faci niciun efort.\n' +
+            '✅ 2 zone la preț de una: 640 lei în loc de 1.280, de Black Friday.\n\n' +
+            'Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\nAlege-ți ziua pe site, durează câteva secunde.\n👉 centrul360.com\n\nRezultatele diferă de la o persoană la alta.',
+          headlines: ['TALIE MAI DEFINITĂ, FĂRĂ OPERAȚIE 👉', 'SE VEDE DIN PRIMA ȘEDINȚĂ ⏰💨', '2 ZONE LA PREȚ DE UNA 👉'], description: '5,0 pe Google, peste 300 de recenzii' },
+      ] },
+      { name: 'C360 · AR · Rezultate · site', utm: 'c360-ar-rezultate-site', city: 'Arad', budget: 50, ads: [
+        { name: 'AR · HIFU gât · caz 24', image: 'rezultate-ar-gat.jpg',
+          text: 'ARAD! Uite cum poți avea un gât mai neted, fără ace și fără operație, chiar dacă până acum cremele n-au ajutat.\n\n' +
+            '✅ O singură ședință de HIFU. Poza e reală, făcută la noi în clinica din Arad.\n' +
+            '✅ Ultrasunete care strâng pielea. Te întorci la treburile tale în aceeași zi.\n' +
+            '✅ Cu Cardul de Sărbători plătești 990 lei și primești 2.500 lei în tratamente.\n\n' +
+            'Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\nIntră pe site și vezi ce ți se potrivește.\n👉 centrul360.com\n\nRezultatele diferă de la o persoană la alta.',
+          headlines: ['GÂT MAI NETED, FĂRĂ ACE 👉', 'REZULTAT DUPĂ O ȘEDINȚĂ ⏰💨', 'PLĂTEȘTI 990 LEI, PRIMEȘTI 2.500 👉'], description: 'Consultația e gratuită' },
+        { name: 'AR · Restart · caz 11', image: 'rezultate-ar-restart.jpg',
+          text: 'ARAD! Uite cum poți avea un ten mai luminos și mai odihnit, fără zile de recuperare, chiar dacă ai un program plin.\n\n' +
+            '✅ O singură ședință de 50 de minute. Poza e reală, făcută la noi în clinica din Arad.\n' +
+            '✅ Curățăm, hidratăm și redăm strălucirea pielii. Te întorci la treburile tale în aceeași zi.\n' +
+            '✅ Tratamentul facial Restart costă acum 190 lei în loc de 300, de Black Friday.\n\n' +
+            'Până pe 24 decembrie, ce plătești acum valorează de până la 3 ori mai mult în tratamente. După, revine la normal.\n\nAlege-ți ziua pe site, durează câteva secunde.\n👉 centrul360.com\n\nRezultatele diferă de la o persoană la alta.',
+          headlines: ['TEN MAI LUMINOS ÎN 50 DE MINUTE ⏰💨', 'TEN ODIHNIT, FĂRĂ RECUPERARE 👉', '190 LEI ÎN LOC DE 300 👉'], description: '5,0 pe Google, peste 300 de recenzii' },
+      ] },
+    ] } },
   // 23.11 ~00:20, the first copy (1713044987053623) was made with a draft ending, before George's final words; the final
   // one: copied from it as it is, only the ending in George's words; every C360 ad on the first copy or on the old WhatsApp
   // form moves to it, the template too, and the draft copy is archived once no ad sends into it
@@ -500,6 +540,31 @@ const expired = (j) => !!dayOf(j) && Date.now() - Date.parse(dayOf(j) + 'T00:00:
 const short = (s) => String(s || '').replace(/^(TM|AR) /, '').slice(0, 40);
 const same = (a, b) => Math.round(Number(a) * 100) === Math.round(Number(b) * 100);
 
+// a picture of brand_asset/ads/ (this repository, public): from GitHub's raw files, else from the site itself
+async function sitePicture(file) {
+  const tries = ['https://raw.githubusercontent.com/geotimo88898-lgtm/centrul360-website/main/brand_asset/ads/', 'https://www.centrul360.com/brand_asset/ads/'];
+  let why = '';
+  for (const base of tries) {
+    try {
+      const r = await fetch(base + encodeURIComponent(file));
+      const buf = r.ok ? Buffer.from(await r.arrayBuffer()) : null;
+      if (buf && buf.length > 10000 && buf[0] === 0xff && buf[1] === 0xd8) return { base64: buf.toString('base64') };
+      why = 'poza ' + r.status;
+    } catch (e) { why = 'poza: ' + e.message; }
+  }
+  return { error: why || 'poza lipsește' };
+}
+// what the site ads job made (ids, ads counted, the last refusal), for /api/clock-status
+async function siteSummary() {
+  const doc = (await readJSON(KEY, {})) || {};
+  const out = {};
+  for (const j of JOBS.filter((x) => x.site)) {
+    const st = (doc.site || {})[j.id] || {};
+    out[j.id] = { done: !!(doc.done || {})[j.id], campaigns: j.site.campaigns.map((c) => { const sc = st[c.name] || {}; return { name: c.name, campaignId: sc.campaignId || '', adsetId: sc.adsetId || '', ads: sc.ads || {}, error: sc.error || '', warning: sc.warning || '' }; }) };
+  }
+  return out;
+}
+
 async function run() {
   // a read that fails throws: nothing is applied and nothing overwritten this hour (a doc read as empty would apply
   // every job again, on an account that is already as the owners want it)
@@ -691,6 +756,59 @@ async function run() {
       await save();
       await tell({ tone: 'good', tag: 'once-done-' + j.id, title: 'FĂCUT ✅ - ' + j.why, text: f.name + ' (' + st.newId + ')' + (f.adId ? ' · reclama ' + short(f.campaign) + ' trimite acum în el' : '') + (st.moved ? ' · reclame mutate: ' + Object.values(st.moved).filter((x) => x.ok).length : '') });
     }
+    // ads of ours to a page of the site (23.11): the pictures from the repository, each ad made by publish() (the first one
+    // makes the campaign and its ad set, the next ones join that ad set); every id written down the moment Meta gives it,
+    // so a run cut short never makes a second campaign; a refusal is told once a day and tried again next hour
+    for (const j of todo.filter((x) => x.site)) {
+      doc.site = doc.site || {};
+      const st = doc.site[j.id] = doc.site[j.id] || {};
+      const d = await ads.loadDefaults(readJSON);
+      let failed = '';
+      for (const c of j.site.campaigns) {
+        if (!ads.ours(conn, c.name)) { failed = c.name + ': numele nu e al nostru în contul conectat'; break; }
+        const sc = st[c.name] = st[c.name] || { ads: {} };
+        const link = 'https://www.centrul360.com/?utm_source=facebook&utm_medium=paid&utm_campaign=' + c.utm;
+        for (const a of c.ads) {
+          if (sc.ads[a.name]) continue;
+          if (sc.making && Date.now() - Date.parse(sc.making) < 10 * 60e3) { failed = c.name + ': se face deja'; break; }
+          const pic = await sitePicture(a.image);
+          if (pic.error) { failed = a.name + ': ' + pic.error; break; }
+          const v = ads.cleanSettings({
+            adsetId: sc.adsetId || '', campaignName: c.name, adsetName: c.city + ' ' + d.radiusKm + ' km · femei ' + j.site.ages.join('-'), adName: a.name,
+            city: c.city, radiusKm: d.radiusKm, women: true, ageMin: j.site.ages[0], ageMax: j.site.ages[1], placements: d.placements, budget: c.budget,
+            link, goal: 'purchase', pixelId: j.site.pixelId, primaryText: a.text, headline: a.headlines[0], headline2: a.headlines[1], headline3: a.headlines[2],
+            description: a.description, cta: j.site.cta, startNow: true,
+          });
+          if (v.error) { failed = a.name + ': ' + v.error; break; }
+          sc.making = new Date().toISOString(); await save();
+          const r = await ads.publish(conn, { base64: pic.base64, name: a.image }, v.s);
+          delete sc.making;
+          if (r.error) { sc.error = r.error; await save(); failed = a.name + ': ' + r.error; break; }
+          if (r.campaignId) sc.campaignId = r.campaignId;
+          sc.adsetId = r.adsetId;
+          sc.ads[a.name] = r.adId;
+          if (r.warning) sc.warning = (sc.warning ? sc.warning + ' · ' : '') + r.warning;
+          delete sc.error;
+          doc.log.push({ job: j.id, at: new Date().toISOString(), campaignId: sc.campaignId, campaignName: c.name, adId: r.adId, why: 'reclama ' + a.name + ' publicată' + (r.texts ? ' (' + r.texts + ' texte)' : '') });
+          await save();
+          out.push(r.adId);
+        }
+        if (failed) break;
+      }
+      if (!failed) {
+        doc.done[j.id] = new Date().toISOString();
+        await save();
+        await tell({ tone: 'good', tag: 'once-done-' + j.id, title: 'FĂCUT ✅ - ' + j.why, text: j.site.campaigns.map((c) => c.name + ': ' + Object.keys((st[c.name] || {}).ads || {}).length + ' reclame').join(' · ') });
+      } else if (expired(j)) {
+        doc.done[j.id] = new Date().toISOString();
+        doc.log.push({ job: j.id, at: new Date().toISOString(), expired: true, why: failed });
+        await save();
+        await tell({ tone: 'bad', tag: 'once-expired-' + j.id, title: 'NEFĂCUT ⚠️ - ' + j.why, text: failed });
+      } else {
+        problems.push(failed);
+        await tell({ tone: 'bad', tag: 'once-fail-' + j.id, title: 'NU ÎNCĂ ⚠️ - ' + j.why, text: 'Meta a refuzat, mai încerc din oră în oră: ' + failed });
+      }
+    }
     // the template every new form starts from (Formulare → Setări formulare)
     for (const j of todo.filter((x) => x.template)) {
       const T = require('./fb-form-template');
@@ -703,7 +821,7 @@ async function run() {
     }
     // a rule over the campaigns that spent this week (the running ones and those paused a moment ago): its budget times a
     // factor, up to a cap
-    const rules = todo.filter((x) => !x.actions && !x.formSite && !x.template);
+    const rules = todo.filter((x) => !x.actions && !x.formSite && !x.template && !x.site);
     if (rules.length) {
       const days = await ads.campaignDays(conn, { since: day(Date.now() - 6 * 864e5), until: day(Date.now()) });
       if (days.error) return { changed: out.length, error: days.error };
@@ -736,4 +854,4 @@ async function run() {
   }
 }
 
-module.exports = { run, JOBS };
+module.exports = { run, JOBS, siteSummary };

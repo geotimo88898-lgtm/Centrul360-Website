@@ -11,5 +11,7 @@ module.exports = async (req, res) => {
   const tm = await require('./_lib/tm-on-once').summary().catch(() => null); // the Timișoara ads switched back on (8.11)
   // Nuki's portal questions per role, once after a publish (16.11): the score and the questions it sent elsewhere
   const nukiGuide = await require('./_lib/nuki-guide-once').summary().catch(() => null);
-  res.status(200).json({ ok: true, last, minutesAgo: age, healthy: age != null && age <= 75, texts, tm, nukiGuide });
+  // the site ads of 23.11 (api/_lib/ads-once.js): campaign and ad ids, the last refusal
+  const siteAds = await require('./_lib/ads-once').siteSummary().catch(() => null);
+  res.status(200).json({ ok: true, last, minutesAgo: age, healthy: age != null && age <= 75, texts, tm, nukiGuide, siteAds });
 };
