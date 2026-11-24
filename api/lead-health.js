@@ -885,6 +885,21 @@ module.exports = async (req, res) => {
     res.status(200).json(out);
     return;
   }
+  // ?ghldm=1: whether HighLevel still gets the Instagram and Messenger messages (its own Meta app has the access ours lacks):
+  // per sub-account, the newest conversations' channel and date only (no names, no text)
+  if (req.query && req.query.ghldm) {
+    const G = require('./_lib/ghl'); const c = await readJSON(G.CONN, {}) || {}; const out = {};
+    for (const [tag, a] of Object.entries((c.accounts) || {})) {
+      if (!a || !a.token || !a.locationId) { out[tag] = 'fără conexiune'; continue; }
+      try {
+        const j = await G.call(a, '/conversations/search?' + new URLSearchParams({ locationId: a.locationId, limit: '40', sortBy: 'last_message_date', sort: 'desc' }), '2021-04-15');
+        const rows = (j.conversations || []).map((x) => ({ type: x.lastMessageType || x.type || '', at: x.lastMessageDate ? new Date(Number(x.lastMessageDate) || x.lastMessageDate).toISOString() : '', dir: x.lastMessageDirection || '', unread: x.unreadCount || 0 }));
+        const by = {}; rows.forEach((r) => { by[r.type] = by[r.type] || { n: 0, newest: '' }; by[r.type].n++; if (r.at > by[r.type].newest) by[r.type].newest = r.at; });
+        out[tag] = { total: j.total || rows.length, byType: by, newest: rows.slice(0, 8) };
+      } catch (e) { out[tag] = { error: e.code || e.message, status: e.status || 0 }; }
+    }
+    res.status(200).json(out); return;
+  }
   // ?ig=1: where Instagram's and Facebook's messages stand (permissions, the Page's app, the webhooks; no token);
   // ?igsetup=1: the webhooks and the Page's app set for the messages (api/_lib/social-inbox.js setup), then the same
   // ?igimport=1: the Instagram and Messenger conversations from before the connection, brought into Mesaje once
