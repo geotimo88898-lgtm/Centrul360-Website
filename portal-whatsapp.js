@@ -41,20 +41,43 @@
     panel.addEventListener('change', (e) => { if (e.target.name === 'waloc') { C.loc = e.target.value; paintList(); } if (e.target.matches('[data-attach]')) attach(e.target); });
   }
 
-  async function load() {
+  // the list loads one at a time: a change announced while one is on the way brings one more after it, and the changes
+  // that come in a burst (a campaign's statuses, the automations) load it at most every few seconds. A list already on
+  // screen stays when a load fails (the next change or check tries again); only a first load shows the error.
+  let loading = null, again = false, lastLoad = 0, laterT = 0;
+  const GAP = 4000;
+  function load(force) {
+    if (loading) { again = true; return loading; }
+    const wait = force === true ? 0 : lastLoad + GAP - Date.now();
+    if (wait > 0) { clearTimeout(laterT); laterT = setTimeout(() => load(true), wait); return Promise.resolve(); }
+    clearTimeout(laterT);
+    loading = loadNow().finally(() => {
+      loading = null; lastLoad = Date.now();
+      if (again) { again = false; clearTimeout(laterT); laterT = setTimeout(() => load(true), GAP); }
+    });
+    return loading;
+  }
+  async function loadNow() {
     try {
       const j = await K.api('/api/portal-whatsapp', { action: 'list' });
+      const prev = C.selectedPhone && C.conversations.find((c) => c.phone === C.selectedPhone);
+      const was = prev ? [prev.lastMessageAt, prev.lastStatus, prev.unreadCount].join('|') : '';
       C.conversations = j.conversations || [];
       C.numbers = j.numbers || {};
       C.templates = j.templates || [];
       C.snippets = j.snippets || [];
       C.loaded = true;
       C.loads = (C.loads || 0) + 1;
+      C.failed = 0;
       if (C.selectedPhone && !C.conversations.find((c) => c.phone === C.selectedPhone)) closeThread();
       if (!panel.querySelector('[data-mx-list]')) render(); else { paintStatus(); paintList(); }
       fitWrap();
-      if (C.selectedPhone) loadThread(C.selectedPhone, false);
+      // the open conversation loads again only when something in it moved (a message, a status)
+      const now = C.selectedPhone && C.conversations.find((c) => c.phone === C.selectedPhone);
+      if (now && (!prev || [now.lastMessageAt, now.lastStatus, now.unreadCount].join('|') !== was)) loadThread(C.selectedPhone, false);
     } catch (e) {
+      C.failed = (C.failed || 0) + 1;
+      if (C.loaded && panel.querySelector('[data-mx-list]')) { if (C.failed >= 3) K.ui().toast('Mesajele se actualizează greu. Încerc din nou.', 'info'); clearTimeout(laterT); laterT = setTimeout(() => load(true), Math.min(30e3, 3000 * C.failed)); return; }
       panel.querySelector('[data-body]').innerHTML = K.empty('alert', 'Nu am putut încărca mesajele', 'Verifică conexiunea și reîncearcă.', '<button type="button" class="k-btn is-primary" data-act="refresh">Reîncearcă</button>');
     }
   }
@@ -415,7 +438,7 @@
               const r = await K.api('/api/portal-whatsapp', { action: 'send_template', phone: opts.phone, templateId: b.dataset.tpl, name: opts.name || '', location: city || '' });
               d.close();
               K.ui().toast('Trimis pe WhatsApp.', 'success');
-              await load();
+              await load(true);
               openThread(r.phone);
             } catch (err) { b.disabled = false; K.ui().toast(err.data && err.data.message ? err.data.message : K.errText(err), 'error'); }
           });
@@ -476,7 +499,7 @@
     const act = e.target.closest('[data-act]');
     if (act) {
       const a = act.dataset.act;
-      if (a === 'refresh') return load();
+      if (a === 'refresh') return load(true);
       if (a === 'new') return openNew();
       if (a === 'connect') { K.go('integrari'); return; }
       if (a === 'back') return goBack();
@@ -775,7 +798,7 @@
             dr.close();
             await loadThread(ph, false);
             scrollToBottom();
-            load();
+            load(true);
           } catch (err) { K.ui().toast((err.data && err.data.message) || K.errText(err), 'error'); }
         }));
       } });
@@ -834,7 +857,7 @@
                   dr.close();
                   await loadThread(ph, false);
                   scrollToBottom();
-                  load();
+                  load(true);
                 } catch (err) { K.ui().toast((err.data && err.data.message) || K.errText(err), 'error'); }
               }));
             }
@@ -855,7 +878,7 @@
             dr.close();
             await loadThread(ph, false);
             scrollToBottom();
-            load();
+            load(true);
           } catch (err) { K.ui().toast((err.data && err.data.message) || K.errText(err), 'error'); }
         }));
       } });
@@ -890,7 +913,7 @@
         if (j && Array.isArray(j.messages) && C.thread) { C.thread.messages = j.messages; paintThread(); scrollToBottom(); }
         else await loadThread(ph, false);
       }
-      load();
+      load(true);
     }).catch((err) => {
       tmp.status = 'failed';
       if (err.code === 'outside_24h_window' && C.thread) { C.thread.within24h = false; C.thread.messages = (C.thread.messages || []).filter((m) => m !== tmp); }
@@ -1022,7 +1045,7 @@
   // booked from the conversation: its header shows the new appointment
   K.on('appointment:created', (a) => { if (panel && C.selectedPhone && a && tail(a.clientPhone) === tail(C.selectedPhone)) loadThread(C.selectedPhone, false); });
 
-  K.section('mesaje', { mount, show() { if (C.loaded) { paintThread(); requestAnimationFrame(fitWrap); } load(); } });
+  K.section('mesaje', { mount, show() { if (C.loaded) { paintThread(); requestAnimationFrame(fitWrap); } load(true); } });
   // opened on a filter from elsewhere (K.go('mesaje/wait'): the manager's KPI, „mesaje care așteaptă”)
   K.on('mesaje:sub', (v) => { if (!['all', 'wait', 'unread', 'open'].includes(v)) return; C.show = v; if (panel && panel.querySelector('[data-mx-list]')) paintList(); });
   K.on('remote', () => { if (panel && K.isActive('mesaje')) load(); });

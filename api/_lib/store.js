@@ -314,7 +314,12 @@ async function writeJSONIf(pathname, data, etag, opts) {
 const REV_PATH = 'data/_rev.json';
 let revMemo = { at: 0, value: null };
 
+// bookkeeping documents (Meta's last webhook delivery, the leads poll's state, the automations' run log): written every few
+// seconds, they changed nothing anyone looks at, yet each write made every open portal reload everything (24.11: Mesaje kept
+// reloading and failing during a WhatsApp campaign). Their writes stay quiet; the portals' 20 s check still catches them.
+const QUIET_DOCS = new Set(['data/whatsapp-hook.json', 'data/fb-poll.json', 'data/workflow-runs.json', 'data/fb-webhook-log.json']);
 async function bumpRev(changed) {
+  if (QUIET_DOCS.has(changed)) return;
   const value = { rev: Date.now() + '-' + Math.random().toString(36).slice(2, 7), changed: changed.replace(/^data\/|\.json$/g, '') };
   revMemo = { at: Date.now(), value };
   try { await writeJSON(REV_PATH, value); } catch (err) { console.error('store.bumpRev error:', err.message); }
