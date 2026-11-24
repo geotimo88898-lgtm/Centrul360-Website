@@ -1001,6 +1001,20 @@ module.exports = async (req, res) => {
     res.status(200).json(out);
     return;
   }
+  // ?laserx=1: what the laser data looks like (counts, field names, the words used), to read laser packages right
+  if (req.query && req.query.laserx) {
+    const [sales, appts] = await Promise.all([readJSON('data/sales.json', []), readJSON('data/appointments.json', [])]);
+    const fold = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const LZ = /epil|laser/;
+    const ls = sales.filter((x) => x && x.source === 'incasare' && LZ.test(fold(JSON.stringify([x.treatment, x.upsellWhat, x.note, x.what, x.items]))));
+    const la = appts.filter((a) => a && LZ.test(fold(a.treatment)));
+    const cnt = (arr, f) => { const m = {}; arr.forEach((x) => { const k = f(x); m[k] = (m[k] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 25); };
+    res.status(200).json({ sales: ls.length, saleKeys: Object.keys(Object.assign({}, ...ls.slice(0, 50))), saleTreat: cnt(ls, (x) => String(x.treatment || '').slice(0, 40)), salePkg: ls.filter((x) => Number(x.packageTotal) > 0 || Number(x.upsell) > 0).length,
+      saleDates: [ls.map((x) => x.date).sort()[0], ls.map((x) => x.date).sort().pop()],
+      appts: la.length, apptStatus: cnt(la, (a) => a.status), apptPkg: la.filter((a) => a.package).length, apptTreat: cnt(la, (a) => String(a.treatment || '').slice(0, 40)), apptKeys: Object.keys(Object.assign({}, ...la.slice(0, 50))),
+      apptDates: [la.map((a) => a.date).sort()[0], la.map((a) => a.date).sort().pop()], imported: la.filter((a) => a.createdBy === 'highlevel' || a.ghlId).length });
+    return;
+  }
   // ?laserliab=1: laser hair removal paid ahead and not done yet (George 24.11, „dacă am vinde aparatul”): per package bought,
   // its sessions, the laser visits done after it, what was paid and what would go back; initials only, no phones
   if (req.query && req.query.laserliab) {
