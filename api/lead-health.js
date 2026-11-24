@@ -1001,63 +1001,6 @@ module.exports = async (req, res) => {
     res.status(200).json(out);
     return;
   }
-  // ?laserppl=1: every client with laser in the portal (payments, visits, bookings ahead), by client; initials only
-  if (req.query && req.query.laserppl) {
-    const [sales, appts, clients] = await Promise.all([readJSON('data/sales.json', []), readJSON('data/appointments.json', []), readJSON('data/clients.json', [])]);
-    const fold = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    const LZ = /epil|laser/;
-    const ini = (n) => String(n || '').trim().split(/\s+/).map((w) => w[0] || '').join('').toUpperCase().slice(0, 3);
-    const cname = new Map(clients.map((c) => [c.id, c.name]));
-    const by = new Map(); const get = (id, name) => { const k = id || 'n:' + fold(name); if (!by.has(k)) by.set(k, { client: ini(cname.get(id) || name), pays: [], visits: [] }); return by.get(k); };
-    sales.filter((x) => x && x.source === 'incasare' && (x.category === 'epilare-laser' || LZ.test(fold((x.treatment || '') + ' ' + (x.upsellWhat || ''))))).forEach((x) => {
-      get(x.clientId, x.client).pays.push({ date: x.date, amount: x.amount, upsell: x.upsell || 0, pkg: x.packageTotal || 0, kind: x.kind || '', what: String(x.upsellWhat || x.treatment || '').slice(0, 60), note: String(x.note || '').slice(0, 80) });
-    });
-    appts.filter((a) => a && LZ.test(fold(a.treatment)) && a.status !== 'concediu').forEach((a) => {
-      get(a.clientId, a.clientName).visits.push({ date: a.date, status: a.status, pkg: !!a.package, paid: !!a.paidSaleId, what: String(a.treatment || '').slice(0, 50), loc: /arad/i.test(a.location || '') ? 'AR' : 'TM' });
-    });
-    const rows = [...by.values()].map((r) => Object.assign(r, { visits: r.visits.sort((a, b) => a.date.localeCompare(b.date)) }));
-    res.status(200).json({ clients: rows.length, rows }); return;
-  }
-  // ?laserx=1: what the laser data looks like (counts, field names, the words used), to read laser packages right
-  if (req.query && req.query.laserx) {
-    const [sales, appts] = await Promise.all([readJSON('data/sales.json', []), readJSON('data/appointments.json', [])]);
-    const fold = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    const LZ = /epil|laser/;
-    const ls = sales.filter((x) => x && x.source === 'incasare' && LZ.test(fold(JSON.stringify([x.treatment, x.upsellWhat, x.note, x.what, x.items, x.category, x.categories]))));
-    const la = appts.filter((a) => a && LZ.test(fold(a.treatment)));
-    const cnt = (arr, f) => { const m = {}; arr.forEach((x) => { const k = f(x); m[k] = (m[k] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 25); };
-    res.status(200).json({ cats: cnt(sales.filter((x) => x && x.source === 'incasare'), (x) => String(x.category || '') + '|' + JSON.stringify(x.categories || '')), sales: ls.length, saleKeys: Object.keys(Object.assign({}, ...ls.slice(0, 50))), saleTreat: cnt(ls, (x) => String(x.treatment || '').slice(0, 40)), salePkg: ls.filter((x) => Number(x.packageTotal) > 0 || Number(x.upsell) > 0).length,
-      saleDates: [ls.map((x) => x.date).sort()[0], ls.map((x) => x.date).sort().pop()],
-      appts: la.length, apptStatus: cnt(la, (a) => a.status), apptPkg: la.filter((a) => a.package).length, apptTreat: cnt(la, (a) => String(a.treatment || '').slice(0, 40)), apptKeys: Object.keys(Object.assign({}, ...la.slice(0, 50))),
-      apptDates: [la.map((a) => a.date).sort()[0], la.map((a) => a.date).sort().pop()], imported: la.filter((a) => a.createdBy === 'highlevel' || a.ghlId).length });
-    return;
-  }
-  // ?laserliab=1: laser hair removal paid ahead and not done yet (George 24.11, „dacă am vinde aparatul”): per package bought,
-  // its sessions, the laser visits done after it, what was paid and what would go back; initials only, no phones
-  if (req.query && req.query.laserliab) {
-    const [sales, appts, dues] = await Promise.all([readJSON('data/sales.json', []), readJSON('data/appointments.json', []), readJSON('data/client-dues.json', [])]);
-    const fold = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    const LZ = /epil|laser|full ?body|axil|inghinal|picioare|mustat|barbie laser/;
-    const d9 = (x) => String(x || '').replace(/\D/g, '').slice(-9);
-    const ini = (n) => String(n || '').trim().split(/\s+/).map((w) => w[0] || '').join('').toUpperCase().slice(0, 3);
-    const who = (o) => [o.clientId ? 'c:' + o.clientId : '', d9(o.clientPhone).length === 9 ? 'p:' + d9(o.clientPhone) : ''].filter(Boolean);
-    const same = (a, b) => a.some((x) => b.includes(x));
-    const buys = sales.filter((x) => x && x.source === 'incasare' && x.kind !== 'refund' && (Number(x.packageTotal) > 0 || Number(x.upsell) > 0) && LZ.test(fold((x.upsellWhat || '') + ' ' + (x.treatment || ''))));
-    const out = buys.map((b) => {
-      const keys = who(b); const text = fold(b.upsellWhat || b.treatment);
-      const m = /(\d{1,2})\s*(x\b|sedin|sesiun)/.exec(text); const of = m ? Number(m[1]) : null;
-      const visits = appts.filter((a) => a && a.status === 'finalizata' && a.date >= b.date && a.id !== b.appointmentId && same(who(a), keys) && LZ.test(fold(a.treatment)));
-      const due = dues.find((d) => d.saleId === b.id);
-      const total = Number(b.packageTotal) || (due ? Number(due.total) : 0) || Number(b.upsell) || 0;
-      const paid = due ? Number(due.paid) : (Number(b.upsell) || Number(b.amount) || 0);
-      const done = visits.length, left = of != null ? Math.max(0, of - done) : null;
-      const per = of ? total / of : null;
-      const back = per != null ? Math.max(0, Math.round((paid - done * per) * 100) / 100) : null;
-      return { date: b.date, city: /arad/i.test(b.location || '') ? 'AR' : 'TM', client: ini(b.client || b.clientName), what: String(b.upsellWhat || b.treatment || '').slice(0, 70), of, done, left, total, paid, perSession: per && Math.round(per), back };
-    }).sort((a, b) => String(a.date).localeCompare(String(b.date)));
-    const owed = out.filter((x) => x.back > 0);
-    res.status(200).json({ packages: out.length, owedClients: owed.length, owedLei: Math.round(owed.reduce((n, x) => n + x.back, 0)), unknownSessions: out.filter((x) => x.of == null).length, rows: out }); return;
-  }
   // ?leadq=1: the Facebook/Instagram leads' quality by week (booked, came), to compare the ad accounts (counts only)
   if (req.query && req.query.leadq) {
     const [leads, appts] = await Promise.all([readJSON('data/leads.json', []), readJSON('data/appointments.json', [])]);
