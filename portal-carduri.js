@@ -208,7 +208,7 @@
     // Black Friday (the list's bf, api/_lib/card-terms.js): the 990 card paid online gives 3.000 lei
     const bf = S.d.bf && S.d.bf.on && Number(o.tier) === Number(S.d.bf.tier), q = o.qty || 1;
     return hi + 'Ți-am rezervat Cardul de Sărbători: plătești ' + lei(o.amount) + ' și primești ' + lei(o.credit) + ' în tratamente. Ți-l ținem rezervat până vii. ' +
-      (bf ? 'La plata online, până duminică 29 noiembrie, primești ' + lei(S.d.bf.creditOnline * q) + ' în loc de ' + lei(S.d.bf.creditClinic * q).replace(/ lei$/, '') + '. ' : '') +
+      (bf ? 'La plata online, până vineri 27 noiembrie, primești ' + lei(S.d.bf.creditOnline * q) + ' în loc de ' + lei(S.d.bf.creditClinic * q).replace(/ lei$/, '') + '. ' : '') +
       'Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360; îți trimit chiar acum linkul pe WhatsApp. Sau stabilim acum când treci pe la clinică să-l plătești.';
   }
   const resvOf = () => (S.d.orders || []).filter((o) => o.status === 'rezervat' && o.pay === 'clinica' && isOpen(o) && o.phone)

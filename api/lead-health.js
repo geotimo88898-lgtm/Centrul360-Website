@@ -103,7 +103,7 @@ module.exports = async (req, res) => {
     return;
   }
   // ?cardbf=1: Black Friday of the Card de Sărbători (the owner, 24.11: the 990 card paid online gives 3.000 lei, until
-  // Sunday 29.11 23:59); GET reads the switch and the window, POST { on: true | false } sets it (api/_lib/card-terms.js,
+  // Friday 27.11 23:59); GET reads the switch and the window, POST { on: true | false } sets it (api/_lib/card-terms.js,
   // data/card-bf.json; off until the owner confirms)
   if (req.query && req.query.cardbf) {
     const T = require('./_lib/card-terms');

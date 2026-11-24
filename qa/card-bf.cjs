@@ -70,7 +70,7 @@ const switchOff = () => store.writeJSON(T.BF_KEY, { on: false, at: '2026-11-24T0
   const OUT = process.env.OUT || '';
   // ---- the terms
   check('terms: 490 → 1.000, 990 → 2.500, VIP 9.900 → 30.000 (online 8.910), on sale 490 / 990 / VIP', T.CARD_TERMS.tiers[490] === 1000 && T.CARD_TERMS.tiers[990] === 2500 && T.CARD_TERMS.tiers[9900] === 30000 && T.discOf(9900) === 8910 && C.SALE.join() === '490,990,9900' && C.TIERS === T.CARD_TERMS.tiers);
-  check('window: 24.11 10:00 to 29.11 23:59:59 (Romania)', T.BF.start === '2026-11-24T08:00:00.000Z' && T.BF.end === '2026-11-29T21:59:59.000Z' && T.inWindow(RealDate.parse('2026-11-29T21:59:59Z')) && !T.inWindow(RealDate.parse('2026-11-29T22:00:00Z')) && !T.inWindow(RealDate.parse('2026-11-24T07:59:59Z')));
+  check('window: 24.11 10:00 to 27.11 23:59:59 (Romania)', T.BF.start === '2026-11-24T08:00:00.000Z' && T.BF.end === '2026-11-27T21:59:59.000Z' && T.inWindow(RealDate.parse('2026-11-27T21:59:59Z')) && !T.inWindow(RealDate.parse('2026-11-27T22:00:00Z')) && !T.inWindow(RealDate.parse('2026-11-24T07:59:59Z')));
   check('the switch is off until the owner says (no file)', (await T.bfActive()) === false && (await T.bfSwitch()).on === false);
 
   // ---- switch on, inside the window
@@ -106,17 +106,17 @@ const switchOff = () => store.writeJSON(T.BF_KEY, { on: false, at: '2026-11-24T0
   check('990 reserved and paid in the clinic (in the window): 2.500', rb.cards[0].value === 2500 && rb.credit === 2500 && !rb.bf && (await saleOf(b)).amount === 990, { value: rb.cards[0].value });
 
   // a PayLink payment matched later: the payment's own time counts
-  setNow('2026-11-29T21:00:00Z');
+  setNow('2026-11-27T21:00:00Z');
   const c = await put(order({}));
   setNow('2026-11-30T03:00:00Z'); // the scan finds it at 05:00 RO; the payment was at 23:40 RO (inside the window)
-  await quietly(() => C.confirm(c, 'online', { by: 'myPOS', amount: 990, match: { src: 'mypos', ref: 'mypos-1', at: '2026-11-29T21:40:00Z' } }));
+  await quietly(() => C.confirm(c, 'online', { by: 'myPOS', amount: 990, match: { src: 'mypos', ref: 'mypos-1', at: '2026-11-27T21:40:00Z' } }));
   check('990 made Sunday 23:00 RO, PayLink paid 23:40 RO, matched by the scan at 05:00 RO: 3.000 (the payment\'s own time)', (await get(c)).cards[0].value === 3000);
-  setNow('2026-11-29T21:30:00Z');
+  setNow('2026-11-27T21:30:00Z');
   const c2 = await put(order({}));
-  setNow('2026-11-29T23:20:00Z');
-  await quietly(() => C.confirm(c2, 'online', { by: 'myPOS', amount: 990, match: { src: 'checkout', ref: 'checkout-t2', at: '2026-11-29T23:20:00Z' } }));
+  setNow('2026-11-27T23:20:00Z');
+  await quietly(() => C.confirm(c2, 'online', { by: 'myPOS', amount: 990, match: { src: 'checkout', ref: 'checkout-t2', at: '2026-11-27T23:20:00Z' } }));
   check('990 made Sunday 23:30 RO, paid at 01:20 RO (inside its 2 h hold, after the window): 3.000', (await get(c2)).cards[0].value === 3000);
-  setNow('2026-11-29T21:30:00Z');
+  setNow('2026-11-27T21:30:00Z');
   const c3 = await put(order({}));
   setNow('2026-11-30T00:00:00Z');
   await quietly(() => C.confirm(c3, 'online', { by: 'myPOS', amount: 990, match: { src: 'checkout', ref: 'checkout-t3', at: '2026-11-30T00:00:00Z' } }));
@@ -177,7 +177,7 @@ const switchOff = () => store.writeJSON(T.BF_KEY, { on: false, at: '2026-11-24T0
   const list = [k];
   await C.toOnline(list, k, { tap: true, by: 'receptie' });
   const t1 = C.payLinkText(k, 'https://example.invalid/pay');
-  check('payLinkText 990 (BF): pay first, 3.000, online only until Sunday, the clinic line', /Cardul de Sărbători: plătești 990 lei și primești 3\.000 lei în tratamente, doar la plata online, până duminică 29 noiembrie\./.test(t1) && t1.includes('Dacă rezervi și plătești în clinică, rămâne 2.500 lei.') && t1.includes('BioLifting'), t1);
+  check('payLinkText 990 (BF): pay first, 3.000, online only until Sunday, the clinic line', /Cardul de Sărbători: plătești 990 lei și primești 3\.000 lei în tratamente, doar la plata online, până vineri 27 noiembrie\./.test(t1) && t1.includes('Dacă rezervi și plătești în clinică, rămâne 2.500 lei.') && t1.includes('BioLifting'), t1);
   check('… the order moved online carries 3.000 (and paid now: the card 3.000)', k.credit === 3000 && T.cardValueOf(k, { via: 'online', paidAt: NOW, sw }) === 3000);
   const v = order({ tier: 9900, amount: 9900, credit: 30000, pay: 'clinica', status: 'rezervat', name: 'Ioana Proba' });
   await C.toOnline([v], v, { tap: true, by: 'receptie' });
@@ -202,17 +202,17 @@ const switchOff = () => store.writeJSON(T.BF_KEY, { on: false, at: '2026-11-24T0
 
   // ---- the lead message: its picture and its template
   const TP = [];
-  for (const key of ['lead3n', 'lead3', 'lead3bfn', 'lead3bf']) TP.push({ id: 'card-' + key + '-x', purpose: 'card-' + key, label: key, body: C.TPL[key].body, map: C.TPL[key].map, meta: { w1: { status: 'APPROVED', name: 'card_' + key } } });
+  for (const key of ['lead3n', 'lead3', 'lead3bfn2', 'lead3bf2']) TP.push({ id: 'card-' + key + '-x', purpose: 'card-' + key, label: key, body: C.TPL[key].body, map: C.TPL[key].map, meta: { w1: { status: 'APPROVED', name: 'card_' + key } } });
   await store.writeJSON('data/wa-templates.json', { templates: TP });
   const L = order({ status: 'lead', pay: 'alege', via: 'meta-form', name: 'Maria Proba' });
   await store.writeJSON(C.KEY, [L]);
   const p1 = await quietly(() => C.leadPack(L));
-  check('leadPack 990 during Black Friday (approved): lead3bfn, its text 3.000 and the clinic line', p1.kind === 'lead3bfn' && C.fill(p1.kind, p1.vars).includes('Plătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până duminică 29 noiembrie. Dacă rezervi și plătești în clinică, rămâne 2.500 lei.'), { kind: p1.kind });
-  check('… its picture is the creative with 3.000 and „la plata online · până duminică 29.11”', p1.png && p1.png.length > 1000 && /Primești 3\.000 lei\./.test(CC.svgOf({ tier: 990, name: 'Maria Proba', left: 9, bf: { credit: 3000, until: T.BF.untilTxt } })) && /la plata online · până duminică 29\.11/.test(CC.svgOf({ tier: 990, left: 9, bf: { credit: 3000, until: T.BF.untilTxt } })));
+  check('leadPack 990 during Black Friday (approved): lead3bfn, its text 3.000 and the clinic line', p1.kind === 'lead3bfn2' && C.fill(p1.kind, p1.vars).includes('Plătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până vineri 27 noiembrie. Dacă rezervi și plătești în clinică, rămâne 2.500 lei.'), { kind: p1.kind });
+  check('… its picture is the creative with 3.000 and „la plata online · până vineri 27.11”', p1.png && p1.png.length > 1000 && /Primești 3\.000 lei\./.test(CC.svgOf({ tier: 990, name: 'Maria Proba', left: 9, bf: { credit: 3000, until: T.BF.untilTxt } })) && /la plata online · până vineri 27\.11/.test(CC.svgOf({ tier: 990, left: 9, bf: { credit: 3000, until: T.BF.untilTxt } })));
   if (OUT) fs.writeFileSync(path.join(OUT, 'test-lead-990-bf.png'), p1.png);
   const L2 = order({ status: 'lead', pay: 'alege', via: 'meta-form', name: '' });
   const p2 = await quietly(() => C.leadPack(L2));
-  check('… without a name: lead3bf', p2.kind === 'lead3bf' && C.fill('lead3bf', p2.vars).startsWith('Bună! 🎁'));
+  check('… without a name: lead3bf', p2.kind === 'lead3bf2' && C.fill('lead3bf2', p2.vars).startsWith('Bună! 🎁'));
   const L3 = order({ tier: 490, amount: 490, credit: 1000, status: 'lead', pay: 'alege', via: 'meta-form', name: 'Maria Proba' });
   check('… a 490 card: lead3n as before', (await quietly(() => C.leadPack(L3))).kind === 'lead3n');
   await switchOff();
@@ -225,7 +225,7 @@ const switchOff = () => store.writeJSON(T.BF_KEY, { on: false, at: '2026-11-24T0
   // ---- the audit (24.11): the texts and the rules of the new orders
   setNow('2026-11-25T10:00:00Z');
   await switchOn('2026-11-24T09:00:00Z');
-  check('factsText during Black Friday: the owner\'s paragraph', (await T.factsText()) === 'Cardul de Sărbători: plătești 990 lei și primești 3.000 lei în tratamente la plata online, până duminică 29 noiembrie (în clinică, 2.500 lei); sau 490 lei → 1.000 lei. La plata online, în plus, o ședință de BioLifting cadou și acces în Clubul 360. Card VIP Transformarea 360: 9.900 lei → 30.000 lei, 8.910 lei online. Valabil până pe 30 iunie 2027.', await T.factsText());
+  check('factsText during Black Friday: the owner\'s paragraph', (await T.factsText()) === 'Cardul de Sărbători: plătești 990 lei și primești 3.000 lei în tratamente la plata online, până vineri 27 noiembrie (în clinică, 2.500 lei); sau 490 lei → 1.000 lei. La plata online, în plus, o ședință de BioLifting cadou și acces în Clubul 360. Card VIP Transformarea 360: 9.900 lei → 30.000 lei, 8.910 lei online. Valabil până pe 30 iunie 2027.', await T.factsText());
   setNow('2026-12-01T10:00:00Z');
   check('factsText after it: the same with 2.500', (await T.factsText()) === 'Cardul de Sărbători: plătești 990 lei și primești 2.500 lei în tratamente; sau 490 lei → 1.000 lei. La plata online, în plus, o ședință de BioLifting cadou și acces în Clubul 360. Card VIP Transformarea 360: 9.900 lei → 30.000 lei, 8.910 lei online. Valabil până pe 30 iunie 2027.');
   setNow('2026-11-25T10:00:00Z');
@@ -249,7 +249,7 @@ const switchOff = () => store.writeJSON(T.BF_KEY, { on: false, at: '2026-11-24T0
   // the clinic choice and the online link, as she gets them
   const cr990 = order({ name: 'Maria Proba', pay: 'clinica', status: 'rezervat' });
   const crTxt = C.clinicReply(cr990, (w) => w + ', Maria', await T.bfSwitch());
-  check('clinic reply 990 (BF): the audit\'s words, then the online 3.000 line', crTxt === 'Gata, Maria! Ți-am rezervat Cardul de Sărbători: plătești 990 lei și primești 2.500 lei în tratamente. Îl plătești în clinică (Str. Bucegi 7, Timișoara), cash sau card, și ți-l ținem rezervat până vii. Te sună recepția să stabiliți când treci.\nLa plata online, până duminică 29 noiembrie, primești 3.000 lei în loc de 2.500.', crTxt);
+  check('clinic reply 990 (BF): the audit\'s words, then the online 3.000 line', crTxt === 'Gata, Maria! Ți-am rezervat Cardul de Sărbători: plătești 990 lei și primești 2.500 lei în tratamente. Îl plătești în clinică (Str. Bucegi 7, Timișoara), cash sau card, și ți-l ținem rezervat până vii. Te sună recepția să stabiliți când treci.\nLa plata online, până vineri 27 noiembrie, primești 3.000 lei în loc de 2.500.', crTxt);
   const crVip = C.clinicReply(order({ tier: 9900, amount: 8910, credit: 30000, city: 'Arad' }), (w) => w, await T.bfSwitch());
   check('clinic reply VIP: Cardul VIP Transformarea 360, 9.900 / 30.000, no Black Friday', crVip === 'Gata! Ți-am rezervat Cardul VIP Transformarea 360: plătești 9.900 lei și primești 30.000 lei în tratamente. Îl plătești în clinică (Str. Ioan Alexandru 16-18, Arad), cash sau card, și ți-l ținem rezervat până vii. Te sună recepția să stabiliți când treci.', crVip);
   await store.writeJSON('data/card-sarbatori-links.json', { 490: 'https://mypos.com/vmp/paylink/p490', 990: 'https://mypos.com/vmp/paylink/p990', 9900: 'https://mypos.com/vmp/paylink/p9900' });
@@ -260,7 +260,7 @@ const switchOff = () => store.writeJSON(T.BF_KEY, { on: false, at: '2026-11-24T0
   await quietly(() => C.onWhatsApp({ phone: lr.phone, city: 'Timișoara', button: 'Plătesc online', msgId: 'm1' }));
   const lrNow = await get(lr.id);
   const lrTxt = (wa.find((x) => x.text) || {}).text || '';
-  check('lead „Plătesc online”: payLinkText (Super, Maria! … plătești 990 lei și primești 3.000 lei … the clinic line)', lrTxt === C.payLinkText(lrNow, 'https://mypos.com/vmp/paylink/p990', 'Super') && lrTxt.startsWith('Super, Maria! Cardul de Sărbători: plătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până duminică 29 noiembrie.') && lrTxt.includes('Dacă rezervi și plătești în clinică, rămâne 2.500 lei.'), lrTxt);
+  check('lead „Plătesc online”: payLinkText (Super, Maria! … plătești 990 lei și primești 3.000 lei … the clinic line)', lrTxt === C.payLinkText(lrNow, 'https://mypos.com/vmp/paylink/p990', 'Super') && lrTxt.startsWith('Super, Maria! Cardul de Sărbători: plătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până vineri 27 noiembrie.') && lrTxt.includes('Dacă rezervi și plătești în clinică, rămâne 2.500 lei.'), lrTxt);
   // her recovery: „Finalizez plata”
   const rw = order({ name: 'Maria Proba', phone: '0700000912', via: 'site' });
   rw.rec = { wa1: { at: new RealDate(NOW).toISOString(), ok: true } };

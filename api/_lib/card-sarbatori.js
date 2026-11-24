@@ -480,12 +480,17 @@ const TPL = {
     body: 'Bună {{1}}! 🎁 Cardul tău de Sărbători este rezervat:\nPlătești {{2}} lei și primești {{3}} lei în tratamente, valabil până pe 30 iunie 2027.\n\n🔥 Au mai rămas doar {{4}} carduri, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
   lead3: { label: 'Card de Sărbători rezervat din reclamă fără nume', category: 'MARKETING', headerType: 'IMAGE', map: ['suma', 'credit', 'ramase'], buttons: 'lead', sample: { code: '', name: '' },
     body: 'Bună! 🎁 Cardul tău de Sărbători este rezervat:\nPlătești {{1}} lei și primești {{2}} lei în tratamente, valabil până pe 30 iunie 2027.\n\n🔥 Au mai rămas doar {{3}} carduri, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
-  // Black Friday (the owner, 24.11): the 990 card, 3.000 lei paying online until Sunday 29.11, 2.500 in the clinic; the same
+  // Black Friday (the owner, 24.11): the 990 card, 3.000 lei paying online until Friday 27.11, 2.500 in the clinic; the same
   // as lead3n / lead3 otherwise; leadPack picks them for a 990 card while Black Friday is on (card-terms.js) and Meta approved them
   lead3bfn: { label: 'Card de Sărbători Black Friday din reclamă', category: 'MARKETING', headerType: 'IMAGE', map: ['prenume', 'ramase'], buttons: 'lead', sample: { code: '', name: '', credit: 3000 },
     body: 'Bună {{1}}! 🎁 Cardul tău de Sărbători este rezervat:\nPlătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până duminică 29 noiembrie. Dacă rezervi și plătești în clinică, rămâne 2.500 lei.\n\n🔥 Au mai rămas doar {{2}} carduri, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
   lead3bf: { label: 'Card de Sărbători Black Friday din reclamă fără nume', category: 'MARKETING', headerType: 'IMAGE', map: ['ramase'], buttons: 'lead', sample: { code: '', name: '', credit: 3000 },
     body: 'Bună! 🎁 Cardul tău de Sărbători este rezervat:\nPlătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până duminică 29 noiembrie. Dacă rezervi și plătești în clinică, rămâne 2.500 lei.\n\n🔥 Au mai rămas doar {{1}} carduri, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
+  // the same, ending Friday 27.11 (the owner, 24.11)
+  lead3bfn2: { label: 'Card de Sărbători Black Friday din reclamă vineri', category: 'MARKETING', headerType: 'IMAGE', map: ['prenume', 'ramase'], buttons: 'lead', sample: { code: '', name: '', credit: 3000 },
+    body: 'Bună {{1}}! 🎁 Cardul tău de Sărbători este rezervat:\nPlătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până vineri 27 noiembrie. Dacă rezervi și plătești în clinică, rămâne 2.500 lei.\n\n🔥 Au mai rămas doar {{2}} carduri, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
+  lead3bf2: { label: 'Card de Sărbători Black Friday din reclamă vineri fără nume', category: 'MARKETING', headerType: 'IMAGE', map: ['ramase'], buttons: 'lead', sample: { code: '', name: '', credit: 3000 },
+    body: 'Bună! 🎁 Cardul tău de Sărbători este rezervat:\nPlătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până vineri 27 noiembrie. Dacă rezervi și plătești în clinică, rămâne 2.500 lei.\n\n🔥 Au mai rămas doar {{1}} carduri, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
   vip3n: { label: 'Card VIP rezervat din reclamă', category: 'MARKETING', headerType: 'IMAGE', map: ['prenume', 'ramase'], buttons: 'lead', sample: { code: '', name: '', vip: true, credit: 30000 },
     body: 'Bună {{1}}! 💎 Cardul tău VIP Transformarea 360 este rezervat:\nPlătești 9.900 lei și primești 30.000 lei în tratamente, pentru tine și cei dragi, valabil până pe 30 iunie 2027.\n\n🔥 Au mai rămas doar {{2}} carduri VIP, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, ai 10% reducere: plătești 8.910 lei, plus acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
   vip3: { label: 'Card VIP rezervat din reclamă fără nume', category: 'MARKETING', headerType: 'IMAGE', map: ['ramase'], buttons: 'lead', sample: { code: '', name: '', vip: true, credit: 30000 },
@@ -1750,7 +1755,7 @@ async function leadPack(r, o) {
   const leftN = Math.max(1, cnt ? Number(leftFor(cnt, r.tier, r.city)) || 1 : 1);
   let png = null, path = 'wa-out/card-lead-' + String(r.id).replace(/[^\w-]/g, '').slice(0, 36) + '.png';
   const who = r.forWho === 'cadou' ? '' : r.name || '';
-  // Black Friday (the owner, 24.11; card-terms.js): a 990 card shows 3.000 lei, „la plata online · până duminică 29.11”
+  // Black Friday (the owner, 24.11; card-terms.js): a 990 card shows 3.000 lei, „la plata online · până vineri 27.11”
   const bf = Number(r.tier) === T.BF.tier && T.bfLive(Date.now(), await T.bfSwitch().catch(() => ({ on: false })));
   // the creative in the style of ad A (the owner, 23.11), with her name and the count; the plain card when it can't be made
   try { png = await require('./card-creative').png({ tier: Number(r.tier), name: who, left: leftN, bf: bf ? { credit: T.BF.creditOnline, until: T.BF.untilTxt } : null }); } catch (e) { console.error('card lead creative:', e.message); png = null; }
@@ -1763,7 +1768,7 @@ async function leadPack(r, o) {
   const nm = leadFirst(r);
   const approved = (k) => !!(k && T2.t && T2.t[k] && require('./wa-templates').overall(T2.t[k]) === 'APPROVED');
   const want = isVip(r) ? (nm ? 'vip3n' : 'vip3') : [490, 990].includes(Number(r.tier)) ? (nm ? 'lead3n' : 'lead3') : '';
-  const wantBf = bf ? (nm ? 'lead3bfn' : 'lead3bf') : '';
+  const wantBf = bf ? (nm ? 'lead3bfn2' : 'lead3bf2') : '';
   const kind = leftN > 1 && approved(wantBf) ? wantBf : leftN > 1 && approved(want) ? want : 'lead'; // one left: „1 carduri” never
   vars.ramase = String(leftN);
   if (kind !== 'lead') vars.prenume = nm;

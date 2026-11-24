@@ -4,7 +4,7 @@
 //   CARD_TERMS  the cards: 490 → 1.000 lei, 990 → 2.500 lei, the VIP 9.900 → 30.000 lei (290 → 500 out of sale, its orders
 //               kept); paying online: a BioLifting session and Clubul 360 with the 490 and 990 cards, 10% off (8.910 lei)
 //               and Clubul 360 with the VIP.
-//   BF          Black Friday (the owner, 24.11): from 24.11.2026 10:00 to Sunday 29.11.2026 23:59:59 (Romania), the 990 card
+//   BF          Black Friday (the owner, 24.11): from 24.11.2026 10:00 to Friday 27.11.2026 23:59:59 (Romania), the 990 card
 //               paid ONLINE by card gives 3.000 lei in place of 2.500; reserved and paid in the clinic it stays 2.500 lei.
 //               The online bonus (BioLifting and Clubul 360) stays on top. 490 and the VIP do not change.
 //   The switch  data/card-bf.json { on, at, by, log: [{ on, at, by }] }, off until the owner says (api/lead-health.js ?cardbf=1).
@@ -27,12 +27,12 @@ const discOf = (t) => Math.round(Number(t) * (1 - CARD_TERMS.vipOnlineDiscount))
 
 const BF = {
   start: '2026-11-24T08:00:00.000Z', // Tuesday 24.11, 10:00 in Romania
-  end: '2026-11-29T21:59:59.000Z', // Sunday 29.11, 23:59:59 in Romania
+  end: '2026-11-27T21:59:59.000Z', // Friday 27.11, 23:59:59 in Romania (the owner, 24.11)
   tier: 990,
   creditOnline: 3000,
   creditClinic: 2500,
-  untilTxt: 'până duminică 29.11', // the picture's small line
-  untilLong: 'până duminică 29 noiembrie',
+  untilTxt: 'până vineri 27.11', // the picture's small line
+  untilLong: 'până vineri 27 noiembrie',
   clinicLine: 'Dacă rezervi și plătești în clinică, rămâne 2.500 lei.', // the exact sentence, everywhere (the owner, 24.11)
 };
 const BF_KEY = 'data/card-bf.json';

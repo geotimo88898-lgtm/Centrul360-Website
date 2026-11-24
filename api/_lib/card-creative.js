@@ -6,8 +6,8 @@
 // (on Cloudflare globalThis.__C360_SVG2PNG, cf/card-png.js; in Node the package from node_modules). Its fonts: the card's
 // (card-fonts.gen.js: Inter, Montserrat) and Fraunces Italic for the gold line (card-creative-fonts.gen.js); all OFL.
 //   png({ tier: 490 | 990 | 9900, name, left, credit?, bf? }) → PNG (Buffer)       svgOf(same) → the SVG
-//   credit: another credit than the card's own; bf: { credit: 3000, until: 'până duminică 29.11' } Black Friday (the owner,
-//   24.11): „Primești 3.000 lei.” and under it the small line „la plata online · până duminică 29.11”
+//   credit: another credit than the card's own; bf: { credit: 3000, until: 'până vineri 27.11' } Black Friday (the owner,
+//   24.11): „Primești 3.000 lei.” and under it the small line „la plata online · până vineri 27.11”
 // The facts on it are the terms' (api/_lib/card-terms.js): 490 → 1.000 lei, 990 → 2.500 lei, VIP 9.900 → 30.000 lei;
 // online: BioLifting and Clubul 360 with the 490 and 990 ones, 10% less (8.910 lei) and Clubul 360 with the VIP.
 
@@ -69,7 +69,7 @@ function svgOf(o) {
   // the credit she gets: the card's, or Black Friday's (o.bf), or one given (o.credit)
   const bf = o.bf && Number(o.bf.credit) > 0 ? o.bf : null;
   const get = bf ? Number(bf.credit) : Number(o.credit) > 0 ? Number(o.credit) : t.get;
-  const bfLine = bf ? 'la plata online · ' + String(bf.until || 'până duminică 29.11') : '';
+  const bfLine = bf ? 'la plata online · ' + String(bf.until || 'până vineri 27.11') : '';
 
   // the rating: its size as the ad's (265 px wide), the G before it
   const RATING = '5,0 · 300+ recenzii Google';
