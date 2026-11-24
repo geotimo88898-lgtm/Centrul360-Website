@@ -335,7 +335,8 @@
       '<div class="pl-stagebar" data-stagebar></div>' +
       '<div class="pl-board" data-board><div class="pl-skeleton">' + '<div></div>'.repeat(5) + '</div></div>' +
       '<div class="pl-stagebar pl-hirebar" data-hirebar></div>' +
-      '<div class="pl-board pl-hireboard" data-hire hidden></div>';
+      '<div class="pl-board pl-hireboard" data-hire hidden></div>' +
+      '<div class="pl-board pl-hireboard pl-devboard" data-dev hidden></div>';
     boardEl = root.querySelector('[data-board]');
     const hireEl = root.querySelector('[data-hire]');
     let hireF = 0;
@@ -362,6 +363,8 @@
     root.addEventListener('change', (e) => {
       const hs = e.target.closest('[data-hire-st]');
       if (hs) return moveCandidate(hs.dataset.hireSt, hs.value, hs);
+      const ds = e.target.closest('[data-dev-st]');
+      if (ds) return moveDevice(ds.dataset.devSt, ds.value, ds);
       if (e.target.name !== 'plcity') return;
       S.location = e.target.value;
       try { localStorage.setItem(CITY_KEY(), S.location); } catch (err) { /* private mode */ }
@@ -434,7 +437,9 @@
     if (!root) return;
     root.classList.toggle('is-hire', m === 'angajari');
     root.classList.toggle('is-cards', m === 'carduri');
+    root.classList.toggle('is-dev', m === 'aparate');
     root.querySelector('[data-hire]').hidden = m !== 'angajari';
+    root.querySelector('[data-dev]').hidden = m !== 'aparate';
     const eb = root.querySelector('[data-pl-eyebrow]');
     if (eb) eb.textContent = EYEBROW[m];
     if (m === 'angajari' && !quiet) loadCandidates();
@@ -443,7 +448,7 @@
       S.filter = 'all'; Object.keys(S.f).forEach((k) => { S.f[k] = ''; });
       // the new tab's board slides in from the side of the tab tapped
       if (!quiet && !reduceMotion) {
-        const pane = root.querySelector(m === 'angajari' ? '[data-hire]' : '[data-board]');
+        const pane = root.querySelector(m === 'angajari' ? '[data-hire]' : m === 'aparate' ? '[data-dev]' : '[data-board]');
         const order = kinds().map(([k]) => k);
         pane.style.setProperty('--dir', order.indexOf(m) > order.indexOf(was) ? 1 : -1);
         pane.classList.remove('is-swap'); void pane.offsetWidth; pane.classList.add('is-swap');
@@ -534,7 +539,39 @@
   }
 
   // ------------------------------------------------------------------ render: stats / chips
-  function renderAll() { renderKinds(); renderStats(); renderTeam(); renderChips(); renderFilters(); renderBoard(); if (S.mode === 'angajari' && hireList) renderHire(); }
+  function renderAll() { renderKinds(); renderStats(); renderTeam(); renderChips(); renderFilters(); renderBoard(); if (S.mode === 'angajari' && hireList) renderHire(); if (S.mode === 'aparate') renderDevices(); }
+  // Aparate (the owner, 24.11): the buyers of a machine the clinic sells, the owner's only, in five columns of their own
+  // (lead.devStage; api/portal-leads.js device_stage), each with her form's answers, a call, WhatsApp and the column
+  const DEV = [['nou', 'Lead nou', '#4f8fd6'], ['nu_raspunde', 'Nu răspunde', '#f59e0b'], ['neinteresat', 'Neinteresat', '#8a8580'], ['interesat', 'Interesat', '#8b5cf6'], ['closed', 'Closed', '#10b981']];
+  const devOf = (l) => (DEV.some(([k]) => k === l.devStage) ? l.devStage : 'nou');
+  function renderDevices() {
+    const box = root && root.querySelector('[data-dev]');
+    if (!box) return;
+    const all = S.leads.filter((l) => segOf(l) === 'aparate');
+    const ansOf = (l) => { const f = (l.forms || []).slice(-1)[0] || l.form || {}; return (f.answers || []).filter((x) => x && x.q && x.a && !/nume|name|telefon|phone|email/i.test(x.q)); };
+    const left = box.scrollLeft;
+    box.innerHTML = DEV.map(([id, name, color]) => {
+      const list = all.filter((l) => devOf(l) === id).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      return '<section class="pl-col" data-dstage="' + id + '" style="--c:' + color + '"><header class="pl-col-head"><span class="pl-dot"></span><b>' + name + '</b><span class="pl-col-count">' + list.length + '</span></header>' +
+        '<div class="pl-list">' + (list.length ? list.map((l) => '<article class="pl-card hire-card" data-id="' + esc(l.id) + '">' +
+          '<div class="pl-card-top"><b class="pl-name">' + esc(l.name || 'Fără nume') + '</b><span class="pl-age">' + ago(l.createdAt) + '</span></div>' +
+          '<div class="pl-card-sub">' + esc(l.phone || '') + '</div>' +
+          (ansOf(l).length ? '<div class="hire-ans">' + ansOf(l).map((x) => '<span><em>' + esc(x.q) + '</em> ' + esc(x.a) + '</span>').join('') + '</div>' : '') +
+          '<div class="hire-row" data-quick><select data-dev-st="' + esc(l.id) + '" aria-label="Etapa">' + DEV.map(([v, n]) => '<option value="' + v + '"' + (v === devOf(l) ? ' selected' : '') + '>' + n + '</option>').join('') + '</select>' +
+            '<a href="tel:' + esc(String(l.phone || '').replace(/[^\d+]/g, '')) + '" class="pl-qbtn" title="Sună">' + ic('phone') + '</a>' +
+            '<a href="#mesaje" class="pl-qbtn is-wa" title="Conversația pe WhatsApp" data-chat="' + esc(l.phone || '') + '" data-chat-name="' + esc(l.name || '') + '" data-chat-city="' + esc(l.location || '') + '">' + ic('chat') + '</a></div>' +
+          '</article>').join('') : '<div class="pl-col-empty">Nimeni aici</div>') + '</div></section>';
+    }).join('');
+    box.scrollLeft = left;
+  }
+  async function moveDevice(id, st, sel) {
+    const l = S.leads.find((x) => x.id === id);
+    if (!l) return;
+    const was = l.devStage;
+    l.devStage = st; renderDevices();
+    try { await K.api('/api/portal-leads', { action: 'device_stage', leadId: id, devStage: st }); }
+    catch (err) { l.devStage = was; renderDevices(); K.ui().toast(K.errText(err), 'error'); }
+  }
   // the filters in use, as chips (each one off with ✕) and what they find
   const PERIOD = { today: 'Azi', '7d': 'Ultimele 7 zile', '30d': 'Ultimele 30 de zile', month: 'Luna asta', lastmonth: 'Luna trecută' };
   const F_LABEL = { proc: 'Procedură', campaign: 'Campanie', ad: 'Reclamă', form: 'Formular', stage: 'Etapă', period: 'Creat', booked: 'Programare' };
@@ -779,6 +816,9 @@
       if (c) K.emit('team:new', { name: c.name || '', location: c.location ? cityName(c.location) : '', role: /recep/i.test(c.job || '') ? 'receptie' : /manager/i.test(c.job || '') ? 'manager' : 'cosmetician', candidateId: c.id, from: ha });
       return;
     }
+    const dl = t.closest('[data-dev] .pl-card[data-id]');
+    if (dl && !t.closest('[data-quick]')) return openLead(dl.dataset.id);
+    if (t.closest('[data-dev]')) return;
     const hl = t.closest('[data-hire] .pl-card[data-id]');
     if (hl && !t.closest('[data-quick]')) return openLead(hl.dataset.id);
     if (t.closest('[data-hire]')) return; // the candidates' board has its own controls (portal-whatsapp opens the chats)
