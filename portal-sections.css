@@ -4089,3 +4089,5 @@ html.ui-nou #panel-panou.sx-host > .mg-strip{ order:1; }
   .at-cell{ font-size:.82rem; }
   .at-cell::before{ font-size:.56rem; letter-spacing:.02em; }
 }
+/* an account Meta didn't give: its reason can be a long link, it wraps inside the screen */
+[data-top-notes] .ad-partial{ overflow-wrap:anywhere; }

@@ -169,7 +169,7 @@ async function top(conn, period, range) {
     });
   })));
   const accounts = per.map(({ c, g }) => ({ act: c.adAccountId, connected: !!c.connected, name: g.name || c.adAccountId, currency: g.currency || '', rate: g.rate || null,
-    ok: !g.error, error: g.error || '', partial: !!g.partial, readAt: g.readAt || null, stale: g.stale || null }));
+    ok: !g.error, error: g.error ? require('./meta-error').ui(g.error) : '', partial: !!g.partial, readAt: g.readAt || null, stale: g.stale || null }));
   return { ok: true, ready: true, period: range ? 'custom' : period, range: range || null, since: first, reachesBack: !!whenNew || noNew, accounts, rows };
 }
 
