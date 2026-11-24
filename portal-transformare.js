@@ -577,7 +577,8 @@
     K.drawer({
       from, focus: false, icon: 'user', title: p.name || p.phone, subtitle: esc((p.city || '') + ' · ' + p.phone), width: 480,
       body: '<div class="tf-sheet"><div class="tf-sheet-go"><a class="k-btn is-outline" href="' + esc(K.tel(p.phone)) + '">' + icon('phone') + 'Sună</a>' +
-        '<a class="k-btn is-outline" href="#mesaje" data-cpchat>' + icon('chat') + 'Mesaje</a></div>' +
+        '<a class="k-btn is-outline" href="#mesaje" data-cpchat>' + icon('chat') + 'Mesaje</a>' +
+        (window.C360SendCardLink && window.C360SendCardLink.can() ? '<button type="button" class="k-btn is-outline"' + window.C360SendCardLink.attrs({ phone: p.phone, name: p.name, city: p.city }) + '>' + icon('link') + '<span data-cl-at>Link de plată</span></button>' : '') + '</div>' +
         '<h4 class="tf-sheet-h">Pașii ei</h4><ul class="tf-log cp-tlist">' + st + '</ul>' +
         (ans ? '<h4 class="tf-sheet-h">Ce a scris</h4><ul class="tf-log">' + ans + '</ul>' : '') + '</div>',
       onMount(el, h) { el.querySelector('[data-cpchat]').addEventListener('click', (e) => { e.preventDefault(); h.close(); K.go('mesaje'); }); },

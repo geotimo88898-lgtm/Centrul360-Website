@@ -186,3 +186,5 @@ section:has(.cd-mw.open), .k-card:has(.cd-mw.open){ position:relative; z-index:4
 .cd-r .cd-o-t{ flex-wrap:wrap; row-gap:.1rem; }
 .cd-r .cd-o-t b{ white-space:normal; overflow:visible; overflow-wrap:anywhere; }
 .cd-r .cd-o-m{ overflow:visible; }
+/* „Link de plată” on the requests and Interesate rows: only its icon until the row has room (a tablet: 28px too wide) */
+@media (max-width:1100px){ .cd-o:not(.cd-r) [data-cardlink] .cd-lg{ display:none; } }

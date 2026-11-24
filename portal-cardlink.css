@@ -1,0 +1,20 @@
+/* Centrul360 portal, „Trimite linkul de plată” (portal-cardlink.js): the popup, in the portal's dialog, and its buttons. */
+.c360-cl{ max-width:460px; max-height:calc(100dvh - 2rem); overflow-y:auto; overscroll-behavior:contain; }
+.c360-cl .c360-dialog-msg{ overflow-wrap:anywhere; }
+.c360-cl-l{ margin:1rem 0 .4rem; font-size:.76rem; font-weight:550; color:var(--muted); }
+.c360-cl-seg{ display:flex; width:100%; }
+.c360-cl-seg > button{ flex:1 1 0; min-width:0; white-space:nowrap; }
+.c360-cl-sub{ margin:.4rem 0 0; font-size:.8rem; color:var(--muted); line-height:1.45; }
+.c360-cl-sub b{ color:var(--good); font-weight:650; }
+.c360-cl-msg{ padding:.75rem .85rem; border-radius:14px 14px 14px 4px; background:var(--glass); font-size:.86rem; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; min-height:4.5em; transition:opacity .2s ease; }
+.c360-cl-msg.is-wait{ opacity:.55; }
+.c360-cl-wait{ color:var(--muted); }
+.c360-cl-note{ margin:.55rem 0 0; font-size:.78rem; line-height:1.45; color:var(--muted); }
+.c360-cl-note:empty{ display:none; }
+@media (max-width:420px){ .c360-cl{ padding:1.2rem 1.1rem 1rem; } .c360-cl-seg > button{ padding-inline:.4rem; font-size:.84rem; } }
+/* the button, where a screen put it: „Link trimis 14:05” once her last link went (48 h) */
+[data-cardlink].c360-cl-sent{ color:var(--good); }
+[data-cardlink].c360-cl-sent [data-cl-at]{ font-variant-numeric:tabular-nums; }
+/* its own line where the row is a grid of two or three (the lead's sheet, the booking) */
+.pl-contact > [data-cardlink], .cal-contact > [data-cardlink]{ grid-column:1 / -1; }
+.c360-cl [data-cl-send]:disabled{ opacity:.45; cursor:not-allowed; box-shadow:none; }

@@ -339,6 +339,7 @@
       '<button type="button" class="mx-thead-who" data-act="contact" title="' + (isIg(t) ? CHAN[chanOf(t)] : 'Deschide profilul ei') + '">' + face(t, 40) + '<div class="mx-thead-main"><b>' + esc(nameOf(t)) + '</b><small>' +
       esc((isIg(t) ? [CHAN[chanOf(t)], t.username && '@' + t.username !== nameOf(t) ? '@' + t.username : ''] : [named(t) ? pretty(t.phone) : '', t.location || '', t.appointment ? 'programare ' + K.dateShort(t.appointment.date) + (t.appointment.time ? ' ' + t.appointment.time : '') : '']).filter(Boolean).join(' · ')) + '</small></div></button>' +
       (isIg(t) ? '' : '<a class="k-icon-btn" href="tel:' + esc(telOf(t.phone)) + '" title="Sună" data-act="call">' + icon('phone') + '</a>') +
+      (isIg(t) || !(window.C360SendCardLink && window.C360SendCardLink.can()) ? '' : '<button type="button" class="k-icon-btn" title="Trimite linkul de plată"' + window.C360SendCardLink.attrs({ phone: t.phone, name: named(t) ? nameOf(t) : '', city: t.location }) + '>' + icon('link') + '</button>') +
       (K.frontDesk && K.frontDesk() ? '<button type="button" class="k-icon-btn" data-act="book" title="Programează">' + icon('calendar') + '</button>' : '') +
       (t.lead && K.frontDesk && K.frontDesk() ? '<button type="button" class="k-icon-btn" data-act="lead" title="Deschide leadul">' + icon('users') + '</button>' : '') + '</header>' +
       // her next appointment: a tap opens it in the Calendar, to change it

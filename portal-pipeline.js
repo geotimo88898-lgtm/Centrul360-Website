@@ -511,6 +511,7 @@
           '<div class="hire-row">' + (locked ? '<span class="hire-lock">' + ic('check') + 'Angajată</span>' : '<select data-hire-st="' + esc(c.id) + '" aria-label="Etapa">' + options(cur) + '</select>') +
             '<button type="button" class="pl-qbtn" title="Adaugă o notă" data-hire-note="' + esc(c.id) + '">' + ic('pen') + '</button>' +
             '<a href="tel:' + esc(String(c.phone || '').replace(/[^\d+]/g, '')) + '" class="pl-qbtn" title="Sună">' + ic('phone') + '</a>' +
+            (window.C360SendCardLink && window.C360SendCardLink.can() ? '<button type="button" class="pl-qbtn" title="Trimite linkul de plată"' + window.C360SendCardLink.attrs({ phone: c.phone, name: c.name, city: c.location }) + '>' + K.icon('link', 'pl-ic') + '</button>' : '') +
             '<a href="#mesaje" class="pl-qbtn is-wa" title="Conversația pe WhatsApp" data-chat="' + esc(c.phone) + '" data-chat-name="' + esc(c.name || '') + '" data-chat-city="' + esc(c.location || '') + '">' + ic('chat') + '</a></div>' +
         '</article>'; }).join('') : '<div class="pl-col-empty">Nimeni aici</div>') + '</div></section>';
     }).join('');
@@ -759,6 +760,7 @@
       '<div class="pl-quick">' +
         '<a href="' + telLink(l) + '" class="pl-qbtn" title="Sună" data-quick="call">' + ic('phone') + '</a>' +
         '<a href="#mesaje" class="pl-qbtn is-wa" title="Conversația pe WhatsApp" data-quick="wa" data-chat="' + esc(l.phone) + '" data-chat-name="' + esc(l.name || '') + '" data-chat-city="' + esc(l.location || '') + '" data-chat-interest="' + esc(l.interest || '') + '">' + ic('chat') + '</a>' +
+        (window.C360SendCardLink && window.C360SendCardLink.can() ? '<button type="button" class="pl-qbtn" title="Trimite linkul de plată"' + window.C360SendCardLink.attrs({ phone: l.phone, name: l.name, city: l.location }) + '>' + K.icon('link', 'pl-ic') + '</button>' : '') +
       '</div>' +
     '</article>';
   }
@@ -1274,6 +1276,7 @@
           '<a class="pl-big-action is-wa" href="#mesaje" data-dial="whatsapp" data-chat="' + esc(l.phone) + '" data-chat-name="' + esc(l.name || '') + '" data-chat-city="' + esc(l.location || '') + '" data-chat-interest="' + esc(l.interest || '') + '">' + ic('chat') + '<span><b>WhatsApp</b><small>conversația din Mesaje</small></span></a>' +
           // a booking is reception's (Regulament intern, 18.11): a cosmetician has no booking button, one quiet line instead
           (cosm() ? '' : '<button type="button" class="pl-big-action is-book" data-book>' + ic('calPlus') + '<span><b>' + (l.appointmentId ? 'Altă programare' : 'Programează') + '</b><small>direct în calendar</small></span></button>') +
+          (window.C360SendCardLink && window.C360SendCardLink.can() ? '<button type="button" class="pl-big-action"' + window.C360SendCardLink.attrs({ phone: l.phone, name: l.name, city: l.location }) + '>' + K.icon('link', 'pl-ic') + '<span><b>Trimite linkul de plată</b><small data-cl-at>Card de Sărbători</small></span></button>' : '') +
         '</div>' + (cosm() ? '<p class="pl-quiet">Programările le face recepția.</p>' : '') +
         (l.appointmentId && l.kind !== 'won' ? '<div class="pl-appt"><span>' + ic('calendar') + '<b>Programare</b> ' + esc(apptWhen(l.appointmentAt)) + '</span>' + (cosm() ? '' : '<button type="button" class="pl-btn is-ghost is-sm" data-open-appt>' + ic('pen') + 'Modifică</button>') + '</div>' : '') +
 
