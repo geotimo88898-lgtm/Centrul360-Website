@@ -1001,6 +1001,23 @@ module.exports = async (req, res) => {
     res.status(200).json(out);
     return;
   }
+  // ?laserppl=1: every client with laser in the portal (payments, visits, bookings ahead), by client; initials only
+  if (req.query && req.query.laserppl) {
+    const [sales, appts, clients] = await Promise.all([readJSON('data/sales.json', []), readJSON('data/appointments.json', []), readJSON('data/clients.json', [])]);
+    const fold = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const LZ = /epil|laser/;
+    const ini = (n) => String(n || '').trim().split(/\s+/).map((w) => w[0] || '').join('').toUpperCase().slice(0, 3);
+    const cname = new Map(clients.map((c) => [c.id, c.name]));
+    const by = new Map(); const get = (id, name) => { const k = id || 'n:' + fold(name); if (!by.has(k)) by.set(k, { client: ini(cname.get(id) || name), pays: [], visits: [] }); return by.get(k); };
+    sales.filter((x) => x && x.source === 'incasare' && (x.category === 'epilare-laser' || LZ.test(fold((x.treatment || '') + ' ' + (x.upsellWhat || ''))))).forEach((x) => {
+      get(x.clientId, x.client).pays.push({ date: x.date, amount: x.amount, upsell: x.upsell || 0, pkg: x.packageTotal || 0, kind: x.kind || '', what: String(x.upsellWhat || x.treatment || '').slice(0, 60), note: String(x.note || '').slice(0, 80) });
+    });
+    appts.filter((a) => a && LZ.test(fold(a.treatment)) && a.status !== 'concediu').forEach((a) => {
+      get(a.clientId, a.clientName).visits.push({ date: a.date, status: a.status, pkg: !!a.package, paid: !!a.paidSaleId, what: String(a.treatment || '').slice(0, 50), loc: /arad/i.test(a.location || '') ? 'AR' : 'TM' });
+    });
+    const rows = [...by.values()].map((r) => Object.assign(r, { visits: r.visits.sort((a, b) => a.date.localeCompare(b.date)) }));
+    res.status(200).json({ clients: rows.length, rows }); return;
+  }
   // ?laserx=1: what the laser data looks like (counts, field names, the words used), to read laser packages right
   if (req.query && req.query.laserx) {
     const [sales, appts] = await Promise.all([readJSON('data/sales.json', []), readJSON('data/appointments.json', [])]);
