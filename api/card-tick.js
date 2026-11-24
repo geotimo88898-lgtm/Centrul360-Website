@@ -7,7 +7,10 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (!isCron(req)) { res.status(401).json({ error: 'unauthorized' }); return; }
   try {
-    res.status(200).json(Object.assign({ ok: true }, await require('./_lib/card-sarbatori').recover()));
+    const C = require('./_lib/card-sarbatori');
+    // a form lead's first message that never went (the request cut): sent now, before the recovery
+    const late = await C.leadMsgDue().catch((e) => { console.error('card-tick leadMsgDue', e.message); return []; });
+    res.status(200).json(Object.assign({ ok: true, late }, await C.recover()));
   } catch (err) {
     console.error('card-tick', err.message);
     res.status(200).json({ ok: false, error: err.message });

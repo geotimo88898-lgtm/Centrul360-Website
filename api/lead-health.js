@@ -738,7 +738,11 @@ module.exports = async (req, res) => {
     const msgs = [];
     (convos || []).filter((c) => d9x(c.phone) === k).forEach((c) => (c.messages || []).forEach((m) => { if (m && m.direction === 'out' && String(m.timestamp || '') <= String(r.created)) msgs.push({ at: m.timestamp, step: m.cardStep || '', order: m.cardOrder ? String(m.cardOrder).slice(0, 8) : '', type: m.type || '', start: String(m.text || '').slice(0, 50) }); }));
     const others = list.filter((x) => x !== r && d9x(x.phone) === k).map((x) => ({ id: String(x.id).slice(0, 8), created: x.created, via: x.via || '', status: x.status, tier: x.tier }));
-    res.status(200).json({ ok: true, samePhoneAsWith: w ? d9x(w.phone) === k : null, wave: p ? { batch: p.batch || 1, pre: p.pre || st.pre || '', sentAt: sm && !sm.e ? sm.at : '', failed: sm && sm.e ? sm.code || 'err' : '' } : null,
+    // after the order: our messages (delivered / read), hers (a button's words or „text”), and whether the desk talked to her
+    const after = [];
+    (convos || []).filter((c) => d9x(c.phone) === k).forEach((c) => (c.messages || []).forEach((m) => { if (m && String(m.timestamp || '') > String(r.created)) after.push(m.direction === 'out' ? { at: m.timestamp, out: true, type: m.type || '', status: m.status || '', step: m.cardStep || '', by: m.sentByName || '' } : { at: m.timestamp, in: true, what: m.type === 'button' || m.type === 'interactive' ? 'buton: ' + String(m.text || '').slice(0, 30) : 'text' }); }));
+    const called = (await require('./_lib/card-who').calledMap().catch(() => new Map())).get(k) || null;
+    res.status(200).json({ ok: true, status: r.status, pay: r.pay, after: after.sort((a, b) => String(a.at).localeCompare(String(b.at))).slice(-12), called, leadCall: r.leadCall || null, samePhoneAsWith: w ? d9x(w.phone) === k : null, wave: p ? { batch: p.batch || 1, pre: p.pre || st.pre || '', sentAt: sm && !sm.e ? sm.at : '', failed: sm && sm.e ? sm.code || 'err' : '' } : null,
       leads: mine, otherOrders: others, messagesBefore: msgs.sort((a, b) => String(a.at).localeCompare(String(b.at))).slice(-8) });
     return;
   }

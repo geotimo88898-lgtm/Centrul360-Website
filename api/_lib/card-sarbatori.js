@@ -1464,6 +1464,25 @@ async function recoverSafe(r, step, scan) {
   if (!(await createOnce('data/card-rec-lock/' + x.id.replace(/[^\w-]/g, '') + '-' + step + '.txt', new Date().toISOString()))) return { ok: false, why: 'trimis deja (lock)' };
   return { ok: true };
 }
+// a form lead whose first message never went (24.11: the request was cut when the site was republished at that second):
+// the 5-minute clock sends it, 3 minutes to 2 hours after the lead, once (a lock), her 2 hours counted from the message
+async function leadMsgDue(now) {
+  const t = now || Date.now();
+  const list = await readJSON(KEY, []);
+  const due = list.filter((r) => r && r.status === 'lead' && r.via === 'meta-form' && !r.leadMsg && t - Date.parse(r.created) > 3 * 60e3 && t - Date.parse(r.created) < 2 * 3600e3).slice(0, 3);
+  const out = [];
+  for (const r of due) {
+    if (!(await createOnce('data/card-lead-lock/' + String(r.id).replace(/[^\w-]/g, '') + '.txt', new Date(t).toISOString()))) continue;
+    const l2 = await readJSON(KEY, []);
+    const x = l2.find((y) => y.id === r.id);
+    if (!x || x.status !== 'lead' || x.leadMsg) continue;
+    x.held = new Date(t).toISOString(); mark(x, 'lead_msg_late', 'mesajul n-a plecat la cerere');
+    await writeJSON(KEY, l2);
+    const m = await leadMsg(r.id).catch((e) => ({ sent: false, error: e.message }));
+    out.push({ id: String(r.id).slice(0, 8), sent: !!(m && m.sent) });
+  }
+  return out;
+}
 async function recover(now) {
   const t = now || Date.now();
   const stamp = await readJSON(REC_KEY, {}).catch(() => ({}));
@@ -2199,7 +2218,7 @@ async function requestFromTap(i, opt) {
   return { ok: true, id: entry.id };
 }
 
-module.exports = { setWave, requestFromTap, deleteOrder, orderExtras, clinicReply, T, BF: T.BF, creditOf: T.creditOf, bfActive: T.bfActive, bfInfo: T.bfInfo, setBf: T.setBf, onlineCredit, payGet,
+module.exports = { leadMsgDue, setWave, requestFromTap, deleteOrder, orderExtras, clinicReply, T, BF: T.BF, creditOf: T.creditOf, bfActive: T.bfActive, bfInfo: T.bfInfo, setBf: T.setBf, onlineCredit, payGet,
   KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT, GIFT_TM, GIFT_ARAD, giftOf, giftShort, giftFor, DISC_TIERS, discOf, onlineLinks, onlinePay, linkOf, siteLinks, sumOk, embedded, setEmbedded, checkoutAmount, checkoutUrl, payQuote, payPaid, payContact, TPL,
   byId, VIP, SALE, isVip, vipLeft, stockFor, leftFor, lostRace, sarb, norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
