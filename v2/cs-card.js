@@ -253,7 +253,7 @@
   }
   clock(); setInterval(clock, 1000);
 
-  // ---- Black Friday (the owner, 24.11: from today until Sunday 29.11, 23:59 in Romania). Its terms come from the server
+  // ---- Black Friday (the owner, 24.11: from today until bf.until, Friday 27.11, 23:59 in Romania). Its terms come from the server
   // (/api/card-sarbatori -> bf, made by api/_lib/card-terms.js): { on, start, until, tier: 990, creditOnline: 3000,
   // creditClinic: 2500 }. While it is on, that card paid online gives creditOnline; reserved and paid in the clinic, creditClinic. Everything of it is drawn
   // here and only while it is on (html.cs-bf, the bf- parts, cs-card.css); off, or when it ends with the page open, the page
@@ -262,15 +262,15 @@
   CSC.creditOf = creditOf; // the payment sheet's first numbers (v2/cs-buy.js) can ask here
   function bfOf(s) {
     var b = s && s.bf;
-    if (b && b.on !== true && /^\/v2\//.test(location.pathname) && /[?&]bf=test\b/.test(location.search)) b = Object.assign({}, b, { on: true }); // the preview, before the switch
-    if (!b && /^\/v2\//.test(location.pathname) && /[?&]bf=test\b/.test(location.search)) b = { on: true, start: '2026-11-24T08:00:00Z', until: '2026-11-29T21:59:59Z', tier: 990, creditOnline: 3000, creditClinic: 2500 };
+    if (b && b.on !== true && /^\/v2(\/|$)/.test(location.pathname) && /[?&]bf=test\b/.test(location.search)) b = Object.assign({}, b, { on: true }); // the preview, before the switch
+    if (!b && /^\/v2(\/|$)/.test(location.pathname) && /[?&]bf=test\b/.test(location.search)) b = { on: true, start: '2026-11-24T08:00:00Z', until: '2026-11-27T21:59:59Z', tier: 990, creditOnline: 3000, creditClinic: 2500 };
     if (!b || b.on !== true) return null;
     var tier = Number(b.tier) || 990; if (!TIERS[tier]) return null;
     var c = b.creditOnline != null ? b.creditOnline : b.credit != null ? b.credit : b.online;
     if (c && typeof c === 'object') c = c[tier];
     if (c && typeof c === 'object') c = c.online != null ? c.online : c.credit;
     var credit = Number(c) || 0, old = Number(b.creditClinic) || TIERS[tier][0];
-    var start = Date.parse(b.start || b.from || '') || 0, end = Date.parse(b.end || b.until || b.to || '') || Date.parse('2026-11-29T21:59:59Z');
+    var start = Date.parse(b.start || b.from || '') || 0, end = Date.parse(b.end || b.until || b.to || '') || Date.parse('2026-11-27T21:59:59Z');
     return credit > old ? { start: start, end: end, tier: tier, credit: credit, old: old } : null;
   }
   function bfLive() { var n = Date.now(); return !!BF && n >= BF.start && n < BF.end; }
@@ -297,18 +297,28 @@
   }
   var CARD_I = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>';
   var BOLT_I = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>';
+  // its last day in words, in Romania's time: „vineri, 27 noiembrie” (every date said on the page comes from bf.until)
+  var RO_D = ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă'], RO_M = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+  function bfWhen() {
+    var p = {};
+    try { new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Bucharest', weekday: 'short', day: 'numeric', month: 'numeric' }).formatToParts(new Date(BF.end)).forEach(function (x) { p[x.type] = x.value; }); } catch (e) {}
+    var wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(p.weekday), day = Number(p.day), mon = Number(p.month);
+    if (wd < 0 || !day || !mon) { var r = new Date(BF.end + 2 * 3600e3); wd = r.getUTCDay(); day = r.getUTCDate(); mon = r.getUTCMonth() + 1; } // Romania in winter: UTC+2
+    return RO_D[wd] + ', ' + day + ' ' + RO_M[mon - 1];
+  }
+  CSC.bfWhen = function () { return BF ? bfWhen() : ''; };
   var built = false;
   function bfBuild() {
     if (built) return; built = true;
     var lei = function (n) { return fmt(n) + ' lei'; };
-    var get = BF.credit, old = BF.old, T = BF.tier;
-    var item = '<span><b>Black Friday</b><i>✦</i>Doar la plata online<i>✦</i>Până duminică, 29 noiembrie<i>✦</i>Plătești ' + lei(T) + ', primești ' + lei(get) + '<i>✦</i></span>';
+    var get = BF.credit, old = BF.old, T = BF.tier, when = bfWhen();
+    var item = '<span><b>Black Friday</b><i>✦</i>Doar la plata online<i>✦</i>Până ' + when + '<i>✦</i>Plătești ' + lei(T) + ', primești ' + lei(get) + '<i>✦</i></span>';
     $$('.csc-xmas').forEach(function (sec) {
       if (!sec.querySelector('[data-cst]')) return;
       sec.insertAdjacentHTML('afterbegin', '<div class="bf-rib" aria-hidden="true"><div class="bf-rib-t">' + item + item + item + '</div><div class="bf-rib-t">' + item + item + item + '</div></div>');
       var txt = sec.querySelector('.txt');
       if (txt) txt.insertAdjacentHTML('afterbegin', '<div class="bf-head"><p class="bf-mark">BLACK FRIDAY</p><div class="bf-row">' +
-        '<span class="bf-badge">' + BOLT_I + '<span><b>Doar la plata online</b><i> · </i><span>până duminică, 29 noiembrie</span></span></span>' +
+        '<span class="bf-badge">' + BOLT_I + '<span><b>Doar la plata online</b><i> · </i><span>până ' + when + '</span></span></span>' +
         '<div class="bf-cd" data-bf-cd role="timer"><span class="bf-cd-l"><i class="bf-live" aria-hidden="true"></i>Se termină în</span><span class="bf-tiles">' +
         '<span class="bf-tile"><b data-d></b><small>z</small></span><span class="bf-tile"><b data-h></b><small>h</small></span><span class="bf-tile"><b data-m></b><small>m</small></span></span></div></div></div>');
       var h1 = sec.querySelector('h1');
@@ -320,7 +330,7 @@
       $$('.cst-go [data-cs-reserve]', sec).forEach(function (r) { r.insertAdjacentHTML('afterend', '<p class="bf-note" data-bf990>Dacă rezervi și plătești în clinică, rămâne ' + lei(old) + '.</p>'); });
     });
     // lower on the card's page: a line under the card's rows, and its card among the three
-    $$('.cs-stack').forEach(function (st) { st.insertAdjacentHTML('afterend', '<p class="bf-fine" data-bf990><b>Black Friday, până duminică, 29 noiembrie:</b> cu plata online, cardul de ' + lei(T) + ' vine cu ' + lei(get) + ' în tratamente. Dacă rezervi și plătești în clinică, rămâne ' + lei(old) + '.</p>'); });
+    $$('.cs-stack').forEach(function (st) { st.insertAdjacentHTML('afterend', '<p class="bf-fine" data-bf990><b>Black Friday, până ' + when + ':</b> cu plata online, cardul de ' + lei(T) + ' vine cu ' + lei(get) + ' în tratamente. Dacă rezervi și plătești în clinică, rămâne ' + lei(old) + '.</p>'); });
     $$('.cs-tier').forEach(function (c) {
       if (!c.querySelector('[data-cs-tier="' + T + '"]')) return;
       var tg = c.querySelector('.cs-tg'), ts = c.querySelector('.cs-ts span');

@@ -351,7 +351,7 @@ main [hidden]{ display:none !important; }
    „calitate maximă de la început”). The card keeps only its slow float. */
 :is(section,header,.hero):has([data-cst]) :is(.rv,.rv.blur), :is(section,header,.hero):has([data-cst]) [data-words] .w{ opacity:1 !important; transform:none !important; filter:none !important; transition:none !important; }
 
-/* ---- Black Friday (the owner, 24.11, until Sunday 29.11, 23:59): the 990 card paid online gives 3.000 lei, in the clinic it
+/* ---- Black Friday (the owner, 24.11, until bf.until: Friday 27.11, 23:59): the 990 card paid online gives 3.000 lei, in the clinic it
    stays 2.500. Drawn only while /api/card-sarbatori says bf is on (cs-card.js puts html.cs-bf and the bf- parts); off, the
    page is exactly as it was. Black and gold over the first screen; readable first: body text 16px, nothing cut at 360px. */
 .cs-bf{ --bf-gold:#f0cf83; --bf-gold2:#e2b458; --bf-ink:#fcf5e9; --bf-mute:rgba(252,245,233,.78);
@@ -375,7 +375,7 @@ main [hidden]{ display:none !important; }
 .bf-rib-t i{ font-style:normal; font-size:10px; color:var(--bf-gold2); }
 @keyframes bfMarq{ to{ transform:translateX(-100%); } }
 
-/* the head: BLACK FRIDAY in foil, „Doar la plata online · până duminică, 29 noiembrie”, the time left */
+/* the head: BLACK FRIDAY in foil, „Doar la plata online · până vineri, 27 noiembrie” (from bf.until), the time left */
 .cs-bf .bf-head{ display:grid; justify-items:start; gap:14px; margin:0 0 4px; }
 .bf-mark{ position:relative; margin:0; font-family:Montserrat,Inter,sans-serif; font-size:clamp(2rem,4.6vw,3.4rem); font-weight:800; line-height:1; letter-spacing:.14em;
   background:var(--bf-foil); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 1px 0 #5a3a10) drop-shadow(0 0 18px rgba(226,180,88,.35)); }
