@@ -151,7 +151,7 @@ const JOBS = [
     ['120251401215320103', 'TM HIFU G · sezon'], ['120251418278340103', 'TM RESTART · fără ace'], ['120251796512940103', 'TM HIFU G · copertă 50+'],
     ['120251585544900103', 'TM VIDEO · HIFU gușă · iPad'], ['120251418156000103', 'tm vid 3 lipo 09.09 - copie'], ['120251418133050103', 'AR HIFU G · sezon'],
   ].flatMap(([campaignId, name]) => [{ campaignId, name, daily: 75, why: 'George: 450 lei/zi pe cele dovedite' }, { campaignId, name, status: 'ACTIVE', why: 'George: leaduri multe, din contul care ne cunoaște' }]) },
-  { id: 'new-twins-off-2026-11-24', why: 'Contul nou: dublurile reclamelor pornite în centru pls oprite (cardurile rămân)', actions: [
+  { id: 'new-twins-off-2026-11-24', act: 'act_989208510351291', why: 'Contul nou: dublurile reclamelor pornite în centru pls oprite (cardurile rămân)', actions: [
     { campaignId: '120250715944510149', name: 'C360 · TM · HIFU G · sezon', status: 'PAUSED', why: 'dublura din centru pls rulează' },
     { campaignId: '120250718340060149', name: 'C360 · AR · HIFU G · sezon (2)', status: 'PAUSED', why: 'dublura din centru pls rulează' },
     { campaignId: '120250730157610149', name: 'C360 · AR · HIFU G · caz 16', status: 'PAUSED', why: 'HIFU gușă Arad rulează din centru pls' },
@@ -887,11 +887,13 @@ async function run() {
       const failed = [];
       // a job on the old ad account „centru pls” (24.11, George reconnected it: the proven campaigns there): the same
       // changes, on that account's campaigns of ours (its own scope, its money in lei); any other account is refused
-      const OTHER = { act_4502494523405059: true };
+      // and (24.11, George switched Integrări to centru pls) the summitlane account act_989208510351291, its C360 campaigns: on/off only
+      const OTHER = { act_4502494523405059: true, act_989208510351291: 'status' };
       if (j.act && !OTHER[j.act]) { console.error('ads-once: account not allowed', j.act); continue; }
       const cn = j.act ? Object.defineProperty(Object.assign({}, conn, { adAccountId: j.act, scope: require('./ads-scope').forAccount(require('./ads-scope').DEFAULT, j.act) }), 'fx', { value: 0, enumerable: false }) : conn;
       for (const a of j.actions) {
         if (logged(j, a)) continue;
+        if (j.act && OTHER[j.act] === 'status' && !a.status) { console.error('ads-once: only on/off on', j.act); continue; }
         const base = { job: j.id, at: new Date().toISOString(), campaignId: a.campaignId, campaignName: a.name, why: a.why };
         if (a.status) {
           const r = await ads.act(cn, { action: 'status', id: a.campaignId, status: a.status });

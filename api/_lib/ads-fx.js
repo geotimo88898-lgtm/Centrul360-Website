@@ -10,7 +10,7 @@ const BNR = 'https://www.bnr.ro/nbrfxrates.xml';
 const ECB = 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml';
 // known accounts and a fallback rate when the bank can't be read the first time (never 1 for a foreign currency: a
 // factor of 1 on CAD would let 3 times more money go before a rule stops it)
-const KNOWN = { act_1136609638911845: 'CAD' };
+const KNOWN = { act_1136609638911845: 'CAD', act_989208510351291: 'CAD' };
 const FALLBACK = { CAD: 3.3, EUR: 5.0, USD: 4.6, RON: 1 };
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
 

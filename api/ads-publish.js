@@ -262,7 +262,7 @@ module.exports = async (req, res) => {
     // read only (23.11): an old ad account's ads of ours (the accounts the port reads from), with Meta's spend / leads and
     // what came after the form (portal), to pick the proven ones worth porting; never a change there
     if (req.method === 'GET' && req.query && req.query.action === 'old_results') {
-      const OLD = ['act_4502494523405059', 'act_1136609638911845'];
+      const OLD = ['act_4502494523405059', 'act_1136609638911845', 'act_989208510351291'];
       const act = OLD.includes(String(req.query.act || '')) ? String(req.query.act) : '';
       if (!act) { res.status(400).json({ error: 'act' }); return; }
       const AM = require('./ads-manager');
