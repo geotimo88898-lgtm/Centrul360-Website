@@ -2,7 +2,9 @@
    - the name on the card changes softly (Pentru tine, Pentru mama, ...) until a page chooses one (CSC.name)
    - on a computer the card leans towards the pointer
    - the cards left: 100 minus the real reservations not cancelled (/api/card-sarbatori); nothing is shown without it
-   - the time left until 24 December 2026, 23:59 (Romania), every second */
+   - the time left until 24 December 2026, 23:59 (Romania), every second
+   - Black Friday (the owner, 24.11): while /api/card-sarbatori's bf is on, the 990 card paid online gives its bf credit
+     (3.000 lei; in the clinic it stays 2.500), drawn black and gold over the first screen (cs-card.css, .cs-bf); off, nothing */
 (function () {
   'use strict';
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
@@ -10,6 +12,7 @@
   var DEADLINE = Date.parse('2026-12-24T21:59:59Z');
   var NAMES = ['Pentru tine', 'Pentru mama', 'Pentru sora ta', 'Pentru prietena ta'];
   var CSC = window.CSC = { state: null, subs: [], fixed: false };
+  var BF = null; // { start, end, tier, credit, old } while Black Friday is on (bfRead)
 
   // ---- the name on the card
   function setName(el, text) {
@@ -49,6 +52,7 @@
       s.online[VIP] = Math.round(VIP * 0.9);
     }
     CSC.state = s;
+    bfRead(s);
     $$('[data-cs-left]').forEach(function (el) {
       el.textContent = String(s.left);
       // „1 card”, „2 carduri” (the text after the number is the next text node: „ carduri”)
@@ -193,7 +197,7 @@
     t = Number(t); if (SALE.indexOf(t) < 0) return;
     CSC.current = t;
     var vip = t === VIP;
-    var get = TIERS[t][0], worth = get; // the gift has no value in lei said (22.11)
+    var get = creditOf(t), worth = get; // the gift has no value in lei said (22.11); Black Friday: the 990 card's online credit
     var on = (CSC.state && CSC.state.online) || {}, d = Number(on[t]) || 0; // the VIP's price online, when its 10% link is set
     var val = { getx: fmt(TIERS[vip ? 990 : t][0]) + ' lei', pay: fmt(t) + ' lei', get: fmt(get) + ' lei', payd: fmt(t) + ' lei.', getd: fmt(get) + ' lei.', save: fmt(get - (d || t)) + ' lei', save2: fmt(worth - t) + ' lei', worth: fmt(worth) + ' lei', mul: 'x' + TIERS[t][1] };
     $$('[data-cs-v]').forEach(function (el) { var k = el.getAttribute('data-cs-v'); if (val[k] != null && el.textContent !== val[k]) el.textContent = val[k]; });
@@ -225,6 +229,7 @@
     $$('[data-cs-svon]').forEach(function (el) { el.hidden = !d; });
     $$('.cst-pts li span').forEach(function (sp) { if (sp._t != null) sp.textContent = !vip ? sp._t : d ? 'La plata online: 10% reducere și acces în Clubul 360' : 'La plata online: acces în Clubul 360'; });
     $$('.cs-stack .cs-row').forEach(function (r) { var b = r.querySelector('b'); if (b && /BioLifting/.test(b.textContent)) r.hidden = vip; });
+    bfPaint(t);
     if (!quiet) { try { localStorage.setItem(KEY, String(t)); } catch (e) {} }
   };
   $$('[data-cst]').forEach(function (box) { box.addEventListener('change', function (e) { if (e.target.name === 'cst') CSC.tier(e.target.value); }); });
@@ -244,6 +249,91 @@
       put('d', String(d)); put('h', two(h)); put('m', two(m)); put('s', two(x));
     });
     CSC.ended = !ms;
+    bfClock();
   }
   clock(); setInterval(clock, 1000);
+
+  // ---- Black Friday (the owner, 24.11: from today until Sunday 29.11, 23:59 in Romania). Its terms come from the server
+  // (/api/card-sarbatori -> bf, made by api/_lib/card-terms.js): { on, start, until, tier: 990, creditOnline: 3000,
+  // creditClinic: 2500 }. While it is on, that card paid online gives creditOnline; reserved and paid in the clinic, creditClinic. Everything of it is drawn
+  // here and only while it is on (html.cs-bf, the bf- parts, cs-card.css); off, or when it ends with the page open, the page
+  // is exactly as it was. The preview (/v2/...?bf=test) shows it before the server has it.
+  function creditOf(t) { return bfLive() && Number(t) === BF.tier ? BF.credit : TIERS[t][0]; }
+  CSC.creditOf = creditOf; // the payment sheet's first numbers (v2/cs-buy.js) can ask here
+  function bfOf(s) {
+    var b = s && s.bf;
+    if (b && b.on !== true && /^\/v2\//.test(location.pathname) && /[?&]bf=test\b/.test(location.search)) b = Object.assign({}, b, { on: true }); // the preview, before the switch
+    if (!b && /^\/v2\//.test(location.pathname) && /[?&]bf=test\b/.test(location.search)) b = { on: true, start: '2026-11-24T08:00:00Z', until: '2026-11-29T21:59:59Z', tier: 990, creditOnline: 3000, creditClinic: 2500 };
+    if (!b || b.on !== true) return null;
+    var tier = Number(b.tier) || 990; if (!TIERS[tier]) return null;
+    var c = b.creditOnline != null ? b.creditOnline : b.credit != null ? b.credit : b.online;
+    if (c && typeof c === 'object') c = c[tier];
+    if (c && typeof c === 'object') c = c.online != null ? c.online : c.credit;
+    var credit = Number(c) || 0, old = Number(b.creditClinic) || TIERS[tier][0];
+    var start = Date.parse(b.start || b.from || '') || 0, end = Date.parse(b.end || b.until || b.to || '') || Date.parse('2026-11-29T21:59:59Z');
+    return credit > old ? { start: start, end: end, tier: tier, credit: credit, old: old } : null;
+  }
+  function bfLive() { var n = Date.now(); return !!BF && n >= BF.start && n < BF.end; }
+  CSC.bfLive = bfLive;
+  function bfRead(s) { var was = document.documentElement.classList.contains('cs-bf'); BF = bfOf(s); if (bfLive() || was) bfApply(true); }
+  function bfApply(fromSet) {
+    var on = bfLive();
+    if (on) bfBuild();
+    document.documentElement.classList.toggle('cs-bf', on);
+    bfClock();
+    if (!fromSet && CSC.current) CSC.tier(CSC.current, true);
+  }
+  // the time left, and the end with the page open (it goes back to the page as it was)
+  function bfClock() {
+    if (!BF) return;
+    var on = bfLive();
+    if (on !== document.documentElement.classList.contains('cs-bf')) { bfApply(); return; }
+    if (!on) return;
+    var s = Math.floor(Math.max(0, BF.end - Date.now()) / 1000), two2 = function (n) { return (n < 10 ? '0' : '') + n; };
+    $$('[data-bf-cd]').forEach(function (el) {
+      var put = function (k, v) { var b = el.querySelector('[data-' + k + ']'); if (b && b.textContent !== v) b.textContent = v; };
+      put('d', String(Math.floor(s / 86400))); put('h', String(Math.floor(s % 86400 / 3600))); put('m', two2(Math.floor(s % 3600 / 60)));
+    });
+  }
+  var CARD_I = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>';
+  var BOLT_I = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>';
+  var built = false;
+  function bfBuild() {
+    if (built) return; built = true;
+    var lei = function (n) { return fmt(n) + ' lei'; };
+    var get = BF.credit, old = BF.old, T = BF.tier;
+    var item = '<span><b>Black Friday</b><i>✦</i>Doar la plata online<i>✦</i>Până duminică, 29 noiembrie<i>✦</i>Plătești ' + lei(T) + ', primești ' + lei(get) + '<i>✦</i></span>';
+    $$('.csc-xmas').forEach(function (sec) {
+      if (!sec.querySelector('[data-cst]')) return;
+      sec.insertAdjacentHTML('afterbegin', '<div class="bf-rib" aria-hidden="true"><div class="bf-rib-t">' + item + item + item + '</div><div class="bf-rib-t">' + item + item + item + '</div></div>');
+      var txt = sec.querySelector('.txt');
+      if (txt) txt.insertAdjacentHTML('afterbegin', '<div class="bf-head"><p class="bf-mark">BLACK FRIDAY</p><div class="bf-row">' +
+        '<span class="bf-badge">' + BOLT_I + '<span><b>Doar la plata online</b><i> · </i><span>până duminică, 29 noiembrie</span></span></span>' +
+        '<div class="bf-cd" data-bf-cd role="timer"><span class="bf-cd-l"><i class="bf-live" aria-hidden="true"></i>Se termină în</span><span class="bf-tiles">' +
+        '<span class="bf-tile"><b data-d></b><small>z</small></span><span class="bf-tile"><b data-h></b><small>h</small></span><span class="bf-tile"><b data-m></b><small>m</small></span></span></div></div></div>');
+      var h1 = sec.querySelector('h1');
+      if (h1) h1.insertAdjacentHTML('afterend', '<p class="bf-only" data-bf990><i>' + CARD_I + '</i><span><b>Doar dacă plătești online, cu cardul.</b> Dacă rezervi și plătești în clinică, rămâne ' + lei(old) + '.</span></p>');
+      $$('.csc-float', sec).forEach(function (f) { var st = f.closest('.csc-stage'); if (st && st.querySelector('[data-csc-credit]')) f.insertAdjacentHTML('beforeend', '<span class="bf-seal" data-bf990 aria-hidden="true"><small>BLACK FRIDAY</small><b>+' + fmt(get - old) + '</b><em>LEI</em><i>la plata online</i></span>'); });
+      var inp = sec.querySelector('.cst-t input[value="' + T + '"]'), box = inp && inp.closest('.cst-t');
+      if (box) box.insertAdjacentHTML('beforeend', '<span class="bf-tier">primești <s>' + lei(old) + '</s><span class="bf-now"><em>Online:</em> ' + lei(get) + '</span><span class="bf-cl">rezervi și plătești în clinică: <em>' + lei(old) + '</em></span></span>');
+      $$('.cst-go [data-cs-buy][data-cs-follow]', sec).forEach(function (b) { var l = b.querySelector('span'); if (l) l.insertAdjacentHTML('beforeend', '<span class="bf-get" data-bf990> → primesc ' + lei(get) + '</span>'); });
+      $$('.cst-go [data-cs-reserve]', sec).forEach(function (r) { r.insertAdjacentHTML('afterend', '<p class="bf-note" data-bf990>Dacă rezervi și plătești în clinică, rămâne ' + lei(old) + '.</p>'); });
+    });
+    // lower on the card's page: a line under the card's rows, and its card among the three
+    $$('.cs-stack').forEach(function (st) { st.insertAdjacentHTML('afterend', '<p class="bf-fine" data-bf990><b>Black Friday, până duminică, 29 noiembrie:</b> cu plata online, cardul de ' + lei(T) + ' vine cu ' + lei(get) + ' în tratamente. Dacă rezervi și plătești în clinică, rămâne ' + lei(old) + '.</p>'); });
+    $$('.cs-tier').forEach(function (c) {
+      if (!c.querySelector('[data-cs-tier="' + T + '"]')) return;
+      var tg = c.querySelector('.cs-tg'), ts = c.querySelector('.cs-ts span');
+      if (tg) tg._bf = [tg.innerHTML, 'Primești <strong><s>' + lei(old) + '</s> ' + lei(get) + '</strong> în tratamente, la plata online'];
+      if (ts) ts._bf = [ts.innerHTML, 'Economisești ' + lei(get - T)];
+    });
+  }
+  function bfPaint(t) {
+    var on = bfLive(), mine = on && Number(t) === BF.tier;
+    document.documentElement.classList.toggle('cs-bf', on);
+    $$('[data-bf990]').forEach(function (el) { el.hidden = !mine; });
+    if (mine) $$('h1 [data-cs-v="getd"], h2 [data-cs-v="getd"]').forEach(function (el) { el.innerHTML = '<s class="bf-old">' + fmt(BF.old) + '</s> ' + fmt(BF.credit) + ' lei.'; });
+    $$('.cst-best').forEach(function (el) { if (el._t == null) el._t = el.textContent; var v = on ? 'Black Friday' : el._t; if (el.textContent !== v) el.textContent = v; });
+    $$('.cs-tier .cs-tg, .cs-tier .cs-ts span').forEach(function (el) { if (!el._bf) return; var v = el._bf[on ? 1 : 0]; if (el.innerHTML !== v) el.innerHTML = v; });
+  }
 })();

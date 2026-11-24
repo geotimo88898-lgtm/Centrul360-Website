@@ -350,3 +350,178 @@ main [hidden]{ display:none !important; }
 /* the card block is the first screen: full quality from the first frame, no blur, fade or slide in (the owner, 22.11:
    „calitate maximă de la început”). The card keeps only its slow float. */
 :is(section,header,.hero):has([data-cst]) :is(.rv,.rv.blur), :is(section,header,.hero):has([data-cst]) [data-words] .w{ opacity:1 !important; transform:none !important; filter:none !important; transition:none !important; }
+
+/* ---- Black Friday (the owner, 24.11, until Sunday 29.11, 23:59): the 990 card paid online gives 3.000 lei, in the clinic it
+   stays 2.500. Drawn only while /api/card-sarbatori says bf is on (cs-card.js puts html.cs-bf and the bf- parts); off, the
+   page is exactly as it was. Black and gold over the first screen; readable first: body text 16px, nothing cut at 360px. */
+.cs-bf{ --bf-gold:#f0cf83; --bf-gold2:#e2b458; --bf-ink:#fcf5e9; --bf-mute:rgba(252,245,233,.78);
+  --bf-foil:linear-gradient(180deg,#fff3cf 0%,#f3d58e 32%,#c8963e 52%,#e2b458 60%,#ffe9ad 84%,#d6a64c 100%);
+  --bf-foilh:linear-gradient(100deg,#c9a45e 0%,#f2dfb4 40%,#fff3cf 50%,#e2b458 66%,#bf9f6e 100%); }
+.cs-bf .csc-xmas{ position:relative; overflow:hidden; color:var(--bf-ink); border-radius:0 0 36px 36px;
+  background:radial-gradient(60% 34% at 50% 26%,rgba(140,20,64,.42),transparent 70%), radial-gradient(70% 30% at 50% 0%,rgba(107,79,31,.55),transparent 72%),
+    radial-gradient(50% 30% at 85% 70%,rgba(107,79,31,.22),transparent 70%), linear-gradient(180deg,#15100a 0%,#0b0906 45%,#060504 100%); }
+.cs-bf .csc-xmas::after{ background-image:radial-gradient(rgba(240,207,131,.08) 1px,transparent 1.2px); background-size:22px 22px;
+  -webkit-mask-image:radial-gradient(80% 60% at 50% 40%,#000,transparent); mask-image:radial-gradient(80% 60% at 50% 40%,#000,transparent); }
+.cs-bf .csc-xmas .csc-snow{ display:none; }
+.cs-bf header.top .bar{ background:rgba(255,255,255,.94); }
+.bf-rib,.bf-head,.bf-seal,.bf-only,.bf-note,.bf-get,.bf-tier{ display:none; }
+
+/* the ribbon under the menu: a slow gold row on black */
+.cs-bf .bf-rib{ position:absolute; left:0; right:0; top:76px; height:36px; z-index:2; overflow:hidden; display:flex; align-items:center; pointer-events:none;
+  background:linear-gradient(180deg,#050403,#1a140c 50%,#050403); box-shadow:0 1px 0 rgba(240,207,131,.7), 0 -1px 0 rgba(240,207,131,.7); }
+.bf-rib-t{ display:flex; flex:none; gap:22px; padding:0 22px 0 30px; white-space:nowrap; animation:bfMarq 40s linear infinite; }
+.bf-rib-t span{ display:inline-flex; align-items:center; gap:22px; font-size:12.5px; font-weight:700; line-height:1; letter-spacing:.14em; text-transform:uppercase; color:#f5dfa6; }
+.bf-rib-t b{ font-family:Montserrat,Inter,sans-serif; font-size:14px; font-weight:800; letter-spacing:.2em; background:var(--bf-foil); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.bf-rib-t i{ font-style:normal; font-size:10px; color:var(--bf-gold2); }
+@keyframes bfMarq{ to{ transform:translateX(-100%); } }
+
+/* the head: BLACK FRIDAY in foil, „Doar la plata online · până duminică, 29 noiembrie”, the time left */
+.cs-bf .bf-head{ display:grid; justify-items:start; gap:14px; margin:0 0 4px; }
+.bf-mark{ position:relative; margin:0; font-family:Montserrat,Inter,sans-serif; font-size:clamp(2rem,4.6vw,3.4rem); font-weight:800; line-height:1; letter-spacing:.14em;
+  background:var(--bf-foil); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 1px 0 #5a3a10) drop-shadow(0 0 18px rgba(226,180,88,.35)); }
+.bf-row{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.bf-badge{ display:inline-flex; align-items:center; gap:8px; min-height:38px; padding:6px 16px 6px 12px; border-radius:999px; font-size:15px; font-weight:700; line-height:1.25;
+  color:#f8e4b0; background:rgba(240,207,131,.08); box-shadow:0 0 0 1px rgba(240,207,131,.6) inset; }
+.bf-badge svg{ width:17px; height:17px; flex:none; color:var(--bf-gold); }
+.bf-cd{ display:flex; align-items:center; gap:10px; padding:6px 8px 6px 14px; border-radius:16px; background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));
+  box-shadow:0 0 0 1px rgba(240,207,131,.25) inset; }
+.bf-cd-l{ display:inline-flex; align-items:center; gap:8px; font-size:15px; font-weight:600; color:var(--bf-mute); white-space:nowrap; }
+.bf-live{ position:relative; width:9px; height:9px; border-radius:50%; background:#ff4d78; flex:none; }
+.bf-live::after{ content:''; position:absolute; inset:-5px; border-radius:50%; border:1.5px solid #ff4d78; animation:bfPing 1.8s ease-out infinite; }
+@keyframes bfPing{ from{ transform:scale(.4); opacity:1; } to{ transform:scale(1.4); opacity:0; } }
+.bf-tiles{ display:flex; gap:5px; }
+.bf-tile{ display:inline-flex; align-items:baseline; justify-content:center; gap:1px; min-width:48px; padding:7px 7px 6px; border-radius:11px;
+  background:linear-gradient(180deg,#2a2015,#120d08); box-shadow:0 0 0 1px rgba(240,207,131,.42) inset; }
+.bf-tile b{ font-size:21px; font-weight:800; line-height:1; letter-spacing:-.03em; font-variant-numeric:tabular-nums; background:var(--bf-foil); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.bf-tile small{ font-size:13px; font-weight:700; color:var(--bf-gold2); }
+
+/* the headline on black: white, the gold line with the old sum struck */
+.cs-bf .csc-xmas h1{ color:var(--bf-ink); }
+.cs-bf .csc-xmas h1 em{ background:var(--bf-foilh); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.cs-bf .csc-xmas h1 em .w, .cs-bf .csc-xmas h1 em span{ color:transparent; }
+.bf-old{ position:relative; display:inline-block; font-family:Inter,sans-serif; font-style:normal; font-size:.6em; font-weight:600; letter-spacing:-.02em; line-height:1; vertical-align:.32em;
+  margin:0 .32em 0 .3em; padding:0 .08em; color:rgba(252,245,233,.82); -webkit-text-fill-color:rgba(252,245,233,.82); text-decoration:none; }
+/* the strike: one thin red line through the middle of the digits, under them in strength (they stay readable) */
+.bf-old::after{ content:''; position:absolute; left:0; right:0; top:52%; height:2px; margin-top:-1px; border-radius:1px; background:#ff4d78; opacity:.9; }
+
+/* right under the headline: only paying online, with the card */
+.cs-bf .bf-only{ display:flex; align-items:center; gap:13px; margin:-4px 0 0; padding:12px 16px; border-radius:18px; max-width:540px; text-align:left;
+  background:linear-gradient(180deg,rgba(240,207,131,.16),rgba(240,207,131,.06)); box-shadow:0 0 0 1.5px rgba(240,207,131,.6) inset;
+  font-size:16px; line-height:1.4; color:var(--bf-ink); }
+.bf-only b{ display:block; font-weight:800; color:#f8e4b0; }
+.bf-only i{ flex:none; display:grid; place-items:center; width:42px; height:42px; border-radius:12px; background:var(--bf-foilh); color:#1e1206; }
+.bf-only i svg{ width:24px; height:24px; }
+
+/* the card: the +500 seal in front of it */
+.cs-bf .bf-seal{ position:absolute; z-index:5; right:-14px; top:-24px; width:108px; height:108px; border-radius:50%; transform:translateZ(46px) rotate(10deg);
+  display:grid; place-items:center; align-content:center; gap:1px; text-align:center; background:radial-gradient(circle at 35% 30%,#2e2419,#0d0a07 62%,#000);
+  box-shadow:0 0 0 3px #e2b458, 0 0 0 4.5px #6e4b16, 0 0 0 6px #f6dc9a, 0 14px 30px -6px rgba(0,0,0,.7), 0 0 34px rgba(226,180,88,.45); }
+.bf-seal::before{ content:''; position:absolute; inset:7px; border-radius:50%; border:1px dashed rgba(240,207,131,.55); }
+.bf-seal small{ font-size:8px; font-weight:700; line-height:1; letter-spacing:.2em; color:var(--bf-gold); }
+.bf-seal b{ font-size:31px; font-weight:800; line-height:.95; letter-spacing:-.05em; background:var(--bf-foil); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.bf-seal em{ font-size:11px; font-style:normal; font-weight:700; line-height:1; letter-spacing:.24em; color:var(--bf-gold); }
+.bf-seal i{ margin-top:4px; padding:3px 7px 2px; border-radius:999px; font-size:8.5px; font-style:normal; font-weight:800; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; color:#1e1206; background:var(--bf-foilh); }
+.cs-bf .csc-xmas .csc-stage::before{ background:radial-gradient(circle at 48% 46%,rgba(232,60,120,.42),rgba(226,180,88,.2) 46%,transparent 70%); }
+
+/* the three cards: the 990 one across the row, in gold (2.500 struck, „Online: 3.000 lei”, the clinic's sum); the others under it */
+.cs-bf .csc-xmas .cst{ grid-template-columns:1fr 1fr; padding-top:14px; gap:10px; }
+.cs-bf .csc-xmas .cst-t{ background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03)); box-shadow:0 0 0 1px rgba(240,207,131,.24) inset; }
+.cs-bf .csc-xmas .cst-t small{ color:rgba(240,207,131,.85); }
+.cs-bf .csc-xmas .cst-t b{ color:var(--bf-ink); }
+.cs-bf .csc-xmas .cst-t span{ color:var(--bf-mute); }
+.cs-bf .csc-xmas .cst-t span strong{ color:#f8e4b0; }
+.cs-bf .csc-xmas .cst-t.best{ order:-1; grid-column:1 / -1; grid-template-columns:auto 1fr; column-gap:22px; align-items:start; padding:18px 18px 16px;
+  background:radial-gradient(120% 90% at 50% 0%,#3a2a14,#140e08 70%); box-shadow:0 0 0 2px #e2b458 inset, 0 0 32px -6px rgba(226,180,88,.55); }
+.cs-bf .csc-xmas .cst-t.best small{ grid-column:1; }
+.cs-bf .csc-xmas .cst-t.best > b{ grid-column:1; font-size:1.9rem; background:var(--bf-foilh); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.cs-bf .csc-xmas .cst-t.best > span{ display:none; }
+.cs-bf .csc-xmas .cst-t.best .bf-tier{ display:grid; gap:2px; grid-column:2; grid-row:1 / span 3; align-self:center; font-size:15px; line-height:1.35; color:var(--bf-mute); }
+.bf-tier s{ color:rgba(252,245,233,.62); text-decoration-color:#ff4d78; text-decoration-thickness:2px; font-weight:600; }
+.bf-tier .bf-now{ font-size:1.65rem; font-weight:800; line-height:1.1; letter-spacing:-.035em; white-space:nowrap; background:var(--bf-foil); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.bf-tier .bf-cl{ font-size:14px; color:var(--bf-mute); }
+.cs-bf .csc-xmas .cst-best{ background:var(--bf-foilh); color:#1e1206; font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; right:14px; top:-11px; padding:3px 11px; }
+
+/* scarcity: the cream pill with its raspberry number */
+.cs-bf .csc-xmas .cst-urg:not(:has(.cst-vipl:not([hidden]))){ background:#fff6ec; color:#160a0d; font-size:16px; font-weight:700; border-radius:999px; box-shadow:0 0 0 2px #b8406f inset, 0 0 0 5px rgba(224,69,127,.22), 0 0 26px rgba(224,69,127,.4); }
+.cs-bf .csc-xmas .cst-urg:not(:has(.cst-vipl:not([hidden]))) b{ color:#e2195f; }
+/* the rest of the block on black: the clinic choice, the gift, the two buttons as equal as before */
+.cs-bf .csc-xmas .cst-city{ background:rgba(255,255,255,.07); box-shadow:0 0 0 1px rgba(240,207,131,.2) inset; }
+.cs-bf .csc-xmas .cst-city label{ color:var(--bf-mute); font-size:15px; }
+.cs-bf .csc-xmas .cst-city label:has(input:checked){ color:#1e1206; background:var(--bf-foilh); }
+.cs-bf .csc-xmas .cst-gift{ color:#1e1206; font-size:13.5px; background:linear-gradient(100deg,#c08f33,#e2bd72 30%,#fbecc6 50%,#e5bf72 68%,#c69538); box-shadow:none; }
+.cs-bf .csc-xmas:not(:has(.cs-vipon)) [data-cs-buy][data-cs-follow]{ color:#1e1206; background:linear-gradient(180deg,#ffe9ad 0%,#f0cf83 30%,#d9ac56 70%,#c08f33 100%);
+  box-shadow:0 0 0 1px #fff0c2 inset, 0 16px 36px -14px rgba(226,180,88,.75); }
+.cs-bf .csc-xmas:not(:has(.cs-vipon)) [data-cs-buy][data-cs-follow]::before, .cs-bf .csc-xmas:not(:has(.cs-vipon)) [data-cs-buy][data-cs-follow]::after{ display:none; }
+.cs-bf .csc-xmas [data-cs-buy][data-cs-follow]{ height:auto; min-height:58px; padding-top:9px; padding-bottom:9px; white-space:normal; text-align:center; line-height:1.2; }
+.cs-bf .bf-get:not([hidden]){ display:inline; font-weight:800; }
+/* „Rezerv și plătesc în clinică” stays the full white button it is, as visible as the gold one */
+.cs-bf .bf-note:not([hidden]){ display:block; margin:-2px 0 0; text-align:center; font-size:15px; line-height:1.4; color:#f0d9a0; }
+.cs-bf .csc-xmas .cst-help{ color:rgba(252,245,233,.66); font-size:14px; }
+.cs-bf .csc-xmas .cst-help a{ color:var(--bf-gold); }
+.cs-bf .csc-xmas .cst-call{ color:var(--bf-ink); }
+.cs-bf .csc-xmas .meta, .cs-bf .csc-xmas .meta .trust, .cs-bf .csc-xmas .cst-pts li{ color:var(--bf-mute); }
+.cs-bf .csc-xmas .cst-pts li{ font-size:15px; }
+.cs-bf .csc-xmas .cst-pts b, .cs-bf .csc-xmas .trust b{ color:#f8e4b0; }
+.cs-bf .csc-xmas .cst-pts i{ color:var(--bf-gold); background:rgba(240,207,131,.14); }
+.cs-bf .csc-xmas .cst-done{ background:#fff6ec; }
+
+/* the phone: the head over the card, everything centred, the 990 card readable at 360px */
+@media (max-width:920px){
+  .cs-bf .bf-head{ justify-items:center; text-align:center; }
+  .bf-row{ justify-content:center; }
+}
+@media (max-width:640px){
+  .cs-bf .csc-xmas{ padding-top:128px; }
+  .cs-bf .csc-xmas .txt > .bf-head{ order:0; }
+  .cs-bf .csc-xmas .txt > .bf-only{ order:2; }
+  .bf-mark{ font-size:clamp(1.6rem,8.4vw,2.1rem); letter-spacing:.12em; }
+  .bf-badge{ font-size:14.5px; min-height:36px; padding:5px 14px 5px 11px; }
+  .bf-cd{ padding:5px 7px 5px 12px; }
+  .bf-cd-l{ font-size:14.5px; }
+  .bf-tile{ min-width:44px; padding:6px 6px 5px; }
+  .bf-tile b{ font-size:19px; }
+  .cs-bf .csc-xmas .csc-stage{ padding-top:44px; }
+  .cs-bf .bf-seal{ width:96px; height:96px; top:-20px; right:-8px; }
+  .bf-seal b{ font-size:27px; }
+  .bf-seal i{ font-size:7.8px; }
+  .bf-only{ font-size:15.5px; padding:11px 13px; }
+  .bf-only i{ width:38px; height:38px; }
+  .cs-bf .csc-xmas .cst-t.best{ column-gap:14px; padding:16px 14px 14px; }
+  .cs-bf .csc-xmas .cst-t.best > b{ font-size:1.6rem; }
+  .bf-tier{ font-size:14.5px; }
+  .bf-tier .bf-now{ font-size:1.45rem; }
+  .cs-bf .csc-xmas .cst-t:not(.best) b{ font-size:1.3rem; }
+  .cs-bf .csc-xmas .cst-t:not(.best) span{ font-size:13.5px; }
+  .cs-bf .csc-xmas .cst-t:not(.best) span strong{ font-size:14.5px; }
+}
+@media (min-width:921px){
+  .cs-bf .bf-rib{ top:88px; height:40px; }
+  .cs-bf .csc-xmas{ padding-top:152px; border-radius:0 0 48px 48px; }
+  .cs-bf .bf-seal{ width:146px; height:146px; right:-24px; top:-40px; }
+  .bf-seal small{ font-size:10.5px; }
+  .bf-seal b{ font-size:44px; }
+  .bf-seal em{ font-size:14px; }
+  .bf-seal i{ font-size:11px; }
+  .bf-only{ font-size:17px; }
+}
+@media (prefers-reduced-motion:reduce){ .bf-rib-t, .bf-live::after{ animation:none; } }
+.bf-tier .bf-now em{ display:block; font-size:13px; font-style:normal; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--bf-gold); -webkit-text-fill-color:var(--bf-gold); }
+@media (min-width:921px){ .bf-tier .bf-now em{ display:inline; font-size:inherit; letter-spacing:inherit; text-transform:none; } }
+.cs-bf .csc-xmas .cst-go [data-cs-buy][data-cs-follow]:has(.bf-get:not([hidden])) > svg{ display:none; }
+/* lower on the card's page (light): the struck sum in the closing title, the line under the card's rows */
+h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
+.cs-bf .bf-fine:not([hidden]){ display:block; max-width:860px; margin:18px auto 0; padding:14px 18px; border-radius:16px; font-size:16px; line-height:1.5; color:var(--ink);
+  background:linear-gradient(180deg,#fff8e6,#fdf1d4); box-shadow:0 0 0 1px rgba(201,160,74,.45) inset; }
+.bf-fine b{ font-weight:800; color:#7a5412; }
+.cs-tier .cs-tg s{ color:var(--mute2); font-weight:600; margin-right:4px; }
+.bf-badge b{ font-weight:700; }
+.bf-badge i{ font-style:normal; }
+.cs-bf .csc-xmas .trust, .cs-bf .csc-xmas .trust .g, .cs-bf .csc-xmas .trust .ok{ color:var(--bf-mute); }
+@media (max-width:920px){
+  .bf-badge{ text-align:left; border-radius:18px; padding:7px 16px 7px 12px; }
+  .bf-badge > span > i{ display:none; }
+  .bf-badge > span > span{ display:block; font-weight:600; color:var(--bf-mute); }
+}
+.bf-tier .bf-cl em{ font-style:normal; font-weight:600; white-space:nowrap; }
+/* another card chosen: the 990 one keeps its gold, quieter, so the chosen one reads as chosen */
+.cs-bf .csc-xmas .cst-t.best:not(:has(input:checked)){ box-shadow:0 0 0 1px rgba(226,180,88,.55) inset; }
