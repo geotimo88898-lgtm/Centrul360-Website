@@ -65,9 +65,13 @@
     var made = b.made || 0, sch = v.scheduled || 0;
     // the same count as Calendar: without the cancelled ones (said under the number)
     var live = made ? Math.max(0, made - (b.cancelled || 0)) : sch;
-    if (made || sch) out.push({ cls: '', html: '<small>' + (made ? 'Programări făcute' : 'Programări') + '</small><b data-count="' + live + '">0</b><p>' + (made ? (b.confirmed ? num(b.confirmed) + ' confirmate' : 'fără anulări') + (b.cancelled ? ' · ' + num(b.cancelled) + ' anulate, nu intră' : '') : 'în calendar, inclusiv anulate') + '</p>' });
+    // George, 24.11: the ones made from the ads first, the sessions of packages already sold apart (not new bookings)
+    if (made && b.fromAdsLive != null) {
+      var other = Math.max(0, live - (b.fromAdsLive || 0) - (b.packLive || 0));
+      out.push({ cls: '', html: '<small>Programări din reclame</small><b data-count="' + (b.fromAdsLive || 0) + '">0</b><p>+ ' + num(other) + ' din alte surse' + (b.packLive ? ' · ' + num(b.packLive) + (b.packLive === 1 ? ' ședință' : ' ședințe') + ' din pachete, separat' : '') + (b.cancelled ? ' · ' + num(b.cancelled) + ' anulate, nu intră' : '') + '</p>' });
+    } else if (made || sch) out.push({ cls: '', html: '<small>' + (made ? 'Programări făcute' : 'Programări') + '</small><b data-count="' + live + '">0</b><p>' + (made ? (b.confirmed ? num(b.confirmed) + ' confirmate' : 'fără anulări') + (b.cancelled ? ' · ' + num(b.cancelled) + ' anulate, nu intră' : '') : 'în calendar, inclusiv anulate') + '</p>' });
     var rate = v.rate != null ? v.rate : b.rates && b.rates.came;
-    if (rate != null) out.push({ cls: 'gauge', html: '<small>Au venit · ' + esc(pl) + '</small>' + gauge(rate) + '<b class="mid" data-count="' + Math.round(rate) + '" data-suf="%">0</b><p>' + num(v.came || b.came) + ' au venit din ' + num(v.due || b.due) + '</p>' });
+    if (rate != null) out.push({ cls: 'gauge', html: '<small>Au venit · ' + esc(pl) + '</small>' + gauge(rate) + '<b class="mid" data-count="' + Math.round(rate) + '" data-suf="%">0</b><p>' + num(v.came || b.came) + ' au venit din ' + num(v.due || b.due) + ' programate (și anulate)</p>' });
     // the leads are in the row below (Leaduri): the tile only counts the clients who paid
     if (m.clients) out.push({ cls: '', html: '<small>Cliente care au plătit</small><b data-count="' + m.clients + '">0</b>' });
     // the ads and the cosmeticians' race have their own full sections below (Reclamele, Echipa): not twice

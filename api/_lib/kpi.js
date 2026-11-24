@@ -13,8 +13,9 @@
 // a client without a lead is "direct", of one whose lead came before START "de dinainte".
 //
 //   came (prezentată)   the booking is finished or paid, or she paid something that day (16.11)
-//   due                 its day has passed and it wasn't cancelled ahead (a cancellation at or after its hour is a no-show),
-//                       or it came: show rate = came / due. Time blocks and leave are never visits.
+//   due                 its day has come (George, 24.11: „câte doamne s-au prezentat din câte erau puse în calendar”): every
+//                       booking of a day that has passed, cancelled ahead included, plus today's that came or were cancelled;
+//                       show rate = came / due. Time blocks and leave are never visits.
 
 const { bucharestDay } = require('./ads-funnel');
 const CL = require('./clinic');
@@ -162,7 +163,7 @@ function model({ offers = [], leads = [], appointments = [], sales = [], clients
     const cancelled = a.status === 'anulata' && !came, noShow = cancelled && CL.lateCancel(a);
     const lead = byAppt.get(a.id) || (a.leadId && leadById.get(a.leadId)) || latestLead(phone, a.clientId, made + 5 * 60e3);
     return { id: a.id, made, madeDay: bucharestDay(made || NOW), date: a.date, time: a.time || '', status: a.status, city: cityOf(a.location), treatment: a.treatment || '',
-      fresh: made >= START && !imported, came, cancelled, noShow, due: came || (!cancelled && a.date < today) || noShow, upcoming: !came && !cancelled && a.date >= today,
+      fresh: made >= START && !imported, came, cancelled, noShow, due: came || a.date < today || (cancelled && a.date <= today) || noShow, upcoming: !came && !cancelled && a.date >= today,
       confirmed: came || a.status === 'confirmata', createdBy: a.createdBy || '', cosmeticianId: a.cosmeticianId || '', clientId: a.clientId || '', phone, paidSaleId: a.paidSaleId || '',
       package: !!a.package, lead, pays: [] };
   });
@@ -208,8 +209,11 @@ function funnelOf(leads) {
     perLead: f.leads ? r2(f.revenue / f.leads) : null };
 }
 function bookingsOf(list) {
-  const b = { made: list.length, confirmed: 0, cancelled: 0, due: 0, came: 0, upcoming: 0, fromLeads: 0, ahead: [], toBook: [] };
+  const b = { made: list.length, confirmed: 0, cancelled: 0, due: 0, came: 0, upcoming: 0, fromLeads: 0, fromAds: 0, fromAdsLive: 0, pack: 0, packLive: 0, ahead: [], toBook: [] };
   list.forEach((a) => {
+    // George, 24.11: the bookings made from the ads apart, and the sessions of a package (already sold) apart
+    if (a.package) { b.pack++; if (!a.cancelled) b.packLive++; }
+    else if (a.lead && a.lead.fresh && a.lead.fromAds) { b.fromAds++; if (!a.cancelled) b.fromAdsLive++; }
     if (a.confirmed) b.confirmed++;
     if (a.cancelled) b.cancelled++;
     if (a.due) b.due++;
@@ -219,6 +223,7 @@ function bookingsOf(list) {
     b.ahead.push(Math.max(0, (Date.parse(a.date + 'T12:00:00Z') - Date.parse(a.madeDay + 'T12:00:00Z')) / DAY));
   });
   return { made: b.made, confirmed: b.confirmed, cancelled: b.cancelled, due: b.due, came: b.came, missed: b.due - b.came, upcoming: b.upcoming, fromLeads: b.fromLeads,
+    fromAds: b.fromAds, fromAdsLive: b.fromAdsLive, pack: b.pack, packLive: b.packLive,
     rates: { came: pct(b.came, b.due), confirmed: pct(b.confirmed, b.made), cancelled: pct(b.cancelled, b.made) },
     daysAhead: b.ahead.length ? r2(b.ahead.reduce((x, y) => x + y, 0) / b.ahead.length) : null, hoursToBook: b.toBook.length ? Math.round(median(b.toBook)) : null };
 }
