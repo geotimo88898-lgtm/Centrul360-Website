@@ -1919,7 +1919,8 @@
     // cosmeticians call her straight from the booking)
     const contactHtml = (x) => (x.clientPhone ? '<div class="cal-contact">' +
       '<a class="k-btn is-primary cal-call" href="' + K.tel(x.clientPhone) + '">' + icon('phone') + '<span>Sună <b>' + esc(x.clientPhone) + '</b></span></a>' +
-      '<a class="k-btn is-outline cal-wa" href="#mesaje" data-chat="' + esc(x.clientPhone) + '" data-chat-name="' + esc(x.clientName || '') + '" data-chat-city="' + esc(x.location || '') + '">' + icon('chat') + 'Mesaje</a></div>' : '');
+      '<a class="k-btn is-outline cal-wa" href="#mesaje" data-chat="' + esc(x.clientPhone) + '" data-chat-name="' + esc(x.clientName || '') + '" data-chat-city="' + esc(x.location || '') + '">' + icon('chat') + 'Mesaje</a>' +
+      (window.C360SendCardLink && window.C360SendCardLink.can() ? '<button type="button" class="k-btn is-outline"' + window.C360SendCardLink.attrs({ phone: x.clientPhone, name: x.clientName, city: x.location }) + '>' + icon('link') + '<span data-cl-at>Trimite linkul de plată</span></button>' : '') + '</div>' : '');
     if (!canEdit()) {
       K.drawer({
         title: a.clientName || 'Programare', lead: K.avatar(a.clientName, 42),

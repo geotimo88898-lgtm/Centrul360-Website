@@ -28,8 +28,11 @@
 //   POST { action: 'stock', wave, max }   the waves: how many cards in a wave (10) and in all (70) (admin only; Activitate notes it)
 //   POST { action: 'open_wave' }   the wave of now ends early, the next one starts now (admin only)
 //   POST { action: 'scan' }        look in myPOS for the payments now
-//   POST { action: 'paylink', id }   „Trimite linkul de plată” (a reservation to pay in the clinic): her one-tap link on
-//        WhatsApp, only on the tap (_lib/card-sarbatori.js sendPayLink) → { ok, how: 'text' | 'template' }
+//   POST { action: 'sendlink', phone, name, city, tier, orderId? }   „Trimite linkul de plată” (anywhere in the portal,
+//        portal-cardlink.js): her open order of that card goes online, or a new one; her one-tap link on WhatsApp, only on
+//        the tap (_lib/card-sarbatori.js sendCardLink) → { ok, how: 'text' | 'template', id, linkAt }
+//   POST { action: 'links', phones: [..], preview?: { phone, name, city, tier, orderId } }   per phone (last 9 digits) her
+//        last link (48 h) and her open order; with preview: the exact message the tap would send (_lib linkInfo)
 //   POST { action: 'pick', check, id }   „De verificat”: a payment that could be two orders' (the same sum), hers is this one
 //   GET ?img=<code>                the card's picture (the team, a portal session)
 
@@ -135,7 +138,7 @@ module.exports = async (req, res) => {
     const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
 
     // ---- the team
-    const TEAM = ['delete', 'void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'request', 'edit', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick', 'interested', 'int_note', 'int_hide', 'int_add', 'to_interested', 'paylink'];
+    const TEAM = ['delete', 'void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'request', 'edit', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick', 'interested', 'int_note', 'int_hide', 'int_add', 'to_interested', 'sendlink', 'links'];
     if (TEAM.includes(b.action)) {
       const session = await require('./_lib/auth').requireRole(req, res, b.action === 'undo' ? ['admin'] : ['admin', 'manager', 'receptie']);
       if (!session) return;
@@ -158,14 +161,7 @@ module.exports = async (req, res) => {
         // (an order of the checkout closed before she gave her phone: nobody to call, not shown)
         const orders = list.filter((r) => r.phone && (r.status === 'asteptare' || r.status === 'rezervat' || r.status === 'lead' || gaveUp(r) || dead(r))).map((r) => ({ id: r.id, created: r.created, name: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit,
           pay: r.pay, status: r.status, forWho: r.forWho || '', names: r.cards.map((c) => c.recipient), held: C.live(r, now), heldUntil: r.status === 'asteptare' || r.status === 'lead' ? new Date(C.heldFrom(r) + C.HOLD_MS).toISOString() : '',
-          online: r.via === 'site' && (r.pay === 'online' || !!r.convertedAt), converted: r.convertedAt || '', byHer: gaveUp(r), nameFrom: r.nameFrom || '', via: r.via || '', note: r.note || '', leadCall: r.leadCall ? r.leadCall.at : '', cancelled: dead(r) && !gaveUp(r), clientId: r.clientId || '', trail: trailOf(r), rec: recView(r) })).reverse();
-        // „Card rezervat, de încasat”: when the desk last sent her the pay link (her chat, Mesaje: cardStep 'link')
-        if (orders.some((o) => o.status === 'rezervat')) {
-          const convos = await readJSON('data/whatsapp-conversations.json', []).catch(() => []);
-          const sent = new Map();
-          (convos || []).forEach((c) => (c.messages || []).forEach((m) => { if (m.direction === 'out' && m.cardOrder && m.cardStep === 'link' && String(m.timestamp) > String(sent.get(m.cardOrder) || '')) sent.set(m.cardOrder, m.timestamp); }));
-          orders.forEach((o) => { if (sent.has(o.id)) o.linkAt = sent.get(o.id); });
-        }
+          online: r.via === 'site' && (r.pay === 'online' || !!r.convertedAt), converted: r.convertedAt || '', byHer: gaveUp(r), nameFrom: r.nameFrom || '', via: r.via || '', note: r.note || '', leadCall: r.leadCall ? r.leadCall.at : '', cancelled: dead(r) && !gaveUp(r), linkAt: r.linkAt || '', clientId: r.clientId || '', trail: trailOf(r), rec: recView(r) })).reverse();
         // her next appointment and the campaign wave, next to each order and each card
         const ex = await C.orderExtras(orders.concat(list.filter((r) => r.status === 'platit').map((r) => ({ id: r.id, phone: r.phone, clientId: r.clientId, tier: r.tier, paidAt: r.paidAt })))).catch(() => ({}));
         orders.forEach((o) => Object.assign(o, ex[o.id] || {}));
@@ -226,11 +222,17 @@ module.exports = async (req, res) => {
         res.status(200).json(Object.assign({ ok: true, opened: x.wave }, await C.count(list)));
         return;
       }
-      // „Trimite linkul de plată”: her one-tap link on WhatsApp, a reservation to pay in the clinic (only on this tap)
-      if (b.action === 'paylink') {
-        const x = await C.sendPayLink(clip(b.id, 60));
-        if (x.error) { res.status(x.error === 'not_found' ? 404 : ['not_open', 'paid', 'sold_out', 'closed'].includes(x.error) ? 409 : x.error === 'bad_phone' ? 400 : 502).json(x); return; }
-        res.status(200).json({ ok: true, how: x.how });
+      // „Trimite linkul de plată” (portal-cardlink.js): her one-tap link on WhatsApp, only on this tap
+      if (b.action === 'sendlink') {
+        const x = await C.sendCardLink(b, { id: session.employeeId || '', name: byName });
+        if (x.error) { res.status(['sold_out', 'closed', 'no_link'].includes(x.error) ? 409 : ['bad_phone', 'missing_city', 'bad_tier'].includes(x.error) ? 400 : 502).json(x); return; }
+        res.status(200).json(x);
+        return;
+      }
+      if (b.action === 'links') {
+        const ph = (Array.isArray(b.phones) ? b.phones : []).map((x) => clip(x, 30));
+        const pv = b.preview && typeof b.preview === 'object' ? { phone: clip(b.preview.phone, 30), name: clip(b.preview.name, 100), city: clip(b.preview.city, 30), tier: b.preview.tier, orderId: clip(b.preview.orderId, 60) } : null;
+        res.status(200).json(await C.linkInfo(ph, pv));
         return;
       }
       if (b.action === 'scan') { res.status(200).json(await C.autoMatch(true)); return; }

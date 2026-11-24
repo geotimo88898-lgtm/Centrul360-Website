@@ -47,6 +47,8 @@
     // a menu closes on a tap elsewhere and on Escape
     document.addEventListener('click', (e) => { if (S.box && !e.target.closest('.cd-mw')) closeMenus(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.box) closeMenus(); });
+    // a link sent from here (or another screen): her order changed (online now, or a new one)
+    document.addEventListener('c360:cardlink', () => { if (S.d && S.box && S.box.isConnected) load(true); });
   }
   async function load(quiet) {
     try { S.d = await api({ action: 'list', scan: !quiet }); const sb = S.box.querySelector('[data-cd-stock]'); if (sb) sb.classList.toggle('hidden', S.d.role !== 'admin'); paint(); loadInt(); }
@@ -185,6 +187,7 @@
         '<span class="cd-o-c">' + chips + '</span></button>' +
       '<a class="cd-o-tel" href="' + K.tel(o.phone) + '" aria-label="Sună">' + icon('phone') + '<span>' + esc(o.phone) + '</span></a>' +
       '<div class="cd-o-act">' + (o.phone ? '<a class="k-btn is-outline is-sm cd-i-chat" href="#mesaje" data-chat="' + esc(o.phone) + '" data-chat-name="' + esc(o.name || '') + '" data-chat-city="' + esc(o.city || '') + '" aria-label="Mesaje">' + icon('chat') + '<span class="cd-lg">Mesaje</span></a>' : '') +
+        (dead ? '' : linkBtn(o, 'is-outline')) +
         (dead ? '' : '<button type="button" class="k-btn is-primary is-sm" data-cd-confirm="' + esc(o.id) + '" data-via="' + (o.pay === 'online' ? 'online' : 'clinica') + '">' + icon('check') +
         '<span class="cd-lg">' + (o.pay === 'online' ? 'Confirmă (e în myPOS)' : 'Confirmă plata') + '</span><span class="cd-sm">Confirmă</span></button>') +
         (menu ? '<span class="cd-mw"><button type="button" class="k-btn is-ghost is-sm cd-dots" data-cd-menu aria-haspopup="true" aria-expanded="false" aria-label="Mai mult">' + icon('more') + '</button><span class="cd-menu" role="menu">' + menu + '</span></span>' : '') + '</div></div>' +
@@ -197,6 +200,9 @@
     const t = (k, l, n) => '<button type="button" role="tab" class="cd-tab' + (S.tab === k ? ' is-on' : '') + '" aria-selected="' + (S.tab === k) + '" data-cd-tab="' + k + '">' + l + '<span>' + n + '</span></button>';
     return '<div class="cd-tabs" role="tablist">' + t('req', 'De confirmat', nReq) + t('int', 'Interesate', S.int ? ints().length : '…') + '</div>';
   }
+  // „Trimite linkul de plată” on a row (portal-cardlink.js: the popup, „Link trimis 14:05” once it went)
+  const linkBtn = (x, cls, label) => (window.C360SendCardLink && window.C360SendCardLink.can() && x.phone ? '<button type="button" class="k-btn ' + cls + ' is-sm"' +
+    window.C360SendCardLink.attrs({ phone: x.phone, name: x.name, city: x.city, tier: x.tier, orderId: x.id }) + ' aria-label="Trimite linkul de plată">' + icon('link') + '<span' + (label ? '' : ' class="cd-lg"') + ' data-cl-at>' + (label || 'Link de plată') + '</span></button>' : '');
   // ------------------------------------------------------------------ „Card rezervat, de încasat” (the owner, 24.11)
   // reception calls each reservation to pay in the clinic and pushes the online payment: her phone, what to say, the link
   const noName = (n) => !n || /fără nume/i.test(n);
@@ -215,14 +221,13 @@
     .sort((a, b) => (isVip(b) - isVip(a)) || String(b.converted || b.created).localeCompare(String(a.converted || a.created)));
   function resvRow(o) {
     const open = S.open.has('r' + o.id);
-    const chips = (isVip(o) ? vipTag : '') + '<span class="k-tag">' + icon('calendar') + 'Rezervat ' + esc(when(o.converted || o.created)) + '</span>' +
-      (o.linkAt ? '<span class="k-tag is-good">' + icon('check') + 'Link trimis ' + esc(hm(o.linkAt)) + '</span>' : '');
+    const chips = (isVip(o) ? vipTag : '') + '<span class="k-tag">' + icon('calendar') + 'Rezervat ' + esc(when(o.converted || o.created)) + '</span>';
     return '<div class="cd-o cd-r' + (open ? ' open' : '') + '" data-r="' + esc(o.id) + '"><div class="cd-o-row">' +
       '<button type="button" class="cd-o-main" data-cd-rx="' + esc(o.id) + '" aria-expanded="' + open + '"><span class="cd-o-t"><b>' + esc(noName(o.name) ? 'Fără nume' : o.name) + '</b><span class="cd-o-m">' + esc(cardTxt(o)) + '</span></span>' +
         '<span class="cd-o-c">' + chips + '</span></button>' +
       '<a class="cd-o-tel" href="' + K.tel(o.phone) + '" aria-label="Sună">' + icon('phone') + '<span>' + esc(o.phone) + '</span></a>' +
       '<div class="cd-o-act"><a class="k-btn is-outline is-sm cd-i-chat" href="#mesaje" data-chat="' + esc(o.phone) + '" data-chat-name="' + esc(o.name || '') + '" data-chat-city="' + esc(o.city || '') + '" aria-label="Mesaje">' + icon('chat') + '<span class="cd-lg">Mesaje</span></a>' +
-        '<button type="button" class="k-btn is-primary is-sm" data-cd-link="' + esc(o.id) + '">' + icon('link') + '<span class="cd-lg">Trimite linkul de plată</span><span class="cd-sm">Trimite linkul</span></button></div></div>' +
+        linkBtn(o, 'is-primary', 'Trimite linkul') + '</div></div>' +
       '<div class="cd-o-more"><div><p class="cd-script">' + icon('phone') + '<span>' + esc(script(o)) + '</span></p></div></div></div>';
   }
   function paintResv() {
@@ -235,22 +240,9 @@
     const other = all.filter((o) => !cities.includes(o.city));
     const group = (c, l) => '<div class="cd-rg"><h4 class="cd-rg-h">' + esc(c) + '<span>' + l.length + '</span><small>' + lei(l.reduce((n, o) => n + (Number(o.amount) || 0), 0)) + '</small></h4><div class="cd-olist">' + l.map(resvRow).join('') + '</div></div>';
     box.innerHTML = '<section class="k-card cd-orders cd-resv"><div class="k-card-head"><h3>Card rezervat, de încasat</h3><span class="k-muted">' + all.length + '</span></div>' +
-      '<p class="cd-resv-hint">Atinge numele pentru ce îi spui. Linkul pleacă pe WhatsApp doar când apeși.</p>' +
+      '<p class="cd-resv-hint">Atinge numele pentru ce îi spui. Linkul pleacă pe WhatsApp doar când apeși Trimite.</p>' +
       cities.map((c) => group(c, all.filter((o) => o.city === c))).join('') + (other.length ? group('Altă clinică', other) : '') + '</section>';
   }
-  async function sendLink(b) {
-    const o = (S.d.orders || []).find((x) => x.id === b.dataset.cdLink);
-    if (!o) return;
-    await K.busy(b, async () => {
-      try {
-        const r = await api({ action: 'paylink', id: o.id });
-        K.ui().toast(r.how === 'template' ? 'Linkul a plecat, cu butoane: îl primește când apasă „Plătesc online”.' : 'Linkul a plecat.', 'success');
-        await load(true);
-      } catch (err) { K.ui().toast(LINKERR[err.code] ? LINKERR[err.code] + (err.data && err.data.detail && err.code === 'send' ? ' (' + err.data.detail + ')' : '') : K.errText(err), 'error'); }
-    });
-  }
-  const LINKERR = { not_open: 'Rezervarea nu mai e deschisă.', paid: 'E deja plătită.', not_found: 'Rezervarea nu mai există.', sold_out: 'Nu mai sunt carduri.', closed: 'Oferta s-a încheiat.', bad_phone: 'Telefon invalid.',
-    tpl: 'Nu ne-a scris în ultimele 24 de ore și mesajul cu butoane nu e aprobat încă de Meta. Sun-o sau scrie-i din Mesaje.', send: 'WhatsApp-ul n-a plecat', no_link: 'Linkul de plată nu s-a putut face.' };
   function paintOrders() {
     paintMoney(); paintChecks(); paintResv();
     const box = S.box.querySelector('[data-cd-orders]'), all = S.d.orders || [];
@@ -276,6 +268,7 @@
         (said(x) ? '<span class="cd-i-q">' + esc(said(x)) + '</span>' : '') + '<span class="cd-o-c">' + chips + '</span></button>' +
       '<a class="cd-o-tel" href="' + K.tel(x.phone) + '" aria-label="Sună">' + icon('phone') + '<span>' + esc(x.phone) + '</span></a>' +
       '<div class="cd-o-act"><a class="k-btn is-outline is-sm cd-i-chat" href="#mesaje" data-chat="' + esc(x.phone) + '" data-chat-name="' + esc(x.name || '') + '" data-chat-city="' + esc(x.city || '') + '">' + icon('chat') + '<span class="cd-lg">Mesaje</span></a>' +
+        linkBtn({ phone: x.phone, name: x.name, city: x.city, tier: x.tier }, 'is-outline') +
         '<button type="button" class="k-btn is-primary is-sm" data-cd-mk="' + esc(k) + '">' + icon('plus') + '<span class="cd-lg">Fă cerere</span><span class="cd-sm">Cerere</span></button>' +
         '<span class="cd-mw"><button type="button" class="k-btn is-ghost is-sm cd-dots" data-cd-menu aria-haspopup="true" aria-expanded="false" aria-label="Mai mult">' + icon('more') + '</button><span class="cd-menu" role="menu">' +
         '<button type="button" data-cd-iedit="' + esc(k) + '">' + icon('pen') + 'Editează</button><button type="button" data-cd-inote="' + esc(k) + '">' + icon('chat') + 'Notă</button>' +
@@ -369,7 +362,6 @@
     if (b.dataset.cdOf) { S.of = b.dataset.cdOf; paintOrders(); return; }
     if (b.dataset.cdX) { toggleRow(b.dataset.cdX); return; }
     if (b.dataset.cdRx) { const row = b.closest('.cd-r'), on = !row.classList.contains('open'); row.classList.toggle('open', on); b.setAttribute('aria-expanded', String(on)); if (on) S.open.add('r' + b.dataset.cdRx); else S.open.delete('r' + b.dataset.cdRx); return; }
-    if (b.dataset.cdLink) { sendLink(b); return; }
     if (b.hasAttribute('data-cd-menu')) { const mw = b.closest('.cd-mw'), on = !mw.classList.contains('open'); closeMenus(mw); mw.classList.toggle('open', on); b.setAttribute('aria-expanded', String(on)); return; }
     if (b.closest('.cd-menu')) closeMenus();
     if (b.dataset.cdDel) {
