@@ -421,7 +421,7 @@ async function makeTemplate(o) {
     await require('./store').writeBinary(path, img, 'image/jpeg');
     let t = d.templates.find((x) => x.fastcash === fk);
     if (!t) {
-      const buttons = (from.buttons || []).map((b) => Object.assign({}, b, b.url ? { url: String(b.url).replace(/utm_content=[^&#]*/, 'utm_content=' + key.replace('card_sarbatori_', '990')) } : {}));
+      const buttons = (from.buttons || []).map((b) => Object.assign({}, b, b.url ? { url: String(b.url).replace(/utm_content=[^&#]*/, 'utm_content=' + String(o.utm || key.replace('card_sarbatori_', '990'))) } : {}, b.url && o.urlText ? { text: String(o.urlText).slice(0, 25) } : {}));
       const cl = WT.clean({ label: String(o.label || 'Cardul de Sărbători') + ' · ' + c, category: 'MARKETING', headerType: 'IMAGE', body: String(o.body || ''), footer: from.footer || '', buttons, only: [c] });
       if (cl.error) return { error: cl.error };
       t = Object.assign(cl.t, { fastcash: fk, samplePath: path, headerImagePath: path, only: [c] });
@@ -493,7 +493,7 @@ async function unpick(batch) {
 async function useTemplate(v) {
   const st = await loadState();
   // 'bl' / 'bl490': the messages with the BioLifting gift for paying online (the owner, 22.11)
-  st.pre = ({ '290': 'card_sarbatori_290', '490': 'card_sarbatori_490', bl: 'card_sarbatori_bl', bl490: 'card_sarbatori_bl_490', v4: 'card_sarbatori_v4', bf: 'card_sarbatori_bf' })[v] || '';
+  st.pre = ({ '290': 'card_sarbatori_290', '490': 'card_sarbatori_490', bl: 'card_sarbatori_bl', bl490: 'card_sarbatori_bl_490', v4: 'card_sarbatori_v4', bf: 'card_sarbatori_bf2' })[v] || '';
   await saveState(st);
   return { ok: true, template: st.pre || 'card_sarbatori' };
 }
