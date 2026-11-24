@@ -59,7 +59,7 @@ function cityOfTargeting(t) {
   const near = (lat, lng) => Object.keys(ads.CITIES).find((k) => Math.abs(ads.CITIES[k].lat - lat) < 0.08 && Math.abs(ads.CITIES[k].lng - lng) < 0.1) || '';
   const names = (g.custom_locations || []).map((x) => near(+x.latitude, +x.longitude)).concat((g.cities || []).map((x) => x.name || ''));
   const found = new Set(names.map(cityOfName).filter(Boolean));
-  return found.size === 1 ? [...found][0] : '';
+  return found.size === 1 ? [...found][0] : found.size > 1 ? 'TM+AR' : '';
 }
 
 // one account's ads of the period: Meta's numbers in lei, the picture, the status, the city, where it sends

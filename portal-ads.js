@@ -46,10 +46,16 @@
       '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Reclame</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="defaults" title="Setări implicite">' + icon('sliders') + '<span class="ad-sm-hide">Setări implicite</span></button>' +
       '<button type="button" class="k-btn is-accent" data-act="creative">' + icon('sparkles') + '<span class="ad-sm-hide">Publică un creative</span><span class="ad-sm-only">Publică</span></button></div></div>' +
-      '<div data-body><div class="k-skel" style="height:110px;margin-bottom:1rem"></div><div class="k-skel" style="height:360px"></div></div>';
+      '<div class="at-views">' + K.seg('adview', [['camp', 'Campanii', 'zap'], ['top', 'Clasament', 'trophy']], 'camp') + '</div>' +
+      '<div data-body><div class="k-skel" style="height:110px;margin-bottom:1rem"></div><div class="k-skel" style="height:360px"></div></div>' +
+      '<div data-top hidden></div>';
     panel.addEventListener('click', onClick);
     panel.addEventListener('change', onChange);
-    panel.addEventListener('input', (e) => { if (e.target.matches('[data-q]')) { A.q = e.target.value; paintList(); } });
+    panel.addEventListener('input', (e) => {
+      if (e.target.matches('[data-q]')) { A.q = e.target.value; paintList(); }
+      if (e.target.matches('[data-tq]')) { T.q = e.target.value; T.shown = PAGE; paintTopList(); }
+      if (e.target.matches('[data-tmin]')) { clearTimeout(T.minT); T.minT = setTimeout(() => { T.min = Math.max(0, Number(e.target.value) || 0); saveTop(); T.shown = PAGE; paintTopList(); }, 250); }
+    });
     panel.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('[data-budget-input]')) { e.preventDefault(); saveBudget(e.target.closest('[data-budget-box]')); } });
   }
   // quiet: refresh after a change (statuses that follow from it) without dimming the page
@@ -404,12 +410,14 @@
   const phone = window.matchMedia ? window.matchMedia('(max-width:640px)') : null;
   function dockPeriod() {
     if (!phone) return;
+    // the period of the view on screen (Campanii or Clasament)
+    const name = T.view === 'top' ? 'topperiod' : 'adperiod', barSel = T.view === 'top' ? '[data-top] .ad-bar' : '[data-body] .ad-bar';
     if (!phone.matches) { // a window grown past a phone's: the period goes back into the toolbar
-      const bar = panel.querySelector('.ad-bar'), seg = dock && dock.querySelector('[data-k-seg="adperiod"]');
+      const bar = panel.querySelector(barSel), seg = dock && dock.querySelector('[data-k-seg="' + name + '"]');
       if (bar && seg) bar.insertBefore(seg, bar.firstChild);
       return;
     }
-    const seg = panel.querySelector('.ad-bar > [data-k-seg="adperiod"]');
+    const seg = panel.querySelector(barSel + ' > [data-k-seg="' + name + '"]');
     if (!seg) return;
     if (!dock) { dock = document.createElement('div'); dock.className = 'ad-dock'; dock.addEventListener('change', onChange); document.body.appendChild(dock); }
     dock.replaceChildren(seg);
@@ -455,6 +463,13 @@
   }
   async function onChange(e) {
     const t = e.target;
+    if (t.name === 'adview') return setView(t.value);
+    if (t.name === 'topperiod') {
+      if (t.value === 'custom') return openRange(t.closest('[data-k-seg]').querySelector('[data-v="custom"]'), TOP_RANGE);
+      T.period = t.value; T.range = null; return loadTop();
+    }
+    if (t.matches('[data-tf]')) { T.f[t.dataset.tf] = t.value; saveTop(); T.shown = PAGE; return paintTopList(); }
+    if (t.matches('[data-tsort-pick]')) { const c = TCOL[t.value]; T.sort = t.value; T.dir = c ? c.dir : 1; saveTop(); return paintTopList(); }
     if (t.name === 'adperiod') {
       if (t.value === 'custom') return openRange(t.closest('[data-k-seg]').querySelector('[data-v="custom"]'));
       A.period = t.value; A.range = null; A.keep.clear(); return load();
@@ -546,14 +561,19 @@
     document.removeEventListener('mousedown', outsideRange, true);
     document.removeEventListener('keydown', escRange, true);
     // cancelled: the period chosen before stays lit
-    if (!apply) document.querySelectorAll('[data-k-seg="adperiod"] > button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === (A.range ? 'custom' : A.period)));
+    if (!apply) document.querySelectorAll('[data-k-seg="' + rangeOf.seg + '"] > button').forEach((b) => b.classList.toggle('is-on', b.dataset.v === rangeOf.on()));
   }
+  // the campaigns' period (Campanii) or the leaderboard's (Clasament)
+  const CAMP_RANGE = { seg: 'adperiod', on: () => (A.range ? 'custom' : A.period), get: () => A.range, set: (r) => { A.range = r; A.keep.clear(); load(); } };
+  const TOP_RANGE = { seg: 'topperiod', on: () => (T.range ? 'custom' : T.period), get: () => T.range, set: (r) => { T.range = r; loadTop(); } };
+  let rangeOf = CAMP_RANGE;
   const outsideRange = (e) => { if (rangeEl && !rangeEl.contains(e.target) && !e.target.closest('[data-v="custom"]')) closeRange(false); };
   const escRange = (e) => { if (e.key === 'Escape') { e.stopPropagation(); closeRange(false); } };
-  function openRange(anchor) {
+  function openRange(anchor, which) {
     if (rangeEl) { closeRange(false); return; }
+    rangeOf = which || CAMP_RANGE;
     const today = K.today();
-    const r = A.range || { since: K.addDays(today, -6), until: today };
+    const r = rangeOf.get() || { since: K.addDays(today, -6), until: today };
     const m = document.createElement('div');
     m.className = 'k-menu ad-range';
     m.innerHTML = '<div class="k-menu-label">Perioadă personalizată</div>' +
@@ -579,10 +599,9 @@
       let a = m.querySelector('[data-since]').value, z = m.querySelector('[data-until]').value;
       if (!a || !z) { K.ui().toast('Alege ambele zile.', 'error'); return; }
       if (a > z) [a, z] = [z, a];
-      A.range = { since: a, until: z > today ? today : z };
-      A.keep.clear();
+      const set = rangeOf.set;
       closeRange(true);
-      load();
+      set({ since: a, until: z > today ? today : z });
     });
   }
 
@@ -838,6 +857,7 @@
   }
   async function onClick(e) {
     const t = e.target;
+    if (onTopClick(t)) return;
     if (t.closest('[data-pick-clear]')) { A.sel.clear(); paintList(); return paintStats(); }
     const rf = t.closest('[data-act="refresh"]');
     if (rf) {
@@ -918,6 +938,258 @@
     });
   }
 
+  // ------------------------------------------------------------------ Clasament (George, 24.11)
+  // „o pagină cu kpi unde pot să văd all time care a fost cea mai bună reclamă cu cel mai mare roas, configurabil pe time
+  // frame-uri, să le pot sorta după obiectiv”: every ad of ours that spent in the period, in the three ad accounts
+  // (api/_lib/ads-top.js: Meta's spend and leads, in lei, and what came after, by ad), ranked; ROAS first. Read only.
+  const PAGE = 60;
+  const T = { view: 'camp', period: 'max', range: null, d: null, at: 0, cache: new Map(), seq: 0, sort: 'roas', dir: -1, q: '', shown: PAGE,
+    f: { obj: 'all', city: 'all', act: 'all', on: 'all' }, min: 50, minT: 0 };
+  const TOP_KEY = 'c360-ads-top';
+  try {
+    const s = JSON.parse(localStorage.getItem(TOP_KEY) || 'null');
+    if (s && typeof s === 'object') {
+      if (typeof s.sort === 'string') T.sort = s.sort;
+      if (s.dir === 1 || s.dir === -1) T.dir = s.dir;
+      if (Number.isFinite(s.min) && s.min >= 0) T.min = s.min;
+      if (s.f && typeof s.f === 'object') Object.keys(T.f).forEach((k) => { if (typeof s.f[k] === 'string') T.f[k] = s.f[k]; });
+    }
+  } catch (e) { /* a private window: the defaults */ }
+  const saveTop = () => { try { localStorage.setItem(TOP_KEY, JSON.stringify({ sort: T.sort, dir: T.dir, min: T.min, f: T.f })); } catch (e) { /* not kept */ } };
+  const OBJ = [['leads', 'Leaduri'], ['traffic', 'Trafic'], ['sales', 'Vânzări'], ['engagement', 'Interacțiuni'], ['awareness', 'Notorietate'], ['other', 'Altele']];
+  const OBJ_L = Object.fromEntries(OBJ);
+  const objOf = (o) => (/LEAD/.test(o) ? 'leads' : /TRAFFIC|LINK_CLICKS/.test(o) ? 'traffic' : /SALES|CONVERSIONS|CATALOG/.test(o) ? 'sales'
+    : /ENGAGEMENT|POST|MESSAGES|VIDEO|PAGE_LIKES/.test(o) ? 'engagement' : /AWARENESS|REACH|BRAND/.test(o) ? 'awareness' : 'other');
+  const CITY_L = { TM: 'Timișoara', AR: 'Arad', 'TM+AR': 'Timișoara și Arad' };
+  // the numbers after the form are counted from 16.10 (the portal's data): their costs and the ROAS use the spend of the same
+  // days, and need at least the minimum spent in them, so a few lei with one sale don't top the list
+  const after = (x) => !T.min || x.spendNew >= T.min;
+  const cost = (base, n) => (n > 0 ? base / n : null);
+  // id → [label, value, format, first sort direction (-1: most first, 1: least first)]
+  const TCOLS = [
+    ['spend', 'Cheltuit', (x) => x.spend, 'money', -1],
+    ['leads', 'Leaduri', (x) => x.leads, 'num', -1],
+    ['cpl', 'Cost/lead', (x) => cost(x.spend, x.leads), 'money', 1],
+    ['booked', 'Programări', (x) => x.booked, 'num', -1],
+    ['cpb', 'Cost/programare', (x) => (after(x) ? cost(x.spendNew, x.booked) : null), 'money', 1],
+    ['showed', 'Prezentări', (x) => x.showed, 'num', -1],
+    ['cps', 'Cost/prezentare', (x) => (after(x) ? cost(x.spendNew, x.showed) : null), 'money', 1],
+    ['clients', 'Cliente', (x) => x.clients, 'num', -1],
+    ['cashed', 'Încasat', (x) => x.cashed, 'money', -1],
+    ['roas', 'ROAS', (x) => (after(x) && x.spendNew > 0 ? x.cashed / x.spendNew : null), 'x', -1],
+    ['cardsPaid', 'Carduri plătite', (x) => x.cardsPaid, 'num', -1],
+  ];
+  // the table's head is narrow: a shorter name where the full one doesn't fit (the full one on hover and on a phone's card)
+  const SHORT = { cpb: 'Cost/progr.', cps: 'Cost/prez.', cardsPaid: 'Carduri' };
+  const TCOL = Object.fromEntries(TCOLS.map(([id, label, val, f, dir]) => [id, { id, label, short: SHORT[id] || label, val, f, dir }]));
+  const TLIST = Object.values(TCOL);
+  const tfmt = (f, v) => (v == null || !Number.isFinite(v) ? '-' : f === 'money' ? money(v) : f === 'x' ? (Math.round(v * 100) / 100).toLocaleString('ro-RO') + 'x' : K.num(v));
+  const topQs = () => 'view=top&' + (T.range ? 'since=' + T.range.since + '&until=' + T.range.until : 'period=' + T.period);
+  const topPairs = () => PERIODS.concat([['custom', T.range ? rangeLabel(T.range) : 'Personalizat', 'calendar']]);
+  const accName = (act) => { const a = ((T.d && T.d.accounts) || []).find((x) => x.act === act); return a ? a.name : act; };
+
+  // Campanii ⇄ Clasament: the view on screen is drawn anew, so it slides in from its side (portal-motion.js)
+  function setView(v) {
+    T.view = v === 'top' ? 'top' : 'camp';
+    const body = panel.querySelector('[data-body]'), top = panel.querySelector('[data-top]');
+    body.hidden = T.view === 'top'; top.hidden = T.view !== 'top';
+    if (T.view === 'top') { if (!T.d || T.drawn !== topQs()) topShell(); else paintTop(); loadTop(true); }
+    else if (A.d) { A.key = ''; render(); if (Date.now() - (A.at || 0) > 20e3) load(true); }
+    else load();
+    dockPeriod();
+  }
+  // the bar (period, search, refresh) and the filters, then the numbers
+  function topShell() {
+    const top = panel.querySelector('[data-top]');
+    const sel = (k, label, pairs) => '<label class="at-f"><span>' + esc(label) + '</span><select data-tf="' + k + '">' + K.options(pairs, T.f[k]) + '</select></label>';
+    const d = T.d || { accounts: [], rows: [] };
+    const objs = OBJ.filter(([k]) => k === T.f.obj || d.rows.some((x) => objOf(x.objective) === k));
+    top.innerHTML =
+      '<div class="ad-bar">' + K.seg('topperiod', topPairs(), T.range ? 'custom' : T.period) +
+        '<div class="ad-bar-right"><label class="ad-search">' + icon('search') + '<input data-tq type="search" placeholder="Caută o reclamă sau o campanie…" value="' + esc(T.q) + '"></label>' +
+        '<button type="button" class="k-icon-btn ad-refresh" data-act="top-refresh" title="Actualizează" aria-label="Actualizează">' + icon('refresh') + '</button></div></div>' +
+      '<div class="at-filters">' +
+        sel('obj', 'Obiectiv', [['all', 'Toate']].concat(objs)) +
+        sel('city', 'Oraș', [['all', 'Ambele'], ['TM', 'Timișoara'], ['AR', 'Arad']]) +
+        sel('act', 'Cont', [['all', 'Toate']].concat(d.accounts.map((a) => [a.act, a.name]))) +
+        sel('on', 'Stare', [['all', 'Toate'], ['on', 'Pornite'], ['off', 'Oprite']]) +
+        '<label class="at-f is-min"><span>Cheltuit minim</span><span class="at-min"><input data-tmin type="number" min="0" step="10" inputmode="numeric" value="' + esc(T.min) + '"><i>lei</i></span></label>' +
+        '<label class="at-f is-sort"><span>Ordonează după</span><select data-tsort-pick>' + K.options(TCOLS.map(([id, label]) => [id, label]), T.sort) + '</select></label>' +
+      '</div>' +
+      '<div data-top-notes></div><div data-top-best></div><div data-top-sum></div><div data-top-list>' +
+      (T.d ? '' : '<div class="k-skel" style="height:96px;margin-bottom:.8rem"></div><div class="k-skel" style="height:420px"></div>') + '</div>';
+    T.drawn = topQs();
+    dockPeriod();
+    if (T.d) paintTop();
+  }
+  // quiet: the numbers kept for this period stay as they are while fresh ones come (no dimming)
+  async function loadTop(quiet) {
+    const qs = topQs(), seq = ++T.seq;
+    const top = panel.querySelector('[data-top]');
+    const kept = T.cache.get(qs), fresh = kept && Date.now() - kept.at < 10 * 60e3;
+    if (kept) { T.d = kept.d; T.at = kept.at; }
+    if (T.drawn !== qs || !top.querySelector('[data-top-list]')) { if (!kept) T.d = null; topShell(); }
+    else if (kept) paintTop();
+    if (fresh && quiet === true) return;
+    if (T.d) { if (quiet !== true) top.classList.add('is-loading'); }
+    else { const l = top.querySelector('[data-top-list]'); if (l) l.insertAdjacentHTML('afterbegin', '<p class="k-muted at-wait">Citesc cele trei conturi de reclame. Prima dată durează câteva secunde.</p>'); }
+    try {
+      const d = await K.api('/api/ads-manager?' + qs);
+      T.cache.set(qs, { d, at: Date.now() });
+      if (seq !== T.seq) return;
+      T.d = d; T.at = Date.now();
+      if (T.drawn !== qs || !top.querySelector('[data-top-list]')) topShell(); else paintTop();
+    } catch (e) {
+      if (seq !== T.seq) return;
+      const l = top.querySelector('[data-top-list]');
+      if (l && !T.d) l.innerHTML = K.empty('alert', 'Nu am putut încărca clasamentul', esc(K.errText(e)), '<button type="button" class="k-btn is-primary" data-act="top-reload">Reîncearcă</button>');
+      else K.ui().toast('Nu am putut reîmprospăta clasamentul: ' + K.errText(e), 'error');
+    } finally { if (seq === T.seq) top.classList.remove('is-loading'); }
+  }
+  function paintTop() {
+    const top = panel.querySelector('[data-top]'), d = T.d;
+    if (!top || !d) return;
+    const l = top.querySelector('[data-top-list]');
+    if (!d.ready) {
+      top.querySelector('[data-top-notes]').innerHTML = '';
+      l.innerHTML = '<div class="k-card ad-setup"><span class="k-icon-chip is-warn">' + icon('alert') + '</span><div><b>Reclamele nu sunt încă legate</b><p>' + esc(d.message || '') + '</p>' +
+        '<button type="button" class="k-btn is-primary is-sm" data-goto="integrari">' + icon('facebook') + 'Integrări → Facebook</button></div></div>';
+      return;
+    }
+    // what the numbers are, and an account Meta didn't give now
+    const line = (tone, html) => '<p class="k-muted ad-partial' + (tone ? ' is-' + tone : '') + '">' + html + '</p>';
+    const bad = (d.accounts || []).filter((a) => !a.ok), cad = (d.accounts || []).filter((a) => a.ok && a.currency && a.currency !== 'RON' && a.rate);
+    top.querySelector('[data-top-notes]').innerHTML =
+      bad.map((a) => line('warn', 'Contul „' + esc(a.name) + '” nu s-a putut citi acum (' + esc(a.error || 'Meta n-a răspuns') + '): reclamele lui lipsesc din listă.')).join('') +
+      (d.reachesBack ? line('', 'Programările, prezentările, clientele și încasările: de pe 16 oct (datele din portal). Costurile lor și ROAS-ul: pe cheltuiala din aceleași zile, de la ' + esc(money(T.min)) + ' în sus.') : '') +
+      (cad.length ? line('', 'Banii din ' + (cad.length === 1 ? 'contul „' + esc(cad[0].name) + '”' : 'conturile ' + cad.map((a) => '„' + esc(a.name) + '”').join(', ')) + ' (' + esc(cad[0].currency) + ') sunt în lei, la ' + esc(String(cad[0].rate).replace('.', ',')) + ' lei.') : '');
+    const acts = top.querySelector('[data-tf="act"]');
+    if (acts && acts.options.length !== (d.accounts || []).length + 1) topShell();
+    else paintTopList();
+  }
+  // the rows the filters keep, sorted (an empty value last, whichever way)
+  function topRows() {
+    const q = K.norm(T.q || ''), f = T.f;
+    const list = ((T.d && T.d.rows) || []).filter((x) => (f.obj === 'all' || objOf(x.objective) === f.obj) &&
+      (f.city === 'all' || x.city === f.city || x.city === 'TM+AR') && (f.act === 'all' || x.act === f.act) &&
+      (f.on === 'all' || (f.on === 'on' ? x.on : !x.on)) && (!T.min || x.spend >= T.min) && (!q || K.norm(x.ad + ' ' + x.campaign + ' ' + x.adset).includes(q)));
+    const c = TCOL[T.sort] || TCOL.roas;
+    const v = new Map(list.map((x) => [x, c.val(x)]));
+    return list.sort((a, b) => {
+      const p = v.get(a), r = v.get(b), pn = p == null || !Number.isFinite(p), rn = r == null || !Number.isFinite(r);
+      if (pn || rn) return pn === rn ? b.spend - a.spend : pn ? 1 : -1;
+      return p === r ? b.spend - a.spend : T.dir * (p - r);
+    });
+  }
+  const statusTag = (x) => (x.on ? '<span class="k-tag is-good">Pornită</span>' : x.status === 'DISAPPROVED' ? '<span class="k-tag is-bad">Respinsă</span>'
+    : x.status === 'ARCHIVED' || x.status === 'DELETED' ? '<span class="k-tag">Arhivată</span>' : '<span class="k-tag">Oprită</span>');
+  const metaLine = (x) => [esc(accName(x.act)), esc(OBJ_L[objOf(x.objective)] || ''), x.city ? esc(x.city === 'TM+AR' ? 'TM + AR' : x.city) : ''].filter(Boolean).join(' · ');
+  function topRowHtml(x, i) {
+    const cells = TLIST.map((c) => { const v = tfmt(c.f, c.val(x)); return '<span class="at-cell' + (c.id === T.sort ? ' is-sort' : '') + (v === '-' ? ' is-none' : '') + '" data-l="' + esc(c.short) + '" title="' + esc(c.label) + '">' + esc(v) + '</span>'; }).join('');
+    return '<article class="at-row' + (x.on ? '' : ' is-off') + '" data-top-ad="' + esc(x.adId) + '" tabindex="0">' +
+      '<span class="at-rank">' + (i + 1) + '</span>' +
+      '<div class="at-name">' + thumbHtml(x.thumb) + '<div class="at-title"><b>' + esc(x.ad || x.adId) + '</b><small>' + esc(x.campaign) + '</small><small class="at-meta">' + statusTag(x) + metaLine(x) + '</small></div></div>' +
+      cells + '</article>';
+  }
+  function paintTopList() {
+    const top = panel.querySelector('[data-top]');
+    if (!top || !T.d || !T.d.ready) return;
+    const rows = topRows();
+    T.rows = rows;
+    paintBest(rows);
+    paintTopSum(rows);
+    const box = top.querySelector('[data-top-list]');
+    // where each row was (to move it to its new place instead of a cut, when the order changes)
+    const was = new Map([...box.querySelectorAll('[data-top-ad]')].map((n) => [n.dataset.topAd, n.getBoundingClientRect().top]));
+    if (!rows.length) {
+      box.innerHTML = K.empty('trophy', 'Nicio reclamă', (T.d.rows || []).length ? 'Niciuna nu se potrivește cu filtrele (sau cu cheltuitul minim).' : 'Nicio reclamă n-a cheltuit în perioada asta.');
+      return;
+    }
+    const shown = rows.slice(0, T.shown);
+    const head = '<div class="at-head"><span class="at-rank">#</span><span class="at-hname">Reclamă</span>' + TLIST.map((c) =>
+      '<button type="button" class="at-h' + (c.id === T.sort ? ' is-on' : '') + '" data-tsort="' + c.id + '" title="' + esc(c.label) + '" aria-sort="' + (c.id === T.sort ? (T.dir < 0 ? 'descending' : 'ascending') : 'none') + '">' +
+      '<span>' + esc(c.short).replace('/', '/<wbr>') + '</span>' + (c.id === T.sort ? icon(T.dir < 0 ? 'down' : 'up') : '') + '</button>').join('') + '</div>';
+    const old = box.querySelector('.at-scroll'), sx = old ? old.scrollLeft : 0;
+    box.innerHTML = '<div class="at-scroll"><div class="at-table">' + head + '<div class="at-list">' + shown.map(topRowHtml).join('') + '</div></div></div>' +
+      (rows.length > shown.length ? '<button type="button" class="k-btn is-outline is-sm at-more" data-act="top-more">' + icon('down') + 'Încă ' + Math.min(PAGE, rows.length - shown.length) + ' din ' + (rows.length - shown.length) + '</button>' : '');
+    if (sx) box.querySelector('.at-scroll').scrollLeft = sx;
+    if (was.size && !(window.C360Motion && window.C360Motion.reduced)) {
+      box.querySelectorAll('[data-top-ad]').forEach((n, k) => {
+        const y = was.get(n.dataset.topAd);
+        if (y == null) { if (k < 12) n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay: k * 12, easing: 'ease-out', fill: 'backwards' }); return; }
+        const dy = y - n.getBoundingClientRect().top;
+        if (Math.abs(dy) > 1 && Math.abs(dy) < innerHeight * 1.5) n.animate([{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      });
+    }
+  }
+  // the three on top: best ROAS, cheapest booking, most clients (of what the filters keep)
+  function paintBest(rows) {
+    const box = panel.querySelector('[data-top-best]');
+    if (!box) return;
+    const best = (id, ok) => { const c = TCOL[id]; let b = null, bv = null; rows.forEach((x) => { const v = c.val(x); if (v == null || !Number.isFinite(v) || (ok && !ok(x))) return; if (b == null || (c.dir < 0 ? v > bv : v < bv)) { b = x; bv = v; } }); return b ? [b, bv] : null; };
+    const picks = [
+      ['roas', 'Cel mai mare ROAS', 'trophy', best('roas', (x) => x.cashed > 0), (x) => money(x.cashed) + ' încasat din ' + money(x.spendNew)],
+      ['cpb', 'Cea mai ieftină programare', 'calendar', best('cpb'), (x) => K.plural(x.booked, 'programare', 'programări') + ' din ' + money(x.spendNew)],
+      ['clients', 'Cele mai multe cliente', 'users', best('clients', (x) => x.clients > 0), (x) => money(x.cashed) + ' încasat'],
+    ].filter((p) => p[3]);
+    box.innerHTML = picks.length ? '<div class="at-best">' + picks.map(([id, label, ic, [x, v], sub]) =>
+      '<button type="button" class="k-card at-pick" data-top-ad="' + esc(x.adId) + '" data-top-pick="' + id + '">' +
+        '<span class="at-pick-h">' + icon(ic) + '<small>' + esc(label) + '</small></span>' +
+        '<span class="at-pick-v">' + esc(tfmt(TCOL[id].f, v)) + '</span>' +
+        '<span class="at-pick-ad">' + thumbHtml(x.thumb) + '<span><b>' + esc(x.ad || x.adId) + '</b><small>' + esc(sub(x)) + '</small></span></span>' +
+      '</button>').join('') + '</div>' : '';
+  }
+  // the sums of what the filters keep (each ad's own: nothing counted twice)
+  function paintTopSum(rows) {
+    const box = panel.querySelector('[data-top-sum]');
+    if (!box) return;
+    const s = (k) => rows.reduce((n, x) => n + (Number(x[k]) || 0), 0);
+    const spendNew = s('spendNew'), cashed = s('cashed');
+    const pairs = [['Reclame', K.num(rows.length)], ['Cheltuit', money(s('spend'))], ['Leaduri', K.num(s('leads'))], ['Programări', K.num(s('booked'))], ['Prezentări', K.num(s('showed'))],
+      ['Cliente', K.num(s('clients'))], ['Încasat', money(cashed)], ['ROAS', spendNew > 0 ? tfmt('x', cashed / spendNew) : '-'], ['Carduri plătite', K.num(s('cardsPaid'))]];
+    box.innerHTML = '<div class="ad-sx-row at-sum">' + pairs.map(([l, v]) => '<span' + (v === '-' ? ' class="is-none"' : '') + '><small>' + esc(l) + '</small><b>' + esc(v) + '</b></span>').join('') + '</div>';
+  }
+  // one ad, all its numbers: grows out of its row (K.drawer from), back goes into it
+  function openTopAd(id, from) {
+    const x = ((T.d && T.d.rows) || []).find((r) => r.adId === id);
+    if (!x) return;
+    const tile = (l, v, sub) => '<div class="ad-sx-t' + (v === '-' ? ' is-none' : '') + '"><small>' + esc(l) + '</small><b>' + esc(v) + '</b>' + (sub ? '<i>' + esc(sub) + '</i>' : '') + '</div>';
+    const pair = (l, v) => '<span' + (v === '-' ? ' class="is-none"' : '') + '><small>' + esc(l).replace('/', '/<wbr>') + '</small><b>' + esc(v) + '</b></span>';
+    const v = (id2) => tfmt(TCOL[id2].f, TCOL[id2].val(x));
+    const link = 'https://adsmanager.facebook.com/adsmanager/manage/ads?act=' + encodeURIComponent(String(x.act).replace(/^act_/, '')) + '&selected_ad_ids=' + encodeURIComponent(x.adId);
+    K.drawer({
+      from, title: x.ad || x.adId, icon: 'trophy', width: 560, subtitle: esc(x.campaign),
+      body: '<div class="at-ad">' + (x.thumb ? '<img class="at-ad-img" src="' + esc(x.thumb) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
+        '<p class="at-ad-meta">' + statusTag(x) + metaLine(x) + (x.created ? ' · ' + esc(madeAt(x.created)) : '') + '</p></div>' +
+        '<div class="ad-sx is-ad"><div class="ad-sx-grid at-ad-grid">' +
+          tile('Cheltuit', money(x.spend), x.spendNew !== x.spend ? money(x.spendNew) + ' de pe 16 oct' : '') + tile('Leaduri', K.num(x.leads)) + tile('Programări', K.num(x.booked)) +
+          tile('Cliente', K.num(x.clients)) + tile('Încasat', money(x.cashed)) + tile('ROAS', v('roas')) + '</div>' +
+        '<div class="ad-sx-row">' + pair('Cost/lead', v('cpl')) + pair('Cost/programare', v('cpb')) + pair('Prezentări', K.num(x.showed)) + pair('Cost/prezentare', v('cps')) +
+          pair('Carduri plătite', K.num(x.cardsPaid)) + pair('Bani din carduri', x.cardsPaid ? money(x.cardsPaidLei) : '-') + pair('Carduri rezervate', K.num(x.cardsReserved)) + '</div></div>' +
+        (x.spendNew < T.min && x.spend >= T.min ? '<p class="k-muted ad-partial">De pe 16 oct a cheltuit sub ' + esc(money(T.min)) + ': costurile de după formular și ROAS-ul nu se calculează.</p>' : '') +
+        '<a class="k-btn is-outline is-sm at-ad-link" href="' + esc(link) + '" target="_blank" rel="noopener">' + icon('link') + 'Deschide în Ads Manager</a>',
+    });
+  }
+  // a tap in Clasament (true: handled)
+  function onTopClick(t) {
+    if (!t.closest('[data-top]')) return false;
+    const h = t.closest('[data-tsort]');
+    if (h) {
+      const c = TCOL[h.dataset.tsort];
+      if (T.sort === c.id) T.dir = -T.dir; else { T.sort = c.id; T.dir = c.dir; }
+      const pick = panel.querySelector('[data-tsort-pick]'); if (pick) pick.value = T.sort;
+      saveTop(); paintTopList(); return true;
+    }
+    if (t.closest('[data-act="top-more"]')) { T.shown += PAGE; paintTopList(); return true; }
+    if (t.closest('[data-act="top-reload"]')) { loadTop(); return true; }
+    const rf = t.closest('[data-act="top-refresh"]');
+    if (rf) { rf.classList.add('is-spinning'); T.cache.clear(); Promise.all([loadTop(true), new Promise((r) => setTimeout(r, 700))]).finally(() => rf.classList.remove('is-spinning')); return true; }
+    const row = t.closest('[data-top-ad]');
+    if (row && !t.closest('a, input, select')) { openTopAd(row.dataset.topAd, row); return true; }
+    return false;
+  }
+  document.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('article[data-top-ad]')) { e.preventDefault(); openTopAd(e.target.dataset.topAd, e.target); } });
+
   // Marketing → Setări (Creative's /setari page) opens these from outside Reclame: the account's data first, so the
   // form starts from what is saved, never from blanks
   window.C360Ads = {
@@ -927,8 +1199,8 @@
     },
   };
 
-  K.section('reclame', { mount, show: () => (A.d ? (Date.now() - (A.at || 0) > 20e3 ? load(true) : null) : load()) });
-  const fresh = (ms) => { if (A.d && K.isActive('reclame') && !document.hidden && !K.drawerOpen && Date.now() - (A.at || 0) > ms) load(true); };
+  K.section('reclame', { mount, show: () => (T.view === 'top' ? (T.d && Date.now() - (T.at || 0) < 5 * 60e3 ? null : loadTop(true)) : A.d ? (Date.now() - (A.at || 0) > 20e3 ? load(true) : null) : load()) });
+  const fresh = (ms) => { if (T.view !== 'top' && A.d && K.isActive('reclame') && !document.hidden && !K.drawerOpen && Date.now() - (A.at || 0) > ms) load(true); };
   // every 3 minutes while the page is open (Meta limits how often the ad account is read; the server keeps the
   // numbers for everyone), not on every change made elsewhere in the portal
   setInterval(() => fresh(170e3), 60e3);
