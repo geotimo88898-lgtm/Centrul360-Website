@@ -138,11 +138,11 @@ module.exports = async (req, res) => {
     const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
 
     // ---- the team
-    const TEAM = ['delete', 'void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'request', 'edit', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick', 'interested', 'int_note', 'int_hide', 'int_add', 'to_interested', 'sendlink', 'links'];
+    const TEAM = ['who', 'delete', 'void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'request', 'edit', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick', 'interested', 'int_note', 'int_hide', 'int_add', 'to_interested', 'sendlink', 'links'];
     if (TEAM.includes(b.action)) {
       const session = await require('./_lib/auth').requireRole(req, res, b.action === 'undo' ? ['admin'] : ['admin', 'manager', 'receptie']);
       if (!session) return;
-      if (session.viewer && b.action !== 'list') { res.status(403).json({ error: 'forbidden' }); return; }
+      if (session.viewer && b.action !== 'list' && b.action !== 'who') { res.status(403).json({ error: 'forbidden' }); return; }
       const emps = await readJSON('data/employees.json', []);
       const me = emps.find((e) => e.id === session.employeeId) || {};
       const byName = me.name || (session.employeeId === 'admin' ? 'Admin' : '');
@@ -183,6 +183,8 @@ module.exports = async (req, res) => {
         return;
       }
       // „Interesate” (_lib/card-interested.js): who answered the campaign's message with words and has no order
+      // „Despre ea” (the owner, 24.11): her visits, treatments, forms, last messages, for the call (api/_lib/card-who.js)
+      if (b.action === 'who') { res.status(200).json(await require('./_lib/card-who').who(clip(b.phone, 30))); return; }
       if (b.action === 'interested') { res.status(200).json(Object.assign({ ok: true }, await require('./_lib/card-interested').list({ all: b.all === true }))); return; }
       if (b.action === 'int_note' || b.action === 'int_hide' || b.action === 'int_add' || b.action === 'to_interested') {
         const I = require('./_lib/card-interested');

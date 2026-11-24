@@ -120,6 +120,40 @@
   }
   const hm = (iso, ref) => { const t = Date.parse(iso); if (!Number.isFinite(t)) return ''; const d = (x) => new Date(x).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' });
     return (ref && d(t) === d(Date.parse(ref)) ? '' : new Date(t).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', day: 'numeric', month: 'short' }) + ', ') + new Date(t).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' }); };
+  // „Despre ea” (the owner, 24.11): who she is, for reception's call, loaded when her row opens (api/_lib/card-who.js)
+  const dayTxt = (d) => { const t = Date.parse(String(d || '').slice(0, 10) + 'T12:00:00Z'); return Number.isFinite(t) ? new Date(t).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', day: 'numeric', month: 'short', year: String(d).slice(0, 4) === String(new Date().getFullYear()) ? undefined : 'numeric' }) : ''; };
+  const whoBox = (phone) => (phone ? '<div class="cd-who' + (S.who && S.who[phone] ? ' is-ok' : '') + '" data-who="' + esc(phone) + '">' + (S.who && S.who[phone] ? whoHtml(S.who[phone]) : '<div class="k-skel" style="height:64px;border-radius:12px"></div>') + '</div>' : '');
+  function whoHtml(w) {
+    if (!w || w.error) return '<p class="cd-who-h">' + icon('info') + '<span>Nu am găsit detalii despre ea.</span></p>';
+    const li = (ic, t) => '<li>' + icon(ic) + '<span>' + t + '</span></li>';
+    const f0 = (w.forms || [])[0];
+    const head = w.kind === 'client' ? 'Clientă' + (w.visits ? ', ' + K.plural(w.visits, 'vizită', 'vizite') : '') + (w.since ? ', în fișe din ' + esc(dayTxt(w.since)) : '')
+      : w.kind === 'lead' ? 'Lead' + (f0 && f0.at ? ' din ' + esc(dayTxt(f0.at)) : '') + ', n-a venit încă la noi'
+      : w.kind === 'fisa' ? 'Contact vechi' + (w.since ? ' din ' + esc(dayTxt(w.since)) : '') + (/high/i.test(w.source || '') ? ' (HighLevel)' : '') + ', n-a venit încă la noi' : 'Contact nou, nu o avem în fișe';
+    const rows = [];
+    if (w.last) rows.push(li('calendar', '<b>Ultima vizită:</b> ' + esc(dayTxt(w.last.date)) + (w.last.treatment ? ', ' + esc(w.last.treatment) : '') + (w.last.city ? ', ' + esc(w.last.city) : '')));
+    if ((w.treatments || []).length) rows.push(li('sparkles', '<b>A făcut:</b> ' + w.treatments.map(esc).join(', ')));
+    if (w.spent) rows.push(li('wallet', '<b>A plătit la noi:</b> ' + lei(w.spent) + ' în total'));
+    (w.rest || []).forEach((r) => rows.push(li('receipt', '<b>Rest de plată:</b> ' + lei(r.rest) + ' din ' + lei(r.total) + ', ' + esc(r.what))));
+    if (w.next) rows.push(li('clock', '<b>Programare:</b> ' + esc(dayTxt(w.next.date)) + (w.next.time ? ', ' + esc(w.next.time) : '') + (w.next.treatment ? ', ' + esc(w.next.treatment) : '')));
+    if (w.noShows) rows.push(li('ban', '<b>' + K.plural(w.noShows, 'neprezentare', 'neprezentări') + '</b> la programări'));
+    (w.forms || []).slice(0, 2).forEach((f) => rows.push(li('file', '<b>Formular ' + esc(dayTxt(f.at)) + ':</b> ' + esc(f.what || 'fără tratament ales') + (f.ad ? ' · reclama „' + esc(f.ad) + '”' : '') + (f.lost ? ' · pierdut: ' + esc(f.lost) : '') +
+      (f.notes || []).map((n) => '<br><em>„' + esc(n.text) + '”' + (n.by ? ' · ' + esc(n.by) : '') + (n.at ? ', ' + esc(dayTxt(n.at)) : '') + '</em>').join(''))));
+    (w.said || []).slice(0, 2).forEach((m) => rows.push(li('chat', '<b>A scris:</b> „' + esc(m.text) + '”' + (m.at ? ' · ' + esc(when(m.at)) : ''))));
+    if (w.cardMsg) rows.push(li('gift', '<b>Mesajul cardului:</b> primit ' + esc(when(w.cardMsg.at)) + (w.cardMsg.batch ? ', lotul ' + esc(String(w.cardMsg.batch)) : '')));
+    if ((w.cards || []).length > 1) rows.push(li('gift', '<b>Cereri de card:</b> ' + w.cards.map((c) => tierTxt(c.tier) + ' ' + esc(c.status === 'platit' ? 'plătit' : c.status === 'anulat' ? 'anulat' : c.status === 'rezervat' ? 'rezervat' : c.status === 'lead' ? 'lead' : 'în așteptare') + ' (' + esc(dayTxt(c.at)) + ')').join(', ')));
+    const topic = w.kind === 'client' && w.last && w.last.treatment ? 'Pornește de la ' + esc(w.last.treatment) + ': cu cardul își face tratamentele pe care le face deja, cu mult mai mult credit.'
+      : f0 && f0.what && !/card/i.test(f0.what) ? 'S-a interesat de ' + esc(f0.what) + ': cardul îl acoperă, cu mult mai mult credit.' : '';
+    return '<p class="cd-who-h">' + icon('user') + '<span><b>' + head + '</b></span></p>' + (rows.length ? '<ul class="cd-who-l">' + rows.join('') + '</ul>' : '') + (topic ? '<p class="cd-who-t">' + icon('phone') + '<span>' + topic + '</span></p>' : '');
+  }
+  async function fillWho(el) {
+    const phone = el && el.dataset.who;
+    if (!phone || el.classList.contains('is-ok') || el.dataset.busy) return;
+    S.who = S.who || {};
+    if (!S.who[phone]) { el.dataset.busy = '1'; try { S.who[phone] = await api({ action: 'who', phone }); } catch (err) { S.who[phone] = { error: K.errText(err) }; } delete el.dataset.busy; }
+    S.box.querySelectorAll('.cd-who[data-who="' + CSS.escape(phone) + '"]').forEach((x) => { x.innerHTML = whoHtml(S.who[phone]); x.classList.add('is-ok'); });
+  }
+  const fillOpen = () => S.box && S.box.querySelectorAll('.cd-o.open .cd-who:not(.is-ok)').forEach(fillWho);
   const trailHtml = (o) => { const rows = (o.trail || []).map((e) => [e, trailLine(e, o)]).filter((x) => x[1]); return rows.length ? '<ol class="cd-trail">' + rows.map(([e, t]) => '<li><time>' + esc(hm(e.at, o.created)) + '</time>' + esc(t) + '</li>').join('') + '</ol>' : ''; };
   // „De verificat”: a payment of one sum that could be two orders' (the desk looks at who paid in myPOS, then taps hers)
   function paintChecks() {
@@ -192,7 +226,7 @@
         '<span class="cd-lg">' + (o.pay === 'online' ? 'Confirmă (e în myPOS)' : 'Confirmă plata') + '</span><span class="cd-sm">Confirmă</span></button>') +
         (menu ? '<span class="cd-mw"><button type="button" class="k-btn is-ghost is-sm cd-dots" data-cd-menu aria-haspopup="true" aria-expanded="false" aria-label="Mai mult">' + icon('more') + '</button><span class="cd-menu" role="menu">' + menu + '</span></span>' : '') + '</div></div>' +
       '<div class="cd-o-more"><div><p class="cd-o-sub">' + esc(what) + ' · ' + esc(when(o.created)) + (o.names.some(Boolean) ? ' · pe numele: ' + esc(o.names.map((n) => n || 'ea').join(', ')) : '') +
-        (NAMEFROM[o.nameFrom] && o.via !== 'portal' ? ' · numele ' + NAMEFROM[o.nameFrom] : '') + (o.note ? ' · ' + esc(o.note) : '') + '</p>' + trailHtml(o) + '</div></div></div>';
+        (NAMEFROM[o.nameFrom] && o.via !== 'portal' ? ' · numele ' + NAMEFROM[o.nameFrom] : '') + (o.note ? ' · ' + esc(o.note) : '') + '</p>' + whoBox(o.phone) + trailHtml(o) + '</div></div></div>';
   }
   // the two lists side by side, as tabs: „De confirmat” (the requests) and „Interesate” (the owner, 22.11)
   const ints = () => ((S.int && S.int.people) || []).filter((x) => !x.hidden);
@@ -228,7 +262,7 @@
       '<a class="cd-o-tel" href="' + K.tel(o.phone) + '" aria-label="Sună">' + icon('phone') + '<span>' + esc(o.phone) + '</span></a>' +
       '<div class="cd-o-act"><a class="k-btn is-outline is-sm cd-i-chat" href="#mesaje" data-chat="' + esc(o.phone) + '" data-chat-name="' + esc(o.name || '') + '" data-chat-city="' + esc(o.city || '') + '" aria-label="Mesaje">' + icon('chat') + '<span class="cd-lg">Mesaje</span></a>' +
         linkBtn(o, 'is-primary', 'Trimite linkul') + '</div></div>' +
-      '<div class="cd-o-more"><div><p class="cd-script">' + icon('phone') + '<span>' + esc(script(o)) + '</span></p></div></div></div>';
+      '<div class="cd-o-more"><div>' + whoBox(o.phone) + '<p class="cd-script">' + icon('phone') + '<span>' + esc(script(o)) + '</span></p></div></div></div>';
   }
   function paintResv() {
     const box = S.box.querySelector('[data-cd-resv]');
@@ -247,7 +281,7 @@
     paintMoney(); paintChecks(); paintResv();
     const box = S.box.querySelector('[data-cd-orders]'), all = S.d.orders || [];
     if (!box) return;
-    if (S.tab === 'int') { box.innerHTML = paintInt(all.filter(isOpen).length); return; }
+    if (S.tab === 'int') { box.innerHTML = paintInt(all.filter(isOpen).length); fillOpen(); return; }
     const now = Date.now(), admin = S.d.role === 'admin';
     if (!orderFilters(all).some((x) => x[0] === S.of)) S.of = 'open';
     const list = pickOrders(all);
@@ -255,6 +289,7 @@
       '<label class="cd-sort"><span class="cd-sort-l">Ordine</span><select data-cd-sort><option value="new"' + (S.os === 'new' ? ' selected' : '') + '>cele mai noi</option><option value="appt"' + (S.os === 'appt' ? ' selected' : '') + '>după programare</option></select></label></div>' +
       (all.length ? '<div class="k-chips cd-of">' + orderFilters(all).map(([k, l, n]) => '<button type="button" class="k-chip' + (S.of === k ? ' is-on' : '') + '" data-cd-of="' + esc(k) + '">' + esc(l) + '<span>' + n + '</span></button>').join('') + '</div>' : '') +
       (list.length ? '<div class="cd-olist">' + list.map((o) => orderRow(o, now, admin)).join('') + '</div>' : K.empty('gift', all.length ? 'Nimic aici' : 'Nicio cerere', all.length ? 'Alege alt filtru.' : 'Cererile de card apar aici.')) + '</section>';
+    fillOpen();
   }
   // „Interesate”: who answered the campaign's message with words and has no order; by hand too
   const said = (x) => (x.said && x.said.text ? '„' + x.said.text + '”' + (x.said.at ? ' · ' + hm(x.said.at) : '') : x.manual ? 'adăugată de mână' + (x.by ? ' de ' + x.by : '') + (x.from === 'cerere' ? ', din cereri' : '') : '');
@@ -273,7 +308,7 @@
         '<span class="cd-mw"><button type="button" class="k-btn is-ghost is-sm cd-dots" data-cd-menu aria-haspopup="true" aria-expanded="false" aria-label="Mai mult">' + icon('more') + '</button><span class="cd-menu" role="menu">' +
         '<button type="button" data-cd-iedit="' + esc(k) + '">' + icon('pen') + 'Editează</button><button type="button" data-cd-inote="' + esc(k) + '">' + icon('chat') + 'Notă</button>' +
         '<button type="button" class="is-bad" data-cd-ihide="' + esc(k) + '">' + icon('ban') + 'Nu e interesată</button></span></span></div></div>' +
-      '<div class="cd-o-more"><div><p class="cd-o-sub">' + esc([x.said && x.n > 1 ? x.n + ' mesaje de la ea' : '', x.note ? 'Notă de ' + (x.note.byName || 'echipă') + ', ' + hm(x.note.at) : ''].filter(Boolean).join(' · ') || 'Fără alte detalii.') + '</p></div></div></div>';
+      '<div class="cd-o-more"><div><p class="cd-o-sub">' + esc([x.said && x.n > 1 ? x.n + ' mesaje de la ea' : '', x.note ? 'Notă de ' + (x.note.byName || 'echipă') + ', ' + hm(x.note.at) : ''].filter(Boolean).join(' · ') || '') + '</p>' + whoBox(x.phone) + '</div></div></div>';
   }
   function paintInt(nReq) {
     const I = S.int, list = ints(), p = (I && I.potential) || {};
@@ -327,7 +362,7 @@
     if (!row) return;
     const on = !row.classList.contains('open');
     row.classList.toggle('open', on); row.querySelector('[data-cd-x]').setAttribute('aria-expanded', String(on));
-    if (on) S.open.add(id); else S.open.delete(id);
+    if (on) { S.open.add(id); fillWho(row.querySelector('.cd-who')); } else S.open.delete(id);
   }
   function closeMenus(except) {
     S.box.querySelectorAll('.cd-mw.open').forEach((m) => { if (m !== except) { m.classList.remove('open'); m.querySelector('[data-cd-menu]').setAttribute('aria-expanded', 'false'); } });
@@ -361,7 +396,7 @@
     if (b.dataset.cdF) { S.f = b.dataset.cdF; paintList(); return; }
     if (b.dataset.cdOf) { S.of = b.dataset.cdOf; paintOrders(); return; }
     if (b.dataset.cdX) { toggleRow(b.dataset.cdX); return; }
-    if (b.dataset.cdRx) { const row = b.closest('.cd-r'), on = !row.classList.contains('open'); row.classList.toggle('open', on); b.setAttribute('aria-expanded', String(on)); if (on) S.open.add('r' + b.dataset.cdRx); else S.open.delete('r' + b.dataset.cdRx); return; }
+    if (b.dataset.cdRx) { const row = b.closest('.cd-r'), on = !row.classList.contains('open'); row.classList.toggle('open', on); b.setAttribute('aria-expanded', String(on)); if (on) { S.open.add('r' + b.dataset.cdRx); fillWho(row.querySelector('.cd-who')); } else S.open.delete('r' + b.dataset.cdRx); return; }
     if (b.hasAttribute('data-cd-menu')) { const mw = b.closest('.cd-mw'), on = !mw.classList.contains('open'); closeMenus(mw); mw.classList.toggle('open', on); b.setAttribute('aria-expanded', String(on)); return; }
     if (b.closest('.cd-menu')) closeMenus();
     if (b.dataset.cdDel) {
@@ -374,7 +409,7 @@
     if (b.hasAttribute('data-cd-add')) { addDrawer(b); return; }
     if (b.dataset.cdTab) { S.tab = b.dataset.cdTab; paintOrders(); return; }
     if (b.hasAttribute('data-cd-iadd')) { intDrawer(b); return; }
-    if (b.dataset.cdIx) { const row = S.box.querySelector('.cd-i[data-i="' + CSS.escape(b.dataset.cdIx) + '"]'); if (row) { const on = !row.classList.contains('open'); row.classList.toggle('open', on); b.setAttribute('aria-expanded', String(on)); if (on) S.open.add('i' + b.dataset.cdIx); else S.open.delete('i' + b.dataset.cdIx); } return; }
+    if (b.dataset.cdIx) { const row = S.box.querySelector('.cd-i[data-i="' + CSS.escape(b.dataset.cdIx) + '"]'); if (row) { const on = !row.classList.contains('open'); row.classList.toggle('open', on); b.setAttribute('aria-expanded', String(on)); if (on) { S.open.add('i' + b.dataset.cdIx); fillWho(row.querySelector('.cd-who')); } else S.open.delete('i' + b.dataset.cdIx); } return; }
     if (b.dataset.cdMk) { const x = intOf(b.dataset.cdMk); if (x) requestDrawer(b, null, { name: x.name, phone: x.phone, city: x.city, tier: x.tier, note: x.note ? x.note.text : '' }); return; }
     if (b.dataset.cdIedit) { const x = intOf(b.dataset.cdIedit); if (x) intDrawer(b, x); return; }
     if (b.dataset.cdInote) { const x = intOf(b.dataset.cdInote); if (x) noteDrawer(b, x); return; }
