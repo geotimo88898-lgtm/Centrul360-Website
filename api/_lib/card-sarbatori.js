@@ -494,6 +494,11 @@ const TPL = {
     body: 'Bună {{1}}! 🎁 Cardul tău de Sărbători este rezervat:\nPlătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până vineri 27 noiembrie. Dacă rezervi și plătești în clinică, rămâne 2.500 lei.\n\n🔥 Au mai rămas doar {{2}} carduri, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
   lead3bf2: { label: 'Card de Sărbători Black Friday din reclamă vineri fără nume', category: 'MARKETING', headerType: 'IMAGE', map: ['ramase'], buttons: 'lead', sample: { code: '', name: '', credit: 3000 },
     body: 'Bună! 🎁 Cardul tău de Sărbători este rezervat:\nPlătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până vineri 27 noiembrie. Dacă rezervi și plătești în clinică, rămâne 2.500 lei.\n\n🔥 Au mai rămas doar {{1}} carduri, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
+  // the last card of the wave (the owner, 24.11: with one left the old „lead” went, 2.500 lei under a 3.000 picture): „1 card”
+  lead3bfn1: { label: 'Card de Sărbători Black Friday din reclamă ultimul card', category: 'MARKETING', headerType: 'IMAGE', map: ['prenume'], buttons: 'lead', sample: { code: '', name: '', credit: 3000 },
+    body: 'Bună {{1}}! 🎁 Cardul tău de Sărbători este rezervat:\nPlătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până vineri 27 noiembrie. Dacă rezervi și plătești în clinică, rămâne 2.500 lei.\n\n🔥 E ultimul card rămas, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
+  lead3bf1: { label: 'Card de Sărbători Black Friday din reclamă ultimul card fără nume', category: 'MARKETING', headerType: 'IMAGE', map: [], buttons: 'lead', sample: { code: '', name: '', credit: 3000 },
+    body: 'Bună! 🎁 Cardul tău de Sărbători este rezervat:\nPlătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până vineri 27 noiembrie. Dacă rezervi și plătești în clinică, rămâne 2.500 lei.\n\n🔥 E ultimul card rămas, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
   vip3n: { label: 'Card VIP rezervat din reclamă', category: 'MARKETING', headerType: 'IMAGE', map: ['prenume', 'ramase'], buttons: 'lead', sample: { code: '', name: '', vip: true, credit: 30000 },
     body: 'Bună {{1}}! 💎 Cardul tău VIP Transformarea 360 este rezervat:\nPlătești 9.900 lei și primești 30.000 lei în tratamente, pentru tine și cei dragi, valabil până pe 30 iunie 2027.\n\n🔥 Au mai rămas doar {{2}} carduri VIP, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, ai 10% reducere: plătești 8.910 lei, plus acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
   vip3: { label: 'Card VIP rezervat din reclamă fără nume', category: 'MARKETING', headerType: 'IMAGE', map: ['ramase'], buttons: 'lead', sample: { code: '', name: '', vip: true, credit: 30000 },
@@ -618,7 +623,7 @@ async function say(kind, r, vars, text, png, code, opt) {
     }
     if (!(png && tpl.headerType === 'IMAGE') || headerImageId) {
       const x = await WA.sendWhatsApp({ phone: r.phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: 'ro', params: tpl.map.map((k) => vars[k] || '-'), from: city, headerImageId });
-      if (x.sent) { await logChat(r.phone, x.fromCity || city, r.name, text, pic, x.id, opt.tag); return { sent: true, how: 'template', city: x.fromCity || city }; }
+      if (x.sent) { await logChat(r.phone, x.fromCity || city, r.name, text, pic, x.id, Object.assign({}, opt.tag, (tpl.buttons || []).length ? { buttons: tpl.buttons.map((b) => b.text).filter(Boolean) } : {})); return { sent: true, how: 'template', city: x.fromCity || city }; }
       errs.push(x.error);
     }
   } else errs.push(tpl ? 'șablonul „' + tpl.label + '” nu e aprobat încă de Meta' : 'șablonul nu e făcut încă');
@@ -1779,7 +1784,8 @@ async function leadPack(r, o) {
   const approved = (k) => !!(k && T2.t && T2.t[k] && require('./wa-templates').overall(T2.t[k]) === 'APPROVED');
   const want = isVip(r) ? (nm ? 'vip3n' : 'vip3') : [490, 990].includes(Number(r.tier)) ? (nm ? 'lead3n' : 'lead3') : '';
   const wantBf = bf ? (nm ? 'lead3bfn2' : 'lead3bf2') : '';
-  const kind = leftN > 1 && approved(wantBf) ? wantBf : leftN > 1 && approved(want) ? want : 'lead'; // one left: „1 carduri” never
+  const wantBf1 = bf ? (nm ? 'lead3bfn1' : 'lead3bf1') : '';
+  const kind = leftN > 1 && approved(wantBf) ? wantBf : leftN === 1 && approved(wantBf1) ? wantBf1 : leftN > 1 && approved(want) ? want : 'lead'; // one left: „1 carduri” never
   vars.ramase = String(leftN);
   if (kind !== 'lead') vars.prenume = nm;
   // ready: the template that goes is approved (the preview says when nothing can go)
