@@ -143,6 +143,20 @@ const CARD_FORM = { id: 'card-form-tm-2026-11-23', why: 'Cardul de Sărbători p
         headlines: ['ALEGE CARDUL: PLĂTEȘTI 990, PRIMEȘTI 2.500 👉', 'AU MAI RĂMAS DOAR 4 CARDURI ⏰💨', 'CARDUL VIP: PLĂTEȘTI 9.900, PRIMEȘTI 30.000 👉'], description: 'Valabil până pe 30.06.2027' },
     ] }] } };
 const JOBS = [
+  // 24.11 ~15:45, George: „am reconectat celălalt cont… hai să aducem leaduri multe multe, plin plin plin”, 450 lei/zi:
+  // the proven campaigns of the old account „centru pls” (16.10-21.11: most women who came and became clients) on again,
+  // as they were (their forms), 75 lei/day each; their twins in the connected account go off so the two don't bid
+  // against each other for the same women (the card campaigns stay)
+  { id: 'old-winners-on-2026-11-24', act: 'act_4502494523405059', why: 'Contul centru pls: reclamele dovedite pornite, 75 lei/zi fiecare (450 lei/zi)', actions: [
+    ['120251401215320103', 'TM HIFU G · sezon'], ['120251418278340103', 'TM RESTART · fără ace'], ['120251796512940103', 'TM HIFU G · copertă 50+'],
+    ['120251585544900103', 'TM VIDEO · HIFU gușă · iPad'], ['120251418156000103', 'tm vid 3 lipo 09.09 - copie'], ['120251418133050103', 'AR HIFU G · sezon'],
+  ].flatMap(([campaignId, name]) => [{ campaignId, name, daily: 75, why: 'George: 450 lei/zi pe cele dovedite' }, { campaignId, name, status: 'ACTIVE', why: 'George: leaduri multe, din contul care ne cunoaște' }]) },
+  { id: 'new-twins-off-2026-11-24', why: 'Contul nou: dublurile reclamelor pornite în centru pls oprite (cardurile rămân)', actions: [
+    { campaignId: '120250715944510149', name: 'C360 · TM · HIFU G · sezon', status: 'PAUSED', why: 'dublura din centru pls rulează' },
+    { campaignId: '120250718340060149', name: 'C360 · AR · HIFU G · sezon (2)', status: 'PAUSED', why: 'dublura din centru pls rulează' },
+    { campaignId: '120250730157610149', name: 'C360 · AR · HIFU G · caz 16', status: 'PAUSED', why: 'HIFU gușă Arad rulează din centru pls' },
+    { campaignId: '120250730080520149', name: 'C360 · TM · Liposonix · caz 05', status: 'PAUSED', why: 'Liposonix TM rulează din centru pls' },
+  ] },
   // 23.11 ~23:30, George: the card's new form for Timișoara (its campaign CARD_FORM held above until George says go)
   CARD_FORM_TM,
   // 24.11 ~02:00, George: „da, pornește campania pe formular”
@@ -871,21 +885,26 @@ async function run() {
     // place is written down as such (not shown as a change); a refused one is told once, and tried again next hour
     for (const j of todo.filter((x) => x.actions)) {
       const failed = [];
+      // a job on the old ad account „centru pls” (24.11, George reconnected it: the proven campaigns there): the same
+      // changes, on that account's campaigns of ours (its own scope, its money in lei); any other account is refused
+      const OTHER = { act_4502494523405059: true };
+      if (j.act && !OTHER[j.act]) { console.error('ads-once: account not allowed', j.act); continue; }
+      const cn = j.act ? Object.defineProperty(Object.assign({}, conn, { adAccountId: j.act, scope: require('./ads-scope').forAccount(require('./ads-scope').DEFAULT, j.act) }), 'fx', { value: 0, enumerable: false }) : conn;
       for (const a of j.actions) {
         if (logged(j, a)) continue;
         const base = { job: j.id, at: new Date().toISOString(), campaignId: a.campaignId, campaignName: a.name, why: a.why };
         if (a.status) {
-          const r = await ads.act(conn, { action: 'status', id: a.campaignId, status: a.status });
+          const r = await ads.act(cn, { action: 'status', id: a.campaignId, status: a.status });
           if (r.error) { failed.push(short(a.name) + ': ' + r.error); console.error('ads-once:', a.campaignId, r.error); continue; }
           await AC.switched(a.campaignId, a.status).catch(() => {});
           doc.log.push(Object.assign(base, { status: a.status }));
           out.push(a.campaignId);
         } else {
-          const b = await ads.budgetOf(conn, a.campaignId);
+          const b = await ads.budgetOf(cn, a.campaignId);
           if (b.error) { failed.push(short(a.name) + ': ' + b.error); console.error('ads-once:', a.campaignId, b.error); continue; }
           const to = Math.max(10, Math.min(150, a.daily || Math.round(b.daily * a.factor)));
           if (same(b.daily, to)) { doc.log.push(Object.assign(base, { budgetId: b.id, from: b.daily, to, unchanged: true })); await save(); continue; }
-          const r = await ads.act(conn, { action: 'budget', id: b.id, daily: to });
+          const r = await ads.act(cn, { action: 'budget', id: b.id, daily: to });
           if (r.error) { failed.push(short(a.name) + ': ' + r.error); console.error('ads-once:', a.campaignId, r.error); continue; }
           doc.log.push(Object.assign(base, { budgetId: b.id, from: b.daily, to }));
           out.push(a.campaignId);
