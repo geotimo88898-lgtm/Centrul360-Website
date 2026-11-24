@@ -187,6 +187,10 @@ const ELYSION = { id: 'elysion-sale-2026-11-24', why: 'Vânzare laser Elysion Pr
     interests: ['Beauty salon', 'Cosmetics', 'Aesthetics', 'Laser hair removal'], behaviors: ['Small business owners'] },
 } };
 const JOBS = [
+  // 25.11 ~00:00: the Elysion Pro ad set's hint „Aesthetics” matched Meta's philosophy interest „Estetică (filosofie)”: taken
+  // out, the other hints, the budget and the rest of the ad set as they are
+  { id: 'elysion-hint-fix-2026-11-25', why: 'Elysion Pro: interesul greșit „Estetică (filosofie)” scos', dropInterests: {
+    adsetId: '120252100284540103', campaignName: 'C360 · Vânzare laser Elysion Pro · formular', ids: ['6003110046272'] } },
   // 24.11, George: „da publică, 100 lei pe zi” (the Elysion Pro laser for sale to salons, ELYSION above)
   ELYSION,
   // 24.11 ~16:40, George: „nu mai tratament faciale, stinge-le pe alea”
@@ -1468,6 +1472,26 @@ async function run() {
       await save();
       await tell({ tone: 'good', tag: 'once-done-' + j.id, title: 'FĂCUT ✅ - ' + j.why, text: c.name + ' · formularul ' + B.form.name + (st.warning ? ' · ' + st.warning : '') });
     }
+    // interests taken out of one ad set of ours (its targeting read from Meta, only those ids removed, written back)
+    for (const j of todo.filter((x) => x.dropInterests)) {
+      const D = j.dropInterests;
+      const r = await ads.call('GET', '/' + D.adsetId, conn.userToken, { fields: 'account_id,targeting,campaign{name}' });
+      const name = r.ok && r.j.campaign ? r.j.campaign.name : '';
+      if (!r.ok || 'act_' + r.j.account_id !== conn.adAccountId || name !== D.campaignName || !ads.ours(conn, name)) { problems.push(j.id + ': setul nu e al nostru sau Meta n-a răspuns'); if (expired(j)) { doc.done[j.id] = new Date().toISOString(); await save(); } continue; }
+      const t = r.j.targeting || {};
+      let removed = 0;
+      (t.flexible_spec || []).forEach((sp) => { if (Array.isArray(sp.interests)) { const n = sp.interests.length; sp.interests = sp.interests.filter((x) => !D.ids.includes(String(x.id))); removed += n - sp.interests.length; if (!sp.interests.length) delete sp.interests; } });
+      if (t.flexible_spec) t.flexible_spec = t.flexible_spec.filter((sp) => Object.keys(sp).length);
+      if (t.flexible_spec && !t.flexible_spec.length) delete t.flexible_spec;
+      if (removed) {
+        const w = await ads.call('POST', '/' + D.adsetId, conn.userToken, { targeting: t });
+        if (!w.ok) { const why = ((w.j.error || {}).error_user_msg || (w.j.error || {}).message || 'Meta n-a răspuns'); problems.push(j.id + ': ' + why); console.error('ads-once drop:', why); if (expired(j)) { doc.done[j.id] = new Date().toISOString(); await save(); } continue; }
+      }
+      doc.done[j.id] = new Date().toISOString();
+      doc.log.push({ job: j.id, at: new Date().toISOString(), adsetId: D.adsetId, campaignName: D.campaignName, removed, why: j.why });
+      await save();
+      if (removed) out.push(D.adsetId);
+    }
     // the template every new form starts from (Formulare → Setări formulare)
     for (const j of todo.filter((x) => x.template)) {
       const T = require('./fb-form-template');
@@ -1480,7 +1504,7 @@ async function run() {
     }
     // a rule over the campaigns that spent this week (the running ones and those paused a moment ago): its budget times a
     // factor, up to a cap
-    const rules = todo.filter((x) => !x.actions && !x.formSite && !x.template && !x.site && !x.lookalike && !x.b2b);
+    const rules = todo.filter((x) => !x.actions && !x.formSite && !x.template && !x.site && !x.lookalike && !x.b2b && !x.dropInterests);
     if (rules.length) {
       const days = await ads.campaignDays(conn, { since: day(Date.now() - 6 * 864e5), until: day(Date.now()) });
       if (days.error) return { changed: out.length, error: days.error };
