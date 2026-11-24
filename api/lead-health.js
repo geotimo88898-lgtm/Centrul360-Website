@@ -697,6 +697,18 @@ module.exports = async (req, res) => {
     res.status(200).json(Object.assign({ ok: true }, out));
     return;
   }
+  // ?cardcalled=1: how many on the card lists the desk has already talked to, by how we know it (counts only, 24.11)
+  if (req.query && req.query.cardcalled) {
+    const W = require('./_lib/card-who'), C = require('./_lib/card-sarbatori');
+    const called = await W.calledMap();
+    const list = await readJSON(C.KEY, []);
+    const d9x = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+    const open = list.filter((r) => r && r.phone && ['asteptare', 'rezervat', 'lead'].includes(r.status));
+    const by = (l) => l.reduce((o, r) => { const c = called.get(d9x(r.phone)); const k = c ? c.how : 'nu'; o[k] = (o[k] || 0) + 1; return o; }, {});
+    const I = await require('./_lib/card-interested').list({ noKpi: true }).catch(() => ({ people: [] }));
+    res.status(200).json({ ok: true, total: called.size, orders: by(open), rezervat: by(open.filter((r) => r.status === 'rezervat')), interesate: by((I.people || []).filter((x) => !x.hidden)) });
+    return;
+  }
   // ?cardsrc=<card id>: where one order came from (the utm values and the referrer's host, the card message's lot and
   // personal-link token if any) and whether her card message went out; never a name or phone
   if (req.query && req.query.cardsrc) {

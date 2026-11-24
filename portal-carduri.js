@@ -168,6 +168,11 @@
   }
   // „Bani potențiali” (the owner, 22.11): what the open requests are worth, by clinic, and what is already cashed
   const isOpen = (o) => !o.byHer && !o.cancelled;
+  // the desk has already talked to her (the owner, 24.11: „să scoatem doamnele cu care am vorbit deja”): out of the lists
+  // to call, under „Am vorbit deja” (api/_lib/card-who.js calledMap)
+  const toCall = (o) => isOpen(o) && !o.called;
+  const calledTag = (c) => (c ? '<span class="k-tag is-good">' + icon('check') + 'Vorbit' + (c.at ? ' ' + esc(when(c.at)) : '') + (c.by ? ' · ' + esc(String(c.by).trim().split(/[\s-]+/)[0]) : '') + '</span>' : '');
+  const calledBtn = (phone, c) => '<button type="button" data-cd-called="' + esc(phone) + '" data-on="' + (c ? '0' : '1') + '">' + icon(c ? 'phone' : 'check') + (c ? 'N-am vorbit încă cu ea' : 'Am vorbit cu ea') + '</button>';
   // the VIP cards left in a clinic („VIP 4 din 5”)
   const vipLeft = (c) => { const v = S.d.vip && S.d.vip[c]; return v ? ' · VIP ' + (v.left > 0 ? v.left + ' din ' + v.max : 'epuizat') : ''; };
   function paintMoney() {
@@ -189,17 +194,17 @@
   const lotTxt = (l) => 'Lot ' + l.n + ' · mesaj ' + l.tier;
   const kind = (o) => (o.cancelled ? 'anulate' : o.status === 'lead' ? 'lead' : o.status === 'asteptare' ? 'neplatita' : o.status === 'rezervat' ? 'rezervat' : '');
   function orderFilters(all) {
-    const open = all.filter(isOpen);
+    const open = all.filter(toCall);
     const lots = [...new Set(open.filter((o) => o.lot).map((o) => o.lot.n))].sort((a, b) => a - b);
     const f = [['open', 'Deschise', open.length], ['rezervat', 'Rezervate', open.filter((o) => kind(o) === 'rezervat').length], ['lead', 'Lead', open.filter((o) => kind(o) === 'lead').length],
       ['neplatita', 'Online neplătite', open.filter((o) => kind(o) === 'neplatita').length], ['appt', 'Au programare', open.filter((o) => o.appt).length], ['vip', 'VIP', open.filter(isVip).length]]
       .concat(lots.map((n) => ['lot:' + n, 'Lot ' + n, open.filter((o) => o.lot && o.lot.n === n).length]))
-      .concat([['anulate', 'Anulate', all.filter((o) => o.cancelled).length]]);
+      .concat([['vorbit', 'Am vorbit deja', all.filter((o) => isOpen(o) && o.called).length], ['anulate', 'Anulate', all.filter((o) => o.cancelled).length]]);
     return f.filter((x) => x[2] || x[0] === 'open' || x[0] === S.of);
   }
   function pickOrders(all) {
     const f = S.of;
-    let l = all.filter((o) => (f === 'anulate' ? o.cancelled : f === 'open' ? !o.cancelled : isOpen(o) && (f === 'appt' ? !!o.appt : f === 'vip' ? isVip(o) : /^lot:/.test(f) ? o.lot && 'lot:' + o.lot.n === f : kind(o) === f)));
+    let l = all.filter((o) => (f === 'anulate' ? o.cancelled : f === 'vorbit' ? isOpen(o) && !!o.called : o.called && isOpen(o) ? false : f === 'open' ? !o.cancelled : isOpen(o) && (f === 'appt' ? !!o.appt : f === 'vip' ? isVip(o) : /^lot:/.test(f) ? o.lot && 'lot:' + o.lot.n === f : kind(o) === f)));
     if (S.os === 'appt') l = l.slice().sort((a, b) => (a.appt ? a.appt.date + a.appt.time : '9') .localeCompare(b.appt ? b.appt.date + b.appt.time : '9'));
     return l;
   }
@@ -212,9 +217,9 @@
     const what = isLead ? 'Lead din reclamă · alege cum plătește' : o.cancelled ? 'Anulată' : o.byHer ? 'A renunțat la plata online' : unpaid ? 'A început plata online · neplătită' + (over ? '' : ' · ținut până la ' + hm(o.heldUntil, o.created)) :
       o.via === 'whatsapp' ? 'Din mesajul WhatsApp · plătește în clinică' : o.via === 'portal' ? 'Adăugată în portal · plătește în clinică' : o.converted ? 'Plătește în clinică · a început online' : 'Plătește în clinică';
     const chips = (isVip(o) ? vipTag : '') + '<span class="k-tag ' + st[1] + '">' + st[0] + '</span>' + (o.lot ? '<span class="k-tag cd-lot">' + esc(lotTxt(o.lot)) + '</span>' : '') +
-      (o.appt ? '<span class="k-tag is-good cd-appt">' + icon('calendar') + esc(apptTxt(o.appt)) + '</span>' : '') + (call ? '<span class="k-tag is-warn">' + icon('phone') + 'Sun-o</span>' : '');
+      (o.appt ? '<span class="k-tag is-good cd-appt">' + icon('calendar') + esc(apptTxt(o.appt)) + '</span>' : '') + (call && !o.called ? '<span class="k-tag is-warn">' + icon('phone') + 'Sun-o</span>' : '') + calledTag(o.called);
     const open = S.open.has(o.id), dead = o.byHer || o.cancelled;
-    const menu = (dead ? '' : '<button type="button" data-cd-edit="' + esc(o.id) + '">' + icon('pen') + 'Editează</button><button type="button" data-cd-toint="' + esc(o.id) + '">' + icon('star') + 'Mută la Interesate</button><button type="button" data-cd-cancel="' + esc(o.id) + '">' + icon('ban') + 'Anulează</button>') +
+    const menu = (dead ? '' : '<button type="button" data-cd-edit="' + esc(o.id) + '">' + icon('pen') + 'Editează</button>' + calledBtn(o.phone, o.called) + '<button type="button" data-cd-toint="' + esc(o.id) + '">' + icon('star') + 'Mută la Interesate</button><button type="button" data-cd-cancel="' + esc(o.id) + '">' + icon('ban') + 'Anulează</button>') +
       (admin ? '<button type="button" class="is-bad" data-cd-del="' + esc(o.id) + '">' + icon('trash') + 'Șterge</button>' : '');
     return '<div class="cd-o' + (dead ? ' is-off' : '') + (open ? ' open' : '') + '" data-o="' + esc(o.id) + '"><div class="cd-o-row">' +
       '<button type="button" class="cd-o-main" data-cd-x="' + esc(o.id) + '" aria-expanded="' + open + '"><span class="cd-o-t"><b>' + esc(o.name || 'Fără nume') + '</b><span class="cd-o-m">' + (o.qty > 1 ? o.qty + ' × ' : '') + tierTxt(o.tier) + (Number(o.amount) !== Number(o.tier) * (o.qty || 1) ? ' · plătește ' + lei(o.amount) : '') + ' · ' + esc(o.city) + '</span></span>' +
@@ -229,10 +234,11 @@
         (NAMEFROM[o.nameFrom] && o.via !== 'portal' ? ' · numele ' + NAMEFROM[o.nameFrom] : '') + (o.note ? ' · ' + esc(o.note) : '') + '</p>' + whoBox(o.phone) + trailHtml(o) + '</div></div></div>';
   }
   // the two lists side by side, as tabs: „De confirmat” (the requests) and „Interesate” (the owner, 22.11)
-  const ints = () => ((S.int && S.int.people) || []).filter((x) => !x.hidden);
+  const ints = () => ((S.int && S.int.people) || []).filter((x) => !x.hidden && (S.intCalled ? !!x.called : !x.called));
+  const intsCalled = () => ((S.int && S.int.people) || []).filter((x) => !x.hidden && x.called).length;
   function tabs(nReq) {
     const t = (k, l, n) => '<button type="button" role="tab" class="cd-tab' + (S.tab === k ? ' is-on' : '') + '" aria-selected="' + (S.tab === k) + '" data-cd-tab="' + k + '">' + l + '<span>' + n + '</span></button>';
-    return '<div class="cd-tabs" role="tablist">' + t('req', 'De confirmat', nReq) + t('int', 'Interesate', S.int ? ints().length : '…') + '</div>';
+    return '<div class="cd-tabs" role="tablist">' + t('req', 'De confirmat', nReq) + t('int', 'Interesate', S.int ? ((S.int.people || []).filter((x) => !x.hidden && !x.called).length) : '…') + '</div>';
   }
   // „Trimite linkul de plată” on a row (portal-cardlink.js: the popup, „Link trimis 14:05” once it went)
   const linkBtn = (x, cls, label) => (window.C360SendCardLink && window.C360SendCardLink.can() && x.phone ? '<button type="button" class="k-btn ' + cls + ' is-sm"' +
@@ -251,7 +257,7 @@
       (bf ? 'La plata online, până vineri 27 noiembrie, primești ' + lei(S.d.bf.creditOnline * q) + ' în loc de ' + lei(S.d.bf.creditClinic * q).replace(/ lei$/, '') + '. ' : '') +
       'Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360; îți trimit chiar acum linkul pe WhatsApp. Sau stabilim acum când treci pe la clinică să-l plătești.';
   }
-  const resvOf = () => (S.d.orders || []).filter((o) => o.status === 'rezervat' && o.pay === 'clinica' && isOpen(o) && o.phone)
+  const resvOf = () => (S.d.orders || []).filter((o) => o.status === 'rezervat' && o.pay === 'clinica' && toCall(o) && o.phone)
     .sort((a, b) => (isVip(b) - isVip(a)) || String(b.converted || b.created).localeCompare(String(a.converted || a.created)));
   function resvRow(o) {
     const open = S.open.has('r' + o.id);
@@ -261,6 +267,7 @@
         '<span class="cd-o-c">' + chips + '</span></button>' +
       '<a class="cd-o-tel" href="' + K.tel(o.phone) + '" aria-label="Sună">' + icon('phone') + '<span>' + esc(o.phone) + '</span></a>' +
       '<div class="cd-o-act"><a class="k-btn is-outline is-sm cd-i-chat" href="#mesaje" data-chat="' + esc(o.phone) + '" data-chat-name="' + esc(o.name || '') + '" data-chat-city="' + esc(o.city || '') + '" aria-label="Mesaje">' + icon('chat') + '<span class="cd-lg">Mesaje</span></a>' +
+        '<button type="button" class="k-btn is-outline is-sm" data-cd-called="' + esc(o.phone) + '" data-on="1" aria-label="Am vorbit cu ea">' + icon('check') + '<span class="cd-lg">Am vorbit</span></button>' +
         linkBtn(o, 'is-primary', 'Trimite linkul') + '</div></div>' +
       '<div class="cd-o-more"><div>' + whoBox(o.phone) + '<p class="cd-script">' + icon('phone') + '<span>' + esc(script(o)) + '</span></p></div></div></div>';
   }
@@ -274,18 +281,18 @@
     const other = all.filter((o) => !cities.includes(o.city));
     const group = (c, l) => '<div class="cd-rg"><h4 class="cd-rg-h">' + esc(c) + '<span>' + l.length + '</span><small>' + lei(l.reduce((n, o) => n + (Number(o.amount) || 0), 0)) + '</small></h4><div class="cd-olist">' + l.map(resvRow).join('') + '</div></div>';
     box.innerHTML = '<section class="k-card cd-orders cd-resv"><div class="k-card-head"><h3>Card rezervat, de încasat</h3><span class="k-muted">' + all.length + '</span></div>' +
-      '<p class="cd-resv-hint">Atinge numele pentru ce îi spui. Linkul pleacă pe WhatsApp doar când apeși Trimite.</p>' +
+      '<p class="cd-resv-hint">Atinge numele pentru ce îi spui. Linkul pleacă pe WhatsApp doar când apeși Trimite. După ce vorbești cu ea, apasă „Am vorbit”: iese de aici și o găsești la cereri, „Am vorbit deja”.</p>' +
       cities.map((c) => group(c, all.filter((o) => o.city === c))).join('') + (other.length ? group('Altă clinică', other) : '') + '</section>';
   }
   function paintOrders() {
     paintMoney(); paintChecks(); paintResv();
     const box = S.box.querySelector('[data-cd-orders]'), all = S.d.orders || [];
     if (!box) return;
-    if (S.tab === 'int') { box.innerHTML = paintInt(all.filter(isOpen).length); fillOpen(); return; }
+    if (S.tab === 'int') { box.innerHTML = paintInt(all.filter(toCall).length); fillOpen(); return; }
     const now = Date.now(), admin = S.d.role === 'admin';
     if (!orderFilters(all).some((x) => x[0] === S.of)) S.of = 'open';
     const list = pickOrders(all);
-    box.innerHTML = '<section class="k-card cd-orders"><div class="k-card-head">' + tabs(all.filter(isOpen).length) +
+    box.innerHTML = '<section class="k-card cd-orders"><div class="k-card-head">' + tabs(all.filter(toCall).length) +
       '<label class="cd-sort"><span class="cd-sort-l">Ordine</span><select data-cd-sort><option value="new"' + (S.os === 'new' ? ' selected' : '') + '>cele mai noi</option><option value="appt"' + (S.os === 'appt' ? ' selected' : '') + '>după programare</option></select></label></div>' +
       (all.length ? '<div class="k-chips cd-of">' + orderFilters(all).map(([k, l, n]) => '<button type="button" class="k-chip' + (S.of === k ? ' is-on' : '') + '" data-cd-of="' + esc(k) + '">' + esc(l) + '<span>' + n + '</span></button>').join('') + '</div>' : '') +
       (list.length ? '<div class="cd-olist">' + list.map((o) => orderRow(o, now, admin)).join('') + '</div>' : K.empty('gift', all.length ? 'Nimic aici' : 'Nicio cerere', all.length ? 'Alege alt filtru.' : 'Cererile de card apar aici.')) + '</section>';
@@ -297,7 +304,7 @@
     const k = x.k, open = S.open.has('i' + k);
     const chips = (isVip(x.tier) ? vipTag : '') + (x.lot ? '<span class="k-tag cd-lot">' + esc(lotTxt(x.lot)) + '</span>' : '<span class="k-tag is-info">De mână</span>') +
       (x.appt ? '<span class="k-tag is-good cd-appt">' + icon('calendar') + esc(apptTxt(x.appt)) + '</span>' : '') +
-      (x.note ? '<span class="k-tag cd-note">' + icon('pen') + esc(x.note.text) + '</span>' : '');
+      (x.note ? '<span class="k-tag cd-note">' + icon('pen') + esc(x.note.text) + '</span>' : '') + calledTag(x.called);
     return '<div class="cd-o cd-i' + (open ? ' open' : '') + '" data-i="' + esc(k) + '"><div class="cd-o-row">' +
       '<button type="button" class="cd-o-main" data-cd-ix="' + esc(k) + '" aria-expanded="' + open + '"><span class="cd-o-t"><b>' + esc(x.name || 'Fără nume') + '</b><span class="cd-o-m">' + tierTxt(x.tier) + (x.city ? ' · ' + esc(x.city) : '') + '</span></span>' +
         (said(x) ? '<span class="cd-i-q">' + esc(said(x)) + '</span>' : '') + '<span class="cd-o-c">' + chips + '</span></button>' +
@@ -306,7 +313,7 @@
         linkBtn({ phone: x.phone, name: x.name, city: x.city, tier: x.tier }, 'is-outline') +
         '<button type="button" class="k-btn is-primary is-sm" data-cd-mk="' + esc(k) + '">' + icon('plus') + '<span class="cd-lg">Fă cerere</span><span class="cd-sm">Cerere</span></button>' +
         '<span class="cd-mw"><button type="button" class="k-btn is-ghost is-sm cd-dots" data-cd-menu aria-haspopup="true" aria-expanded="false" aria-label="Mai mult">' + icon('more') + '</button><span class="cd-menu" role="menu">' +
-        '<button type="button" data-cd-iedit="' + esc(k) + '">' + icon('pen') + 'Editează</button><button type="button" data-cd-inote="' + esc(k) + '">' + icon('chat') + 'Notă</button>' +
+        calledBtn(x.phone, x.called) + '<button type="button" data-cd-iedit="' + esc(k) + '">' + icon('pen') + 'Editează</button><button type="button" data-cd-inote="' + esc(k) + '">' + icon('chat') + 'Notă</button>' +
         '<button type="button" class="is-bad" data-cd-ihide="' + esc(k) + '">' + icon('ban') + 'Nu e interesată</button></span></span></div></div>' +
       '<div class="cd-o-more"><div><p class="cd-o-sub">' + esc([x.said && x.n > 1 ? x.n + ' mesaje de la ea' : '', x.note ? 'Notă de ' + (x.note.byName || 'echipă') + ', ' + hm(x.note.at) : ''].filter(Boolean).join(' · ') || '') + '</p>' + whoBox(x.phone) + '</div></div></div>';
   }
@@ -314,6 +321,7 @@
     const I = S.int, list = ints(), p = (I && I.potential) || {};
     return '<section class="k-card cd-orders cd-int"><div class="k-card-head">' + tabs(nReq) + '</div>' +
       (!I ? '<div class="k-skel" style="height:120px;border-radius:14px"></div>' :
+      (intsCalled() || S.intCalled ? '<div class="k-chips cd-of"><button type="button" class="k-chip' + (S.intCalled ? '' : ' is-on') + '" data-cd-intc="0">De sunat<span>' + ((I.people || []).filter((x) => !x.hidden && !x.called).length) + '</span></button><button type="button" class="k-chip' + (S.intCalled ? ' is-on' : '') + '" data-cd-intc="1">Am vorbit deja<span>' + intsCalled() + '</span></button></div>' : '') +
       '<p class="cd-int-pot"><b>Potențial ' + lei(p.total || 0) + '</b><span>' + list.length + (list.length === 1 ? ' persoană' : ' persoane') + ' · Timișoara ' + lei(p['Timișoara'] || 0) + ' · Arad ' + lei(p.Arad || 0) + '</span><small>separat de cereri</small></p>' +
       (list.length ? '<div class="cd-olist">' + list.map(intRow).join('') + '</div>' : K.empty('chat', 'Nicio interesată', I.error ? esc(I.error) : 'Cine răspunde cu un mesaj la campania cardului apare aici.'))) + '</section>';
   }
@@ -408,6 +416,17 @@
     }
     if (b.hasAttribute('data-cd-add')) { addDrawer(b); return; }
     if (b.dataset.cdTab) { S.tab = b.dataset.cdTab; paintOrders(); return; }
+    if (b.dataset.cdIntc != null) { S.intCalled = b.dataset.cdIntc === '1'; paintOrders(); return; }
+    if (b.dataset.cdCalled) {
+      const on = b.dataset.on !== '0', phone = b.dataset.cdCalled;
+      closeMenus();
+      try {
+        await api({ action: 'called', phone, on });
+        K.ui().toast(on ? 'Notat: ai vorbit cu ea. E la „Am vorbit deja”.' : 'Înapoi la lista de sunat.', 'success');
+        await load(true);
+      } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+      return;
+    }
     if (b.hasAttribute('data-cd-iadd')) { intDrawer(b); return; }
     if (b.dataset.cdIx) { const row = S.box.querySelector('.cd-i[data-i="' + CSS.escape(b.dataset.cdIx) + '"]'); if (row) { const on = !row.classList.contains('open'); row.classList.toggle('open', on); b.setAttribute('aria-expanded', String(on)); if (on) { S.open.add('i' + b.dataset.cdIx); fillWho(row.querySelector('.cd-who')); } else S.open.delete('i' + b.dataset.cdIx); } return; }
     if (b.dataset.cdMk) { const x = intOf(b.dataset.cdMk); if (x) requestDrawer(b, null, { name: x.name, phone: x.phone, city: x.city, tier: x.tier, note: x.note ? x.note.text : '' }); return; }

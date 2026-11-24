@@ -138,7 +138,7 @@ module.exports = async (req, res) => {
     const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
 
     // ---- the team
-    const TEAM = ['who', 'delete', 'void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'request', 'edit', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick', 'interested', 'int_note', 'int_hide', 'int_add', 'to_interested', 'sendlink', 'links'];
+    const TEAM = ['who', 'called', 'delete', 'void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'request', 'edit', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick', 'interested', 'int_note', 'int_hide', 'int_add', 'to_interested', 'sendlink', 'links'];
     if (TEAM.includes(b.action)) {
       const session = await require('./_lib/auth').requireRole(req, res, b.action === 'undo' ? ['admin'] : ['admin', 'manager', 'receptie']);
       if (!session) return;
@@ -165,6 +165,9 @@ module.exports = async (req, res) => {
         // her next appointment and the campaign wave, next to each order and each card
         const ex = await C.orderExtras(orders.concat(list.filter((r) => r.status === 'platit').map((r) => ({ id: r.id, phone: r.phone, clientId: r.clientId, tier: r.tier, paidAt: r.paidAt })))).catch(() => ({}));
         orders.forEach((o) => Object.assign(o, ex[o.id] || {}));
+        // who the desk has already talked to (the owner, 24.11): out of the lists to call, under „Am vorbit deja”
+        const called = await require('./_lib/card-who').calledMap().catch(() => new Map());
+        orders.forEach((o) => { const c = called.get(d9(o.phone)); if (c) o.called = c; });
         cards.forEach((c) => { const x = ex[c.order]; if (x) { c.lot = x.lot; if (x.review) c.review = x.review; } });
         const paid = list.filter((r) => r.status === 'platit');
         const totals = { cards: paid.reduce((n, r) => n + C.qtyOf(r), 0), money: paid.reduce((n, r) => n + (Number(r.paidAmount) || Number(r.amount) || 0), 0), online: paid.filter((r) => r.paidVia === 'online').reduce((n, r) => n + (Number(r.paidAmount) || r.amount), 0),
@@ -185,7 +188,15 @@ module.exports = async (req, res) => {
       // „Interesate” (_lib/card-interested.js): who answered the campaign's message with words and has no order
       // „Despre ea” (the owner, 24.11): her visits, treatments, forms, last messages, for the call (api/_lib/card-who.js)
       if (b.action === 'who') { res.status(200).json(await require('./_lib/card-who').who(clip(b.phone, 30))); return; }
-      if (b.action === 'interested') { res.status(200).json(Object.assign({ ok: true }, await require('./_lib/card-interested').list({ all: b.all === true }))); return; }
+      if (b.action === 'interested') {
+        const x = await require('./_lib/card-interested').list({ all: b.all === true });
+        // who the desk has already talked to (the owner, 24.11): out of the list to call, under „Am vorbit deja”
+        const called = await require('./_lib/card-who').calledMap().catch(() => new Map());
+        (x.people || []).forEach((p) => { const c = called.get(d9(p.phone)); if (c) p.called = c; });
+        res.status(200).json(Object.assign({ ok: true }, x)); return;
+      }
+      // „Am vorbit cu ea” / „N-am vorbit încă” on a row (the owner, 24.11)
+      if (b.action === 'called') { const x = await require('./_lib/card-who').markCalled(clip(b.phone, 30), b.on !== false, byName); res.status(x.error ? 400 : 200).json(x); return; }
       if (b.action === 'int_note' || b.action === 'int_hide' || b.action === 'int_add' || b.action === 'to_interested') {
         const I = require('./_lib/card-interested');
         const x = b.action === 'int_note' ? await I.note(b.phone, b.note, byName) : b.action === 'int_hide' ? await I.hide(b.phone, b.hide !== false, session, byName)
