@@ -799,7 +799,13 @@ module.exports = async (req, res) => {
     if (!conn.pageAccessToken) { res.status(200).json({ ok: false, error: 'no_page' }); return; }
     const leads = await readJSON('data/leads.json', []);
     const since = new Date(Date.now() - 3 * 864e5).toISOString();
-    const ids = [...new Set(leads.filter((l) => l && l.form && l.form.id && String(l.createdAt || '') >= since && /card/i.test(String(l.interest || ''))).map((l) => l.form.id))];
+    const orders = await readJSON('data/card-sarbatori.json', []);
+    const forms = await readJSON('data/fb-forms.json', {}).catch(() => ({}));
+    const fl = Array.isArray(forms) ? forms : Array.isArray(forms.forms) ? forms.forms : Object.entries(forms.forms || forms || {}).map(([id, f]) => Object.assign({ id }, f || {}));
+    const ids = [...new Set([].concat(
+      leads.filter((l) => l && l.form && l.form.id && String(l.createdAt || '') >= since && /card/i.test(String(l.interest || ''))).map((l) => l.form.id),
+      orders.filter((r) => r && r.via === 'meta-form' && String(r.created || '') >= since && r.track && r.track.formId).map((r) => r.track.formId),
+      fl.filter((f) => f && /card|sărb|sarb/i.test(String(f.name || '')) && String(f.lastAt || '') >= since).map((f) => f.id || f.formId)).filter(Boolean))];
     const fields = 'id,name,status,locale,questions,context_card{title,content,style,button_text},thank_you_page{title,body,button_text,button_type,website_url,business_phone_number,enable_messenger,gated_file},privacy_policy_url,follow_up_action_url,is_optimized_for_quality,leads_count';
     const out = [];
     for (const id of ids.slice(0, 5)) {
