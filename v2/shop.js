@@ -1,19 +1,19 @@
 /* ============================================================
-   Centrul360, the Black Friday shop (the owner, 24.11 evening): every treatment of the price list at -50%, paid online by
-   card, each one on its own (sessions, never combined offers), no volume bonuses for now.
+   Centrul360, the Black Friday shop (the owner, 24.11 night): one session of every treatment of the price list at -50%,
+   paid online by card. No packages, no combined offers. Each card: a clean drawn silhouette with the treated zone lit, the
+   short name („Liposonix Abdomen”, „HIFU Gușă”), what the session does, the zone, the price, one big button.
      [data-bfs]        the first screen's slider: three in sight, the middle one in front, round and round
      [data-bfo-grid]   all the offers (+ [data-bfo-needs], the tabs)
      [data-sh-clock]   the time left until the end of Black Friday (the server's moment, the same for everyone)
-   Tapping „Vreau oferta” puts it in the cart and a popup asks: go on shopping, or book it now. The checkout: the cart, what
-   goes well with it („Merge super în combinație cu”), the other offers, the clinic, the hour, the card payment
-   (c360-pay.js, kind 'shop'). Prices, the discount and the sum are the server's (/api/shop).
-   Motion: the popup grows out of the button, the checkout out of the bar, back goes back where it came from.
+   „Vreau oferta” puts it in the cart, a popup asks: book it now, or add more. The checkout: the cart (how many sessions),
+   what goes well with it („Merge super în combinație cu”), the other offers, the clinic, the hour, the card payment
+   (c360-pay.js, kind 'shop'). Prices and the sum are the server's (/api/shop). The header gets a cart button.
    Kept on this device only: her cart and her clinic (localStorage 'c360-shop').
    ============================================================ */
 (function () {
   'use strict';
   if (window.C360Shop) return;
-  var KEY = 'c360-shop';
+  var KEY = 'c360-shop2';
   var ADDR = { 'Timișoara': 'Str. Bucegi 7, Timișoara', Arad: 'Str. Ioan Alexandru 16-18, Arad' };
   var MAPS = { 'Timișoara': 'https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Bucegi%207%20Timisoara', Arad: 'https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Ioan%20Alexandru%2016-18%20Arad' };
   var WD = ['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'];
@@ -35,8 +35,49 @@
   var px = function (name, data) { try { if (window.fbq && window.C360_CONSENT) window.fbq('track', name, data || {}); } catch (e) { /* no pixel */ } };
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // ---- the silhouettes: a body (front) and a face (profile), drawn; the treated zone glows
+  var BODY_L = 'M44,22 L44,32 C38,35 29,36 24,40 C21,43 21,50 24,55 C25,60 23,68 25,76 C27,84 32,88 32,94 C32,102 22,110 22,122 C22,138 25,154 27,170 C28,178 26,188 28,200 C29,208 31,214 31,218 L30,222 L44,222 L43,217 C42,206 44,190 44,178 C45,160 48,142 50,134';
+  var ARM_L = 'M24,41 C17,45 15,60 14,74 C13,88 12,102 12,112 C12,117 17,117 17,112 C18,100 20,86 21,76 C22,69 24,63 25,58';
+  var FACE = 'M34,118 C34,104 32,94 28,86 C18,78 13,62 15,44 C17,22 33,8 52,8 C70,8 80,19 82,33 C83,38 82,42 84,46 C86,50 89,53 88,56 C87,58 84,58 84,60 C85,62 85,64 83,65 C84,67 84,70 81,71 C81,76 79,80 73,82 C67,84 62,86 60,92 C58,100 60,110 62,118';
+  var SPOT = {
+    abdomen: [[50, 104, 13, 11]], flancuri: [[31, 102, 5, 11], [69, 102, 5, 11]], coapse: [[37, 152, 9, 16], [63, 152, 9, 16]],
+    brate: [[16, 78, 4, 14], [84, 78, 4, 14]], antebrate: [[14, 100, 3, 9], [86, 100, 3, 9]], lombara: [[50, 116, 18, 6]],
+    gambe: [[35, 196, 5, 13], [65, 196, 5, 13]], axile: [[26, 58, 4, 5], [74, 58, 4, 5]], piept: [[39, 70, 8, 7], [61, 70, 8, 7]],
+    umeri: [[27, 44, 6, 5], [73, 44, 6, 5]], inghinal: [[50, 132, 8, 6]], fese: [[25, 124, 5, 9], [75, 124, 5, 9]],
+    maini: [[14, 116, 3, 4], [86, 116, 3, 4]], laba: [[37, 220, 6, 3], [63, 220, 6, 3]], spate: [[50, 90, 20, 22]], full: [[50, 120, 34, 100]],
+    gusa: [[66, 85, 10, 5]], gat: [[50, 100, 12, 10]], contur: [[60, 79, 16, 4, 18]], pometi: [[68, 52, 7, 5]], frunte: [[60, 20, 15, 7]],
+    periocular: [[72, 40, 6, 4]], perioral: [[81, 63, 5, 6]], fata: [[58, 48, 26, 31]],
+  };
+  var FACE_SPOTS = { gusa: 1, gat: 1, contur: 1, pometi: 1, frunte: 1, periocular: 1, perioral: 1, fata: 1 };
+  var ZS = { Abdomen: ['abdomen'], Flancuri: ['flancuri'], Coapse: ['coapse'], 'Brațe': ['brate'], 'Zona lombară': ['lombara'], Gambe: ['gambe'], 'Gușă': ['gusa'], 'Gât': ['gat'], 'Contur mandibular': ['contur'], 'Pomeți': ['pometi'], Frunte: ['frunte'] };
+  var PS = { impachetare: ['abdomen', 'coapse'], 'rf-sculpt-gusa': ['gusa', 'contur'], 'masaj-facial': ['fata', 'gat'], periocular: ['periocular'] };
+  function spotsOf(p, zone) {
+    if (zone && ZS[zone]) return ZS[zone];
+    if (PS[p.id]) return PS[p.id];
+    if (p.need === 'fata') return ['fata'];
+    if (p.need === 'epilare') {
+      var n = p.name;
+      var E = [[/Full Body/, ['full']], [/Axile/, ['axile']], [/Antebrațe/, ['antebrate']], [/Brațe/, ['brate', 'antebrate']], [/Mâini/, ['maini', 'laba']], [/Areole|Piept/, ['piept']], [/Umeri/, ['umeri']],
+        [/Abdomen/, ['abdomen']], [/bikini|Linia albă|Inghinal|Labii/, ['inghinal']], [/Fese/, ['fese']], [/lombară/, ['lombara']], [/Spate/, ['spate']], [/Picior scurt/, ['gambe']], [/Picior lung/, ['coapse', 'gambe']],
+        [/Față/, ['fata']], [/barbă/, ['contur', 'gat']]];
+      for (var i = 0; i < E.length; i++) if (E[i][0].test(n)) return E[i][1];
+      return [];
+    }
+    return [];
+  }
+  var defs = false;
+  function sil(p, zone) {
+    if (!defs) { defs = true; var d = document.createElement('div'); d.innerHTML = '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><radialGradient id="shSpot"><stop offset="0" stop-color="#fbe0d4" stop-opacity=".95"/><stop offset=".55" stop-color="#e7a993" stop-opacity=".55"/><stop offset="1" stop-color="#e7a993" stop-opacity="0"/></radialGradient></defs></svg>'; document.body.appendChild(d.firstChild); }
+    var sp = spotsOf(p, zone), face = sp.length ? sp.every(function (k) { return FACE_SPOTS[k]; }) : p.need === 'fata' || p.need === 'gusa';
+    var glow = sp.map(function (k) { return (SPOT[k] || []).map(function (e) { return '<ellipse class="sp" cx="' + e[0] + '" cy="' + e[1] + '" rx="' + e[2] * 1.6 + '" ry="' + e[3] * 1.6 + '"' + (e[4] ? ' transform="rotate(' + e[4] + ' ' + e[0] + ' ' + e[1] + ')"' : '') + ' fill="url(#shSpot)"/>'; }).join(''); }).join('');
+    var line = face
+      ? '<path d="' + FACE + '"/><path d="M68,40 Q72,38 76,40"/>'
+      : '<ellipse cx="50" cy="11" rx="8" ry="10"/><path d="' + BODY_L + '"/><path d="' + ARM_L + '"/><g transform="translate(100,0) scale(-1,1)"><path d="' + BODY_L + '"/><path d="' + ARM_L + '"/></g>';
+    return '<svg class="bfc-sil" viewBox="' + (face ? '0 0 100 120' : '0 0 100 225') + '" aria-hidden="true"><g class="gl">' + glow + '</g><g class="ln" fill="none" stroke-linecap="round" stroke-linejoin="round">' + line + '</g></svg>';
+  }
+
   var D = null, offset = 0;
-  var S = { city: '', cart: [], sel: {}, need: 'top', step: 'cart', visit: 'first', date: '', time: '', days: null, hold: null, paid: null };
+  var S = { city: '', cart: [], zone: {}, need: 'top', step: 'cart', visit: 'first', date: '', time: '', days: null, hold: null, paid: null };
   try { var kept = JSON.parse(localStorage.getItem(KEY) || 'null'); if (kept) { if (kept.city === 'Arad' || kept.city === 'Timișoara') S.city = kept.city; if (Array.isArray(kept.cart)) S.cart = kept.cart.slice(0, 12); } } catch (e) { /* private mode */ }
   var qs = new URLSearchParams(location.search);
   if (NEED[qs.get('nevoie')]) S.need = qs.get('nevoie');
@@ -45,22 +86,20 @@
 
   // ---- the data
   var byId = function (id) { return D && D.products.filter(function (p) { return p.id === id; })[0]; };
-  var optOf = function (oid) { var hit = null; (D ? D.products : []).some(function (p) { return p.options.some(function (o) { if (o.id === oid) { hit = { p: p, o: o }; return true; } return false; }); }); return hit; };
-  var inCart = function (pid) { var hit = ''; S.cart.forEach(function (oid) { var x = optOf(oid); if (x && x.p.id === pid) hit = oid; }); return hit; };
-  var selOf = function (p) { return S.sel[p.id] || inCart(p.id) || p.options[0].id; };
-  var onlyTm = function (p) { return p.cities.length === 1 ? p.cities[0] : ''; };
-  var lines = function () { return S.cart.map(optOf).filter(Boolean); };
-  // the clinic: hers, else the only one all her treatments are in, else Timișoara
+  var zoneOf = function (p) { return p.zones.length ? (S.zone[p.id] && p.zones.indexOf(S.zone[p.id]) > -1 ? S.zone[p.id] : p.zones[0]) : ''; };
+  var nameOf = function (p, zone) { return p.name + (zone ? ' ' + zone : ''); };
+  var keyOf = function (id, zone) { return id + '|' + (zone || ''); };
+  var lineOf = function (id, zone) { return S.cart.filter(function (l) { return l.id === id && (l.zone || '') === (zone || ''); })[0]; };
+  var lines = function () { return S.cart.map(function (l) { var p = byId(l.id); return p ? { p: p, zone: l.zone || '', qty: l.qty || 1, key: keyOf(l.id, l.zone) } : null; }).filter(Boolean); };
   function cityNow() {
-    var l = lines(), must = '';
-    l.forEach(function (x) { if (x.p.cities.length === 1) must = x.p.cities[0]; });
-    if (must) return must;
-    return S.city || 'Timișoara';
+    var must = '';
+    lines().forEach(function (x) { if (x.p.cities.length === 1) must = x.p.cities[0]; });
+    return must || S.city || 'Timișoara';
   }
   function totals() {
-    var l = lines(), full = 0, amount = 0;
-    l.forEach(function (x) { full += x.o.full; amount += x.o.price; });
-    return { lines: l, full: full, amount: amount, saved: full - amount };
+    var l = lines(), full = 0, amount = 0, n = 0;
+    l.forEach(function (x) { full += x.p.full * x.qty; amount += x.p.price * x.qty; n += x.qty; });
+    return { lines: l, full: full, amount: amount, saved: full - amount, n: n };
   }
 
   // ---- the timer
@@ -79,27 +118,23 @@
     if (D && D.terms.bf && !t && !ended) { ended = true; load(); }
   }
 
-  // ---- the offer card: its picture, -50%, what it does (in plain words), how many sessions, the price, one big button
+  // ---- the offer card: short and clear
   function cardHtml(p) {
-    var oid = selOf(p), o = p.options.filter(function (x) { return x.id === oid; })[0] || p.options[0];
-    var mine = inCart(p.id) === o.id, only = onlyTm(p);
-    return '<article class="bfc' + (mine ? ' in' : '') + '" data-p="' + esc(p.id) + '">' +
-      '<img class="bfc-ph" src="' + esc(p.photo) + '" alt="" loading="lazy" draggable="false">' +
-      '<span class="bfc-pct">-' + D.terms.pct + '%</span>' +
-      '<span class="bfc-k"><b>' + esc(NEED[p.need] || '') + '</b> · ' + esc(p.name.replace(/^Epilare laser · /, 'Epilare laser · ')) + '</span>' +
-      '<h3>' + esc(p.t) + '</h3>' +
+    var z = zoneOf(p), mine = S.cart.some(function (l) { return l.id === p.id; });
+    return '<article class="slip has-pic bfc' + (mine ? ' in' : '') + '" data-p="' + esc(p.id) + '">' +
+      '<span class="pic" aria-hidden="true"><img src="' + esc(p.photo) + '" alt="" decoding="async"></span>' +
+      '<span class="pct">-' + D.terms.pct + '%</span>' +
+      '<span class="k"><b>Black Friday</b> · ' + esc(NEED[p.need] || '') + '</span><h3>' + esc(nameOf(p, z)) + '</h3>' +
       '<ul class="bfc-b">' + p.b.slice(0, 2).map(function (b) { return '<li>' + esc(b) + '</li>'; }).join('') + '</ul>' +
-      ('<div class="bfc-opts" role="group" aria-label="Câte ședințe">' + p.options.map(function (x) { return '<button type="button" data-opt="' + esc(x.id) + '" aria-pressed="' + (x.id === o.id) + '">' + esc(x.label) + '</button>'; }).join('') + '</div>') +
-      '<div class="bfc-pr"><b>' + lei(o.price) + '</b><s>' + lei(o.full) + '</s></div>' +
-      '<span class="bfc-save">Economisești ' + lei(o.full - o.price) + (only ? ' <small>· doar în ' + esc(only) + '</small>' : '') + '</span>' +
-      '<button type="button" class="btn book gold bfc-cta" data-add>' + (mine ? I.check + ' În coș' : 'Vreau oferta' + I.arrow) + '</button></article>';
+      '<div class="pr"><b>' + lei(p.price) + '</b><s>' + lei(p.full) + '</s></div>' +
+      '<button type="button" class="btn book gold bfc-cta" data-add>' + (mine ? I.check + ' În coș' : 'Rezervă oferta' + I.arrow) + '</button></article>';
   }
   function repaint(pid) {
     $$('.bfc[data-p="' + pid + '"]').forEach(function (card) {
       var t = document.createElement('div');
       t.innerHTML = cardHtml(byId(pid));
       var fresh = t.firstChild, pos = card.getAttribute('data-pos');
-      if (pos != null) fresh.setAttribute('data-pos', pos);
+      if (pos != null) { fresh.setAttribute('data-pos', pos); fresh.setAttribute('aria-hidden', card.getAttribute('aria-hidden')); }
       fresh.style.transition = 'none';
       card.replaceWith(fresh);
       requestAnimationFrame(function () { fresh.style.transition = ''; });
@@ -107,7 +142,7 @@
   }
   var repaintAll = function () { (D ? D.products : []).forEach(function (p) { repaint(p.id); }); };
 
-  // ---- the slider: three in sight, the one in the middle in front, round and round
+  // ---- the slider
   var SL = { i: 0, n: 0, el: null, timer: 0, hold: 0 };
   function slider() {
     var box = $('[data-bfs]');
@@ -127,8 +162,7 @@
     play();
   }
   function place() {
-    var cards = $$('.bfs-st > .bfc', SL.el);
-    cards.forEach(function (c, k) {
+    $$('.bfs-st > .bfc', SL.el).forEach(function (c, k) {
       var d = (k - SL.i + SL.n) % SL.n;
       if (d > SL.n / 2) d -= SL.n;
       c.setAttribute('data-pos', Math.abs(d) <= 2 ? String(d) : 'far');
@@ -136,7 +170,7 @@
     });
     $$('.bfs-dots i', SL.el).forEach(function (d, k) { d.classList.toggle('on', k === SL.i); });
   }
-  function play() { clearInterval(SL.timer); if (reduce) return; SL.timer = setInterval(function () { if (document.hidden || sheetOn || pop || Date.now() < SL.hold) return; SL.i = (SL.i + 1) % SL.n; place(); }, 4200); }
+  function play() { clearInterval(SL.timer); if (reduce) return; SL.timer = setInterval(function () { if (document.hidden || sheetOn || pop || Date.now() < SL.hold) return; SL.i = (SL.i + 1) % SL.n; place(); }, 5200); }
   function pause() { SL.hold = Date.now() + 9000; }
 
   // ---- all the offers
@@ -150,20 +184,38 @@
   }
 
   // ---- the cart
-  function add(oid) {
-    var x = optOf(oid);
-    if (!x) return;
-    var had = inCart(x.p.id);
-    S.cart = S.cart.filter(function (id) { return id !== had; }).concat(oid);
-    S.sel[x.p.id] = oid;
+  function add(id, zone, from) {
+    var p = byId(id);
+    if (!p) return;
+    var had = lineOf(id, zone);
+    if (!had) S.cart.push({ id: id, zone: zone || '', qty: 1 });
     save();
     fev('cart');
-    px('AddToCart', { value: x.o.price, currency: 'RON', content_ids: [oid], content_type: 'product', content_name: x.p.name });
-    repaint(x.p.id);
-    bar(true);
+    px('AddToCart', { value: p.price, currency: 'RON', content_ids: [id], content_type: 'product', content_name: nameOf(p, zone) });
+    repaint(id); headCart(true); bar(true);
     if (sheetOn) paneCart();
   }
-  function remove(oid) { var x = optOf(oid); S.cart = S.cart.filter(function (id) { return id !== oid; }); save(); if (x) repaint(x.p.id); bar(); if (sheetOn) paneCart(); }
+  function setQty(key, d) {
+    S.cart = S.cart.map(function (l) { if (keyOf(l.id, l.zone) === key) l.qty = Math.max(0, Math.min(10, (l.qty || 1) + d)); return l; }).filter(function (l) { return l.qty > 0; });
+    save(); repaintAll(); headCart(); bar(); if (sheetOn) paneCart();
+  }
+  // the header's cart (next to the menu, on the right)
+  function headCart(bump) {
+    var bar0 = $('.top .bar');
+    if (!bar0) return;
+    var b = $('.sh-hcart', bar0);
+    if (!b) {
+      b = document.createElement('button');
+      b.type = 'button'; b.className = 'sh-hcart'; b.setAttribute('data-cart', ''); b.setAttribute('aria-label', 'Coșul');
+      b.innerHTML = I.cart + '<i></i>';
+      var burger = $('.burger', bar0);
+      bar0.insertBefore(b, burger || null);
+    }
+    var n = totals().n;
+    $('i', b).textContent = n || '';
+    b.classList.toggle('has', n > 0);
+    if (bump && n) { b.classList.remove('sh-bump'); void b.offsetWidth; b.classList.add('sh-bump'); }
+  }
   function bar(bump) {
     var b = $('.sh-bar');
     if (!b) {
@@ -174,28 +226,43 @@
     }
     var t = totals();
     b.classList.toggle('on', t.lines.length > 0 && !sheetOn && !pop);
-    $('.ct span', b).textContent = t.lines.length;
+    $('.ct span', b).textContent = t.n;
     $('.tx', b).textContent = lei(t.amount);
     if (bump) { b.classList.remove('sh-bump'); void b.offsetWidth; b.classList.add('sh-bump'); }
   }
 
-  // ---- the popup after „Vreau oferta”: book it now, or go on shopping
+  // ---- the popup after „Vreau oferta”
   var pop = null, veil = null;
   function needVeil() { if (!veil) { veil = document.createElement('div'); veil.className = 'sh-veil'; document.body.appendChild(veil); veil.addEventListener('click', function () { if (pop) closePop(); else closeSheet(); }); } return veil; }
-  function openPop(oid, from) {
-    var x = optOf(oid);
-    if (!x) return;
+  function openPop(id, zone, from) {
+    var p = byId(id);
+    if (!p) return;
     needVeil();
     pop = document.createElement('div');
-    pop.className = 'sh-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true');
+    pop.className = 'sh-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); pop.setAttribute('data-id', id); pop.setAttribute('data-zone', zone || '');
     pop.innerHTML = '<div class="ok"><i>' + I.check + '</i>Adăugat în coș</div>' +
-      '<div class="it"><img src="' + esc(x.p.photo) + '" alt=""><div><b>' + esc(x.p.t) + '</b><small>' + esc(x.p.name) + ' · ' + esc(x.o.label) + '</small></div><div class="pr"><s>' + lei(x.o.full) + '</s><b>' + lei(x.o.price) + '</b></div></div>' +
+      '<div class="it"><span class="th"><img src="' + esc(p.photo) + '" alt=""></span><div><b>' + esc(nameOf(p, zone)) + '</b><small>1 ședință</small></div><div class="pr"><s>' + lei(p.full) + '</s><b>' + lei(p.price) + '</b></div></div>' +
+      (p.zones.length ? '<p class="zq">Ce zonă?</p><div class="bfc-opts zs">' + p.zones.map(function (x) { return '<button type="button" data-pzone="' + esc(x) + '" aria-pressed="' + (x === zone) + '">' + esc(x) + '</button>'; }).join('') + '</div>' : '') +
       '<button type="button" class="sh-go" data-checkout>Rezervă acum' + I.arrow + '</button>' +
       '<button type="button" class="sh-more" data-shop-on>Mai adaug și altele</button>';
     document.body.appendChild(pop);
     if (from && !reduce) { var r = from.getBoundingClientRect(), q = pop.getBoundingClientRect(); pop.style.transformOrigin = (r.left + r.width / 2 - q.left) + 'px ' + (r.top + r.height / 2 - q.top) + 'px'; }
     bar();
     requestAnimationFrame(function () { requestAnimationFrame(function () { pop.classList.add('on'); veil.classList.add('on'); }); });
+  }
+  // the zone picked in the popup: the cart's line follows
+  function popZone(zone) {
+    var id = pop && pop.getAttribute('data-id'), old = pop && pop.getAttribute('data-zone');
+    if (!id || zone === old) return;
+    var l = lineOf(id, old), other = lineOf(id, zone);
+    if (l && !other) l.zone = zone;
+    else if (l && other) { other.qty = Math.min(10, (other.qty || 1) + (l.qty || 1)); S.cart = S.cart.filter(function (x) { return x !== l; }); }
+    S.zone[id] = zone; save();
+    var p = byId(id);
+    pop.setAttribute('data-zone', zone);
+    $('.it b', pop).textContent = nameOf(p, zone);
+    $$('[data-pzone]', pop).forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-pzone') === zone)); });
+    repaint(id);
   }
   function closePop(then) {
     if (!pop) return;
@@ -205,7 +272,7 @@
     setTimeout(function () { p.remove(); bar(); if (then) then(); }, then ? 120 : 420);
   }
 
-  // ---- the checkout: grows from the bar; its panes slide (forward right to left, back left to right)
+  // ---- the checkout
   var sheet = null, sheetOn = false;
   var ORDER = ['cart', 'when', 'pay', 'done'];
   var TITLES = { cart: 'Coșul tău', when: 'Alege ora', pay: 'Plata', done: 'Gata' };
@@ -249,21 +316,20 @@
   }
   function pane(s) { return $('[data-pane="' + s + '"]', sheet); }
   function miniHtml(p) {
-    var o = p.options[0], has = !!inCart(p.id);
-    return '<div class="sh-mini"><img src="' + esc(p.photo) + '" alt=""><div><b>' + esc(p.t) + '</b><small>' + esc(p.name) + ' · <s>' + lei(o.full) + '</s> <em>' + lei(o.price) + '</em></small></div>' +
-      '<button type="button" class="sh-plus' + (has ? ' in' : '') + '" data-plus="' + esc(o.id) + '">' + (has ? '✓' : '+ Adaugă') + '</button></div>';
+    var z = zoneOf(p), has = !!lineOf(p.id, z);
+    return '<div class="sh-mini"><span class="th"><img src="' + esc(p.photo) + '" alt=""></span><div><b>' + esc(nameOf(p, z)) + '</b><small><s>' + lei(p.full) + '</s> <em>' + lei(p.price) + '</em></small></div>' +
+      '<button type="button" class="sh-plus' + (has ? ' in' : '') + '" data-plus="' + esc(p.id) + '" data-pz="' + esc(z) + '">' + (has ? '✓' : '+ Adaugă') + '</button></div>';
   }
   function tileHtml(p) {
-    var o = p.options[0], has = !!inCart(p.id);
-    return '<div class="sh-tile"><img src="' + esc(p.photo) + '" alt=""><span class="p">-' + D.terms.pct + '%</span><b>' + esc(p.t) + '</b><small><s>' + lei(o.full) + '</s> ' + lei(o.price) + '</small>' +
-      '<button type="button" class="' + (has ? 'in' : '') + '" data-plus="' + esc(o.id) + '">' + (has ? '✓ În coș' : '+ Adaugă') + '</button></div>';
+    var z = zoneOf(p), has = !!lineOf(p.id, z);
+    return '<div class="sh-tile"><img src="' + esc(p.photo) + '" alt=""><span class="p">-' + D.terms.pct + '%</span><b>' + esc(nameOf(p, z)) + '</b><small><s>' + lei(p.full) + '</s> ' + lei(p.price) + '</small>' +
+      '<button type="button" class="' + (has ? 'in' : '') + '" data-plus="' + esc(p.id) + '" data-pz="' + esc(z) + '">' + (has ? '✓ În coș' : '+ Adaugă') + '</button></div>';
   }
   function paneCart() {
     var el = pane('cart'), t = totals();
     if (!t.lines.length) { el.innerHTML = '<div class="sh-empty"><p>Coșul e gol.</p><button type="button" class="sh-go" data-close>Vezi ofertele</button></div>'; return; }
     var city = cityNow(), tmOnly = t.lines.some(function (x) { return x.p.cities.length === 1; });
     var mine = {}; t.lines.forEach(function (x) { mine[x.p.id] = 1; });
-    // „Merge super în combinație cu”: what goes with what she has, in her clinic
     var pairs = [];
     t.lines.forEach(function (x) { x.p.pairs.forEach(function (id) { var p = byId(id); if (p && !mine[p.id] && p.cities.indexOf(city) > -1 && pairs.indexOf(p) < 0) pairs.push(p); }); });
     pairs = pairs.slice(0, 3);
@@ -271,7 +337,9 @@
     el.innerHTML = (D.terms.bf ? '<div class="sh-clockline"><span>-' + D.terms.pct + '% se termină în</span><span class="sh-clock" data-sh-clock>' + left() + '</span></div>' : '') +
       '<ul class="sh-lines">' + t.lines.map(function (x) {
         var no = x.p.cities.indexOf(city) < 0;
-        return '<li><img src="' + esc(x.p.photo) + '" alt=""><div><b>' + esc(x.p.t) + '</b><small' + (no ? ' class="warn"' : '') + '>' + (no ? 'Doar în ' + esc(x.p.cities[0]) : esc(x.p.name.replace(/^Epilare laser · /, '')) + ' · ' + esc(x.o.label)) + '</small></div><div class="pr"><s>' + lei(x.o.full) + '</s><b>' + lei(x.o.price) + '</b></div><button type="button" class="sh-rm" data-rm="' + esc(x.o.id) + '" aria-label="Scoate din coș">' + I.x + '</button></li>';
+        return '<li><span class="th"><img src="' + esc(x.p.photo) + '" alt=""></span><div><b>' + esc(nameOf(x.p, x.zone)) + '</b>' + (no ? '<small class="warn">Doar în ' + esc(x.p.cities[0]) + '</small>' : '') +
+          '<span class="sh-qty"><button type="button" data-q="-1" data-k="' + esc(x.key) + '" aria-label="Mai puțin">−</button><b>' + x.qty + (x.qty === 1 ? ' ședință' : ' ședințe') + '</b><button type="button" data-q="1" data-k="' + esc(x.key) + '" aria-label="Încă o ședință">+</button></span></div>' +
+          '<div class="pr"><s>' + lei(x.p.full * x.qty) + '</s><b>' + lei(x.p.price * x.qty) + '</b></div></li>';
       }).join('') + '</ul>' +
       (pairs.length ? '<p class="sh-lab">Merge super <em>în combinație cu</em></p>' + pairs.map(miniHtml).join('') : '') +
       (rest.length ? '<p class="sh-lab">Alte oferte <em>-' + D.terms.pct + '%</em></p><div class="sh-rail">' + rest.map(tileHtml).join('') + '</div>' : '') +
@@ -281,16 +349,15 @@
       '<button type="button" class="sh-go" data-go="when">Alege ora' + I.arrow + '</button>' +
       '<p class="sh-fine">Plata doar online, cu cardul. Programarea se confirmă după plată.</p>';
   }
-  // the hour: her first session (the main treatment) or the free consultation
-  function mainLine() { return totals().lines.slice().sort(function (a, b) { return b.o.full - a.o.full; })[0]; }
+  function mainLine() { return totals().lines.slice().sort(function (a, b) { return b.p.full - a.p.full; })[0]; }
   function paneWhen() {
     var el = pane('when'), m = mainLine();
     if (!m) { go('cart'); return; }
     S.city = cityNow(); save();
     fev('checkout');
-    px('InitiateCheckout', { value: totals().amount, currency: 'RON', num_items: totals().lines.length });
+    px('InitiateCheckout', { value: totals().amount, currency: 'RON', num_items: totals().n });
     el.innerHTML = '<div class="sh-visit">' +
-      '<button type="button" data-visit="first" aria-pressed="' + (S.visit === 'first') + '"><b>Încep direct</b><small>Prima ședință: ' + esc(m.p.t) + ' · ' + m.o.minutes + ' min</small></button>' +
+      '<button type="button" data-visit="first" aria-pressed="' + (S.visit === 'first') + '"><b>Încep direct</b><small>Prima ședință: ' + esc(nameOf(m.p, m.zone)) + ' · ' + m.p.minutes + ' min</small></button>' +
       '<button type="button" data-visit="consult" aria-pressed="' + (S.visit === 'consult') + '"><b>Vin întâi la consultația gratuită</b><small>30 min · îți spunem ce ți se potrivește</small></button></div>' +
       '<p class="sh-lab">Ziua · Centrul360 ' + esc(S.city) + '</p><div data-days><div class="sh-wait">Caut orele libere…</div></div><div data-slots></div>' +
       '<button type="button" class="sh-go" data-go="pay" ' + (S.time ? '' : 'disabled') + '>Plătește ' + lei(totals().amount) + I.arrow + '</button>';
@@ -299,10 +366,10 @@
   var daysKey = '';
   function days() {
     var m = mainLine(), el = pane('when');
-    var k = S.city + '|' + S.visit + '|' + (S.visit === 'first' ? m.o.id : '');
+    var k = S.city + '|' + S.visit + '|' + (S.visit === 'first' ? m.p.ref : '');
     if (k !== daysKey) { daysKey = k; S.days = null; S.date = ''; S.time = ''; }
     if (S.days) { drawDays(); return; }
-    var url = '/api/booking?city=' + encodeURIComponent(S.city) + (S.visit === 'consult' ? '&service=consult' : '&service=custom&treatment=' + encodeURIComponent(m.o.id));
+    var url = '/api/booking?city=' + encodeURIComponent(S.city) + (S.visit === 'consult' ? '&service=consult' : '&service=custom&treatment=' + encodeURIComponent(m.p.ref));
     fetch(url, { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (d) {
       if (k !== daysKey) return;
       S.days = (d && d.on && d.days) || [];
@@ -326,7 +393,6 @@
   }
   function nice(date) { var x = new Date(date + 'T12:00:00'); return WDL[x.getDay()] + ' ' + x.getDate() + ' ' + MO[x.getMonth()]; }
 
-  // the payment: the hour held on the server with the cart (/api/shop hold), then the card form in the pane
   var payP = null;
   function payScript() {
     if (window.C360Pay) return Promise.resolve(window.C360Pay);
@@ -348,7 +414,7 @@
       return P.ready().then(function (on) {
         if (S.payRun !== mine) return;
         if (!on) { $('[data-pay]', el).innerHTML = '<div class="sh-alert">Plata online nu e pornită încă pe această pagină.</div>'; return; }
-        var holdP = fetch('/api/shop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'hold', city: S.city, items: t.lines.map(function (x) { return x.o.id; }), visit: S.visit, date: S.date, time: S.time, page: location.pathname, src: src }) })
+        var holdP = fetch('/api/shop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'hold', city: S.city, items: t.lines.map(function (x) { return { id: x.p.id, zone: x.zone, qty: x.qty }; }), visit: S.visit, date: S.date, time: S.time, page: location.pathname, src: src }) })
           .then(function (r) { return r.json(); }, function () { return { error: 'net' }; })
           .then(function (d) {
             if (S.payRun !== mine) { if (d && d.hold) fetch('/api/booking', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ release: d.hold.id, key: d.hold.key }) }).catch(function () {}); return Promise.reject({ code: 'gone' }); }
@@ -359,7 +425,7 @@
         var me = null; try { me = JSON.parse(localStorage.getItem('c360-book-me') || 'null'); } catch (e) { /* none */ }
         P.open({
           kind: 'shop', ref: holdP, city: S.city, page: location.pathname, mount: $('[data-pay]', el),
-          preview: { amount: t.amount, full: t.full, title: t.lines.map(function (x) { return x.p.t; }).join(' + '), bonusText: '-' + D.terms.pct + '% Black Friday' },
+          preview: { amount: t.amount, full: t.full, title: t.lines.map(function (x) { return nameOf(x.p, x.zone) + (x.qty > 1 ? ' × ' + x.qty : ''); }).join(' + '), bonusText: '-' + D.terms.pct + '% Black Friday' },
           contact: me && me.name ? { name: me.name, phone: me.phone } : undefined,
           onContact: function (c) { try { localStorage.setItem('c360-book-me', JSON.stringify({ name: c.name, phone: c.phone })); } catch (e) { /* private mode */ } },
           onError: function (code) {
@@ -369,9 +435,9 @@
           },
           onPaid: function (r) {
             if (S.payRun !== mine) return;
-            S.paid = { amount: r.amount || t.amount, confirmed: r.confirmed, date: S.date, time: S.time, city: S.city, lines: t.lines.map(function (x) { return x.p.t + ' · ' + x.o.label; }), visit: S.visit };
+            S.paid = { amount: r.amount || t.amount, confirmed: r.confirmed, date: S.date, time: S.time, city: S.city, lines: t.lines.map(function (x) { return nameOf(x.p, x.zone) + ' · ' + x.qty + (x.qty === 1 ? ' ședință' : ' ședințe'); }), visit: S.visit };
             S.hold = null; S.cart = []; save(); S.time = ''; S.days = null; daysKey = '';
-            go('done'); bar(); repaintAll();
+            go('done'); bar(); headCart(); repaintAll();
           },
         });
       });
@@ -391,23 +457,21 @@
   document.addEventListener('click', function (e) {
     var t = e.target;
     var card = t.closest('.bfc[data-p]');
-    // a card on the side of the slider comes to the middle first
     if (card && card.closest('.bfs-st') && card.getAttribute('data-pos') !== '0') {
       if (SL.swiped && Date.now() - SL.swiped < 400) return;
       SL.i = $$('.bfs-st > .bfc', SL.el).indexOf(card); place(); pause(); return;
     }
-    var opt = t.closest('[data-opt]');
-    if (opt && card) { var pid = card.getAttribute('data-p'); S.sel[pid] = opt.getAttribute('data-opt'); if (inCart(pid)) add(S.sel[pid]); else repaint(pid); pause(); return; }
+    var pz = t.closest('[data-pzone]'); if (pz) { popZone(pz.getAttribute('data-pzone')); return; }
     var a = t.closest('[data-add]');
-    if (a && card) { var p = byId(card.getAttribute('data-p')), oid = selOf(p); pause(); if (inCart(p.id) !== oid) add(oid); openPop(oid, a); return; }
+    if (a && card) { var p = byId(card.getAttribute('data-p')), z = zoneOf(p); pause(); if (S.cart.some(function (l) { return l.id === p.id; })) { openSheet('cart'); return; } add(p.id, z, a); openPop(p.id, z, a); return; }
     if (t.closest('[data-checkout]')) { closePop(function () { openSheet('cart'); }); return; }
     if (t.closest('[data-shop-on]')) { closePop(); return; }
-    var plus = t.closest('[data-plus]'); if (plus) { var x = optOf(plus.getAttribute('data-plus')); if (x && inCart(x.p.id)) remove(inCart(x.p.id)); else add(plus.getAttribute('data-plus')); return; }
+    var plus = t.closest('[data-plus]'); if (plus) { var id = plus.getAttribute('data-plus'), pz = plus.getAttribute('data-pz') || ''; if (lineOf(id, pz)) setQty(keyOf(id, pz), -99); else add(id, pz); return; }
+    var q = t.closest('[data-q]'); if (q) { setQty(q.getAttribute('data-k'), Number(q.getAttribute('data-q'))); return; }
     if (t.closest('[data-cart]')) { openSheet('cart'); return; }
     if (t.closest('[data-close]')) { closeSheet(); return; }
     if (t.closest('[data-back]')) { go(ORDER[Math.max(0, ORDER.indexOf(S.step) - 1)]); return; }
     var gg = t.closest('[data-go]'); if (gg && sheet && sheet.contains(gg)) { go(gg.getAttribute('data-go')); return; }
-    var rm = t.closest('[data-rm]'); if (rm) { remove(rm.getAttribute('data-rm')); return; }
     var c = t.closest('[data-city]'); if (c && !c.disabled) { S.city = c.getAttribute('data-city'); save(); paneCart(); return; }
     var n = t.closest('[data-need]'); if (n) { S.need = n.getAttribute('data-need'); grid(); return; }
     var v = t.closest('[data-visit]'); if (v) { S.visit = v.getAttribute('data-visit'); $$('[data-visit]', sheet).forEach(function (b) { b.setAttribute('aria-pressed', String(b === v)); }); days(); return; }
@@ -420,12 +484,13 @@
     return fetch('/api/shop', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (d) {
       if (!d || !d.ok) return;
       D = d; offset = d.terms.now - Date.now();
-      var known = {}; d.products.forEach(function (p) { p.options.forEach(function (o) { known[o.id] = 1; }); });
-      S.cart = S.cart.filter(function (id) { return known[id]; });
-      slider(); grid(); bar(); tick();
+      S.cart = S.cart.filter(function (l) { return l && byId(l.id); });
+      slider(); grid(); headCart(); bar(); tick();
       if (/[?&#]cos\b/.test(location.search + location.hash) && lines().length) openSheet('cart');
     }).catch(function () { var g = $('[data-bfo-grid]') || $('[data-bfs]'); if (g) g.innerHTML = '<div class="sh-alert">Nu am putut încărca ofertele. Reîncarcă pagina.</div>'; });
   }
+  // the preview: the menu's Black Friday links go to the preview's offers page
+  if (/^\/v2\//.test(location.pathname)) $$('a[href="/v2/oferte"]').forEach(function (a) { a.setAttribute('href', '/v2/oferte-bf'); });
   window.C360Shop = { add: add, open: function () { openSheet('cart'); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
   setInterval(tick, 1000);

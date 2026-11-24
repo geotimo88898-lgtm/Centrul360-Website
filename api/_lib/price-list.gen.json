@@ -171,6 +171,20 @@
    ]
   },
   {
+   "id": "faciale-tratament-restart-1-sedinta",
+   "group": "faciale",
+   "title": "Tratamente faciale · Tratament Restart · 1 ședință",
+   "price": 300,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 50,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
    "id": "faciale-tratament-restart-2-sedinte",
    "group": "faciale",
    "title": "Tratamente faciale · Tratament Restart · 2 ședințe",
@@ -507,6 +521,20 @@
    ]
   },
   {
+   "id": "liposonix-o-zona-corporala-1-sedinta",
+   "group": "liposonix",
+   "title": "Liposonix · O zonă corporală · 1 ședință",
+   "price": 640,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 45,
+   "cat": "corporale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
    "id": "liposonix-o-zona-corporala-2-sedinte",
    "group": "liposonix",
    "title": "Liposonix · O zonă corporală · 2 ședințe",
@@ -596,6 +624,20 @@
    "cat": "corporale",
    "cities": [
     "Timișoara"
+   ]
+  },
+  {
+   "id": "cavitatie-o-zona-corporala-1-sedinta",
+   "group": "cavitatie",
+   "title": "Cavitație · O zonă corporală · 1 ședință",
+   "price": 280,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 60,
+   "cat": "corporale",
+   "cities": [
+    "Timișoara",
+    "Arad"
    ]
   },
   {

@@ -56,50 +56,50 @@ const H = require(path.join(LIB, 'booking-holds.js'));
 (async () => {
   // ---- the catalog and the prices
   const tm = S.catalog('Timișoara'), ar = S.catalog('Arad');
-  check('catalog: Timișoara has EMS, împachetare and epilare; Arad has none of them', tm.some((p) => p.id === 'ems-o-zona') && tm.some((p) => p.need === 'epilare') && !ar.some((p) => p.need === 'epilare' || /^ems|impachetare/.test(p.id)), ar.map((p) => p.id));
-  const lipo = tm.find((p) => p.id === 'liposonix-o-zona-corporala');
-  check('Liposonix 2 ședințe: 980 → 490 during Black Friday', lipo && lipo.options[0].full === 980 && lipo.options[0].price === 490, lipo && lipo.options);
-  check('every product has options, a picture and words', tm.concat(ar).every((p) => p.options.length && p.img && p.d));
+  check('catalog: Timișoara has EMS, împachetare and epilare; Arad has none of them', tm.some((p) => p.id === 'ems') && tm.some((p) => p.need === 'epilare') && !ar.some((p) => p.need === 'epilare' || /^ems|impachetare/.test(p.id)), ar.map((p) => p.id));
+  const lipo = tm.find((p) => p.id === 'liposonix');
+  check('Liposonix, one session, one zone: 640 → 320 during Black Friday (the owner: 2 zones = 1.280)', lipo && lipo.full === 640 && lipo.price === 320, lipo);
+  check('one session only: no packages, no combined offers (no EMS 2 zones, no „Gușă + Contur” name)', tm.every((p) => p.full > 0 && !/\+|2 zone/.test(p.name)) && !tm.some((p) => /2-zone/.test(p.ref)), tm.map((p) => p.name));
+  check('short names, a zone where it has one, two short lines', tm.concat(ar).every((p) => p.name.length <= (p.need === "epilare" ? 40 : 26) && p.b.length >= 2 && p.b.every((x) => x.length <= 36)), tm.filter((p) => p.name.length > (p.need === "epilare" ? 40 : 26) || p.b.some((x) => x.length > 36)).map((p) => p.name));
   check('pairs only of the same city', ar.every((p) => p.pairs.every((id) => ar.some((x) => x.id === id))));
-  // ---- the cart
-  let q;
-  const ems = tm.find((p) => p.id === 'ems-o-zona');
-  q = await S.quote('Timișoara', [lipo.options[0].id, ems.options[1].id]);
-  check('cart: 980 + 1050 → 490 + 525 = 1015, saved 1015', q.amount === 1015 && q.full === 2030 && q.saved === 1015, q);
+  let q = await S.quote('Timișoara', [{ id: 'liposonix', zone: 'Abdomen', qty: 2 }, { id: 'ems', zone: 'Coapse' }]);
+  check('cart: Liposonix Abdomen × 2 (2 × 320) + EMS Coapse (125) = 765, full 1.530', q.amount === 765 && q.full === 1530 && q.saved === 765, q);
+  check('the names carry the zone', q.lines[0].name === 'Liposonix Abdomen' && q.lines[1].name === 'EMS Coapse' && S.summary(q) === 'Liposonix Abdomen × 2 + EMS Coapse', S.summary(q));
+  check('a zone that is not the product’s: its first zone', (await S.quote('Timișoara', [{ id: 'liposonix', zone: 'Nas' }])).lines[0].zone === 'Abdomen');
+  check('at most 10 sessions of one', (await S.quote('Timișoara', [{ id: 'liposonix', qty: 99 }])).lines[0].qty === 10);
   check('no volume bonuses for now', q.reached.length === 0 && !q.next, q.reached);
-  check('the main treatment is the dearest (EMS 6 ședințe, 30 min)', q.main.minutes === 30 && q.main.id === ems.options[1].id, q.main);
-  check('EMS in Arad: not in the city', (await S.quote('Arad', [ems.options[1].id])).error === 'not_in_city');
+  check('the main treatment is the dearest session (Liposonix, 45 min)', q.main.minutes === 45 && q.main.id === 'liposonix-o-zona-corporala-1-sedinta', q.main);
+  check('EMS in Arad: not in the city', (await S.quote('Arad', [{ id: 'ems' }])).error === 'not_in_city');
   check('an empty cart', (await S.quote('Timișoara', [])).error === 'empty');
+  check('the massage is in the list: 120 → 60', (tm.find((p) => p.id === 'masaj-facial') || {}).price === 60);
   // ---- after Black Friday: the list price minus the usual online bonus
   setNow('2026-11-27T22:00:01Z');
-  q = await S.quote('Timișoara', [lipo.options[0].id]);
-  check('after 27.11 23:59:59: 980 minus 10% = 882, not -50%', q.amount === 882 && !q.bf, q);
+  q = await S.quote('Timișoara', [{ id: 'liposonix' }]);
+  check('after 27.11 23:59:59: 640 minus 10% = 576, not -50%', q.amount === 576 && !q.bf, q);
   setNow('2026-11-27T21:59:58Z');
-  check('one second before the end: still -50%', (await S.quote('Timișoara', [lipo.options[0].id])).amount === 490);
+  check('one second before the end: still -50%', (await S.quote('Timișoara', [{ id: 'liposonix' }])).amount === 320);
   setNow('2026-11-25T10:00:00Z');
-  // ---- the owner's numbers replace the steps
   await store.writeJSON('data/shop-bonus.json', { tiers: [{ at: 600, title: 'Test' }] });
-  check('data/shop-bonus.json replaces the steps', (await S.tiers()).length === 1 && (await S.tiers())[0].at === 600);
+  check('data/shop-bonus.json brings the steps back', (await S.tiers()).length === 1 && (await S.tiers())[0].at === 600);
   await store.writeJSON('data/shop-bonus.json', null);
-  check('every product has its cut-out photo and real benefits', tm.concat(ar).every((p) => /^\/brand_asset\/[a-z0-9/-]+\.webp$/.test(p.photo) && p.b.length), tm.filter((p) => !p.b.length).map((p) => p.id));
   // ---- the payment's sum comes from the hold's cart, never the page
-  const h = await H.add({ key: 'k', city: 'Timișoara', svc: { id: 'custom', title: 'Prima ședință · comandă online: x', price: 1015, old: 2030, minutes: 45, cat: 'corporale', treatment: lipo.options[0].id },
-    cart: { items: [lipo.options[0].id, ems.options[1].id], visit: 'first' }, date: '2026-11-26', time: '10:00', endTime: '10:45' });
+  const h = await H.add({ key: 'k', city: 'Timișoara', svc: { id: 'custom', title: 'Prima ședință · comandă online: Liposonix Abdomen × 2 + EMS Coapse', price: 765, old: 1530, minutes: 45, cat: 'corporale', treatment: lipo.ref },
+    cart: { items: [{ id: 'liposonix', zone: 'Abdomen', qty: 2 }, { id: 'ems', zone: 'Coapse' }], visit: 'first' }, date: '2026-11-26', time: '10:00', endTime: '10:45' });
   const pq = await P.KINDS.shop.quote({ ref: h.id, input: { amount: 1 } });
-  check('pay quote: 1015 lei, full 2030, -50% Black Friday', pq.amount === 1015 && pq.full === 2030 && pq.bonus.type === 'pct' && pq.bonus.pct === 50, pq);
+  check('pay quote: 765 lei, full 1.530, -50% Black Friday', pq.amount === 765 && pq.full === 1530 && pq.bonus.type === 'pct' && pq.bonus.pct === 50, pq);
   setNow('2026-11-25T10:20:00Z');
   check('the hold ran out (15 min): nothing to pay', (await P.KINDS.shop.quote({ ref: h.id })).error === 'expired');
   // ---- paid (myPOS's signed word, pay.js markPaid → the handler): the booking made from the hold, paid, in Încasări
   setNow('2026-11-25T10:05:00Z');
   await H.patch(h.id, (x) => { x.contact = { name: 'Proba Test', phone: '0700000123', consent: true }; });
-  const o = { id: 'C360-test1', kind: 'shop', ref: h.id, amount: 1015, full: 2030, bonus: pq.bonus, title: pq.title, city: 'Timișoara', name: 'Proba Test', phone: '0700000123', mypos: { ref: 'R1', at: new RealDate(NOW).toISOString() }, paidAt: new RealDate(NOW).toISOString() };
+  const o = { id: 'C360-test1', kind: 'shop', ref: h.id, amount: 765, full: 1530, bonus: pq.bonus, title: pq.title, city: 'Timișoara', name: 'Proba Test', phone: '0700000123', mypos: { ref: 'R1', at: new RealDate(NOW).toISOString() }, paidAt: new RealDate(NOW).toISOString() };
   const r = await P.KINDS.shop.paid(o).catch((e) => ({ err: e.message, stack: e.stack }));
   const appts = await store.readJSON('data/appointments.json', []);
   const a = appts.find((x) => x.id === r.appt);
-  check('paid: the booking is made, confirmed and paid online (1015 lei)', a && a.pay === 'online-paid' && a.paidOnline.amount === 1015 && a.status === 'confirmata' && a.date === '2026-11-26' && a.time === '10:00', r);
-  check('the booking says what was bought', a && /comandă online/.test(a.treatment) && /Plată online 1015 lei/.test(a.note), a && { t: a.treatment, n: a.note });
+  check('paid: the booking is made, confirmed and paid online (765 lei)', a && a.pay === 'online-paid' && a.paidOnline.amount === 765 && a.status === 'confirmata' && a.date === '2026-11-26' && a.time === '10:00', r);
+  check('the booking says what was bought', a && /comandă online/.test(a.treatment) && /Plată online 765 lei/.test(a.note), a && { t: a.treatment, n: a.note });
   const sale = (await store.readJSON('data/sales.json', [])).find((x) => x.id === r.sale);
-  check('a row in Încasări, 1015 lei, card, online', sale && sale.amount === 1015 && sale.method === 'card', sale);
+  check('a row in Încasări, 765 lei, card, online', sale && sale.amount === 765 && sale.method === 'card', sale);
   check('the hold knows its booking', (await H.get(h.id)).bookingId === a.id);
   const r2 = await P.KINDS.shop.paid(o);
   check('the handler twice: one booking, one sale', r2.appt === a.id && (await store.readJSON('data/appointments.json', [])).length === 1 && (await store.readJSON('data/sales.json', [])).length === 1, r2);
