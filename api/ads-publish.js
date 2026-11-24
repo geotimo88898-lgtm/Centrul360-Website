@@ -320,7 +320,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET' && req.query && req.query.action === 'once_state') {
       const job = String(req.query.job || '').slice(0, 80);
       const d = (await readJSON('data/ads-once.json', {})) || {};
-      res.status(200).json({ ok: true, job, done: (d.done || {})[job] || '', state: (d.forms || {})[job] || null, log: (d.log || []).filter((e) => e.job === job).slice(-20), running: d.running || null });
+      res.status(200).json({ ok: true, job, done: (d.done || {})[job] || '', state: (d.forms || {})[job] || (d.b2b || {})[job] || null, log: (d.log || []).filter((e) => e.job === job).slice(-20), running: d.running || null });
       return;
     }
     // read only, a dry run (23.11): what a new lead on this form would become, the way api/_lib/fb-leads.js and

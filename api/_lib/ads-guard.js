@@ -208,8 +208,9 @@ async function check(o, now, doc) {
   const mine = portalLeads(allLeads, since, until);
   // a job ad (api/_lib/hire-once.js) brings candidates, not clients: no booking or money to judge it by
   // and the Card de Sărbători's site ads (21.11) sell on the page, not with a form: judged on checkouts and cards sold
-  // (the hourly review), never on leads here
-  const job = (name) => /angajare|·\s*CARD\s*·/i.test(String(name || ''));
+  // (the hourly review), never on leads here; nor the Elysion Pro laser sold to salons (24.11, a B2B sale of 94.900 lei:
+  // a lead there isn't worth what a client's is, George set its 100 lei a day)
+  const job = (name) => /angajare|·\s*CARD\s*·|elysion/i.test(String(name || ''));
   const rows = res.rows.filter((x) => !job(x.campaignName)).map((x) => Object.assign({}, x, { leads: Math.max(x.metaLeads, mine.ad.get(x.adId) || 0) }));
   const spent = rows.reduce((n, x) => n + x.spend, 0), got = rows.reduce((n, x) => n + x.leads, 0);
   if (spent >= SUSPECT_SPEND && !got) {

@@ -142,7 +142,53 @@ const CARD_FORM = { id: 'card-form-tm-2026-11-23', why: 'Cardul de Sărbători p
           '👉 Completează formularul și îți trimitem cardul pe WhatsApp\ncentrul360.com\n📍 Timișoara',
         headlines: ['ALEGE CARDUL: PLĂTEȘTI 990, PRIMEȘTI 2.500 👉', 'AU MAI RĂMAS DOAR 4 CARDURI ⏰💨', 'CARDUL VIP: PLĂTEȘTI 9.900, PRIMEȘTI 30.000 👉'], description: 'Valabil până pe 30.06.2027' },
     ] }] } };
+// 24.11, George: „da publică, 100 lei pe zi”: the clinic's used Elysion Pro laser sold to beauty salons (B2B, not a
+// treatment). Its own instant form (Higher intent, 4 questions + the salon's city, a call at the end; the portal's form
+// builder asks 3 questions, a clinic and a WhatsApp ending, so this one is posted to the Page as it is), registered as
+// kind 'b2b' (api/_lib/fb-leads.js): its leads come into the Pipeline as „Vânzare laser Elysion Pro”, no offer, no
+// welcome, no message to them, only the team's alert. Then one campaign (leads), one ad set (all of Romania, 25-60,
+// everyone, Advantage+ audience and placements, 100 lei a day), one ad (the picture, 3 titles); made paused, switched
+// on once the ad is there (ads.publish)
+const ELYSION_TEXT = 'PROPRIETARI DE SALOANE DIN ROMÂNIA! Vindem laserul nostru de epilare definitivă Elysion Pro, folosit doar 6 luni: 94.900 lei.\n\n' +
+  '✅ Laser cu diodă 810 nm, standardul pentru epilare definitivă\n' +
+  '✅ Pentru toate tipurile de piele\n' +
+  '✅ Producător european: Cocoon Medical (Spania)\n' +
+  '✅ Răcire integrată, ședințe confortabile pentru cliente\n' +
+  '✅ Gata de lucru din prima zi\n' +
+  '✅ Oferim factură\n\n' +
+  '🎁 Îți aducem GARANTAT primii 20 de clienți pe el\n' +
+  '➕ Aparat HIFU, în valoare de 6.000 lei, inclus\n' +
+  '➕ Aparat Liposonix, în valoare de 17.000 lei, inclus\n' +
+  '➕ Mesopen Beauty One, în valoare de 3.000 lei, inclus\n' +
+  '🚚 Livrare personală gratuită oriunde în țară\n\n' +
+  'Un singur aparat. Când se vinde, anunțul dispare.\n\n' +
+  '📞 Sună acum: 0726 088 115 sau completează formularul și te sunăm azi.';
+const choices = (key, list) => list.map((value, k) => ({ value, key: key + '_' + (k + 1) }));
+const ELYSION = { id: 'elysion-sale-2026-11-24', why: 'Vânzare laser Elysion Pro către saloane: formular nou, 100 lei/zi', b2b: {
+  interest: 'Vânzare laser Elysion Pro',
+  form: {
+    name: 'Elysion Pro · vânzare · saloane',
+    intro: { title: 'Laser Elysion Pro · 94.900 lei', text: 'Folosit doar 6 luni. Îți aducem GARANTAT primii 20 de clienți, plus aparat HIFU, Liposonix și Mesopen incluse. Livrare personală gratuită oriunde în țară. Răspunde la 4 întrebări și te sunăm azi.' },
+    questions: [
+      { type: 'CUSTOM', key: 'are_salon', label: 'Ai deja un salon sau o clinică?', options: choices('are_salon', ['Da, am salon sau clinică', 'Îmi deschid unul în curând', 'Nu, cumpăr pentru mine']) },
+      { type: 'CUSTOM', key: 'face_epilare', label: 'Faceți deja epilare laser?', options: choices('face_epilare', ['Da, cu alt aparat', 'Nu încă, vreau să încep']) },
+      { type: 'CUSTOM', key: 'cand_cumpara', label: 'Când vrei să cumperi?', options: choices('cand_cumpara', ['Luna asta', 'În 1-3 luni', 'Doar mă informez']) },
+      { type: 'CUSTOM', key: 'cum_plateste', label: 'Cum ai plăti cei 94.900 lei?', options: choices('cum_plateste', ['Integral', 'Leasing sau credit', 'Încă nu știu']) },
+      { type: 'CUSTOM', key: 'oras_salon', label: 'În ce oraș e salonul?' },
+      { type: 'FULL_NAME' }, { type: 'PHONE' },
+    ],
+    ending: { title: 'Mulțumim! 🤍', body: 'Te sunăm azi să-ți spunem toate detaliile despre aparat și cum îți aducem primii 20 de clienți. Vrei să vorbim acum?', button_type: 'CALL_BUSINESS', button_text: 'Sună acum', business_phone_number: '+40726088115' },
+  },
+  campaign: { name: 'C360 · Vânzare laser Elysion Pro · formular', adsetName: 'România · 25-60 · saloane · Advantage+', adName: 'Elysion Pro · vânzare · saloane',
+    budget: 100, ages: [25, 60], image: 'elysion-vanzare-4.jpg', cta: 'APPLY_NOW', text: ELYSION_TEXT,
+    headlines: ['Laser Elysion Pro · 94.900 lei', '+ 20 de clienți garantați și 3 aparate cadou', 'Epilare laser pentru salonul tău, gata de lucru'],
+    description: 'Folosit doar 6 luni · livrare gratuită în toată țara',
+    // a hint for Advantage+ audience (Meta's own names, looked up in its targeting search; one not found is left out)
+    interests: ['Beauty salon', 'Cosmetics', 'Aesthetics', 'Laser hair removal'], behaviors: ['Small business owners'] },
+} };
 const JOBS = [
+  // 24.11, George: „da publică, 100 lei pe zi” (the Elysion Pro laser for sale to salons, ELYSION above)
+  ELYSION,
   // 24.11 ~16:40, George: „nu mai tratament faciale, stinge-le pe alea”
   { id: 'facial-off-2026-11-24', act: 'act_4502494523405059', why: 'George: fără tratamente faciale', actions: [
     { campaignId: '120251418278340103', name: 'TM RESTART · fără ace', status: 'PAUSED', why: 'George: nu mai tratamente faciale' },
@@ -859,6 +905,59 @@ async function siteSummary() {
   return out;
 }
 
+// the B2B job's form (ELYSION): Meta's parameters, as fb-form-create.js builds them but with its own questions and ending;
+// v: 0 as given, 1 the intro as a list of its sentences, 2 that and the ending's title without the emoji
+function b2bFormParams(f, v) {
+  const sentences = String(f.intro.text).split(/(?<=\.)\s+/).filter(Boolean).slice(0, 5);
+  const p = {
+    name: f.name, locale: 'RO_RO', questions: f.questions,
+    privacy_policy: { url: 'https://www.centrul360.com/politica-de-confidentialitate', link_text: 'Politica de confidențialitate' },
+    follow_up_action_url: 'https://www.centrul360.com', block_display_for_non_targeted_viewer: true,
+    is_optimized_for_quality: true, // „Higher intent”: a review screen before sending
+    context_card: v >= 1 ? { title: f.intro.title, style: 'LIST_STYLE', content: sentences, button_text: 'Continuă' } : { title: f.intro.title, style: 'PARAGRAPH_STYLE', content: [f.intro.text], button_text: 'Continuă' },
+    thank_you_page: Object.assign({}, f.ending, { country_code: 'RO' }, v >= 2 ? { title: String(f.ending.title).replace(/[^\p{L}\p{N} .,!?]/gu, '').trim() } : {}),
+  };
+  return p;
+}
+// Meta's ids for the audience hint (its targeting search): an interest or behaviour of exactly that name, else the first
+// whose name holds it; one not found is left out (written down)
+async function b2bHints(conn, interests, behaviors) {
+  const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  const pick = (list, w) => list.find((x) => fold(x.name) === fold(w)) || list.find((x) => fold(x.name).includes(fold(w)));
+  const out = { interests: [], behaviors: [], missing: [] };
+  for (const w of interests) {
+    const r = await ads.call('GET', '/search', conn.userToken, { type: 'adinterest', q: w, limit: '25', locale: 'en_US' });
+    const hit = r.ok ? pick(r.j.data || [], w) : null;
+    if (hit) out.interests.push({ id: String(hit.id), name: hit.name }); else out.missing.push(w + (r.ok ? '' : ' (căutarea: ' + ((r.j.error || {}).message || 'eroare') + ')'));
+  }
+  if (behaviors.length) {
+    const r = await ads.call('GET', '/search', conn.userToken, { type: 'adTargetingCategory', class: 'behaviors', limit: '1000', locale: 'en_US' });
+    const list = r.ok ? r.j.data || [] : [];
+    for (const w of behaviors) {
+      const hit = pick(list, w);
+      if (hit) { out.behaviors.push({ id: String(hit.id), name: hit.name }); continue; }
+      // not a behaviour: maybe an interest of that name
+      const r2 = await ads.call('GET', '/search', conn.userToken, { type: 'adinterest', q: w, limit: '25', locale: 'en_US' });
+      const hit2 = r2.ok ? pick(r2.j.data || [], w) : null;
+      if (hit2) out.interests.push({ id: String(hit2.id), name: hit2.name }); else out.missing.push(w);
+    }
+  }
+  return out;
+}
+// the ad set's audience: all of Romania, the ages, everyone, Advantage+ audience on (the hints as suggestions), no
+// placements named (Advantage+ placements). v: 0 the ages as asked; 1 Meta's way with Advantage+ audience (the youngest
+// age as a control, 25-60 as its suggestion); 2 the youngest age alone; 3 as 1 without the hints
+function b2bTargeting(c, hints, v) {
+  const t = { geo_locations: { countries: ['RO'], location_types: ['home', 'recent'] }, age_min: c.ages[0], targeting_automation: { advantage_audience: 1 } };
+  if (v === 0) t.age_max = c.ages[1];
+  if (v === 1 || v === 3) { t.age_max = 65; t.age_range = [c.ages[0], c.ages[1]]; }
+  const spec = {};
+  if (hints.interests.length) spec.interests = hints.interests;
+  if (hints.behaviors.length) spec.behaviors = hints.behaviors;
+  if (v !== 3 && Object.keys(spec).length) t.flexible_spec = [spec];
+  return t;
+}
+
 async function run() {
   // a read that fails throws: nothing is applied and nothing overwritten this hour (a doc read as empty would apply
   // every job again, on an account that is already as the owners want it)
@@ -1215,6 +1314,100 @@ async function run() {
         await tell({ tone: 'bad', tag: 'once-fail-' + j.id, title: 'NU ÎNCĂ ⚠️ - ' + j.why, text: 'Meta a refuzat, mai încerc din oră în oră: ' + failed });
       }
     }
+    // a B2B sale (24.11, ELYSION): its own form on the Page (registered as kind 'b2b'), then the campaign; every id written
+    // down the moment Meta gives it, so a run cut short never makes a second form or campaign
+    for (const j of todo.filter((x) => x.b2b)) {
+      const B = j.b2b, c = B.campaign;
+      doc.b2b = doc.b2b || {};
+      const st = doc.b2b[j.id] = doc.b2b[j.id] || {};
+      const store = { readJSON, writeJSON };
+      const fail = async (why) => {
+        st.error = why; st.tries = (st.tries || 0) + 1; await save();
+        console.error('ads-once b2b:', j.id, why);
+        if (expired(j) || st.tries >= 6) {
+          doc.done[j.id] = new Date().toISOString(); doc.log.push({ job: j.id, at: new Date().toISOString(), expired: true, why }); await save();
+          await tell({ tone: 'bad', tag: 'once-expired-' + j.id, title: 'NEFĂCUT ⚠️ - ' + j.why, text: why });
+        } else { problems.push(why); await tell({ tone: 'bad', tag: 'once-fail-' + j.id, title: 'NU ÎNCĂ ⚠️ - ' + j.why, text: 'Mai încerc: ' + why }); }
+      };
+      if (!ads.ours(conn, c.name)) { await fail(c.name + ': numele nu e al nostru în contul conectat'); continue; }
+      if (st.making && Date.now() - Date.parse(st.making) < 10 * 60e3) { problems.push(j.id + ': se face deja'); continue; }
+      // 1. the form: one of the same name already on the Page (a run cut short) is taken, else it is made
+      if (!st.formId) {
+        const have = await ads.call('GET', '/' + conn.pageId + '/leadgen_forms', conn.pageAccessToken, { fields: 'id,name,status', limit: '200' });
+        const same = have.ok ? (have.j.data || []).find((x) => x.name === B.form.name && x.status !== 'ARCHIVED') : null;
+        if (same) st.formId = String(same.id);
+        else {
+          const tries = [];
+          let r = null;
+          for (const v of [0, 1, 2]) {
+            r = await require('./fb-form-create').postForm(store, b2bFormParams(B.form, v));
+            if (r.id) { st.formVariant = v; break; }
+            tries.push(r.error);
+            if (/pages_manage_ads|nu e conectat/.test(r.error || '')) break; // a permission: another shape won't help
+          }
+          if (!r || !r.id) { await fail('formularul: ' + tries.join(' | ')); continue; }
+          st.formId = r.id;
+        }
+        st.formAt = new Date().toISOString(); await save();
+        doc.log.push({ job: j.id, at: new Date().toISOString(), formId: st.formId, why: 'formularul ' + B.form.name + (same ? ' (găsit pe Pagină)' : ' făcut') });
+        await save();
+      }
+      // 2. registered: its leads come in as the sale's, no offer, no welcome (api/_lib/fb-leads.js kind 'b2b')
+      if (!st.registered) {
+        const now = new Date().toISOString();
+        const [fd, poll] = await Promise.all([readJSON('data/fb-forms.json', {}), readJSON('data/fb-poll.json', {})]);
+        fd.forms = fd.forms || {};
+        fd.forms[st.formId] = Object.assign({ leads: 0, createdHere: now }, fd.forms[st.formId], { name: B.form.name, kind: 'b2b', interest: B.interest, offerId: '', location: '',
+          questions: B.form.questions.map((q) => ({ key: q.key || q.type.toLowerCase(), label: q.label || '', type: q.type, options: q.options || [] })) });
+        poll.forms = [{ id: st.formId, name: B.form.name, status: 'ACTIVE', count: 0, created: now, lastAt: 0 }].concat((poll.forms || []).filter((x) => x.id !== st.formId));
+        await Promise.all([writeJSON('data/fb-forms.json', fd), writeJSON('data/fb-poll.json', poll)]);
+        st.registered = now; await save();
+      }
+      // 3. the audience hint's ids (once)
+      if (!st.hints) {
+        st.hints = await b2bHints(conn, c.interests || [], c.behaviors || []);
+        await save();
+      }
+      // 4. the campaign, its ad set and its ad (ads.publish: paused, switched on once the ad exists); a campaign of this
+      // name already in the account (a run cut short) stops the job for a look, never a second one
+      if (!st.campaignId) {
+        const ex = await ads.call('GET', '/' + conn.adAccountId + '/campaigns', conn.userToken, { fields: 'id,name,effective_status', limit: '500', effective_status: JSON.stringify(ads.LIVE) });
+        if (!ex.ok) { await fail('campaniile: ' + ((ex.j.error || {}).message || 'Meta n-a răspuns')); continue; }
+        const twin = (ex.j.data || []).find((x) => x.name === c.name);
+        if (twin) { await fail('există deja o campanie „' + c.name + '” (' + twin.id + '), de verificat'); continue; }
+        const pic = await sitePicture(c.image);
+        if (pic.error) { await fail('poza: ' + pic.error); continue; }
+        const d = await ads.loadDefaults(readJSON);
+        const v = ads.cleanSettings({
+          adsetId: '', campaignName: c.name, adsetName: c.adsetName, adName: c.adName,
+          city: 'Timișoara', women: false, ageMin: c.ages[0], ageMax: c.ages[1], placements: d.placements, budget: c.budget, // the city and placements only for the checks: the audience is rawTargeting
+          formId: st.formId, primaryText: c.text, headline: c.headlines[0], headline2: c.headlines[1], headline3: c.headlines[2], description: c.description, cta: c.cta, startNow: true,
+        });
+        if (v.error) { await fail('setările: ' + v.error); continue; }
+        st.making = new Date().toISOString(); await save();
+        const tries = [];
+        let r = null;
+        for (const tv of [0, 1, 2, 3]) {
+          v.s.rawTargeting = b2bTargeting(c, st.hints, tv);
+          r = await ads.publish(conn, { base64: pic.base64, name: c.image }, v.s);
+          if (!r.error) { st.targetingVariant = tv; st.targeting = v.s.rawTargeting; break; }
+          tries.push('v' + tv + ': ' + r.error);
+          if (!/^Setul de reclame/.test(r.error)) break; // only the audience is tried another way
+        }
+        delete st.making;
+        st.attempts = tries;
+        if (r.error) { await fail(tries.join(' | ')); continue; }
+        st.campaignId = r.campaignId; st.adsetId = r.adsetId; st.adId = r.adId; st.started = !!r.started; st.texts = r.texts;
+        if (r.warning) st.warning = r.warning;
+        delete st.error;
+        doc.log.push({ job: j.id, at: new Date().toISOString(), campaignId: r.campaignId, campaignName: c.name, adId: r.adId, why: 'campania publicată (' + c.budget + ' lei/zi, ' + (r.texts || 1) + ' titluri)' });
+        await save();
+        out.push(r.adId);
+      }
+      doc.done[j.id] = new Date().toISOString();
+      await save();
+      await tell({ tone: 'good', tag: 'once-done-' + j.id, title: 'FĂCUT ✅ - ' + j.why, text: c.name + ' · formularul ' + B.form.name + (st.warning ? ' · ' + st.warning : '') });
+    }
     // the template every new form starts from (Formulare → Setări formulare)
     for (const j of todo.filter((x) => x.template)) {
       const T = require('./fb-form-template');
@@ -1227,7 +1420,7 @@ async function run() {
     }
     // a rule over the campaigns that spent this week (the running ones and those paused a moment ago): its budget times a
     // factor, up to a cap
-    const rules = todo.filter((x) => !x.actions && !x.formSite && !x.template && !x.site && !x.lookalike);
+    const rules = todo.filter((x) => !x.actions && !x.formSite && !x.template && !x.site && !x.lookalike && !x.b2b);
     if (rules.length) {
       const days = await ads.campaignDays(conn, { since: day(Date.now() - 6 * 864e5), until: day(Date.now()) });
       if (days.error) return { changed: out.length, error: days.error };
