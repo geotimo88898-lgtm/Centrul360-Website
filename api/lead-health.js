@@ -723,6 +723,25 @@ module.exports = async (req, res) => {
       trail: (r.trail || []).map((x) => [String(x.at || '').slice(11, 19), x.ev || x.kind || '', String(x.note || '').slice(0, 40)]) });
     return;
   }
+  // ?cardsame=<order id>&with=<order id>: where one order's buyer came from, by her phone (never shown): the same phone as
+  // the other order, on the WhatsApp wave's list (lot, message, sent when), her leads (source, form campaign id, when), and
+  // the card messages to her number before the order (template purpose and time). Yes/no and times only (24.11).
+  if (req.query && req.query.cardsame) {
+    const C = require('./_lib/card-sarbatori');
+    const list = await readJSON(C.KEY, []);
+    const r = C.byId(list, String(req.query.cardsame)), w = req.query.with ? C.byId(list, String(req.query.with)) : null;
+    if (!r) { res.status(404).json({ error: 'not_found' }); return; }
+    const d9x = (p) => String(p || '').replace(/\D/g, '').slice(-9), k = d9x(r.phone);
+    const [st, sent, leads, convos] = await Promise.all([readJSON('cardblast/state.json', null), readJSON('cardblast/sent.json', null), readJSON('data/leads.json', []), readJSON('data/whatsapp-conversations.json', [])]);
+    const p = st && (st.list || []).find((x) => x.k === k), sm = sent && sent[k];
+    const mine = (leads || []).filter((l) => d9x(l.phone) === k).map((l) => ({ at: l.createdAt, source: l.source || '', campaignId: (l.form && l.form.campaignId) || '', form: (l.form && l.form.name) || '', interest: String(l.interest || '').slice(0, 60) }));
+    const msgs = [];
+    (convos || []).filter((c) => d9x(c.phone) === k).forEach((c) => (c.messages || []).forEach((m) => { if (m && m.direction === 'out' && String(m.timestamp || '') <= String(r.created)) msgs.push({ at: m.timestamp, step: m.cardStep || '', order: m.cardOrder ? String(m.cardOrder).slice(0, 8) : '', type: m.type || '', start: String(m.text || '').slice(0, 50) }); }));
+    const others = list.filter((x) => x !== r && d9x(x.phone) === k).map((x) => ({ id: String(x.id).slice(0, 8), created: x.created, via: x.via || '', status: x.status, tier: x.tier }));
+    res.status(200).json({ ok: true, samePhoneAsWith: w ? d9x(w.phone) === k : null, wave: p ? { batch: p.batch || 1, pre: p.pre || st.pre || '', sentAt: sm && !sm.e ? sm.at : '', failed: sm && sm.e ? sm.code || 'err' : '' } : null,
+      leads: mine, otherOrders: others, messagesBefore: msgs.sort((a, b) => String(a.at).localeCompare(String(b.at))).slice(-8) });
+    return;
+  }
   if (req.query && req.query.cardrecent) {
     const C = require('./_lib/card-sarbatori');
     const list = await readJSON(C.KEY, []);
