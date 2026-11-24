@@ -161,7 +161,8 @@ function svgOf(o) {
 let nodeReady = null;
 async function nodeRender(svg, fonts) {
   const R = require('@resvg/resvg-wasm');
-  if (!nodeReady) nodeReady = R.initWasm(require('fs').readFileSync(require.resolve('@resvg/resvg-wasm/index_bg.wasm')));
+  // (one wasm for both pictures in Node: the second module finds it started already)
+  if (!nodeReady) nodeReady = R.initWasm(require('fs').readFileSync(require.resolve('@resvg/resvg-wasm/index_bg.wasm'))).catch((e) => { if (!/Already initialized/.test(e.message)) throw e; });
   await nodeReady;
   const r = new R.Resvg(svg, { font: { fontBuffers: fonts, defaultFontFamily: 'Inter', loadSystemFonts: false }, fitTo: { mode: 'original' } });
   return Buffer.from(r.render().asPng());
