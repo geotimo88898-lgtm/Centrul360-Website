@@ -1471,7 +1471,15 @@ async function leadMsgDue(now) {
   const list = await readJSON(KEY, []);
   const due = list.filter((r) => r && r.status === 'lead' && r.via === 'meta-form' && !r.leadMsg && t - Date.parse(r.created) > 3 * 60e3 && t - Date.parse(r.created) < 2 * 3600e3).slice(0, 3);
   const out = [];
+  // the desk already talked to her (a call answered, „Am vorbit”, a note): no message on top of it
+  const called = due.length ? await require('./card-who').calledMap().catch(() => new Map()) : new Map();
   for (const r of due) {
+    if (called.has(d9(r.phone))) {
+      const l2 = await readJSON(KEY, []); const x = l2.find((y) => y.id === r.id);
+      if (x && !x.leadMsg) { x.leadMsg = { at: new Date(t).toISOString(), skipped: 'recepția a vorbit deja cu ea' }; mark(x, 'lead_msg', 'netrimis: recepția a vorbit deja cu ea'); await writeJSON(KEY, l2); }
+      out.push({ id: String(r.id).slice(0, 8), sent: false, why: 'vorbit' });
+      continue;
+    }
     if (!(await createOnce('data/card-lead-lock/' + String(r.id).replace(/[^\w-]/g, '') + '.txt', new Date(t).toISOString()))) continue;
     const l2 = await readJSON(KEY, []);
     const x = l2.find((y) => y.id === r.id);
