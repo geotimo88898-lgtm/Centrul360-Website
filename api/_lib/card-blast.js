@@ -461,9 +461,9 @@ async function bfAudience(opt) {
   const C = require('./clinic');
   const visCity = new Map(); appts.forEach((a) => { if (a && a.clientId && a.status === 'finalizata') visCity.set(a.clientId, C.clinicOf(a.location) || visCity.get(a.clientId) || ''); });
   const seen = new Map();
-  const put = (ph, name, loc, kind, clientId, extra) => { const p = normalizePhone(ph); const k = d9(p); if (!p || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(name || ''))) return; seen.set(k, { k, to: WA.toE164(ph), fn: require('./fc-campaign').firstName(name), loc: String(loc || ''), city: (clientId && visCity.get(clientId)) || nearOf(loc), kind, src: String(extra && extra.source || '').slice(0, 30), yr: String(extra && (extra.createdAt || extra.created) || '').slice(0, 4) }); };
+  const put = (ph, name, loc, kind, clientId, extra) => { const p = normalizePhone(ph); const k = d9(p); if (!p || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(name || ''))) return; seen.set(k, { k, to: WA.toE164(ph), fn: require('./fc-campaign').firstName(name), loc: String(loc || ''), city: (clientId && visCity.get(clientId)) || nearOf(loc), kind, src: String(extra && extra.source || '').slice(0, 30), yr: String(extra && (extra.createdAt || extra.created) || '').slice(0, 4), at: String(extra && (extra.createdAt || extra.created) || '') }); };
   clients.forEach((c) => put(c && c.phone, c && c.name, c && c.location, visCity.has(c && c.id) ? 'client' : 'fisa', c && c.id, c));
-  leads.slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).forEach((l) => put(l && l.phone, l && l.name, l && l.location, 'lead'));
+  leads.slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).forEach((l) => put(l && l.phone, l && l.name, l && l.location, 'lead', null, l));
   const out = { total: seen.size, excluded: { reached: 0, optout: 0, stopWords: 0, candidates: 0, card: 0, staff: 0, noWhatsApp: 0, notRoMobile: 0, otherCity: 0 }, fisa: { source: {}, year: {}, chatted: 0, loc: {} }, byCity: {}, otherWords: {}, list: [] };
   seen.forEach((x) => {
     const ex = reached.has(x.k) ? 'reached' : off.has(x.k) ? 'optout' : stopWords.has(x.k) ? 'stopWords' : cand.has(x.k) ? 'candidates' : carded.has(x.k) ? 'card' : staff.has(x.k) ? 'staff' : !x.to ? 'noWhatsApp' : !/^\+?407\d{8}$/.test(String(x.to).replace(/\s/g, '')) ? 'notRoMobile' : !x.city ? 'otherCity' : '';
@@ -478,6 +478,29 @@ async function bfAudience(opt) {
   out.chats = chats; out.stopFound = stopWords.size;
   if (!(opt && opt.list)) delete out.list;
   return out;
+}
+// the Black Friday batches (the owner, 24.11: „fă-ți o listă de 1500 … în batchuri de 300”): picked from bfAudience, so every
+// exclusion holds (reached in any wave, opt-outs, stop words in her chat, job candidates, card orders, staff, no WhatsApp,
+// not a Romanian mobile, other cities); clients first, then leads, then the old files, newest first in each
+async function pickBf(n, opt) {
+  const want = Math.max(1, Math.min(1000, Number(n) || 300));
+  const st = await loadState();
+  if (st.armed && !st.doneAt) return { error: 'still_sending' };
+  const a = await bfAudience({ list: true });
+  const RANK = { client: 0, lead: 1, fisa: 2 };
+  const pool = a.list.filter((x) => CITIES.includes(x.city) && x.to).sort((x, y) => RANK[x.kind] - RANK[y.kind] || String(y.at || '').localeCompare(String(x.at || '')));
+  const list = pool.slice(0, want).map((x) => ({ k: x.k, to: x.to, city: x.city, fn: x.fn, seg: 'bf-' + x.kind, score: 0, visits: 0, paid: 0, batch: (opt && opt.batch) || 2, at: x.at || '' }));
+  const by = (l, f) => l.reduce((o, p) => Object.assign(o, { [f(p)]: (o[f(p)] || 0) + 1 }), {});
+  const info = { eligible: a.eligible, excluded: a.excluded, stopFound: a.stopFound, picked: list.length, byCity: by(list, (p) => p.city), byKind: by(list, (p) => p.seg) };
+  if (opt && opt.dry) return Object.assign({ dry: true }, info);
+  st.list = st.list.concat(list); st.armed = false; st.doneAt = ''; st.pickedAt = nowISO();
+  await saveState(st);
+  // the ones from the Transformarea list: out of it, so nobody gets both
+  const FC = require('./fc-campaign');
+  const inTrans = new Set((await FC.buildAudience()).map((p) => p.k));
+  const fromTr = list.filter((p) => inTrans.has(p.k)).map((p) => p.k);
+  if (fromTr.length) { const ex = await excluded(); fromTr.forEach((k) => ex.add(k)); await writeJSON(EXCLUDE, [...ex], { quiet: true }); }
+  return Object.assign({ ok: true }, info);
 }
 // a picked batch not sent yet, taken back (nothing went): only the ones still unsent of that batch
 async function unpick(batch) {
@@ -606,4 +629,4 @@ async function backfillTaps() {
   return out;
 }
 
-module.exports = { bfAudience, nearOf, makeTemplate, allLeft, unresend, resend, whyLeft, backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };
+module.exports = { pickBf, bfAudience, nearOf, makeTemplate, allLeft, unresend, resend, whyLeft, backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };
