@@ -145,8 +145,8 @@ const CARD_FORM = { id: 'card-form-tm-2026-11-23', why: 'Cardul de Sărbători p
 // 24.11, George: „da publică, 100 lei pe zi”: the clinic's used Elysion Pro laser sold to beauty salons (B2B, not a
 // treatment). Its own instant form (Higher intent, 4 questions + the salon's city, a call at the end; the portal's form
 // builder asks 3 questions, a clinic and a WhatsApp ending, so this one is posted to the Page as it is), registered as
-// kind 'b2b' (api/_lib/fb-leads.js): its leads come into the Pipeline as „Vânzare laser Elysion Pro”, no offer, no
-// welcome, no message to them, only the team's alert. Then one campaign (leads), one ad set (all of Romania, 25-60,
+// kind 'b2b' with no offer and no city (api/_lib/fb-leads.js routes it by its name to the admins' „Aparate”): no
+// welcome, no message to them.  Then one campaign (leads), one ad set (all of Romania, 25-60,
 // everyone, Advantage+ audience and placements, 100 lei a day), one ad (the picture, 3 titles); made paused, switched
 // on once the ad is there (ads.publish)
 const ELYSION_TEXT = 'PROPRIETARI DE SALOANE DIN ROMÂNIA! Vindem laserul nostru de epilare definitivă Elysion Pro, folosit doar 6 luni: 94.900 lei.\n\n' +
@@ -1330,7 +1330,7 @@ async function run() {
         } else { problems.push(why); await tell({ tone: 'bad', tag: 'once-fail-' + j.id, title: 'NU ÎNCĂ ⚠️ - ' + j.why, text: 'Mai încerc: ' + why }); }
       };
       if (!ads.ours(conn, c.name)) { await fail(c.name + ': numele nu e al nostru în contul conectat'); continue; }
-      if (st.making && Date.now() - Date.parse(st.making) < 10 * 60e3) { problems.push(j.id + ': se face deja'); continue; }
+      if (st.making && Date.now() - Date.parse(st.making) < 3 * 60e3) { problems.push(j.id + ': se face deja'); continue; }
       // 1. the form: one of the same name already on the Page (a run cut short) is taken, else it is made
       if (!st.formId) {
         const have = await ads.call('GET', '/' + conn.pageId + '/leadgen_forms', conn.pageAccessToken, { fields: 'id,name,status', limit: '200' });
@@ -1368,41 +1368,101 @@ async function run() {
         st.hints = await b2bHints(conn, c.interests || [], c.behaviors || []);
         await save();
       }
-      // 4. the campaign, its ad set and its ad (ads.publish: paused, switched on once the ad exists); a campaign of this
-      // name already in the account (a run cut short) stops the job for a look, never a second one
-      if (!st.campaignId) {
-        const ex = await ads.call('GET', '/' + conn.adAccountId + '/campaigns', conn.userToken, { fields: 'id,name,effective_status', limit: '500', effective_status: JSON.stringify(ads.LIVE) });
-        if (!ex.ok) { await fail('campaniile: ' + ((ex.j.error || {}).message || 'Meta n-a răspuns')); continue; }
-        const twin = (ex.j.data || []).find((x) => x.name === c.name);
-        if (twin) { await fail('există deja o campanie „' + c.name + '” (' + twin.id + '), de verificat'); continue; }
-        const pic = await sitePicture(c.image);
-        if (pic.error) { await fail('poza: ' + pic.error); continue; }
-        const d = await ads.loadDefaults(readJSON);
-        const v = ads.cleanSettings({
-          adsetId: '', campaignName: c.name, adsetName: c.adsetName, adName: c.adName,
-          city: 'Timișoara', women: false, ageMin: c.ages[0], ageMax: c.ages[1], placements: d.placements, budget: c.budget, // the city and placements only for the checks: the audience is rawTargeting
-          formId: st.formId, primaryText: c.text, headline: c.headlines[0], headline2: c.headlines[1], headline3: c.headlines[2], description: c.description, cta: c.cta, startNow: true,
-        });
-        if (v.error) { await fail('setările: ' + v.error); continue; }
+      // 4. the campaign, its ad set and its ad, one step at a time, each id written down the moment Meta gives it (a run the
+      // clock cuts short goes on from there next time; 24.11 the first run stopped after the ad set): all made paused, the
+      // ad set and the campaign switched on only once the ad exists. One of this name already in the account (made by a
+      // run cut short before its id was written down) is taken, never a second one
+      if (!st.started) {
+        const tok = conn.userToken, act = conn.adAccountId;
+        const words = (r) => { const e = (r.j && r.j.error) || {}; return [e.error_user_title, e.error_user_msg || e.message].filter(Boolean).join(': ') || 'Meta n-a răspuns'; };
         st.making = new Date().toISOString(); await save();
-        const tries = [];
-        let r = null;
-        for (const tv of [0, 1, 2, 3]) {
-          v.s.rawTargeting = b2bTargeting(c, st.hints, tv);
-          r = await ads.publish(conn, { base64: pic.base64, name: c.image }, v.s);
-          if (!r.error) { st.targetingVariant = tv; st.targeting = v.s.rawTargeting; break; }
-          tries.push('v' + tv + ': ' + r.error);
-          if (!/^Setul de reclame/.test(r.error)) break; // only the audience is tried another way
+        if (!st.campaignId) {
+          const ex = await ads.call('GET', '/' + act + '/campaigns', tok, { fields: 'id,name,effective_status', limit: '500', effective_status: JSON.stringify(ads.LIVE) });
+          if (!ex.ok) { delete st.making; await fail('campaniile: ' + words(ex)); continue; }
+          const twin = (ex.j.data || []).find((x) => x.name === c.name);
+          if (twin) st.campaignId = String(twin.id);
+          else {
+            const r = await ads.call('POST', '/' + act + '/campaigns', tok, { name: c.name, objective: 'OUTCOME_LEADS', status: 'PAUSED', special_ad_categories: [], buying_type: 'AUCTION', is_adset_budget_sharing_enabled: false });
+            if (!r.ok || !r.j.id) { delete st.making; await fail('campania: ' + words(r)); continue; }
+            st.campaignId = String(r.j.id);
+          }
+          await save();
+          doc.log.push({ job: j.id, at: new Date().toISOString(), campaignId: st.campaignId, campaignName: c.name, why: twin ? 'campania găsită în cont (oprită)' : 'campania făcută (oprită)' });
+          await save();
+        }
+        if (!st.adsetId) {
+          const have = await ads.call('GET', '/' + st.campaignId + '/adsets', tok, { fields: 'id,name,targeting', limit: '25' });
+          const same = have.ok ? (have.j.data || []).find((x) => x.name === c.adsetName) : null;
+          if (same) { st.adsetId = String(same.id); st.targeting = same.targeting; }
+          else {
+            const acc = await ads.call('GET', '/' + act, tok, { fields: 'default_dsa_beneficiary,default_dsa_payor' });
+            const who = conn.pageName || 'Centrul360';
+            const dsa = { dsa_beneficiary: (acc.ok && acc.j.default_dsa_beneficiary) || who, dsa_payor: (acc.ok && acc.j.default_dsa_payor) || who };
+            const tries = [];
+            for (const tv of [0, 1, 2, 3]) {
+              const t = b2bTargeting(c, st.hints, tv);
+              const r = await ads.call('POST', '/' + act + '/adsets', tok, Object.assign({ name: c.adsetName, campaign_id: st.campaignId, daily_budget: ads.cents(conn, c.budget), billing_event: 'IMPRESSIONS',
+                bid_strategy: 'LOWEST_COST_WITHOUT_CAP', targeting: t, status: 'PAUSED', optimization_goal: 'LEAD_GENERATION', destination_type: 'ON_AD', promoted_object: { page_id: conn.pageId } }, dsa));
+              if (r.ok && r.j.id) { st.adsetId = String(r.j.id); st.targetingVariant = tv; st.targeting = t; break; }
+              tries.push('v' + tv + ': ' + words(r));
+            }
+            st.attempts = tries;
+            if (!st.adsetId) { delete st.making; await fail('setul de reclame: ' + tries.join(' | ')); continue; }
+          }
+          await save();
+        }
+        if (!st.adId) {
+          const have = await ads.call('GET', '/' + st.adsetId + '/ads', tok, { fields: 'id,name', limit: '25' });
+          const same = have.ok ? (have.j.data || []).find((x) => x.name === c.adName) : null;
+          if (same) st.adId = String(same.id);
+          else {
+            if (!st.creativeId) {
+              if (!st.hash) {
+                const pic = await sitePicture(c.image);
+                if (pic.error) { delete st.making; await fail('poza: ' + pic.error); continue; }
+                const img = await ads.call('POST', '/' + act + '/adimages', tok, { bytes: pic.base64, name: c.image });
+                const imgs = (img.ok && img.j.images) || {};
+                st.hash = (imgs[Object.keys(imgs)[0]] || {}).hash || '';
+                if (!st.hash) { delete st.making; await fail('poza: ' + words(img)); continue; }
+                await save();
+              }
+              const spec = { page_id: conn.pageId, link_data: { image_hash: st.hash, link: 'https://fb.me/', message: c.text, name: c.headlines[0], description: c.description,
+                call_to_action: { type: c.cta, value: { lead_gen_form_id: st.formId } } } };
+              const ig = await ads.call('GET', '/' + conn.pageId, conn.pageAccessToken, { fields: 'instagram_business_account' });
+              if (ig.ok && ig.j.instagram_business_account) spec.instagram_user_id = ig.j.instagram_business_account.id;
+              // the 3 titles, Meta shows each person the one that works (asset_feed_spec, as ads.publish does)
+              const feed = { bodies: [{ text: c.text }], titles: c.headlines.map((text) => ({ text })), descriptions: [{ text: c.description }], optimization_type: 'DEGREES_OF_FREEDOM' };
+              let r = await ads.call('POST', '/' + act + '/adcreatives', tok, { name: c.adName, object_story_spec: spec, asset_feed_spec: feed });
+              st.titles = 3;
+              if (!r.ok || !r.j.id) {
+                st.feedRefused = words(r);
+                r = await ads.call('POST', '/' + act + '/adcreatives', tok, { name: c.adName, object_story_spec: spec });
+                st.titles = 1;
+              }
+              if (!r.ok || !r.j.id) { delete st.making; await fail('reclama (textele și poza): ' + words(r)); continue; }
+              st.creativeId = String(r.j.id); await save();
+            }
+            const r = await ads.call('POST', '/' + act + '/ads', tok, { name: c.adName, adset_id: st.adsetId, creative: { creative_id: st.creativeId }, status: 'ACTIVE' });
+            if (!r.ok || !r.j.id) { delete st.making; await fail('reclama: ' + words(r)); continue; }
+            st.adId = String(r.j.id);
+          }
+          await save();
+          doc.log.push({ job: j.id, at: new Date().toISOString(), campaignId: st.campaignId, campaignName: c.name, adId: st.adId, why: 'reclama făcută (' + (st.titles || '?') + ' titluri)' });
+          await save();
+        }
+        // the ad is there: the ad set on, then the campaign
+        for (const id of [st.adsetId, st.campaignId]) {
+          const r = await ads.call('POST', '/' + id, tok, { status: 'ACTIVE' });
+          if (!r.ok) { st.startError = words(r); break; }
         }
         delete st.making;
-        st.attempts = tries;
-        if (r.error) { await fail(tries.join(' | ')); continue; }
-        st.campaignId = r.campaignId; st.adsetId = r.adsetId; st.adId = r.adId; st.started = !!r.started; st.texts = r.texts;
-        if (r.warning) st.warning = r.warning;
+        if (st.startError) { const why = 'pornirea: ' + st.startError; delete st.startError; await fail(why); continue; }
+        st.started = new Date().toISOString();
         delete st.error;
-        doc.log.push({ job: j.id, at: new Date().toISOString(), campaignId: r.campaignId, campaignName: c.name, adId: r.adId, why: 'campania publicată (' + c.budget + ' lei/zi, ' + (r.texts || 1) + ' titluri)' });
+        doc.log.push({ job: j.id, at: new Date().toISOString(), campaignId: st.campaignId, campaignName: c.name, status: 'ACTIVE', why: 'campania pornită (' + c.budget + ' lei/zi)' });
         await save();
-        out.push(r.adId);
+        await AC.switched(st.campaignId, 'ACTIVE').catch(() => {});
+        out.push(st.adId);
       }
       doc.done[j.id] = new Date().toISOString();
       await save();
