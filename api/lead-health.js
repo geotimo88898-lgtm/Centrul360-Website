@@ -659,6 +659,39 @@ module.exports = async (req, res) => {
       payouts: pays.filter((x) => x && x.employeeId === id) });
     return;
   }
+  // POST ?payfix=1 { employeeId, salaryHistory?: [{from,lei}], weekendDays?: [adjustment id] }: a pay correction the owner asked
+  // for (24.11): her dated salaries replaced as given; each listed day she worked made all overtime (a scheduled Saturday
+  // the owner counts as extra hours: expected 0, every minute worked approved as weekend overtime). Logged on the record.
+  if (req.query && req.query.payfix && req.method === 'POST') {
+    let b = req.body || {}; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
+    const { writeJSON } = require('./_lib/store');
+    const id = String(b.employeeId || '');
+    const out = {};
+    if (Array.isArray(b.salaryHistory)) {
+      const emps = await readJSON('data/employees.json', []);
+      const e = emps.find((x) => x && x.id === id);
+      if (!e) { res.status(404).json({ error: 'not_found' }); return; }
+      const hist = b.salaryHistory.filter((h) => h && /^\d{4}-\d{2}-\d{2}$/.test(String(h.from)) && Number(h.lei) >= 0).map((h) => ({ from: h.from, lei: Math.round(Number(h.lei)) }));
+      e.salaryHistoryLog = (e.salaryHistoryLog || []).concat({ at: new Date().toISOString(), by: 'owner (prin Claude)', before: e.salaryHistory || null, after: hist });
+      e.salaryHistory = hist;
+      await writeJSON('data/employees.json', emps);
+      out.salaryHistory = hist;
+    }
+    if (Array.isArray(b.weekendDays) && b.weekendDays.length) {
+      const adj = await readJSON('data/time-adjust.json', []);
+      out.days = [];
+      b.weekendDays.forEach((aid) => {
+        const a = adj.find((x) => x && x.id === aid && x.employeeId === id);
+        if (!a) return;
+        const before = { expected: a.expected, minutes: a.minutes, approvedMinutes: a.approvedMinutes, weekend: a.weekend };
+        Object.assign(a, { expected: 0, minutes: a.worked, approvedMinutes: a.worked, weekend: true, ownerFix: { at: new Date().toISOString(), before, why: 'sâmbătă lucrată: ore suplimentare (proprietarul, 24.11)' } });
+        out.days.push({ id: a.id, date: a.date, minutes: a.worked });
+      });
+      await writeJSON('data/time-adjust.json', adj);
+    }
+    res.status(200).json(Object.assign({ ok: true }, out));
+    return;
+  }
   // ?cardsrc=<card id>: where one order came from (the utm values and the referrer's host, the card message's lot and
   // personal-link token if any) and whether her card message went out; never a name or phone
   if (req.query && req.query.cardsrc) {
