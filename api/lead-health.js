@@ -769,6 +769,19 @@ module.exports = async (req, res) => {
     res.status(200).json({ ok: !!x.sent, error: x.sent ? '' : String(x.error || '').slice(0, 200) });
     return;
   }
+  // ?cardpaylink=<order id (the whole id)>: her signed one-tap pay link, for the owner to send by hand (24.11); an order still
+  // waiting only. The link pays only her own order.
+  if (req.query && req.query.cardpaylink) {
+    const C = require('./_lib/card-sarbatori');
+    const id = String(req.query.cardpaylink);
+    if (!/^[0-9a-f-]{36}$/.test(id)) { res.status(400).json({ error: 'bad_id' }); return; }
+    const r = C.byId(await readJSON(C.KEY, []), id);
+    if (!r || r.id !== id) { res.status(404).json({ error: 'not_found' }); return; }
+    if (r.status === 'platit' || r.status === 'anulat') { res.status(409).json({ error: 'not_open', status: r.status }); return; }
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(200).json({ ok: true, status: r.status, tier: r.tier, link: require('./_lib/pay').cardLink(r.id) });
+    return;
+  }
   if (req.query && req.query.cardrecent) {
     const C = require('./_lib/card-sarbatori');
     const list = await readJSON(C.KEY, []);
