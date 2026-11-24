@@ -746,6 +746,29 @@ module.exports = async (req, res) => {
       leads: mine, otherOrders: others, messagesBefore: msgs.sort((a, b) => String(a.at).localeCompare(String(b.at))).slice(-8) });
     return;
   }
+  // POST ?cardfailpay=<order id>: the owner's one message to a client whose online payment failed (24.11, template
+  // „failpay”, his words, one link button to her signed pay link); only while the order still waits and only once
+  if (req.query && req.query.cardfailpay && req.method === 'POST') {
+    const C = require('./_lib/card-sarbatori'), WA = require('./_lib/whatsapp'), WT = require('./_lib/wa-templates');
+    const list = await readJSON(C.KEY, []);
+    const r = C.byId(list, String(req.query.cardfailpay));
+    if (!r) { res.status(404).json({ error: 'not_found' }); return; }
+    if (r.status !== 'asteptare') { res.status(409).json({ error: 'not_waiting', status: r.status }); return; }
+    if (r.failpay) { res.status(409).json({ error: 'sent_already', at: r.failpay.at }); return; }
+    const { t } = await C.templates();
+    const tpl = t.failpay;
+    const cfg = await WA.loadConfig();
+    const n = cfg.numbers[r.city];
+    if (!tpl || !n || !WT.approvedFor(tpl, n.wabaId)) { res.status(409).json({ error: 'not_approved' }); return; }
+    const link = require('./_lib/pay').cardLink(r.id), q = new URL(link).searchParams;
+    const name = C.greetName(r) || 'dragă';
+    const x = await WA.sendWhatsApp({ phone: r.phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: 'ro', params: [name], from: r.city, buttonUrl: { index: 0, text: q.get('c') + '~' + q.get('t') } });
+    const l2 = await readJSON(C.KEY, []), y = C.byId(l2, r.id);
+    if (x.sent && y) { y.failpay = { at: new Date().toISOString() }; C.mark(y, 'failpay', 'mesaj trimis'); C.recOf(y).stop = C.recOf(y).stop || 'failpay'; await require('./_lib/store').writeJSON(C.KEY, l2); }
+    if (x.sent) await C.logChat(r.phone, x.fromCity || r.city, r.name, tpl.body.replace('{{1}}', name), '', x.id, { cardOrder: r.id, cardStep: 'failpay', buttons: ['Plătesc online'] }).catch(() => {});
+    res.status(200).json({ ok: !!x.sent, error: x.sent ? '' : String(x.error || '').slice(0, 200) });
+    return;
+  }
   if (req.query && req.query.cardrecent) {
     const C = require('./_lib/card-sarbatori');
     const list = await readJSON(C.KEY, []);

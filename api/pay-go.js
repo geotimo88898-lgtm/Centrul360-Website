@@ -62,7 +62,9 @@ function cardPage(res, code) {
   return '<style>#w{display:none}</style><main><h1>' + esc(h) + '</h1><p>' + esc(p) + '</p><a class="b" href="https://www.centrul360.com/">Mergi la Centrul360</a></main></body></html>';
 }
 async function cardTap(req, res) {
-  const id = String(req.query.c || '').toLowerCase().slice(0, 40), t = String(req.query.t || '').slice(0, 40);
+  // „c=<id>~<token>” in one value too (a WhatsApp template's link button ends in one variable, 24.11)
+  const cq = String(req.query.c || ''), cut = cq.indexOf('~');
+  const id = (cut > 0 ? cq.slice(0, cut) : cq).toLowerCase().slice(0, 40), t = String(cut > 0 ? cq.slice(cut + 1) : req.query.t || '').slice(0, 40);
   if (!/^[0-9a-f-]{36}$/.test(id) || !P.cardTokenOk(id, t)) { page(res, 404, 'not_found'); return; }
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');

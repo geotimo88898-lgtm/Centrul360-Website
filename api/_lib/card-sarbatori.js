@@ -499,6 +499,11 @@ const TPL = {
     body: 'Bună {{1}}! 🎁 Cardul tău de Sărbători este rezervat:\nPlătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până vineri 27 noiembrie. Dacă rezervi și plătești în clinică, rămâne 2.500 lei.\n\n🔥 E ultimul card rămas, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
   lead3bf1: { label: 'Card de Sărbători Black Friday din reclamă ultimul card fără nume', category: 'MARKETING', headerType: 'IMAGE', map: [], buttons: 'lead', sample: { code: '', name: '', credit: 3000 },
     body: 'Bună! 🎁 Cardul tău de Sărbători este rezervat:\nPlătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până vineri 27 noiembrie. Dacă rezervi și plătești în clinică, rămâne 2.500 lei.\n\n🔥 E ultimul card rămas, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
+  // her online payment failed (the owner, 24.11: „fără plătesc în clinică sau nu mai vreau, doar opțiunea de plată online”):
+  // his words, one link button to her own signed pay link (pay-go?c=<id>~<token>), sent by hand from lead-health
+  failpay: { label: 'Card de Sărbători plata n-a mers', category: 'MARKETING', headerType: '', map: ['prenume'], sample: { code: '', name: '' },
+    buttons: [{ type: 'URL', text: 'Plătesc online', url: 'https://www.centrul360.com/api/pay-go?c={{1}}', example: 'https://www.centrul360.com/api/pay-go?c=3f2b1c9e-0000-4000-8000-000000000000~AbCdEfGhIjKlMnOpQrStUv' }],
+    body: 'Bună, {{1}}! Am văzut că plata cardului de 990 lei n-a mers, se mai întâmplă de la bancă. Dacă vrei să încerci din nou, ai aici linkul. Cu plata online primești 3.000 lei, până vineri 💛' },
   vip3n: { label: 'Card VIP rezervat din reclamă', category: 'MARKETING', headerType: 'IMAGE', map: ['prenume', 'ramase'], buttons: 'lead', sample: { code: '', name: '', vip: true, credit: 30000 },
     body: 'Bună {{1}}! 💎 Cardul tău VIP Transformarea 360 este rezervat:\nPlătești 9.900 lei și primești 30.000 lei în tratamente, pentru tine și cei dragi, valabil până pe 30 iunie 2027.\n\n🔥 Au mai rămas doar {{2}} carduri VIP, așa că ți-l țin rezervat 2 ore.\n\n✨ Dacă îl plătești acum online, ai 10% reducere: plătești 8.910 lei, plus acces în Clubul 360.\n\n🏥 Preferi să-l plătești în clinică? Îți facem o programare și ți-l ținem rezervat până vii.\n\nAlege mai jos 👇' },
   vip3: { label: 'Card VIP rezervat din reclamă fără nume', category: 'MARKETING', headerType: 'IMAGE', map: ['ramase'], buttons: 'lead', sample: { code: '', name: '', vip: true, credit: 30000 },
@@ -564,7 +569,7 @@ async function ensureTemplates() {
     if (!x) {
       x = { id: 'card-' + k + '-' + crypto.randomUUID().slice(0, 6), purpose: 'card-' + k, label: TPL[k].label, name: '', language: 'ro', category: TPL[k].category || 'UTILITY',
         headerType: TPL[k].headerType || '', header: '', body: TPL[k].body, map: TPL[k].map, footer: 'Centrul360',
-        buttons: TPL[k].buttons ? Object.values(TPL[k].buttons === 'rec' ? REC_BTN : TPL[k].buttons === 'lead' ? LEAD_BTN : NAME_BTN).map((text) => ({ type: 'QUICK_REPLY', text })) : [], meta: {}, updatedAt: nowISO() };
+        buttons: Array.isArray(TPL[k].buttons) ? TPL[k].buttons.map((b) => Object.assign({}, b)) : TPL[k].buttons ? Object.values(TPL[k].buttons === 'rec' ? REC_BTN : TPL[k].buttons === 'lead' ? LEAD_BTN : NAME_BTN).map((text) => ({ type: 'QUICK_REPLY', text })) : [], meta: {}, updatedAt: nowISO() };
       if (x.headerType === 'IMAGE') {
         // the example Meta reviews: a sample card (its own when the template's card is another kind, e.g. „Rezervat”)
         const sm = TPL[k].sample;
@@ -2226,7 +2231,7 @@ async function requestFromTap(i, opt) {
   return { ok: true, id: entry.id };
 }
 
-module.exports = { leadMsgDue, setWave, requestFromTap, deleteOrder, orderExtras, clinicReply, T, BF: T.BF, creditOf: T.creditOf, bfActive: T.bfActive, bfInfo: T.bfInfo, setBf: T.setBf, onlineCredit, payGet,
+module.exports = { logChat, leadMsgDue, setWave, requestFromTap, deleteOrder, orderExtras, clinicReply, T, BF: T.BF, creditOf: T.creditOf, bfActive: T.bfActive, bfInfo: T.bfInfo, setBf: T.setBf, onlineCredit, payGet,
   KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT, GIFT_TM, GIFT_ARAD, giftOf, giftShort, giftFor, DISC_TIERS, discOf, onlineLinks, onlinePay, linkOf, siteLinks, sumOk, embedded, setEmbedded, checkoutAmount, checkoutUrl, payQuote, payPaid, payContact, TPL,
   byId, VIP, SALE, isVip, vipLeft, stockFor, leftFor, lostRace, sarb, norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,

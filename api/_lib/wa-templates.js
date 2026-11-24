@@ -138,7 +138,7 @@ function components(t, handle) {
   if ((t.map || []).length) body.example = { body_text: [t.map.map((k) => SAMPLE[k] || 'exemplu')] };
   c.push(body);
   if (t.footer) c.push({ type: 'FOOTER', text: t.footer });
-  if ((t.buttons || []).length) c.push({ type: 'BUTTONS', buttons: t.buttons.map((b) => (b.type === 'URL' ? { type: 'URL', text: b.text, url: b.url } : b.type === 'PHONE_NUMBER' ? { type: 'PHONE_NUMBER', text: b.text, phone_number: b.phone } : { type: 'QUICK_REPLY', text: b.text })) });
+  if ((t.buttons || []).length) c.push({ type: 'BUTTONS', buttons: t.buttons.map((b) => (b.type === 'URL' ? Object.assign({ type: 'URL', text: b.text, url: b.url }, /\{\{1\}\}/.test(String(b.url || '')) && b.example ? { example: [String(b.example)] } : {}) : b.type === 'PHONE_NUMBER' ? { type: 'PHONE_NUMBER', text: b.text, phone_number: b.phone } : { type: 'QUICK_REPLY', text: b.text })) });
   return c;
 }
 async function graph(token, method, path, params) {
