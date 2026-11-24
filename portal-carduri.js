@@ -1,5 +1,7 @@
 // Centrul360 portal, „Carduri de Sărbători” (the owner, 21.11): admin, manager and reception (reception records payments).
 //   on top     the wave of now (Valul 2 din 7: left, sold; the owner sets the waves, „Valuri”; only here, never on the site), the money of the cards paid, the credit used, the WhatsApp templates
+//   Card rezervat, de încasat  the reservations to pay in the clinic, by clinic (reception: hers), VIP first, then the newest:
+//              her phone to call, what to tell her (her name, the sum, the credit), „Trimite linkul de plată” on WhatsApp
 //   De confirmat  the orders sent to the PayLink (found in myPOS by themselves, or one tap here) and the reservations to pay
 //              in the clinic: „Confirmă plata (X lei)”, „Anulează”
 //   the cards  code, name on the card, who bought it, phone, the card, credit used / left, state, clinic, bonuses, dates;
@@ -68,7 +70,7 @@
       stat('card', '', 'Credit folosit', lei(t.used || 0), 'din ' + lei(t.credit || 0) + ' credit dat') +
       stat('chat', tplOk ? 'is-good' : 'is-warn', 'Mesaje WhatsApp', tplOk ? 'Automate' : 'Manual', tplOk ? 'șabloanele sunt aprobate de Meta' : 'șabloanele așteaptă aprobarea Meta') +
       '</div>' +
-      '<div data-cd-money></div><div data-cd-checks></div><div data-cd-orders></div>' +
+      '<div data-cd-money></div><div data-cd-checks></div><div data-cd-resv></div><div data-cd-orders></div>' +
       '<section class="k-card cd-list"><div class="cd-bar"><label class="k-search">' + icon('search') + '<input data-cd-q type="search" placeholder="Caută după cod sau nume…" autocomplete="off" value="' + esc(S.q) + '"></label>' +
       '<div class="k-chips" data-cd-chips></div></div><div data-cd-rows></div></section>' +
       '<p class="k-muted cd-foot">Folosirea creditului nu e o încasare nouă: banii au intrat o dată, la plata cardului. Cardul se folosește la prețul de listă, nu peste ofertele reduse. Valabil până pe 30.06.2027.</p>';
@@ -87,7 +89,7 @@
       case 'lead_msg': return failed ? 'WhatsApp-ul cu cardul n-a plecat' + (why ? ' (' + why + ')' : '') : 'WhatsApp trimis: cardul ei, online sau în clinică';
       case 'choice': return 'a ales pe WhatsApp: ' + (n === 'online' ? 'plătește online' : 'plătește în clinică');
       case 'lead_call': return 'de sunat: ' + n;
-      case 'to_paylink': return n === 'whatsapp' ? 'a primit linkul de plată pe WhatsApp' : 'a intrat pe pagina de plată';
+      case 'to_paylink': return n === 'whatsapp' ? 'a primit linkul de plată pe WhatsApp' : n === 'receptie' ? 'recepția i-a trimis linkul de plată pe WhatsApp' : 'a intrat pe pagina de plată';
       case 'to_checkout': return 'a deschis plata pe site';
       case 'contact': return n === 'la rezervare' ? 'și-a lăsat telefonul la rezervare' : n === 'telefon schimbat' ? 'alt telefon, scris la plată' : 'și-a scris numele și telefonul la plată';
       case 'test_paid': return 'plată de test (sandbox): nu e card';
@@ -195,8 +197,58 @@
     const t = (k, l, n) => '<button type="button" role="tab" class="cd-tab' + (S.tab === k ? ' is-on' : '') + '" aria-selected="' + (S.tab === k) + '" data-cd-tab="' + k + '">' + l + '<span>' + n + '</span></button>';
     return '<div class="cd-tabs" role="tablist">' + t('req', 'De confirmat', nReq) + t('int', 'Interesate', S.int ? ints().length : '…') + '</div>';
   }
+  // ------------------------------------------------------------------ „Card rezervat, de încasat” (the owner, 24.11)
+  // reception calls each reservation to pay in the clinic and pushes the online payment: her phone, what to say, the link
+  const noName = (n) => !n || /fără nume/i.test(n);
+  const first = (n) => { const w = noName(n) ? '' : String(n || '').trim().split(/\s+/)[0] || ''; return /^[\p{L}]+(?:-[\p{L}]+)?$/u.test(w) && w.replace(/-/g, '').length >= 2 ? w.toLowerCase().replace(/(^|-)(\p{L})/gu, (m, a, b) => a + b.toUpperCase()) : ''; };
+  const cardTxt = (o) => (o.qty > 1 ? o.qty + ' × ' : '') + (isVip(o) ? 'VIP ' : '') + lei(o.amount) + ' → ' + lei(o.credit);
+  function script(o) {
+    const g = first(o.name), hi = 'Bună' + (g ? ', ' + g : '') + ', sunt de la Centrul360. ';
+    if (isVip(o)) return hi + 'Ți-am rezervat Cardul VIP Transformarea 360 de ' + lei(o.amount) + ', primești ' + lei(o.credit) + ' în tratamente. Îl ținem până vineri. Dacă îl plătești acum online, ai -10%, plătești ' + lei(Math.round(Number(o.tier) * 0.9) * (o.qty || 1)) + ', și acces în Clubul 360; îți trimit chiar acum linkul pe WhatsApp. Sau stabilim acum când treci pe la clinică să-l plătești.';
+    return hi + 'Ți-am rezervat Cardul de Sărbători de ' + lei(o.amount) + ', primești ' + lei(o.credit) + ' în tratamente. Îl ținem până vineri. Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360; îți trimit chiar acum linkul pe WhatsApp. Sau stabilim acum când treci pe la clinică să-l plătești.';
+  }
+  const resvOf = () => (S.d.orders || []).filter((o) => o.status === 'rezervat' && o.pay === 'clinica' && isOpen(o) && o.phone)
+    .sort((a, b) => (isVip(b) - isVip(a)) || String(b.converted || b.created).localeCompare(String(a.converted || a.created)));
+  function resvRow(o) {
+    const open = S.open.has('r' + o.id);
+    const chips = (isVip(o) ? vipTag : '') + '<span class="k-tag">' + icon('calendar') + 'Rezervat ' + esc(when(o.converted || o.created)) + '</span>' +
+      (o.linkAt ? '<span class="k-tag is-good">' + icon('check') + 'Link trimis ' + esc(hm(o.linkAt)) + '</span>' : '');
+    return '<div class="cd-o cd-r' + (open ? ' open' : '') + '" data-r="' + esc(o.id) + '"><div class="cd-o-row">' +
+      '<button type="button" class="cd-o-main" data-cd-rx="' + esc(o.id) + '" aria-expanded="' + open + '"><span class="cd-o-t"><b>' + esc(noName(o.name) ? 'Fără nume' : o.name) + '</b><span class="cd-o-m">' + esc(cardTxt(o)) + '</span></span>' +
+        '<span class="cd-o-c">' + chips + '</span></button>' +
+      '<a class="cd-o-tel" href="' + K.tel(o.phone) + '" aria-label="Sună">' + icon('phone') + '<span>' + esc(o.phone) + '</span></a>' +
+      '<div class="cd-o-act"><a class="k-btn is-outline is-sm cd-i-chat" href="#mesaje" data-chat="' + esc(o.phone) + '" data-chat-name="' + esc(o.name || '') + '" data-chat-city="' + esc(o.city || '') + '" aria-label="Mesaje">' + icon('chat') + '<span class="cd-lg">Mesaje</span></a>' +
+        '<button type="button" class="k-btn is-primary is-sm" data-cd-link="' + esc(o.id) + '">' + icon('link') + '<span class="cd-lg">Trimite linkul de plată</span><span class="cd-sm">Trimite linkul</span></button></div></div>' +
+      '<div class="cd-o-more"><div><p class="cd-script">' + icon('phone') + '<span>' + esc(script(o)) + '</span></p></div></div></div>';
+  }
+  function paintResv() {
+    const box = S.box.querySelector('[data-cd-resv]');
+    if (!box) return;
+    const mine = S.d.role === 'receptie' && S.d.myCity ? S.d.myCity : '';
+    const all = resvOf().filter((o) => !mine || o.city === mine);
+    if (!all.length) { box.innerHTML = ''; return; }
+    const cities = (mine ? [mine] : ['Timișoara', 'Arad']).filter((c) => all.some((o) => o.city === c));
+    const other = all.filter((o) => !cities.includes(o.city));
+    const group = (c, l) => '<div class="cd-rg"><h4 class="cd-rg-h">' + esc(c) + '<span>' + l.length + '</span><small>' + lei(l.reduce((n, o) => n + (Number(o.amount) || 0), 0)) + '</small></h4><div class="cd-olist">' + l.map(resvRow).join('') + '</div></div>';
+    box.innerHTML = '<section class="k-card cd-orders cd-resv"><div class="k-card-head"><h3>Card rezervat, de încasat</h3><span class="k-muted">' + all.length + '</span></div>' +
+      '<p class="cd-resv-hint">Atinge numele pentru ce îi spui. Linkul pleacă pe WhatsApp doar când apeși.</p>' +
+      cities.map((c) => group(c, all.filter((o) => o.city === c))).join('') + (other.length ? group('Altă clinică', other) : '') + '</section>';
+  }
+  async function sendLink(b) {
+    const o = (S.d.orders || []).find((x) => x.id === b.dataset.cdLink);
+    if (!o) return;
+    await K.busy(b, async () => {
+      try {
+        const r = await api({ action: 'paylink', id: o.id });
+        K.ui().toast(r.how === 'template' ? 'Linkul a plecat, cu butoane: îl primește când apasă „Plătesc online”.' : 'Linkul a plecat.', 'success');
+        await load(true);
+      } catch (err) { K.ui().toast(LINKERR[err.code] ? LINKERR[err.code] + (err.data && err.data.detail && err.code === 'send' ? ' (' + err.data.detail + ')' : '') : K.errText(err), 'error'); }
+    });
+  }
+  const LINKERR = { not_open: 'Rezervarea nu mai e deschisă.', paid: 'E deja plătită.', not_found: 'Rezervarea nu mai există.', sold_out: 'Nu mai sunt carduri.', closed: 'Oferta s-a încheiat.', bad_phone: 'Telefon invalid.',
+    tpl: 'Nu ne-a scris în ultimele 24 de ore și mesajul cu butoane nu e aprobat încă de Meta. Sun-o sau scrie-i din Mesaje.', send: 'WhatsApp-ul n-a plecat', no_link: 'Linkul de plată nu s-a putut face.' };
   function paintOrders() {
-    paintMoney(); paintChecks();
+    paintMoney(); paintChecks(); paintResv();
     const box = S.box.querySelector('[data-cd-orders]'), all = S.d.orders || [];
     if (!box) return;
     if (S.tab === 'int') { box.innerHTML = paintInt(all.filter(isOpen).length); return; }
@@ -312,6 +364,8 @@
     if (b.dataset.cdF) { S.f = b.dataset.cdF; paintList(); return; }
     if (b.dataset.cdOf) { S.of = b.dataset.cdOf; paintOrders(); return; }
     if (b.dataset.cdX) { toggleRow(b.dataset.cdX); return; }
+    if (b.dataset.cdRx) { const row = b.closest('.cd-r'), on = !row.classList.contains('open'); row.classList.toggle('open', on); b.setAttribute('aria-expanded', String(on)); if (on) S.open.add('r' + b.dataset.cdRx); else S.open.delete('r' + b.dataset.cdRx); return; }
+    if (b.dataset.cdLink) { sendLink(b); return; }
     if (b.hasAttribute('data-cd-menu')) { const mw = b.closest('.cd-mw'), on = !mw.classList.contains('open'); closeMenus(mw); mw.classList.toggle('open', on); b.setAttribute('aria-expanded', String(on)); return; }
     if (b.closest('.cd-menu')) closeMenus();
     if (b.dataset.cdDel) {

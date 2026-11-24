@@ -296,7 +296,15 @@ w('data/card-sarbatori.json', [
   ord(null, 990, 'online', 'platit', 14, { track: { utm_campaign: 'card-sarbatori', ua: pc } }),
   o({ created: iso(t0 - 2 * 86400e3), phone: '0722000777', city: 'Timișoara', tier: 990, amount: 990, credit: 2500, pay: 'online', status: 'platit', paidVia: 'online', paidAt: iso(t0 - 2 * 86400e3 + 600e3), page: 'https://www.centrul360.com/card-sarbatori', track: { utm_source: 'instagram', ua } }),
   o({ created: iso(t0 + 3 * 3600e3), phone: '0722000778', city: 'Arad', tier: 490, amount: 490, credit: 1000, pay: 'online', status: 'platit', paidVia: 'online', paidAt: iso(t0 + 3 * 3600e3 + 300e3), page: 'https://www.centrul360.com/card-sarbatori', track: { ua } }),
+  // „Card rezervat, de încasat” (24.11): reservations to pay in the clinic, both clinics, a VIP and a long name
+  o({ id: 'cs-seed-resv-vip', created: iso(now - 5 * 3600e3), name: 'Alexandra-Ioana Constantinescu-Bărbulescu', phone: '0722000781', city: 'Timișoara', tier: 9900, amount: 9900, credit: 30000, pay: 'clinica', status: 'rezervat', page: link, track: { ua } }),
+  o({ id: 'cs-seed-resv-ar', created: iso(now - 40 * 60e3), name: 'Maria Popescu', phone: '0722000782', city: 'Arad', tier: 990, amount: 990, credit: 2500, pay: 'clinica', status: 'rezervat', page: link, track: { ua } }),
+  o({ id: 'cs-seed-resv-ar2', created: iso(now - 26 * 3600e3), name: 'Card de Sărbători, fără nume', phone: '0722000783', city: 'Arad', tier: 490, amount: 490, credit: 1000, pay: 'clinica', status: 'rezervat', via: 'meta-form', page: '', track: {} }),
 ]);
+// the pay link sent to one of them (her chat: the chip „Link trimis”)
+const cv = (() => { try { return JSON.parse(fs.readFileSync(f('data/whatsapp-conversations.json'), 'utf8')); } catch (e) { return []; } })();
+cv.push({ phone: '0722000782', clientName: 'Maria Popescu', location: 'Arad', unreadCount: 0, lastMessageAt: iso(now - 10 * 60e3), messages: [{ id: 'm-cs-link', direction: 'out', type: 'text', text: 'Bună, Maria! Aici plătești Cardul de Sărbători…', status: 'sent', timestamp: iso(now - 10 * 60e3), auto: true, cardOrder: 'cs-seed-resv-ar', cardStep: 'link' }] });
+w('data/whatsapp-conversations.json', cv);
 console.log('Cardul de Sărbători campaign seeded');
 })();
 

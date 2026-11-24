@@ -28,6 +28,8 @@
 //   POST { action: 'stock', wave, max }   the waves: how many cards in a wave (10) and in all (70) (admin only; Activitate notes it)
 //   POST { action: 'open_wave' }   the wave of now ends early, the next one starts now (admin only)
 //   POST { action: 'scan' }        look in myPOS for the payments now
+//   POST { action: 'paylink', id }   „Trimite linkul de plată” (a reservation to pay in the clinic): her one-tap link on
+//        WhatsApp, only on the tap (_lib/card-sarbatori.js sendPayLink) → { ok, how: 'text' | 'template' }
 //   POST { action: 'pick', check, id }   „De verificat”: a payment that could be two orders' (the same sum), hers is this one
 //   GET ?img=<code>                the card's picture (the team, a portal session)
 
@@ -133,7 +135,7 @@ module.exports = async (req, res) => {
     const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
 
     // ---- the team
-    const TEAM = ['delete', 'void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'request', 'edit', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick', 'interested', 'int_note', 'int_hide', 'int_add', 'to_interested'];
+    const TEAM = ['delete', 'void', 'stock', 'open_wave', 'list', 'confirm', 'add', 'request', 'edit', 'cancel', 'redeem', 'undo', 'resend', 'rename', 'scan', 'set', 'pick', 'interested', 'int_note', 'int_hide', 'int_add', 'to_interested', 'paylink'];
     if (TEAM.includes(b.action)) {
       const session = await require('./_lib/auth').requireRole(req, res, b.action === 'undo' ? ['admin'] : ['admin', 'manager', 'receptie']);
       if (!session) return;
@@ -157,6 +159,13 @@ module.exports = async (req, res) => {
         const orders = list.filter((r) => r.phone && (r.status === 'asteptare' || r.status === 'rezervat' || r.status === 'lead' || gaveUp(r) || dead(r))).map((r) => ({ id: r.id, created: r.created, name: r.name, phone: r.phone, city: r.city, tier: r.tier, qty: r.qty, amount: r.amount, credit: r.credit,
           pay: r.pay, status: r.status, forWho: r.forWho || '', names: r.cards.map((c) => c.recipient), held: C.live(r, now), heldUntil: r.status === 'asteptare' || r.status === 'lead' ? new Date(C.heldFrom(r) + C.HOLD_MS).toISOString() : '',
           online: r.via === 'site' && (r.pay === 'online' || !!r.convertedAt), converted: r.convertedAt || '', byHer: gaveUp(r), nameFrom: r.nameFrom || '', via: r.via || '', note: r.note || '', leadCall: r.leadCall ? r.leadCall.at : '', cancelled: dead(r) && !gaveUp(r), clientId: r.clientId || '', trail: trailOf(r), rec: recView(r) })).reverse();
+        // „Card rezervat, de încasat”: when the desk last sent her the pay link (her chat, Mesaje: cardStep 'link')
+        if (orders.some((o) => o.status === 'rezervat')) {
+          const convos = await readJSON('data/whatsapp-conversations.json', []).catch(() => []);
+          const sent = new Map();
+          (convos || []).forEach((c) => (c.messages || []).forEach((m) => { if (m.direction === 'out' && m.cardOrder && m.cardStep === 'link' && String(m.timestamp) > String(sent.get(m.cardOrder) || '')) sent.set(m.cardOrder, m.timestamp); }));
+          orders.forEach((o) => { if (sent.has(o.id)) o.linkAt = sent.get(o.id); });
+        }
         // her next appointment and the campaign wave, next to each order and each card
         const ex = await C.orderExtras(orders.concat(list.filter((r) => r.status === 'platit').map((r) => ({ id: r.id, phone: r.phone, clientId: r.clientId, tier: r.tier, paidAt: r.paidAt })))).catch(() => ({}));
         orders.forEach((o) => Object.assign(o, ex[o.id] || {}));
@@ -174,7 +183,7 @@ module.exports = async (req, res) => {
           id: r.id, created: r.created, city: r.city, tier: r.tier, name: r.name || '', last3: String(r.phone || '').replace(/\D/g, '').slice(-3), status: r.status })) }));
         const recTpl = Object.fromEntries(Object.entries(all).filter(([k]) => !C.CORE.includes(k)));
         res.status(200).json(Object.assign({ cards: cards.filter((c) => c.code).reverse(), orders, totals, templates: tpl, recTemplates: recTpl, checks, scan, treatments: await treatments(), team: emps.filter((e) => e.active !== false && ['cosmetician', 'manager'].includes(e.role)).map((e) => ({ id: e.id, name: e.name, city: e.location || '' })),
-          role: session.role, links: await C.links(), online: await C.onlineLinks() }, await C.count(list, now)));
+          role: session.role, myCity: session.role === 'receptie' ? require('./_lib/clinic').clinicOf(me.location) || '' : '', links: await C.links(), online: await C.onlineLinks() }, await C.count(list, now)));
         return;
       }
       // „Interesate” (_lib/card-interested.js): who answered the campaign's message with words and has no order
@@ -215,6 +224,13 @@ module.exports = async (req, res) => {
         const x = await C.openNext(list, session.employeeId || '');
         if (x.error) { res.status(409).json(x); return; }
         res.status(200).json(Object.assign({ ok: true, opened: x.wave }, await C.count(list)));
+        return;
+      }
+      // „Trimite linkul de plată”: her one-tap link on WhatsApp, a reservation to pay in the clinic (only on this tap)
+      if (b.action === 'paylink') {
+        const x = await C.sendPayLink(clip(b.id, 60));
+        if (x.error) { res.status(x.error === 'not_found' ? 404 : ['not_open', 'paid', 'sold_out', 'closed'].includes(x.error) ? 409 : x.error === 'bad_phone' ? 400 : 502).json(x); return; }
+        res.status(200).json({ ok: true, how: x.how });
         return;
       }
       if (b.action === 'scan') { res.status(200).json(await C.autoMatch(true)); return; }
