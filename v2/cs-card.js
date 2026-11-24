@@ -65,9 +65,18 @@
     if (CSC.tier && CSC.current) CSC.tier(CSC.current, true);
     if (bfLive()) bfLater();
   };
+  // the page's first paint already in Black Friday when it is due (the little script before the card's section adds html.cs-bf
+  // and cs-bfwait, the card's words hidden): the server's answer confirms it (and is kept for the next visit) or undoes it
+  function bfSettle() {
+    var h = document.documentElement;
+    if (!bfLive() && h.classList.contains('cs-bfwait')) h.classList.remove('cs-bf');
+    h.classList.remove('cs-bfwait');
+  }
   fetch('/api/card-sarbatori').then(function (r) { if (!r.ok) throw new Error('card'); return r.json(); }).then(function (d) {
     if (d && typeof d.left === 'number') CSC.set(d);
-  }).catch(function () {});
+    if (!/^\/v2(\/|$)/.test(location.pathname)) try { localStorage.setItem('c360bf', JSON.stringify(BF ? { s: BF.start, e: BF.end } : { off: 1 })); } catch (e) {}
+    bfSettle();
+  }).catch(bfSettle);
 
   // ---- the snow of the first screen: fine flakes, rose and gold, that fall slowly (none with reduced motion)
   var FLAKE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10"/><path d="M9.5 3.5 12 6l2.5-2.5M9.5 20.5 12 18l2.5 2.5"/></svg>';

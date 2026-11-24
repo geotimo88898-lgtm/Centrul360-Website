@@ -670,3 +670,8 @@ h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
 .cs-bf .csc-xmas .cst-t.vip:has(input:checked){ box-shadow:0 0 0 3px rgba(227,194,122,.14); }
 /* the button opaque, so the tab tucked under its edge does not show through */
 .cs-bf .csc-xmas .cs-vipon [data-cs-buy][data-cs-follow]{ background:linear-gradient(180deg,#1f1a14,#14110d) !important; -webkit-backdrop-filter:none; backdrop-filter:none; }
+
+/* the first paint in Black Friday (the script before the section, cs-card.js bfSettle): the black is there at once, the old
+   words never show; the Black Friday ones come in softly when the server confirms */
+html.cs-bfwait .csc-xmas > .wrap, html.cs-bfwait .csc-xmas > .csc-snow{ opacity:0; pointer-events:none; }
+.cs-bf .csc-xmas > .wrap{ transition:opacity .25s ease-out; }
