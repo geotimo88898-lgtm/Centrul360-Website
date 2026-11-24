@@ -492,7 +492,7 @@ async function unpick(batch) {
 // which message the next sends use (the owner, 21.11): 'bl' / 'bl490' the messages with the BioLifting gift for paying online
 // (22.11), 'v4', 'bf' (Black Friday, 24.11). Only these (the audit, 24.11): the first one, '290' and '490' still name the
 // 290 card or the EMS gift, so they can no longer be chosen; any other value is refused, never the first one by default
-const USE_TPL = { bl: 'card_sarbatori_bl', bl490: 'card_sarbatori_bl_490', v4: 'card_sarbatori_v4', bf: 'card_sarbatori_bf3' };
+const USE_TPL = { bl: 'card_sarbatori_bl', bl490: 'card_sarbatori_bl_490', v4: 'card_sarbatori_v4', bf: 'card_sarbatori_bf4' };
 async function useTemplate(v) {
   if (!Object.prototype.hasOwnProperty.call(USE_TPL, String(v || ''))) return { error: 'bad_template', allowed: Object.keys(USE_TPL) };
   const st = await loadState();
