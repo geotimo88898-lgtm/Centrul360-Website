@@ -1343,7 +1343,7 @@
     const what = (l) => (/^pachet/i.test(l.what || '') ? '' : 'pachet ') + esc(l.what || 'upsell') + (l.client && !o.noClient ? ', ' + esc(l.client) : '');
     const row = (cls, title, sub, lei, extra) => '<li class="' + cls + '"><div class="cl-main"><b>' + title + '</b><small>' + sub + '</small></div>' + (extra || '') + '<span class="cl-lei">' + lei + '</span></li>';
     const wait = (l) => (l.status === 'pending' ? ' is-wait' : '');
-    const waitTxt = (l) => (l.status === 'pending' ? ' · în așteptare' : '');
+    const waitTxt = (l) => (l.status === 'pending' ? ' · în așteptare' : '') + (l.paidCash === 'daily' ? ' · plătit cash, în ziua lui' : l.paidCash === 'day' ? ' · plătit deja' : '');
     const out = (lines || []).map((l) => {
       const day = esc(K.dateShort(l.date));
       const EX = { third: 'a 3-a vânzare din zi +50', again: 'clientă care revine +100' };
@@ -1407,7 +1407,7 @@
     const hero = !pay ? '<section class="cb-hero k-card"><div class="cb-hero-main"><span>Salariul tău · ' + esc(K.monthLabel(C.month)) + '</span><b>-</b><p>' + icon('info') + 'Nu avem date pentru luna asta.</p></div>' + monthNav(isNow) + '</section>'
       : '<section class="cb-hero k-card"><div class="cb-hero-main"><span>Salariul tău · ' + esc(K.monthLabel(C.month)) + '</span>' +
         '<b data-count="' + pay.total + '" data-fmt="lei" data-key="sl-t-' + C.month + '">0</b>' +
-        '<p>' + icon('wallet') + 'în mână' + (isNow ? ', până azi' : '') + '</p></div>' + monthNav(isNow) +
+        '<p>' + icon('wallet') + 'în mână' + (isNow ? ', până azi' : '') + (pay.toPay != null && pay.toPay < pay.total ? ' · ' + lei2(pay.total - pay.toPay) + ' primiți deja cash, ' + lei2(pay.toPay) + ' la final de lună' : '') + '</p></div>' + monthNav(isNow) +
         '<div class="cb-split">' +
           tile('user', 'Salariu de bază', pay.base ? K.lei(pay.base) : 'încă nu', pay.base ? 'net, pe lună' : 'nesetat încă') +
           tile('clock', 'Ore suplimentare', lei2(pay.overtimeLei), pay.overtimeMinutes ? hm(pay.overtimeMinutes) + ' × 40 lei' + (pay.overtimeDueLei ? ', neplătite încă (toate lunile), vin cu salariul' : '') : 'nicio oră luna asta') +
