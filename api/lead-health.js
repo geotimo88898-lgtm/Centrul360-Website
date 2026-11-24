@@ -606,6 +606,18 @@ module.exports = async (req, res) => {
     res.status(200).json({ status: r.status, city: r.city, cards: (r.cards || []).map((c) => ({ sent: c.sent || null })), rec: Object.keys(C.recOf(r)), convos: convos.filter((c) => d9(c.phone) === d9(r.phone)).length, msgs });
     return;
   }
+  // ?cardresv=<days>: the card reservations to pay in the clinic, not paid, of the last <days> days: counts and sums per
+  // clinic and card (no names or phones)
+  if (req.query && req.query.cardresv) {
+    const C = require('./_lib/card-sarbatori');
+    const days = Math.min(60, Math.max(1, Number(req.query.cardresv) || 7));
+    const since = Date.now() - days * 864e5;
+    const rows = (await readJSON(C.KEY, [])).filter((r) => r && r.status === 'rezervat' && Date.parse(r.convertedAt || r.created) > since);
+    const out = { days, n: rows.length, lei: 0, byCity: {} };
+    rows.forEach((r) => { C.norm(r); const c = out.byCity[r.city] = out.byCity[r.city] || { n: 0, lei: 0, tiers: {} }; const a = Number(r.amount) || Number(r.tier) * C.qtyOf(r); c.n++; c.lei += a; out.lei += a; c.tiers[r.tier] = (c.tiers[r.tier] || 0) + 1; });
+    res.status(200).json(out);
+    return;
+  }
   // ?cardsrc=<card id>: where one order came from (the utm values and the referrer's host, the card message's lot and
   // personal-link token if any) and whether her card message went out; never a name or phone
   if (req.query && req.query.cardsrc) {
