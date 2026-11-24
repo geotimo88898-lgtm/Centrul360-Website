@@ -901,6 +901,25 @@ module.exports = async (req, res) => {
     res.status(200).json(out);
     return;
   }
+  // ?leadq=1: the Facebook/Instagram leads' quality by week (booked, came), to compare the ad accounts (counts only)
+  if (req.query && req.query.leadq) {
+    const [leads, appts] = await Promise.all([readJSON('data/leads.json', []), readJSON('data/appointments.json', [])]);
+    const d9 = (x) => String(x || '').replace(/\D/g, '').slice(-9);
+    const byPh = new Map(); appts.forEach((a) => { const k = d9(a.clientPhone); if (k.length === 9) (byPh.get(k) || byPh.set(k, []).get(k)).push(a); });
+    const wk = (iso) => { const t = new Date(iso); const day = (t.getUTCDay() + 6) % 7; t.setUTCDate(t.getUTCDate() - day); return t.toISOString().slice(0, 10); };
+    const out = {}; const keys = {};
+    leads.forEach((l) => {
+      const src = String(l.source || '').toLowerCase(); Object.keys(l).forEach((x) => { keys[x] = 1; });
+      if (!/facebook|instagram|meta|fb|lead ?form|formular/.test(src + ' ' + String(l.formName || l.form || '')) && !l.adId && !l.formId) return;
+      const w = wk(l.createdAt || ''); if (!w || w < '2026-09-29') return;
+      const o = out[w] = out[w] || { leads: 0, booked: 0, came: 0, acct: {} };
+      o.leads++; const a = (byPh.get(d9(l.phone)) || []).filter((x) => String(x.createdAt || x.date || '') >= String(l.createdAt || '').slice(0, 10) && x.status !== 'anulata' && x.status !== 'concediu');
+      if (a.length) o.booked++; if (a.some((x) => x.status === 'finalizata' && !x.noShow)) o.came++;
+      const ac = String(l.adAccount || l.accountId || (l.meta && l.meta.account) || '?'); o.acct[ac] = (o.acct[ac] || 0) + 1;
+    });
+    Object.values(out).forEach((o) => { o.bookedPct = Math.round(o.booked * 100 / o.leads); o.camePct = Math.round(o.came * 100 / o.leads); });
+    res.status(200).json({ weeks: out, fields: Object.keys(keys).slice(0, 80) }); return;
+  }
   // ?mxdiag=1: what Admin → Mesaje's list costs (sizes and read times of what it reads; counts only)
   if (req.query && req.query.mxdiag) {
     const t = {}, n = {}; const time = async (k, f) => { const a = Date.now(); const v = await f(); t[k] = Date.now() - a; return v; };
