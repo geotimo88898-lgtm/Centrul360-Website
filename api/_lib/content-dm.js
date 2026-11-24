@@ -234,7 +234,7 @@ function problem(t, priceOk, maxBytes) {
 // the card's own facts, for a message about the card (it is not in „Ofertele active”): from the card's terms module when
 // there is one (api/_lib/card-terms.js, the card session's), else these, checked against the card audit (24.11): always
 // what she pays before what she gets; the online bonus; Black Friday while it runs (24.11 – 29.11 23:59, Romania)
-const BF_FROM = Date.parse('2026-11-23T22:00:00Z'), BF_TO = Date.parse('2026-11-29T21:59:59Z');
+const BF_FROM = Date.parse('2026-11-23T22:00:00Z'), BF_TO = Date.parse('2026-11-27T21:59:59Z');
 // Black Friday on: the card's terms module says so when it exists (its own switch), else 24.11 00:00 – 29.11 23:59:59 Romania
 function bfOn(T, t) {
   const f = T && (T.isBlackFriday || T.blackFriday || T.bfActive || T.bfOn);
