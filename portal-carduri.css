@@ -172,3 +172,17 @@
 @media (max-width:520px){ .cd .cd-tab{ padding:7px 10px; font-size:.88rem; } }
 /* an open „⋯” menu stays above the card under its list (the owner, 22.11: the next card covered „Notă” and „Nu e interesată”) */
 section:has(.cd-mw.open), .k-card:has(.cd-mw.open){ position:relative; z-index:45; }
+/* „Card rezervat, de încasat” (24.11): the reservations to call, by clinic; what to tell her opens under her name */
+.cd-resv-hint{ margin:0 0 .5rem; font-size:.8rem; color:var(--muted); }
+.cd-rg + .cd-rg{ margin-top:.8rem; }
+.cd-rg-h{ display:flex; align-items:baseline; gap:.5rem; margin:.3rem 0 .1rem; font-size:.88rem; }
+.cd-rg-h span{ font-size:.74rem; font-weight:700; padding:1px 7px; border-radius:999px; background:var(--glass-2); color:var(--fg); }
+.cd-rg-h small{ margin-left:auto; font-size:.78rem; font-weight:600; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.cd-r .k-tag svg{ width:12px; height:12px; }
+.cd-script{ display:flex; gap:.55rem; align-items:flex-start; margin:.1rem 0 .7rem; padding:.7rem .8rem; border-radius:12px; font-size:.88rem; line-height:1.5; color:var(--fg); background:var(--glass); overflow-wrap:anywhere; }
+.cd-script svg{ flex:none; width:15px; height:15px; margin-top:.2rem; color:var(--accent); }
+.cd-script span{ min-width:0; }
+/* her whole name and the whole card (the sum matters on the phone): they wrap, never cut */
+.cd-r .cd-o-t{ flex-wrap:wrap; row-gap:.1rem; }
+.cd-r .cd-o-t b{ white-space:normal; overflow:visible; overflow-wrap:anywhere; }
+.cd-r .cd-o-m{ overflow:visible; }

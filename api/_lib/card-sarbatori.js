@@ -1530,6 +1530,13 @@ async function onWhatsApp(m) {
   let reply = '', quietDesk = false;
   if (kind === 'text') { await writeJSON(KEY, list); return { quiet: false }; }
   if (r.status === 'platit') { reply = hi('Bună') + '! Plata ta e deja confirmată, iar cardul l-ai primit aici pe WhatsApp. Mulțumim!'; quietDesk = true; }
+  // a reservation for the clinic (the desk sent her the lead flow's message: sendPayLink): „Plătesc online” moves it online
+  // now (toOnline, the one-tap link) and the link goes in the answer; nothing automatic after (the desk talks to her)
+  else if (kind === 'pay' && r.status === 'rezervat' && r.pay === 'clinica') {
+    const op = await toOnline(list, r, { tap: true, by: 'whatsapp' });
+    if (op.link) { rc.stop = rc.stop || 'receptie'; reply = payLinkText(r, op.link, 'Sigur'); quietDesk = true; }
+    else reply = hi('Ne pare rău') + ', ' + (op.h === 'closed' ? 'oferta Cardului de Sărbători s-a încheiat.' : 'în acest moment nu mai avem carduri disponibile.') + ' Mulțumim!';
+  }
   else if (kind === 'pay' && openOnline(r)) {
     const h = await rehold(list, r);
     const link = h === 'ok' ? await linkOf(r) : null;
@@ -1672,14 +1679,13 @@ function leadFirst(r) {
   if (!/^[\p{L}]+(?:-[\p{L}]+)?$/u.test(w) || w.replace(/-/g, '').length < 2) return '';
   return w.slice(0, 30).toLowerCase().replace(/(^|-)(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
 }
-async function leadMsg(id) {
-  const list = await readJSON(KEY, []);
-  const r = list.find((x) => x.id === id);
-  if (!r || r.status !== 'lead' || r.leadMsg) return r ? r.leadMsg || {} : {};
-  norm(r);
+// the lead flow's first message of her card: the template (the new one of her card once Meta approves it, else „lead”), its
+// fields and her card's creative (saved for her chat). leadMsg, and the desk's „Trimite linkul de plată” outside the 24 h
+async function leadPack(r, o) {
+  o = o || {};
   const op = await onlinePay(r.tier).catch(() => ({ disc: false }));
   // („Online, cu cardul, primești în plus {{3}} și acces în Clubul 360”: the gift; the VIP: 10% off, or its card at once)
-  const emb0 = isVip(r) ? await embedded().catch(() => false) : false;
+  const emb0 = isVip(r) ? (!!o.tap || await embedded().catch(() => false)) : false; // o.tap: her link will be the one-tap one (toOnline)
   const vipOnline = emb0 ? checkoutAmount(r.tier, 1) : op.disc ? op.amount : 0;
   const vars = { suma: lei(r.amount), credit: lei(r.credit), cadoul: !isVip(r) ? giftOf(r.city) : vipOnline ? '10% reducere (' + lei(vipOnline) + ' lei)' : 'cardul pe loc, aici pe WhatsApp' };
   // the cards left of now (her own lead is already on the counter: status „lead”, held 2 hours): the same number in the
@@ -1700,6 +1706,14 @@ async function leadMsg(id) {
   const kind = want && leftN > 1 && T2.t && T2.t[want] && require('./wa-templates').overall(T2.t[want]) === 'APPROVED' ? want : 'lead'; // one left: „1 carduri” never
   vars.ramase = String(leftN);
   if (kind !== 'lead') vars.prenume = nm;
+  return { kind, vars, png, path };
+}
+async function leadMsg(id) {
+  const list = await readJSON(KEY, []);
+  const r = list.find((x) => x.id === id);
+  if (!r || r.status !== 'lead' || r.leadMsg) return r ? r.leadMsg || {} : {};
+  norm(r);
+  const { kind, vars, png, path } = await leadPack(r);
   const m = png ? await say(kind, r, vars, fill(kind, vars), png, '', { path, only: 'template', tag: { cardOrder: r.id, cardStep: 'lead' } }).catch((e) => ({ sent: false, error: e.message }))
     : { sent: false, error: 'poza cardului' };
   const res = m.sent ? { at: nowISO(), how: m.how, sent: true } : { at: nowISO(), skipped: m.tpl ? 'șablonul nu e aprobat încă' : String(m.error || 'netrimis').slice(0, 160) };
@@ -1731,6 +1745,72 @@ async function leadCall(id, why) {
   } catch (e) { console.error('card lead notify:', e.message); }
   return true;
 }
+// her card moved to the online payment (a lead's „Plătesc online”; the desk's „Trimite linkul de plată” on a reservation,
+// and her „Plătesc online” on that message): a new 2 h hold (rehold), pay 'online', the sum she pays online, the trail's line
+// (o.by: whatsapp, receptie). o.tap: the one-tap link always (api/pay-go, its sum the checkout's: the VIP 10% off); else the
+// checkout in the page while it is on, otherwise the card's PayLink (its 10% link when set). r.leadChoice and r.track stay.
+// → { h: 'ok' | 'sold_out' | 'closed', link, disc }; no link: the order as it was (its status)
+async function toOnline(list, r, o) {
+  o = o || {};
+  const was = r.status;
+  const h = await rehold(list, r);
+  if (h !== 'ok') return { h, link: null };
+  const tap = !!o.tap || (Number(r.tier) !== 290 && await embedded());
+  const op = tap ? { link: oneTap(r), amount: checkoutAmount(r.tier, qtyOf(r)), disc: isVip(r) } : await onlinePay(r.tier);
+  if (!op.link) { r.status = was; return { h, link: null }; }
+  r.pay = 'online';
+  if (tap || (Number(r.tier) !== 290 && qtyOf(r) === 1)) { r.amount = op.amount; if (op.disc) r.disc = true; else delete r.disc; }
+  mark(r, 'to_paylink', o.by || 'whatsapp');
+  return { h, link: op.link, disc: !!op.disc };
+}
+// the words with her link (the desk's tap, her „Plătesc online”): the card, the credit, the sum, and what she gets online
+const payLinkText = (r, link, hello) => { const g = leadFirst(r) || greetName(r);
+  return (hello || 'Bună') + (g ? ', ' + g : '') + '! Aici plătești ' + cardWord(r) + ' de ' + lei(r.credit) + ' lei în tratamente (' + lei(r.amount) + ' lei), pe pagina de plată securizată: ' + link +
+    '\nDupă plată primești cardul aici pe WhatsApp' + (isVip(r) ? ' și accesul în Clubul 360.' : ', plus ' + giftOf(r.city) + ' și accesul în Clubul 360.'); };
+// she wrote us in the last 24 hours (an inbound message from her phone): Meta lets a plain message through
+async function inWindow(phone, now) {
+  const t = now || Date.now(), k = d9(phone);
+  if (k.length !== 9) return false;
+  const convos = await readJSON('data/whatsapp-conversations.json', []).catch(() => []);
+  return (convos || []).some((c) => d9(c.phone) === k && (c.messages || []).some((m) => m.direction === 'in' && t - Date.parse(m.timestamp) < 24 * 3600e3));
+}
+// ---- „Trimite linkul de plată” (the desk, a reservation to pay in the clinic, the owner 24.11): only on the tap, never by
+// itself. She wrote us in the last 24 h: the order goes online (toOnline: a new 2 h hold, no recovery messages after) and
+// she gets her one-tap link as a plain message; else the order stays as it is and she gets the approved template of the
+// lead flow (her card's creative, „Plătesc online” / „Plătesc în clinică”: onWhatsApp). Both in her chat (Mesaje).
+// → { ok, how: 'text' | 'template' } | { error }
+async function sendPayLink(id) {
+  const list = await readJSON(KEY, []);
+  const r = list.find((x) => x.id === id);
+  if (!r) return { error: 'not_found' };
+  norm(r);
+  if (r.status === 'platit') return { error: 'paid' };
+  if (r.status !== 'rezervat' || r.pay !== 'clinica') return { error: 'not_open' };
+  if (!r.phone) return { error: 'bad_phone' };
+  if (Date.now() >= Date.parse(DEADLINE)) return { error: 'closed' };
+  const WA = require('./whatsapp');
+  if (await inWindow(r.phone)) {
+    const KEEP = ['status', 'pay', 'held', 'amount', 'disc', 'trail', 'rec'];
+    const keep = JSON.parse(JSON.stringify(Object.fromEntries(KEEP.map((k) => [k, r[k] === undefined ? null : r[k]]))));
+    const op = await toOnline(list, r, { tap: true, by: 'receptie' });
+    if (!op.link) { r.status = keep.status; return { error: op.h === 'ok' ? 'no_link' : op.h }; }
+    recOf(r).stop = recOf(r).stop || 'receptie'; // the desk talks to her: no automatic messages after
+    await writeJSON(KEY, list);
+    const text = payLinkText(r, op.link);
+    const y = await WA.sendWhatsApp({ phone: r.phone, text, from: r.city }).catch((e) => ({ sent: false, error: e.message }));
+    if (y.sent) { await logChat(r.phone, y.fromCity || r.city, r.name, text, '', y.id, { cardOrder: r.id, cardStep: 'link' }); return { ok: true, how: 'text' }; }
+    // not sent: the reservation as it was
+    const l2 = await readJSON(KEY, []);
+    const x = l2.find((z) => z.id === id);
+    if (x && x.status === 'asteptare') { KEEP.forEach((k) => { if (keep[k] === null) delete x[k]; else x[k] = keep[k]; }); await writeJSON(KEY, l2); }
+    return { error: 'send', detail: String(y.error || 'netrimis').slice(0, 200) };
+  }
+  const p = await leadPack(r, { tap: true });
+  if (!p.png) return { error: 'send', detail: 'poza cardului' };
+  const m = await say(p.kind, r, p.vars, fill(p.kind, p.vars), p.png, '', { path: p.path, only: 'template', tag: { cardOrder: r.id, cardStep: 'link' } }).catch((e) => ({ sent: false, error: e.message }));
+  if (m.sent) return { ok: true, how: 'template' };
+  return { error: m.tpl ? 'tpl' : 'send', detail: String(m.error || 'netrimis').slice(0, 200) };
+}
 // her button on the lead message (onWhatsApp): online → the PayLink (an online order from now); clinic → reserved
 async function leadReply(list, r, m) {
   const kind = Object.keys(LEAD_BTN).find((x) => fold(LEAD_BTN[x]) === fold(m.button || m.text)) || '';
@@ -1742,21 +1822,14 @@ async function leadReply(list, r, m) {
   const g = greetName(r), hi = (w) => w + (g ? ', ' + g : '');
   let reply = '', quietDesk = false, vipCall = false;
   if (kind === 'online') {
-    const h = await rehold(list, r);
-    // online: 10% off when its 10% link is set (the order's sum follows)
-    // the checkout in the page while it is on (its page with her order), else the PayLink
-    const emb = h === 'ok' && Number(r.tier) !== 290 && await embedded();
-    const op = h === 'ok' ? (emb ? { link: oneTap(r), amount: checkoutAmount(r.tier, 1), disc: isVip(r) } : await onlinePay(r.tier)) : null;
-    const link = op && op.link;
+    const op = await toOnline(list, r, { by: 'whatsapp' });
+    const h = op.h, link = op.link;
     if (link) {
-      r.pay = 'online';
-      if (Number(r.tier) !== 290 && qtyOf(r) === 1) { r.amount = op.amount; if (op.disc) r.disc = true; else delete r.disc; }
-      mark(r, 'to_paylink', 'whatsapp');
       reply = hi('Super') + '! Aici plătești Cardul de Sărbători de ' + lei(r.credit) + ' lei în tratamente (' + (op.disc ? lei(r.amount) + ' lei în loc de ' + lei(r.tier) + ' lei, 10% reducere la plata online' : lei(r.amount) + ' lei') + '), pe pagina securizată myPOS: ' + link +
         '\nDupă plată primești cardul aici pe WhatsApp' + (isVip(r) ? '' : ', plus ' + giftOf(r.city) + ',') + ' și accesul în Clubul 360.';
       quietDesk = true;
     } else {
-      if (r.status === 'asteptare' && r.pay !== 'online') r.status = 'lead'; // no PayLink now: she stays a lead, the desk calls her
+      // (no PayLink now: she stays a lead, the desk calls her; toOnline gave her status back)
       // the VIP one has no PayLink yet: we call her (the desk hears it now, not in 2 hours)
       if (h === 'ok' && isVip(r)) { reply = hi('Mulțumim') + '! Pentru cardul VIP te sunăm noi în curând, să stabilim plata și revizia ta completă.'; vipCall = true; }
       if (h !== 'ok') reply = hi('Ne pare rău') + ', ' + (h === 'closed' ? 'oferta Cardului de Sărbători s-a încheiat.' : 'în acest moment nu mai avem carduri disponibile.') + ' Mulțumim!';
@@ -1943,5 +2016,5 @@ module.exports = { setWave, requestFromTap, deleteOrder, orderExtras,
   KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT, GIFT_TM, GIFT_ARAD, giftOf, giftShort, giftFor, DISC_TIERS, discOf, onlineLinks, onlinePay, linkOf, siteLinks, sumOk, embedded, setEmbedded, checkoutAmount, checkoutUrl, payQuote, payPaid, payContact, TPL,
   byId, VIP, SALE, isVip, vipLeft, stockFor, leftFor, lostRace, sarb, norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
-  supersede, supersedeOnce, request, editOrder, reserveFromLead, leadMsg, leadCall, leadReply, LEAD_BTN, CORE, REC_BTN, NAME_BTN, NONAME, CHECK, REASONS, needsName, knownName, nameLead, sendCards, askName, cleanName, pick, openCheckOf, openChecks, greetName, mark, recOf, heldFrom, rehold, back, answer, toClinic, recover, recoverIfIdle, onWhatsApp, abandonStats, cardsLeft, quiet, awake,
+  supersede, supersedeOnce, request, editOrder, reserveFromLead, leadMsg, leadPack, toOnline, payLinkText, inWindow, sendPayLink, leadCall, leadReply, LEAD_BTN, CORE, REC_BTN, NAME_BTN, NONAME, CHECK, REASONS, needsName, knownName, nameLead, sendCards, askName, cleanName, pick, openCheckOf, openChecks, greetName, mark, recOf, heldFrom, rehold, back, answer, toClinic, recover, recoverIfIdle, onWhatsApp, abandonStats, cardsLeft, quiet, awake,
 };
