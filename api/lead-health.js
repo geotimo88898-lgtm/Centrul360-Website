@@ -782,6 +782,16 @@ module.exports = async (req, res) => {
     res.status(200).json({ ok: true, status: r.status, tier: r.tier, link: require('./_lib/pay').cardLink(r.id) });
     return;
   }
+  // ?sitefunnel=YYYY-MM-DD: that day's site funnel (counts only): per source the steps, per card segment (utm_campaign or
+  // the card page, phone / computer) the card's steps (24.11, to read what an ad's visitors did)
+  if (req.query && req.query.sitefunnel) {
+    const day = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.sitefunnel)) ? String(req.query.sitefunnel) : new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+    const doc = await readJSON('data/site/funnel-' + day + '.json', null).catch(() => null);
+    const k = {}; Object.entries((doc && doc.k) || {}).forEach(([g, x]) => { k[g] = Object.fromEntries(Object.entries(x).filter(([n]) => n !== 'h')); });
+    const camps = {}; Object.values((doc && doc.s) || {}).forEach((row) => { const c = (row && row[2]) || ''; if (c) camps[c] = (camps[c] || 0) + 1; });
+    res.status(200).json({ ok: true, day, sources: (doc && doc.f) || {}, segments: k, campaigns: camps });
+    return;
+  }
   if (req.query && req.query.cardrecent) {
     const C = require('./_lib/card-sarbatori');
     const list = await readJSON(C.KEY, []);
