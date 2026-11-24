@@ -802,13 +802,21 @@ module.exports = async (req, res) => {
     const orders = await readJSON('data/card-sarbatori.json', []);
     const forms = await readJSON('data/fb-forms.json', {}).catch(() => ({}));
     const fl = Array.isArray(forms) ? forms : Array.isArray(forms.forms) ? forms.forms : Object.entries(forms.forms || forms || {}).map(([id, f]) => Object.assign({ id }, f || {}));
-    const ids = [...new Set([].concat(
+    // ?fbform=active: every form of the page with a lead in the last 14 days (the treatments' forms: HIFU, Liposonix…)
+    const act = String(req.query.fbform) === 'active';
+    let actIds = [];
+    if (act) {
+      const lr = await fetch('https://graph.facebook.com/v25.0/' + encodeURIComponent(conn.pageId) + '/leadgen_forms?' + new URLSearchParams({ fields: 'id,name,status,leads.limit(1){created_time}', limit: '100', access_token: conn.pageAccessToken })).then((x) => x.json()).catch(() => ({}));
+      const cut = Date.now() - 14 * 864e5;
+      actIds = (lr.data || []).filter((f) => f.status === 'ACTIVE' && f.leads && f.leads.data && f.leads.data[0] && Date.parse(f.leads.data[0].created_time) > cut).map((f) => f.id);
+    }
+    const ids = act ? actIds : [...new Set([].concat(
       leads.filter((l) => l && l.form && l.form.id && String(l.createdAt || '') >= since && /card/i.test(String(l.interest || ''))).map((l) => l.form.id),
       orders.filter((r) => r && r.via === 'meta-form' && String(r.created || '') >= since && r.track && r.track.formId).map((r) => r.track.formId),
       fl.filter((f) => f && /card|sărb|sarb/i.test(String(f.name || '')) && String(f.lastAt || '') >= since).map((f) => f.id || f.formId)).filter(Boolean))];
     const fields = 'id,name,status,locale,questions,context_card{title,content,style,button_text},thank_you_page{title,body,button_text,button_type,website_url,business_phone_number,enable_messenger,gated_file},privacy_policy_url,follow_up_action_url,is_optimized_for_quality,leads_count';
     const out = [];
-    for (const id of ids.slice(0, 5)) {
+    for (const id of ids.slice(0, 12)) {
       const r = await fetch('https://graph.facebook.com/v25.0/' + encodeURIComponent(id) + '?' + new URLSearchParams({ fields, access_token: conn.pageAccessToken })).then((x) => x.json()).catch((e) => ({ error: { message: e.message } }));
       out.push(r.error ? { id, error: String(r.error.message || '').slice(0, 200) } : r);
     }
