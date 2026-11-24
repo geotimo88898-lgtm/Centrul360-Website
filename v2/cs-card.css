@@ -525,3 +525,38 @@ h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
 .bf-tier .bf-cl em{ font-style:normal; font-weight:600; white-space:nowrap; }
 /* another card chosen: the 990 one keeps its gold, quieter, so the chosen one reads as chosen */
 .cs-bf .csc-xmas .cst-t.best:not(:has(input:checked)){ box-shadow:0 0 0 1px rgba(226,180,88,.55) inset; }
+
+/* only the card block is black and gold; under it a long soft fade into the page, which goes on as always (the owner,
+   24.11: „să-și dea un fade clar super nice”): no edge, no rounded corners, a quiet gold glow where the dark ends */
+.cs-bf .csc-xmas{ --bf-fade:200px; border-radius:0; padding-bottom:calc(var(--bf-fade) + 24px);
+  background:
+    radial-gradient(46% 90px at 50% calc(100% - var(--bf-fade)), rgba(226,180,88,.2), transparent 72%),
+    radial-gradient(60% 30% at 50% 24%, rgba(140,20,64,.42), transparent 70%), radial-gradient(70% 26% at 50% 0%, rgba(107,79,31,.55), transparent 72%),
+    radial-gradient(50% 26% at 85% 62%, rgba(107,79,31,.22), transparent 70%),
+    linear-gradient(180deg, #15100a 0%, #0b0906 40%, #060504 calc(100% - var(--bf-fade) - 40px),
+      rgba(8,6,4,.9) calc(100% - var(--bf-fade) * .78), rgba(10,8,5,.66) calc(100% - var(--bf-fade) * .55),
+      rgba(12,9,6,.36) calc(100% - var(--bf-fade) * .32), rgba(14,10,6,.12) calc(100% - var(--bf-fade) * .14), rgba(14,10,6,0) 100%); }
+/* the gold line where the dark starts to go: thin, brightest in the middle, gone at the sides */
+.cs-bf .csc-xmas::before{ inset:auto 0 calc(var(--bf-fade) - 1px) 0; height:1px; z-index:0; opacity:1; background-size:auto;
+  background-image:linear-gradient(90deg, rgba(240,207,131,0) 8%, rgba(240,207,131,.55) 50%, rgba(240,207,131,0) 92%);
+  -webkit-mask-image:none; mask-image:none; }
+.cs-bf .csc-xmas::after{ -webkit-mask-image:radial-gradient(80% 50% at 50% 35%,#000,transparent); mask-image:radial-gradient(80% 50% at 50% 35%,#000,transparent); }
+@media (max-width:640px){ .cs-bf .csc-xmas{ --bf-fade:150px; padding-bottom:calc(var(--bf-fade) + 12px); } }
+@media (min-width:921px){ .cs-bf .csc-xmas{ border-radius:0; } }
+/* the fade through warm gold, not grey: dark, bronze, champagne, then the page. When the lead filter's section follows
+   (home, card page), the fade ends in its own colour and the two meet with no line and no gap */
+.cs-bf .csc-xmas{ background:
+    radial-gradient(46% 90px at 50% calc(100% - var(--bf-fade)), rgba(226,180,88,.2), transparent 72%),
+    radial-gradient(60% 30% at 50% 24%, rgba(140,20,64,.42), transparent 70%), radial-gradient(70% 26% at 50% 0%, rgba(107,79,31,.55), transparent 72%),
+    radial-gradient(50% 26% at 85% 62%, rgba(107,79,31,.22), transparent 70%),
+    linear-gradient(180deg, #15100a 0%, #0b0906 40%, #060504 calc(100% - var(--bf-fade) - 30px),
+      rgba(24,17,10,.95) calc(100% - var(--bf-fade) * .8), rgba(66,48,27,.78) calc(100% - var(--bf-fade) * .6),
+      rgba(150,118,74,.46) calc(100% - var(--bf-fade) * .4), rgba(226,204,160,.2) calc(100% - var(--bf-fade) * .2), rgba(255,255,255,0) 100%); }
+.cs-bf .csc-xmas:has(~ .lfs-sec){ background:
+    radial-gradient(46% 90px at 50% calc(100% - var(--bf-fade)), rgba(226,180,88,.2), transparent 72%),
+    radial-gradient(60% 30% at 50% 24%, rgba(140,20,64,.42), transparent 70%), radial-gradient(70% 26% at 50% 0%, rgba(107,79,31,.55), transparent 72%),
+    radial-gradient(50% 26% at 85% 62%, rgba(107,79,31,.22), transparent 70%),
+    linear-gradient(180deg, #15100a 0%, #0b0906 40%, #060504 calc(100% - var(--bf-fade) - 30px),
+      #1b140c calc(100% - var(--bf-fade) * .8), #4a3720 calc(100% - var(--bf-fade) * .6),
+      #a88d62 calc(100% - var(--bf-fade) * .4), #e6dcc4 calc(100% - var(--bf-fade) * .2), #eef9f7 100%); }
+.cs-bf .csc-xmas ~ .lfs-sec{ margin-top:0; border-top:0; }
