@@ -278,9 +278,11 @@ function sitePayload(o, rq, now) {
   const ev = {
     event_name: o.name, event_time: Math.floor((now || Date.now()) / 1000), event_id: String(o.eventId), action_source: 'website',
     event_source_url: rq.url || SITE + '/',
-    user_data: userData({ phone: o.phone, email: o.email, externalId: o.leadId, ip: rq.ip, ua: rq.ua, fbp: rq.fbp, fbc: rq.fbc }),
+    user_data: userData({ phone: o.phone, email: o.email, externalId: o.leadId, leadId: o.metaLeadId, ip: rq.ip, ua: rq.ua, fbp: rq.fbp, fbc: rq.fbc }),
   };
   if (Object.keys(custom).length) ev.custom_data = custom;
+  // a lead from a Meta lead form (its leadgen id): the CRM event Meta credits to the lead ad
+  if (o.metaLeadId) { ev.custom_data = Object.assign({}, ev.custom_data, { event_source: 'crm', lead_event_source: 'Centrul360' }); }
   return ev;
 }
 
