@@ -588,3 +588,12 @@ h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
 .cs-bf .csc-xmas .cst-go > *{ min-width:0; max-width:100%; }
 @media (max-width:400px){ .cs-bf .csc-xmas .cst-gift{ font-size:12.5px; } }
 @media (max-width:360px){ .cs-bf .csc-xmas .cst-gift{ font-size:12px; white-space:normal; text-align:center; line-height:1.3; border-radius:16px; } }
+/* the gift sits on the pink button again, as its tab (the owner, 24.11): blush with deep magenta words, the same family as
+   the button and clearly apart from it, never gold; its bottom goes under the button's top edge, so the two read as one */
+.cs-bf .csc-xmas .cst-gift{ justify-self:center; width:calc(100% - 64px); box-sizing:border-box; justify-content:center; margin:0 0 -24px; padding:7px 14px 22px;
+  border-radius:16px 16px 0 0; font-size:13.5px; font-weight:700; color:#c2124f; text-shadow:none;
+  background:linear-gradient(180deg,#fff4f8 0%,#fde7ef 100%); box-shadow:0 0 0 1px rgba(255,255,255,.6) inset, 0 -6px 18px -8px rgba(255,61,132,.45); }
+.cs-bf .csc-xmas .cst-gift svg, .cs-bf .csc-xmas .cst-gift .cst-gi{ color:#c2124f; stroke:#c2124f; }
+.cs-bf .csc-xmas .cst-gift + .btn{ position:relative; z-index:2; }
+@media (max-width:400px){ .cs-bf .csc-xmas .cst-gift{ width:calc(100% - 48px); font-size:12.5px; } }
+@media (max-width:360px){ .cs-bf .csc-xmas .cst-gift{ width:calc(100% - 40px); font-size:12px; white-space:normal; text-align:center; line-height:1.3; border-radius:14px 14px 0 0; } }
