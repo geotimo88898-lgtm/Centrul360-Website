@@ -675,3 +675,14 @@ h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
    words never show; the Black Friday ones come in softly when the server confirms */
 html.cs-bfwait .csc-xmas > .wrap, html.cs-bfwait .csc-xmas > .csc-snow{ opacity:0; pointer-events:none; }
 .cs-bf .csc-xmas > .wrap{ transition:opacity .25s ease-out; }
+
+/* the +500 seal (the owner, 24.11: „repară badge-ul… să fie tot timpul peste fundă și să arate bine scrisul în el”): always
+   centred on the bow's knot (the bow: left 62.8cqw, width 31cqw, the ribbons' cross at 78.3cqw / ~21cqw of the card), the
+   same share of the card on every screen, and its words sized on the seal itself, so they always sit inside the ring */
+.cs-bf .csc-float > .bf-seal{ left:64.5%; top:-3.2%; right:auto; width:34%; height:auto; aspect-ratio:1; container-type:inline-size;
+  transform:rotate(8deg); gap:0; padding:0; }
+.cs-bf .csc-float > .bf-seal::before{ inset:5.5cqw; }
+.cs-bf .csc-float > .bf-seal small{ font-size:7.2cqw; letter-spacing:.14em; line-height:1; }
+.cs-bf .csc-float > .bf-seal b{ font-size:30cqw; line-height:.92; margin-top:1.5cqw; }
+.cs-bf .csc-float > .bf-seal em{ font-size:9cqw; letter-spacing:.26em; line-height:1; margin-left:.26em; }
+.cs-bf .csc-float > .bf-seal i{ font-size:6.3cqw; letter-spacing:.05em; padding:1.8cqw 4cqw 1.4cqw; margin-top:3.2cqw; }
