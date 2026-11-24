@@ -487,7 +487,7 @@ async function unpick(batch) {
 async function useTemplate(v) {
   const st = await loadState();
   // 'bl' / 'bl490': the messages with the BioLifting gift for paying online (the owner, 22.11)
-  st.pre = ({ '290': 'card_sarbatori_290', '490': 'card_sarbatori_490', bl: 'card_sarbatori_bl', bl490: 'card_sarbatori_bl_490', v4: 'card_sarbatori_v4' })[v] || '';
+  st.pre = ({ '290': 'card_sarbatori_290', '490': 'card_sarbatori_490', bl: 'card_sarbatori_bl', bl490: 'card_sarbatori_bl_490', v4: 'card_sarbatori_v4', bf: 'card_sarbatori_bf' })[v] || '';
   await saveState(st);
   return { ok: true, template: st.pre || 'card_sarbatori' };
 }
