@@ -1906,7 +1906,8 @@ async function linkDraft(list, x, now) {
   const d = r ? Object.assign(JSON.parse(JSON.stringify(r)), { name: r.name || name }) : { id: '', name, phone: x.phone, city: x.city, tier: x.tier, qty: 1, credit: TIERS[x.tier], forWho: 'eu', cards: [{ code: '', recipient: '' }] };
   d.amount = checkoutAmount(d.tier, qtyOf(d));
   // the link is the online payment: Black Friday's credit (3.000 for a 990 card) when it is on (the owner, 24.11)
-  d.credit = onlineCredit(d, await T.bfSwitch().catch(() => ({ on: false })));
+  // (counted as the tap would leave it: sent to the online payment now)
+  d.credit = onlineCredit(Object.assign({}, d, { created: d.created || new Date(now).toISOString(), trail: (d.trail || []).concat({ ev: 'to_paylink', at: new Date(now).toISOString() }) }), await T.bfSwitch().catch(() => ({ on: false })));
   return { r, d };
 }
 // her open orders, her last link (48 h) and, for one phone, the exact message the tap would send
