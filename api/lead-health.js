@@ -448,6 +448,12 @@ module.exports = async (req, res) => {
     res.status(200).json(out);
     return;
   }
+  // ?viptop=1&city=Timișoara|Arad&n=30: the clinic's best clients for a personal call (the owner, 24.11), read only
+  // (api/_lib/vip-top.js); the answer has names and phones, so it is never logged
+  if (req.query && req.query.viptop) {
+    try { res.status(200).json(await require('./_lib/vip-top').top({ city: String(req.query.city || ''), n: req.query.n })); } catch (e) { res.status(500).json({ error: 'viptop_failed' }); }
+    return;
+  }
   if (req.query && req.query.verify) {
     try { res.status(200).json(await verifyNumbers(req.query.month)); } catch (e) { res.status(500).json({ error: String(e.message || e).replace(PHONE, '…').slice(0, 200) }); }
     return;
