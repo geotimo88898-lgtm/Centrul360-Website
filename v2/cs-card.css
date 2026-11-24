@@ -565,3 +565,5 @@ h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
 .cs-bf .csc-xmas{ background-image:linear-gradient(180deg, rgba(248,245,239,.96) 0, rgba(248,245,239,.55) 34px, rgba(248,245,239,0) 74px), var(--bf-bg); }
 /* the decorations never take a tap (glows, the seal, the moving row, the live dot, the fades) */
 .bf-rib, .bf-rib *, .bf-seal, .bf-seal *, .bf-live, .bf-live::after, .bf-mark, .cs-bf .csc-xmas::before, .cs-bf .csc-xmas::after{ pointer-events:none; }
+/* the seal flat on the card (no translateZ): nothing of the layer is lifted in 3D over the page's fixed bars on iOS */
+.cs-bf .bf-seal{ transform:rotate(10deg); }
