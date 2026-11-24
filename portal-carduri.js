@@ -636,6 +636,8 @@
       footer: '<button type="button" class="k-btn" data-cancel>Renunță</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Emite cardul</button>',
       onMount(root, h) {
         const f0 = root.querySelector('[data-f]'), sum = root.querySelector('[data-sum]');
+        // her name or phone: pick her from the contacts (the owner, 24.11), as on „Adaugă cerere”
+        contacts(f0);
         // online: the full sum or the 10% one (its PayLink, 22.11)
         f0.addEventListener('click', () => setTimeout(() => { const v = K.formValues(f0); sum.hidden = !(v.via === 'online' && v.tier === '9900'); }, 0));
         root.querySelector('[data-cancel]').addEventListener('click', () => h.close());
