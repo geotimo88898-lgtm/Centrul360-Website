@@ -597,13 +597,13 @@ const VIP_WHAT = 'Cardul VIP e pentru tine și cei dragi și începe cu revizia 
 const cardWord = (r) => (isVip(r) ? 'Cardul VIP Transformarea 360' : 'Cardul de Sărbători');
 function cardText(r, c) {
   const gf = giftFor(r, c);
-  const extra = (isVip(r) ? VIP_WHAT + ' ' : '') + (r.bonus ? (gf ? 'Cadou: ' + gf + '. ' : '') + 'Locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code : 'Te așteptăm cu drag.');
+  const extra = (isVip(r) ? VIP_WHAT + ' ' : '') + (r.bonus ? (gf ? 'Cadou: ' + gf + ', îl programezi odată cu primul tratament, spune doar codul cardului. ' : '') + 'Locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code : 'Te așteptăm cu drag.');
   const g = greetName(r);
   return { vars: { prenume: g || 'dragă', credit: lei(c.value), cod: c.code, cadou: extra },
     text: 'Bună' + (g ? ', ' + g : '') + '! ' + (isVip(r) ? '💎 Cardul tău VIP Transformarea 360' : '🎁 Cardul tău de Sărbători') + ' Centrul360 este activ' + (c.recipient && c.recipient !== r.name ? ' (pe numele ' + c.recipient + ')' : '') + ':\n' +
       '• credit de ' + lei(c.value) + ' lei, pentru orice tratament la prețul de listă' + (isVip(r) ? ', pentru tine și cei dragi' : '') + '\n• cod ' + c.code + '\n• valabil până pe ' + VALID_TXT + '\n' +
       (isVip(r) ? '• începem cu revizia completă și planul tău personal: te sunăm să o programăm\n' : '') +
-      (r.bonus ? (gf ? '• cadou: ' + gf + (gf === GIFT_TM ? ' (în clinica din Timișoara)' : '') + '\n' : '') + '• locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code + '\n' : '') +
+      (r.bonus ? (gf ? '• cadou: ' + gf + (gf === GIFT_TM ? ' (în clinica din Timișoara)' : '') + ', îl programezi odată cu primul tratament\n' : '') + '• locul tău în Clubul 360 e rezervat: ' + CLUB_URL + '?cod=' + c.code + '\n' : '') +
       '\nPentru programare răspunde la acest mesaj. Mulțumim!' };
 }
 // her card, out on WhatsApp; what happened is kept on the card (the portal shows „de trimis manual” when it could not go)
@@ -781,7 +781,7 @@ async function confirm(id, via, o) {
   try {
     const capi = require('./meta-capi');
     const t = r.track || {};
-    await capi.soon(() => capi.laterEvent({ name: 'Purchase', eventId: 'purchase.' + r.id, phone: r.phone, leadId: r.leadId, url: t.url || r.page,
+    await capi.soon(() => capi.laterEvent({ name: 'Purchase', eventId: 'purchase.' + r.id, phone: r.phone, leadId: r.leadId, metaLeadId: t.leadId || '', url: t.url || r.page,
       custom: { value: r.paidAmount } }, t));
   } catch (e) { console.error('card purchase capi:', e.message); }
 
@@ -804,7 +804,7 @@ async function confirm(id, via, o) {
       kind: 'money', tone: 'good', go: 'carduri', tag: posPaid ? posPaid.tag : 'card-paid-' + r.id, quiet: !!posPaid, ref: r.paidVia === 'clinica' && r.payMethod === 'card' ? N.payRef('desk', r.paidAmount) : '',
       title: sarb(r.tier, r.amount) + ' · PLĂTIT' + (r.paidVia === 'online' ? ' ONLINE' : '') + N.cityTag(r.city),
       text: (r.name || r.hint || 'numele vine pe WhatsApp') + ' · ' + r.qty + ' × ' + r.tier + ' lei (credit ' + lei(r.credit) + ') · ' + r.cards.map((c) => c.code).join(', ') + (r.bonus ? (isVip(r) ? (r.disc ? ' · 10% reducere online' : '') + ' · + Clubul 360' : ' · + ' + giftShort(r.city) + ' și Clubul 360') : '') +
-        (o.match ? ' · găsit automat în myPOS' : ''),
+        (o.match && o.match.src !== 'checkout' ? ' · găsit automat în myPOS' : ''),
     });
   } catch (e) { console.error('card notify:', e.message); }
   // a VIP one: the desk books her full review and her plan (the card's row shows „Revizie: de programat / programată …”)
@@ -1318,6 +1318,8 @@ async function toClinic(id, how) {
   if (!openOnline(r) && r.status !== 'lead') return { error: 'not_open' };
   const h = await rehold(list, r); // a hold that is over takes a card only when one is left
   if (h !== 'ok') { await writeJSON(KEY, list); return { error: h }; }
+  // the clinic: the full price (the 10% of a VIP chosen online first is only for the online payment)
+  if (Number(r.tier) !== 290) { r.amount = Number(r.tier) * qtyOf(r); delete r.disc; }
   Object.assign(r, { status: 'rezervat', pay: 'clinica', convertedAt: nowISO() });
   supersede(list, r);
   recOf(r).stop = recOf(r).stop || 'converted';
@@ -1439,7 +1441,7 @@ async function recover(now) {
     else if (rc.wa1.ok && !rc.wa2) { step = 'wa2'; from = awake(Date.parse(rc.wa1.at) + 24 * 3600e3 - 10 * 60e3); end = from + 3 * 3600e3; }
     if (!step) { stop(r, 'done'); continue; }
     if (t < from || quiet(t)) continue;
-    if (t > end) { rc[step] = { at: new Date(t).toISOString(), ok: false, error: rc[step + 'Wait'] || 'nu a plecat la timp' }; mark(r, step, 'netrimis: ' + rc[step].error); changed.add(r); if (step === 'wa1') stop(r, 'missed'); continue; }
+    if (t > end) { rc[step] = { at: new Date(t).toISOString(), ok: false, error: rc[step + 'Wait'] || 'nu a plecat la timp' }; mark(r, step, 'netrimis: ' + rc[step].error); changed.add(r); if (step === 'wa1') { stop(r, 'missed'); if (r.via === 'meta-form') leadCall(r.id, 'readucerea pe WhatsApp n-a plecat').catch(() => {}); } continue; }
     if (!cnt) cnt = await count(list, t);
     if (!live(r, t) && leftFor(cnt, r.tier, r.city) < qtyOf(r)) { stop(r, 'stock'); continue; }
     if (step === 'wa2' && leftFor(cnt, r.tier, r.city) < 1) { stop(r, 'stock'); continue; }
@@ -1495,7 +1497,7 @@ async function onWhatsApp(m) {
   const list = await readJSON(KEY, []);
   const k9 = d9(m.phone);
   let r = m.order ? list.find((x) => x.id === m.order) : null;
-  if (!r && k9.length === 9) r = list.filter((x) => d9(x.phone) === k9 && (x.status === 'lead' || (x.rec && x.rec.wa1 && x.rec.wa1.ok) || (x.naming && x.naming.state !== 'done'))).sort((a, b) => Date.parse(b.created) - Date.parse(a.created))[0] || null;
+  if (!r && k9.length === 9) r = list.filter((x) => d9(x.phone) === k9 && (x.status === 'lead' || (x.rec && x.rec.wa1 && x.rec.wa1.ok) || (x.naming && x.naming.state !== 'done') || (x.leadChoice && ['asteptare', 'rezervat'].includes(x.status)))).sort((a, b) => Date.parse(b.created) - Date.parse(a.created))[0] || null;
   if (!r) return null;
   norm(r);
   // a lead from the ads' form: her choice, online or in the clinic (leadReply)
@@ -1504,10 +1506,13 @@ async function onWhatsApp(m) {
   if (r.status === 'platit' && r.naming && r.naming.state !== 'done') return named(r, m);
   if (r.status === 'platit' && !(r.rec && r.rec.wa1)) return null;
   const rc = recOf(r);
-  const kind = Object.keys(REC_BTN).find((k) => fold(REC_BTN[k]) === fold(m.button || m.text)) || 'text';
-  if (kind === 'text' && rc.replied) return null; // she talks to the desk now: Mesaje as always
+  // the recovery's buttons, and the lead message's own (tapped again after her first choice)
+  const said = fold(m.button || m.text);
+  const kind = Object.keys(REC_BTN).find((k) => fold(REC_BTN[k]) === said) || (said === fold(LEAD_BTN.online) ? 'pay' : said === fold(LEAD_BTN.clinic) ? 'clinic' : 'text');
+  if (kind === 'text' && (rc.replied || !(r.rec && r.rec.wa1))) return null; // she talks to the desk now: Mesaje as always
   if (m.msgId && rc.replied && rc.replied.msg === m.msgId) return { quiet: true }; // Meta sent it twice
-  rc.stop = rc.stop || 'replied';
+  // „Finalizez plata” gives the link and the recovery goes on (she may still not pay); any other answer stops it
+  if (kind !== 'pay') rc.stop = rc.stop || 'replied';
   rc.replied = { at: nowISO(), what: kind, msg: String(m.msgId || '').slice(0, 80) };
   mark(r, 'replied', kind);
   if (!r.hint && m.waName && m.waName !== NONAME) r.hint = String(m.waName).slice(0, 80);
@@ -1520,7 +1525,7 @@ async function onWhatsApp(m) {
     const link = h === 'ok' ? await linkOf(r) : null;
     if (link) {
       mark(r, 'to_paylink', 'whatsapp');
-      reply = hi('Sigur') + '! Aici plătești Cardul de Sărbători de ' + lei(r.credit) + ' lei în tratamente (' + lei(r.amount) + ' lei), pe pagina securizată myPOS: ' + link + '\nCardul îți vine aici pe WhatsApp imediat ce se confirmă plata.';
+      reply = hi('Sigur') + '! Aici plătești ' + cardWord(r) + ' de ' + lei(r.credit) + ' lei în tratamente (' + lei(r.amount) + ' lei), pe pagina de plată securizată: ' + link + '\nCardul îți vine aici pe WhatsApp imediat ce se confirmă plata.';
       quietDesk = true;
     } else if (h !== 'ok') reply = hi('Ne pare rău') + ', ' + (h === 'closed' ? 'oferta Cardului de Sărbători s-a încheiat.' : 'în acest moment nu mai avem carduri disponibile.') + ' Mulțumim!';
   } else if (kind === 'no') {
@@ -1531,7 +1536,8 @@ async function onWhatsApp(m) {
   await writeJSON(KEY, list);
   if (kind === 'clinic' && r.status !== 'platit') {
     const x = await toClinic(r.id, 'whatsapp');
-    if (x.ok && !x.paid) { reply = hi('Gata') + '! Ți-am rezervat Cardul de Sărbători de ' + lei(r.credit) + ' lei în tratamente. Îl plătești în clinică (' + (ADDR[r.city] || ADDR['Timișoara']) + '), cash sau card. Te sună recepția să stabiliți când treci.'; quietDesk = true; }
+    if (x.ok && !x.paid && !x.again) { reply = hi('Gata') + '! Ți-am rezervat ' + cardWord(r) + ' de ' + lei(r.credit) + ' lei în tratamente. Îl plătești în clinică (' + (ADDR[r.city] || ADDR['Timișoara']) + '), cash sau card. Te sună recepția să stabiliți când treci.'; quietDesk = true; }
+    else if (x.ok && x.again) { reply = hi('Bună') + '! Cardul tău e deja rezervat. Te sună recepția să stabiliți când treci.'; quietDesk = true; }
     else if (x.error === 'sold_out' || x.error === 'closed') reply = hi('Ne pare rău') + ', ' + (x.error === 'closed' ? 'oferta Cardului de Sărbători s-a încheiat.' : 'în acest moment nu mai avem carduri disponibile.') + ' Mulțumim!';
   }
   // the answer, inside the 24 hours she opened by writing; in her chat like every card message
@@ -1620,7 +1626,15 @@ async function reserveFromLead(o) {
   const k = d9(phone);
   const mine = list.filter((r) => d9(r.phone) === k && (r.status === 'lead' || r.status === 'rezervat' || (r.status === 'asteptare' && now - heldFrom(r) < MATCH_MS)))
     .sort((a, b) => Date.parse(b.created) - Date.parse(a.created))[0];
-  if (mine) return { ok: true, id: mine.id, sent: false, again: true };
+  if (mine) {
+    // her new ad answer: the first one stays (track), this one kept as srcLast, and the desk calls her (not silence)
+    const s0 = o.source && typeof o.source === 'object' ? o.source : {};
+    mine.srcLast = Object.assign({ at: new Date(now).toISOString() }, ...['utm_source', 'utm_campaign', 'utm_content', 'adId', 'adsetId', 'campaignId', 'formId', 'leadId'].filter((x) => s0[x]).map((x) => ({ [x]: String(s0[x]).slice(0, 120) })));
+    mark(mine, 'lead_again', String(tier));
+    await writeJSON(KEY, list);
+    leadCall(mine.id, 'a completat din nou formularul').catch(() => {});
+    return { ok: true, id: mine.id, sent: false, again: true };
+  }
   const c0 = await stockFor(list, tier, city, 1, now);
   if (!c0.ok) return { error: c0.error === 'closed' ? 'closed' : 'sold_out' };
   // her name: the form's, else ours (clients, then leads); nameFrom says which
@@ -1655,7 +1669,9 @@ async function leadMsg(id) {
   norm(r);
   const op = await onlinePay(r.tier).catch(() => ({ disc: false }));
   // („Online, cu cardul, primești în plus {{3}} și acces în Clubul 360”: the gift; the VIP: 10% off, or its card at once)
-  const vars = { suma: lei(r.amount), credit: lei(r.credit), cadoul: !isVip(r) ? giftOf(r.city) : op.disc ? '10% reducere (' + lei(op.amount) + ' lei)' : 'cardul pe loc, aici pe WhatsApp' };
+  const emb0 = isVip(r) ? await embedded().catch(() => false) : false;
+  const vipOnline = emb0 ? checkoutAmount(r.tier, 1) : op.disc ? op.amount : 0;
+  const vars = { suma: lei(r.amount), credit: lei(r.credit), cadoul: !isVip(r) ? giftOf(r.city) : vipOnline ? '10% reducere (' + lei(vipOnline) + ' lei)' : 'cardul pe loc, aici pe WhatsApp' };
   // the cards left of now (her own lead is already on the counter: status „lead”, held 2 hours): the same number in the
   // picture, in the text and on the site (the VIP: its clinic's)
   const cnt = await count(await readJSON(KEY, [])).catch(() => null);
@@ -1671,7 +1687,7 @@ async function leadMsg(id) {
   const T2 = await templates().catch(() => ({ t: {} }));
   const nm = leadFirst(r);
   const want = isVip(r) ? (nm ? 'vip3n' : 'vip3') : [490, 990].includes(Number(r.tier)) ? (nm ? 'lead3n' : 'lead3') : '';
-  const kind = want && T2.t && T2.t[want] && require('./wa-templates').overall(T2.t[want]) === 'APPROVED' ? want : 'lead';
+  const kind = want && leftN > 1 && T2.t && T2.t[want] && require('./wa-templates').overall(T2.t[want]) === 'APPROVED' ? want : 'lead'; // one left: „1 carduri” never
   vars.ramase = String(leftN);
   if (kind !== 'lead') vars.prenume = nm;
   const m = png ? await say(kind, r, vars, fill(kind, vars), png, '', { path, only: 'template', tag: { cardOrder: r.id, cardStep: 'lead' } }).catch((e) => ({ sent: false, error: e.message }))

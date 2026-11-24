@@ -312,11 +312,11 @@ async function createOrder({ kind, ref, input, host, track }) {
     ...(input && input.notice && name && phone ? { consent: true, notice: { kind: clip(input.notice, 40), text: 'Îți trimitem confirmarea pe WhatsApp.', at: nowISO() } } : {}), createdAt: nowISO(), paidAt: '', mypos: {}, handled: false,
     sandbox: pv.sandbox, test: kind === 'test', track: track || null, provider: pv.name,
     // where she came from (the page's first touch of the visit, c360-pay.js): saved for the reports, never shown
-    ...(kind === 'test' ? {} : { src: sourceOf(input && input.src && typeof input.src === 'object' ? input.src : q.src, (input && input.cookie) || q.cookie, (input && input.ua) || q.app) }),
+    ...(kind === 'test' ? {} : { src: input && input.srcKeep && typeof input.srcKeep === 'object' ? input.srcKeep : sourceOf(input && input.src && typeof input.src === 'object' ? input.src : q.src, (input && input.cookie) || q.cookie, (input && input.ua) || q.app) }),
   };
   await Promise.all([
     writeJSON(docOf(id), o, { quiet: true }),
-    openList((l) => l.concat({ id, at: o.createdAt, amount })),
+    openList((l) => l.concat(Object.assign({ id, at: o.createdAt, amount }, kind === 'card' ? { ref } : {}))),
     kind === 'test' ? null : listEdit(INDEX, (l) => l.concat({ id, at: o.createdAt, kind }), 2000),
     kind === 'booking' ? noteBooking(ref, id) : null,
     kind === 'hold' ? require('./booking-holds').patch(ref, (h) => { h.orderIds = (h.orderIds || []).concat(id).slice(-10); }) : null,
@@ -689,4 +689,78 @@ async function requestWords(o) {
   return { words: found.map((x) => x.status), found: found.length };
 }
 
-module.exports = { INDEX, touch, lastActivity, markRecovery, requestWords, later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
+// ---- the card's one-tap link (24.11): WhatsApp „Plătesc online” → straight to the myPOS page of her card
+// cardLink(cardId) → 'https://www.centrul360.com/api/pay-go?c=<cardId>&t=<token>' (signed: no link can be made up or guessed)
+const cardToken = (id) => {
+  const k = String(process.env.PORTAL_SECRET || '');
+  if (!k) throw new Error('no_secret');
+  return crypto.createHmac('sha256', k + '|card-pay-go').update(String(id)).digest('base64url').slice(0, 22);
+};
+function cardLink(cardId) {
+  const id = String(cardId || '').toLowerCase();
+  if (!/^[0-9a-f-]{36}$/.test(id)) throw new Error('bad_card_id');
+  return 'https://www.centrul360.com/api/pay-go?c=' + id + '&t=' + cardToken(id);
+}
+const cardTokenOk = (id, t) => { try { const a = Buffer.from(cardToken(String(id || '').toLowerCase())), b = Buffer.from(String(t || '')); return a.length === b.length && crypto.timingSafeEqual(a, b); } catch (e) { return false; } };
+// where her card came from: the site's own record of it, else the ad form's (Meta lead form: ad, ad set, campaign, form,
+// lead), else only that it is a card's; always marked inherited (the tap in WhatsApp is not where she came from)
+function cardSource(r) {
+  const T = ['adId', 'adsetId', 'campaignId', 'formId', 'leadId'], U = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+  const t = r.track && typeof r.track === 'object' ? r.track : {};
+  const ad = {}; T.forEach((k) => { if (t[k]) ad[k] = clip(t[k], 80); });
+  const tag = {}; U.forEach((k) => { if (t[k]) tag[k.replace('utm_', '')] = clip(t[k], 80); });
+  const base = r.src && typeof r.src === 'object' && r.src.from ? JSON.parse(JSON.stringify(r.src))
+    : Object.keys(ad).length || r.via === 'meta-form' ? { from: 'Reclamă Facebook/Instagram', form: true }
+    : { from: 'Card de Sărbători' };
+  if (Object.keys(ad).length) base.ad = ad;
+  if (Object.keys(tag).length && !base.tag) base.tag = tag;
+  return Object.assign(base, { inherited: 'card', card: r.id, via: clip(r.via || '', 30) || undefined });
+}
+// the tap: her card's checkout order (the open one again while her card is held, else made now: the card module holds it
+// again when one is left) and its myPOS page → { url } | { error: 'already_paid' | 'sold_out' | 'closed' | 'not_found' | …, page }
+async function cardGo(cardId) {
+  const C = cardModule();
+  if (!C || typeof C.byId !== 'function') return { error: 'card_not_ready' };
+  const id = String(cardId || '').toLowerCase();
+  const page = typeof C.checkoutUrl === 'function' ? C.checkoutUrl({ id }) : 'https://www.centrul360.com/card-sarbatori';
+  // (two taps at once: one makes the order, the other finds it)
+  for (let round = 0; round < 8; round++) {
+    const r = C.byId((await readJSON(C.KEY, [])) || [], id);
+    if (!r) return { error: 'not_found', page };
+    if (r.status === 'platit') return { error: 'already_paid', page };
+    // an order of this card paid already (its card not marked yet): never a second payment
+    if (round === 0) {
+      const paid = ((await readJSON(PAID, [])) || []).filter((x) => Math.abs(Number(x.amount) - Number(r.amount)) < 0.01 && Date.now() - Date.parse(x.at) < 14 * 864e5).slice(-20);
+      for (const it of paid) { const { data } = await readOrder(it.id); if (data && data.kind === 'card' && data.ref === r.id && data.status === 'paid') return { error: 'already_paid', page }; }
+    }
+    let o = null;
+    if (r.status === 'asteptare' && typeof C.live === 'function' && C.live(r)) {
+      const open = (await readJSON(OPEN, [])) || [];
+      const mine = open.filter((x) => x.ref === r.id || (!x.ref && Math.abs(Number(x.amount) - Number(r.amount)) < 0.01 && Date.now() - Date.parse(x.at) < 48 * 3600e3)).slice(-12).reverse();
+      for (const it of mine) {
+        const { data } = await readOrder(it.id);
+        if (data && data.kind === 'card' && data.ref === r.id && data.status === 'open' && !data.test && Math.abs(Number(data.amount) - Number(r.amount)) < 0.01) { o = data; break; }
+      }
+    }
+    if (!o) {
+      let mineLock = true;
+      // (per card, per minute and per hold: a card held again later makes its own)
+      const hk = crypto.createHash('sha1').update(String(r.held || r.created || '') + '|' + r.status).digest('hex').slice(0, 8);
+      try { mineLock = await store.createOnce('locks/card-go/' + r.id + '-' + Math.floor(Date.now() / 60e3) + '-' + hk + '.txt', '1'); } catch (e) { mineLock = true; }
+      if (!mineLock) { await new Promise((w) => setTimeout(w, 1200)); continue; }
+      // her card's first touch, inherited (a WhatsApp link has no utm: never „Direct”); ref = the card's id joins the reports
+      const c = await createOrder({ kind: 'card', ref: r.id, input: { srcKeep: cardSource(r) }, host: 'www.centrul360.com' });
+      if (c.error) return { error: c.error, page };
+      if (c.provider !== 'requests') return { error: 'not_requests', page };
+      o = (await readOrder(c.orderId)).data;
+      if (!o) return { error: 'order_lost', page };
+    }
+    if (o.provider !== 'requests') return { error: 'not_requests', page };
+    later(touch(o.id));
+    const l = await link(o.id, o.key, { data: o });
+    return l.ok ? { url: l.url, orderId: o.id } : { error: l.error || 'mypos_failed', status: l.status || 0, page, orderId: o.id };
+  }
+  return { error: 'busy', page };
+}
+
+module.exports = { cardLink, cardTokenOk, cardGo, INDEX, touch, lastActivity, markRecovery, requestWords, later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };

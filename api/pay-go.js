@@ -47,9 +47,44 @@ function page(res, status, code, extra) {
 const WAIT = '<main id="w"><div class="sp"></div><h1>Se deschide plata securizată myPOS…</h1><p>Câteva secunde.</p></main><!--' + ' '.repeat(1200) + '-->';
 const goTo = (url) => '<script>location.replace(' + JSON.stringify(url).replace(/</g, '\\u003c') + ')</script><main><a class="b" href="' + esc(url) + '">Deschide plata myPOS</a></main></body></html>';
 
+// ---- GET ?c=<cardId>&t=<token>: the card's one-tap link from WhatsApp (api/_lib/pay.js cardLink): her card's myPOS page at
+// once (the order made or the open one again, the request made or the same one again); a card no longer to be had: a word
+// of why; anything else: the card's own page (?plata=). A link preview (WhatsApp's, Facebook's) only reads a title.
+const PREVIEW_UA = /WhatsApp|facebookexternalhit|Facebot|meta-externalagent|Twitterbot|TelegramBot|Slackbot|Discordbot|LinkedInBot|Googlebot|bingbot|Applebot|SkypeUriPreview|preview|crawler|spider/i;
+const CARD_SAY = {
+  already_paid: ['Plătit', 'Cardul tău e deja plătit. Îl primești pe WhatsApp. Mulțumim!'],
+  sold_out: ['S-au terminat cardurile', 'Pentru moment nu mai sunt carduri de acest fel în clinica ta. Scrie-ne pe WhatsApp și te anunțăm primele când apar.'],
+  closed: ['Oferta s-a încheiat', 'Cardurile de Sărbători nu se mai pot cumpăra. Scrie-ne pe WhatsApp pentru alte oferte.'],
+  not_found: ['Nu am găsit comanda', 'Linkul nu mai e bun. Scrie-ne pe WhatsApp și te ajutăm imediat.'],
+};
+function cardPage(res, code) {
+  const [h, p] = CARD_SAY[code] || CARD_SAY.not_found;
+  return '<style>#w{display:none}</style><main><h1>' + esc(h) + '</h1><p>' + esc(p) + '</p><a class="b" href="https://www.centrul360.com/">Mergi la Centrul360</a></main></body></html>';
+}
+async function cardTap(req, res) {
+  const id = String(req.query.c || '').toLowerCase().slice(0, 40), t = String(req.query.t || '').slice(0, 40);
+  if (!/^[0-9a-f-]{36}$/.test(id) || !P.cardTokenOk(id, t)) { page(res, 404, 'not_found'); return; }
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('X-Robots-Tag', 'noindex');
+  if (PREVIEW_UA.test(String(req.headers['user-agent'] || ''))) { res.end(top().replace('<title>Plata</title>', '<title>Plata cardului · Centrul360</title><meta property="og:title" content="Plata cardului · Centrul360"><meta property="og:description" content="Plata securizată myPOS, cu suma completată.">') + '<main><h1>Plata cardului</h1></main></body></html>'); return; }
+  const ip = String(req.headers['x-forwarded-for'] || req.headers['cf-connecting-ip'] || '').split(',')[0].trim() || 'x';
+  const now = Date.now(), mine = (tries.get(ip) || []).filter((x) => now - x < 10 * 60e3);
+  if (mine.length >= 30) { page(res, 429, 'too_many'); return; }
+  tries.set(ip, mine.concat(now));
+  res.write(top() + WAIT);
+  let r;
+  try { r = await P.cardGo(id); } catch (e) { console.error('pay-go card:', e.message); r = { error: 'failed', page: 'https://www.centrul360.com/card-sarbatori?plata=' + encodeURIComponent(id) }; }
+  if (r.url && okUrl(r.url)) { res.end(goTo(r.url)); return; }
+  if (CARD_SAY[r.error]) { res.end(cardPage(res, r.error)); return; }
+  // myPOS or anything else not right now: her card's own page, which pays it another way
+  res.end(goTo(r.page || 'https://www.centrul360.com/card-sarbatori?plata=' + encodeURIComponent(id)));
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (!ourOrigin(String(req.headers.origin || ''))) { page(res, 403, 'forbidden'); return; }
+  if (req.method === 'GET' && req.query && req.query.c) { await cardTap(req, res); return; }
   if (req.method !== 'POST') { page(res, 405, 'not_found'); return; }
   let b = req.body || {};
   if (typeof b === 'string') { try { b = /^\s*\{/.test(b) ? JSON.parse(b) : Object.fromEntries(new URLSearchParams(b)); } catch (e) { b = {}; } }

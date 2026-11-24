@@ -720,6 +720,14 @@ module.exports = async (req, res) => {
     res.status(200).json(RQ.adminOf(await RQ.active(ST)));
     return;
   }
+  // ?cardlink=<cardId>: the card's one-tap pay link (api/_lib/pay.js cardLink), only for a test card (phone 0700000000)
+  if (req.query && req.query.cardlink) {
+    const C = require('./_lib/card-sarbatori');
+    const r = C.byId(await readJSON(C.KEY, []), String(req.query.cardlink));
+    if (!r || String(r.phone || '').replace(/\D/g, '').slice(-9) !== '700000000') { res.status(404).json({ error: 'not_a_test_card' }); return; }
+    res.status(200).json({ link: require('./_lib/pay').cardLink(r.id) });
+    return;
+  }
   // ?capilast=1: the Conversions API's last sends (when, kind, mode, event names, how many, ok), nothing about the people
   if (req.query && req.query.capilast) {
     const st = (await readJSON(require('./_lib/meta-capi').STATUS_KEY, {})) || {};
