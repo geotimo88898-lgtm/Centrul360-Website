@@ -3,7 +3,8 @@
 // those months, then by how recently she came. One person per phone (her client files, her payments and her bookings
 // merged by the last 9 digits). Left out: the team (by phone or full name), test records, anyone who already holds or is
 // buying the VIP card (data/card-sarbatori.json, tier 9900). Names and phones are for the admin's answer only: never
-// written to a log.
+// written to a log. `before`: what her finished bookings before the first payment in Încasări were worth (booked sums,
+// an estimate).
 
 const { readJSON } = require('./store');
 const { normalizePhone } = require('./clients');
@@ -36,7 +37,7 @@ async function top({ city, n }) {
   };
 
   const P = new Map();
-  const get = (k) => { if (!P.has(k)) P.set(k, { k, names: {}, phone: '', paid12: 0, paidAll: 0, card: 0, money: {}, seen: {}, days: new Set(), days12: new Set(), tr: {}, files: new Set(), cards: [], test: false }); return P.get(k); };
+  const get = (k) => { if (!P.has(k)) P.set(k, { k, names: {}, phone: '', paid12: 0, paidAll: 0, before: 0, card: 0, money: {}, seen: {}, days: new Set(), days12: new Set(), tr: {}, files: new Set(), cards: [], test: false }); return P.get(k); };
   const nameOf = (p, nm, w) => { const s = String(nm || '').trim(); if (s) p.names[s] = (p.names[s] || 0) + (w || 1); if (isTest(s)) p.test = true; };
   const visitOn = (p, d, loc, tr) => {
     if (!d || d > today) return;
@@ -48,6 +49,8 @@ async function top({ city, n }) {
 
   clients.forEach((c) => { if (!c) return; const k = keyOf(c.id, c.phone, c.name); if (!k) return; const p = get(k); nameOf(p, c.name, 3); p.files.add(c.id); if (!p.phone) p.phone = normalizePhone(c.phone); if (C.clinicOf(c.location)) p.home = C.clinicOf(c.location); });
 
+  // Încasări started on its first payment; a visit finished before that has only the booked sum (an estimate, `before`)
+  const firstPay = N.sales.filter((s) => M.isPayment(s) && s.date).map((s) => s.date).sort()[0] || today;
   const apptById = new Map(N.appts.filter(Boolean).map((a) => [a.id, a]));
   const counted = new Set();
   N.sales.forEach((s) => {
@@ -62,12 +65,13 @@ async function top({ city, n }) {
     if (!M.isPayment(s)) return;
     const ap = s.appointmentId && apptById.get(s.appointmentId);
     if (ap) counted.add(ap.id);
-    if (s.appointmentId || !s.dueId) visitOn(p, s.visitDate || s.date, s.location, s.treatment || (ap && ap.treatment));
+    if (s.appointmentId || !s.dueId) visitOn(p, s.visitDate || s.date, s.location, (!s.crossSell && ap && ap.treatment) || s.treatment);
   });
   N.appts.forEach((a) => {
     if (!C.visit(a) || counted.has(a.id) || !(a.status === 'finalizata' || a.paidSaleId)) return;
     const k = keyOf(a.clientId, a.clientPhone, a.clientName); if (!k) return;
     const p = get(k); nameOf(p, a.clientName);
+    if (a.date < firstPay && a.status === 'finalizata') p.before += Number(a.amount) || 0;
     visitOn(p, a.date, a.location, a.treatment);
   });
   (orders || []).forEach((r) => {
@@ -82,7 +86,7 @@ async function top({ city, n }) {
     const name = Object.keys(p.names).sort((x, y) => p.names[y] - p.names[x] || y.length - x.length)[0] || '';
     if (staffP.has(p.k) || (name && staffN.has(words(name)))) { out.staff++; return; }
     if (p.test || isTest(name)) { out.test++; return; }
-    if (!(p.paidAll > 0)) { out.noMoney++; return; }
+    if (!(p.paidAll > 0) && !(p.before > 0)) { out.noMoney++; return; }
     if (p.cards.some((x) => x.tier === VIP && ['platit', 'rezervat', 'asteptare', 'lead'].includes(x.status))) { out.vip++; return; }
     const best = (o) => Object.keys(o).sort((x, y) => o[y] - o[x])[0] || '';
     const home = best(p.money) || best(p.seen) || p.home || '';
@@ -90,14 +94,14 @@ async function top({ city, n }) {
     const days = [...p.days].sort();
     rows.push({
       name, phone: p.phone || ('0' + p.k), city: home,
-      paid12: M.r2(p.paid12), paidAll: M.r2(p.paidAll), cardLei: M.r2(p.card),
+      paid12: M.r2(p.paid12), paidAll: M.r2(p.paidAll), before: M.r2(p.before), cardLei: M.r2(p.card),
       visits12: p.days12.size, visits: p.days.size, firstVisit: days[0] || '', lastVisit: days[days.length - 1] || '',
       treatments: Object.entries(p.tr).sort((x, y) => y[1] - x[1]).slice(0, 4).map(([t, c]) => ({ t, n: c })),
       cards: p.cards, files: p.files.size,
     });
   });
   rows.sort((x, y) => y.paid12 - x.paid12 || y.visits12 - x.visits12 || String(y.lastVisit).localeCompare(String(x.lastVisit)));
-  return { ok: true, today, from, city: want || 'toate', paying: rows.length, left: out, list: rows.slice(0, lim) };
+  return { ok: true, today, from, firstPay, city: want || 'toate', paying: rows.length, left: out, list: rows.slice(0, lim) };
 }
 
 module.exports = { top };
