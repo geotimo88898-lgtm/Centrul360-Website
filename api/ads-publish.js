@@ -290,6 +290,22 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, act, since, until: today, currency: view.account && view.account.currency, ads: out });
       return;
     }
+    // read only (24.11): a campaign's ad sets as Meta runs them (audience, goal, bid, budget, status), the connected account's
+    // or one of ours in the old account centru pls, to check the settings before money goes out
+    if (req.method === 'GET' && req.query && req.query.action === 'adsets') {
+      const AM = require('./ads-manager');
+      const { conn, problem } = await AM.connection();
+      if (problem) { res.status(200).json({ ok: false, reason: problem }); return; }
+      const id = /^\d{5,25}$/.test(String(req.query.id || '')) ? String(req.query.id) : '';
+      if (!id) { res.status(400).json({ error: 'id' }); return; }
+      const r = await ads.call('GET', '/' + id, conn.userToken, { fields: 'account_id,name,objective,effective_status,daily_budget,bid_strategy,adsets.limit(10){name,effective_status,daily_budget,optimization_goal,billing_event,bid_strategy,bid_amount,destination_type,promoted_object,targeting,attribution_spec,start_time,end_time}' });
+      const SCOPE = require('./_lib/ads-scope');
+      const adAct = r.ok ? 'act_' + r.j.account_id : '';
+      const okAct = adAct === conn.adAccountId || adAct === 'act_4502494523405059';
+      if (!r.ok || !okAct || !SCOPE.keep(SCOPE.forAccount(SCOPE.DEFAULT, adAct), r.j.name)) { res.status(200).json({ ok: false, reason: 'not_ours' }); return; }
+      res.status(200).json({ ok: true, account: adAct, campaign: { name: r.j.name, objective: r.j.objective, status: r.j.effective_status, daily_budget: r.j.daily_budget, bid_strategy: r.j.bid_strategy }, adsets: (r.j.adsets && r.j.adsets.data) || [] });
+      return;
+    }
     // read only (23.11): what a one-time job of api/_lib/ads-once.js did (done, its steps, its last refusal); ids only
     if (req.method === 'GET' && req.query && req.query.action === 'once_state') {
       const job = String(req.query.job || '').slice(0, 80);
