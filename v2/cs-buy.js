@@ -299,7 +299,8 @@
     var t = tierOf(tier), vip = Number(t[0]) === VIP;
     var amount = vip ? Number((st.online || {})[VIP]) || 8910 : t[0];
     return { amount: amount, full: vip ? t[0] : amount,
-      title: (vip ? 'Cardul VIP Transformarea 360' : 'Cardul de Sărbători ' + dots(t[0]) + ' lei') + ' · ' + dots(t[1]) + ' lei în tratamente',
+      // the credit online now (Black Friday: the card layer's creditOf, 3.000 for the 990), else the tier's
+      title: (vip ? 'Cardul VIP Transformarea 360' : 'Cardul de Sărbători ' + dots(t[0]) + ' lei') + ' · ' + dots((window.CSC && typeof window.CSC.creditOf === 'function' && Number(window.CSC.creditOf(t[0]))) || t[1]) + ' lei în tratamente',
       bonusText: vip ? '−10% și Clubul 360 la plata online' : '+ BioLifting cadou și Clubul 360 la plata online' };
   }
   // the sheet for an order of ours: ref is its id, or the promise of it (made now, in the background: the sheet is open
