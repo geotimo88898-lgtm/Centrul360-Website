@@ -5,18 +5,18 @@
 // what paying online adds; one sentence at the bottom. Drawn as SVG and made a PNG by resvg, the same way as card-image.js
 // (on Cloudflare globalThis.__C360_SVG2PNG, cf/card-png.js; in Node the package from node_modules). Its fonts: the card's
 // (card-fonts.gen.js: Inter, Montserrat) and Fraunces Italic for the gold line (card-creative-fonts.gen.js); all OFL.
-//   png({ tier: 490 | 990 | 9900, name, left }) → PNG (Buffer)       svgOf(same) → the SVG
-// The facts on it are the site's (api/card-sarbatori.js, v2/cs-card.js): 490 → 1.000 lei, 990 → 2.500 lei, VIP 9.900 →
-// 30.000 lei; online: BioLifting and Clubul 360 with the 490 and 990 ones, 10% less (8.910 lei) and Clubul 360 with the VIP.
+//   png({ tier: 490 | 990 | 9900, name, left, credit?, bf? }) → PNG (Buffer)       svgOf(same) → the SVG
+//   credit: another credit than the card's own; bf: { credit: 3000, until: 'până duminică 29.11' } Black Friday (the owner,
+//   24.11): „Primești 3.000 lei.” and under it the small line „la plata online · până duminică 29.11”
+// The facts on it are the terms' (api/_lib/card-terms.js): 490 → 1.000 lei, 990 → 2.500 lei, VIP 9.900 → 30.000 lei;
+// online: BioLifting and Clubul 360 with the 490 and 990 ones, 10% less (8.910 lei) and Clubul 360 with the VIP.
 
 const CI = require('./card-image');
+const CT = require('./card-terms');
 
 const W = 1080, H = 1350;
-const TIERS = {
-  490: { pay: 490, get: 1000 },
-  990: { pay: 990, get: 2500 },
-  9900: { pay: 9900, get: 30000, vip: true, online: 8910 },
-};
+const TIERS = Object.fromEntries(CT.CARD_TERMS.sale.map((p) => [p, Object.assign({ pay: p, get: CT.CARD_TERMS.tiers[p] },
+  p === CT.CARD_TERMS.vip ? { vip: true, online: CT.discOf(p) } : {})]));
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const lei = (n) => Math.round(Number(n) || 0).toLocaleString('ro-RO').replace(/[\s  ]/g, '.');
 const f1 = (n) => Math.round(n * 10) / 10;
@@ -49,8 +49,8 @@ const cardFonts = (svg) => svg
   .replace(/font-family="Inter" font-weight="(\d+)"/g, (m, w) => 'font-family="' + fam(Number(w)) + '"')
   .replace(/<tspan([^>]*) font-weight="(\d+)"/g, (m, a, w) => '<tspan' + a + ' font-family="' + fam(Number(w)) + '"');
 // the card of card-image.js without its light background (its own drop shadow stays), tilted like the ad's
-function card(t, name) {
-  let svg = CI.svgOf({ credit: t.get, name: String(name || '').trim() || 'Pentru tine', code: '', valid: '30.06.2027', vip: !!t.vip });
+function card(t, name, credit) {
+  let svg = CI.svgOf({ credit: credit || t.get, name: String(name || '').trim() || 'Pentru tine', code: '', valid: '30.06.2027', vip: !!t.vip });
   svg = svg.replace(/<rect width="1200" height="900" fill="url\(#kBack\)"\/><rect width="1200" height="900" fill="url\(#kGlow\)"\/>/, '')
     .replace(/(<\/defs>)((?:<circle [^>]*opacity="\.7"\/>)+)/, '$1');
   const inner = cardFonts(svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, ''));
@@ -66,6 +66,10 @@ function svgOf(o) {
   if (!t) throw new Error('card-creative: tier ' + (o && o.tier));
   const left = Math.max(1, Math.round(Number(o.left) || 0));
   const vip = !!t.vip;
+  // the credit she gets: the card's, or Black Friday's (o.bf), or one given (o.credit)
+  const bf = o.bf && Number(o.bf.credit) > 0 ? o.bf : null;
+  const get = bf ? Number(bf.credit) : Number(o.credit) > 0 ? Number(o.credit) : t.get;
+  const bfLine = bf ? 'la plata online · ' + String(bf.until || 'până duminică 29.11') : '';
 
   // the rating: its size as the ad's (265 px wide), the G before it
   const RATING = '5,0 · 300+ recenzii Google';
@@ -79,7 +83,10 @@ function svgOf(o) {
   const frac = Math.min(1, left / 4);
 
   // the headline
-  const l1 = 'Plătești ' + lei(t.pay) + ' lei.', l2 = 'Primești ' + lei(t.get) + ' lei.';
+  const l1 = 'Plătești ' + lei(t.pay) + ' lei.', l2 = 'Primești ' + lei(get) + ' lei.';
+  // Black Friday: the headline a little higher, room for its small line under the gold one
+  const up = bf ? 22 : 0;
+  const bs1 = bf ? fit(bfLine, 'i600', 32, 760, 0.02) : 0;
   const s1 = fit(l1, 'i800', 99, 900, -0.045), s2 = fit(l2, 'fr', 116, 930, -0.035);
   const g2 = widthOf(l2, 'fr', s2, -0.035);
 
@@ -127,10 +134,11 @@ function svgOf(o) {
     '<rect x="' + f1(tx) + '" y="199" width="' + f1(tw) + '" height="8" rx="4" fill="#f7cfcf"/>' +
     '<rect x="' + f1(tx) + '" y="199" width="' + f1(Math.max(8, tw * frac)) + '" height="8" rx="4" fill="#e2195f"/>' +
     // the headline
-    '<text x="540" y="347" text-anchor="middle" font-family="Inter ExtraBold" font-size="' + s1 + '" letter-spacing="' + f1(-0.045 * s1) + '" fill="#fcf5e9">' + esc(l1) + '</text>' +
-    '<text x="540" y="457" text-anchor="middle" font-family="Fraunces C360" font-style="italic" font-size="' + s2 + '" letter-spacing="' + f1(-0.035 * s2) + '" fill="url(#zGold2)">' + esc(l2) + '</text>' +
+    '<text x="540" y="' + (347 - up) + '" text-anchor="middle" font-family="Inter ExtraBold" font-size="' + s1 + '" letter-spacing="' + f1(-0.045 * s1) + '" fill="#fcf5e9">' + esc(l1) + '</text>' +
+    '<text x="540" y="' + (457 - up) + '" text-anchor="middle" font-family="Fraunces C360" font-style="italic" font-size="' + s2 + '" letter-spacing="' + f1(-0.035 * s2) + '" fill="url(#zGold2)">' + esc(l2) + '</text>' +
+    (bf ? '<text x="540" y="' + (457 - up + 50) + '" text-anchor="middle" font-family="Inter SemiBold" font-size="' + bs1 + '" letter-spacing="' + f1(0.02 * bs1) + '" fill="#f2dfb4">' + esc(bfLine) + '</text>' : '') +
     // the card
-    card(t, o.name) +
+    card(t, o.name, get) +
     // the band
     '<rect x="70" y="1072" width="940" height="128" rx="28" fill="#e2b458" opacity=".55" filter="url(#zBandGlow)"/>' +
     '<rect x="64" y="1064" width="951" height="140" rx="28" fill="url(#zBand)"/><rect x="64" y="1064" width="951" height="140" rx="28" fill="url(#zBandHi)"/>' +
@@ -156,7 +164,8 @@ let nodeReady = null;
 async function render(svg) {
   if (typeof globalThis.__C360_SVG2PNG === 'function') return Buffer.from(await globalThis.__C360_SVG2PNG(svg, fonts()));
   const R = require('@resvg/resvg-wasm');
-  if (!nodeReady) nodeReady = R.initWasm(require('fs').readFileSync(require.resolve('@resvg/resvg-wasm/index_bg.wasm')));
+  // (one wasm for both pictures in Node: the second module finds it started already)
+  if (!nodeReady) nodeReady = R.initWasm(require('fs').readFileSync(require.resolve('@resvg/resvg-wasm/index_bg.wasm'))).catch((e) => { if (!/Already initialized/.test(e.message)) throw e; });
   await nodeReady;
   const r = new R.Resvg(svg, { font: { fontBuffers: fonts(), defaultFontFamily: 'Inter', loadSystemFonts: false }, fitTo: { mode: 'original' } });
   return Buffer.from(r.render().asPng());

@@ -204,8 +204,8 @@
   const cardTxt = (o) => (o.qty > 1 ? o.qty + ' × ' : '') + (isVip(o) ? 'VIP ' : '') + lei(o.amount) + ' → ' + lei(o.credit);
   function script(o) {
     const g = first(o.name), hi = 'Bună' + (g ? ', ' + g : '') + ', sunt de la Centrul360. ';
-    if (isVip(o)) return hi + 'Ți-am rezervat Cardul VIP Transformarea 360 de ' + lei(o.amount) + ', primești ' + lei(o.credit) + ' în tratamente. Îl ținem până vineri. Dacă îl plătești acum online, ai -10%, plătești ' + lei(Math.round(Number(o.tier) * 0.9) * (o.qty || 1)) + ', și acces în Clubul 360; îți trimit chiar acum linkul pe WhatsApp. Sau stabilim acum când treci pe la clinică să-l plătești.';
-    return hi + 'Ți-am rezervat Cardul de Sărbători de ' + lei(o.amount) + ', primești ' + lei(o.credit) + ' în tratamente. Îl ținem până vineri. Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360; îți trimit chiar acum linkul pe WhatsApp. Sau stabilim acum când treci pe la clinică să-l plătești.';
+    if (isVip(o)) return hi + 'Ți-am rezervat Cardul VIP Transformarea 360 de ' + lei(o.amount) + ', primești ' + lei(o.credit) + ' în tratamente. Ți-l ținem rezervat până vii. Dacă îl plătești acum online, ai -10%, plătești ' + lei(Math.round(Number(o.tier) * 0.9) * (o.qty || 1)) + ', și acces în Clubul 360; îți trimit chiar acum linkul pe WhatsApp. Sau stabilim acum când treci pe la clinică să-l plătești.';
+    return hi + 'Ți-am rezervat Cardul de Sărbători de ' + lei(o.amount) + ', primești ' + lei(o.credit) + ' în tratamente. Ți-l ținem rezervat până vii. Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360; îți trimit chiar acum linkul pe WhatsApp. Sau stabilim acum când treci pe la clinică să-l plătești.';
   }
   const resvOf = () => (S.d.orders || []).filter((o) => o.status === 'rezervat' && o.pay === 'clinica' && isOpen(o) && o.phone)
     .sort((a, b) => (isVip(b) - isVip(a)) || String(b.converted || b.created).localeCompare(String(a.converted || a.created)));

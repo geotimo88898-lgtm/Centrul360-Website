@@ -102,6 +102,16 @@ module.exports = async (req, res) => {
     res.status(200).json(r);
     return;
   }
+  // ?cardbf=1: Black Friday of the Card de Sărbători (the owner, 24.11: the 990 card paid online gives 3.000 lei, until
+  // Sunday 29.11 23:59); GET reads the switch and the window, POST { on: true | false } sets it (api/_lib/card-terms.js,
+  // data/card-bf.json; off until the owner confirms)
+  if (req.query && req.query.cardbf) {
+    const T = require('./_lib/card-terms');
+    let b = req.body || {}; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
+    const r = req.method === 'POST' ? await T.setBf(b.on === true, session ? session.employeeId : 'creative') : Object.assign(await T.bfInfo(), { switch: !!(await T.bfSwitch()).on });
+    res.status(200).json(r);
+    return;
+  }
   if (req.query && req.query.cardlinks) {
     const C = require('./_lib/card-sarbatori');
     let b = req.body || {}; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }

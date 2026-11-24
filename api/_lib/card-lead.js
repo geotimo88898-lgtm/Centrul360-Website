@@ -12,7 +12,7 @@ const { readJSON, writeJSON } = require('./store');
 
 const LEADS_KEY = 'data/leads.json';
 // 290 is out of sale on the site (22.11), still read here: a form that offers it keeps working; 9900 the VIP one
-const TIERS = { 290: 500, 490: 1000, 990: 2500, 9900: 30000 };
+const TIERS = require('./card-terms').CARD_TERMS.tiers; // { 290: 500, 490: 1000, 990: 2500, 9900: 30000 }
 const Q = { card: 'Ce card vrei?', who: 'Pentru cine este?', city: 'La ce clinică?' };
 const CARD_OPTS = ['290 lei → 500 lei în tratamente', '490 lei → 1.000 lei în tratamente', '990 lei → 2.500 lei (cea mai bună valoare)'];
 const WHO_OPTS = ['Pentru mine', 'Cadou'];
