@@ -66,7 +66,7 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   const ems = tm.find((p) => p.id === 'ems-o-zona');
   q = await S.quote('Timișoara', [lipo.options[0].id, ems.options[1].id]);
   check('cart: 980 + 1050 → 490 + 525 = 1015, saved 1015', q.amount === 1015 && q.full === 2030 && q.saved === 1015, q);
-  check('cart 1015: the steps of 550 and 990 reached, 4990 next (3975 missing)', q.reached.map((x) => x.at).join() === '550,990' && q.next.at === 4990 && q.next.missing === 3975, q.reached);
+  check('no volume bonuses for now', q.reached.length === 0 && !q.next, q.reached);
   check('the main treatment is the dearest (EMS 6 ședințe, 30 min)', q.main.minutes === 30 && q.main.id === ems.options[1].id, q.main);
   check('EMS in Arad: not in the city', (await S.quote('Arad', [ems.options[1].id])).error === 'not_in_city');
   check('an empty cart', (await S.quote('Timișoara', [])).error === 'empty');
@@ -81,11 +81,12 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   await store.writeJSON('data/shop-bonus.json', { tiers: [{ at: 600, title: 'Test' }] });
   check('data/shop-bonus.json replaces the steps', (await S.tiers()).length === 1 && (await S.tiers())[0].at === 600);
   await store.writeJSON('data/shop-bonus.json', null);
+  check('every product has its cut-out photo and real benefits', tm.concat(ar).every((p) => /^\/brand_asset\/[a-z0-9/-]+\.webp$/.test(p.photo) && p.b.length), tm.filter((p) => !p.b.length).map((p) => p.id));
   // ---- the payment's sum comes from the hold's cart, never the page
   const h = await H.add({ key: 'k', city: 'Timișoara', svc: { id: 'custom', title: 'Prima ședință · comandă online: x', price: 1015, old: 2030, minutes: 45, cat: 'corporale', treatment: lipo.options[0].id },
     cart: { items: [lipo.options[0].id, ems.options[1].id], visit: 'first' }, date: '2026-11-26', time: '10:00', endTime: '10:45' });
   const pq = await P.KINDS.shop.quote({ ref: h.id, input: { amount: 1 } });
-  check('pay quote: 1015 lei, full 2030, the gifts of the steps', pq.amount === 1015 && pq.full === 2030 && pq.bonus.type === 'gift' && /200 lei/.test(pq.bonus.gift) && /Radiofrecvență/.test(pq.bonus.gift), pq);
+  check('pay quote: 1015 lei, full 2030, -50% Black Friday', pq.amount === 1015 && pq.full === 2030 && pq.bonus.type === 'pct' && pq.bonus.pct === 50, pq);
   setNow('2026-11-25T10:20:00Z');
   check('the hold ran out (15 min): nothing to pay', (await P.KINDS.shop.quote({ ref: h.id })).error === 'expired');
   // ---- paid (myPOS's signed word, pay.js markPaid → the handler): the booking made from the hold, paid, in Încasări
@@ -96,7 +97,7 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   const appts = await store.readJSON('data/appointments.json', []);
   const a = appts.find((x) => x.id === r.appt);
   check('paid: the booking is made, confirmed and paid online (1015 lei)', a && a.pay === 'online-paid' && a.paidOnline.amount === 1015 && a.status === 'confirmata' && a.date === '2026-11-26' && a.time === '10:00', r);
-  check('the booking says what was bought and the gifts', a && /comandă online/.test(a.treatment) && /Card cadou de 200 lei/.test(a.note), a && { t: a.treatment, n: a.note });
+  check('the booking says what was bought', a && /comandă online/.test(a.treatment) && /Plată online 1015 lei/.test(a.note), a && { t: a.treatment, n: a.note });
   const sale = (await store.readJSON('data/sales.json', [])).find((x) => x.id === r.sale);
   check('a row in Încasări, 1015 lei, card, online', sale && sale.amount === 1015 && sale.method === 'card', sale);
   check('the hold knows its booking', (await H.get(h.id)).bookingId === a.id);

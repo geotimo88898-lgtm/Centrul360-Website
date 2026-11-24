@@ -20,7 +20,9 @@ function parse(html) {
   const out = [];
   const groups = html.split(/<div class="prt-grp" id="/).slice(1);
   for (const g of groups) {
-    const gid = g.slice(0, g.indexOf('"'));
+    const gid0 = g.slice(0, g.indexOf('"'));
+    // data-idg: the group whose ids its rows keep (BioLifting's rows keep their radiofrecventa-… ids)
+    const gid = (/^[^>]*data-idg="([^"]+)"/.exec(g) || [])[1] || gid0;
     const gname = strip((/<h3>([\s\S]*?)(<span class="prt-loc"|<\/h3>)/.exec(g) || [])[1] || gid);
     const cities = TM_ONLY.has(gid) ? ['Timișoara'] : ['Timișoara', 'Arad'];
     // treatments with tiers (1 ședință, 4 ședințe…)

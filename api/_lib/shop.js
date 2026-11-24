@@ -24,11 +24,9 @@ const BF = {
 const bfOn = (t) => { const x = t || Date.now(); return x >= Date.parse(BF.start) && x <= Date.parse(BF.end); };
 
 // the steps (the owner, 24.11: 550, 990, 4990). value: what the gift is worth at the price list, for the page's value stack
-const TIERS_DEFAULT = [
-  { at: 550, id: 'gift200', title: 'Card cadou de 200 lei', sub: 'pentru o prietenă, la primul ei tratament', value: 200 },
-  { at: 990, id: 'rf-face', title: 'O ședință de Radiofrecvență Full Face', sub: 'cadou pentru tine', value: 280 },
-  { at: 4990, id: 'gift1000', title: 'Card cadou de 1.000 lei în tratamente', sub: 'pentru tine sau de dăruit', value: 1000 },
-];
+// none for now (the owner, 24.11 evening: „pentru moment ștergem bonusurile de volum”); data/shop-bonus.json can bring them back,
+// e.g. { tiers: [{ at: 550, title: 'Card cadou de 200 lei', sub: 'pentru o prietenă', value: 200 }] }
+const TIERS_DEFAULT = [];
 async function tiers() {
   const d = await readJSON('data/shop-bonus.json', null).catch(() => null);
   const l = d && Array.isArray(d.tiers) ? d.tiers.filter((x) => x && Number(x.at) > 0 && x.title) : null;
@@ -44,25 +42,26 @@ const NEEDS = [
 ];
 // the treatment's base name (the title without its sessions) → its page words (from Prețuri, word for word), need, picture
 const P = {
-  'Liposonix · O zonă corporală': { need: 'corp', d: 'Ultrasunete focalizate care distrug celulele de grăsime din zonele tratate: remodelare corporală fără recuperare.', z: 'Abdomen, brațe, coapse, zona lombară: grăsime localizată rezistentă la dietă.', img: 'ba-liposonix-premium.webp', top: 1 },
-  'Electrostimulare Magnetică (EMS) · O zonă': { need: 'corp', d: 'Contracții musculare intense și controlate: tonifiere, fermitate și definirea zonelor corporale.', img: 'concern-tonifiere.webp' },
-  'Electrostimulare Magnetică (EMS) · 2 zone': { need: 'corp', d: 'Două grupe musculare în aceeași ședință.', img: 'concern-tonifiere.webp' },
-  'Radiofrecvență · O zonă corporală': { need: 'corp', d: 'Energie termică controlată: stimulează colagenul și elastina pentru fermitate, reducerea ridurilor și a celulitei.', z: 'Abdomen, brațe, coapse: celulită, fermitate și depozite mici de grăsime.', img: 'concern-celulita.webp' },
-  'HIFU · O zonă corporală': { need: 'corp', d: 'Ultrasunete focalizate de mare intensitate: lifting non-chirurgical, fermitate și redefinirea conturului.', z: 'Abdomen, brațe, coapse, gambe, zona lombară, zona sutien.', img: 'concern-belly-2.webp' },
-  'Împachetare la cald · Împachetare la cald': { name: 'Împachetare la cald', need: 'corp', d: 'Tratament relaxant și detoxifiant: stimulează circulația, drenajul și absorbția ingredientelor active.', img: 'concern-detox.webp' },
-  'RF Sculpt · Gușă + Contur Mandibular': { need: 'gusa', d: 'Reduce gușa și redefinește linia mandibulei.', img: 'gusa-ba-premium.webp', top: 1 },
-  'HIFU · O zonă mică facială': { need: 'gusa', d: 'Ultrasunete focalizate de mare intensitate: lifting non-chirurgical, fermitate și redefinirea conturului facial.', z: 'Gușă, gât, contur mandibular, pomeți, periocular, perioral, frunte.', img: 'ba-hifu-barbie-gat.webp', top: 1 },
-  'Radiofrecvență · O zonă mică facială': { need: 'gusa', d: 'Energie termică controlată: stimulează colagenul și elastina pentru fermitate.', z: 'Gușă, gât, contur mandibular, pomeți, periocular, perioral, frunte.', img: 'concern-chin-2.webp' },
-  'HIFU · Full Face': { need: 'fata', d: 'Ultrasunete focalizate de mare intensitate: lifting non-chirurgical și fermitate.', z: 'Laxitate la nivelul întregii fețe, riduri și pierderea conturului facial.', img: 'ba-hifu-periocular.webp' },
-  'RF Sculpt · Full Face': { need: 'fata', d: 'Tonifiere și revitalizare la nivelul întregii fețe.', img: 'concern-face-2.webp' },
-  'Radiofrecvență · Full Face': { need: 'fata', d: 'Energie termică controlată: stimulează colagenul și elastina.', z: 'Laxitate la nivelul întregii fețe, riduri și pierderea elasticității.', img: 'concern-riduri.webp' },
-  'Tratamente faciale · Tratament Restart': { name: 'Tratament facial Restart', need: 'fata', d: 'Revitalizează pielea, îmbunătățește textura și redă luminozitatea naturală.', img: 'restart-ba-premium.webp', top: 1 },
-  'Tratamente faciale · Tratament de hidratare profundă': { name: 'Hidratare profundă', need: 'fata', d: 'Reface nivelul optim de apă al pielii și întărește bariera cutanată.', img: 'concern-stralucire.webp' },
-  'Tratamente faciale · Tratament intensiv antirid': { name: 'Tratament intensiv antirid', need: 'fata', d: 'Diminuează ridurile și liniile fine, stimulând regenerarea pielii.', img: 'concern-riduri.webp' },
-  'Tratamente faciale · Redness Relief Protocol': { name: 'Redness Relief Protocol', need: 'fata', d: 'Calmează roșeața și reechilibrează pielea sensibilă, reactivă sau cuperozică.', img: 'concern-face-1.webp' },
-  'Tratamente faciale · Sebum Off Protocol': { name: 'Sebum Off Protocol', need: 'fata', d: 'Reglează secreția de sebum, curăță porii și reduce imperfecțiunile.', img: 'concern-ten-problematic.webp' },
-  'Tratamente faciale · Microneedling Exozomi PDRN': { name: 'Microneedling Exozomi PDRN', need: 'fata', d: 'Regenerare prin microperforații: cicatrici post-acneice, textură și fermitate.', img: 'faciale-closeup.webp' },
-  'Tratamente faciale · Microneedling Corector Periocular': { name: 'Microneedling Corector Periocular', need: 'fata', d: 'Țintit pe zona ochilor: cearcăne, hidratare și linii fine.', img: 'faciale-closeup.webp' },
+  'Liposonix · O zonă corporală': { t: 'Grăsimea care nu pleacă cu sportul', b: ['Fără efort și fără diete stricte', 'Fără timp de recuperare', 'Fără ace sau anestezie'], ph: 'concern-grasime.webp',  need: 'corp', d: 'Ultrasunete focalizate care distrug celulele de grăsime din zonele tratate: remodelare corporală fără recuperare.', z: 'Abdomen, brațe, coapse, zona lombară: grăsime localizată rezistentă la dietă.', img: 'ba-liposonix-premium.webp', top: 1 },
+  'Electrostimulare Magnetică (EMS) · O zonă': { t: 'Tonifiere fără efort', b: ['20.000 de contracții musculare într-o ședință', 'Fără efort', 'Fără recuperare'], ph: 'concern-tonifiere.webp',  need: 'corp', d: 'Contracții musculare intense și controlate: tonifiere, fermitate și definirea zonelor corporale.', img: 'concern-tonifiere.webp' },
+  'Electrostimulare Magnetică (EMS) · 2 zone': { t: 'Tonifiere fără efort, 2 zone', b: ['Două grupe musculare în aceeași ședință', 'Fără efort', 'Fără recuperare'], ph: 'concern-belly-3.webp',  need: 'corp', d: 'Două grupe musculare în aceeași ședință.', img: 'concern-tonifiere.webp' },
+  'Radiofrecvență · O zonă corporală': { t: 'Celulită și fermitate', b: ['Celulită, fermitate și depozite mici de grăsime', 'Stimulează colagenul și elastina'], ph: 'concern-cellulite-2.webp',  need: 'corp', d: 'Energie termică controlată: stimulează colagenul și elastina pentru fermitate, reducerea ridurilor și a celulitei.', z: 'Abdomen, brațe, coapse: celulită, fermitate și depozite mici de grăsime.', img: 'concern-celulita.webp' },
+  'HIFU · O zonă corporală': { t: 'Piele mai fermă pe corp', b: ['Lifting non-chirurgical', 'Abdomen, brațe, coapse, gambe, zona lombară'], ph: 'concern-belly-2.webp',  need: 'corp', d: 'Ultrasunete focalizate de mare intensitate: lifting non-chirurgical, fermitate și redefinirea conturului.', z: 'Abdomen, brațe, coapse, gambe, zona lombară, zona sutien.', img: 'concern-belly-2.webp' },
+  'Împachetare la cald · Împachetare la cald': { t: 'Detox și celulită', b: ['Celulită, retenție de apă și detoxifiere', 'Piele mai netedă și revitalizată'], ph: 'concern-detox.webp',  name: 'Împachetare la cald', need: 'corp', d: 'Tratament relaxant și detoxifiant: stimulează circulația, drenajul și absorbția ingredientelor active.', img: 'concern-detox.webp' },
+  'RF Sculpt · Gușă + Contur Mandibular': { t: 'Gușă și contur, fără operație', b: ['Reduce gușa și redefinește linia mandibulei', 'Fără ace', 'Fără operație'], ph: 'concern-chin-1.webp',  need: 'gusa', d: 'Reduce gușa și redefinește linia mandibulei.', img: 'gusa-ba-premium.webp', top: 1 },
+  'HIFU · O zonă mică facială': { t: 'Gușă, fără ace', b: ['Fără ace', 'Fără pauză, te întorci la treabă', 'Gușă, gât, contur mandibular, pomeți'], ph: 'concern-gusa.webp',  need: 'gusa', d: 'Ultrasunete focalizate de mare intensitate: lifting non-chirurgical, fermitate și redefinirea conturului facial.', z: 'Gușă, gât, contur mandibular, pomeți, periocular, perioral, frunte.', img: 'ba-hifu-barbie-gat.webp', top: 1 },
+  'BioLifting · O zonă mică facială': { t: 'Fermitate pe o zonă a feței', b: ['Stimulează colagenul și elastina', 'Gușă, gât, pomeți, frunte'], ph: 'concern-chin-3.webp',  need: 'gusa', d: 'Energie termică controlată: stimulează colagenul și elastina pentru fermitate.', z: 'Gușă, gât, contur mandibular, pomeți, periocular, perioral, frunte.', img: 'concern-chin-2.webp' },
+  'HIFU · Full Face': { t: 'Lifting fără operație', b: ['Lifting non-chirurgical', 'Fermitate și contur pe toată fața'], ph: 'concern-face-1.webp',  need: 'fata', d: 'Ultrasunete focalizate de mare intensitate: lifting non-chirurgical și fermitate.', z: 'Laxitate la nivelul întregii fețe, riduri și pierderea conturului facial.', img: 'ba-hifu-periocular.webp' },
+  'RF Sculpt · Full Face': { t: 'Față tonifiată', b: ['Tonifiere și revitalizare la nivelul întregii fețe'], ph: 'concern-face-2.webp',  need: 'fata', d: 'Tonifiere și revitalizare la nivelul întregii fețe.', img: 'concern-face-2.webp' },
+  'BioLifting · Full Face': { t: 'Riduri și fermitate', b: ['Riduri și pierderea elasticității', 'Stimulează colagenul și elastina'], ph: 'concern-riduri.webp',  need: 'fata', d: 'Energie termică controlată: stimulează colagenul și elastina.', z: 'Laxitate la nivelul întregii fețe, riduri și pierderea elasticității.', img: 'concern-riduri.webp' },
+  'Tratamente faciale · Tratament Restart': { t: 'Ten luminos imediat', b: ['Fără timp de recuperare', 'Rezultat vizibil imediat', 'Potrivit înainte de un eveniment'], ph: 'restart-ba-premium.webp',  name: 'Tratament facial Restart', need: 'fata', d: 'Revitalizează pielea, îmbunătățește textura și redă luminozitatea naturală.', img: 'restart-ba-premium.webp', top: 1 },
+  'Tratamente faciale · Tratament de hidratare profundă': { t: 'Ten hidratat', b: ['Reface nivelul optim de apă al pielii', 'Întărește bariera cutanată'], ph: 'concern-stralucire.webp',  name: 'Hidratare profundă', need: 'fata', d: 'Reface nivelul optim de apă al pielii și întărește bariera cutanată.', img: 'concern-stralucire.webp' },
+  'Tratamente faciale · Tratament intensiv antirid': { t: 'Mai puține riduri', b: ['Diminuează ridurile și liniile fine', 'Stimulează regenerarea pielii'], ph: 'faciale-closeup.webp',  name: 'Tratament intensiv antirid', need: 'fata', d: 'Diminuează ridurile și liniile fine, stimulând regenerarea pielii.', img: 'concern-riduri.webp' },
+  'Tratamente faciale · Redness Relief Protocol': { t: 'Calmează roșeața', b: ['Calmează roșeața', 'Pentru pielea sensibilă, reactivă sau cuperozică'], ph: 'concern-pete.webp',  name: 'Redness Relief Protocol', need: 'fata', d: 'Calmează roșeața și reechilibrează pielea sensibilă, reactivă sau cuperozică.', img: 'concern-face-1.webp' },
+  'Tratamente faciale · Sebum Off Protocol': { t: 'Ten gras și pori', b: ['Curăță porii', 'Reduce imperfecțiunile'], ph: 'concern-ten-problematic.webp',  name: 'Sebum Off Protocol', need: 'fata', d: 'Reglează secreția de sebum, curăță porii și reduce imperfecțiunile.', img: 'concern-ten-problematic.webp' },
+  'Tratamente faciale · Masaj facial clasic': { t: 'Relaxare și ten odihnit', b: ['Scalp, față, gușă, gât și decolteu', 'Pielea arată odihnită și luminoasă'], ph: 'offer-facial.webp', name: 'Masaj facial clasic', need: 'fata', d: 'Masajul scalpului, feței, gușii, gâtului și decolteului. Relaxare profundă, pielea arată odihnită și luminoasă.', img: 'offer-facial.webp' },
+  'Tratamente faciale · Microneedling Exozomi PDRN': { t: 'Cicatrici și textură', b: ['Cicatrici post-acneice', 'Textură și fermitate'], ph: 'oferte/facial.webp',  name: 'Microneedling Exozomi PDRN', need: 'fata', d: 'Regenerare prin microperforații: cicatrici post-acneice, textură și fermitate.', img: 'faciale-closeup.webp' },
+  'Tratamente faciale · Microneedling Corector Periocular': { t: 'Cearcăne și linii fine', b: ['Cearcăne și linii fine', 'Hidratare în zona ochilor'], ph: 'ba-hifu-periocular.webp',  name: 'Microneedling Corector Periocular', need: 'fata', d: 'Țintit pe zona ochilor: cearcăne, hidratare și linii fine.', img: 'faciale-closeup.webp' },
 };
 const EPIL_D = 'Laser cu diodă, certificat medical. Pentru rezultat progresiv definitiv sunt necesare în general 6-8 ședințe, în funcție de tipul de păr și de piele.';
 // „Merge bine cu” (the owner: „procedurile se completează între ele”): what goes with each treatment, best first
@@ -74,23 +73,26 @@ const PAIRS = {
   'hifu-o-zona-corporala': ['radiofrecventa-o-zona-corporala', 'ems-o-zona', 'liposonix-o-zona-corporala'],
   'impachetare-la-cald': ['radiofrecventa-o-zona-corporala', 'liposonix-o-zona-corporala'],
   'rf-sculpt-gusa-contur-mandibular': ['hifu-o-zona-mica-faciala', 'tratament-restart'],
-  'hifu-o-zona-mica-faciala': ['rf-sculpt-gusa-contur-mandibular', 'radiofrecventa-full-face'],
-  'radiofrecventa-o-zona-mica-faciala': ['hifu-o-zona-mica-faciala', 'rf-sculpt-gusa-contur-mandibular'],
+  'hifu-o-zona-mica-faciala': ['rf-sculpt-gusa-contur-mandibular', 'biolifting-full-face'],
+  'biolifting-o-zona-mica-faciala': ['hifu-o-zona-mica-faciala', 'rf-sculpt-gusa-contur-mandibular'],
   'hifu-full-face': ['rf-sculpt-full-face', 'tratament-de-hidratare-profunda'],
   'rf-sculpt-full-face': ['hifu-full-face', 'tratament-restart'],
-  'radiofrecventa-full-face': ['hifu-o-zona-mica-faciala', 'tratament-intensiv-antirid'],
-  'tratament-restart': ['radiofrecventa-full-face', 'hifu-o-zona-mica-faciala'],
-  'tratament-de-hidratare-profunda': ['radiofrecventa-full-face', 'microneedling-corector-periocular'],
-  'tratament-intensiv-antirid': ['hifu-full-face', 'radiofrecventa-full-face'],
+  'biolifting-full-face': ['hifu-o-zona-mica-faciala', 'tratament-intensiv-antirid'],
+  'tratament-restart': ['biolifting-full-face', 'masaj-facial-clasic', 'hifu-o-zona-mica-faciala'],
+  'masaj-facial-clasic': ['tratament-restart', 'tratament-de-hidratare-profunda'],
+  'tratament-de-hidratare-profunda': ['masaj-facial-clasic', 'biolifting-full-face', 'microneedling-corector-periocular'],
+  'tratament-intensiv-antirid': ['hifu-full-face', 'biolifting-full-face'],
   'redness-relief-protocol': ['tratament-de-hidratare-profunda'],
   'sebum-off-protocol': ['microneedling-exozomi-pdrn', 'tratament-restart'],
-  'microneedling-exozomi-pdrn': ['tratament-de-hidratare-profunda', 'radiofrecventa-full-face'],
+  'microneedling-exozomi-pdrn': ['tratament-de-hidratare-profunda', 'biolifting-full-face'],
   'microneedling-corector-periocular': ['hifu-o-zona-mica-faciala', 'tratament-de-hidratare-profunda'],
 };
 const EPIL_PAIRS = ['epilare-axile-femei', 'epilare-inghinal-total-femei', 'epilare-picior-lung-complet-femei', 'epilare-linie-bikini-femei'];
 // the small add-on offered before paying (impulse): one per city, cheap, goes with anything
-const IMPULSE = { 'Timișoara': 'epilare-axile-femei', Arad: 'radiofrecventa-o-zona-mica-faciala' };
+const IMPULSE = { 'Timișoara': 'epilare-axile-femei', Arad: 'biolifting-o-zona-mica-faciala' };
 
+// the first screen's slider (the owner, 24.11): these, in this order, the ones of her clinic
+const SHOW = ['liposonix-o-zona-corporala', 'hifu-o-zona-mica-faciala', 'tratament-restart', 'rf-sculpt-gusa-contur-mandibular', 'epilare-full-body', 'hifu-full-face', 'ems-o-zona'];
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const lst = () => require('./pay').priceList();
 // a price list row → its treatment's base name and the package's label
@@ -104,12 +106,12 @@ function productOf(t) {
   const { base } = split(t);
   if (t.group === 'epilare') {
     const n = base.replace(/^Epilare laser · (Elysion Pro · )?/, '');
-    return { id: fold('epilare ' + n), name: 'Epilare laser · ' + n, need: 'epilare', d: /Full Body/.test(n) ? 'Toate zonele de corp, fără față: axile, inghinal total, brațe total, picior lung. ' + EPIL_D : EPIL_D, img: /Full Body/.test(n) ? 'offer-epilare.webp' : 'epilare-legs.webp', top: /Full Body/.test(n) ? 1 : 0, guarantee: 'Garanția banilor înapoi.' };
+    return { id: fold('epilare ' + n), name: 'Epilare laser · ' + n, t: /Full Body/.test(n) ? 'Tot corpul fără păr' : 'Fără păr: ' + n.split(' · ')[0].replace(/ \(.*\)/, '').toLowerCase().replace(/^./, (c) => c.toUpperCase()) + (/ · bărbați/.test(n) ? ' (bărbați)' : ''), need: 'epilare', b: /Full Body/.test(n) ? ['Toate zonele de corp, fără față', 'Nedureros', 'Laser certificat medical'] : ['Nedureros', 'Laser certificat medical'], photo: '/brand_asset/' + (/Full Body/.test(n) ? 'epilare-legs.webp' : /Picior/.test(n) ? 'epilare-legs-black.webp' : /Axile|Brațe|Antebrațe|Umeri/.test(n) ? 'oferte/epilare.webp' : 'offer-epilare.webp'), d: /Full Body/.test(n) ? 'Toate zonele de corp, fără față: axile, inghinal total, brațe total, picior lung. ' + EPIL_D : EPIL_D, img: /Full Body/.test(n) ? 'offer-epilare.webp' : 'epilare-legs.webp', top: /Full Body/.test(n) ? 1 : 0, guarantee: 'Garanția banilor înapoi.' };
   }
   const m = P[base];
   if (!m) return null;
   const id = fold(base.replace(/^Tratamente faciale · /, '').replace(/^Electrostimulare Magnetică \(EMS\)/, 'EMS').replace(/^Împachetare la cald · /, ''));
-  return { id, name: m.name || base, need: m.need, d: m.d, z: m.z || '', img: m.img, top: m.top || 0 };
+  return { id, name: m.name || base, t: m.t || m.name || base, need: m.need, d: m.d, z: m.z || '', img: m.img, top: m.top || 0, b: m.b || [], photo: '/brand_asset/' + m.ph };
 }
 const priceOf = (full, at) => (bfOn(at) ? Math.round(full * (100 - BF.pct) / 100) : require('./pay').bonusPrice(full, require('./pay').BONUS_PCT));
 
@@ -137,7 +139,7 @@ function catalog(city, at) {
 
 async function terms(at) {
   const now = at || Date.now();
-  return { now, bf: bfOn(now), end: BF.end, start: BF.start, pct: bfOn(now) ? BF.pct : require('./pay').BONUS_PCT, tiers: await tiers(), needs: NEEDS, impulse: IMPULSE };
+  return { now, bf: bfOn(now), end: BF.end, start: BF.start, pct: bfOn(now) ? BF.pct : require('./pay').BONUS_PCT, tiers: await tiers(), needs: NEEDS, impulse: IMPULSE, show: SHOW };
 }
 
 // the cart, priced here: items = price list ids (each once), in her city → { lines, full, amount, saved, reached, next, minutes }

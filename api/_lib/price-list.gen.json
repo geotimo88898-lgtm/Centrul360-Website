@@ -185,6 +185,20 @@
    ]
   },
   {
+   "id": "faciale-masaj-facial-clasic-1-sedinta",
+   "group": "faciale",
+   "title": "Tratamente faciale · Masaj facial clasic · 1 ședință",
+   "price": 120,
+   "old": 0,
+   "sessions": 1,
+   "minutes": 30,
+   "cat": "faciale",
+   "cities": [
+    "Timișoara",
+    "Arad"
+   ]
+  },
+  {
    "id": "faciale-microneedling-exozomi-pdrn-1-sedinta",
    "group": "faciale",
    "title": "Tratamente faciale · Microneedling Exozomi PDRN · 1 ședință",
@@ -313,7 +327,7 @@
   {
    "id": "radiofrecventa-o-zona-mica-faciala-1-sedinta",
    "group": "radiofrecventa",
-   "title": "Radiofrecvență · O zonă mică facială · 1 ședință",
+   "title": "BioLifting · O zonă mică facială · 1 ședință",
    "price": 170,
    "old": 0,
    "sessions": 1,
@@ -327,7 +341,7 @@
   {
    "id": "radiofrecventa-o-zona-mica-faciala-4-sedinte",
    "group": "radiofrecventa",
-   "title": "Radiofrecvență · O zonă mică facială · 4 ședințe",
+   "title": "BioLifting · O zonă mică facială · 4 ședințe",
    "price": 580,
    "old": 0,
    "sessions": 4,
@@ -341,7 +355,7 @@
   {
    "id": "radiofrecventa-full-face-1-sedinta",
    "group": "radiofrecventa",
-   "title": "Radiofrecvență · Full Face · 1 ședință",
+   "title": "BioLifting · Full Face · 1 ședință",
    "price": 280,
    "old": 0,
    "sessions": 1,
@@ -355,7 +369,7 @@
   {
    "id": "radiofrecventa-full-face-4-sedinte",
    "group": "radiofrecventa",
-   "title": "Radiofrecvență · Full Face · 4 ședințe",
+   "title": "BioLifting · Full Face · 4 ședințe",
    "price": 880,
    "old": 0,
    "sessions": 4,
