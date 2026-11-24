@@ -634,6 +634,16 @@ module.exports = async (req, res) => {
     res.status(200).json(out);
     return;
   }
+  // ?wflist=1: the automations as they are (name, on/off, trigger, steps: kind and template label), no people
+  if (req.query && req.query.wflist) {
+    const d = await readJSON('data/workflows.json', {});
+    const WT = require('./_lib/wa-templates');
+    const tp = await WT.load().catch(() => ({ templates: [] }));
+    const lab = (id) => { const t = (tp.templates || []).find((x) => x.id === id); return t ? t.label : id || ''; };
+    const flat = (steps) => (steps || []).map((x) => x.type + (x.templateId ? ':' + lab(x.templateId) : '') + (x.type === 'wait' ? ':' + JSON.stringify(x.wait || x.amount || x.until || x.minutes || x.hours || x.days || '') : '') + (x.yes || x.no ? ' [' + flat(x.yes).join(', ') + ' | ' + flat(x.no).join(', ') + ']' : ''));
+    res.status(200).json((d.workflows || []).map((w) => ({ id: w.id, name: w.name, active: !!w.active, trigger: w.trigger, steps: flat(w.steps) })));
+    return;
+  }
   // ?cardsrc=<card id>: where one order came from (the utm values and the referrer's host, the card message's lot and
   // personal-link token if any) and whether her card message went out; never a name or phone
   if (req.query && req.query.cardsrc) {
