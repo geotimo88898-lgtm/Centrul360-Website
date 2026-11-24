@@ -756,7 +756,7 @@ module.exports = async (req, res) => {
     if (r.status !== 'asteptare') { res.status(409).json({ error: 'not_waiting', status: r.status }); return; }
     if (r.failpay) { res.status(409).json({ error: 'sent_already', at: r.failpay.at }); return; }
     const { t } = await C.templates();
-    const tpl = t.failpay;
+    const tpl = t.failpay2;
     const cfg = await WA.loadConfig();
     const n = cfg.numbers[r.city];
     if (!tpl || !n || !WT.approvedFor(tpl, n.wabaId)) { res.status(409).json({ error: 'not_approved' }); return; }
@@ -765,7 +765,7 @@ module.exports = async (req, res) => {
     const x = await WA.sendWhatsApp({ phone: r.phone, template: (tpl.meta[n.wabaId] || {}).name || tpl.name, language: 'ro', params: [name], from: r.city, buttonUrl: { index: 0, text: q.get('c') + '~' + q.get('t') } });
     const l2 = await readJSON(C.KEY, []), y = C.byId(l2, r.id);
     if (x.sent && y) { y.failpay = { at: new Date().toISOString() }; C.mark(y, 'failpay', 'mesaj trimis'); C.recOf(y).stop = C.recOf(y).stop || 'failpay'; await require('./_lib/store').writeJSON(C.KEY, l2); }
-    if (x.sent) await C.logChat(r.phone, x.fromCity || r.city, r.name, tpl.body.replace('{{1}}', name), '', x.id, { cardOrder: r.id, cardStep: 'failpay', buttons: ['Plătesc online'] }).catch(() => {});
+    if (x.sent) await C.logChat(r.phone, x.fromCity || r.city, r.name, tpl.body.replace('{{1}}', name), '', x.id, { cardOrder: r.id, cardStep: 'failpay', buttons: ['Linkul de plată'] }).catch(() => {});
     res.status(200).json({ ok: !!x.sent, error: x.sent ? '' : String(x.error || '').slice(0, 200) });
     return;
   }
