@@ -644,12 +644,12 @@ h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
 /* ---- VIP chosen during Black Friday (the owner, 24.11: „la VIP … să iasă mai puțin în evidență CTA-ul cu online și câte
    carduri au rămas, tot într-un ton foarte premium, dar puțin diferit față de rest”): the VIP card leads; the rest is quiet
    champagne on black. The 490 and 990 looks stay as they are. */
-/* the cards left: one small line, no box */
-.cs-bf .csc-xmas .cst-urg:has(.cst-vipl:not([hidden])){ background:none !important; box-shadow:none !important; border:0; padding:4px 0;
-  font-size:13.5px; font-weight:500; letter-spacing:.02em; color:rgba(241,223,180,.82); }
-.cs-bf .csc-xmas .cst-urg:has(.cst-vipl:not([hidden])) .dot{ width:5px; height:5px; background:#d4a645 !important; }
-.cs-bf .csc-xmas .cst-urg:has(.cst-vipl:not([hidden])) .dot::after{ animation:none; display:none; }
-.cs-bf .csc-xmas .cst-urg .cst-vipl b{ color:#e0b456 !important; font-weight:700; }
+/* the cards left: the white pill, as on 490 and 990, with a gold edge and gold number (the owner, 24.11: „chenarul de la scarcity tot alb”) */
+.cs-bf .csc-xmas .cst-urg:has(.cst-vipl:not([hidden])){ background:#fffdf8 !important; color:#1a140c !important; border:0 !important;
+  box-shadow:0 0 0 1.5px #d9b465 inset, 0 6px 18px -10px rgba(0,0,0,.6) !important; }
+.cs-bf .csc-xmas .cst-urg:has(.cst-vipl:not([hidden])) .dot{ background:#c9973c !important; }
+.cs-bf .csc-xmas .cst-urg:has(.cst-vipl:not([hidden])) .dot::after{ background:#c9973c !important; }
+.cs-bf .csc-xmas .cst-urg .cst-vipl b{ color:#a9781f !important; font-weight:800; }
 /* the online button: dark glass, a hairline of champagne, no glow; ivory words, the price in gold, the full price struck and quiet */
 .cs-bf .csc-xmas .cs-vipon [data-cs-buy][data-cs-follow]{ color:#f6ead0 !important; font-weight:600;
   background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02)) !important; border:0 !important;
@@ -658,10 +658,10 @@ h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
 .cs-bf .csc-xmas .cs-vipon [data-cs-buy][data-cs-follow] [data-cs-v="payon"]{ font-weight:800; background:linear-gradient(100deg,#c9973c 0%,#f6dc8e 40%,#fff1c2 52%,#e0b456 70%,#b8862e 100%);
   -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
 .cs-bf .csc-xmas .cs-vipon [data-cs-buy][data-cs-follow] [data-cs-v="payon"] s{ -webkit-text-fill-color:rgba(246,234,208,.45); color:rgba(246,234,208,.45); font-weight:500; opacity:1; text-decoration-thickness:1px; }
-/* its tab: dark, a gold hairline, gold words, still on the button */
-.cs-bf .csc-xmas .cs-vipon .cst-gift{ color:#e8c97e !important; text-shadow:none !important; font-weight:600;
-  background:#14110d !important; box-shadow:0 0 0 1px rgba(224,190,120,.38) inset !important; }
-.cs-bf .csc-xmas .cs-vipon .cst-gift svg, .cs-bf .csc-xmas .cs-vipon .cst-gift .cst-gi{ color:#e8c97e; stroke:#e8c97e; }
+/* its tab: white, gold words, still on the button (the owner, 24.11: „bonusul cu −10% alb”) */
+.cs-bf .csc-xmas .cs-vipon .cst-gift{ color:#8a6118 !important; text-shadow:none !important; font-weight:700;
+  background:#fffdf8 !important; box-shadow:0 0 0 1px rgba(217,180,101,.9) inset !important; }
+.cs-bf .csc-xmas .cs-vipon .cst-gift svg, .cs-bf .csc-xmas .cs-vipon .cst-gift .cst-gi{ color:#a9781f; stroke:#a9781f; }
 /* the clinic button: as big, one step quieter (no border light, softer words) */
 .cs-bf .csc-xmas .cs-vipon:not(.cs-vipcall) .cst-cash{ color:rgba(246,234,208,.92); background:rgba(255,255,255,.02); box-shadow:0 0 0 1px rgba(224,190,120,.3) inset; }
 /* the clinic switch: chosen in soft champagne, not solid gold */
