@@ -67,7 +67,7 @@ async function collect(inWin) {
   appts.forEach((a) => {
     if (!a || a.createdBy !== 'site' || a.block || !inWin(a.createdAt)) return;
     const s = B.sourceAgain(a.src);
-    items.push({ kind: 'booking', from: s ? s.from : '', m: tagsOf(s), lei: a.amount, phone: a.clientPhone, at: a.createdAt });
+    items.push({ kind: 'booking', from: s ? s.from : '', m: tagsOf(s), lei: a.amount, phone: a.clientPhone, at: a.createdAt, id: a.id });
   });
 
   // the checkout's orders: from the index (every order since it exists) and the open and paid lists (the ones before it)
@@ -87,14 +87,17 @@ async function collect(inWin) {
     if (!saved && o.kind === 'hold') { const h = holdById.get(o.ref); s = h ? B.sourceOf(h.src, h.cookie, h.app) : null; if (!(s && s.from) && h && h.bookingId) s = B.sourceAgain((apptById.get(h.bookingId) || {}).src); }
     if (!(s && s.from) && o.kind === 'booking') s = B.sourceAgain((apptById.get(o.ref) || {}).src);
     if (o.kind === 'card' && s && s.from) cardSrc.set(o.ref, s);
-    items.push({ kind: 'pay', saved, from: s ? s.from : '', m: tagsOf(s), paid: o.status === 'paid', payKind: o.kind, lei: o.amount, phone: o.phone, at: o.createdAt });
+    // a card's checkout order: the card's ad (its lead form's, inherited: src.ad = { adId, campaignId, ... }) names it exactly
+    const m = tagsOf(s), inh = o.src && o.src.ad && typeof o.src.ad === 'object' ? o.src.ad : null;
+    if (inh && /^\d{5,25}$/.test(String(inh.adId || ''))) { m.ad = String(inh.adId); m.source = m.source || 'facebook'; }
+    items.push({ kind: 'pay', saved, from: s ? s.from : '', m, paid: o.status === 'paid', payKind: o.kind, lei: o.amount, phone: o.phone, at: o.createdAt, id: o.id, ref: o.ref });
   });
 
   // leads of the site's forms
   leads.forEach((l) => {
     if (!l || l.createdBy !== 'site-form' || !inWin(l.createdAt)) return;
     const s = B.sourceAgain(l.src);
-    items.push({ kind: 'lead', saved: !!(s && s.from), from: s ? s.from : '', m: tagsOf(s), lf: !!l.lf, siteSource: l.siteSource, lei: l.lf ? Number(l.lf.tier) || 0 : 0, phone: l.phone, at: l.createdAt });
+    items.push({ kind: 'lead', saved: !!(s && s.from), from: s ? s.from : '', m: tagsOf(s), lf: !!l.lf, siteSource: l.siteSource, lei: l.lf ? Number(l.lf.tier) || 0 : 0, phone: l.phone, at: l.createdAt, id: l.id });
   });
 
   // the Card de Sărbători orders of the site
@@ -107,7 +110,7 @@ async function collect(inWin) {
     const m = [own, s].map(tagsOf).find(tagged) || tagsOfCard(r);
     const paid = r.status === 'platit';
     items.push({ kind: 'card', how: s ? 'checkout' : 'page', from: s ? s.from : fromTrack(r.track), m, paid, status: r.status, pay: r.pay,
-      lei: paid ? Number(r.paidAmount) || Number(r.amount) : r.amount, phone: r.phone, at: r.created });
+      lei: paid ? Number(r.paidAmount) || Number(r.amount) : r.amount, phone: r.phone, at: r.created, id: r.id });
   });
   return items;
 }
@@ -178,8 +181,8 @@ async function byAd(days) {
   if (!MEMO.at || Date.now() - MEMO.at > 90e3) MEMO.p = collect((iso) => Number.isFinite(Date.parse(iso))).then((l) => l.filter((x) => fromMeta(x.m))), MEMO.at = Date.now();
   let all;
   try { all = await MEMO.p; } catch (e) { MEMO.at = 0; throw e; }
-  // who came from which ad, and when (only for the matching by phone in api/ads-manager.js, never in an answer)
-  const touches = all.filter((x) => x.phone).map((x) => ({ phone: x.phone, t: Date.parse(x.at), ad: x.m.ad, campaign: x.m.campaign, content: x.m.content, kind: x.kind }));
+  // which record came from which ad, who and when (only for api/ads-manager.js withOutcomes, never in an answer)
+  const touches = all.map((x) => ({ phone: x.phone || '', t: Date.parse(x.at), ad: x.m.ad, campaign: x.m.campaign, content: x.m.content, kind: x.kind, id: x.id || '', ref: x.payKind === 'card' ? x.ref || '' : '' }));
   const items = all.filter((x) => inWin(x.at));
   const ads = {}, pairs = {};
   items.forEach((x) => {

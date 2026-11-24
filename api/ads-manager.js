@@ -109,12 +109,14 @@ async function withSite(view, period, range, conn) {
   return (ours.touches || []).map((t) => {
     const x = (t.ad && byId.get(t.ad)) || adOf(t.campaign, t.content);
     const c = x ? x.c : campOf(t.campaign);
-    return x ? { phone: t.phone, t: t.t, adId: x.a.id, campaignId: x.c.id } : c ? { phone: t.phone, t: t.t, adId: '', campaignId: c.id } : null;
+    const base = { phone: t.phone, t: t.t, kind: t.kind, id: t.id, ref: t.ref };
+    return x ? Object.assign(base, { adId: x.a.id, campaignId: x.c.id }) : c ? Object.assign(base, { adId: '', campaignId: c.id }) : null;
   }).filter(Boolean);
 }
 // every ad's outcome by her phone (api/_lib/ad-outcomes.js): o* on every ad, ad set and campaign, for the same tiles on a
 // lead-form ad and a website ad. From 16.10.2026, 22:05 on, like withFunnel (the leads, the bookings and their payments).
-const O_KEYS = { booked: 'oBooked', showed: 'oShowed', cardRes: 'oCardRes', cardPaid: 'oCardPaid', cardPaidLei: 'oCardPaidLei', cardOpen: 'oCardOpen', cashed: 'oCashed', cashedOnline: 'oCashedOnline' };
+const O_KEYS = { booked: 'oBooked', showed: 'oShowed', cardRes: 'oCardRes', cardPaid: 'oCardPaid', cardPaidLei: 'oCardPaidLei', cardOpen: 'oCardOpen', cashed: 'oCashed', cashedOnline: 'oCashedOnline',
+  exact: 'oExact', byPhone: 'oByPhone' };
 async function withOutcomes(view, period, range, siteTouches) {
   const O = require('./_lib/ad-outcomes');
   const [allLeads, allAppts, allSales, cards, clients] = await Promise.all([
@@ -129,6 +131,7 @@ async function withOutcomes(view, period, range, siteTouches) {
     sales: allSales.filter((x) => at(x.createdAt || x.date) >= START), cards: Array.isArray(cards) ? cards : [], clients: Array.isArray(clients) ? clients : [],
     siteTouches: siteTouches || [], ads: flat, range: periodRange(period, range),
   });
+
   const zero = (x) => { Object.values(O_KEYS).forEach((k) => { x[k] = 0; }); };
   const addTo = (x, box) => { if (box) Object.keys(O_KEYS).forEach((k) => { x[O_KEYS[k]] = Math.round(((x[O_KEYS[k]] || 0) + (box[k] || 0)) * 100) / 100; }); };
   view.campaigns.forEach((c) => {
@@ -136,6 +139,8 @@ async function withOutcomes(view, period, range, siteTouches) {
     c.adsets.forEach((s) => { zero(s); s.ads.forEach((a) => { zero(a); addTo(a, o.ads.get(a.id)); addTo(s, o.ads.get(a.id)); addTo(c, o.ads.get(a.id)); }); });
     addTo(c, o.campaigns.get(c.id)); // the touches of its campaign without an ad of the list
   });
+  // how exact the matching was on these campaigns: actions matched by the record's own ad / by her phone (kept, not shown)
+  view.outcomeMatch = view.campaigns.reduce((m, c) => ({ exact: m.exact + (c.oExact || 0), byPhone: m.byPhone + (c.oByPhone || 0) }), { exact: 0, byPhone: 0 });
   return view;
 }
 // what the guard saw on each campaign (api/_lib/ads-guard.js: TOP / ATENȚIE / DE URMĂRIT on the days it really ran,

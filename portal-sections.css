@@ -1395,7 +1395,7 @@ html[data-role="cosmetician"] .cal-col{ cursor:default; }
   .ad-sx-row small, .ad-sx-t small{ letter-spacing:.01em; }
   /* the campaign's row: the name on its line, the budget under it (the numbers are the tiles) */
   .ad-camp .ad-row.is-camp > .ad-cell{ flex:1 1 100%; }
-}
+  .ad-camp .ad-row.is-camp .ad-title small{ white-space:normal; }
 }
 .ad-flag{ --nc:var(--accent); display:flex; flex-wrap:wrap; align-items:baseline; gap:.2rem .5rem; margin:0; padding:.45rem .7rem; border-radius:10px; font-size:.8rem; line-height:1.35;
   background:color-mix(in srgb, var(--nc) 10%, transparent); box-shadow:inset 3px 0 0 var(--nc); }

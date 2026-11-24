@@ -106,7 +106,7 @@ async function results(sinceQ) {
     spendNew: a.spendNew || 0, pLeads: a.pLeads || 0, contacted: a.contacted || 0, lost: a.lost || 0, booked: a.booked || 0, showed: a.showed || 0, clients: a.clients || 0, revenue: a.revenue || 0,
     // what she did later, by her phone, 30 days, for her first ad touch (a form lead or a website ad's record; ad-outcomes.js)
     after: { booked: a.oBooked || 0, showed: a.oShowed || 0, cardsReserved: a.oCardRes || 0, cardsPaid: a.oCardPaid || 0, cardsPaidLei: a.oCardPaidLei || 0, cardsPending: a.oCardOpen || 0,
-      cashed: a.oCashed || 0, cashedOnline: a.oCashedOnline || 0 },
+      cashed: a.oCashed || 0, cashedOnline: a.oCashedOnline || 0, exact: a.oExact || 0, byPhone: a.oByPhone || 0 },
     // a website ad (23.11): Meta's steps on the site and what its visitors did there (our records, by the ad's tags)
     ...(c.site ? { site: true, visits: a.visits || 0, checkouts: a.checkouts || 0, purchases: a.purchases || 0, purchaseValue: a.purchaseValue || 0, schedules: a.schedules || 0, pixelLeads: a.pixelLeads || 0,
       cardsPaid: a.sCardPaid || 0, cardsPaidLei: a.sCardPaidLei || 0, cardsReserved: a.sCardRes || 0, cardsReservedLei: a.sCardResLei || 0, cardsStarted: a.sCardOpen || 0,
