@@ -231,17 +231,26 @@ function problem(t, priceOk, maxBytes) {
   return '';
 }
 // the message, by Claude: { text } or { error }
-// the card's own facts (api/_lib/card-sarbatori.js), for a message about the card: it is not in „Ofertele active”
-function cardFacts() {
+// the card's own facts, for a message about the card (it is not in „Ofertele active”): from the card's terms module when
+// there is one (api/_lib/card-terms.js, the card session's), else these, checked against the card audit (24.11): always
+// what she pays before what she gets; the online bonus; Black Friday while it runs (24.11 – 29.11 23:59, Romania)
+const BF_FROM = Date.parse('2026-11-23T22:00:00Z'), BF_TO = Date.parse('2026-11-29T21:59:59Z');
+function cardFacts(now) {
   try {
-    const C = require('./card-sarbatori');
+    let T = null;
+    try { T = require('./card-terms'); } catch (e) { T = null; }
+    if (T && typeof T.factsText === 'function') { const x = T.factsText(now); if (x) return String(x); }
+    const C = (() => { try { return require('./card-sarbatori'); } catch (e) { return {}; } })();
     const lei = (n) => Number(n).toLocaleString('ro-RO');
-    // only the cards on sale now (22.11: the 290 one is out, the VIP one is in)
-    const tiers = (C.SALE || Object.keys(C.TIERS)).map((t) => 'plătește ' + lei(t) + ' lei și primește ' + lei(C.TIERS[t]) + ' lei în tratamente' +
-      (C.VIP && Number(t) === C.VIP ? ' (cardul VIP Transformarea 360, pentru ea și toată familia, doar ' + (C.VIP_MAX || 5) + ' pe clinică)' : '')).join('; ');
-    const until = new Intl.DateTimeFormat('ro-RO', { timeZone: 'Europe/Bucharest', day: 'numeric', month: 'long' }).format(new Date(C.DEADLINE));
-    return 'Cardul de Sărbători Centrul360: ' + tiers + '. Pentru orice tratament din lista de prețuri, la prețul întreg, în Timișoara și Arad, valabil până pe ' + C.VALID_TXT +
-      '. Se cumpără până pe ' + until + ', online (plata cu cardul) sau rezervat și plătit în clinică; vine pe WhatsApp, pe numele ei sau al celei care îl primește cadou.';
+    const credit = (t, d) => (C.TIERS && Number(C.TIERS[t])) || d;
+    const t = now || Date.now();
+    const until = C.DEADLINE ? new Intl.DateTimeFormat('ro-RO', { timeZone: 'Europe/Bucharest', day: 'numeric', month: 'long' }).format(new Date(C.DEADLINE)) : '24 decembrie';
+    return 'Cardul de Sărbători Centrul360: plătești 490 lei și primești ' + lei(credit(490, 1000)) + ' lei în tratamente; plătești 990 lei și primești ' + lei(credit(990, 2500)) +
+      ' lei în tratamente; Cardul VIP Transformarea 360: plătești 9.900 lei și primești ' + lei(credit(9900, 30000)) + ' lei în tratamente, pentru tine și cei dragi. ' +
+      'Pentru orice tratament din clinică, în Timișoara și Arad, valabil până pe 30.06.2027. ' +
+      'La plata online (cu cardul): la cardurile de 490 și 990 lei, în plus o ședință de BioLifting cadou și Clubul 360; la cardul VIP, 10% reducere (plătești 8.910 lei) și Clubul 360. ' +
+      (t >= BF_FROM && t <= BF_TO ? 'BLACK FRIDAY, până pe 29 noiembrie la 23:59: la plata online, cardul de 990 lei: plătești 990 lei și primești 3.000 lei în tratamente. Dacă rezervi și plătești în clinică, rămâne 2.500 lei. ' : '') +
+      'Se cumpără până pe ' + until + ', online (plata cu cardul) sau rezervat și plătit în clinică; vine pe WhatsApp, pe numele ei sau al celei care îl primește cadou.';
   } catch (e) { return ''; }
 }
 // the message, by Claude: { text } or { error }. o: { via: 'comment' | 'message' (a story reply or a message with the

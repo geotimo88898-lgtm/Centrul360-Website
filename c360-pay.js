@@ -314,7 +314,7 @@
     function go(target) {
       const c = ask ? { name: fv('name') || who.name, phone: fv('phone') || who.phone } : null;
       if (c && c.name && c.phone) { who.name = c.name; who.phone = c.phone; store.set(ME, c); if (o.onContact && contactSaved !== c.name + '|' + digits(c.phone)) o.onContact(c); }
-      store.set('c360-pay-pending', { orderId: order.orderId, key: order.key, amount: order.amount, title: order.title, at: Date.now() });
+      store.set('c360-pay-pending', { orderId: order.orderId, key: order.key, amount: order.amount, title: order.title, kind: order.kind || o.kind, at: Date.now() });
       const f = document.createElement('form');
       f.method = 'POST'; f.action = '/api/pay-go'; f.style.display = 'none';
       const add = (k, v) => { const i = document.createElement('input'); i.type = 'hidden'; i.name = k; i.value = v; f.appendChild(i); };
@@ -332,7 +332,7 @@
     // the browser didn't open a tab (an app's own browser): the same tab, and the site says „Plătit” when she comes back
     function sameTab(url) {
       if (!/^https:\/\//.test(String(url || '')) && !/^http:\/\/(localhost|127\.0\.0\.1)[:/]/.test(String(url || ''))) { showErr({ code: 'no_url' }); return; }
-      store.set('c360-pay-pending', { orderId: order.orderId, key: order.key, amount: order.amount, title: order.title, at: Date.now() });
+      store.set('c360-pay-pending', { orderId: order.orderId, key: order.key, amount: order.amount, title: order.title, kind: order.kind || o.kind, at: Date.now() });
       location.assign(url);
     }
     function fail(msg) {
@@ -349,7 +349,7 @@
     }
     // she pays in the myPOS tab; this one asks the server every few seconds (at once when she comes back)
     function waitPaid() {
-      store.set('c360-pay-pending', { orderId: order.orderId, key: order.key, amount: order.amount, title: order.title, at: Date.now() });
+      store.set('c360-pay-pending', { orderId: order.orderId, key: order.key, amount: order.amount, title: order.title, kind: order.kind || o.kind, at: Date.now() });
       paint(stateHtml('wait', 'Plătește în fila myPOS', 'S-a deschis cu ' + lei(order.amount) + ' completat. Când ai plătit, revino aici: se actualizează singur.',
         '<button type="button" class="cp-btn" data-cp-again>Deschide din nou plata</button>' + (o.onClinic ? '<button type="button" class="cp-ghost" data-cp-clinic>Plătesc în clinică</button>' : '')));
       const mine = ++polling, t0 = Date.now();
@@ -434,7 +434,7 @@
     sheet.addEventListener('click', (e) => { if (e.target.closest('[data-cp-x]')) shut(); });
     const check = (n) => post({ action: 'check', orderId: p.orderId, key: p.key }).then((r) => {
       if (stop) return;
-      if (r.paid) { try { localStorage.removeItem('c360-pay-pending'); } catch (e) { /* private mode */ } say('ok', 'Plătit', (p.amount ? lei(p.amount) + ' · ' : '') + 'Programarea e confirmată. Confirmarea vine și pe WhatsApp.'); return; }
+      if (r.paid) { try { localStorage.removeItem('c360-pay-pending'); } catch (e) { /* private mode */ } say('ok', 'Plătit', (p.amount ? lei(p.amount) + ' · ' : '') + ((r.kind || p.kind) === 'card' ? 'Plata e confirmată 🎉 Cardul tău de Sărbători vine acum pe WhatsApp.' : 'Programarea e confirmată. Confirmarea vine și pe WhatsApp.')); return; }
       if (r.status && r.status !== 'open') { try { localStorage.removeItem('c360-pay-pending'); } catch (e) { /* private mode */ } if (q.get('plata')) say('bad', 'Plata nu a trecut', 'Banii nu au fost luați. Poți încerca din nou din programare.'); else shut(); return; }
       if (n < 20) setTimeout(() => check(n + 1), 3000);
     }, () => {});

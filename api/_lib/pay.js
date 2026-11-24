@@ -413,16 +413,16 @@ async function runHandler(orderId) {
 async function check(orderId, key) {
   const { data: o } = await readOrder(orderId);
   if (!o || !key || !safeEq(o.key, key)) return { error: 'not_found' };
-  if (o.status === 'paid') return { paid: true, status: 'paid', handled: !!o.handled };
+  if (o.status === 'paid') return { paid: true, status: 'paid', handled: !!o.handled, kind: o.kind };
   if (o.status !== 'open') return { paid: false, status: o.status };
   // a card sent to its own PayLink: paid when the card's record says so (its payment is matched there)
-  if (o.kind === 'card' && o.fallback) { const C = cardModule(); const r = C && C.KEY && C.byId ? C.byId(await readJSON(C.KEY, []), String(o.ref || '')) : null; if (r && r.status === 'platit') return { paid: true, status: 'paid', via: 'paylink' }; }
+  if (o.kind === 'card' && o.fallback) { const C = cardModule(); const r = C && C.KEY && C.byId ? C.byId(await readJSON(C.KEY, []), String(o.ref || '')) : null; if (r && r.status === 'platit') return { paid: true, status: 'paid', via: 'paylink', kind: o.kind }; }
   let st = null;
   try {
     if (o.provider === 'requests') { const r = await rqActive(); if (!r) return { paid: false, status: 'open' }; st = await askRequest(r, await recoverRequest(r, o)); }
     else { const c = await IPC.load(S); if (!IPC.ready(c)) return { paid: false, status: 'open' }; st = await askBoth(c, o); }
   } catch (e) { await rqFail(e); return { paid: false, status: 'open', error: e.code || 'mypos_failed' }; }
-  if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(orderId, st, 'status'); return { paid: !!r.ok, status: r.ok ? 'paid' : r.double ? 'double' : 'open' }; }
+  if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(orderId, st, 'status'); return { paid: !!r.ok, status: r.ok ? 'paid' : r.double ? 'double' : 'open', kind: o.kind }; }
   if (st && (st.status === 3 || st.status === 4) && baseOf(st.orderId) === o.id) return { paid: false, status: 'failed' };
   return { paid: false, status: 'open' };
 }
