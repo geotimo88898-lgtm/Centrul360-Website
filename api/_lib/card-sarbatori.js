@@ -143,13 +143,15 @@ async function setStock(input, by) {
 }
 // the wave's size changed, the new wave starting full now (the owner, 23.11: „fiecare val să înceapă de la 4”, the same
 // number as the WhatsApp picture): the skip moves so that the cards sold so far end a wave of the new size
-async function setWave(size, by) {
+// left: the wave of now starting with that many left instead of full (the owner, 24.11: „resetează la 3 carduri înainte de val”)
+async function setWave(size, by, left) {
   const W = Number(size);
   if (!Number.isInteger(W) || W < 1 || W > 200) return { error: 'bad_wave' };
   const cfg = await settings();
   const list = await readJSON(KEY, []);
   const eff = ordered(list, Date.now()) + cfg.skip;
-  const skip = cfg.skip + ((W - (eff % W)) % W);
+  const L = Number.isInteger(Number(left)) && Number(left) >= 1 && Number(left) <= W ? Number(left) : W;
+  const skip = cfg.skip + ((W - (eff % W)) % W) + (W - L);
   await writeJSON(STOCK, { wave: W, max: cfg.max, skip, vip: cfg.vip, by: by || '', at: nowISO() });
   const c = counter(list, Date.now(), Object.assign({}, cfg, { wave: W, skip }));
   return { ok: true, wave: W, left: c.left };
