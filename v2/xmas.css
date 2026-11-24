@@ -9,15 +9,7 @@ html:not(.xmas) .xm-pill, html:not(.xmas) .xm-band, html:not(.xmas) .xm-only{ di
 .xmas .top .brand{ position:relative; }
 .xmas .top .brand::before{ display:none; content:''; position:absolute; z-index:2; left:-8px; top:-13px; width:25px; height:23px; pointer-events:none;
   background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20120%20110%22%3E%3Cpath%20d%3D%22M72%2023C84%2013%20100%2015%20107%2031C110%2038%20110%2045%20108%2051L101%2051C101%2041%2095%2033%2085%2032C80%2032%2077%2030%2072%2030Z%22%20fill%3D%22%23c42a3b%22/%3E%3Ccircle%20cx%3D%22105%22%20cy%3D%2256%22%20r%3D%2210%22%20fill%3D%22%23fff%22/%3E%3Cpath%20d%3D%22M17%2086C19%2062%2033%2038%2057%2027C66%2023%2074%2021%2081%2024C85%2040%2089%2062%2097%2086Z%22%20fill%3D%22%23d23444%22/%3E%3Cpath%20d%3D%22M30%2076C33%2058%2043%2042%2058%2033%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-opacity%3D%22.3%22%20stroke-width%3D%224%22%20stroke-linecap%3D%22round%22/%3E%3Crect%20x%3D%229%22%20y%3D%2275%22%20width%3D%2296%22%20height%3D%2223%22%20rx%3D%2211.5%22%20fill%3D%22%23fff%22/%3E%3Crect%20x%3D%229%22%20y%3D%2275%22%20width%3D%2296%22%20height%3D%2223%22%20rx%3D%2211.5%22%20fill%3D%22none%22%20stroke%3D%22%23e2d6d2%22%20stroke-width%3D%222%22/%3E%3C/svg%3E") center/contain no-repeat; transform:rotate(-22deg); transform-origin:40% 85%; filter:drop-shadow(0 2px 2px rgba(120,30,40,.25)); }
-/* a fine string of lights under the bar: gold, raspberry and warm white, twinkling slowly */
-.xmas .top .bar{ position:relative; }
-.xmas .top .bar::before, .xmas .top .bar::after{ content:''; position:absolute; left:34px; right:34px; bottom:-5px; height:6px; pointer-events:none;
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); }
-.xmas .top .bar::before{ background:radial-gradient(circle,#e3c27a 0 2px,transparent 2.6px) 0 50%/42px 6px repeat-x, radial-gradient(circle,#fff1d0 0 1.8px,transparent 2.4px) 28px 50%/42px 6px repeat-x;
-  filter:drop-shadow(0 0 3px rgba(227,194,122,.9)); animation:xmTw 3.4s var(--e2) infinite alternate; }
-.xmas .top .bar::after{ background:radial-gradient(circle,#d9497f 0 2px,transparent 2.6px) 14px 50%/42px 6px repeat-x;
-  filter:drop-shadow(0 0 3px rgba(217,73,127,.8)); animation:xmTw 3.4s var(--e2) 1.7s infinite alternate; }
-@keyframes xmTw{ 0%{ opacity:.45; } 100%{ opacity:1; } }
+/* (the string of lights under the bar is gone: the owner, 24.11) */
 
 /* the header's pill: the Card de Sărbători (Black Friday stays in the menu and in the links, while it runs) */
 .xm-pill{ color:#fff8ea; background:linear-gradient(150deg,#d9497f 0%,#b0175a 55%,#8e0f46 100%);
