@@ -225,7 +225,7 @@
       '<div class="mo-range"><b>' + esc(rangeLabel()) + '</b><span>' + esc(where) + '</span><span class="k-live">live</span></div>' +
       (mgr && back.count ? '<p class="mo-refunds">' + icon('refresh') + '<span>Rambursări <b>' + K.lei(back.lei, 2) + '</b> · ' + K.plural(back.count, 'rambursare', 'rambursări') + ' · ' + String(back.pct).replace('.', ',') + '% din încasări</span></p>' : '') +
       (kpis.length ? '<div class="mo-kpis k-stagger">' + kpis.map((k) => INC[k].html()).join('') + '</div>' : '') +
-      (K.data.isAdmin ? '<div data-pos></div>' : '') +
+      (K.data.isAdmin || K.data.me.role === 'manager' ? '<div data-pos></div>' : '') +
       blocks.map((b) => BLOCK[b]()).join('');
 
     const ch = panel.querySelector('[data-chart]');
@@ -239,7 +239,7 @@
     });
     K.countAll(panel);
     renderList();
-    if (K.data.isAdmin) paintPos(from, to);
+    if (K.data.isAdmin || K.data.me.role === 'manager') paintPos(from, to);
     loadDues();
   }
 
@@ -347,7 +347,7 @@
       '<div class="k-row-sub">' + esc([dayTxt(x.s.date), x.s.treatment, S.loc === 'all' ? x.s.location : ''].filter(Boolean).join(' · ')) + '</div></div><div class="k-row-end"><span class="k-amount">' + K.lei(x.amt, 2) + '</span></div></div>';
     const more = (list) => (list.length > 6 ? '<button type="button" class="k-btn is-ghost is-sm" data-pos-all>' + (POS.all ? 'Mai puține' : 'Vezi toate (' + list.length + ')') + '</button>' : '');
     return '<section class="k-card mo-pos"><div class="k-card-head"><h3>' + icon('card') + 'POS myPOS</h3><span class="k-sub">' + (d.syncedAt ? 'citit ' + esc(K.ago(d.syncedAt)) : '') + '</span></div>' +
-      balHtml() +
+      (K.data.isAdmin ? balHtml() : '') +
       '<div class="mo-pos-sum">' +
         '<div><span>Pe POS</span><b>' + K.lei(r.posTotal) + '</b><small>' + K.plural(r.pos.length, 'plată', 'plăți') + (r.pos.length ? ' · bon mediu ' + K.lei(r.posTotal / r.pos.length) : '') + '</small></div>' +
         '<div><span>În portal, pe card</span><b>' + K.lei(r.portalCard) + '</b><small>' + K.plural(r.matched.size + r.portalOnly.length, 'încasare', 'încasări') + '</small></div>' +
@@ -358,8 +358,32 @@
       (r.posOnly.length ? '<h4 class="mo-pos-h">Pe POS, dar nu în portal · ' + r.posOnly.length + '</h4><div class="k-list">' + cap(r.posOnly).map(posRow).join('') + '</div>' + more(r.posOnly) : '') +
       (r.portalOnly.length ? '<h4 class="mo-pos-h">În portal pe card, dar nu pe POS · ' + r.portalOnly.length + '</h4><div class="k-list">' + cap(r.portalOnly).map(saleRow).join('') + '</div>' + more(r.portalOnly) : '') +
       (r.refunds.length ? '<h4 class="mo-pos-h">Returnări pe POS · ' + r.refunds.length + '</h4><div class="k-list">' + r.refunds.map(posRow).join('') + '</div>' : '') +
+      histHtml(r, d) +
       (ok && r.pos.length ? '<p class="mo-pos-ok">' + icon('checkCircle') + 'Fiecare plată de pe POS are încasarea ei în portal.</p>' : '') +
       '</section>';
+  }
+  // every POS payment of the period with its exact time (the owner, 24.11: to check when the cosmeticians clock out against
+  // their last payment; the manager sees it too): newest first, by day; next to each, the payment recorded in the portal it
+  // matches (client, who did it, when it was entered)
+  const posTimeS = (p) => { const t = new Date(p.at); return K.pad(t.getHours()) + ':' + K.pad(t.getMinutes()) + ':' + K.pad(t.getSeconds()); };
+  const hm2 = (iso) => { const t = new Date(iso); return Number.isFinite(t.getTime()) ? K.pad(t.getHours()) + ':' + K.pad(t.getMinutes()) : ''; };
+  function histHtml(r, d) {
+    const devices = d.devices || {};
+    const list = r.pos.concat(r.refunds).slice().sort((a, b) => (a.at < b.at ? 1 : -1));
+    if (!list.length) return '';
+    const bySale = new Map(); r.matched.forEach((p, id) => bySale.set(p, id));
+    const sales = new Map(periodRows().map((s) => [s.id, s]));
+    const days = [...new Set(list.map((p) => p.day))];
+    const row = (p) => {
+      const s = sales.get(bySale.get(p));
+      const sub = s ? [s.client || '', s.performedByName && s.performedByName !== '-' ? s.performedByName : '', s.createdAt ? 'trecută în portal la ' + hm2(s.createdAt) : ''].filter(Boolean).join(' · ')
+        : p.amount < 0 ? 'returnare' : 'nu e trecută în portal';
+      return '<div class="mo-hist-row' + (s ? '' : ' is-miss') + '"><time>' + esc(posTimeS(p)) + '</time><div class="mo-hist-main"><b>' + esc([devices[p.tid] && devices[p.tid].city, p.pan ? 'card ••' + p.pan : ''].filter(Boolean).join(' · ') || 'TID ' + p.tid) + '</b><small>' + esc(sub) + '</small></div><span class="k-amount">' + K.lei(p.amount, 2) + '</span></div>';
+    };
+    const dayTxt = (day) => (K.relDay(day) === K.dateLong(day) ? K.dateLong(day) : K.relDay(day) + ', ' + K.dateShort(day));
+    return '<details class="mo-hist"' + (POS.hist !== false ? ' open' : '') + ' data-pos-hist><summary>' + icon('clock') + 'Toate plățile pe POS, cu ora exactă · ' + list.length + '</summary>' +
+      days.map((day) => { const l = list.filter((p) => p.day === day); return '<div class="mo-hist-day"><h5>' + esc(dayTxt(day)) + '<span>prima ' + esc(posTimeS(l[l.length - 1])) + ' · ultima ' + esc(posTimeS(l[0])) + '</span></h5>' + l.map(row).join('') + '</div>'; }).join('') +
+      '<p class="mo-hist-note">Alege ziua sus, la Perioadă („Ieri” sau „Alte date”).</p></details>';
   }
   // each POS of the period: payments, total, the average payment; on more than one day, payments per day
   function posDevsHtml(r, devices) {
@@ -387,6 +411,8 @@
       if (!d.connected) { slot.innerHTML = ''; POS.r = null; return; }
       POS.r = reconcile(periodRows(), d);
       slot.innerHTML = posHtml(POS.r, d);
+      const hd = slot.querySelector('[data-pos-hist]');
+      if (hd) hd.addEventListener('toggle', () => { POS.hist = hd.open; });
       const all = slot.querySelectorAll('[data-pos-all]');
       all.forEach((b) => b.addEventListener('click', () => { POS.all = !POS.all; draw(); }));
       slot.querySelectorAll('[data-goto-int]').forEach((x) => x.addEventListener('click', () => K.go('integrari')));
@@ -396,7 +422,7 @@
     };
     draw();
     loadPos(from, to).then((changed) => { if (changed) draw(); });
-    loadBal(false).then((changed) => { if (changed) draw(); });
+    if (K.data.isAdmin) loadBal(false).then((changed) => { if (changed) draw(); });
   }
 
   // the owner sees on each card payment whether it is on the POS too

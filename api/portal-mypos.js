@@ -67,7 +67,10 @@ async function status() {
 }
 
 module.exports = async (req, res) => {
-  const session = await requireAdmin(req, res);
+  // the POS payments of a period: the manager too (the owner, 24.11: the exact times, to check when the cosmeticians clock
+  // out against their last payment), only her clinics' terminals; everything else stays the owner's
+  const mgrView = req.method === 'GET' && String((req.query && req.query.view) || '') === 'payments';
+  const session = mgrView ? await require('./_lib/auth').requireRole(req, res, ['admin', 'manager']) : await requireAdmin(req, res);
   if (!session) return;
   try {
     if (req.method === 'GET') {
@@ -93,10 +96,16 @@ module.exports = async (req, res) => {
         }
         const devices = {};
         (conn.devices || []).forEach((d) => { devices[d.tid] = { city: d.city || '', model: d.model || '' }; });
+        let mine = null;
+        if (session.role === 'manager') {
+          const emps = await readJSON('data/employees.json', []);
+          mine = require('./_lib/roles').managesOf(emps.find((e) => e && e.id === session.employeeId));
+        }
+        const okTid = (tid) => !mine || mine.includes((devices[tid] || {}).city || '');
         res.setHeader('Cache-Control', 'no-store');
         res.status(200).json({
-          connected: true, devices, syncedAt: pay.syncedAt || '', coverFrom: pay.coverFrom || '', sync,
-          payments: (pay.list || []).filter((p) => p.day >= from && p.day <= to),
+          connected: true, devices, syncedAt: pay.syncedAt || '', coverFrom: pay.coverFrom || '', sync: mine ? null : sync,
+          payments: (pay.list || []).filter((p) => p.day >= from && p.day <= to && okTid(p.tid)),
         });
         return;
       }
