@@ -690,6 +690,17 @@ module.exports = async (req, res) => {
       return save();
     }
 
+    // Aparate (the owner, 24.11): a machine buyer's column (Lead nou, Nu răspunde, Neinteresat, Interesat, Closed), the owner's
+    if (action === 'device_stage') {
+      if (session.role !== 'admin' || !isDeviceLead(lead)) return fail(403, 'forbidden');
+      const DEV = { nou: 'Lead nou', nu_raspunde: 'Nu răspunde', neinteresat: 'Neinteresat', interesat: 'Interesat', closed: 'Closed' };
+      const v = String(body.devStage || '');
+      if (!DEV[v]) return fail(400, 'invalid_stage');
+      lead.devStage = v;
+      addActivity(lead, { type: 'note', text: 'Aparate: ' + DEV[v], author });
+      await save();
+      return;
+    }
     if (action === 'move_stage') {
       const target = stages.find((s) => s.id === body.stage);
       if (!target) return fail(400, 'invalid_stage');
