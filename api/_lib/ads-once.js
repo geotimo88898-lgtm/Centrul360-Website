@@ -143,6 +143,10 @@ const CARD_FORM = { id: 'card-form-tm-2026-11-23', why: 'Cardul de Sărbători p
         headlines: ['ALEGE CARDUL: PLĂTEȘTI 990, PRIMEȘTI 2.500 👉', 'AU MAI RĂMAS DOAR 4 CARDURI ⏰💨', 'CARDUL VIP: PLĂTEȘTI 9.900, PRIMEȘTI 30.000 👉'], description: 'Valabil până pe 30.06.2027' },
     ] }] } };
 const JOBS = [
+  // 24.11 ~16:40, George: „nu mai tratament faciale, stinge-le pe alea”
+  { id: 'facial-off-2026-11-24', act: 'act_4502494523405059', why: 'George: fără tratamente faciale', actions: [
+    { campaignId: '120251418278340103', name: 'TM RESTART · fără ace', status: 'PAUSED', why: 'George: nu mai tratamente faciale' },
+  ] },
   // 24.11 ~15:45, George: „am reconectat celălalt cont… hai să aducem leaduri multe multe, plin plin plin”, 450 lei/zi:
   // the proven campaigns of the old account „centru pls” (16.10-21.11: most women who came and became clients) on again,
   // as they were (their forms), 75 lei/day each; their twins in the connected account go off so the two don't bid
