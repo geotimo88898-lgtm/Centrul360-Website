@@ -11,7 +11,7 @@
 // Every row counts its actions of each kind too (exact, byPhone): how sure its numbers are.
 //   booked   women who booked (any appointment, not cancelled)    showed   women who came (finished or paid)
 //   cardRes  cards reserved to pay at the clinic                   cardPaid / cardPaidLei   cards paid (online or there)
-//   cardOpen cards started online, not paid                        cashed / cashedOnline    lei in Încasări (all / online)
+//   cardOpen cards started online, not paid                        cashed / cashedOnline    lei paid (all / online), once each
 // Counts and sums only: never a name or a phone in what it returns.
 const { bucharestDay } = require('./ads-funnel');
 
@@ -43,7 +43,7 @@ function matcher(ads) {
 // { leads, appointments, sales, cards, clients, siteTouches: [{ phone, t, adId, campaignId }], ads: [{ id, name, campaignId,
 // campaignName }], range: { since, until } | null } → { ads: Map(adId → counts), campaigns: Map(campaignId → counts of the
 // touches without an ad of the list) }
-function outcomes({ leads, appointments, sales, cards, clients, siteTouches, ads, range }) {
+function outcomes({ leads, appointments, sales, cards, clients, siteTouches, orders, ads, range }) {
   const match = matcher(ads);
   const touches = new Map(); // phone → [{ t, adId, campaignId }]
   const touch = (phone, t, where) => {
@@ -120,15 +120,36 @@ function outcomes({ leads, appointments, sales, cards, clients, siteTouches, ads
     if (!x) return;
     give(x, r.status === 'platit' ? { cardPaid: 1, cardPaidLei: Number(r.paidAmount) || Number(r.amount) || 0 } : r.status === 'rezervat' ? { cardRes: 1 } : { cardOpen: 1 });
   });
-  // the money: every row of Încasări, by her phone (its own, her booking's, her card's, her client's); a refund takes it back
+  // the money, once per payment: every row of Încasări (by her phone: its own, her booking's, her card's, her client's; a
+  // refund takes it back), then a card paid or a checkout order paid that isn't in Încasări (yet): by the card's id, the
+  // order's id, the booking it paid
   const clientPhone = new Map((clients || []).filter((c) => c && c.id).map((c) => [c.id, c.phone]));
+  const inSales = { card: new Set(), pay: new Set(), appt: new Set() };
   (sales || []).forEach((s) => {
     if (!s || s.source !== 'incasare' || !Number(s.amount)) return;
+    if (s.kind !== 'refund') {
+      if (s.cardOrderId) inSales.card.add(s.cardOrderId);
+      if (s.payOrderId) inSales.pay.add(s.payOrderId);
+      if (s.bookingPay && s.appointmentId) inSales.appt.add(s.appointmentId);
+    }
     const phone = s.clientPhone || (apptById.get(s.appointmentId) || {}).clientPhone || (cardById.get(s.cardOrderId) || {}).phone || clientPhone.get(s.clientId);
     const x = whereOf((s.cardOrderId && own.card.get(s.cardOrderId)) || (s.appointmentId && own.appt.get(s.appointmentId)) || (s.payOrderId && own.pay.get(s.payOrderId)) || null,
       phone, Date.parse(s.createdAt || s.date));
     if (!x) return;
     give(x, Object.assign({ cashed: Number(s.amount) }, s.online ? { cashedOnline: Number(s.amount) } : {}));
+  });
+  cardById.forEach((r) => {
+    if (r.test || r.status !== 'platit' || inSales.card.has(r.id)) return;
+    const lei = Number(r.paidAmount) || Number(r.amount) || 0;
+    const x = lei > 0 && whereOf(own.card.get(r.id), r.phone, Date.parse(r.created));
+    if (x) give(x, Object.assign({ cashed: lei }, r.paidVia !== 'clinica' ? { cashedOnline: lei } : {}));
+  });
+  (orders || []).forEach((o) => {
+    if (!o || !o.id || !(o.lei > 0) || inSales.pay.has(o.id)) return;
+    if (o.kind === 'card' && cardById.has(o.ref)) return; // its card counts it (above, or its row of Încasări)
+    if (o.kind === 'booking' && inSales.appt.has(o.ref)) return;
+    const x = whereOf(own.pay.get(o.id) || (o.kind === 'card' && own.card.get(o.ref)) || null, o.phone, o.t);
+    if (x) give(x, { cashed: o.lei, cashedOnline: o.lei });
   });
   return out;
 }

@@ -90,7 +90,7 @@ async function collect(inWin) {
     // a card's checkout order: the card's ad (its lead form's, inherited: src.ad = { adId, campaignId, ... }) names it exactly
     const m = tagsOf(s), inh = o.src && o.src.ad && typeof o.src.ad === 'object' ? o.src.ad : null;
     if (inh && /^\d{5,25}$/.test(String(inh.adId || ''))) { m.ad = String(inh.adId); m.source = m.source || 'facebook'; }
-    items.push({ kind: 'pay', saved, from: s ? s.from : '', m, paid: o.status === 'paid', payKind: o.kind, lei: o.amount, phone: o.phone, at: o.createdAt, id: o.id, ref: o.ref });
+    items.push({ kind: 'pay', saved, from: s ? s.from : '', m, paid: o.status === 'paid', payKind: o.kind, lei: o.amount, phone: o.phone, at: o.createdAt, id: o.id, ref: o.ref, paidAt: o.paidAt });
   });
 
   // leads of the site's forms
@@ -178,9 +178,12 @@ async function byAd(days) {
   };
   // every day read once: the period's records counted, all of them kept as touches
   // (the same reading for 90 seconds in this worker: Reclame asks for several periods one after another)
-  if (!MEMO.at || Date.now() - MEMO.at > 90e3) MEMO.p = collect((iso) => Number.isFinite(Date.parse(iso))).then((l) => l.filter((x) => fromMeta(x.m))), MEMO.at = Date.now();
-  let all;
-  try { all = await MEMO.p; } catch (e) { MEMO.at = 0; throw e; }
+  if (!MEMO.at || Date.now() - MEMO.at > 90e3) MEMO.p = collect((iso) => Number.isFinite(Date.parse(iso))), MEMO.at = Date.now();
+  let every;
+  try { every = await MEMO.p; } catch (e) { MEMO.at = 0; throw e; }
+  // the checkout's paid orders, every one (Încasat: the ones not yet in Încasări; never in an answer)
+  const orders = every.filter((x) => x.kind === 'pay' && x.paid).map((x) => ({ id: x.id, ref: x.ref || '', kind: x.payKind, lei: Number(x.lei) || 0, phone: x.phone || '', t: Date.parse(x.at) }));
+  const all = every.filter((x) => fromMeta(x.m));
   // which record came from which ad, who and when (only for api/ads-manager.js withOutcomes, never in an answer)
   const touches = all.map((x) => ({ phone: x.phone || '', t: Date.parse(x.at), ad: x.m.ad, campaign: x.m.campaign, content: x.m.content, kind: x.kind, id: x.id || '', ref: x.payKind === 'card' ? x.ref || '' : '' }));
   const items = all.filter((x) => inWin(x.at));
@@ -191,7 +194,7 @@ async function byAd(days) {
       : (pairs[x.m.campaign + '|' + x.m.content] = pairs[x.m.campaign + '|' + x.m.content] || Object.assign(SITE_ZERO(), { campaign: x.m.campaign, content: x.m.content }));
     count(box, x);
   });
-  return { ok: true, days: days || null, ads, pairs: Object.values(pairs), touches };
+  return { ok: true, days: days || null, ads, pairs: Object.values(pairs), touches, orders };
 }
 
 module.exports = { report, byAd, SITE_ZERO };

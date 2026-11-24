@@ -129,7 +129,7 @@ async function withOutcomes(view, period, range, siteTouches) {
     leads: allLeads.filter((l) => at(l.createdAt) >= START || (l.forms || []).some((f) => at(f.sentAt || f.at) >= START)),
     appointments: allAppts.filter((a) => at(a.createdAt) >= START && a.createdBy !== 'highlevel' && !a.importedAt && !a.ghlId),
     sales: allSales.filter((x) => at(x.createdAt || x.date) >= START), cards: Array.isArray(cards) ? cards : [], clients: Array.isArray(clients) ? clients : [],
-    siteTouches: siteTouches || [], ads: flat, range: periodRange(period, range),
+    siteTouches: siteTouches || [], orders: ((await require('./_lib/site-sources').byAd(null).catch(() => null)) || {}).orders || [], ads: flat, range: periodRange(period, range),
   });
 
   const zero = (x) => { Object.values(O_KEYS).forEach((k) => { x[k] = 0; }); };
