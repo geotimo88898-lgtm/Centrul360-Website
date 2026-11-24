@@ -49,6 +49,8 @@
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.box) closeMenus(); });
     // a link sent from here (or another screen): her order changed (online now, or a new one)
     document.addEventListener('c360:cardlink', () => { if (S.d && S.box && S.box.isConnected) load(true); });
+    // someone else marked „Am vorbit” (the live rev): only that list again, light
+    K.on('remote', () => { if (S.d && S.box && S.box.isConnected && K.isActive('carduri')) loadCalled(); });
   }
   async function load(quiet) {
     try { S.d = await api({ action: 'list', scan: !quiet }); applyCalled(); const sb = S.box.querySelector('[data-cd-stock]'); if (sb) sb.classList.toggle('hidden', S.d.role !== 'admin'); paint(); loadInt(); loadCalled(); }
@@ -428,13 +430,24 @@
     if (b.dataset.cdTab) { S.tab = b.dataset.cdTab; paintOrders(); return; }
     if (b.dataset.cdIntc != null) { S.intCalled = b.dataset.cdIntc === '1'; paintOrders(); return; }
     if (b.dataset.cdCalled) {
-      const on = b.dataset.on !== '0', phone = b.dataset.cdCalled;
+      // at once (the owner, 24.11: „să dispară în timp real”): her rows fade and close, the save goes after; a failed save
+      // puts them back
+      const on = b.dataset.on !== '0', phone = b.dataset.cdCalled, k = k9(phone);
       closeMenus();
+      S.called = S.called || {};
+      const prev = S.called[k];
+      const rows = [...S.box.querySelectorAll('.cd-o')].filter((r) => [...r.querySelectorAll('[data-cd-called]')].some((x) => k9(x.dataset.cdCalled) === k));
+      rows.forEach((r) => { r.style.height = r.offsetHeight + 'px'; r.style.overflow = 'hidden'; void r.offsetHeight; r.classList.add('is-leaving'); r.style.height = '0px'; });
+      if (on) S.called[k] = { at: new Date().toISOString(), by: (K.data && K.data.me && K.data.me.name) || '', how: 'mark' }; else delete S.called[k];
+      setTimeout(() => { applyCalled(); paintOrders(); }, 280);
       try {
         await api({ action: 'called', phone, on });
         K.ui().toast(on ? 'Notat: ai vorbit cu ea. E la „Am vorbit deja”.' : 'Înapoi la lista de sunat.', 'success');
-        await load(true);
-      } catch (err) { K.ui().toast(K.errText(err), 'error'); }
+      } catch (err) {
+        if (prev) S.called[k] = prev; else delete S.called[k];
+        applyCalled(); paintOrders();
+        K.ui().toast('Nu s-a salvat, e din nou în listă. ' + K.errText(err), 'error');
+      }
       return;
     }
     if (b.hasAttribute('data-cd-iadd')) { intDrawer(b); return; }
