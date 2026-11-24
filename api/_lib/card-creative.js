@@ -71,12 +71,12 @@ function svgOf(o) {
   const RATING = '5,0 · 300+ recenzii Google';
   const gs = fit(RATING, 'i600', 24, 268, 0), gw = widthOf(RATING, 'i600', gs, 0);
 
-  // the pill: the number in its circle, the words, the bar (what is left of 10)
+  // the pill: the number in its circle, the words, the bar (what is left of the wave of 4)
   const words = (left === 1 ? 'A mai rămas doar 1 card' : 'Au mai rămas doar ' + left + ' carduri') + (vip ? ' VIP' : '');
   const ps = fit(words, 'i700', 30, 620, -0.01);
   const tw = widthOf(words, 'i700', ps, -0.01);
   const pw = 11 + 60 + 21 + tw + 29, px = (W - pw) / 2, tx = px + 92;
-  const frac = Math.min(1, left / 10);
+  const frac = Math.min(1, left / 4);
 
   // the headline
   const l1 = 'Plătești ' + lei(t.pay) + ' lei.', l2 = 'Primești ' + lei(t.get) + ' lei.';

@@ -235,6 +235,12 @@ function problem(t, priceOk, maxBytes) {
 // there is one (api/_lib/card-terms.js, the card session's), else these, checked against the card audit (24.11): always
 // what she pays before what she gets; the online bonus; Black Friday while it runs (24.11 – 29.11 23:59, Romania)
 const BF_FROM = Date.parse('2026-11-23T22:00:00Z'), BF_TO = Date.parse('2026-11-29T21:59:59Z');
+// Black Friday on: the card's terms module says so when it exists (its own switch), else 24.11 00:00 – 29.11 23:59:59 Romania
+function bfOn(T, t) {
+  const f = T && (T.isBlackFriday || T.blackFriday || T.bfActive || T.bfOn);
+  if (typeof f === 'function') { try { const v = f(t); if (typeof v === 'boolean') return v; if (v && typeof v === 'object' && 'on' in v) return !!v.on; } catch (e) { /* the dates below */ } }
+  return t >= BF_FROM && t <= BF_TO;
+}
 function cardFacts(now) {
   try {
     let T = null;
@@ -249,7 +255,7 @@ function cardFacts(now) {
       ' lei în tratamente; Cardul VIP Transformarea 360: plătești 9.900 lei și primești ' + lei(credit(9900, 30000)) + ' lei în tratamente, pentru tine și cei dragi. ' +
       'Pentru orice tratament din clinică, în Timișoara și Arad, valabil până pe 30.06.2027. ' +
       'La plata online (cu cardul): la cardurile de 490 și 990 lei, în plus o ședință de BioLifting cadou și Clubul 360; la cardul VIP, 10% reducere (plătești 8.910 lei) și Clubul 360. ' +
-      (t >= BF_FROM && t <= BF_TO ? 'BLACK FRIDAY, până pe 29 noiembrie la 23:59: la plata online, cardul de 990 lei: plătești 990 lei și primești 3.000 lei în tratamente. Dacă rezervi și plătești în clinică, rămâne 2.500 lei. ' : '') +
+      (bfOn(T, t) ? 'BLACK FRIDAY, până pe 29 noiembrie la 23:59: la plata online, cardul de 990 lei: plătești 990 lei și primești 3.000 lei în tratamente. Dacă rezervi și plătești în clinică, rămâne 2.500 lei. ' : '') +
       'Se cumpără până pe ' + until + ', online (plata cu cardul) sau rezervat și plătit în clinică; vine pe WhatsApp, pe numele ei sau al celei care îl primește cadou.';
   } catch (e) { return ''; }
 }
