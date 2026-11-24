@@ -18,7 +18,7 @@ const capi = require('./_lib/meta-capi');
 
 const ourOrigin = (o) => !o || /^https:\/\/([\w-]+\.)?centrul360\.com$/.test(o) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o);
 const tries = new Map(); // ip → [times] (per warm instance)
-const KINDS = ['hold', 'booking', 'offer', 'treatment', 'card', 'test'];
+const KINDS = ['hold', 'shop', 'booking', 'offer', 'treatment', 'card', 'test'];
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');

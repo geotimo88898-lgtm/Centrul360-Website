@@ -190,6 +190,12 @@ const KINDS = {
     },
     async paid(o) { return prepaid(o); },
   },
+  // the site's shop (api/_lib/shop.js, 24.11): the cart the hold carries, priced there (Black Friday -50%, the gifts of its
+  // steps); paid → the booking is made from the hold, then paid, exactly like 'hold'
+  shop: {
+    async quote({ ref }) { return require('./shop').payQuote({ ref }); },
+    async paid(o) { return KINDS.hold.paid(o); },
+  },
   // the Card de Sărbători: its module (api/_lib/card-sarbatori.js, owned by the card's work) exports
   //   payQuote({ ref, input }) → { amount, title, city?, name?, phone? } | null     its own price and bonuses
   //   payPaid({ orderId, ref, amount, currency, myposRef, method, at, sandbox })     once per order, safe to call twice
@@ -319,7 +325,7 @@ async function createOrder({ kind, ref, input, host, track }) {
     openList((l) => l.concat(Object.assign({ id, at: o.createdAt, amount }, kind === 'card' ? { ref } : {}))),
     kind === 'test' ? null : listEdit(INDEX, (l) => l.concat({ id, at: o.createdAt, kind }), 2000),
     kind === 'booking' ? noteBooking(ref, id) : null,
-    kind === 'hold' ? require('./booking-holds').patch(ref, (h) => { h.orderIds = (h.orderIds || []).concat(id).slice(-10); }) : null,
+    kind === 'hold' || kind === 'shop' ? require('./booking-holds').patch(ref, (h) => { h.orderIds = (h.orderIds || []).concat(id).slice(-10); }) : null,
   ]);
   // the Partners way: the payment request is made once her name is known (action 'link'); its page opens in a new tab
   if (pv.name === 'requests') return { ok: true, provider: 'requests', orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, bonus: o.bonus, bonusText: o.bonusText, title: o.title, sandbox: pv.sandbox };
@@ -360,9 +366,9 @@ async function markPaid(orderId, info, src) {
     return { mismatch: true };
   }
   // a booking already paid by another order: this second payment is a double (the notify answers so that myPOS reverses it)
-  if (first.status === 'open' && (first.kind === 'booking' || first.kind === 'hold')) {
+  if (first.status === 'open' && (first.kind === 'booking' || first.kind === 'hold' || first.kind === 'shop')) {
     let apptRef = first.ref;
-    if (first.kind === 'hold') { const h = await require('./booking-holds').get(first.ref); apptRef = h && h.bookingId; }
+    if (first.kind === 'hold' || first.kind === 'shop') { const h = await require('./booking-holds').get(first.ref); apptRef = h && h.bookingId; }
     const a = apptRef && (await readJSON('data/appointments.json', [])).find((x) => x && x.id === apptRef);
     if (a && a.paidOnline && a.paidOnline.orderId && a.paidOnline.orderId !== orderId) {
       await update(orderId, (o) => { if (o.status !== 'open') return false; Object.assign(o, { status: 'failed', failWhy: 'double', mypos: { ref: clip(info.ref, 80), src, at: clip(info.at, 40) } }); });
@@ -455,7 +461,7 @@ async function contact(orderId, key, input) {
   const notice = { kind: clip(input.notice || 'consent', 40), text: input.notice ? 'Îți trimitem confirmarea pe WhatsApp.' : 'acord bifat', at: nowISO() };
   // already booked that day (the same rule as the form)
   let holdPatch = null;
-  if (o.kind === 'hold') {
+  if (o.kind === 'hold' || o.kind === 'shop') {
     const H = require('./booking-holds');
     const [h, appts] = await Promise.all([H.get(o.ref), readJSON('data/appointments.json', [])]);
     if (h) {
@@ -500,7 +506,7 @@ async function link(orderId, key, pre) {
   if (o.status === 'paid') return { error: 'already_paid' };
   if (o.status !== 'open') return { error: 'not_open' };
   if (o.request && o.request.code && o.request.url) return { ok: true, url: o.request.url };
-  if (['hold', 'offer', 'treatment'].includes(o.kind) && !o.phone) return { error: 'missing_contact' };
+  if (['hold', 'shop', 'offer', 'treatment'].includes(o.kind) && !o.phone) return { error: 'missing_contact' };
   const r = await rqActive();
   if (!r || r.error) return { error: 'off' };
   // one request per order, saved before its page is given out: a request made before for this order (its answer lost, a

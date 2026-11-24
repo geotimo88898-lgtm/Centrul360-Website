@@ -8,7 +8,9 @@
 //   open   a buying window opened (the card's, or the lead filter's)
 //   start  she started filling it (the lead filter's first answer, the card form sent)
 //   lead   she left her details (the lead filter, a card reserved in the clinic)
-//   pay    she went to the card's secure payment page (myPOS)
+//   pay    she went to a secure payment page (myPOS): the card's, or the shop's
+//   cart   the shop: she put a treatment in the cart
+//   checkout the shop: she opened the checkout (the hour and the payment)
 // The source: utm_source (+ utm_medium) when the link has them, else the app she reads in (Instagram, Facebook, TikTok
 // in-app browsers), else the referrer's site, else direct. The page sends its own guess; the server keeps it clean.
 //   data/site/funnel-<YYYY-MM-DD>.json { v: 1, s: { <sid>: [source, mask] }, f: { <source>: { visit, cta, ... } } }
@@ -26,7 +28,7 @@
 
 const { readJSON, readJSONTagged, writeJSON, writeJSONIf } = require('./store');
 
-const STEPS = ['visit', 'cta', 'open', 'start', 'lead', 'pay'];
+const STEPS = ['visit', 'cta', 'open', 'start', 'lead', 'pay', 'cart', 'checkout']; // cart, checkout: the shop (v2/shop.js, 24.11): a treatment put in the cart, the checkout opened
 const BIT = STEPS.reduce((o, s, i) => (o[s] = 1 << i, o), {});
 const MAX_SIDS = 8000;
 const MAX_TOKENS = 3000;
