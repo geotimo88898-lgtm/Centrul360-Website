@@ -99,6 +99,8 @@
         if (n !== st.seq || !root.isConnected) return;
         const p = r.preview || {};
         $('[data-cl-msg]').textContent = p.text || '';
+        // the credit the server counts (Black Friday: 3.000 for a 990 card paid online)
+        if (p.credit && st.tier !== VIP) $('[data-cl-sub]').innerHTML = 'primește ' + lei(p.credit) + ' în tratamente' + (p.credit > CREDIT[st.tier] ? ' · <b>Black Friday, la plata online</b>' : '');
         const ord = p.order;
         $('[data-cl-note]').textContent = r.error ? (ERR[r.error] || '') : [ord ? (ord.status === 'rezervat' ? 'Folosim rezervarea ei: trece pe plata online, ținută 2 ore.' : ord.status === 'lead' ? 'Folosim cererea ei din reclamă.' : 'Folosim comanda ei deschisă.') : '',
           p.how === 'template' ? (p.ready ? 'Nu ne-a scris în ultimele 24 de ore: pleacă mesajul aprobat, cu poza cardului și butoanele „Plătesc online” / „Plătesc în clinică”.' : ERR.tpl) : ''].filter(Boolean).join(' ');

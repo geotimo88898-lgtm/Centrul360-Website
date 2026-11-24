@@ -1884,7 +1884,7 @@ function pickFor(list, phone, tier, city, id, now) {
 // the short message (the desk is on the phone with her)
 const linkText = (r, link) => { const g = leadFirst(r) || greetName(r), hi = 'Bună' + (g ? ', ' + g : '') + '! ', tail = '\nDupă plată îți trimitem cardul aici pe WhatsApp. 💛';
   return isVip(r) ? hi + 'Aici e linkul pentru Cardul VIP Transformarea 360 (primești ' + lei(r.credit) + ' lei în tratamente), plătești ' + lei(r.amount) + ' lei online: ' + link + tail
-    : hi + 'Aici e linkul pentru Cardul de Sărbători de ' + lei(r.amount) + ' lei (primești ' + lei(r.credit) + ' lei în tratamente): ' + link + tail; };
+    : hi + 'Aici e linkul pentru Cardul de Sărbători de ' + lei(r.amount) + ' lei (primești ' + lei(r.credit) + ' lei în tratamente' + bfTail(r) + '): ' + link + tail; };
 const SEND_TIERS = SALE;
 const cityOk = (c) => ['Timișoara', 'Arad'].find((x) => fold(x) === fold(c)) || '';
 function linkInput(input) {
@@ -1905,6 +1905,8 @@ async function linkDraft(list, x, now) {
   const name = x.name || (r && r.name) || await knownName(x.phone).catch(() => '');
   const d = r ? Object.assign(JSON.parse(JSON.stringify(r)), { name: r.name || name }) : { id: '', name, phone: x.phone, city: x.city, tier: x.tier, qty: 1, credit: TIERS[x.tier], forWho: 'eu', cards: [{ code: '', recipient: '' }] };
   d.amount = checkoutAmount(d.tier, qtyOf(d));
+  // the link is the online payment: Black Friday's credit (3.000 for a 990 card) when it is on (the owner, 24.11)
+  d.credit = onlineCredit(d, await T.bfSwitch().catch(() => ({ on: false })));
   return { r, d };
 }
 // her open orders, her last link (48 h) and, for one phone, the exact message the tap would send
@@ -1931,7 +1933,7 @@ async function linkInfo(phones, x) {
     text = fill(p.kind, p.vars);
     ready = p.ready;
   }
-  return { people: out, preview: { how: win ? 'text' : 'template', text, ready, order: r ? { id: r.id, status: r.status } : null, name: d.name || '' } };
+  return { people: out, preview: { how: win ? 'text' : 'template', text, ready, credit: Number(d.credit) || 0, order: r ? { id: r.id, status: r.status } : null, name: d.name || '' } };
 }
 async function sendCardLink(input, by) {
   const v = linkInput(input || {});
@@ -1953,6 +1955,7 @@ async function sendCardLink(input, by) {
     if (!name) { const kn = await knownName(v.phone).catch(() => ''); if (kn) { name = kn; nameFrom = 'fisa'; } }
     r = { id: crypto.randomUUID(), created: new Date(now).toISOString(), name, phone: v.phone, city: v.city, tier: v.tier, qty: 1, amount: checkoutAmount(v.tier, 1), credit: TIERS[v.tier], forWho: 'eu',
       disc: isVip(v.tier) ? true : undefined, cards: [{ code: '', recipient: '' }], recipient: '', status: 'asteptare', via: 'receptie', pay: 'online', held: new Date(now).toISOString(), addedBy: (by && by.id) || '' };
+    r.credit = onlineCredit(r, await T.bfSwitch().catch(() => ({ on: false }))); // paid online: Black Friday's 3.000 for a 990 card
     if (nameFrom) r.nameFrom = nameFrom;
     mark(r, 'created', 'receptie'); mark(r, 'to_paylink', 'receptie');
     list.push(r); made = true;
