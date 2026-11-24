@@ -63,6 +63,7 @@
     $$('[data-cs-live]').forEach(function (el) { el.hidden = false; });
     CSC.subs.forEach(function (fn) { try { fn(s); } catch (e) {} });
     if (CSC.tier && CSC.current) CSC.tier(CSC.current, true);
+    if (bfLive()) bfLater();
   };
   fetch('/api/card-sarbatori').then(function (r) { if (!r.ok) throw new Error('card'); return r.json(); }).then(function (d) {
     if (d && typeof d.left === 'number') CSC.set(d);
@@ -189,7 +190,7 @@
   vipShape();
   function setCredit(el, text) {
     if (el.textContent === text) return;
-    if (reduce) { el.textContent = text; return; }
+    if (reduce || bfMeasuring) { el.textContent = text; return; }
     el.classList.add('out');
     setTimeout(function () { el.textContent = text; el.classList.remove('out'); el.classList.add('pre'); void el.offsetWidth; el.classList.remove('pre'); }, 120);
   }
@@ -282,6 +283,8 @@
     document.documentElement.classList.toggle('cs-bf', on);
     bfClock();
     if (!fromSet && CSC.current) CSC.tier(CSC.current, true);
+    if (on) bfLater();
+    else $$('.csc-xmas').forEach(function (sec) { SLOTS.forEach(function (s) { $$(s, sec).forEach(function (e) { e.style.minHeight = ''; }); }); });
   }
   // the time left, and the end with the page open (it goes back to the page as it was)
   function bfClock() {
@@ -322,12 +325,12 @@
         '<div class="bf-cd" data-bf-cd role="timer"><span class="bf-cd-l"><i class="bf-live" aria-hidden="true"></i>Se termină în</span><span class="bf-tiles">' +
         '<span class="bf-tile"><b data-d></b><small>z</small></span><span class="bf-tile"><b data-h></b><small>h</small></span><span class="bf-tile"><b data-m></b><small>m</small></span></span></div></div></div>');
       var h1 = sec.querySelector('h1');
-      if (h1) h1.insertAdjacentHTML('afterend', '<p class="bf-only" data-bf990><i>' + CARD_I + '</i><span><b>Doar dacă plătești online, cu cardul.</b> Dacă rezervi și plătești în clinică, rămâne ' + lei(old) + '.</span></p>');
+      if (h1) h1.insertAdjacentHTML('afterend', '<p class="bf-only"><i>' + CARD_I + '</i><span data-bf-only></span></p>');
       $$('.csc-float', sec).forEach(function (f) { var st = f.closest('.csc-stage'); if (st && st.querySelector('[data-csc-credit]')) f.insertAdjacentHTML('beforeend', '<span class="bf-seal" data-bf990 aria-hidden="true"><small>BLACK FRIDAY</small><b>+' + fmt(get - old) + '</b><em>LEI</em><i>la plata online</i></span>'); });
       var inp = sec.querySelector('.cst-t input[value="' + T + '"]'), box = inp && inp.closest('.cst-t');
       if (box) box.insertAdjacentHTML('beforeend', '<span class="bf-tier"><span>primești <s>' + fmt(old) + '</s></span><span class="bf-now">' + lei(get) + '</span><span class="bf-cl">online · în clinică ' + fmt(old) + '</span></span>');
       $$('.cst-go [data-cs-buy][data-cs-follow]', sec).forEach(function (b) { var l = b.querySelector('span'); if (l) l.insertAdjacentHTML('beforeend', '<span class="bf-get" data-bf990> → primesc <b>' + lei(get) + '</b></span>'); });
-      $$('.cst-go [data-cs-reserve]', sec).forEach(function (r) { r.insertAdjacentHTML('afterend', '<p class="bf-note" data-bf990>Dacă rezervi și plătești în clinică, rămâne ' + lei(old) + '.</p>'); });
+      $$('.cst-go [data-cs-reserve]', sec).forEach(function (r) { r.insertAdjacentHTML('afterend', '<p class="bf-note" data-bf-note></p>'); });
     });
     // lower on the card's page: a line under the card's rows, and its card among the three
     $$('.cs-stack').forEach(function (st) { st.insertAdjacentHTML('afterend', '<p class="bf-fine" data-bf990><b>Black Friday, până ' + when + ':</b> cu plata online, cardul de ' + lei(T) + ' vine cu ' + lei(get) + ' în tratamente. Dacă rezervi și plătești în clinică, rămâne ' + lei(old) + '.</p>'); });
@@ -338,8 +341,49 @@
       if (ts) ts._bf = [ts.innerHTML, 'Economisești ' + lei(get - T)];
     });
   }
+  var bfMeasuring = false, bfLastT = 0;
+  // the parts that change with the card keep the height of the tallest of the three, so choosing another card or a clinic
+  // never moves the page (the owner, 24.11: „când schimb cardul să se schimbe clean”); measured once the fonts are in,
+  // and again when the width changes
+  var SLOTS = ['h1', '.bf-only', '.cst-urg', '.cst-gift', '.cst-go [data-cs-buy][data-cs-follow]', '.bf-note', '[data-cs-pts]', '.cst-call'];
+  function bfReserve() {
+    if (!bfLive() || bfMeasuring || !CSC.current) return;
+    bfMeasuring = true;
+    var root = document.documentElement, cur = CSC.current, els = [];
+    root.classList.add('bf-measuring');
+    $$('.csc-xmas').forEach(function (sec) { SLOTS.forEach(function (s) { $$(s, sec).forEach(function (e) { e.style.minHeight = ''; e._bfH = 0; els.push(e); }); }); });
+    [BF.tier, 490, VIP].forEach(function (t) {
+      if (SALE.indexOf(t) < 0) return;
+      CSC.tier(t, true);
+      els.forEach(function (e) { e._bfH = Math.max(e._bfH, e.offsetHeight); });
+    });
+    CSC.tier(cur, true);
+    els.forEach(function (e) { if (e._bfH) e.style.minHeight = e._bfH + 'px'; });
+    void root.offsetWidth; root.classList.remove('bf-measuring');
+    bfMeasuring = false;
+  }
+  var rsT = 0;
+  addEventListener('resize', function () { clearTimeout(rsT); rsT = setTimeout(bfReserve, 200); });
+  function bfLater() {
+    var go = function () { requestAnimationFrame(function () { requestAnimationFrame(bfReserve); }); };
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else go();
+  }
   function bfPaint(t) {
     var on = bfLive(), mine = on && Number(t) === BF.tier;
+    if (on) {
+      var lei2 = function (n) { return fmt(n) + ' lei'; }, d = Number(((CSC.state && CSC.state.online) || {})[t]) || 0;
+      var only = mine ? '<b>Doar dacă plătești online, cu cardul.</b> Dacă rezervi și plătești în clinică, rămâne ' + lei2(BF.old) + '.'
+        : Number(t) === VIP ? (d ? '<b>La plata online:</b> 10% reducere (' + lei2(d) + ') și acces în Clubul 360.' : '<b>La plata online:</b> acces în Clubul 360.')
+        : '<b>La plata online:</b> o ședință de BioLifting cadou și acces în Clubul 360.';
+      var note = mine ? 'Dacă rezervi și plătești în clinică, rămâne ' + lei2(BF.old) + '.' : 'Cu plata în clinică primești creditul cardului.';
+      $$('[data-bf-only]').forEach(function (el) { if (el.innerHTML !== only) el.innerHTML = only; });
+      $$('[data-bf-note]').forEach(function (el) { if (el.textContent !== note) el.textContent = note; });
+      // another card chosen by her: what changed comes in with a short fade, nothing moves
+      if (!bfMeasuring && bfLastT && bfLastT !== Number(t)) $$('.csc-xmas h1 em, .bf-only > span, .cst-go [data-cs-buy][data-cs-follow] > span, .bf-note, .cst-urg > span:not(.dot)').forEach(function (el) {
+        if (el.animate && !reduce) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' });
+      });
+      if (!bfMeasuring) bfLastT = Number(t);
+    }
     document.documentElement.classList.toggle('cs-bf', on);
     $$('[data-bf990]').forEach(function (el) { el.hidden = !mine; });
     if (mine) $$('h1 [data-cs-v="getd"], h2 [data-cs-v="getd"]').forEach(function (el) { el.innerHTML = '<s class="bf-old">' + fmt(BF.old) + '</s> <span class="bf-new">' + fmt(BF.credit) + ' lei.</span>'; });

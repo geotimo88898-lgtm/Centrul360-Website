@@ -597,3 +597,46 @@ h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
 .cs-bf .csc-xmas .cst-gift + .btn{ position:relative; z-index:2; }
 @media (max-width:400px){ .cs-bf .csc-xmas .cst-gift{ width:calc(100% - 48px); font-size:12.5px; } }
 @media (max-width:360px){ .cs-bf .csc-xmas .cst-gift{ width:calc(100% - 40px); font-size:12px; white-space:normal; text-align:center; line-height:1.3; border-radius:14px 14px 0 0; } }
+
+/* ---- the clean pass (the owner, 24.11: „fă mai clean per total … clean și lizibil”) */
+/* the menu stays a solid white bar over the black: nothing of the block shows through it */
+.cs-bf header.top .bar{ background:#fbfaf7; -webkit-backdrop-filter:none; backdrop-filter:none; }
+/* the fade: dark to the next section's colour, mixed in light (no muddy middle), eased; no glow under it */
+.cs-bf .csc-xmas{ --bf-bg:
+    radial-gradient(60% 30% at 50% 24%, rgba(140,20,64,.34), transparent 70%), radial-gradient(70% 26% at 50% 0%, rgba(107,79,31,.4), transparent 72%),
+    linear-gradient(180deg, #15100a 0%, #0b0906 40%, rgba(6,5,4,1) calc(100% - var(--bf-fade) * 1), rgba(6,5,4,0.972) calc(100% - var(--bf-fade) * 0.9), rgba(6,5,4,0.896) calc(100% - var(--bf-fade) * 0.8), rgba(6,5,4,0.784) calc(100% - var(--bf-fade) * 0.7), rgba(6,5,4,0.619) calc(100% - var(--bf-fade) * 0.58), rgba(6,5,4,0.425) calc(100% - var(--bf-fade) * 0.45), rgba(6,5,4,0.242) calc(100% - var(--bf-fade) * 0.32), rgba(6,5,4,0.086) calc(100% - var(--bf-fade) * 0.18), rgba(6,5,4,0) calc(100% - var(--bf-fade) * 0)); }
+.cs-bf .csc-xmas:has(~ .lfs-sec){ --bf-bg:
+    radial-gradient(60% 30% at 50% 24%, rgba(140,20,64,.34), transparent 70%), radial-gradient(70% 26% at 50% 0%, rgba(107,79,31,.4), transparent 72%),
+    linear-gradient(180deg, #15100a 0%, #0b0906 40%, #060504 calc(100% - var(--bf-fade) * 1), #2c2f2e calc(100% - var(--bf-fade) * 0.9), #555958 calc(100% - var(--bf-fade) * 0.8), #777d7c calc(100% - var(--bf-fade) * 0.7), #9ba2a1 calc(100% - var(--bf-fade) * 0.58), #bac3c1 calc(100% - var(--bf-fade) * 0.45), #d3dcdb calc(100% - var(--bf-fade) * 0.32), #e5efed calc(100% - var(--bf-fade) * 0.18), #eef9f7 calc(100% - var(--bf-fade) * 0)); }
+.cs-bf .csc-xmas::before{ background-image:linear-gradient(90deg, rgba(240,207,131,0) 12%, rgba(240,207,131,.38) 50%, rgba(240,207,131,0) 88%); }
+.cs-bf .csc-xmas{ background-image:linear-gradient(180deg, #fbfaf7 0, rgba(251,250,247,.6) 28px, rgba(251,250,247,0) 72px), var(--bf-bg); }
+/* fewer glows */
+.cs-bf .bf-mark{ filter:drop-shadow(0 1px 0 #5a3a10); }
+.cs-bf .bf-seal{ box-shadow:0 0 0 3px #e2b458, 0 0 0 4.5px #6e4b16, 0 0 0 6px #f6dc9a, 0 10px 22px -8px rgba(0,0,0,.7); }
+.cs-bf .csc-xmas .cst-urg:not(:has(.cst-vipl:not([hidden]))){ box-shadow:0 0 0 1.5px #c8507f inset; }
+.cs-bf .csc-xmas .cst-t.best{ box-shadow:0 0 0 2px #e2b458 inset; }
+.cs-bf .csc-xmas .cst-t.best:not(:has(input:checked)){ box-shadow:0 0 0 1px rgba(226,180,88,.6) inset; }
+.cs-bf .csc-xmas .cst-gift{ box-shadow:none; }
+.cs-bf .csc-xmas .cst-go:not(.cs-vipcall) .cst-cash{ box-shadow:0 0 0 1.5px #d9b465 inset; }
+.cs-bf .bf-only i{ box-shadow:none; }
+/* one spacing scale (8px): the block's rows 24, inside a group 8 / 16 */
+.cs-bf .csc-xmas .txt{ gap:24px; }
+.cs-bf .csc-xmas .bf-head{ gap:16px; margin:0; }
+.cs-bf .csc-xmas .bf-row{ gap:8px; }
+.cs-bf .csc-xmas .cst{ gap:8px; padding-top:16px; }
+.cs-bf .csc-xmas .cst-go{ gap:8px; }
+.cs-bf .bf-only{ margin:0; gap:16px; font-size:16px; }
+@media (max-width:640px){
+  .cs-bf .home-cs .wrap{ gap:24px; }
+  .cs-bf .csc-xmas .bf-head{ gap:8px; }
+  .cs-bf .bf-only{ font-size:15px; gap:12px; }
+}
+/* the slots that change with the card hold their height (cs-card.js sets it); while measuring, nothing animates */
+.bf-measuring .csc-xmas *, .bf-measuring .csc-xmas *::before, .bf-measuring .csc-xmas *::after{ transition:none !important; }
+.cs-bf .csc-xmas .cst-urg, .cs-bf .csc-xmas .cst-gift, .cs-bf .bf-note{ display:flex; align-items:center; justify-content:center; }
+.cs-bf .bf-note{ text-align:center; }
+.cs-bf .bf-only{ align-items:center; }
+/* the text column keeps its width whatever the card (the long 990 headline must not widen it and re-flow the rest) */
+.cs-bf .csc-xmas .txt{ min-width:0; }
+@media (min-width:921px){ .cs-bf .csc-xmas .bf-row{ flex-direction:column; align-items:flex-start; } }
+.cs-bf .csc-xmas [data-cs-pts]{ align-content:start; }
