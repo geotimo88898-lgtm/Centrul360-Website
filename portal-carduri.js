@@ -51,12 +51,22 @@
     document.addEventListener('c360:cardlink', () => { if (S.d && S.box && S.box.isConnected) load(true); });
   }
   async function load(quiet) {
-    try { S.d = await api({ action: 'list', scan: !quiet }); const sb = S.box.querySelector('[data-cd-stock]'); if (sb) sb.classList.toggle('hidden', S.d.role !== 'admin'); paint(); loadInt(); }
+    try { S.d = await api({ action: 'list', scan: !quiet }); applyCalled(); const sb = S.box.querySelector('[data-cd-stock]'); if (sb) sb.classList.toggle('hidden', S.d.role !== 'admin'); paint(); loadInt(); loadCalled(); }
     catch (err) { const b = S.box && S.box.querySelector('[data-cd-body]'); if (b && !S.d) b.innerHTML = '<section class="k-card">' + K.empty('alert', 'Nu am putut încărca cardurile', esc(K.errText(err))) + '</section>'; }
   }
 
+  // „Am vorbit deja” (api/_lib/card-who.js calledMap), loaded on its own after the lists: when it fails, they stay as they are
+  const k9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
+  function applyCalled() {
+    const c = S.called || {};
+    ((S.d && S.d.orders) || []).forEach((o) => { o.called = c[k9(o.phone)] || null; });
+    ((S.int && S.int.people) || []).forEach((x) => { x.called = c[k9(x.phone)] || null; });
+  }
+  async function loadCalled() {
+    try { const r = await api({ action: 'called_list' }); S.called = (r && r.called) || {}; applyCalled(); paintOrders(); } catch (err) { console.warn('called_list', err); }
+  }
   async function loadInt() {
-    try { S.int = await api({ action: 'interested' }); paintOrders(); } catch (err) { if (!S.int) S.int = { people: [], potential: { total: 0 }, error: K.errText(err) }; paintOrders(); }
+    try { S.int = await api({ action: 'interested' }); applyCalled(); paintOrders(); } catch (err) { if (!S.int) S.int = { people: [], potential: { total: 0 }, error: K.errText(err) }; paintOrders(); }
   }
 
   // ------------------------------------------------------------------ the page
