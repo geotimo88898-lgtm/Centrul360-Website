@@ -644,6 +644,21 @@ module.exports = async (req, res) => {
     res.status(200).json((d.workflows || []).map((w) => ({ id: w.id, name: w.name, active: !!w.active, trigger: w.trigger, steps: flat(w.steps) })));
     return;
   }
+  // ?payview=<employee id>&month=YYYY-MM: one person's month for a pay correction the owner asked for: her salaries, her
+  // days (date, weekday, in, out), the time adjustments and payouts of that month, and Salariu's numbers (no clients)
+  if (req.query && req.query.payview) {
+    const id = String(req.query.payview), month = /^\d{4}-\d{2}$/.test(String(req.query.month || '')) ? req.query.month : new Date().toISOString().slice(0, 7);
+    const [emps, att, adj, pays] = await Promise.all([readJSON('data/employees.json', []), readJSON('data/attendance.json', []), readJSON('data/time-adjust.json', []), readJSON('data/time-payouts.json', [])]);
+    const e = emps.find((x) => x && x.id === id);
+    if (!e) { res.status(404).json({ error: 'not_found' }); return; }
+    const P = require('./_lib/payroll');
+    const dow = (d) => ['du', 'lu', 'ma', 'mi', 'jo', 'vi', 'sa'][new Date(d + 'T12:00:00Z').getUTCDay()];
+    res.status(200).json({ name: e.name, role: e.role, salaryHistory: P.salaryHistoryOf(e), salaryOfMonth: P.salaryOfMonth(e, month),
+      days: att.filter((a) => a && a.employeeId === id && String(a.date || '').startsWith(month)).map((a) => ({ id: a.id, date: a.date, dow: dow(a.date), in: a.checkIn, out: a.checkOut })),
+      adjust: adj.filter((a) => a && a.employeeId === id && String(a.date || '').startsWith(month)).map((a) => ({ id: a.id, date: a.date, dow: dow(a.date), worked: a.worked, expected: a.expected, minutes: a.minutes, weekend: a.weekend, status: a.status, approvedMinutes: a.approvedMinutes })),
+      payouts: pays.filter((x) => x && x.employeeId === id) });
+    return;
+  }
   // ?cardsrc=<card id>: where one order came from (the utm values and the referrer's host, the card message's lot and
   // personal-link token if any) and whether her card message went out; never a name or phone
   if (req.query && req.query.cardsrc) {
