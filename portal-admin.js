@@ -564,7 +564,7 @@
     const hm = (m) => { const a = Math.abs(Math.round(m || 0)); const h = Math.floor(a / 60), r = a % 60; return h ? h + 'h' + (r ? ' ' + K.pad(r) : '') : r + ' min'; };
     box.innerHTML =
       '<div class="k-grid c4 k-stagger" style="margin-bottom:1rem">' +
-        '<div class="k-stat is-accent"><div class="k-stat-top">' + icon('wallet') + 'Total de plată</div><div class="k-stat-value">' + K.lei(sum('total')) + '</div><div class="k-stat-sub">' + esc(K.monthLabel(K.thisMonth())) + ', până azi</div></div>' +
+        '<div class="k-stat is-accent"><div class="k-stat-top">' + icon('wallet') + 'Total de plată</div><div class="k-stat-value">' + K.lei(rows.reduce((a, r) => a + (Number(r.toPay != null ? r.toPay : r.total) || 0), 0)) + '</div><div class="k-stat-sub">' + esc(K.monthLabel(K.thisMonth())) + ', până azi' + (sum('total') > rows.reduce((a, r) => a + (Number(r.toPay != null ? r.toPay : r.total) || 0), 0) ? ' · ' + K.lei(sum('commissionPaidDaily') + sum('commissionPaidDay')) + ' plătiți deja cash' : '') + '</div></div>' +
         '<div class="k-stat"><div class="k-stat-top">' + icon('users') + 'Salarii de bază</div><div class="k-stat-value">' + K.lei(sum('base')) + '</div></div>' +
         '<div class="k-stat"><div class="k-stat-top">' + icon('clock') + 'Ore suplimentare</div><div class="k-stat-value">' + K.lei(sum('overtimeLei')) + '</div></div>' +
         '<div class="k-stat"><div class="k-stat-top">' + icon('percent') + 'Comision + bonus</div><div class="k-stat-value">' + K.lei(sum('commission') + sum('bonus') + sum('manual') + sum('managerBonus')) + '</div></div>' +
@@ -583,7 +583,8 @@
           '<dl class="pr-kv"><div><dt>Salariu net</dt><dd>' + (r.base ? K.lei(r.base) : '<em>nesetat</em>') + '</dd></div>' +
           '<div><dt>Ore suplimentare</dt><dd>' + K.lei(r.overtimeLei, r.overtimeLei % 1 ? 2 : 0) + '</dd><small>' + (r.overtimeMinutes ? hm(r.overtimeMinutes) + (r.overtimeDueLei ? ', de plătit' : ', plătite') : '-') + '</small></div>' + extra +
           (r.manual ? '<div><dt>Comision manual</dt><dd>' + (r.manual > 0 ? '+' : '') + K.lei(r.manual, r.manual % 1 ? 2 : 0) + '</dd><small>din Ajustări</small></div>' : '') +
-          '<div class="pr-total"><dt>Total</dt><dd>' + K.lei(r.total, r.total % 1 ? 2 : 0) + '</dd></div></dl>' +
+          (r.toPay != null && r.toPay < r.total ? '<div><dt>Plătit deja cash</dt><dd>' + K.lei(r.total - r.toPay, (r.total - r.toPay) % 1 ? 2 : 0) + '</dd><small>' + (r.commissionPaidDaily ? 'bonus pachet, zilnic' : 'comision') + (r.commissionPaidDaily && r.commissionPaidDay ? ' + comision' : '') + '</small></div>' : '') +
+          '<div class="pr-total"><dt>' + (r.toPay != null && r.toPay < r.total ? 'De plătit' : 'Total') + '</dt><dd>' + K.lei(r.toPay != null ? r.toPay : r.total, (r.toPay != null ? r.toPay : r.total) % 1 ? 2 : 0) + '</dd>' + (r.toPay != null && r.toPay < r.total ? '<small>din ' + K.lei(r.total, r.total % 1 ? 2 : 0) + ' câștigat</small>' : '') + '</div></dl>' +
           // the commission's lines (from November 2026: 4% of each payment received, minus the refunds; portal-money.js)
           (K.commLinesHtml && ((r.commissionLines || []).length || (r.toCome || []).length) ? '<details class="pr-lines"><summary>Comisionul pe linii · ' + K.plural((r.commissionLines || []).length, 'linie', 'linii') + ((r.toCome || []).length ? ', ' + K.plural(r.toCome.length, 'pachet', 'pachete') + ' de încasat' : '') + '</summary>' + K.commLinesHtml(r.commissionLines, r.toCome) + '</details>' : '') +
           (r.overtimeDueLei ? '<button type="button" class="k-btn is-sm is-good" data-payout="' + esc(r.id) + '">' + icon('check') + 'Ore plătite cu salariul</button>' : '') +

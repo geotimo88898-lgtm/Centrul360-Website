@@ -657,7 +657,11 @@ module.exports = async (req, res) => {
     res.status(200).json({ name: e.name, role: e.role, salaryHistory: P.salaryHistoryOf(e), salaryOfMonth: P.salaryOfMonth(e, month),
       days: att.filter((a) => a && a.employeeId === id && String(a.date || '').startsWith(month)).map((a) => ({ id: a.id, date: a.date, dow: dow(a.date), in: a.checkIn, out: a.checkOut })),
       adjust: adj.filter((a) => a && a.employeeId === id && String(a.date || '').startsWith(month)).map((a) => ({ id: a.id, date: a.date, dow: dow(a.date), worked: a.worked, expected: a.expected, minutes: a.minutes, weekend: a.weekend, status: a.status, approvedMinutes: a.approvedMinutes })),
-      payouts: pays.filter((x) => x && x.employeeId === id) });
+      payouts: pays.filter((x) => x && x.employeeId === id),
+      pay: await (async () => { const CM = require('./_lib/commission'); const [sales, dues] = await Promise.all([readJSON('data/sales.json', []), readJSON('data/client-dues.json', [])]);
+        const r = P.monthPay({ emp: e, month, isCurrent: month === new Date().toISOString().slice(0, 7), sales, dues, cctx: CM.context(sales, dues, emps), payouts: pays, bank: null, attendance: [], appointments: [] });
+        return { base: r.base, commission: r.commission, total: r.total, toPay: r.toPay, paidDaily: r.commissionPaidDaily, paidDay: r.commissionPaidDay,
+          lines: (r.commissionLines || []).map((l) => ({ date: l.date, kind: l.kind, cash: l.cash, lei: l.lei, pack: l.pack || 0, extras: l.extras || null, status: l.status, paidCash: l.paidCash || '' })) }; })() });
     return;
   }
   // POST ?payfix=1 { employeeId, salaryHistory?: [{from,lei}], weekendDays?: [adjustment id] }: a pay correction the owner asked

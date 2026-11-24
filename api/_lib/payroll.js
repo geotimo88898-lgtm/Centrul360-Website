@@ -184,6 +184,17 @@ function planBonus(emp, month, appointments) {
   return { lei: days.length * PLAN.lei, rate: PLAN.lei, count: days.length, plans: days };
 }
 
+// commission already paid in cash, out of the month's „de plătit” (the owner, 24.11): the package bonus (payments of
+// 1.500 lei and more, with its extras) is paid at the end of each day, for everyone; and days the owner paid by hand
+// (one person's lines of that day). Still a cost of the business: only what is left to pay at the month's end drops it.
+const PAID_DAYS = [{ emp: '73493e68-701c-49ec-96ca-d985cdd753f4', date: '2026-11-23' }];
+function paidOfLine(emp, l) {
+  if (!l || !(l.lei > 0) || l.status !== 'approved') return '';
+  if (PAID_DAYS.some((x) => x.emp === emp.id && x.date === l.date)) return 'day';
+  if (l.pack) return 'daily';
+  return '';
+}
+
 // One month of pay for one person.
 function monthPay({ emp, month, isCurrent, sales, dues, payouts, bank, attendance, appointments, finals, cctx }) {
   // the salary of the month by its dates (salaryOfMonth); none in the months before the first one
@@ -197,6 +208,8 @@ function monthPay({ emp, month, isCurrent, sales, dues, payouts, bank, attendanc
   const dueMin = isCurrent && bank ? bank.bank : 0;
   const cm = commissionMonth({ emp, month, isCurrent, sales, dues, cctx });
   const { commission, waiting, upsells, lines, toCome, manual } = cm;
+  let paidDaily = 0, paidDay = 0;
+  (lines || []).forEach((l) => { const w = paidOfLine(emp, l); if (w) l.paidCash = w; if (w === 'daily') paidDaily += l.lei; else if (w === 'day') paidDay += l.lei; });
   const booking = hasBookingBonus(emp, month) ? bookingBonus(emp.id, month, attendance, appointments, bonusUntil(emp)) : null;
   const bonus = booking ? booking.lei : 0;
   const fin = hasManagerBonus(emp, month) && finals ? finals[emp.id + '|' + month] : null;
@@ -210,9 +223,11 @@ function monthPay({ emp, month, isCurrent, sales, dues, payouts, bank, attendanc
     commission: r2(commission), commissionWaiting: r2(waiting), upsells, bonus, booking, manual: r2(manual),
     ...(lines ? { commissionLines: lines, toCome: toCome || [] } : {}),
     ...(lines && month >= CM.PACK.from.slice(0, 7) && (!CM.PACK.until || month <= CM.PACK.until.slice(0, 7)) ? { pack: { from: CM.PACK.from, until: CM.PACK.until, tiers: CM.PACK.tiers, min: CM.packMinOf(emp) } } : {}),
-    total: r2(base + paidLei + dueLei + commission + bonus + manual + managerBonus + teamLei + planLei), ...(team ? { team } : {}), ...(plan ? { plan } : {}), hasCommission: hasCommission(emp), hasBonus: hasBookingBonus(emp, month),
+    total: r2(base + paidLei + dueLei + commission + bonus + manual + managerBonus + teamLei + planLei),
+    commissionPaidDaily: r2(paidDaily), commissionPaidDay: r2(paidDay),
+    toPay: r2(base + paidLei + dueLei + commission + bonus + manual + managerBonus + teamLei + planLei - paidDaily - paidDay), ...(team ? { team } : {}), ...(plan ? { plan } : {}), hasCommission: hasCommission(emp), hasBonus: hasBookingBonus(emp, month),
     ...(hasManagerBonus(emp, month) ? { hasManagerBonus: true, managerBonus: r2(managerBonus), managerFinal: !!fin } : {}),
   };
 }
 
-module.exports = { MANAGER_FROM, isCosmetician, TEAM, teamPrize, PLAN, planBonus, BOOKING_TIERS, bonusUntil, bookingBonus, monthPay, commissionMonth, salaryHistoryOf, salaryOn, salaryOfMonth, withSalary, hasBookingBonus, hasCommission, hasManagerBonus, bucharestDate };
+module.exports = { PAID_DAYS, paidOfLine, MANAGER_FROM, isCosmetician, TEAM, teamPrize, PLAN, planBonus, BOOKING_TIERS, bonusUntil, bookingBonus, monthPay, commissionMonth, salaryHistoryOf, salaryOn, salaryOfMonth, withSalary, hasBookingBonus, hasCommission, hasManagerBonus, bucharestDate };
