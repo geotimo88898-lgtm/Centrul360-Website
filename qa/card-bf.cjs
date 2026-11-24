@@ -23,6 +23,17 @@ const storePath = require.resolve(path.join(LIB, 'store.js'));
 require.cache[storePath] = new Module(storePath); Object.assign(require.cache[storePath], { filename: storePath, loaded: true, exports: store });
 // no network
 globalThis.fetch = async () => { throw new Error('no network in this test'); };
+// WhatsApp, kept here: every message she would get (text, template) is in `wa`
+const wa = [];
+const waPath = require.resolve(path.join(LIB, 'whatsapp.js'));
+const waOk = async (o) => { wa.push(o); return { sent: true, id: 'wa-' + wa.length, fromCity: o.from }; };
+require.cache[waPath] = new Module(waPath); Object.assign(require.cache[waPath], { filename: waPath, loaded: true, exports: {
+  loadConfig: async () => ({ numbers: { 'Timișoara': { wabaId: 'w1' }, Arad: { wabaId: 'w1' } } }), readyNumbers: () => ['Timișoara', 'Arad'],
+  sendWhatsApp: waOk, sendMedia: waOk, uploadMedia: async () => ({ id: 'm1' }) } });
+// myPOS: connected, no payments in its list (the recovery's checks read it)
+const myPath = require.resolve(path.join(LIB, 'mypos.js'));
+require.cache[myPath] = new Module(myPath); Object.assign(require.cache[myPath], { filename: myPath, loaded: true, exports: {
+  loadConn: async () => ({ devices: [] }), connected: () => true, listTransactions: async () => [], listEvents: async () => [] } });
 
 // ---- the clock, set by hand
 const RealDate = Date;
@@ -210,6 +221,104 @@ const switchOff = () => store.writeJSON(T.BF_KEY, { on: false, at: '2026-11-24T0
   await store.writeJSON('data/wa-templates.json', { templates: TP.filter((x) => !/bf/.test(x.purpose)) });
   check('… the Black Friday ones not approved yet: lead3n as before', (await quietly(() => C.leadPack(L))).kind === 'lead3n');
   check('the creative without Black Friday: „Primești 2.500 lei.”, no small line', /Primești 2\.500 lei\./.test(CC.svgOf({ tier: 990, left: 4 })) && !/la plata online ·/.test(CC.svgOf({ tier: 990, left: 4 })));
+
+  // ---- the audit (24.11): the texts and the rules of the new orders
+  setNow('2026-11-25T10:00:00Z');
+  await switchOn('2026-11-24T09:00:00Z');
+  check('factsText during Black Friday: the owner\'s paragraph', (await T.factsText()) === 'Cardul de Sărbători: plătești 990 lei și primești 3.000 lei în tratamente la plata online, până duminică 29 noiembrie (în clinică, 2.500 lei); sau 490 lei → 1.000 lei. La plata online, în plus, o ședință de BioLifting cadou și acces în Clubul 360. Card VIP Transformarea 360: 9.900 lei → 30.000 lei, 8.910 lei online. Valabil până pe 30 iunie 2027.', await T.factsText());
+  setNow('2026-12-01T10:00:00Z');
+  check('factsText after it: the same with 2.500', (await T.factsText()) === 'Cardul de Sărbători: plătești 990 lei și primești 2.500 lei în tratamente; sau 490 lei → 1.000 lei. La plata online, în plus, o ședință de BioLifting cadou și acces în Clubul 360. Card VIP Transformarea 360: 9.900 lei → 30.000 lei, 8.910 lei online. Valabil până pe 30 iunie 2027.');
+  setNow('2026-11-25T10:00:00Z');
+  await store.writeJSON(C.KEY, []); mem.delete(C.STOCK);
+  const pc = C.publicCount(await C.count([]));
+  check('no stock file: waves of 4 (total 4, 4 left); the public tiers only the cards on sale', C.WAVE === 4 && C.TOTAL === 4 && pc.total === 4 && pc.left === 4 && JSON.stringify(pc.tiers) === JSON.stringify({ 490: 1000, 990: 2500, 9900: 30000 }), { total: pc.total, left: pc.left, tiers: pc.tiers });
+  const r290 = await quietly(() => C.request({ name: 'Proba Test', phone: '0700000901', city: 'Arad', tier: 290 }, { employeeId: 'e1' }, 'Proba'));
+  const l290 = await quietly(() => C.reserveFromLead({ phone: '0700000902', city: 'Arad', value: '290' }));
+  const t290 = await quietly(() => C.requestFromTap({ phone: '0700000903', city: 'Arad', tier: 290 }, { quiet: true }));
+  const t990 = await quietly(() => C.requestFromTap({ phone: '0700000904', city: 'Arad' }, { quiet: true }));
+  check('a new 290 order refused: request, reserveFromLead, requestFromTap (a tap with no card said: 990)', r290.error === 'bad_tier' && l290.error === 'bad_tier' && t290.error === 'bad_tier' && t990.ok && (await get(t990.id)).tier === 990, { r290, l290, t290 });
+  const old290 = order({ tier: 290, amount: 290, credit: 500, pay: 'clinica', status: 'rezervat' });
+  await put(old290);
+  const e290 = await quietly(() => C.editOrder(old290.id, { note: 'proba' }, 'Proba'));
+  const e290b = await quietly(() => C.editOrder(old290.id, { tier: 490 }, 'Proba'));
+  check('an old 290 order keeps its card when edited; moved to another card only one on sale', e290.ok && e290b.ok && (await get(old290.id)).tier === 490 && (await quietly(() => C.editOrder(old290.id, { tier: 290 }, 'Proba'))).error === 'bad_tier');
+  check('TPL: rec1c, rec1d, rec2b (suma, credit), rezervatvip (locatie)', JSON.stringify(C.TPL.rec1c.map) === '["suma","credit"]' && JSON.stringify(C.TPL.rec1d.map) === '["suma","credit"]' && JSON.stringify(C.TPL.rec2b.map) === '["suma","credit","carduri"]' && JSON.stringify(C.TPL.rezervatvip.map) === '["locatie"]' &&
+    C.fill('rec1d', { suma: '990', credit: '3.000' }).includes('Cardul tău de Sărbători nu s-a terminat: plătești 990 lei și primești 3.000 lei în tratamente.') &&
+    C.fill('rec2b', { suma: '990', credit: '3.000', carduri: '3 carduri' }).includes('Au mai rămas doar 3 carduri, iar oferta') &&
+    C.fill('rezervatvip', { locatie: 'Arad' }).includes('Ți-l ținem rezervat până vii la clinica din Arad.'));
+  // the clinic choice and the online link, as she gets them
+  const cr990 = order({ name: 'Maria Proba', pay: 'clinica', status: 'rezervat' });
+  const crTxt = C.clinicReply(cr990, (w) => w + ', Maria', await T.bfSwitch());
+  check('clinic reply 990 (BF): the audit\'s words, then the online 3.000 line', crTxt === 'Gata, Maria! Ți-am rezervat Cardul de Sărbători: plătești 990 lei și primești 2.500 lei în tratamente. Îl plătești în clinică (Str. Bucegi 7, Timișoara), cash sau card, și ți-l ținem rezervat până vii. Te sună recepția să stabiliți când treci.\nLa plata online, până duminică 29 noiembrie, primești 3.000 lei în loc de 2.500.', crTxt);
+  const crVip = C.clinicReply(order({ tier: 9900, amount: 8910, credit: 30000, city: 'Arad' }), (w) => w, await T.bfSwitch());
+  check('clinic reply VIP: Cardul VIP Transformarea 360, 9.900 / 30.000, no Black Friday', crVip === 'Gata! Ți-am rezervat Cardul VIP Transformarea 360: plătești 9.900 lei și primești 30.000 lei în tratamente. Îl plătești în clinică (Str. Ioan Alexandru 16-18, Arad), cash sau card, și ți-l ținem rezervat până vii. Te sună recepția să stabiliți când treci.', crVip);
+  await store.writeJSON('data/card-sarbatori-links.json', { 490: 'https://mypos.com/vmp/paylink/p490', 990: 'https://mypos.com/vmp/paylink/p990', 9900: 'https://mypos.com/vmp/paylink/p9900' });
+  await store.writeJSON('data/wa-templates.json', { templates: [] });
+  const lr = order({ status: 'lead', pay: 'alege', via: 'meta-form', name: 'Maria Proba', phone: '0700000911' });
+  await store.writeJSON(C.KEY, [lr]);
+  wa.length = 0;
+  await quietly(() => C.onWhatsApp({ phone: lr.phone, city: 'Timișoara', button: 'Plătesc online', msgId: 'm1' }));
+  const lrNow = await get(lr.id);
+  const lrTxt = (wa.find((x) => x.text) || {}).text || '';
+  check('lead „Plătesc online”: payLinkText (Super, Maria! … plătești 990 lei și primești 3.000 lei … the clinic line)', lrTxt === C.payLinkText(lrNow, 'https://mypos.com/vmp/paylink/p990', 'Super') && lrTxt.startsWith('Super, Maria! Cardul de Sărbători: plătești 990 lei și primești 3.000 lei în tratamente, doar la plata online, până duminică 29 noiembrie.') && lrTxt.includes('Dacă rezervi și plătești în clinică, rămâne 2.500 lei.'), lrTxt);
+  // her recovery: „Finalizez plata”
+  const rw = order({ name: 'Maria Proba', phone: '0700000912', via: 'site' });
+  rw.rec = { wa1: { at: new RealDate(NOW).toISOString(), ok: true } };
+  await store.writeJSON(C.KEY, [rw]);
+  wa.length = 0;
+  await quietly(() => C.onWhatsApp({ phone: rw.phone, city: 'Timișoara', button: 'Finalizez plata', msgId: 'm2' }));
+  const rwTxt = (wa.find((x) => x.text) || {}).text || '';
+  check('„Finalizez plata”: payLinkText (Sigur, Maria! …)', rwTxt === C.payLinkText(await get(rw.id), 'https://mypos.com/vmp/paylink/p990', 'Sigur') && rwTxt.startsWith('Sigur, Maria! Cardul de Sărbători: plătești 990 lei și primești 3.000 lei'), rwTxt);
+  const lc = order({ status: 'lead', pay: 'alege', via: 'meta-form', name: 'Maria Proba', phone: '0700000913' });
+  await store.writeJSON(C.KEY, [lc]);
+  wa.length = 0;
+  await quietly(() => C.onWhatsApp({ phone: lc.phone, city: 'Timișoara', button: 'Plătesc în clinică', msgId: 'm3' }));
+  const lcTxt = (wa.find((x) => x.text) || {}).text || '';
+  check('lead „Plătesc în clinică” (the „rezervat” template not approved): the clinic reply', lcTxt.startsWith('Gata, Maria! Ți-am rezervat Cardul de Sărbători: plătești 990 lei și primești 2.500 lei în tratamente.') && lcTxt.includes('ți-l ținem rezervat până vii'), lcTxt);
+  // the VIP lead: never „cardul pe loc”
+  const vl = order({ tier: 9900, amount: 9900, credit: 30000, status: 'lead', pay: 'alege', via: 'meta-form', name: 'Ioana Proba', phone: '0700000914' });
+  await store.writeJSON(C.KEY, [vl]);
+  const vp = await quietly(() => C.leadPack(vl));
+  check('VIP lead, its templates not approved: „lead” with „10% reducere (plătești 8.910 lei)”', vp.kind === 'lead' && vp.vars.cadoul === '10% reducere (plătești 8.910 lei)' && !/pe loc/.test(C.fill('lead', vp.vars)), vp.vars);
+  await store.writeJSON('data/wa-templates.json', { templates: ['vip3n', 'vip3', 'rezervatvip', 'rezervat2'].map((key) => ({ id: 'card-' + key + '-x', purpose: 'card-' + key, label: key, body: C.TPL[key].body, map: C.TPL[key].map, meta: { w1: { status: 'APPROVED', name: 'card_' + key } } })) });
+  check('VIP lead, approved: vip3n', (await quietly(() => C.leadPack(vl))).kind === 'vip3n');
+  // a VIP reservation: rezervatvip
+  const vr = order({ tier: 9900, amount: 9900, credit: 30000, pay: 'clinica', status: 'rezervat', city: 'Arad', phone: '0700000915' });
+  const nr = order({ pay: 'clinica', status: 'rezervat', city: 'Arad', phone: '0700000916' });
+  await store.writeJSON(C.KEY, [vr, nr]);
+  wa.length = 0;
+  await quietly(() => C.reservedMsg(vr.id)); await quietly(() => C.reservedMsg(nr.id));
+  check('the reservation message: rezervatvip for the VIP, rezervat2 for the 990', wa.length === 2 && wa[0].template === 'card_rezervatvip' && JSON.stringify(wa[0].params) === '["Arad"]' && wa[1].template === 'card_rezervat2', wa.map((x) => x.template));
+  // the 14-day reminder: epilation only in Timișoara
+  const rm = (city, phone) => Object.assign(order({ city, phone, pay: 'clinica', status: 'platit', paidAt: '2026-11-01T10:00:00Z', paidVia: 'clinica' }), { cards: [{ code: 'C360-TEST-' + city.slice(0, 2).toUpperCase(), recipient: '', value: 2500, claims: [] }] });
+  await store.writeJSON(C.KEY, [rm('Arad', '0700000921'), rm('Timișoara', '0700000922')]);
+  await store.writeJSON('data/wa-templates.json', { templates: [] });
+  wa.length = 0;
+  await quietly(() => C.reminders(RealDate.parse('2026-11-25T08:00:00Z')));
+  const remA = (wa.find((x) => x.phone === '0700000921') || {}).text || '', remT = (wa.find((x) => x.phone === '0700000922') || {}).text || '';
+  check('14-day reminder: Arad without „epilare laser”, Timișoara with it', remA && !/epilare/.test(remA) && /remodelare corporală, tratamente faciale\./.test(remA) && /epilare laser/.test(remT), { remA, remT });
+
+  // the recovery: rec1d over rec1b, rec1c, rec1; rec2b over rec2; {{1}} the online sum, {{2}} the credit paying online now
+  const recTpl = (keys) => store.writeJSON('data/wa-templates.json', { templates: keys.map((key) => ({ id: 'card-' + key + '-x', purpose: 'card-' + key, label: key, body: C.TPL[key].body, map: C.TPL[key].map, meta: { w1: { status: 'APPROVED', name: 'card_' + key } } })) });
+  const recRun = async (keys, step, phone) => {
+    await recTpl(keys);
+    setNow('2026-11-25T09:45:00Z');
+    const o = order({ via: 'site', phone });
+    if (step === 'wa2') o.rec = { wa1: { at: '2026-11-24T10:00:00.000Z', ok: true } };
+    await store.writeJSON(C.KEY, [o]);
+    setNow('2026-11-25T10:00:00Z');
+    wa.length = 0;
+    await quietly(() => C.recover(NOW));
+    return wa.find((x) => x.template) || {};
+  };
+  const ra1 = await recRun(['rec1', 'rec1b', 'rec1c', 'rec1d'], 'wa1', '0700000931');
+  const ra2 = await recRun(['rec1', 'rec1b', 'rec1c'], 'wa1', '0700000932');
+  const ra3 = await recRun(['rec1', 'rec1c'], 'wa1', '0700000933');
+  const ra4 = await recRun(['rec1'], 'wa1', '0700000934');
+  const rb1 = await recRun(['rec2', 'rec2b'], 'wa2', '0700000935');
+  const rb2 = await recRun(['rec2'], 'wa2', '0700000936');
+  check('recovery: rec1d, else rec1b, rec1c, rec1; rec2b, else rec2', ra1.template === 'card_rec1d' && ra2.template === 'card_rec1b' && ra3.template === 'card_rec1c' && ra4.template === 'card_rec1' && rb1.template === 'card_rec2b' && rb2.template === 'card_rec2', [ra1, ra2, ra3, ra4, rb1, rb2].map((x) => x.template));
+  check('… rec1d / rec2b carry the online sum and the Black Friday credit (990, 3.000)', JSON.stringify(ra1.params) === '["990","3.000"]' && rb1.params && rb1.params[0] === '990' && rb1.params[1] === '3.000', { a: ra1.params, b: rb1.params });
 
   console.log('\n' + ok + '/' + (ok + fails.length) + ' ok' + (fails.length ? ', failed: ' + fails.join('; ') : ''));
   process.exit(fails.length ? 1 : 0);

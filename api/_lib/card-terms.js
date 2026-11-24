@@ -96,4 +96,17 @@ function cardValueOf(r, o) {
 // the order's credit: the card's credit times how many
 const creditOf = (r, o) => cardValueOf(r, o) * qtyOf(r);
 
-module.exports = { CARD_TERMS, BF, BF_KEY, discOf, inWindow, bfSwitch, setBf, onAt, bfLive, bfActive, bfInfo, bfMoments, bfApplies, cardValueOf, creditOf };
+// ---- the card's facts in one short paragraph, for the DM auto-replies (the audit, 24.11): what she pays first; under Black
+// Friday the 990 card's 3.000 lei online. factsTextOf(now, sw) with the switch in hand, factsText(now) reads it.
+const leiTxt = (n) => Math.round(Number(n) || 0).toLocaleString('ro-RO').replace(/[\s\u00a0\u202f]/g, '.').replace(/,/g, '.');
+function factsTextOf(now, sw) {
+  const t = CARD_TERMS.tiers, v = CARD_TERMS.vip;
+  const c990 = bfLive(now, sw)
+    ? 'plătești 990 lei și primești ' + leiTxt(BF.creditOnline) + ' lei în tratamente la plata online, ' + BF.untilLong + ' (în clinică, ' + leiTxt(BF.creditClinic) + ' lei)'
+    : 'plătești 990 lei și primești ' + leiTxt(t[990]) + ' lei în tratamente';
+  return 'Cardul de Sărbători: ' + c990 + '; sau 490 lei → ' + leiTxt(t[490]) + ' lei. La plata online, în plus, ' + CARD_TERMS.onlineBonus.gift + ' și acces în Clubul 360. ' +
+    'Card VIP Transformarea 360: ' + leiTxt(v) + ' lei → ' + leiTxt(t[v]) + ' lei, ' + leiTxt(discOf(v)) + ' lei online. Valabil până pe 30 iunie 2027.';
+}
+async function factsText(now) { return factsTextOf(now || Date.now(), await bfSwitch()); }
+
+module.exports = { factsText, factsTextOf, CARD_TERMS, BF, BF_KEY, discOf, inWindow, bfSwitch, setBf, onAt, bfLive, bfActive, bfInfo, bfMoments, bfApplies, cardValueOf, creditOf };

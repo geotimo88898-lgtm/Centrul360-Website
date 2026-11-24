@@ -1779,7 +1779,13 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const ord = (id) => rd(CSK, []).find((r) => r.id === id) || {};
 
     const g0 = await pub();
-    check('CS', 'GET: 10 cards, 10 left, open, the deadline 24.12 23:59 RO, valid until 30.06.2027, the cards on sale 490, 990 and the VIP (290 still known for its orders), 5 VIP per clinic, no PayLink yet', g0.total === 10 && g0.left === 10 && g0.open === true && g0.deadline === '2026-12-24T21:59:59.000Z' && g0.validUntil === '2027-06-30T20:59:59.000Z' && JSON.stringify(g0.tiers) === JSON.stringify({ 290: 500, 490: 1000, 990: 2500, 9900: 30000 }) && JSON.stringify(g0.sale) === '[490,990,9900]' && g0.vip['Timișoara'].left === 5 && g0.vip.Arad.max === 5 && g0.links[990] === null && g0.links[9900] === null, g0);
+    // (the audit, 24.11: no stock file → waves of 4; the public answer lists only the cards on sale; the VIP in waves of 4 too)
+    check('CS', 'GET: a wave of 4 cards, 4 left, open, the deadline 24.12 23:59 RO, valid until 30.06.2027, only the cards on sale (490, 990 and the VIP), 5 VIP per clinic shown 4 at a time, no PayLink yet', g0.total === 4 && g0.left === 4 && g0.open === true && g0.deadline === '2026-12-24T21:59:59.000Z' && g0.validUntil === '2027-06-30T20:59:59.000Z' && JSON.stringify(g0.tiers) === JSON.stringify({ 490: 1000, 990: 2500, 9900: 30000 }) && JSON.stringify(g0.sale) === '[490,990,9900]' && g0.vip['Timișoara'].left === 4 && g0.vip['Timișoara'].stock === 5 && g0.vip.Arad.max === 5 && g0.links[990] === null && g0.links[9900] === null, g0);
+    // the checks below were written for waves of 10: set so
+    wr('data/card-sarbatori-stock.json', { wave: 10 });
+    const no290 = await pub({ tier: 290, qty: 1, name: 'Proba 290', phone: '0755000290', city: 'Arad', consent: true, pay: 'clinica' });
+    const no290a = await cs('receptie', { action: 'add', tier: 290, qty: 1, name: 'Proba 290', phone: '0755000291', city: 'Arad', via: 'clinica', method: 'cash' });
+    check('CS', 'a new 290 card is refused (out of sale): the site and „Adaugă card plătit” → bad_tier', no290.error === 'bad_tier' && no290a.error === 'bad_tier', { no290, no290a });
     const me = { tier: 990, forWho: 'eu', name: 'Proba Card', phone: '0755 000 111', city: 'Timișoara', consent: true, pay: 'online', page: 'https://www.centrul360.com/v2/card-sarbatori' };
     const noLink = await pub(me);
     check('CS', 'online with no PayLink for that card: no_link, nothing stored (the page offers the reservation)', noLink._status === 409 && noLink.error === 'no_link' && rd(CSK, []).length === 0, noLink);
@@ -1848,13 +1854,13 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     check('CS', '„Deschide acum următorul val”: the owner only; wave 3 starts now (10 on the page), a second time right after: 409; Activitate has it', opR._status === 403 && op1.ok && op1.opened === 3 && op1.left === 10 && op2._status === 409 && wv2.left === 10 && lsW2.wave.n === 3 && lsW2.wave.sold === 0 && actW.length === 1, { op1, op2: op2._status, w: lsW2.wave });
     const stMax = await cs('admin', { action: 'stock', wave: 10, max: 13 });
     const stEnd = await cs('admin', { action: 'stock', wave: 10, max: 11 });
-    const wEnd = await pub({ tier: 290, qty: 1, name: 'Proba Final', phone: '0755000303', city: 'Arad', consent: true, pay: 'clinica' });
+    const wEnd = await pub({ tier: 490, qty: 1, name: 'Proba Final', phone: '0755000303', city: 'Arad', consent: true, pay: 'clinica' });
     const gEnd = await pub();
     const actS = rd('data/activity/' + day(0) + '.json', []).filter((e) => e.area === 'Carduri de Sărbători' && /valurile/.test(e.verb));
     check('CS', 'past the planned total the waves go on (the owner, 23.11: never sold out before the deadline): 13 → a full wave on, 11 → still open, a reservation goes through; Activitate has the changes', stMax.ok && stMax.left > 0 && stMax.open !== false && stEnd.ok && stEnd.open !== false && !stEnd.wave.soldOut && wEnd.ok && gEnd.open && gEnd.left > 0 && actS.length >= 2, { stMax, stEnd, wEnd, gEnd, actS: actS.length });
     const ntOff = await pub({ action: 'notify', name: 'Proba Anunt', phone: '0755000304', consent: true });
     check('CS', 'no public „Anunță-mă” for a wave (the waves stay inside)', ntOff._status === 401, ntOff);
-    wr(CSK, rd(CSK, []).filter((r) => r.id !== 'wave-fill' && r.phone !== '0755000301')); wr('data/card-sarbatori-stock.json', {});
+    wr(CSK, rd(CSK, []).filter((r) => r.id !== 'wave-fill' && r.phone !== '0755000301')); wr('data/card-sarbatori-stock.json', { wave: 10 });
 
     // 4. found in myPOS by itself: the same sum, after the order, within 48 h, the oldest first, each payment once
     const t0 = Date.now();
@@ -1891,9 +1897,9 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const leftAfter = (await pub()).left;
     const mOld = await CL.matchPayments([{ ref: 'mypos-3', amount: 290, at: new Date().toISOString() }]);
     check('CS', 'a PayLink order not paid in 2 hours frees its card on the counter; paid later (within 48 h) it is still matched', leftAfter === leftBefore && mOld.length === 1 && ord('old-wait').status === 'platit', { leftBefore, leftAfter, mOld });
-    const add = await cs('receptie', { action: 'add', tier: 290, qty: 1, name: 'Proba Adaugata', phone: '0755000666', city: 'Arad', via: 'clinica', method: 'transfer' });
+    const add = await cs('receptie', { action: 'add', tier: 490, qty: 1, name: 'Proba Adaugata', phone: '0755000666', city: 'Arad', via: 'clinica', method: 'transfer' });
     check('CS', '„Adaugă card plătit”: issued at once, paid in the clinic, the counter keeps it', add.ok && add.reservation.status === 'platit' && /^C360-/.test(add.cards[0].code) && add.reservation.via === 'portal', add.reservation && add.reservation.status);
-    const resX = await pub({ tier: 290, qty: 1, name: 'Proba Anulare', phone: '0755000777', city: 'Arad', consent: true, pay: 'clinica' });
+    const resX = await pub({ tier: 490, qty: 1, name: 'Proba Anulare', phone: '0755000777', city: 'Arad', consent: true, pay: 'clinica' });
     const l1 = (await pub()).left;
     const cut = await cs('receptie', { action: 'cancel', id: resX.reservation.id });
     check('CS', 'a reservation cancelled: its card back on the counter', cut.ok && cut.left === l1 + 1, { l1, cut: cut.left });
@@ -1904,12 +1910,12 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const sOn = csales().filter((x) => x.cardOrderId === on1.id);
     const s3 = csales().filter((x) => x.cardOrderId === o3.id);
     const sAdd = csales().filter((x) => x.cardOrderId === add.reservation.id);
-    check('CS', 'Încasări: the online card (990, card, Timișoara, today, no one\'s day, no commission, „Card de Sărbători”), the clinic one (1.470 as chosen), the one added (290); once each, even confirmed twice or matched again', sOn.length === 1 && sOn[0].source === 'incasare' && sOn[0].amount === 990 && sOn[0].method === 'card' && sOn[0].location === 'Timișoara' && sOn[0].date === day(0) && sOn[0].performedBy === '' && sOn[0].commission === 0 && /^Card de Sărbători/.test(sOn[0].treatment) && sOn[0].label === 'Card de Sărbători' &&
-      s3.length === 1 && s3[0].amount === 1470 && s3[0].method === 'cash' && sAdd.length === 1 && sAdd[0].amount === 290 && sAdd[0].method === 'transfer' && !rd('data/sales.json', []).some((x) => x.source === 'comision' && x.cardOrderId), { sOn, s3: s3.map((x) => [x.amount, x.method]), sAdd: sAdd.map((x) => [x.amount, x.method]) });
+    check('CS', 'Încasări: the online card (990, card, Timișoara, today, no one\'s day, no commission, „Card de Sărbători”), the clinic one (1.470 as chosen), the one added (490); once each, even confirmed twice or matched again', sOn.length === 1 && sOn[0].source === 'incasare' && sOn[0].amount === 990 && sOn[0].method === 'card' && sOn[0].location === 'Timișoara' && sOn[0].date === day(0) && sOn[0].performedBy === '' && sOn[0].commission === 0 && /^Card de Sărbători/.test(sOn[0].treatment) && sOn[0].label === 'Card de Sărbători' &&
+      s3.length === 1 && s3[0].amount === 1470 && s3[0].method === 'cash' && sAdd.length === 1 && sAdd[0].amount === 490 && sAdd[0].method === 'transfer' && !rd('data/sales.json', []).some((x) => x.source === 'comision' && x.cardOrderId), { sOn, s3: s3.map((x) => [x.amount, x.method]), sAdd: sAdd.map((x) => [x.amount, x.method]) });
     const nInc = rd('data/notifications.json', []).filter((n) => /ÎNCASARE/.test(n.title) && /Card de Sărbători/.test(n.text || ''));
     check('CS', 'one notice per card paid (no second „ÎNCASARE” line for it)', nInc.length === 0, nInc.map((n) => n.title));
     const MON = require('../api/_lib/money');
-    check('CS', 'the totals that read Încasări count the cards once: 990 + 1.470 + 290 + 490 + 290', MON.net(csales()) === 990 + 1470 + 290 + 490 + 290, MON.net(csales()));
+    check('CS', 'the totals that read Încasări count the cards once: 990 + 1.470 + 290 + 490 + 490', MON.net(csales()) === 990 + 1470 + 290 + 490 + 490, MON.net(csales()));
     const bf = rd(CSK, []);
     bf.push({ id: 'paid-before', created: new Date().toISOString(), name: 'Proba Veche Platita', phone: '0755000901', city: 'Arad', tier: 290, qty: 1, amount: 290, credit: 500, cards: [{ code: 'C360-BACK-FILL', recipient: '' }], status: 'platit', paidAt: new Date().toISOString(), paidVia: 'clinica', via: 'portal', pay: 'clinica' });
     wr(CSK, bf);
@@ -1947,7 +1953,7 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     const vOk = await cs('admin', { action: 'void', id: add.reservation.id, reason: 'proba' });
     const vAgain = await cs('admin', { action: 'void', id: add.reservation.id });
     const refRow = rd('data/sales.json', []).find((x) => x.kind === 'refund' && x.cardOrderId === add.reservation.id);
-    check('CS', 'a paid card cancelled: the owner only, not once used; a refund of -290 in Încasări today (refundOf the payment), the order cancelled, a second time 409', vR._status === 403 && vUsed._status === 409 && vUsed.error === 'used' && vOk.ok && refRow && refRow.amount === -290 && refRow.refundOf === sAdd[0].id && refRow.date === day(0) &&
+    check('CS', 'a paid card cancelled: the owner only, not once used; a refund of -490 in Încasări today (refundOf the payment), the order cancelled, a second time 409', vR._status === 403 && vUsed._status === 409 && vUsed.error === 'used' && vOk.ok && refRow && refRow.amount === -490 && refRow.refundOf === sAdd[0].id && refRow.date === day(0) &&
       ord(add.reservation.id).status === 'anulat' && vAgain._status === 409 && MON.net(csales().filter((x) => x.cardOrderId === add.reservation.id)) === 0, { vR: vR._status, vUsed, vOk, refRow });
 
     // 7. her card's picture (the team) and Clubul 360's page
@@ -1964,8 +1970,8 @@ const check = (item, name, ok, info) => { results.push({ item, name, ok: !!ok })
     check('CS', 'Clubul 360: a place on the list (once per phone), marked card holder when she comes with her card\'s code; consent asked', j1.ok && j1.place === club3 + 1 && !j1.holder && j2.again && rd(CLK, []).length === club3 + 2 && j3.holder === true && j4.ok && j4.holder === false && j5.error === 'missing_consent', { j1, j2, j3, j4, j5 });
 
     // 8. myPOS's own notification: only with a signature that holds (no certificate here: nothing paid)
-    const waitN = await pub(Object.assign({}, me, { phone: '0755000123', tier: 290 }));
-    const nf = await fetch('http://127.0.0.1:' + PORT + '/api/card-notify', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ IPCmethod: 'IPCPurchaseNotify', Amount: '290.00', Currency: 'RON', OrderID: 'X1', IPC_Trnref: '99' }).toString() });
+    const waitN = await pub(Object.assign({}, me, { phone: '0755000123', tier: 490 }));
+    const nf = await fetch('http://127.0.0.1:' + PORT + '/api/card-notify', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ IPCmethod: 'IPCPurchaseNotify', Amount: '490.00', Currency: 'RON', OrderID: 'X1', IPC_Trnref: '99' }).toString() });
     check('CS', 'myPOS\'s notification without a signature that holds: OK to myPOS, nothing paid', nf.status === 200 && (await nf.text()) === 'OK' && ord(waitN.id).status === 'asteptare', ord(waitN.id).status);
 
     // 9. the reminders: 14 days active with credit left and no booking (once), not at night
