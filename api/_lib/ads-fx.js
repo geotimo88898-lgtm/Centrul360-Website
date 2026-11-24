@@ -73,4 +73,24 @@ async function info(store) {
   return { currency: k.currency || 'RON', rate: k.currency === 'RON' || !k.currency ? 1 : k.rate || FALLBACK[k.currency] || 1, date: k.date || '', source: k.source || '' };
 }
 
-module.exports = { KEY, KNOWN, FALLBACK, factor, info, bnrRate, ecbRate };
+// lei for 1 unit of a currency, for an ad account that isn't the connected one (Admin → Reclame → Clasament reads the
+// other accounts too, read only): the connected account's rate of the day when it is the same currency, else the BNR's
+// of the day (kept for the day in data/ads-fx-rates.json, asked at most once an hour when no bank answers), else the fallback
+const RATES = 'data/ads-fx-rates.json';
+async function rateOf(cur, store) {
+  if (!cur || cur === 'RON') return 1;
+  const { readJSON, writeJSON } = store || require('./store');
+  const k = (await readJSON(KEY, null).catch(() => null)) || {};
+  if (k.currency === cur && k.rate > 0 && k.checked === today()) return k.rate;
+  const all = (await readJSON(RATES, null).catch(() => null)) || {};
+  const m = all[cur] || {};
+  if (m.rate > 0 && m.checked === today()) return m.rate;
+  const old = m.rate || (k.currency === cur && k.rate) || FALLBACK[cur] || 1;
+  if (m.tryAt && Date.now() - Date.parse(m.tryAt) < 3600e3) return old;
+  const got = await fetchRate(cur);
+  all[cur] = got ? { rate: got.rate, date: got.date, source: got.source, checked: today() } : Object.assign({}, m, { tryAt: new Date().toISOString() });
+  await writeJSON(RATES, all, { quiet: true }).catch(() => {});
+  return got ? got.rate : old;
+}
+
+module.exports = { KEY, KNOWN, FALLBACK, factor, info, rateOf, bnrRate, ecbRate };

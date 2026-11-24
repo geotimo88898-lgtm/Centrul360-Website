@@ -8,6 +8,7 @@
 //   POST { action: 'form_info', id }       an existing form's screening questions (to copy them)
 //   GET  ?action=results&since=YYYY-MM-DD  every ad's spend and leads (Meta) and what came after the form (portal), so
 //                                          Creative makes more of what brought cheap leads and bookings
+//   GET  ?action=top&period=max|…            Reclame → Clasament's rows (read only, the same as /api/ads-manager?view=top)
 //                            campaign + ad set + ad, see _lib/meta-ads.js; kept in data/ads-published.json
 // The publishing itself lives in _lib/meta-ads.js.
 
@@ -256,6 +257,15 @@ module.exports = async (req, res) => {
         ads: (o.adsets || []).reduce((n, s) => n + (s.ads || []).length, 0), adsOn: (o.adsets || []).reduce((n, s) => n + (s.status === 'ACTIVE' ? (s.ads || []).filter((a) => a.status === 'ACTIVE').length : 0), 0) };
       res.status(200).json({ ok: true, id, period: range ? 'custom' : period, range, fx: ads.FX(conn), readAt: view && view.readAt, reclame: pick(c), viewError: view && view.error ? ME.ui(view.error) : '',
         siteMatch: view && view.siteMatch, meta: row, metaError: meta.ok ? '' : ME.ui(meta.j && meta.j.error && meta.j.error.message) });
+      return;
+    }
+    // read only (24.11): Reclame → Clasament's rows (every ad of ours in the three ad accounts, api/_lib/ads-top.js)
+    if (req.method === 'GET' && req.query && req.query.action === 'top') {
+      const AM = require('./ads-manager');
+      const { conn, problem } = await AM.connection();
+      if (problem) { res.status(200).json({ ok: false, reason: problem }); return; }
+      const period = ads.PERIODS[req.query.period] ? req.query.period : 'max';
+      res.status(200).json(await require('./_lib/ads-top').top(conn, period, AM.dayRange(req.query)));
       return;
     }
     if (req.method === 'GET' && req.query && req.query.action === 'daily') { res.status(200).json(await daily(req.query.since)); return; }

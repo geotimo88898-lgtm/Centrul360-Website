@@ -8,6 +8,8 @@
 //   POST { action: 'details', campaignId }        its ad sets (audience, budget) and ads (texts, images)
 //   POST { action: 'edit_ad', adId, texts, headlines, descriptions, cta, formId }
 //   POST { action: 'edit_adset', adsetId, budget, ageMin, ageMax, women, radiusKm, placements }
+//   GET  ?view=top&period=…|since=&until=     Clasament: every ad of ours in the three ad accounts, Meta's numbers and what came
+//                                             after (api/_lib/ads-top.js), read only
 //   GET  ?media=<link>                       an ad's picture, to save it
 //   POST { action: 'defaults', defaults }     what the "Publică pe Meta" window starts with
 // The Meta side lives in _lib/meta-ads.js.
@@ -116,7 +118,7 @@ async function withSite(view, period, range, conn) {
 // every ad's outcome by her phone (api/_lib/ad-outcomes.js): o* on every ad, ad set and campaign, for the same tiles on a
 // lead-form ad and a website ad. From 16.10.2026, 22:05 on, like withFunnel (the leads, the bookings and their payments).
 const O_KEYS = { booked: 'oBooked', showed: 'oShowed', cardRes: 'oCardRes', cardPaid: 'oCardPaid', cardPaidLei: 'oCardPaidLei', cardOpen: 'oCardOpen', cashed: 'oCashed', cashedOnline: 'oCashedOnline',
-  exact: 'oExact', byPhone: 'oByPhone' };
+  clients: 'oClients', exact: 'oExact', byPhone: 'oByPhone' };
 async function withOutcomes(view, period, range, siteTouches) {
   const O = require('./_lib/ad-outcomes');
   const [allLeads, allAppts, allSales, cards, clients] = await Promise.all([
@@ -253,6 +255,13 @@ module.exports = async (req, res) => {
       res.setHeader('Content-Type', m.type);
       res.setHeader('Content-Disposition', 'attachment; filename="reclama.' + (m.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg') + '"');
       res.status(200).send(m.buf);
+      return;
+    }
+    // Clasament (24.11): every ad of ours in the three ad accounts, with what came after, ranked on the page (read only)
+    if (req.method === 'GET' && req.query && req.query.view === 'top') {
+      if (problem) { res.status(200).json({ ok: true, ready: false, reason: problem, message: REASONS[problem] }); return; }
+      const period = ads.PERIODS[req.query.period] ? req.query.period : 'max';
+      res.status(200).json(await require('./_lib/ads-top').top(conn, period, dayRange(req.query)));
       return;
     }
     if (req.method === 'GET') {

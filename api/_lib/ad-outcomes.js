@@ -12,6 +12,7 @@
 //   booked   women who booked (any appointment, not cancelled)    showed   women who came (finished or paid)
 //   cardRes  cards reserved to pay at the clinic                   cardPaid / cardPaidLei   cards paid (online or there)
 //   cardOpen cards started online, not paid                        cashed / cashedOnline    lei paid (all / online), once each
+//   clients  women who paid (a payment counted for the touch), once each per touch
 // Counts and sums only: never a name or a phone in what it returns.
 const { bucharestDay } = require('./ads-funnel');
 
@@ -19,7 +20,7 @@ const DAY = 864e5, AFTER = 30 * DAY, BEFORE = 3600e3; // an action up to 30 days
 const d9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
-const KEYS = ['booked', 'showed', 'cardRes', 'cardPaid', 'cardPaidLei', 'cardOpen', 'cashed', 'cashedOnline', 'exact', 'byPhone'];
+const KEYS = ['booked', 'showed', 'cardRes', 'cardPaid', 'cardPaidLei', 'cardOpen', 'cashed', 'cashedOnline', 'clients', 'exact', 'byPhone'];
 const zero = () => Object.fromEntries(KEYS.map((k) => [k, 0]));
 
 // a form's ad among the period's ads: by its id, else by the campaign and ad names (the leads saved before the ids were kept)
@@ -86,7 +87,8 @@ function outcomes({ leads, appointments, sales, cards, clients, siteTouches, ord
     return firstOf(phone, t);
   };
   const people = new Map(); // touch → the women already counted as booked / showed for it
-  const give = (x, ev, person) => {
+  // quiet: not one more action of hers (a client is counted from a payment already counted)
+  const give = (x, ev, person, quiet) => {
     const box = x.adId ? out.ads : out.campaigns, id = x.adId || x.campaignId;
     const c = box.get(id) || zero();
     if (person) {
@@ -95,9 +97,11 @@ function outcomes({ leads, appointments, sales, cards, clients, siteTouches, ord
       seen.add(person.phone); people.set(k, seen);
     }
     Object.keys(ev).forEach((k) => { c[k] = r2(c[k] + ev[k]); });
-    c[x.how]++;
+    if (!quiet) c[x.how]++;
     box.set(id, c);
   };
+  // money paid for a touch: the payment, and she is a client of that touch (once)
+  const paid = (x, ev, who) => { give(x, ev); if (ev.cashed > 0 && who) give(x, { clients: 1 }, { what: 'c', phone: who }, true); };
 
   // bookings and visits: a woman once per touch
   const apptById = new Map();
@@ -136,20 +140,20 @@ function outcomes({ leads, appointments, sales, cards, clients, siteTouches, ord
     const x = whereOf((s.cardOrderId && own.card.get(s.cardOrderId)) || (s.appointmentId && own.appt.get(s.appointmentId)) || (s.payOrderId && own.pay.get(s.payOrderId)) || null,
       phone, Date.parse(s.createdAt || s.date));
     if (!x) return;
-    give(x, Object.assign({ cashed: Number(s.amount) }, s.online ? { cashedOnline: Number(s.amount) } : {}));
+    paid(x, Object.assign({ cashed: Number(s.amount) }, s.online ? { cashedOnline: Number(s.amount) } : {}), s.kind === 'refund' ? '' : d9(phone) || 's' + s.id);
   });
   cardById.forEach((r) => {
     if (r.test || r.status !== 'platit' || inSales.card.has(r.id)) return;
     const lei = Number(r.paidAmount) || Number(r.amount) || 0;
     const x = lei > 0 && whereOf(own.card.get(r.id), r.phone, Date.parse(r.created));
-    if (x) give(x, Object.assign({ cashed: lei }, r.paidVia !== 'clinica' ? { cashedOnline: lei } : {}));
+    if (x) paid(x, Object.assign({ cashed: lei }, r.paidVia !== 'clinica' ? { cashedOnline: lei } : {}), d9(r.phone) || 'c' + r.id);
   });
   (orders || []).forEach((o) => {
     if (!o || !o.id || !(o.lei > 0) || inSales.pay.has(o.id)) return;
     if (o.kind === 'card' && cardById.has(o.ref)) return; // its card counts it (above, or its row of Încasări)
     if (o.kind === 'booking' && inSales.appt.has(o.ref)) return;
     const x = whereOf(own.pay.get(o.id) || (o.kind === 'card' && own.card.get(o.ref)) || null, o.phone, o.t);
-    if (x) give(x, { cashed: o.lei, cashedOnline: o.lei });
+    if (x) paid(x, { cashed: o.lei, cashedOnline: o.lei }, d9(o.phone) || 'o' + o.id);
   });
   return out;
 }
