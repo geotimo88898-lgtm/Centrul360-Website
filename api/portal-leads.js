@@ -452,10 +452,18 @@ function cleanForm(f) {
 // the bell and on their phones. Leads the team types in don't (they know already). Built in, not an automation.
 const SELF = ['facebook-webhook', 'site-form'];
 // From the site's forms the title says LEAD SITE (the owner tells them apart from the ads' LEAD NOU at a glance).
+// a lead for one of the clinic's machines (the owner, 24.11: Pipeline → Aparate): the owner's only
+const isDeviceLead = (l) => /^aparate\b/i.test(String((l && l.interest) || ''));
 async function alertTeam(lead, returning, fromSite, alertWhat) {
   if (!SELF.includes(lead.createdBy) && !(returning && (lead.source === 'facebook' || lead.source === 'site'))) return;
   const employees = (await readJSON('data/employees.json', [])).filter((e) => e.active !== false);
-  const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || e.role === 'receptie' || (e.role === 'manager' && require('./_lib/roles').managesCity(e, lead.location))).map((e) => e.id));
+  const dev = isDeviceLead(lead);
+  const ids = ['admin'].concat(employees.filter((e) => e.role === 'admin' || (!dev && (e.role === 'receptie' || (e.role === 'manager' && require('./_lib/roles').managesCity(e, lead.location))))).map((e) => e.id));
+  if (dev) {
+    await notifyMany({ readJSON, writeJSON }, ids, { kind: 'lead', tone: 'info', go: 'pipeline/aparate', tag: 'lead-' + lead.id + (returning ? ':again' : ''),
+      title: (returning ? 'APARAT 💼 REVENIT' : 'APARAT 💼 CERERE') + ' · ' + String(lead.interest || '').replace(/^aparate · /i, '').slice(0, 40), text: lead.name + ' · ' + (lead.phone || '') });
+    return;
+  }
   const raw = lead.interest || ((lead.forms || []).slice(-1)[0] || {}).name || ''; // the offer, or the form's name
   // a lead-filter lead: the package and the zone she chose (alertWhat, from _lib/fb-leads.js)
   const what = alertWhat && alertWhat.title ? alertWhat.title : require('./_lib/offers').shortName(await require('./_lib/offers').loadOffers(readJSON), raw); // "Lipo 640"
@@ -533,9 +541,9 @@ async function createLead({ name, phone, source, location, createdBy, email, int
     });
     await writeJSON(LEADS_KEY, leads);
     // someone already in the Pipeline filled the form again: worth an alert, not a second welcome
-    await workflows.emit('lead_created', { lead: existing, returning: true });
+    if (!isDeviceLead(existing)) await workflows.emit('lead_created', { lead: existing, returning: true });
     if (SELF.includes(createdBy)) await alertTeam(existing, true, createdBy === 'site-form', alertWhat);
-    if (filled && filled.leadgenId) await capi.soon(() => capi.crmSync({ leadIds: [existing.id] })); // a new Facebook lead id: its "Lead_nou"
+    if (filled && filled.leadgenId && !isDeviceLead(existing)) await capi.soon(() => capi.crmSync({ leadIds: [existing.id] })); // a new Facebook lead id: its "Lead_nou"
     return { lead: withComputedFields(existing, stages), duplicate: true, reopened };
   }
 
@@ -559,10 +567,10 @@ async function createLead({ name, phone, source, location, createdBy, email, int
   if (note) lead.activities.push({ id: crypto.randomUUID(), type: 'note', text: clip(note, 1000), author, at: now });
   leads.push(lead);
   await writeJSON(LEADS_KEY, leads);
-  await workflows.emit('lead_created', { lead }); // the flows on a new lead, if any
+  if (!isDeviceLead(lead)) await workflows.emit('lead_created', { lead }); // the flows on a new lead, if any (none for a machine's buyer)
   if (SELF.includes(createdBy) && welcome !== false) await workflows.welcome(lead); // the welcome WhatsApp of its offer, to a lead that came by herself (one typed at the desk is on the phone already)
   await alertTeam(lead, false, createdBy === 'site-form', alertWhat);
-  if (filled && filled.leadgenId) await capi.soon(() => capi.crmSync({ leadIds: [lead.id] })); // "Lead_nou" for Meta
+  if (filled && filled.leadgenId && !isDeviceLead(lead)) await capi.soon(() => capi.crmSync({ leadIds: [lead.id] })); // "Lead_nou" for Meta
   return { lead: withComputedFields(lead, stages) };
 }
 
@@ -643,7 +651,7 @@ module.exports = async (req, res) => {
 
     if (action === 'list') {
       const city = await cityOf(session, readJSON);
-      const sorted = leads.filter((l) => inCity(city, l.location)).slice().sort((a, b) => (a.position || 0) - (b.position || 0)).map((l) => withComputedFields(l, stages));
+      const sorted = leads.filter((l) => inCity(city, l.location) && (session.role === 'admin' || !isDeviceLead(l))).slice().sort((a, b) => (a.position || 0) - (b.position || 0)).map((l) => withComputedFields(l, stages));
       sendVersioned(res, {
         ok: true, stages, leads: sorted,
         meta: { sources: VALID_SOURCES, locations: VALID_LOCATIONS, outcomes: VALID_OUTCOMES, channels: VALID_CHANNELS, inactiveDays: INACTIVE_DAYS_THRESHOLD },
@@ -655,6 +663,7 @@ module.exports = async (req, res) => {
     if (!body.leadId) return fail(400, 'missing_lead_id');
     if (!lead) return fail(404, 'lead_not_found');
     if (!inCity(await cityOf(session, readJSON), lead.location)) return fail(403, 'forbidden');
+    if (isDeviceLead(lead) && session.role !== 'admin') return fail(403, 'forbidden');
     const author = await authorName(session);
     const save = async (extra) => {
       await writeJSON(LEADS_KEY, leads);
@@ -788,6 +797,7 @@ module.exports = async (req, res) => {
 };
 
 module.exports.STAGE_ORDER = STAGE_ORDER;
+module.exports.isDeviceLead = isDeviceLead;
 module.exports.ALL_STAGES = ALL_STAGES;
 module.exports.createLead = createLead;
 module.exports.loadStages = loadStages;

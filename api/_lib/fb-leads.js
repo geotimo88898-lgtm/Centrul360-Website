@@ -93,10 +93,13 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
     await writeJSON(FORMS_KEY, doc);
     return require('./leadfilter').testResult(formId, form, lf, answerPairs(lead.field_data, form.questions));
   }
+  // a form selling one of the clinic's machines (the owner, 24.11: the Elysion Pro laser, to salons): its leads are the
+  // owner's only, in Pipeline → Aparate; no welcome, no offer, no team alert (portal-leads.js isDeviceLead)
+  const device = /v[aâ]nzare|vand|vând/i.test(String(form.name || '')) && /elysion|aparat|laser/i.test(String(form.name || ''));
   const offers = (await loadOffers(readJSON, writeJSON)).filter((o) => o.active !== false);
   // what the person answered ("Oraș: Arad") says the city better than the form's name
   const city = (card && card.city) || form.location || detectCity(answers.join(" · ")) || detectCity(text);
-  const offer = lf || card ? null : (form.offerId && offers.find((o) => o.id === form.offerId)) || detectOffer(offers, text, city);
+  const offer = lf || card || device ? null : (form.offerId && offers.find((o) => o.id === form.offerId)) || detectOffer(offers, text, city);
   const only = offer && Array.isArray(offer.locations) && offer.locations.length === 1 ? offer.locations[0] : '';
   const location = city || (only === 'arad' ? 'Arad' : only === 'timisoara' ? 'Timișoara' : DEFAULT_LOCATION);
 
@@ -114,9 +117,9 @@ async function ingestLead(lead, leadgenId, pageAccessToken, formIdHint) {
   try {
     result = await createLead({
     name: name || 'Lead Facebook', phone, email, source: 'facebook', location,
-    interest: lf ? 'Lead filter · ' + (lf.zoneLabel || 'general') : card ? 'Cardul de Sărbători' + (card.tier ? ' · ' + card.tier + ' lei' : '') : offer ? offer.title : form.name, note, createdBy: 'facebook-webhook',
+    interest: device ? 'Aparate · ' + String(form.name || 'vânzare') : lf ? 'Lead filter · ' + (lf.zoneLabel || 'general') : card ? 'Cardul de Sărbători' + (card.tier ? ' · ' + card.tier + ' lei' : '') : offer ? offer.title : form.name, note, createdBy: 'facebook-webhook',
     // a lead-filter lead gets its own message (its zone × package), not an offer's welcome
-    welcome: lf || card ? false : undefined,
+    welcome: lf || card || device ? false : undefined,
     // the push says what she chose (the owner, 21.11: „să văd direct din notificare la ce se înscriu”)
     alertWhat: card ? { title: 'Cardul de Sărbători' + (card.tier ? ' · ' + card.tier + ' lei' : ''), full: 'C. SARB ' + (String(card.tier) === '9900' ? '💎 VIP ' : '🎄 ') + (card.tier ? Number(card.tier).toLocaleString('ro-RO') + ' lei · ' : '') + 'CERERE', text: require('./card-lead').summary(card) } : lf ? { title: [lf.tier ? Number(lf.tier).toLocaleString('ro-RO') + ' lei' : '', lf.zoneLabel].filter(Boolean).join(' · '), text: require('./leadfilter').summary(lf) } : undefined,
     // leadgenId: Facebook's id of this lead, for the CRM steps sent back to Meta (_lib/meta-capi.js)
