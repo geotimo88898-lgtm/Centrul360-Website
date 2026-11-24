@@ -167,6 +167,7 @@ async function openNext(list, by) {
 // the waves count the regular cards; the VIP ones have their own stock, per clinic
 const ordered = (list, now) => (list || []).filter((r) => !isVip(r) && live(r, now || Date.now())).reduce((n, r) => n + qtyOf(r), 0);
 const VIP_WAVE = 4;
+const NO_FOLLOWUPS = true; // the recovery messages after the first one: off (the owner, 24.11)
 function vipLeft(list, now, cfg) {
   const t = now || Date.now(), out = {};
   ['Timișoara', 'Arad'].forEach((c) => {
@@ -1517,6 +1518,8 @@ async function recover(now) {
     if (!convos) convos = await readJSON('data/whatsapp-conversations.json', []).catch(() => []);
     const c = convos.find((x) => d9(x.phone) === d9(r.phone));
     if (c && (c.messages || []).some((m) => m.direction === 'in' && Date.parse(m.timestamp) > heldFrom(r))) { rc.replied = rc.replied || { at: nowISO(), what: 'text' }; mark(r, 'replied', 'text'); stop(r, 'replied'); continue; }
+    // the follow-up WhatsApp messages are off (the owner, 24.11: „renunțăm complet la ele”): nothing goes, nothing waits
+    if (NO_FOLLOWUPS) { stop(r, 'off'); continue; }
     due.push({ r, step });
   }
   let sent = 0, failed = 0, waiting = 0, held = 0;

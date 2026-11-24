@@ -31,6 +31,7 @@ const TAG = { 'Timișoara': 'tm', Arad: 'ar' };
 const CTAG = { 'Timișoara': 'TM', Arad: 'AR' };
 const TIERS = ['14900', '4990', '990', '390'];
 const HOT = ['14900', '4990'];
+const NO_FOLLOWUPS = true;
 const FOLLOW = [{ k: 'f1', after: 24 * 3600e3, msg: ['follow1', 'fu_24h'] }, { k: 'f2', after: 72 * 3600e3, msg: ['follow2', 'fu_3z'] }];
 const Q = { problem: 'Ce te deranjează cel mai mult?', when: 'Când vrei să vezi rezultatul?', pack: 'Ce variantă ți se potrivește?', zone: 'Ce zonă vrei să schimbi cel mai mult?' };
 const DAY_FROM = 9, DAY_TO = 20; // follow-ups leave between 9 and 20, Romania time
@@ -293,6 +294,9 @@ function roHour(ms) { return Number(new Intl.DateTimeFormat('en-GB', { timeZone:
 // hourly (api/automation-tick.js): the 24 h and 3 days follow-ups, between 9 and 20, to whoever hasn't written back and
 // isn't booked (a stage from „Programare stabilită” on, or an appointment); at most 40 a run
 async function followups(now) {
+  // off for good (the owner, 24.11: „nu mai vreau să existe follow-upuri, renunțăm complet la ele, e mult prea spammy;
+  // avem doar mesajul de bază”): only the first message goes
+  if (NO_FOLLOWUPS) return { skipped: 'off' };
   const t = now || Date.now();
   const h = roHour(t);
   if (h < DAY_FROM || h >= DAY_TO) return { skipped: 'night' };
