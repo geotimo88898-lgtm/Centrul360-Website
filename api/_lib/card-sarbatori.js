@@ -495,6 +495,9 @@ const TPL = {
   // paid online, the name comes after (the owner, 21.11): the payment received, „pe ce nume să fie cardul?” (askName)
   name: { label: 'Card de Sărbători pe ce nume', map: ['suma', 'credit'], buttons: 'name',
     body: 'Bună! Am primit plata ta de {{1}} lei pentru Cardul de Sărbători Centrul360, cu {{2}} lei în tratamente. Mulțumim! Pe ce nume să fie cardul? Alege mai jos.' },
+  // a gift said already in the ads' form (the owner, 23.11: not asked twice): straight to the name of the one who gets it
+  name2: { label: 'Card de Sărbători cadou pe ce nume', map: ['suma', 'credit'],
+    body: 'Bună! Am primit plata ta de {{1}} lei pentru Cardul de Sărbători Centrul360, cu {{2}} lei în tratamente. Mulțumim! 🎁 Pe ce nume să fie cardul cadou? Scrie-ne aici numele persoanei care îl primește, așa cum vrei să apară pe card.' },
 };
 // the buttons of the recovery messages (Meta: quick replies, at most 25 letters); what each does: onWhatsApp
 const REC_BTN = { pay: 'Finalizez plata', clinic: 'Plătesc în clinică', no: 'Nu mai vreau' };
@@ -657,7 +660,7 @@ async function recordSale(r, by) {
   const method = r.paidVia === 'online' ? 'card' : PAY_METHODS.includes(r.payMethod) ? r.payMethod : 'card';
   const entry = {
     id: crypto.randomUUID(), source: 'incasare', cardSale: true, label: isVip(r) ? 'Card VIP Transformarea 360' : 'Card de Sărbători', cardOrderId: r.id, online: r.paidVia === 'online', // online: a PayLink, never a POS terminal's
-    employeeId: by || r.paidBy || 'card-sarbatori', performedBy: '', appointmentId: '', clientId: r.clientId || '', client: r.name || '',
+    employeeId: by || r.paidBy || 'card-sarbatori', performedBy: '', appointmentId: '', clientId: r.clientId || '', clientPhone: r.phone || '', client: r.name || '',
     date: roDay(Date.parse(r.paidAt) || Date.now()), location: r.city || '', categories: [], category: '',
     treatment: (isVip(r) ? 'Card VIP Transformarea 360' : 'Card de Sărbători') + ' · plătești ' + (r.qty > 1 ? r.qty + ' × ' + lei(r.tier) : lei(Number(r.paidAmount) || Number(r.amount) || r.tier)) + ' lei' + (r.disc ? ' (10% reducere online)' : '') + ', credit ' + (r.qty > 1 ? r.qty + ' × ' : '') + lei(TIERS[r.tier]) + ' lei',
     amount, bookedAmount: 0, upsell: 0, method, split: null, status: 'recorded', commission: 0,
@@ -739,8 +742,12 @@ async function sendCards(r, how) {
 // „Pe ce nume să fie cardul?” (the template, she did not write us yet); not sent: the card goes at once, with no name
 async function askName(r) {
   const vars = { suma: lei(r.paidAmount || r.amount), credit: lei(r.credit) };
-  const m = await say('name', r, vars, fill('name', vars), null, '', { only: 'template', tag: { cardOrder: r.id, cardStep: 'ask' } }).catch((e) => ({ sent: false, error: e.message }));
-  if (m.sent) { r.naming = { at: nowISO(), state: 'asked' }; mark(r, 'ask_name', 'ok'); return true; }
+  // a gift said in the form: only the name (name2, once Meta approves it); else „Pentru mine / E cadou” first
+  const T2 = r.via === 'meta-form' && r.forWho === 'cadou' ? await templates().catch(() => ({ t: {} })) : { t: {} };
+  const gift = !!(T2.t && T2.t.name2 && require('./wa-templates').overall(T2.t.name2) === 'APPROVED');
+  const kind = gift ? 'name2' : 'name';
+  const m = await say(kind, r, vars, fill(kind, vars), null, '', { only: 'template', tag: { cardOrder: r.id, cardStep: 'ask' } }).catch((e) => ({ sent: false, error: e.message }));
+  if (m.sent) { r.naming = gift ? { at: nowISO(), state: 'typing', for: 'gift', forAt: nowISO() } : { at: nowISO(), state: 'asked' }; mark(r, 'ask_name', gift ? 'cadou' : 'ok'); return true; }
   r.naming = { at: nowISO(), state: 'done', how: 'none', error: String(m.error || '').slice(0, 160) };
   mark(r, 'ask_name', 'netrimis: ' + String(m.error || '').slice(0, 100));
   await sendCards(r, 'fără nume');

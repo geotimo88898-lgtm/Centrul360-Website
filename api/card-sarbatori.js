@@ -82,7 +82,7 @@ function trackOf(req, page, ct) {
   const t = { fbp: rq.fbp, fbc: rq.fbc, ip: rq.ip, ua: rq.ua, url: rq.url };
   try {
     const q = new URL(String(page || '')).searchParams;
-    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid'].forEach((k) => { const v = q.get(k); if (v) t[k] = String(v).slice(0, 200); });
+    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'c360_ad'].forEach((k) => { const v = q.get(k); if (v) t[k] = String(v).slice(0, 200); });
     if (!ct) ct = q.get('c');
   } catch (e) { /* no address */ }
   if (/^[A-Za-z0-9_-]{6,24}$/.test(String(ct || ''))) t.ct = String(ct);
