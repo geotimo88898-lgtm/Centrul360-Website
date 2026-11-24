@@ -448,7 +448,10 @@ async function bfAudience(opt) {
   const sent = Object.assign({}, prev || {}, sentMap || {});
   const off = await OPT.set();
   // who wrote a stop word in her chat (not on the list yet)
-  const stopWords = new Set(); (convos || []).forEach((c) => { if ((c.messages || []).some((m) => m && m.direction === 'in' && OPT.isStop(m.text))) stopWords.add(d9(c.phone)); });
+  const fold2 = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const REFUSE = /\b(stop|dezabon\w*|spam|blochez|blocat|nu sunt interesat\w*|nu ma intereseaza|nu mai vreau|nu mai doresc|nu mai trimite\w*|lasati-?ma|lasa-?ma in pace|cine sunteti|de unde aveti numarul|nu v-?am dat|sterge\w*-?ma|nu ma mai \w+)\b/;
+  const stopWords = new Set(); let chats = 0; const chatted = new Set();
+  (convos || []).forEach((c) => { const k = d9(c.phone); if ((c.messages || []).some((m) => m && m.direction === 'in')) { chatted.add(k); chats++; } if ((c.messages || []).some((m) => m && m.direction === 'in' && (OPT.isStop(m.text) || REFUSE.test(fold2(m.text))))) stopWords.add(k); });
   const reached = new Set(st.list.map((p) => p.k).concat(Object.keys(sent)));
   const carded = new Set(orders.map((o) => d9(o && o.phone)).filter((k) => k.length === 9));
   const staff = new Set(emps.map((e) => d9(e && e.phone)).filter((x) => x.length === 9));
@@ -458,18 +461,21 @@ async function bfAudience(opt) {
   const C = require('./clinic');
   const visCity = new Map(); appts.forEach((a) => { if (a && a.clientId && a.status === 'finalizata') visCity.set(a.clientId, C.clinicOf(a.location) || visCity.get(a.clientId) || ''); });
   const seen = new Map();
-  const put = (ph, name, loc, kind, clientId) => { const p = normalizePhone(ph); const k = d9(p); if (!p || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(name || ''))) return; seen.set(k, { k, to: WA.toE164(ph), fn: require('./fc-campaign').firstName(name), loc: String(loc || ''), city: (clientId && visCity.get(clientId)) || nearOf(loc), kind }); };
-  clients.forEach((c) => put(c && c.phone, c && c.name, c && c.location, visCity.has(c && c.id) ? 'client' : 'fisa', c && c.id));
+  const put = (ph, name, loc, kind, clientId, extra) => { const p = normalizePhone(ph); const k = d9(p); if (!p || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(name || ''))) return; seen.set(k, { k, to: WA.toE164(ph), fn: require('./fc-campaign').firstName(name), loc: String(loc || ''), city: (clientId && visCity.get(clientId)) || nearOf(loc), kind, src: String(extra && extra.source || '').slice(0, 30), yr: String(extra && (extra.createdAt || extra.created) || '').slice(0, 4) }); };
+  clients.forEach((c) => put(c && c.phone, c && c.name, c && c.location, visCity.has(c && c.id) ? 'client' : 'fisa', c && c.id, c));
   leads.slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).forEach((l) => put(l && l.phone, l && l.name, l && l.location, 'lead'));
-  const out = { total: seen.size, excluded: { reached: 0, optout: 0, stopWords: 0, candidates: 0, card: 0, staff: 0, noWhatsApp: 0, otherCity: 0 }, byCity: {}, otherWords: {}, list: [] };
+  const out = { total: seen.size, excluded: { reached: 0, optout: 0, stopWords: 0, candidates: 0, card: 0, staff: 0, noWhatsApp: 0, notRoMobile: 0, otherCity: 0 }, fisa: { source: {}, year: {}, chatted: 0, loc: {} }, byCity: {}, otherWords: {}, list: [] };
   seen.forEach((x) => {
-    const ex = reached.has(x.k) ? 'reached' : off.has(x.k) ? 'optout' : stopWords.has(x.k) ? 'stopWords' : cand.has(x.k) ? 'candidates' : carded.has(x.k) ? 'card' : staff.has(x.k) ? 'staff' : !x.to ? 'noWhatsApp' : !x.city ? 'otherCity' : '';
+    const ex = reached.has(x.k) ? 'reached' : off.has(x.k) ? 'optout' : stopWords.has(x.k) ? 'stopWords' : cand.has(x.k) ? 'candidates' : carded.has(x.k) ? 'card' : staff.has(x.k) ? 'staff' : !x.to ? 'noWhatsApp' : !/^\+?407\d{8}$/.test(String(x.to).replace(/\s/g, '')) ? 'notRoMobile' : !x.city ? 'otherCity' : '';
     if (ex) { out.excluded[ex]++; if (ex === 'otherCity') { const w = x.loc.trim().toLowerCase().slice(0, 30) || '(gol)'; out.otherWords[w] = (out.otherWords[w] || 0) + 1; } return; }
     const b = out.byCity[x.city] = out.byCity[x.city] || { n: 0, client: 0, fisa: 0, lead: 0 }; b.n++; b[x.kind]++;
+    if (x.kind === 'fisa') { const f = out.fisa; f.source[x.src || '-'] = (f.source[x.src || '-'] || 0) + 1; f.year[x.yr || '-'] = (f.year[x.yr || '-'] || 0) + 1; if (chatted.has(x.k)) f.chatted++; const w = x.loc.trim().toLowerCase().slice(0, 24) || '(gol)'; f.loc[w] = (f.loc[w] || 0) + 1; }
     if (opt && opt.list) out.list.push(x);
   });
   out.eligible = Object.values(out.byCity).reduce((n, b) => n + b.n, 0);
   out.otherWords = Object.fromEntries(Object.entries(out.otherWords).sort((a, b) => b[1] - a[1]).slice(0, 30));
+  out.fisa.loc = Object.fromEntries(Object.entries(out.fisa.loc).sort((a, b) => b[1] - a[1]).slice(0, 15));
+  out.chats = chats; out.stopFound = stopWords.size;
   if (!(opt && opt.list)) delete out.list;
   return out;
 }
