@@ -1168,3 +1168,6 @@ html.ui-nou .st2-fn li > p{ margin:0; font-size:12.5px; color:var(--muted); }
   html.ui-nou .st2-range .k-field{ flex:1 1 0; min-width:0; }
 }
 html.ui-nou .sx-lv[hidden]{ display:none !important; }
+/* a search bar is one pill: the field inside it has no box of its own (the owner, 24.11: an inner frame showed in many searches) */
+html.ui-nou :is(.k-search, .ad-search, .mx-search, .fm-search, .st-fbl-search, .pl-search, [class$="-search"]:has(> svg)) > input,
+html.ui-nou label:has(> svg) > input[type=search]{ border:0 !important; border-radius:0 !important; background:transparent !important; box-shadow:none !important; outline:none !important; }
