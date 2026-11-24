@@ -397,8 +397,7 @@ main [hidden]{ display:none !important; }
 
 /* the headline on black: white, the gold line with the old sum struck */
 .cs-bf .csc-xmas h1{ color:var(--bf-ink); }
-.cs-bf .csc-xmas h1 em{ background:var(--bf-foilh); -webkit-background-clip:text; background-clip:text; color:transparent; }
-.cs-bf .csc-xmas h1 em .w, .cs-bf .csc-xmas h1 em span{ color:transparent; }
+.cs-bf .csc-xmas h1 em{ color:#ecca7e; -webkit-text-fill-color:#ecca7e; }
 .bf-old{ position:relative; display:inline-block; font-family:Inter,sans-serif; font-style:normal; font-size:.6em; font-weight:600; letter-spacing:-.02em; line-height:1; vertical-align:.32em;
   margin:0 .32em 0 .3em; padding:0 .08em; color:rgba(252,245,233,.82); -webkit-text-fill-color:rgba(252,245,233,.82); text-decoration:none; }
 /* the strike: one thin red line through the middle of the digits, under them in strength (they stay readable) */
@@ -422,24 +421,6 @@ main [hidden]{ display:none !important; }
 .bf-seal em{ font-size:11px; font-style:normal; font-weight:700; line-height:1; letter-spacing:.24em; color:var(--bf-gold); }
 .bf-seal i{ margin-top:4px; padding:3px 7px 2px; border-radius:999px; font-size:8.5px; font-style:normal; font-weight:800; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; color:#1e1206; background:var(--bf-foilh); }
 .cs-bf .csc-xmas .csc-stage::before{ background:radial-gradient(circle at 48% 46%,rgba(232,60,120,.42),rgba(226,180,88,.2) 46%,transparent 70%); }
-
-/* the three cards: the 990 one across the row, in gold (2.500 struck, „Online: 3.000 lei”, the clinic's sum); the others under it */
-.cs-bf .csc-xmas .cst{ grid-template-columns:1fr 1fr; padding-top:14px; gap:10px; }
-.cs-bf .csc-xmas .cst-t{ background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03)); box-shadow:0 0 0 1px rgba(240,207,131,.24) inset; }
-.cs-bf .csc-xmas .cst-t small{ color:rgba(240,207,131,.85); }
-.cs-bf .csc-xmas .cst-t b{ color:var(--bf-ink); }
-.cs-bf .csc-xmas .cst-t span{ color:var(--bf-mute); }
-.cs-bf .csc-xmas .cst-t span strong{ color:#f8e4b0; }
-.cs-bf .csc-xmas .cst-t.best{ order:-1; grid-column:1 / -1; grid-template-columns:auto 1fr; column-gap:22px; align-items:start; padding:18px 18px 16px;
-  background:radial-gradient(120% 90% at 50% 0%,#3a2a14,#140e08 70%); box-shadow:0 0 0 2px #e2b458 inset, 0 0 32px -6px rgba(226,180,88,.55); }
-.cs-bf .csc-xmas .cst-t.best small{ grid-column:1; }
-.cs-bf .csc-xmas .cst-t.best > b{ grid-column:1; font-size:1.9rem; background:var(--bf-foilh); -webkit-background-clip:text; background-clip:text; color:transparent; }
-.cs-bf .csc-xmas .cst-t.best > span{ display:none; }
-.cs-bf .csc-xmas .cst-t.best .bf-tier{ display:grid; gap:2px; grid-column:2; grid-row:1 / span 3; align-self:center; font-size:15px; line-height:1.35; color:var(--bf-mute); }
-.bf-tier s{ color:rgba(252,245,233,.62); text-decoration-color:#ff4d78; text-decoration-thickness:2px; font-weight:600; }
-.bf-tier .bf-now{ font-size:1.65rem; font-weight:800; line-height:1.1; letter-spacing:-.035em; white-space:nowrap; background:var(--bf-foil); -webkit-background-clip:text; background-clip:text; color:transparent; }
-.bf-tier .bf-cl{ font-size:14px; color:var(--bf-mute); }
-.cs-bf .csc-xmas .cst-best{ background:var(--bf-foilh); color:#1e1206; font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; right:14px; top:-11px; padding:3px 11px; }
 
 /* scarcity: the cream pill with its raspberry number */
 .cs-bf .csc-xmas .cst-urg:not(:has(.cst-vipl:not([hidden]))){ background:#fff6ec; color:#160a0d; font-size:16px; font-weight:700; border-radius:999px; box-shadow:0 0 0 2px #b8406f inset, 0 0 0 5px rgba(224,69,127,.22), 0 0 26px rgba(224,69,127,.4); }
@@ -486,13 +467,6 @@ main [hidden]{ display:none !important; }
   .bf-seal i{ font-size:7.8px; }
   .bf-only{ font-size:15.5px; padding:11px 13px; }
   .bf-only i{ width:38px; height:38px; }
-  .cs-bf .csc-xmas .cst-t.best{ column-gap:14px; padding:16px 14px 14px; }
-  .cs-bf .csc-xmas .cst-t.best > b{ font-size:1.6rem; }
-  .bf-tier{ font-size:14.5px; }
-  .bf-tier .bf-now{ font-size:1.45rem; }
-  .cs-bf .csc-xmas .cst-t:not(.best) b{ font-size:1.3rem; }
-  .cs-bf .csc-xmas .cst-t:not(.best) span{ font-size:13.5px; }
-  .cs-bf .csc-xmas .cst-t:not(.best) span strong{ font-size:14.5px; }
 }
 @media (min-width:921px){
   .cs-bf .bf-rib{ top:88px; height:40px; }
@@ -505,8 +479,6 @@ main [hidden]{ display:none !important; }
   .bf-only{ font-size:17px; }
 }
 @media (prefers-reduced-motion:reduce){ .bf-rib-t, .bf-live::after{ animation:none; } }
-.bf-tier .bf-now em{ display:block; font-size:13px; font-style:normal; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--bf-gold); -webkit-text-fill-color:var(--bf-gold); }
-@media (min-width:921px){ .bf-tier .bf-now em{ display:inline; font-size:inherit; letter-spacing:inherit; text-transform:none; } }
 .cs-bf .csc-xmas .cst-go [data-cs-buy][data-cs-follow]:has(.bf-get:not([hidden])) > svg{ display:none; }
 /* lower on the card's page (light): the struck sum in the closing title, the line under the card's rows */
 h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
@@ -522,9 +494,6 @@ h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
   .bf-badge > span > i{ display:none; }
   .bf-badge > span > span{ display:block; font-weight:600; color:var(--bf-mute); }
 }
-.bf-tier .bf-cl em{ font-style:normal; font-weight:600; white-space:nowrap; }
-/* another card chosen: the 990 one keeps its gold, quieter, so the chosen one reads as chosen */
-.cs-bf .csc-xmas .cst-t.best:not(:has(input:checked)){ box-shadow:0 0 0 1px rgba(226,180,88,.55) inset; }
 
 /* only the card block is black and gold; under it a long soft fade into the page, which goes on as always (the owner,
    24.11: „să-și dea un fade clar super nice”): no edge, no rounded corners, a quiet gold glow where the dark ends */
@@ -545,14 +514,14 @@ h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
 @media (min-width:921px){ .cs-bf .csc-xmas{ border-radius:0; } }
 /* the fade through warm gold, not grey: dark, bronze, champagne, then the page. When the lead filter's section follows
    (home, card page), the fade ends in its own colour and the two meet with no line and no gap */
-.cs-bf .csc-xmas{ background:
+.cs-bf .csc-xmas{ --bf-bg:
     radial-gradient(46% 90px at 50% calc(100% - var(--bf-fade)), rgba(226,180,88,.2), transparent 72%),
     radial-gradient(60% 30% at 50% 24%, rgba(140,20,64,.42), transparent 70%), radial-gradient(70% 26% at 50% 0%, rgba(107,79,31,.55), transparent 72%),
     radial-gradient(50% 26% at 85% 62%, rgba(107,79,31,.22), transparent 70%),
     linear-gradient(180deg, #15100a 0%, #0b0906 40%, #060504 calc(100% - var(--bf-fade) - 30px),
       rgba(24,17,10,.95) calc(100% - var(--bf-fade) * .8), rgba(66,48,27,.78) calc(100% - var(--bf-fade) * .6),
       rgba(150,118,74,.46) calc(100% - var(--bf-fade) * .4), rgba(226,204,160,.2) calc(100% - var(--bf-fade) * .2), rgba(255,255,255,0) 100%); }
-.cs-bf .csc-xmas:has(~ .lfs-sec){ background:
+.cs-bf .csc-xmas:has(~ .lfs-sec){ --bf-bg:
     radial-gradient(46% 90px at 50% calc(100% - var(--bf-fade)), rgba(226,180,88,.2), transparent 72%),
     radial-gradient(60% 30% at 50% 24%, rgba(140,20,64,.42), transparent 70%), radial-gradient(70% 26% at 50% 0%, rgba(107,79,31,.55), transparent 72%),
     radial-gradient(50% 26% at 85% 62%, rgba(107,79,31,.22), transparent 70%),
@@ -560,3 +529,39 @@ h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
       #1b140c calc(100% - var(--bf-fade) * .8), #4a3720 calc(100% - var(--bf-fade) * .6),
       #a88d62 calc(100% - var(--bf-fade) * .4), #e6dcc4 calc(100% - var(--bf-fade) * .2), #eef9f7 100%); }
 .cs-bf .csc-xmas ~ .lfs-sec{ margin-top:0; border-top:0; }
+
+/* round 3 (the owner, 24.11, from his iPhone) */
+/* the headline: each word carries its own gold (never the em's: Safari drops words that are their own layer) */
+.cs-bf .csc-xmas h1 em .w, .cs-bf .csc-xmas h1 em .bf-new{ background:var(--bf-foilh); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
+@media (max-width:640px){ .cs-bf .csc-xmas h1 em{ white-space:normal; } } /* on a phone it may break after „Primești”, never drop it */
+.cs-bf .csc-xmas h1 em .bf-keep{ white-space:nowrap; }
+/* the three cards, equal, in one row as before (the owner: „arată mai bine și mai clar în 3 chenare egale”); the 990 one
+   in gold: „Plătești 990 lei”, „primești ~~2.500~~”, „3.000 lei” big, „online · în clinică 2.500” */
+.cs-bf .csc-xmas .cst-t{ background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03)); box-shadow:0 0 0 1px rgba(240,207,131,.24) inset; }
+.cs-bf .csc-xmas .cst-t small{ color:rgba(240,207,131,.85); }
+.cs-bf .csc-xmas .cst-t b{ color:var(--bf-ink); }
+.cs-bf .csc-xmas .cst-t span{ color:var(--bf-mute); }
+.cs-bf .csc-xmas .cst-t span strong{ color:#f8e4b0; }
+.cs-bf .csc-xmas .cst-t.best{ background:radial-gradient(120% 90% at 50% 0%,#3a2a14,#140e08 72%); box-shadow:0 0 0 2px #e2b458 inset, 0 0 28px -6px rgba(226,180,88,.55); }
+.cs-bf .csc-xmas .cst-t.best:not(:has(input:checked)){ box-shadow:0 0 0 1px rgba(226,180,88,.6) inset; }
+.cs-bf .csc-xmas .cst-t.best > b{ background:var(--bf-foilh); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
+.cs-bf .csc-xmas .cst-t.best > span:not(.bf-tier){ display:none; }
+.cs-bf .csc-xmas .cst-t.best .bf-tier{ display:grid; gap:1px; }
+.cs-bf .csc-xmas .cst-t .bf-tier s{ color:rgba(252,245,233,.7); text-decoration-color:#ff4d78; text-decoration-thickness:1.5px; font-weight:600; }
+.cs-bf .csc-xmas .cst-t .bf-tier .bf-now{ font-size:1.55rem; font-weight:800; line-height:1.1; letter-spacing:-.04em; white-space:nowrap;
+  background:var(--bf-foil); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
+.cs-bf .csc-xmas .cst-t .bf-tier .bf-cl{ font-size:12.5px; line-height:1.3; color:var(--bf-mute); }
+.cs-bf .csc-xmas .cst-best{ background:var(--bf-foilh); color:#1e1206; font-weight:800; letter-spacing:.05em; text-transform:uppercase; }
+@media (max-width:640px){
+  .cs-bf .csc-xmas .cst-t .bf-tier .bf-now{ font-size:1.13rem; letter-spacing:-.035em; }
+  .cs-bf .csc-xmas .cst-t .bf-tier .bf-cl{ font-size:11px; }
+  .cs-bf .csc-xmas .cst-best{ font-size:9.5px; right:5px; padding:2px 7px; }
+}
+/* the one explanation line: text, no box */
+.cs-bf .bf-only{ padding:0 2px; background:none; box-shadow:none; border-radius:0; gap:12px; }
+.bf-only i{ width:34px; height:34px; border-radius:10px; }
+.bf-only i svg{ width:20px; height:20px; }
+/* and at the top: the page's light comes down into the black under the menu, no cut */
+.cs-bf .csc-xmas{ background-image:linear-gradient(180deg, rgba(248,245,239,.96) 0, rgba(248,245,239,.55) 34px, rgba(248,245,239,0) 74px), var(--bf-bg); }
+/* the decorations never take a tap (glows, the seal, the moving row, the live dot, the fades) */
+.bf-rib, .bf-rib *, .bf-seal, .bf-seal *, .bf-live, .bf-live::after, .bf-mark, .cs-bf .csc-xmas::before, .cs-bf .csc-xmas::after{ pointer-events:none; }

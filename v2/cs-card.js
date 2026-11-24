@@ -325,7 +325,7 @@
       if (h1) h1.insertAdjacentHTML('afterend', '<p class="bf-only" data-bf990><i>' + CARD_I + '</i><span><b>Doar dacă plătești online, cu cardul.</b> Dacă rezervi și plătești în clinică, rămâne ' + lei(old) + '.</span></p>');
       $$('.csc-float', sec).forEach(function (f) { var st = f.closest('.csc-stage'); if (st && st.querySelector('[data-csc-credit]')) f.insertAdjacentHTML('beforeend', '<span class="bf-seal" data-bf990 aria-hidden="true"><small>BLACK FRIDAY</small><b>+' + fmt(get - old) + '</b><em>LEI</em><i>la plata online</i></span>'); });
       var inp = sec.querySelector('.cst-t input[value="' + T + '"]'), box = inp && inp.closest('.cst-t');
-      if (box) box.insertAdjacentHTML('beforeend', '<span class="bf-tier">primești <s>' + lei(old) + '</s><span class="bf-now"><em>Online:</em> ' + lei(get) + '</span><span class="bf-cl">rezervi și plătești în clinică: <em>' + lei(old) + '</em></span></span>');
+      if (box) box.insertAdjacentHTML('beforeend', '<span class="bf-tier"><span>primești <s>' + fmt(old) + '</s></span><span class="bf-now">' + lei(get) + '</span><span class="bf-cl">online · în clinică ' + fmt(old) + '</span></span>');
       $$('.cst-go [data-cs-buy][data-cs-follow]', sec).forEach(function (b) { var l = b.querySelector('span'); if (l) l.insertAdjacentHTML('beforeend', '<span class="bf-get" data-bf990> → primesc ' + lei(get) + '</span>'); });
       $$('.cst-go [data-cs-reserve]', sec).forEach(function (r) { r.insertAdjacentHTML('afterend', '<p class="bf-note" data-bf990>Dacă rezervi și plătești în clinică, rămâne ' + lei(old) + '.</p>'); });
     });
@@ -342,7 +342,7 @@
     var on = bfLive(), mine = on && Number(t) === BF.tier;
     document.documentElement.classList.toggle('cs-bf', on);
     $$('[data-bf990]').forEach(function (el) { el.hidden = !mine; });
-    if (mine) $$('h1 [data-cs-v="getd"], h2 [data-cs-v="getd"]').forEach(function (el) { el.innerHTML = '<s class="bf-old">' + fmt(BF.old) + '</s> ' + fmt(BF.credit) + ' lei.'; });
+    if (mine) $$('h1 [data-cs-v="getd"], h2 [data-cs-v="getd"]').forEach(function (el) { el.innerHTML = '<s class="bf-old">' + fmt(BF.old) + '</s> <span class="bf-new">' + fmt(BF.credit) + ' lei.</span>'; });
     $$('.cst-best').forEach(function (el) { if (el._t == null) el._t = el.textContent; var v = on ? 'Black Friday' : el._t; if (el.textContent !== v) el.textContent = v; });
     $$('.cs-tier .cs-tg, .cs-tier .cs-ts span').forEach(function (el) { if (!el._bf) return; var v = el._bf[on ? 1 : 0]; if (el.innerHTML !== v) el.innerHTML = v; });
   }
