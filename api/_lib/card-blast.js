@@ -433,6 +433,46 @@ async function makeTemplate(o) {
   await WT.save(d);
   return { ok: true, out };
 }
+// the Black Friday wave (the owner, 24.11): everyone in our files who has NOT had a Cardul de Sărbători message, without
+// the ones who said no (the no-offers list and the stop words in their chats), the job candidates, the other cities and the
+// ones with a card order; counts only, per clinic and per reason, plus the other cities' words (to judge the surroundings)
+const NEAR = { 'Timișoara': /timi|giroc|chisoda|dumbravita|ghiroda|mosnita|sanmihai|săcălaz|sacalaz|dudestii|remetea mare|utvin|becicherec|sag\b|şag|șag|parta|recas|recaș|buzias|buziaș|lugoj|jimbolia|deta|sannicolau|sânnicolau|ciacova|carpinis|cărpiniș|orţişoara|ortisoara|giarmata|pischia|bucovat|ghizela|maşloc|masloc|ianova|cenei|uivar|cheveres/i,
+  Arad: /arad|vladimirescu|zimandu|frumuseni|fântânele|fantanele|sânleani|sanleani|livada|horia|zădăreni|zadareni|şiria|siria|pecica|lipova|ineu|curtici|sântana|santana|nadlac|nădlac|chisineu|chișineu|pâncota|pancota|sebiș|sebis|ghioroc|cuvin|minis|miniș|covasint|macea|semlac|iratosu|zabrani|zăbrani/i };
+const nearOf = (loc) => { const t = String(loc || ''); return NEAR['Timișoara'].test(t) ? 'Timișoara' : NEAR.Arad.test(t) ? 'Arad' : ''; };
+async function bfAudience(opt) {
+  const st = await loadState();
+  const { normalizePhone } = require('./clients');
+  const OPT = require('./optout');
+  const [clients, leads, appts, orders, emps, cands, convos, sentMap, prev] = await Promise.all([readJSON('data/clients.json', []), readJSON('data/leads.json', []), readJSON('data/appointments.json', []), readJSON('data/card-sarbatori.json', []),
+    readJSON('data/employees.json', []), readJSON('data/candidates.json', []), readJSON('data/whatsapp-conversations.json', []), readJSON(SENT, null), readJSON(P + 'sent-prev.json', null)]);
+  const sent = Object.assign({}, prev || {}, sentMap || {});
+  const off = await OPT.set();
+  // who wrote a stop word in her chat (not on the list yet)
+  const stopWords = new Set(); (convos || []).forEach((c) => { if ((c.messages || []).some((m) => m && m.direction === 'in' && OPT.isStop(m.text))) stopWords.add(d9(c.phone)); });
+  const reached = new Set(st.list.map((p) => p.k).concat(Object.keys(sent)));
+  const carded = new Set(orders.map((o) => d9(o && o.phone)).filter((k) => k.length === 9));
+  const staff = new Set(emps.map((e) => d9(e && e.phone)).filter((x) => x.length === 9));
+  const cand = new Set((Array.isArray(cands) ? cands : (cands.list || [])).map((c) => d9(c && c.phone)).filter((x) => x.length === 9));
+  const hireLead = (l) => /angaj|cv\b|job|candidat|recrut|hiring/i.test(String((l && (l.interest || '')) + ' ' + (l && l.source || '') + ' ' + (l && (l.form || l.formName) || '')));
+  leads.forEach((l) => { if (hireLead(l)) { const k = d9(l.phone); if (k.length === 9) cand.add(k); } });
+  const C = require('./clinic');
+  const visCity = new Map(); appts.forEach((a) => { if (a && a.clientId && a.status === 'finalizata') visCity.set(a.clientId, C.clinicOf(a.location) || visCity.get(a.clientId) || ''); });
+  const seen = new Map();
+  const put = (ph, name, loc, kind, clientId) => { const p = normalizePhone(ph); const k = d9(p); if (!p || k.length !== 9 || seen.has(k) || /^\s*test\b/i.test(String(name || ''))) return; seen.set(k, { k, to: WA.toE164(ph), fn: require('./fc-campaign').firstName(name), loc: String(loc || ''), city: (clientId && visCity.get(clientId)) || nearOf(loc), kind }); };
+  clients.forEach((c) => put(c && c.phone, c && c.name, c && c.location, visCity.has(c && c.id) ? 'client' : 'fisa', c && c.id));
+  leads.slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).forEach((l) => put(l && l.phone, l && l.name, l && l.location, 'lead'));
+  const out = { total: seen.size, excluded: { reached: 0, optout: 0, stopWords: 0, candidates: 0, card: 0, staff: 0, noWhatsApp: 0, otherCity: 0 }, byCity: {}, otherWords: {}, list: [] };
+  seen.forEach((x) => {
+    const ex = reached.has(x.k) ? 'reached' : off.has(x.k) ? 'optout' : stopWords.has(x.k) ? 'stopWords' : cand.has(x.k) ? 'candidates' : carded.has(x.k) ? 'card' : staff.has(x.k) ? 'staff' : !x.to ? 'noWhatsApp' : !x.city ? 'otherCity' : '';
+    if (ex) { out.excluded[ex]++; if (ex === 'otherCity') { const w = x.loc.trim().toLowerCase().slice(0, 30) || '(gol)'; out.otherWords[w] = (out.otherWords[w] || 0) + 1; } return; }
+    const b = out.byCity[x.city] = out.byCity[x.city] || { n: 0, client: 0, fisa: 0, lead: 0 }; b.n++; b[x.kind]++;
+    if (opt && opt.list) out.list.push(x);
+  });
+  out.eligible = Object.values(out.byCity).reduce((n, b) => n + b.n, 0);
+  out.otherWords = Object.fromEntries(Object.entries(out.otherWords).sort((a, b) => b[1] - a[1]).slice(0, 30));
+  if (!(opt && opt.list)) delete out.list;
+  return out;
+}
 // a picked batch not sent yet, taken back (nothing went): only the ones still unsent of that batch
 async function unpick(batch) {
   const st = await loadState();
@@ -557,4 +597,4 @@ async function backfillTaps() {
   return out;
 }
 
-module.exports = { makeTemplate, allLeft, unresend, resend, whyLeft, backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };
+module.exports = { bfAudience, nearOf, makeTemplate, allLeft, unresend, resend, whyLeft, backfillTaps, useTemplate, pick, pickMore, unpick, go, stop, tick, status, excluded, EXCLUDE, onInbound, backfillChats, onStatus, noteAnswer, kindOf, tokenOf, STATE, SENT, P };

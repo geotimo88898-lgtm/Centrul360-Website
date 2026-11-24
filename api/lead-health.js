@@ -320,7 +320,7 @@ module.exports = async (req, res) => {
       : req.method === 'POST' && op === 'mktpl' ? await CB.makeTemplate(typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {}))
       : req.method === 'POST' && op === 'unresend' ? await CB.unresend(req.query.batch)
       : req.method === 'POST' && op === 'resend' ? await CB.resend(req.query.batch, String(req.query.pre || ''))
-      : req.method === 'POST' && op === 'unpick' ? await CB.unpick(req.query.batch) : op === 'left' ? await CB.allLeft() : op === 'why' ? await CB.whyLeft() : await CB.status();
+      : req.method === 'POST' && op === 'unpick' ? await CB.unpick(req.query.batch) : op === 'bfcount' ? await CB.bfAudience() : op === 'left' ? await CB.allLeft() : op === 'why' ? await CB.whyLeft() : await CB.status();
     res.status(200).json(r); return;
   }
   // ?fcleft=1: the Transformarea 360 list as it stands now (clients with a visit in the last 6 months and the leads of the
