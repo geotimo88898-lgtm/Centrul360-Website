@@ -663,7 +663,7 @@ h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
   background:#14110d !important; box-shadow:0 0 0 1px rgba(224,190,120,.38) inset !important; }
 .cs-bf .csc-xmas .cs-vipon .cst-gift svg, .cs-bf .csc-xmas .cs-vipon .cst-gift .cst-gi{ color:#e8c97e; stroke:#e8c97e; }
 /* the clinic button: as big, one step quieter (no border light, softer words) */
-.cs-bf .csc-xmas .cs-vipon:not(.cs-vipcall) .cst-cash{ color:rgba(246,234,208,.78); background:rgba(255,255,255,.02); box-shadow:0 0 0 1px rgba(224,190,120,.2) inset; }
+.cs-bf .csc-xmas .cs-vipon:not(.cs-vipcall) .cst-cash{ color:rgba(246,234,208,.92); background:rgba(255,255,255,.02); box-shadow:0 0 0 1px rgba(224,190,120,.3) inset; }
 /* the clinic switch: chosen in soft champagne, not solid gold */
 .cs-bf .csc-xmas:has(.cs-vipon) .cst-city label:has(input:checked){ color:#f6ead0; background:rgba(224,190,120,.16); box-shadow:0 0 0 1px rgba(224,190,120,.45) inset; }
 /* the VIP card itself leads: its gold edge, without the big glow */
