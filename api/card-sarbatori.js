@@ -291,7 +291,7 @@ module.exports = async (req, res) => {
       }
       if (b.action === 'add') {
         const tier = Number(b.tier), qty = Number(b.qty) || 1;
-        if (!C.TIERS[tier]) { res.status(400).json({ error: 'bad_tier' }); return; }
+        if (!C.SALE.includes(tier)) { res.status(400).json({ error: 'bad_tier' }); return; } // only the cards on sale (no 290)
         if (!Number.isInteger(qty) || qty < 1 || qty > C.MAXQ) { res.status(400).json({ error: 'bad_qty' }); return; }
         const name = clean(b.name, 100), phone = phoneOf(b.phone), city = cityOf(b.city);
         if (name.length < 2) { res.status(400).json({ error: 'missing_name' }); return; }
@@ -378,7 +378,7 @@ module.exports = async (req, res) => {
     const phone = phoneOf(b.phone);
     const city = cityOf(b.city);
     const tier = Number(b.tier), qty = online ? 1 : Number(b.qty);
-    if (!C.TIERS[tier]) { res.status(400).json({ error: 'bad_tier' }); return; }
+    if (!C.SALE.includes(tier)) { res.status(400).json({ error: 'bad_tier' }); return; } // only the cards on sale (no 290)
     if (!Number.isInteger(qty) || qty < 1 || qty > C.MAXQ) { res.status(400).json({ error: 'bad_qty' }); return; }
     const gift = b.forWho === 'cadou' || (b.forWho == null && Array.isArray(b.names) && b.names.some((x) => clean(x, 80)));
     const names = online ? [gift ? clean(b.recipient || (b.names || [])[0], 80) : ''] : Array.from({ length: qty }, (_, i) => clean((Array.isArray(b.names) ? b.names : [])[i], 80));

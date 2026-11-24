@@ -97,7 +97,7 @@
   };
   var VIP_TIER = '<div class="card cs-tier rv in vip"><span class="cs-best cs-vk">VIP · Transformarea 360</span><small>Plătești</small><b class="cs-tp">9.900 lei</b><p class="cs-tg">Primești <strong>30.000 lei</strong> în tratamente</p>' +
     '<p class="cs-ts"><span>Economisești 20.100 lei</span><span class="cs-mul">x3</span></p><ul class="cs-tb"><li>Pentru tine și cei dragi, oricâte persoane</li><li>Începi cu revizia completă și planul tău personal</li>' +
-    '<li>Doar 5 carduri pe clinică</li></ul><button type="button" class="btn ghost" data-cs-buy data-cs-tier="9900">Vreau cardul VIP</button></div>';
+    '<li>La plata online: 10% reducere (8.910 lei) și Clubul 360</li></ul><button type="button" class="btn ghost" data-cs-buy data-cs-tier="9900">Vreau cardul VIP</button></div>';
   var ROW = function (icon, title, text) { return '<div class="cs-row" data-cs-only="9900" hidden><i>' + icon + '</i><div><b>' + title + '</b><p>' + text + '</p></div><span class="cs-v inc">inclus</span></div>'; };
   var I_FAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2c2.8.2 5 2.5 5 5.8"/></svg>';
   var I_PLAN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M9 3.5h6v3H9zM8.5 11.5l2 2 4-4M8.5 17h7"/></svg>';
@@ -129,9 +129,9 @@
       if (pb && !g.querySelector('[data-cs-call]')) pb.insertAdjacentHTML('beforebegin', '<p class="cst-call" data-cs-call hidden>Pentru cardul VIP te sunăm noi</p>');
     });
     // the page's words that still name the 290 one (its steps, its questions)
-    var SAY = [['290, 490 sau 990 lei, pentru tine sau cadou, câte vrei.', '490, 990 sau 9.900 lei (VIP), pentru tine sau cadou, câte vrei.'],
+    var SAY = [['290, 490 sau 990 lei, pentru tine sau cadou, câte vrei.', '490, 990 sau 9.900 lei (VIP), pentru tine sau cadou, până la 5 deodată.'],
       ['Trei: plătești 290 lei și primești 500 lei în tratamente; plătești 490 lei și primești 1.000 lei; plătești 990 lei și primești 2.500 lei.',
-        'Trei: plătești 490 lei și primești 1.000 lei în tratamente; plătești 990 lei și primești 2.500 lei; cardul VIP: plătești 9.900 lei și primești 30.000 lei, pentru tine și cei dragi, cu revizia completă și planul tău personal la început (doar 5 carduri pe clinică).']];
+        'Trei: plătești 490 lei și primești 1.000 lei în tratamente; plătești 990 lei și primești 2.500 lei; cardul VIP: plătești 9.900 lei și primești 30.000 lei, pentru tine și cei dragi, cu revizia completă și planul tău personal la început.']];
     $$('.tl p, .q .a p').forEach(function (p) { SAY.forEach(function (x) { if (p.children.length === 0 && p.textContent.indexOf(x[0]) >= 0) p.textContent = p.textContent.replace(x[0], x[1]); }); });
     // the VIP card paid online costs 10% less (the owner, 22.11), when its 10% PayLink is set (CSC.state.online), and has no
     // gift; the 490 and 990 ones keep the BioLifting gift online. Their words kept here to come back to (CSC.tier)

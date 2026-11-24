@@ -14,7 +14,8 @@ const LEADS_KEY = 'data/leads.json';
 // 290 is out of sale on the site (22.11), still read here: a form that offers it keeps working; 9900 the VIP one
 const TIERS = require('./card-terms').CARD_TERMS.tiers; // { 290: 500, 490: 1000, 990: 2500, 9900: 30000 }
 const Q = { card: 'Ce card vrei?', who: 'Pentru cine este?', city: 'La ce clinică?' };
-const CARD_OPTS = ['290 lei → 500 lei în tratamente', '490 lei → 1.000 lei în tratamente', '990 lei → 2.500 lei (cea mai bună valoare)'];
+// what she pays first (the audit, 24.11); the 290 card out of sale, the VIP in
+const CARD_OPTS = ['Plătești 490 lei → primești 1.000 lei', 'Plătești 990 lei → primești 2.500 lei (cel mai cumpărat)', 'Card VIP: plătești 9.900 lei → primești 30.000 lei'];
 const WHO_OPTS = ['Pentru mine', 'Cadou'];
 const CITY_OPTS = ['Timișoara', 'Arad'];
 const PAGE = 'https://www.centrul360.com/card-sarbatori?utm_source=facebook&utm_medium=paid&utm_campaign=card_form';

@@ -204,8 +204,12 @@
   const cardTxt = (o) => (o.qty > 1 ? o.qty + ' × ' : '') + (isVip(o) ? 'VIP ' : '') + lei(o.amount) + ' → ' + lei(o.credit);
   function script(o) {
     const g = first(o.name), hi = 'Bună' + (g ? ', ' + g : '') + ', sunt de la Centrul360. ';
-    if (isVip(o)) return hi + 'Ți-am rezervat Cardul VIP Transformarea 360 de ' + lei(o.amount) + ', primești ' + lei(o.credit) + ' în tratamente. Ți-l ținem rezervat până vii. Dacă îl plătești acum online, ai -10%, plătești ' + lei(Math.round(Number(o.tier) * 0.9) * (o.qty || 1)) + ', și acces în Clubul 360; îți trimit chiar acum linkul pe WhatsApp. Sau stabilim acum când treci pe la clinică să-l plătești.';
-    return hi + 'Ți-am rezervat Cardul de Sărbători de ' + lei(o.amount) + ', primești ' + lei(o.credit) + ' în tratamente. Ți-l ținem rezervat până vii. Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360; îți trimit chiar acum linkul pe WhatsApp. Sau stabilim acum când treci pe la clinică să-l plătești.';
+    if (isVip(o)) return hi + 'Ți-am rezervat Cardul VIP Transformarea 360: plătești ' + lei(o.amount) + ' și primești ' + lei(o.credit) + ' în tratamente. Ți-l ținem rezervat până vii. Dacă îl plătești acum online, ai 10% reducere: plătești ' + lei(Math.round(Number(o.tier) * 0.9) * (o.qty || 1)) + ', plus acces în Clubul 360; îți trimit chiar acum linkul pe WhatsApp. Sau stabilim acum când treci pe la clinică să-l plătești.';
+    // Black Friday (the list's bf, api/_lib/card-terms.js): the 990 card paid online gives 3.000 lei
+    const bf = S.d.bf && S.d.bf.on && Number(o.tier) === Number(S.d.bf.tier), q = o.qty || 1;
+    return hi + 'Ți-am rezervat Cardul de Sărbători: plătești ' + lei(o.amount) + ' și primești ' + lei(o.credit) + ' în tratamente. Ți-l ținem rezervat până vii. ' +
+      (bf ? 'La plata online, până duminică 29 noiembrie, primești ' + lei(S.d.bf.creditOnline * q) + ' în loc de ' + lei(S.d.bf.creditClinic * q).replace(/ lei$/, '') + '. ' : '') +
+      'Dacă îl plătești acum online, primești în plus o ședință de BioLifting cadou și acces în Clubul 360; îți trimit chiar acum linkul pe WhatsApp. Sau stabilim acum când treci pe la clinică să-l plătești.';
   }
   const resvOf = () => (S.d.orders || []).filter((o) => o.status === 'rezervat' && o.pay === 'clinica' && isOpen(o) && o.phone)
     .sort((a, b) => (isVip(b) - isVip(a)) || String(b.converted || b.created).localeCompare(String(a.converted || a.created)));
@@ -455,7 +459,7 @@
         K.field('Total maxim', '<input type="number" name="max" min="0" max="1000" step="1" inputmode="numeric" value="' + w.max + '">') + '</div>' +
         '<h4 class="cd-h4">Carduri VIP, pe clinică</h4><div class="k-grid c2">' + ['Timișoara', 'Arad'].map((c) => { const x = (S.d.vip || {})[c] || { max: 5, left: 5 };
           return K.field(c + ' · ' + (x.left > 0 ? x.left + ' rămase' : 'epuizat'), '<input type="number" name="vip' + (c === 'Arad' ? 'Ar' : 'Tm') + '" min="0" max="100" step="1" inputmode="numeric" value="' + x.max + '">'); }).join('') + '</div>' +
-        '<p class="cd-stock-left">Doar în portal: pe site se vede numai „Au mai rămas doar N carduri”, N din valul de acum. Un val epuizat deschide imediat următorul; după total, vânzarea se închide.</p>' +
+        '<p class="cd-stock-left">Doar în portal: pe site se vede numai „Au mai rămas doar N carduri”, N din valul de acum. Un val epuizat deschide imediat următorul, până pe 24 decembrie, 23:59. Cardurile VIP: tot în valuri de câte 4, cel mult stocul clinicii.</p>' +
         (w.n < w.of && !w.soldOut ? '<div class="cd-wait"><span>Valul ' + w.n + ': ' + w.left + ' rămase.</span><button type="button" class="k-btn is-outline is-sm" data-open>' + icon('sparkles') + 'Deschide acum următorul val</button></div>' : '') + '</form>',
       footer: '<button type="button" class="k-btn" data-cancel>Renunță</button><span class="k-grow"></span><button type="button" class="k-btn is-primary" data-save>' + icon('check') + 'Salvează</button>',
       onMount(root, h) {

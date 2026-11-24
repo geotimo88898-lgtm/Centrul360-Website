@@ -1,6 +1,7 @@
 // The Card de Sărbători (the owner, 20-21.11): three cards, the more she pays the more she gets (290 → 500 lei, 490 → 1.000
-// lei, 990 → 2.500 lei in treatments, at list price, not on top of the discounted offers), 10 cards in all at first (the stock, set in the portal) whatever the card
-// (both clinics), on sale until 24 December 2026, 23:59 (Romania), valid until 30 June 2027.
+// lei, 990 → 2.500 lei in treatments, at list price, not on top of the discounted offers), sold in waves of 4 (the stock, set in the portal) whatever the card
+// (both clinics), on sale until 24 December 2026, 23:59 (Romania), valid until 30 June 2027. On sale now: 490, 990 and the VIP
+// (SALE); the terms in api/_lib/card-terms.js.
 //
 //   data/card-sarbatori.json  [order]
 //   order = { id, created, name, phone, city, tier (490 | 990 | 9900 VIP; 290 out of sale, its orders kept), qty (1-5), amount (tier × qty, made here), credit,
@@ -40,7 +41,7 @@ const T = require('./card-terms');
 const KEY = 'data/card-sarbatori.json';
 const CLUB = 'data/club360-waitlist.json';
 const PROBE = 'data/card-sarbatori-probe.json';
-const TOTAL = 10; // only 10 cards in all (the owner, 20.11)
+const TOTAL = 4; // a wave of 4 cards (the owner, 23.11: „fiecare val să înceapă de la 4”; 10 in all at first, 20.11)
 const TIERS = T.CARD_TERMS.tiers; // 290 → 500, 490 → 1.000, 990 → 2.500, 9900 → 30.000 (card-terms.js)
 // on sale now (the owner, 22.11): the 290 card is out (its orders and cards keep working), the VIP is in. The VIP card
 // („Cardul VIP Transformarea 360”): 9.900 lei → 30.000 lei, for her and all her family; 5 per clinic, its own stock, outside
@@ -110,13 +111,13 @@ function mark(r, ev, note) {
   return x;
 }
 const recOf = (r) => (r.rec = r.rec && typeof r.rec === 'object' ? r.rec : {});
-// the waves (the owner, 21.11): the cards sell in waves of 10, up to 70 in all (both set by him in the portal, Carduri de
+// the waves (the owner, 21.11; of 4 since 23.11): the cards sell in waves of 4, up to 70 in all (both set by him in the portal, Carduri de
 // Sărbători → Valuri). Only inside: the page says only „Au mai rămas doar N carduri”, N = what is left of the wave of now,
 // counted from the real orders. A wave sold out: the next opens at once (N is the wave's size again); after the last one
 // (the total) the sale closes. „Deschide acum următorul val” (the owner) ends the wave of now early: N starts over.
-//   data/card-sarbatori-stock.json  { wave: 10, max: 70, skip (cards of waves ended early), by, at }
+//   data/card-sarbatori-stock.json  { wave: 4, max: 70, skip (cards of waves ended early), by, at }
 const STOCK = 'data/card-sarbatori-stock.json';
-const WAVE = 10, MAX = 70;
+const WAVE = 4, MAX = 70; // a missing stock file: waves of 4, like the site's picture
 async function settings() {
   const d = (await readJSON(STOCK, null).catch(() => null)) || {};
   const wave = Number.isInteger(d.wave) && d.wave >= 1 && d.wave <= 200 ? d.wave : WAVE;
@@ -195,7 +196,9 @@ function counter(list, now, cfg) {
 }
 // the public answer: nothing about the waves
 // (bf: Black Friday, the owner 24.11: { on, start, until, tier: 990, creditOnline: 3000, creditClinic: 2500 }, card-terms.js)
-const publicCount = (c) => Object.assign({ total: c.total, left: c.left, deadline: c.deadline, open: c.open, tiers: c.tiers, sale: c.sale, maxQty: c.maxQty, validUntil: c.validUntil, vip: c.vip }, c.bf ? { bf: c.bf } : {});
+// (tiers: only the cards on sale; the 290 one is known only to the portal, for its old orders)
+const saleTiers = () => Object.fromEntries(SALE.map((t) => [t, TIERS[t]]));
+const publicCount = (c) => Object.assign({ total: c.total, left: c.left, deadline: c.deadline, open: c.open, tiers: saleTiers(), sale: c.sale, maxQty: c.maxQty, validUntil: c.validUntil, vip: c.vip }, c.bf ? { bf: c.bf } : {});
 const count = async (list, now) => Object.assign(counter(list, now, await settings()), { bf: await T.bfInfo(now).catch(() => null) || undefined });
 const total = async () => (await settings()).max;
 // is there a card of this kind for her: the VIP ones of her clinic, else the wave of now → { ok, left, error }
@@ -493,6 +496,9 @@ const TPL = {
   // used once Meta approves it, until then the one above
   rezervat2: { label: 'Card de Sărbători rezervat 2', headerType: 'IMAGE', map: ['suma', 'credit', 'locatie'], sample: { code: '', mark: 'Rezervat', name: '' },
     body: 'Bună! Cardul tău de Sărbători de {{1}} lei e rezervat: primești {{2}} lei în tratamente, la clinica din {{3}}, valabil până pe 30 iunie 2027. Îl plătești când treci pe la noi, cash sau card. Când îți e mai ușor să vii, mâine sau în zilele următoare?' },
+  // a VIP one (the audit, 24.11): its own words, used for a VIP reservation once Meta approves it, else rezervat2 / rezervat
+  rezervatvip: { label: 'Card VIP rezervat', headerType: 'IMAGE', map: ['locatie'], sample: { code: '', mark: 'Rezervat', name: '', vip: true, credit: 30000 },
+    body: 'Bună! Cardul tău VIP Transformarea 360 e rezervat: plătești 9.900 lei și primești 30.000 lei în tratamente, pentru tine și cei dragi, valabil până pe 30 iunie 2027. Ți-l ținem rezervat până vii la clinica din {{1}}. Când îți e mai ușor să vii, mâine sau în zilele următoare?' },
   // the payment she started and did not finish (the owner, 21.11): about an hour after, and once more a day later, with the
   // picture of her card (her name, no code: nothing is issued yet) and three buttons (recover, onWhatsApp below)
   // (no name in them: an online order is only her phone and her card, 21.11)
@@ -504,6 +510,15 @@ const TPL = {
     body: 'Hei! Am văzut că plata pentru Cardul tău de Sărbători de {{1}} lei în tratamente nu s-a terminat. Dacă ai avut vreo problemă, scrie-ne aici sau alege mai jos și te ajutăm imediat 🥰' },
   rec2: { label: 'Card de Sărbători mai sunt carduri', category: 'MARKETING', headerType: 'IMAGE', map: ['credit', 'carduri'], buttons: 'rec', sample: { code: '', name: '' },
     body: 'Bună! Încă poți lua Cardul de Sărbători de {{1}} lei în tratamente. Mai avem doar {{2}}, iar oferta se încheie pe 24 decembrie. Îl plătești online sau îl rezervi și plătești în clinică, alege mai jos.' },
+  // the same three with what she pays first (the audit, 24.11): {{1}} her order's online sum, {{2}} the credit paying online
+  // now (Black Friday: 3.000 for a 990 card); recover picks rec1d, then rec1b, rec1c, rec1 for the first one and rec2b, then
+  // rec2 for the second, whichever Meta approved
+  rec1c: { label: 'Card de Sărbători plată neterminată 3', category: 'MARKETING', headerType: 'IMAGE', map: ['suma', 'credit'], buttons: 'rec', sample: { code: '', name: '' },
+    body: 'Bună! Am văzut că ai vrut Cardul de Sărbători: plătești {{1}} lei și primești {{2}} lei în tratamente, dar plata nu s-a finalizat. S-a blocat ceva? Îl poți plăti online sau îl rezervi și plătești în clinică. Alege mai jos ce preferi.' },
+  rec1d: { label: 'Card de Sărbători plată neterminată 4', category: 'MARKETING', headerType: 'IMAGE', map: ['suma', 'credit'], buttons: 'rec', sample: { code: '', name: '' },
+    body: 'Hei! Am văzut că plata pentru Cardul tău de Sărbători nu s-a terminat: plătești {{1}} lei și primești {{2}} lei în tratamente. Dacă ai avut vreo problemă, scrie-ne aici sau alege mai jos și te ajutăm imediat 🥰' },
+  rec2b: { label: 'Card de Sărbători mai sunt carduri 2', category: 'MARKETING', headerType: 'IMAGE', map: ['suma', 'credit', 'carduri'], buttons: 'rec', sample: { code: '', name: '' },
+    body: 'Bună! Încă poți lua Cardul de Sărbători: plătești {{1}} lei și primești {{2}} lei în tratamente. Au mai rămas doar {{3}}, iar oferta se încheie pe 24 decembrie. Îl plătești online sau îl rezervi și plătești în clinică, alege mai jos.' },
   // paid online, the name comes after (the owner, 21.11): the payment received, „pe ce nume să fie cardul?” (askName)
   name: { label: 'Card de Sărbători pe ce nume', map: ['suma', 'credit'], buttons: 'name',
     body: 'Bună! Am primit plata ta de {{1}} lei pentru Cardul de Sărbători Centrul360, cu {{2}} lei în tratamente. Mulțumim! Pe ce nume să fie cardul? Alege mai jos.' },
@@ -665,9 +680,10 @@ async function reservedMsg(id) {
     png = await require('./card-image').png({ credit: TIERS[r.tier] || r.credit, name: (r.cards[0] || {}).recipient || r.name || '', code: '', mark: 'Rezervat', valid: VALID_TXT, vip: isVip(r) });
     await writeBinary(path, png, 'image/png').catch(() => { path = ''; });
   } catch (e) { console.error('card reserved image:', e.message); }
-  // the version ending with a question once approved for her number, else the first one
+  // the version ending with a question once approved for her number, else the first one; a VIP card: its own (rezervatvip)
   const T2 = await templates().catch(() => ({ t: {} }));
-  const kind = T2.t && T2.t.rezervat2 && require('./wa-templates').overall(T2.t.rezervat2) === 'APPROVED' ? 'rezervat2' : 'rezervat';
+  const okT = (k) => !!(T2.t && T2.t[k] && require('./wa-templates').overall(T2.t[k]) === 'APPROVED');
+  const kind = isVip(r) && okT('rezervatvip') ? 'rezervatvip' : okT('rezervat2') ? 'rezervat2' : 'rezervat';
   const m = png ? await say(kind, r, vars, fill(kind, vars), png, '', { path, only: 'template', tag: { cardOrder: r.id, cardStep: 'rezervat' } }).catch((e) => ({ sent: false, error: e.message }))
     : { sent: false, error: 'poza cardului' };
   const rez = m.sent ? { at: nowISO(), how: m.how } : { at: nowISO(), skipped: m.tpl ? 'șablonul nu e aprobat încă' : String(m.error || 'netrimis').slice(0, 160) };
@@ -1133,7 +1149,7 @@ async function reminders(now) {
     const { r, c, k } = x;
     const vars = { prenume: firstName(r.name), sold: lei(leftOf(c)), cod: c.code };
     const text = k === 'd14'
-      ? 'Bună, ' + firstName(r.name) + '! Pe ' + (isVip(r) ? 'Cardul tău VIP ' : 'Cardul tău de Sărbători ') + c.code + ' ai ' + lei(leftOf(c)) + ' lei pentru orice tratament la prețul de listă: remodelare corporală, tratamente faciale, epilare laser. Spune-ne ce ți-ar plăcea și îți găsim o oră. Răspunde la acest mesaj.'
+      ? 'Bună, ' + firstName(r.name) + '! Pe ' + (isVip(r) ? 'Cardul tău VIP ' : 'Cardul tău de Sărbători ') + c.code + ' ai ' + lei(leftOf(c)) + ' lei pentru orice tratament la prețul de listă: remodelare corporală, tratamente faciale' + (r.city === 'Timișoara' ? ', epilare laser' : '') + '. Spune-ne ce ți-ar plăcea și îți găsim o oră. Răspunde la acest mesaj.'
       : 'Bună, ' + firstName(r.name) + '! Mai ai ' + lei(leftOf(c)) + ' lei pe ' + (isVip(r) ? 'Cardul VIP ' : 'Cardul de Sărbători ') + c.code + ' până pe 30 iunie. Răspunde la acest mesaj și îți facem programarea.';
     const m = await say('remind', r, vars, text, null, c.code).catch((e) => ({ sent: false, error: e.message }));
     c.remind[k] = m.sent ? nowISO() : 'netrimis: ' + String(m.error || '').slice(0, 120);
@@ -1283,7 +1299,7 @@ async function request(input, session, byName) {
   if (name.length < 2) return { error: 'missing_name' };
   if (!(/^07\d{8}$/.test(phone) || /^[1-9]\d{10,14}$/.test(phone))) return { error: 'bad_phone' };
   if (!city) return { error: 'missing_city' };
-  if (!TIERS[tier]) return { error: 'bad_tier' };
+  if (!SALE.includes(tier)) return { error: 'bad_tier' }; // a new order: only the cards on sale (no 290, the audit 24.11)
   if (!Number.isInteger(qty) || qty < 1 || qty > MAXQ) return { error: 'bad_qty' };
   const now = Date.now();
   if (now >= Date.parse(DEADLINE)) return { error: 'closed' };
@@ -1333,7 +1349,7 @@ async function editOrder(id, input, byName) {
   if (name && name.length < 2) return { error: 'missing_name' };
   if (!(/^07\d{8}$/.test(phone) || /^[1-9]\d{10,14}$/.test(phone))) return { error: 'bad_phone' };
   if (!city) return { error: 'missing_city' };
-  if (!TIERS[tier]) return { error: 'bad_tier' };
+  if (!SALE.includes(tier) && tier !== Number(r.tier)) return { error: 'bad_tier' }; // another card: only one on sale (an old 290 order keeps its own)
   if (!Number.isInteger(qty) || qty < 1 || qty > MAXQ || (r.pay !== 'clinica' && qty !== 1)) return { error: 'bad_qty' }; // a PayLink is one card
   // more cards: only when they are left (its own cards counted as hers)
   // (a VIP one: of her clinic; to or from a VIP one, the other stock)
@@ -1500,7 +1516,9 @@ async function recover(now) {
   }
   let sent = 0, failed = 0, waiting = 0, held = 0;
   const T2 = due.length ? await templates().catch(() => ({ t: {} })) : { t: {} };
-  const warm = T2.t && T2.t.rec1b && require('./wa-templates').overall(T2.t.rec1b) === 'APPROVED';
+  const okT = (k) => !!(T2.t && T2.t[k] && require('./wa-templates').overall(T2.t[k]) === 'APPROVED');
+  // the first: rec1d, rec1b, rec1c, rec1 (the first approved); the second: rec2b, rec2
+  const k1 = ['rec1d', 'rec1b', 'rec1c'].find(okT) || 'rec1', k2 = okT('rec2b') ? 'rec2b' : 'rec2';
   const scan = { done: false, pays: null };
   const sw = due.length ? await T.bfSwitch().catch(() => ({ on: false })) : { on: false };
   for (const { r, step } of due.slice(0, 6)) {
@@ -1508,9 +1526,10 @@ async function recover(now) {
     // only when it is sure she has not paid (the owner, 23.11): any doubt waits for the next run
     const g = await recoverSafe(r, step, scan).catch((e) => ({ ok: false, why: 'eroare: ' + e.message }));
     if (!g.ok) { if (g.stop) stop(r, g.stop); held++; rc[step + 'Held'] = String(g.why || '').slice(0, 120); changed.add(r); continue; }
-    const k = step === 'wa1' ? (warm ? 'rec1b' : 'rec1') : 'rec2';
+    const k = step === 'wa1' ? k1 : k2;
     const cr = onlineCredit(r, sw) || r.credit; // paying online now (Black Friday: 3.000 for a 990 card)
-    const vars = { credit: lei(cr), carduri: cardsLeft(leftFor(cnt, r.tier, r.city)) };
+    // suma: her order's online sum (the VIP's 10% when it carries it)
+    const vars = { suma: lei(r.amount), credit: lei(cr), carduri: cardsLeft(leftFor(cnt, r.tier, r.city)) };
     let png = null, path = 'wa-out/card-rec-' + String(r.id).replace(/[^\w-]/g, '').slice(0, 36) + '.png';
     try {
       png = await require('./card-image').png({ credit: cr / qtyOf(r), name: (r.cards[0] || {}).recipient || r.name, code: '', valid: VALID_TXT, vip: isVip(r) });
@@ -1582,7 +1601,7 @@ async function onWhatsApp(m) {
     if (link) {
       mark(r, 'to_paylink', 'whatsapp');
       r.credit = onlineCredit(r, await T.bfSwitch().catch(() => ({ on: false }))); // Black Friday: 3.000 for a 990 card
-      reply = hi('Sigur') + '! ' + cardWord(r) + ': ' + payGet(r) + bfTail(r) + '. Aici e pagina de plată securizată: ' + link + '\nCardul îți vine aici pe WhatsApp imediat ce se confirmă plata.' + bfClinic(r);
+      reply = payLinkText(r, link, 'Sigur');
       quietDesk = true;
     } else if (h !== 'ok') reply = hi('Ne pare rău') + ', ' + (h === 'closed' ? 'oferta Cardului de Sărbători s-a încheiat.' : 'în acest moment nu mai avem carduri disponibile.') + ' Mulțumim!';
   } else if (kind === 'no') {
@@ -1593,7 +1612,7 @@ async function onWhatsApp(m) {
   await writeJSON(KEY, list);
   if (kind === 'clinic' && r.status !== 'platit') {
     const x = await toClinic(r.id, 'whatsapp');
-    if (x.ok && !x.paid && !x.again) { reply = hi('Gata') + '! Ți-am rezervat ' + cardWord(r) + ': ' + payGet(r, Number(r.tier) * qtyOf(r), clinicCredit(r)) + '. Îl plătești în clinică (' + (ADDR[r.city] || ADDR['Timișoara']) + '), cash sau card. Te sună recepția să stabiliți când treci.' + bfOnlineHint(r, await T.bfSwitch().catch(() => ({ on: false }))); quietDesk = true; }
+    if (x.ok && !x.paid && !x.again) { reply = clinicReply(r, hi, await T.bfSwitch().catch(() => ({ on: false }))); quietDesk = true; }
     else if (x.ok && x.again) { reply = hi('Bună') + '! Cardul tău e deja rezervat. Te sună recepția să stabiliți când treci.'; quietDesk = true; }
     else if (x.error === 'sold_out' || x.error === 'closed') reply = hi('Ne pare rău') + ', ' + (x.error === 'closed' ? 'oferta Cardului de Sărbători s-a încheiat.' : 'în acest moment nu mai avem carduri disponibile.') + ' Mulțumim!';
   }
@@ -1675,7 +1694,7 @@ async function reserveFromLead(o) {
   const city = ['Timișoara', 'Arad'].find((c) => fold(c) === fold(o.city)) || '';
   if (!city) return { error: 'missing_city' };
   const tier = Number(String(o.value == null ? '' : o.value).replace(/\D/g, ''));
-  if (!TIERS[tier]) return { error: 'bad_tier' };
+  if (!SALE.includes(tier)) return { error: 'bad_tier' }; // only the cards on sale (no 290)
   const now = Date.now();
   if (now >= Date.parse(DEADLINE)) return { error: 'closed' };
   let list = await readJSON(KEY, []);
@@ -1723,11 +1742,8 @@ function leadFirst(r) {
 // fields and her card's creative (saved for her chat). leadMsg, and the desk's „Trimite linkul de plată” outside the 24 h
 async function leadPack(r, o) {
   o = o || {};
-  const op = await onlinePay(r.tier).catch(() => ({ disc: false }));
-  // („Online, cu cardul, primești în plus {{3}} și acces în Clubul 360”: the gift; the VIP: 10% off, or its card at once)
-  const emb0 = isVip(r) ? (!!o.tap || await embedded().catch(() => false)) : false; // o.tap: her link will be the one-tap one (toOnline)
-  const vipOnline = emb0 ? checkoutAmount(r.tier, 1) : op.disc ? op.amount : 0;
-  const vars = { suma: lei(r.amount), credit: lei(r.credit), cadoul: !isVip(r) ? giftOf(r.city) : vipOnline ? '10% reducere (' + lei(vipOnline) + ' lei)' : 'cardul pe loc, aici pe WhatsApp' };
+  // („Online, cu cardul, primești în plus {{3}} și acces în Clubul 360”: the gift; the VIP: always its 10%, the audit 24.11)
+  const vars = { suma: lei(r.amount), credit: lei(r.credit), cadoul: !isVip(r) ? giftOf(r.city) : '10% reducere (plătești ' + lei(discOf(r.tier)) + ' lei)' };
   // the cards left of now (her own lead is already on the counter: status „lead”, held 2 hours): the same number in the
   // picture, in the text and on the site (the VIP: its clinic's)
   const cnt = await count(await readJSON(KEY, [])).catch(() => null);
@@ -1813,6 +1829,11 @@ async function toOnline(list, r, o) {
 const payLinkText = (r, link, hello) => { const g = leadFirst(r) || greetName(r);
   return (hello || 'Bună') + (g ? ', ' + g : '') + '! ' + cardWord(r) + ': ' + payGet(r) + bfTail(r) + '. Aici e pagina de plată securizată: ' + link +
     '\nDupă plată primești cardul aici pe WhatsApp' + (isVip(r) ? ' și accesul în Clubul 360.' : ', plus ' + giftOf(r.city) + ' și accesul în Clubul 360.') + bfClinic(r); };
+// her choice of the clinic, answered (the audit, 24.11): „Gata, Maria! Ți-am rezervat Cardul de Sărbători: plătești 990 lei și
+// primești 2.500 lei în tratamente. Îl plătești în clinică (…), cash sau card, și ți-l ținem rezervat până vii. …”; a 990 card
+// under Black Friday: the line of the online 3.000 (bfOnlineHint). hi: her greeting („Gata, Maria”)
+const clinicReply = (r, hi, sw) => hi('Gata') + '! Ți-am rezervat ' + cardWord(r) + ': ' + payGet(r, Number(r.tier) * qtyOf(r), clinicCredit(r)) + '. Îl plătești în clinică (' + (ADDR[r.city] || ADDR['Timișoara']) +
+  '), cash sau card, și ți-l ținem rezervat până vii. Te sună recepția să stabiliți când treci.' + bfOnlineHint(r, sw);
 // she wrote us in the last 24 hours (an inbound message from her phone): Meta lets a plain message through
 async function inWindow(phone, now) {
   const t = now || Date.now(), k = d9(phone);
@@ -1871,8 +1892,7 @@ async function leadReply(list, r, m) {
     const op = await toOnline(list, r, { by: 'whatsapp' });
     const h = op.h, link = op.link;
     if (link) {
-      reply = hi('Super') + '! ' + cardWord(r) + ': ' + payGet(r) + bfTail(r) + '. Aici e pagina securizată myPOS: ' + link +
-        '\nDupă plată primești cardul aici pe WhatsApp' + (isVip(r) ? '' : ', plus ' + giftOf(r.city) + ',') + ' și accesul în Clubul 360.' + bfClinic(r);
+      reply = payLinkText(r, link, 'Super');
       quietDesk = true;
     } else {
       // (no PayLink now: she stays a lead, the desk calls her; toOnline gave her status back)
@@ -1888,7 +1908,7 @@ async function leadReply(list, r, m) {
       const rez = await reservedMsg(r.id).catch(() => null);
       quietDesk = true; // reception heard the reservation (toClinic)
       // the approved „rezervat” message went; else a plain one (she just wrote us: Meta lets it through)
-      if (!(rez && rez.how)) reply = hi('Gata') + '! Ți-am rezervat ' + cardWord(r) + ': ' + payGet(r, Number(r.tier) * qtyOf(r), clinicCredit(r)) + '. Îl plătești în clinică (' + (ADDR[r.city] || ADDR['Timișoara']) + '), cash sau card. Te sunăm să stabilim când treci.' + bfOnlineHint(r, await T.bfSwitch().catch(() => ({ on: false })));
+      if (!(rez && rez.how)) reply = clinicReply(r, hi, await T.bfSwitch().catch(() => ({ on: false })));
     } else if (x.error === 'sold_out' || x.error === 'closed') reply = hi('Ne pare rău') + ', ' + (x.error === 'closed' ? 'oferta Cardului de Sărbători s-a încheiat.' : 'în acest moment nu mai avem carduri disponibile.') + ' Mulțumim!';
   }
   let ok = false;
@@ -2021,7 +2041,9 @@ async function requestFromTap(i, opt) {
   let phone = normalizePhone(String(i.phone || '')) || '';
   if (/^7\d{8}$/.test(phone)) phone = '0' + phone;
   const city = ['Timișoara', 'Arad'].find((c) => fold(c) === fold(i.city)) || '';
-  const tier = TIERS[Number(i.tier)] ? Number(i.tier) : 990;
+  // the card of the message she tapped (none said: 990); only the cards on sale (no 290, the audit 24.11)
+  const tier = i.tier == null || i.tier === '' ? 990 : Number(i.tier);
+  if (!SALE.includes(tier)) return { error: 'bad_tier' };
   if (!(/^07\d{8}$/.test(phone) || /^[1-9]\d{10,14}$/.test(phone))) return { error: 'bad_phone' };
   if (!city) return { error: 'missing_city' };
   const now = Date.now();
@@ -2058,7 +2080,7 @@ async function requestFromTap(i, opt) {
   return { ok: true, id: entry.id };
 }
 
-module.exports = { setWave, requestFromTap, deleteOrder, orderExtras, T, BF: T.BF, creditOf: T.creditOf, bfActive: T.bfActive, bfInfo: T.bfInfo, setBf: T.setBf, onlineCredit, payGet,
+module.exports = { setWave, requestFromTap, deleteOrder, orderExtras, clinicReply, T, BF: T.BF, creditOf: T.creditOf, bfActive: T.bfActive, bfInfo: T.bfInfo, setBf: T.setBf, onlineCredit, payGet,
   KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT, GIFT_TM, GIFT_ARAD, giftOf, giftShort, giftFor, DISC_TIERS, discOf, onlineLinks, onlinePay, linkOf, siteLinks, sumOk, embedded, setEmbedded, checkoutAmount, checkoutUrl, payQuote, payPaid, payContact, TPL,
   byId, VIP, SALE, isVip, vipLeft, stockFor, leftFor, lostRace, sarb, norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
