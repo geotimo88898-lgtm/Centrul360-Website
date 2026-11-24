@@ -792,6 +792,23 @@ module.exports = async (req, res) => {
     res.status(200).json({ ok: true, day, sources: (doc && doc.f) || {}, segments: k, campaigns: camps });
     return;
   }
+  // ?fbform=card: the Meta lead forms the Cardul de Sărbători leads came from (the last 3 days), as Meta has them: the intro,
+  // the questions, the end screen (title, text, button, where it goes), the privacy link (24.11, the owner)
+  if (req.query && req.query.fbform) {
+    const conn = await require('./_lib/facebook').loadConnection(readJSON);
+    if (!conn.pageAccessToken) { res.status(200).json({ ok: false, error: 'no_page' }); return; }
+    const leads = await readJSON('data/leads.json', []);
+    const since = new Date(Date.now() - 3 * 864e5).toISOString();
+    const ids = [...new Set(leads.filter((l) => l && l.form && l.form.id && String(l.createdAt || '') >= since && /card/i.test(String(l.interest || ''))).map((l) => l.form.id))];
+    const fields = 'id,name,status,locale,questions,context_card{title,content,style,button_text},thank_you_page{title,body,button_text,button_type,website_url,business_phone_number,enable_messenger,gated_file},privacy_policy_url,follow_up_action_url,is_optimized_for_quality,leads_count';
+    const out = [];
+    for (const id of ids.slice(0, 5)) {
+      const r = await fetch('https://graph.facebook.com/v25.0/' + encodeURIComponent(id) + '?' + new URLSearchParams({ fields, access_token: conn.pageAccessToken })).then((x) => x.json()).catch((e) => ({ error: { message: e.message } }));
+      out.push(r.error ? { id, error: String(r.error.message || '').slice(0, 200) } : r);
+    }
+    res.status(200).json({ ok: true, forms: out });
+    return;
+  }
   if (req.query && req.query.cardrecent) {
     const C = require('./_lib/card-sarbatori');
     const list = await readJSON(C.KEY, []);
