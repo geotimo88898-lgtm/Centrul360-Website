@@ -885,6 +885,17 @@ module.exports = async (req, res) => {
     res.status(200).json(out);
     return;
   }
+  // ?mxdiag=1: what Admin → Mesaje's list costs (sizes and read times of what it reads; counts only)
+  if (req.query && req.query.mxdiag) {
+    const t = {}, n = {}; const time = async (k, f) => { const a = Date.now(); const v = await f(); t[k] = Date.now() - a; return v; };
+    const conv = await time('conversations', () => readJSON('data/whatsapp-conversations.json', []));
+    n.conversations = conv.length; n.messages = conv.reduce((a, c) => a + ((c.messages || []).length), 0); n.bytes = JSON.stringify(conv).length;
+    n.clients = (await time('clients', () => readJSON('data/clients.json', []))).length;
+    n.leads = (await time('leads', () => readJSON('data/leads.json', []))).length;
+    n.social = (await time('social', () => readJSON('data/social-conversations.json', []))).length;
+    const rev = await readJSON('data/_rev.json', null);
+    res.status(200).json({ ms: t, n, lastRev: rev }); return;
+  }
   // ?ghldm=1: whether HighLevel still gets the Instagram and Messenger messages (its own Meta app has the access ours lacks):
   // per sub-account, the newest conversations' channel and date only (no names, no text)
   if (req.query && req.query.ghldm) {
