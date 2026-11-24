@@ -567,3 +567,24 @@ h2 .bf-old{ color:var(--mute2); -webkit-text-fill-color:var(--mute2); }
 .bf-rib, .bf-rib *, .bf-seal, .bf-seal *, .bf-live, .bf-live::after, .bf-mark, .cs-bf .csc-xmas::before, .cs-bf .csc-xmas::after{ pointer-events:none; }
 /* the seal flat on the card (no translateZ): nothing of the layer is lifted in 3D over the page's fixed bars on iOS */
 .cs-bf .bf-seal{ transform:rotate(10deg); }
+/* the buttons (the owner, 24.11: „la CTA-uri putem face mai bine cu culorile”): the online one hot pink on the black, one
+   line „Plătesc online → primesc 3.000 lei”, a soft glow that breathes slowly; the clinic one the same size, calm (dark,
+   a gold edge, cream words); the gift's pill apart from them */
+.cs-bf .csc-xmas:not(:has(.cs-vipon)) .cst-go [data-cs-buy][data-cs-follow]{ color:#fff; background:linear-gradient(100deg,#e0145a 0%,#f02a70 55%,#ff3d84 100%);
+  box-shadow:0 0 0 1px rgba(255,170,200,.45) inset, 0 14px 32px -12px rgba(224,20,90,.75); min-height:58px; white-space:nowrap; }
+.cs-bf .csc-xmas:not(:has(.cs-vipon)) .cst-go [data-cs-buy][data-cs-follow]::after{ display:block; content:''; position:absolute; inset:0; z-index:-1; border-radius:inherit; pointer-events:none;
+  box-shadow:0 0 26px 4px rgba(255,61,132,.55); opacity:.35; animation:bfGlow 2.8s ease-in-out infinite alternate; }
+@keyframes bfGlow{ to{ opacity:.95; } }
+.cs-bf .csc-xmas .cst-go [data-cs-buy][data-cs-follow]:has(.bf-get:not([hidden])) [data-cs-v="payon"]{ display:none; }
+.cs-bf .bf-get:not([hidden]){ font-weight:600; }
+.cs-bf .bf-get b{ font-weight:800; }
+.cs-bf .csc-xmas .cst-go:not(.cs-vipcall) .cst-cash{ color:#f6e7c8; background:#151313; min-height:58px;
+  box-shadow:0 0 0 1.5px #d9b465 inset, 0 10px 24px -16px rgba(0,0,0,.8); border-color:transparent; }
+.cs-bf .csc-xmas .cst-gift{ margin:0 0 4px; padding:6px 14px; border-radius:999px; }
+@media (max-width:400px){ .cs-bf .csc-xmas:not(:has(.cs-vipon)) .cst-go [data-cs-buy][data-cs-follow]{ font-size:15px; padding-left:12px; padding-right:12px; } }
+@media (prefers-reduced-motion:reduce){ .cs-bf .csc-xmas .cst-go [data-cs-buy][data-cs-follow]::after{ animation:none; opacity:.6; } }
+@media (max-width:360px){ .cs-bf .csc-xmas:not(:has(.cs-vipon)) .cst-go [data-cs-buy][data-cs-follow]{ font-size:13.5px; letter-spacing:-.01em; padding-left:10px; padding-right:10px; } }
+/* nothing in the block may widen it on a small phone: its parts shrink, the gift's pill may take two lines there */
+.cs-bf .csc-xmas .cst-go > *{ min-width:0; max-width:100%; }
+@media (max-width:400px){ .cs-bf .csc-xmas .cst-gift{ font-size:12.5px; } }
+@media (max-width:360px){ .cs-bf .csc-xmas .cst-gift{ font-size:12px; white-space:normal; text-align:center; line-height:1.3; border-radius:16px; } }

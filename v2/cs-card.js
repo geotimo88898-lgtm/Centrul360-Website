@@ -326,7 +326,7 @@
       $$('.csc-float', sec).forEach(function (f) { var st = f.closest('.csc-stage'); if (st && st.querySelector('[data-csc-credit]')) f.insertAdjacentHTML('beforeend', '<span class="bf-seal" data-bf990 aria-hidden="true"><small>BLACK FRIDAY</small><b>+' + fmt(get - old) + '</b><em>LEI</em><i>la plata online</i></span>'); });
       var inp = sec.querySelector('.cst-t input[value="' + T + '"]'), box = inp && inp.closest('.cst-t');
       if (box) box.insertAdjacentHTML('beforeend', '<span class="bf-tier"><span>primești <s>' + fmt(old) + '</s></span><span class="bf-now">' + lei(get) + '</span><span class="bf-cl">online · în clinică ' + fmt(old) + '</span></span>');
-      $$('.cst-go [data-cs-buy][data-cs-follow]', sec).forEach(function (b) { var l = b.querySelector('span'); if (l) l.insertAdjacentHTML('beforeend', '<span class="bf-get" data-bf990> → primesc ' + lei(get) + '</span>'); });
+      $$('.cst-go [data-cs-buy][data-cs-follow]', sec).forEach(function (b) { var l = b.querySelector('span'); if (l) l.insertAdjacentHTML('beforeend', '<span class="bf-get" data-bf990> → primesc <b>' + lei(get) + '</b></span>'); });
       $$('.cst-go [data-cs-reserve]', sec).forEach(function (r) { r.insertAdjacentHTML('afterend', '<p class="bf-note" data-bf990>Dacă rezervi și plătești în clinică, rămâne ' + lei(old) + '.</p>'); });
     });
     // lower on the card's page: a line under the card's rows, and its card among the three
