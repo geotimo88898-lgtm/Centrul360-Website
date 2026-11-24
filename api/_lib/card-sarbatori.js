@@ -275,8 +275,11 @@ async function onlinePay(tier) {
 }
 // the link of an order: the one of the sum it carries (a 10% order: its 10% link while it exists, else the full one; the
 // payment of the full sum is matched to it too: candsOf)
+// the one-tap link to myPOS (api/pay-go: signed, the same request for the same card while it is held, „deja plătit” when
+// paid), else the card's page with its checkout
+function oneTap(r) { try { return require('./pay').cardLink(r.id); } catch (e) { return checkoutUrl(r); } }
 async function linkOf(r) {
-  if (await embedded()) return checkoutUrl(r);
+  if (await embedded()) return oneTap(r);
   const [full, on] = await Promise.all([links(), onlineLinks()]);
   const l = (r.disc && on[r.tier]) || full[r.tier] || null;
   if (l && r.checkout) r.checkout.paylink = nowISO(); // a PayLink for an order of the checkout: its sum may be matched again
@@ -1736,7 +1739,7 @@ async function leadReply(list, r, m) {
     // online: 10% off when its 10% link is set (the order's sum follows)
     // the checkout in the page while it is on (its page with her order), else the PayLink
     const emb = h === 'ok' && Number(r.tier) !== 290 && await embedded();
-    const op = h === 'ok' ? (emb ? { link: checkoutUrl(r), amount: checkoutAmount(r.tier, 1), disc: isVip(r) } : await onlinePay(r.tier)) : null;
+    const op = h === 'ok' ? (emb ? { link: oneTap(r), amount: checkoutAmount(r.tier, 1), disc: isVip(r) } : await onlinePay(r.tier)) : null;
     const link = op && op.link;
     if (link) {
       r.pay = 'online';
