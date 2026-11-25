@@ -21,7 +21,12 @@
                                                moment's prices, or null (no catalog yet, unknown id)
      C360Shop.catalog()                         → Promise<{ terms, products } | null> (pictures from v2/art.json applied)
      C360Shop.count()                           → the lines in the cart
+     C360Shop.lines()                           → [{ id, zone, qty }], what is in the cart now (a line per zone)
      document events: 'c360:cart' (detail { n, amount }) when the cart changes; 'c360:shop' when the catalog is here.
+   „In the cart” is per zone (Liposonix Abdomen and Liposonix Coapse are two lines); „+ Încă o zonă” in the popup and on a cart
+   line adds a zone not in the cart yet. The clinic is one choice everywhere: the offers' filter, ?oras=, the checkout; unknown,
+   the checkout asks (nothing preselected); a clinic that does not do a line (EMS, Împachetare, the laser in Arad) offers to
+   take it out or to switch.
    Card → treatment page: a View Transition where the browser has it (@view-transition in shop.css and in the shell's
    head). The treatment page names its hero picture `view-transition-name: pic-<product id>`; the
    tapped card's picture takes the same name just before leaving, so the photo carries over; back on the list, the same
@@ -94,10 +99,14 @@
 
   var D = null, ART = {}, offset = 0;
   var S = { keep: {}, city: '', cart: [], zone: {}, n: {}, step: 'cart', visit: 'first', date: '', time: '', days: null, hold: null, paid: null };
-  try { var kept = JSON.parse(localStorage.getItem(KEY) || 'null'); if (kept) { if (kept.city === 'Arad' || kept.city === 'Timișoara') S.city = kept.city; if (Array.isArray(kept.cart)) S.cart = kept.cart.filter(function (l) { return l && l.id; }).slice(0, 12); } } catch (e) { /* private mode */ }
+  // her clinic is hers to choose: a city kept before v2 was the old default (Timișoara), not her choice, so it is not trusted
+  try { var kept = JSON.parse(localStorage.getItem(KEY) || 'null'); if (kept) { if (kept.v === 2 && (kept.city === 'Arad' || kept.city === 'Timișoara')) S.city = kept.city; if (Array.isArray(kept.cart)) S.cart = kept.cart.filter(function (l) { return l && l.id; }).slice(0, 12); } } catch (e) { /* private mode */ }
   var qs = new URLSearchParams(location.search);
   if (/^arad$/i.test(qs.get('oras') || '')) S.city = 'Arad'; else if (/^tim/i.test(qs.get('oras') || '')) S.city = 'Timișoara';
-  var save = function () { try { localStorage.setItem(KEY, JSON.stringify({ city: S.city, cart: S.cart })); } catch (e) { /* private mode */ } };
+  var save = function () { try { localStorage.setItem(KEY, JSON.stringify({ v: 2, city: S.city, cart: S.cart })); } catch (e) { /* private mode */ } };
+  if (qs.get('oras')) save();
+  // this visit only: the offers' order, the slider's card, where the list was (so back from a treatment lands where she was)
+  var ss = { get: function (k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set: function (k, v) { try { sessionStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
 
   // ---- the data
   var byId = function (id) { return D && D.products.filter(function (p) { return p.id === id; })[0]; };
@@ -106,7 +115,10 @@
   var keyOf = function (id, zone) { return id + '|' + (zone || ''); };
   var lineOf = function (id, zone) { return S.cart.filter(function (l) { return l.id === id && (l.zone || '') === (zone || ''); })[0]; };
   var lineByKey = function (k) { return S.cart.filter(function (l) { return keyOf(l.id, l.zone) === k; })[0]; };
-  var inCart = function (id) { return S.cart.some(function (l) { return l.id === id; }); };
+  // „in the cart” is per zone: Liposonix Abdomen in the cart leaves Liposonix Coapse free to add
+  var has = function (p) { return !!lineOf(p.id, zoneOf(p)); };
+  var freeZone = function (p) { return p.zones.filter(function (z) { return !lineOf(p.id, z); })[0] || ''; };
+  var onlyHtml = function (p, cls) { return p.cities.length === 1 ? '<span class="' + cls + '">Doar ' + esc(p.cities[0]) + '</span>' : ''; };
   var lines = function () { return S.cart.map(function (l) { var p = byId(l.id); return p ? { p: p, zone: l.zone || '', qty: l.qty || 1, key: keyOf(l.id, l.zone) } : null; }).filter(Boolean); };
   // the sessions she can pick (the owner: 1×, 3×, 6×, or 1×, 2×, 3× for HIFU, HIFU Full Face, HIFU corp and Liposonix)
   var sessOf = function (p) { return /^(hifu|hifu-full-face|hifu-corp|liposonix)$/.test(p.id) ? [1, 2, 3] : [1, 3, 6]; };
@@ -117,12 +129,31 @@
   // a whole photo on black (v2/art.json full, the owner 25.11): its focal point goes on every <img> that shows it
   var fullOf = function (p) { var a = artOf(p); return !!(a && a.img && a.full); };
   var posOf = function (p) { var a = artOf(p); return fullOf(p) && a.pos ? ' style="object-position:' + esc(String(a.pos).replace(/[^0-9% .a-z]/g, '')) + '"' : ''; };
+  // where the picture is small, a smaller copy of it (v2/tools/pic-sizes.py: <id>-600.webp, <id>-300.webp, listed in art.json "w";
+  // the pictures themselves are 966 wide): the 2-up tiles take the 600 one (the big one only on a screen that needs it), the
+  // thumbnails the 300 one. A picture without copies stays as it is.
+  var picW = function (p, w) { var a = artOf(p), u = picOf(p); return a && a.img && u === a.img && (a.w || []).indexOf(w) > -1 ? u.replace(/\.webp(\?|$)/, '-' + w + '.webp$1') : u; };
+  var tileImg = function (p) { var s = picW(p, 600), u = picOf(p); return 'src="' + esc(s) + '"' + (s !== u ? ' srcset="' + esc(s) + ' 600w, ' + esc(u) + ' 966w" sizes="(max-width:640px) calc(50vw - 31px), 270px"' : ''); };
   var sesWord = function (n) { return n === 1 ? '1 ședință' : n + ' ședințe'; };
   var qOf = function (v) { return clamp(Math.floor(Number(v) || 1), 1, 10); };
-  function cityNow() {
+  // the clinic: hers (the offers' filter, ?oras=, the checkout: one choice everywhere); with no choice, the one clinic her cart
+  // can only be done in; else none, and the checkout asks
+  function mustCity() {
     var must = '';
     lines().forEach(function (x) { if (x.p.cities.length === 1) must = x.p.cities[0]; });
-    return must || S.city || 'Timișoara';
+    return must;
+  }
+  function cityNow() { return S.city || mustCity(); }
+  // the lines her clinic does not do (EMS, Împachetare, the laser in Arad), and the clinic that does them all
+  var clashOf = function () { return S.city ? lines().filter(function (x) { return x.p.cities.indexOf(S.city) < 0; }) : []; };
+  var fixCity = function () { return ['Timișoara', 'Arad'].filter(function (c) { return c !== S.city && lines().every(function (x) { return x.p.cities.indexOf(c) > -1; }); })[0] || ''; };
+  function setCity(c) {
+    if (c !== 'Arad' && c !== 'Timișoara') c = '';
+    if (c === S.city) return;
+    S.city = c; save();
+    // the offers' clinic filter follows (and the other way round, in the filter's own handler)
+    var dd = $('[data-dd="city"]');
+    if (dd && F.city !== c) { F.city = c; ddSet(dd, c); grid(false); }
   }
   function totals() {
     var l = lines(), full = 0, amount = 0, n = 0;
@@ -158,7 +189,7 @@
     $$('[data-tm]').forEach(function (el) { if (!el.hasAttribute('data-tmx')) el.outerHTML = tmHtml(el.getAttribute('data-tm')); });
     $$('[data-tmv]').forEach(function (b) { var i = +b.getAttribute('data-tmv'), t = p ? two(p[i]) : '00'; if (b.textContent !== t) { b.textContent = t; if (!reduce) { b.classList.remove('tk'); void b.offsetWidth; b.classList.add('tk'); } } });
     $$('[data-tmu]').forEach(function (u) { var i = +u.getAttribute('data-tmu'); u.textContent = p && p[i] === 1 ? UNITS[i][0] : UNITS[i][1]; });
-    if (D && D.terms.bf && !p && !ended) { ended = true; load(); }
+    if (D && D.terms.bf && !p && !ended) { ended = true; load(true); }
   }
 
   // ================= the card: the site's Black Friday card =================
@@ -168,11 +199,13 @@
       list.map(function (k) { return '<button type="button" role="radio" data-n="' + k + '" aria-checked="' + (k === n) + '" aria-label="' + sesWord(k) + '">' + k + '×</button>'; }).join('') + '</div>';
   }
   function ctaHtml(mine) { return mine ? I.check + '<span>În coș</span>' : '<span>Rezervă oferta</span>' + I.arrow; }
-  function cardHtml(p) {
-    var z = zoneOf(p), n = nOf(p), mine = inCart(p.id), u = urlOf(p);
+  // o.wait: the picture waits (data-src) until the card comes near the front of the slider; o.first: the slider's first picture
+  function cardHtml(p, o) {
+    var z = zoneOf(p), n = nOf(p), mine = has(p), u = urlOf(p);
+    o = o || {};
     return '<article class="slip has-pic bfc' + (mine ? ' in' : '') + '" data-p="' + esc(p.id) + '" data-href="' + u + '" data-w="1">' +
-      '<span class="pic' + (fullOf(p) ? ' full' : '') + '" aria-hidden="true"><img src="' + esc(picOf(p)) + '" alt="" decoding="async"' + posOf(p) + '></span>' +
-      '<span class="pct">-' + pct() + '%</span>' +
+      '<span class="pic' + (fullOf(p) ? ' full' : '') + '" aria-hidden="true"><img ' + (o.wait ? 'data-src' : 'src') + '="' + esc(picOf(p)) + '" alt=""' + (o.first ? ' fetchpriority="high"' : ' decoding="async"') + posOf(p) + '></span>' +
+      '<span class="pct">-' + pct() + '%</span>' + onlyHtml(p, 'bfc-c') +
       '<span class="k"><b>Black Friday</b> · ' + esc(NEED[p.need] || '') + '</span>' +
       '<h3><a href="' + u + '">' + esc(nameOf(p, z)) + '</a></h3>' +
       '<ul class="bfc-b">' + p.b.slice(0, 2).map(function (b) { return '<li>' + esc(b) + '</li>'; }).join('') + '</ul>' +
@@ -184,7 +217,7 @@
   function paintCard(card) {
     var p = byId(card.getAttribute('data-p'));
     if (!p) return;
-    var n = nOf(p), mine = inCart(p.id), list = sessOf(p), ses = $('.ses', card);
+    var n = nOf(p), mine = has(p), list = sessOf(p), ses = $('.ses', card);
     if (ses) { ses.style.setProperty('--i', Math.max(0, list.indexOf(n))); $$('[data-n]', ses).forEach(function (b) { b.setAttribute('aria-checked', String(+b.getAttribute('data-n') === n)); }); }
     roll($('[data-pr]', card), lei(p.price * n));
     var f = $('[data-full]', card); if (f) f.textContent = lei(p.full * n);
@@ -203,12 +236,19 @@
     var box = $('[data-bfs]');
     if (!box || !D || box.hasAttribute('data-on')) return;
     var list = D.terms.show.map(byId).filter(Boolean);
+    // her clinic known: only what it does (Arad: no EMS, no laser)
+    var here = S.city ? list.filter(function (p) { return p.cities.indexOf(S.city) > -1; }) : list;
+    if (here.length >= 3) list = here;
     if (!list.length) return;
     box.setAttribute('data-on', '');
     box.setAttribute('aria-roledescription', 'carusel');
-    box.innerHTML = '<div class="bfs-st">' + list.map(cardHtml).join('') + '</div><div class="bfs-dots">' +
+    // only the card in front and its two neighbours show at first: the others' pictures load after the page (speed, 25.11)
+    box.innerHTML = '<div class="bfs-st">' + list.map(function (p, k) { return cardHtml(p, { wait: Math.min(k, list.length - k) > 1, first: k === 0 }); }).join('') + '</div><div class="bfs-dots">' +
       list.map(function (p, k) { return '<button type="button" data-dot="' + k + '" aria-label="' + esc(p.name) + '"></button>'; }).join('') + '</div>';
     SL.el = box; SL.cards = $$('.bfs-st > .bfc', box); SL.n = SL.cards.length;
+    // back on the page in this visit: the card she left in front is in front again
+    var was = ss.get('c360-bfs'), at = list.map(function (p) { return p.id; }).indexOf(was);
+    if (at > 0) SL.pos = at;
     measure(); layout(true);
     requestAnimationFrame(function () { box.classList.add('on'); });
     box.addEventListener('pointerdown', function (e) {
@@ -248,7 +288,11 @@
     addEventListener('resize', function () { measure(); layout(true); });
     if (window.IntersectionObserver) new IntersectionObserver(function (es) { SL.vis = es[0].isIntersecting; }).observe(box);
     if (!reduce) SL.timer = setInterval(function () { if (document.hidden || !SL.vis || SL.over || SL.drag || sheetOn || pop || Date.now() < SL.hold) return; SL.pos += 1; layout(); }, 5200);
+    afterLoad(function () { SL.cards.forEach(warm); });
   }
+  // a waiting picture starts loading (it comes near the front, or the page has loaded)
+  function warm(c) { var i = $('img[data-src]', c); if (i) { i.src = i.getAttribute('data-src'); i.removeAttribute('data-src'); } }
+  function afterLoad(fn) { var go = function () { setTimeout(fn, 400); }; if (document.readyState === 'complete') go(); else addEventListener('load', go, { once: true }); }
   function measure() {
     var c = SL.cards[0];
     if (!c) return;
@@ -274,6 +318,7 @@
       if (instant) c.style.transition = 'none';
       c.style.transform = P.t; c.style.opacity = P.o; c.style.zIndex = P.z;
       c.style.visibility = Math.abs(d) > 2.4 ? 'hidden' : '';
+      if (Math.abs(d) < 2) warm(c);
       if (instant) { void c.offsetWidth; c.style.transition = ''; }
     });
     if (mid !== SL.mid) {
@@ -285,6 +330,7 @@
         $$('a, button', c).forEach(function (b) { if (on) b.removeAttribute('tabindex'); else b.setAttribute('tabindex', '-1'); });
       });
       $$('[data-dot]', SL.el).forEach(function (b, k) { b.setAttribute('aria-current', String(k === mid)); });
+      ss.set('c360-bfs', SL.cards[mid].getAttribute('data-p'));
     }
   }
   var pause = function () { SL.hold = Date.now() + 9000; };
@@ -318,13 +364,28 @@
     if (!el || !D) return;
     var h = (location.hash || '').slice(1);
     if (FILTERS.some(function (f) { return f[0] === h; })) F.k = h;
+    // the clinic is hers (kept, or ?oras=); the order is kept for this visit (back from a treatment, it is as she left it)
+    F.city = S.city;
+    var so = ss.get('c360-bfo-sort'); if (SORTS.some(function (s) { return s[0] === so; })) F.sort = so;
     el.innerHTML = '<div class="bfo-f"><div class="bfo-cats" role="tablist" aria-label="Categorie">' +
       FILTERS.map(function (f) { return '<button type="button" role="tab" data-f="' + f[0] + '" aria-selected="' + (f[0] === F.k) + '">' + f[1] + '</button>'; }).join('') + '</div>' +
       '<div class="bfo-tools">' +
       ddHtml('city', 'Clinica', CITIES_F, F.city, 'l') + ddHtml('sort', 'Sortează', SORTS, F.sort, 'r') +
       '</div></div>' +
       '<div class="bfo-head"><h2 data-fh></h2><span data-fn></span></div><div class="bfo-g tiles" data-grid></div>';
+    el.style.minHeight = '';
     grid(false);
+    // back from a treatment (not from the browser's page cache): where she was in the list
+    var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0], y = +ss.get('c360-bfo-y') || 0;
+    if (nav && nav.type === 'back_forward' && y > 0) requestAnimationFrame(function () { scrollTo(0, y); });
+  }
+  addEventListener('pagehide', function () { if ($('[data-grid]')) ss.set('c360-bfo-y', String(Math.round(scrollY))); });
+  function ddSet(dd, v) {
+    var o = $$('[data-ddo]', dd).filter(function (x) { return x.getAttribute('data-ddo') === v; })[0];
+    if (!o) return;
+    $$('[data-ddo]', dd).forEach(function (x) { x.setAttribute('aria-selected', String(x === o)); });
+    $('[data-ddv]', dd).textContent = $('span', o).textContent;
+    $('.bfo-ddb', dd).setAttribute('aria-label', (dd.getAttribute('data-dd') === 'sort' ? 'Sortează' : 'Clinica') + ': ' + $('span', o).textContent);
   }
   var CITIES_F = [['', 'Ambele clinici'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']];
   function ddHtml(key, label, opts, val, side) {
@@ -341,10 +402,9 @@
     var o = t.closest('[data-ddo]');
     if (o) {
       var dd = o.closest('.bfo-dd'), key = dd.getAttribute('data-dd'), v = o.getAttribute('data-ddo');
-      if (key === 'sort') F.sort = v; else F.city = v;
-      $$('[data-ddo]', dd).forEach(function (x) { x.setAttribute('aria-selected', String(x === o)); });
-      $('[data-ddv]', dd).textContent = $('span', o).textContent;
-      $('.bfo-ddb', dd).setAttribute('aria-label', (key === 'sort' ? 'Sortează' : 'Clinica') + ': ' + $('span', o).textContent);
+      // the clinic picked here is the checkout's clinic too
+      if (key === 'sort') { F.sort = v; ss.set('c360-bfo-sort', v); } else { F.city = v; S.city = v; save(); }
+      ddSet(dd, v);
       ddClose(); grid(true); return;
     }
     if (!t.closest('.bfo-dd')) ddClose();
@@ -360,12 +420,13 @@
       az: function (x, y) { return x.name.localeCompare(y.name, 'ro'); } }[F.sort] || null;
     return cmp && (k !== 'top' || F.sort !== 'rec') ? list.slice().sort(cmp) : list;
   }
-  // a small product card for the grid: the picture, -50%, the name, the price, „Rezervă oferta”; a tap on it opens the treatment
-  function tileHtml(p) {
-    var z = zoneOf(p), n = nOf(p), mine = inCart(p.id), u = urlOf(p);
+  // a small product card for the grid: the picture, -50%, the name, the price, „Rezervă oferta”; a tap on it opens the treatment.
+  // The first row's pictures load at once (the first one first), the others when they come near.
+  function tileHtml(p, k) {
+    var z = zoneOf(p), n = nOf(p), mine = has(p), u = urlOf(p);
     return '<article class="bfc bft' + (mine ? ' in' : '') + '" data-p="' + esc(p.id) + '" data-href="' + u + '" data-w="1">' +
-      '<span class="pic" aria-hidden="true"><img src="' + esc(picOf(p)) + '" alt="" loading="lazy" decoding="async"' + posOf(p) + '></span>' +
-      '<span class="pct">-' + pct() + '%</span>' + (p.cities.length === 1 ? '<span class="bft-c">Doar ' + esc(p.cities[0]) + '</span>' : '') +
+      '<span class="pic" aria-hidden="true"><img ' + tileImg(p) + ' alt=""' + (k === 0 ? ' fetchpriority="high"' : k < 4 ? '' : ' loading="lazy"') + ' decoding="async"' + posOf(p) + '></span>' +
+      '<span class="pct">-' + pct() + '%</span>' + onlyHtml(p, 'bft-c') +
       '<div class="bft-b"><span class="k">' + esc(NEED[p.need] || '') + '</span>' +
       '<h3><a href="' + u + '">' + esc(nameOf(p, z)) + '</a></h3>' +
       '<div class="pr"><b data-pr>' + lei(p.price * n) + '</b><s data-full>' + lei(p.full * n) + '</s></div>' +
@@ -390,9 +451,9 @@
     var men = EPI.g === 'm';
     var list = D.products.filter(function (p) { return p.need === 'epilare' && p.id !== 'epilare-full-body' && /bărbați$/.test(p.name) === men; });
     ul.innerHTML = list.map(function (p) {
-      var has = inCart(p.id);
+      var on = has(p);
       return '<li><a href="' + urlOf(p) + '">' + esc(p.name.replace(/^Epilare /, '').replace(/ bărbați$/, '')) + '</a><span class="pz"><s>' + lei(p.full) + '</s><b>' + lei(p.price) + '</b></span>' +
-        '<button type="button" class="sh-plus' + (has ? ' in' : '') + '" data-plus="' + esc(p.id) + '" aria-label="' + (has ? 'În coș, scoate' : 'Adaugă ' + esc(p.name)) + '">' + (has ? I.check : I.plus) + '</button></li>';
+        '<button type="button" class="sh-plus' + (on ? ' in' : '') + '" data-plus="' + esc(p.id) + '" aria-label="' + (on ? 'În coș, scoate' : 'Adaugă ' + esc(p.name)) + '">' + (on ? I.check : I.plus) + '</button></li>';
     }).join('');
   }
   // the light segmented controls: the white thumb sits under the chosen part, and slides to the next one
@@ -414,7 +475,7 @@
     if (!box || !D) return;
     var p = byId(box.getAttribute('data-pp'));
     if (!p) return;
-    var z = zoneOf(p), n = nOf(p), mine = inCart(p.id);
+    var z = zoneOf(p), n = nOf(p), mine = has(p);
     box.innerHTML = (p.zones.length ? '<p class="pp-l">Zona</p><div class="seg d wr" role="radiogroup" aria-label="Zona">' + p.zones.map(function (x) { return '<button type="button" role="radio" data-ppz="' + esc(x) + '" aria-checked="' + (x === z) + '">' + esc(x) + '</button>'; }).join('') + '</div>' : '') +
       '<p class="pp-l">Ședințe</p>' + sesHtml(p) +
       '<div class="pp-pr"><b>' + lei(p.price * n) + '</b><s>' + lei(p.full * n) + '</s><span>' + (n > 1 ? lei(p.price) + ' / ședință' : '') + '</span></div>' +
@@ -439,10 +500,11 @@
     ppBar.innerHTML = '<div><b>' + esc(nameOf(p, zoneOf(p))) + '</b><span><s>' + lei(p.full * n) + '</s> ' + lei(p.price * n) + '</span></div><button type="button" class="btn book gold" data-ppadd>' + (mine ? 'Finalizează' : 'Rezervă') + I.arrow + '</button>';
   }
   function pairHtml(from, q, dark) {
-    var z = zoneOf(q), has = inCart(q.id);
-    return '<div class="pair' + (dark ? ' d' : '') + '" data-href="' + urlOf(q) + '"><span class="th"><img src="' + esc(picOf(q)) + '" alt=""' + posOf(q) + '></span>' +
+    var z = q.zones.indexOf(zoneOf(from)) > -1 ? zoneOf(from) : zoneOf(q), on = !!lineOf(q.id, z);
+    return '<div class="pair' + (dark ? ' d' : '') + '" data-href="' + urlOf(q) + '"><span class="th"><img src="' + esc(picW(q, 300)) + '" alt="" decoding="async"' + posOf(q) + '></span>' +
       '<div><a href="' + urlOf(q) + '"><b>' + esc(nameOf(q, z)) + '</b></a><small>' + esc(WHY[from.id + '>' + q.id] || 'Se completează bine') + '</small><span class="pz"><s>' + lei(q.full) + '</s> <b>' + lei(q.price) + '</b></span></div>' +
-      '<button type="button" class="sh-plus' + (has ? ' in' : '') + '" data-plus="' + esc(q.id) + '" data-pz="' + esc(z) + '" aria-label="' + (has ? 'În coș' : 'Adaugă') + '">' + (has ? I.check : I.plus) + '</button></div>';
+      '<button type="button" class="sh-plus' + (on ? ' in' : '') + '" data-plus="' + esc(q.id) + '" data-pz="' + esc(z) + '" aria-label="' + (on ? 'În coș' : 'Adaugă') + '">' + (on ? I.check : I.plus) + '</button></div>';
+
   }
 
   // ================= the cart =================
@@ -494,8 +556,9 @@
       document.body.appendChild(b);
     }
     var t = totals();
-    // a page with its own bottom bar (the consultation dock of the content pages) keeps it: the header's bag is enough there
-    b.classList.toggle('on', t.lines.length > 0 && !sheetOn && !pop && !$('.dock'));
+    // with something in the cart it stays, also on the content pages (above their consultation dock: shop.css); a treatment
+    // page's own buy bar takes its place on the phone (pp.css)
+    b.classList.toggle('on', t.lines.length > 0 && !sheetOn && !pop);
     $('.ct i', b).textContent = t.lines.length;
     $('.tx small', b).textContent = t.lines.length === 1 ? nameOf(t.lines[0].p, t.lines[0].zone) : t.lines.length + ' tratamente';
     $('.tx b', b).innerHTML = lei(t.amount) + (t.saved > 0 ? '<s>' + lei(t.full) + '</s>' : '');
@@ -571,14 +634,24 @@
     }
     return veil;
   }
+  // the zone chips of a line: its own zone is checked; a zone already in the cart on another line is shown as such and cannot be
+  // picked (two lines never merge by surprise); „+ Încă o zonă” adds a new line with a zone not yet in the cart
+  function zoneChips(p, zone, attr, k) {
+    return p.zones.map(function (x) {
+      var other = x !== zone && !!lineOf(p.id, x);
+      return '<button type="button" role="radio" ' + attr + '="' + esc(x) + '"' + (k ? ' data-k="' + esc(k) + '"' : '') + ' aria-checked="' + (x === zone) + '"' + (other ? ' disabled class="tk" aria-label="' + esc(x) + ', deja în coș"' : '') + '>' + I.check + esc(x) + '</button>';
+    }).join('');
+  }
   function popHtml(p, zone, qty) {
     return '<div class="sp-in">' +
       '<div class="sp-h"><span class="sp-ok">' + I.check + '</span><b>Adăugat în coș</b><button type="button" class="sh-ic" data-pop-x aria-label="Închide">' + I.x + '</button></div>' +
-      '<div class="sp-it"><span class="th"><img src="' + esc(picOf(p)) + '" alt=""' + posOf(p) + '></span><div><b data-sp-n>' + esc(nameOf(p, zone)) + '</b><small>Black Friday -' + pct() + '% · ' + p.minutes + ' min</small></div>' +
+      '<div class="sp-it"><span class="th"><img src="' + esc(picW(p, 300)) + '" alt=""' + posOf(p) + '></span><div><b data-sp-n>' + esc(nameOf(p, zone)) + '</b><small>Black Friday -' + pct() + '% · ' + p.minutes + ' min</small>' + onlyHtml(p, 'sp-c') + '</div>' +
       '<div class="pz"><b data-sp-p>' + lei(p.price * qty) + '</b><s data-sp-f>' + lei(p.full * qty) + '</s></div></div>' +
-      (p.zones.length ? '<p class="sp-l">Alege zona</p><div class="sh-chips" role="radiogroup" aria-label="Zona">' + p.zones.map(function (x) { return '<button type="button" role="radio" data-pzone="' + esc(x) + '" aria-checked="' + (x === zone) + '">' + I.check + esc(x) + '</button>'; }).join('') + '</div>' : '') +
+      (p.zones.length ? '<p class="sp-l">Alege zona</p><div class="sh-chips" role="radiogroup" aria-label="Zona" data-sp-z>' + zoneChips(p, zone, 'data-pzone') + '</div>' +
+        '<button type="button" class="sh-addz" data-pzadd' + (freeZone(p) ? '' : ' hidden') + '>' + I.plus + 'Încă o zonă</button>' : '') +
       '<div class="sp-row"><span>Ședințe<small data-sp-u>' + (qty > 1 ? lei(p.price) + ' / ședință' : 'o ședință') + '</small></span>' + stepHtml('pop', qty, 1) + '</div>' +
-      '<button type="button" class="sh-go" data-checkout>Finalizează rezervarea' + I.arrow + '</button>' +
+      // the next step is the clinic and the hour (the cart stays one tap back, with what goes well with it)
+      '<button type="button" class="sh-go" data-checkout>Alege ziua și ora' + I.arrow + '</button>' +
       '<button type="button" class="sh-more" data-pop-x>Mai adaug și altele</button></div>';
   }
   function stepHtml(key, qty, min) {
@@ -623,9 +696,20 @@
     roll($('[data-sp-p]', el), lei(p.price * q));
     $('[data-sp-f]', el).textContent = lei(p.full * q);
     $('[data-sp-u]', el).textContent = q > 1 ? lei(p.price) + ' / ședință' : 'o ședință';
-    $$('[data-pzone]', el).forEach(function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-pzone') === pop.zone)); });
+    var zc = $('[data-sp-z]', el); if (zc) zc.innerHTML = zoneChips(p, pop.zone, 'data-pzone');
+    var za = $('[data-pzadd]', el); if (za) za.hidden = !freeZone(p);
     stepPaint($('.sh-step', el), q, 1);
   }
+  // „+ Încă o zonă”: a new line with the first zone not in the cart; her next tap on a chip changes that new line's zone
+  function popMore() {
+    if (!pop) return;
+    var p = byId(pop.id), z = p && freeZone(p);
+    if (!z) return;
+    add(p.id, z, 1);
+    pop.zone = z; S.zone[p.id] = z;
+    popPaint(); repaint(p.id);
+  }
+
   function popZone(zone) {
     if (!pop || zone === pop.zone) return;
     setZone(keyOf(pop.id, pop.zone), zone);
@@ -706,18 +790,20 @@
   // a small card: „Merge super în combinație cu” (with the reason) and the other offers; one tap adds it, the card opens its page
   function miniHtml(q, why, zone) {
     var z = zone || zoneOf(q), has = !!lineOf(q.id, z);
-    return '<div class="sh-pc sh-card" data-href="' + urlOf(q) + '"><span class="th"><img src="' + esc(picOf(q)) + '" alt="" loading="lazy"' + posOf(q) + '></span><b>' + esc(nameOf(q, z)) + '</b>' + (why ? '<small>' + esc(why) + '</small>' : '') +
+    return '<div class="sh-pc sh-card" data-href="' + urlOf(q) + '"><span class="th"><img src="' + esc(picW(q, 600)) + '" alt="" loading="lazy" decoding="async"' + posOf(q) + '></span><b>' + esc(nameOf(q, z)) + '</b>' + (why ? '<small>' + esc(why) + '</small>' : '') +
       '<span class="pz"><b>' + lei(q.price) + '</b><s>' + lei(q.full) + '</s></span>' +
       '<button type="button" class="sh-plus' + (has ? ' in' : '') + '" data-plus="' + esc(q.id) + '" data-pz="' + esc(z) + '" aria-label="' + (has ? 'În coș, scoate ' : 'Adaugă ') + esc(nameOf(q, z)) + '">' + (has ? I.check : I.plus) + '</button></div>';
   }
   function lineHtml(x) {
     var u = urlOf(x.p);
-    return '<li class="sh-li sh-card" data-line="' + esc(x.key) + '"><a class="th" href="' + u + '" aria-hidden="true" tabindex="-1"><img src="' + esc(picOf(x.p)) + '" alt=""' + posOf(x.p) + '></a>' +
+    return '<li class="sh-li sh-card" data-line="' + esc(x.key) + '"><a class="th" href="' + u + '" aria-hidden="true" tabindex="-1"><img src="' + esc(picW(x.p, 300)) + '" alt=""' + posOf(x.p) + '></a>' +
       '<div class="sh-li-m"><a class="sh-li-n" href="' + u + '">' + esc(x.p.name) + '</a>' +
-      (x.p.zones.length ? '<button type="button" class="sh-zone" data-zk="' + esc(x.key) + '" aria-expanded="false">' + esc(x.zone) + I.down + '</button>' : '<span class="sh-li-x">' + esc(NEED[x.p.need] || '') + ' · ' + x.p.minutes + ' min</span>') + '</div>' +
+      (x.p.zones.length ? '<div class="sh-zr"><button type="button" class="sh-zone" data-zk="' + esc(x.key) + '" aria-expanded="false">' + esc(x.zone) + I.down + '</button>' +
+        (freeZone(x.p) ? '<button type="button" class="sh-addz s" data-zadd="' + esc(x.p.id) + '">' + I.plus + 'Încă o zonă</button>' : '') + '</div>'
+        : '<span class="sh-li-x">' + esc(NEED[x.p.need] || '') + ' · ' + x.p.minutes + ' min</span>') + '</div>' +
       '<div class="pz"><b>' + lei(x.p.price * x.qty) + '</b><s>' + lei(x.p.full * x.qty) + '</s></div>' +
       '<div class="sh-li-b"><small>' + (lei(x.p.price) + ' / ședință') + '</small>' + stepHtml(x.key, x.qty, 0) + '</div>' +
-      (x.p.zones.length ? '<div class="sh-zp"><div><div class="sh-chips" role="radiogroup" aria-label="Zona">' + x.p.zones.map(function (z) { return '<button type="button" role="radio" data-lz="' + esc(z) + '" data-k="' + esc(x.key) + '" aria-checked="' + (z === x.zone) + '">' + I.check + esc(z) + '</button>'; }).join('') + '</div></div></div>' : '') + '</li>';
+      (x.p.zones.length ? '<div class="sh-zp"><div><div class="sh-chips" role="radiogroup" aria-label="Zona">' + zoneChips(x.p, x.zone, 'data-lz', x.key) + '</div></div></div>' : '') + '</li>';
   }
   function paneCart() {
     var el = pane('cart'), t = totals();
@@ -725,16 +811,22 @@
       el.innerHTML = '<div class="sh-empty">' + I.bag + '<h4>Coșul e gol</h4><p>Alege un tratament la -' + pct() + '%.</p><a class="sh-go" href="' + OFFERS + '">Vezi ofertele' + I.arrow + '</a></div>';
       foot(''); return;
     }
-    var city = cityNow(), mine = {}, pairs = [];
-    t.lines.forEach(function (x) { if (!S.keep[x.p.id]) mine[x.p.id] = 1; });
+    // the suggestions: her clinic's (both, while she has not chosen); a treatment already in the cart is offered on a zone not in
+    // the cart yet, or left out; one she added from here stays, checked, so she can take it back
+    var city = cityNow(), pairs = [];
+    var here = function (q) { return !city || q.cities.indexOf(city) > -1; };
+    var mine = function (q, z) { return !!lineOf(q.id, z) && !S.keep[keyOf(q.id, z)]; };
     t.lines.forEach(function (x) {
       x.p.pairs.forEach(function (id) {
         var q = byId(id);
-        if (q && !mine[q.id] && q.cities.indexOf(city) > -1 && !pairs.some(function (y) { return y.q === q; })) pairs.push({ q: q, why: WHY[x.p.id + '>' + q.id] || 'Se completează bine', zone: q.zones.indexOf(x.zone) > -1 ? x.zone : '' });
+        if (!q || !here(q) || pairs.some(function (y) { return y.q === q; })) return;
+        var z = q.zones.length ? (q.zones.indexOf(x.zone) > -1 ? x.zone : zoneOf(q)) : '';
+        if (mine(q, z)) { if (!q.zones.length || !freeZone(q)) return; z = freeZone(q); }
+        pairs.push({ q: q, why: WHY[x.p.id + '>' + q.id] || 'Se completează bine', zone: z });
       });
     });
     pairs = pairs.slice(0, 4);
-    var rest = D.terms.show.map(byId).filter(function (p) { return p && !mine[p.id] && !pairs.some(function (y) { return y.q === p; }) && p.cities.indexOf(city) > -1; }).slice(0, 5);
+    var rest = D.terms.show.map(byId).filter(function (p) { return p && here(p) && !pairs.some(function (y) { return y.q === p; }) && !S.cart.some(function (l) { return l.id === p.id && !S.keep[keyOf(l.id, l.zone)]; }); }).slice(0, 5);
     el.innerHTML = '<div class="sh-tmw">' + tmHtml('s') + '</div>' +
       '<ul class="sh-lines">' + t.lines.map(lineHtml).join('') + '</ul>' +
       (pairs.length ? '<p class="sh-lab">Merge super în combinație cu</p><div class="sh-rail">' + pairs.map(function (y) { return miniHtml(y.q, y.why, y.zone); }).join('') + '</div>' : '') +
@@ -764,24 +856,62 @@
     var fn = $('[data-ft-n]', sheet); if (fn) fn.textContent = 'Total, ' + (t.n === 1 ? '1 ședință' : t.n + ' ședințe');
   }
   function mainLine() { return totals().lines.slice().sort(function (a, b) { return b.p.full - a.p.full; })[0]; }
-  function whenLine() { if (!S.time || !S.date) return 'Alege ziua și ora'; var x = new Date(S.date + 'T12:00:00'); return WDL[x.getDay()].replace(/^./, function (c) { return c.toUpperCase(); }) + ' ' + x.getDate() + ' ' + MOS[x.getMonth()] + ', ' + S.time; }
+  function whenLine() { if (!S.city) return 'Alege clinica'; if (clashOf().length) return 'Alege ce faci mai sus'; if (!S.time || !S.date) return 'Alege ziua și ora'; var x
+ = new Date(S.date + 'T12:00:00'); return WDL[x.getDay()].replace(/^./, function (c) { return c.toUpperCase(); }) + ' ' + x.getDate() + ' ' + MOS[x.getMonth()] + ', ' + S.time; }
+  // the clinic first (none chosen: she picks, nothing is preselected), then the day and the hour; the first visit is one line
   function paneWhen() {
     var el = pane('when'), m = mainLine();
     if (!m) { go('cart'); return; }
-    var tmOnly = totals().lines.some(function (x) { return x.p.cities.length === 1; });
     S.city = cityNow(); save();
     fev('checkout');
     px('InitiateCheckout', { value: totals().amount, currency: 'RON', num_items: totals().n });
     el.innerHTML = '<p class="sh-lab" style="margin-top:10px">Clinica</p><div class="seg sh-seg" role="radiogroup" aria-label="Clinica"><i class="sg-i" aria-hidden="true"></i>' +
-      ['Timișoara', 'Arad'].map(function (c) { return '<button type="button" role="radio" data-city="' + c + '" aria-checked="' + (c === S.city) + '"' + (tmOnly && c === 'Arad' ? ' disabled' : '') + '>' + c + '</button>'; }).join('') + '</div>' +
-      '<p class="sh-addr" data-addr>' + I.pin + '<span>' + esc(ADDR[S.city]) + '</span></p>' +
-      (tmOnly ? '<p class="sh-note">EMS, împachetarea și epilarea laser se fac doar în Timișoara.</p>' : '') +
-      '<p class="sh-lab">La prima vizită</p><div class="sh-opt" role="radiogroup" aria-label="La prima vizită">' +
-      '<button type="button" role="radio" data-visit="first" aria-checked="' + (S.visit === 'first') + '"><i></i><span><b>Încep direct</b><small>Prima ședință: ' + esc(nameOf(m.p, m.zone)) + ', ' + m.p.minutes + ' min</small></span></button>' +
-      '<button type="button" role="radio" data-visit="consult" aria-checked="' + (S.visit === 'consult') + '"><i></i><span><b>Vin întâi la consultația gratuită</b><small>30 min, îți spunem ce ți se potrivește</small></span></button></div>' +
-      '<p class="sh-lab">Ziua</p><div data-days><div class="sh-wait">Caut orele libere…</div></div><div data-slots></div>';
-    foot('<div class="sh-ft-t"><small>Centrul360 ' + esc(S.city) + '</small><b class="sm" data-when>' + esc(whenLine()) + '</b></div><button type="button" class="sh-go" data-go="pay"' + (S.time ? '' : ' disabled') + '>Spre plată' + I.arrow + '</button>');
-    days();
+      ['Timișoara', 'Arad'].map(function (c) { return '<button type="button" role="radio" data-city="' + c + '" aria-checked="' + (c === S.city) + '">' + c + '</button>'; }).join('') + '</div>' +
+      '<p class="sh-addr" data-addr' + (S.city ? '' : ' hidden') + '>' + I.pin + '<span>' + esc(ADDR[S.city] || '') + '</span></p>' +
+      '<p class="sh-note" data-pick-c' + (S.city ? ' hidden' : '') + '>Alege clinica și îți arătăm orele libere.</p>' +
+      '<p class="sh-note" data-only hidden></p><div data-clash hidden></div>' +
+      '<div data-wh' + (S.city ? '' : ' hidden') + '>' +
+      '<p class="sh-lab">La prima vizită</p><div class="seg sh-seg sh-vis" role="radiogroup" aria-label="La prima vizită"><i class="sg-i" aria-hidden="true"></i>' +
+      '<button type="button" role="radio" data-visit="first" aria-checked="' + (S.visit === 'first') + '">Încep direct</button>' +
+      '<button type="button" role="radio" data-visit="consult" aria-checked="' + (S.visit === 'consult') + '">Consultație gratuită</button></div>' +
+      '<p class="sh-note" data-visit-n>' + esc(visitNote()) + '</p>' +
+      '<p class="sh-lab">Ziua</p><div data-days><div class="sh-wait">Caut orele libere…</div></div><div data-slots></div></div>';
+    foot('<div class="sh-ft-t"><small data-ft-c>' + esc(S.city ? 'Centrul360 ' + S.city : 'Clinica') + '</small><b class="sm" data-when>' + esc(whenLine()) + '</b></div><button type="button" class="sh-go" data-go="pay" disabled>Spre plată' + I.arrow + '</button>');
+    whenSync();
+  }
+  function visitNote() { var m = mainLine(); return S.visit === 'consult' ? '30 de minute, gratuit: îți spunem ce ți se potrivește.' : m ? 'Prima ședință: ' + nameOf(m.p, m.zone) + ', ' + m.p.minutes + ' min.' : ''; }
+  // after the clinic changed or a line went: the address, what her clinic does not do, the hours
+  function whenSync() {
+    var el = pane('when');
+    if (!el || S.step !== 'when') return;
+    if (!mainLine()) { go('cart'); return; }
+    var bad = clashOf(), ok = !!S.city && !bad.length;
+    var ad = $('[data-addr]', el); if (ad) { ad.hidden = !S.city; $('span', ad).textContent = ADDR[S.city] || ''; }
+    var pc = $('[data-pick-c]', el); if (pc) pc.hidden = !!S.city;
+    // why this clinic (the cart has what only it does)
+    var only = ok ? lines().filter(function (x) { return x.p.cities.length === 1; }).map(function (x) { return nameOf(x.p, x.zone); }) : [];
+    var on1 = $('[data-only]', el); if (on1) { on1.hidden = !only.length; on1.textContent = only.length ? only.join(', ') + (only.length === 1 ? ' se face' : ' se fac') + ' doar în ' + S.city + '.' : ''; }
+    var cl = $('[data-clash]', el);
+    if (cl) {
+      var to = fixCity(), one = bad.length === 1;
+      cl.hidden = !bad.length;
+      cl.innerHTML = bad.length ? '<div class="sh-clash sh-card"><p><b>' + (one ? 'Se face doar în ' : 'Se fac doar în ') + esc(bad[0].p.cities[0]) + '</b>' + (one ? 'Tratamentul de mai jos nu se face' : 'Tratamentele de mai jos nu se fac') + ' în ' + esc(S.city) + '.</p><ul>' +
+        bad.map(function (x) { return '<li><span>' + esc(nameOf(x.p, x.zone)) + (x.qty > 1 ? ' × ' + x.qty : '') + '</span><button type="button" class="sh-rm" data-rm="' + esc(x.key) + '">Scoate</button></li>'; }).join('') + '</ul>' +
+        (to ? '<button type="button" class="sh-go l" data-city-to="' + esc(to) + '">Schimbă pe ' + esc(to) + '</button>' : '') + '</div>' : '';
+    }
+    var wh = $('[data-wh]', el);
+    if (wh) { var was = wh.hidden; wh.hidden = !ok; if (was && ok) thumb($('.sh-vis', wh), true); }
+    var vn = $('[data-visit-n]', el); if (vn) vn.textContent = visitNote();
+    var fc = $('[data-ft-c]', sheet); if (fc) fc.textContent = S.city ? 'Centrul360 ' + S.city : 'Clinica';
+    if (ok) days();
+    whenFoot();
+  }
+  // a day tapped: its hours come into sight (on a small phone they are under the fold)
+  function slotsInView() {
+    var el = pane('when'), sl = el && $('[data-slots]', el);
+    if (!sl || !sl.firstChild) return;
+    var r = sl.getBoundingClientRect(), pr = el.getBoundingClientRect(), d = Math.min(r.bottom - pr.bottom + 16, r.top - pr.top - 8);
+    if (d > 0) { try { el.scrollBy({ top: d, behavior: reduce ? 'auto' : 'smooth' }); } catch (e) { el.scrollTop += d; } }
   }
   var daysKey = '';
   function days() {
@@ -816,7 +946,7 @@
     $('[data-slots]', el).innerHTML = '<p class="sh-lab">Ora · ' + esc(nice(S.date)) + '</p><div class="sh-slots" role="radiogroup" aria-label="Ora">' + day.slots.map(function (t) { return '<button type="button" role="radio" data-time="' + t + '" aria-checked="' + (t === S.time) + '">' + t + '</button>'; }).join('') + '</div>';
     whenFoot();
   }
-  function whenFoot() { var w = $('[data-when]', sheet); if (w) w.textContent = whenLine(); var b = $('[data-go="pay"]', sheet); if (b) b.disabled = !S.time; }
+  function whenFoot() { var w = $('[data-when]', sheet); if (w) w.textContent = whenLine(); var b = $('[data-go="pay"]', sheet); if (b) b.disabled = !S.time || !S.city || clashOf().length > 0; }
   function nice(date) { var x = new Date(date + 'T12:00:00'); return WDL[x.getDay()] + ' ' + x.getDate() + ' ' + MO[x.getMonth()]; }
 
   var payP = null;
@@ -931,19 +1061,20 @@
       return;
     }
     var a = t.closest('[data-add]');
-    if (a && card) { var p = byId(card.getAttribute('data-p')), z = zoneOf(p); pause(); if (inCart(p.id)) { openSheet('cart', a); return; } add(p.id, z, nOf(p)); openPop(p.id, z, a); return; }
+    if (a && card) { var p = byId(card.getAttribute('data-p')), z = zoneOf(p); pause(); if (has(p)) { openSheet('cart', a); return; } add(p.id, z, nOf(p)); openPop(p.id, z, a); return; }
     var ppa = t.closest('[data-ppadd]');
-    if (ppa) { var pp = byId($('[data-pp]').getAttribute('data-pp')); if (inCart(pp.id)) { openSheet('cart', ppa); return; } add(pp.id, zoneOf(pp), nOf(pp)); openPop(pp.id, zoneOf(pp), ppa); return; }
+    if (ppa) { var pp = byId($('[data-pp]').getAttribute('data-pp')); if (has(pp)) { openSheet('cart', ppa); return; } add(pp.id, zoneOf(pp), nOf(pp)); openPop(pp.id, zoneOf(pp), ppa); return; }
     var ppz = t.closest('[data-ppz]'); if (ppz) { S.zone[$('[data-pp]').getAttribute('data-pp')] = ppz.getAttribute('data-ppz'); ppBuy(); return; }
     if (card && !t.closest('a, button')) { openCard(card, card.getAttribute('data-href')); return; }
     if (card && t.closest('h3 a')) { e.preventDefault(); openCard(card, t.closest('a').getAttribute('href')); return; }
-    var pz = t.closest('[data-pzone]'); if (pz) { popZone(pz.getAttribute('data-pzone')); return; }
-    var co = t.closest('[data-checkout]'); if (co) { var from = co; closePop(function () { openSheet('cart', from); }); return; }
+    var pz = t.closest('[data-pzone]'); if (pz) { if (!pz.disabled) popZone(pz.getAttribute('data-pzone')); return; }
+    if (t.closest('[data-pzadd]')) { popMore(); return; }
+    var co = t.closest('[data-checkout]'); if (co) { var from = co; closePop(function () { openSheet('when', from); }); return; }
     if (t.closest('[data-pop-x]')) { closePop(); return; }
     var plus = t.closest('[data-plus]');
     if (plus) {
       var id = plus.getAttribute('data-plus'), q = byId(id), z2 = plus.getAttribute('data-pz') || (q ? zoneOf(q) : ''), had = !!lineOf(id, z2);
-      if (sheet && sheet.contains(plus)) S.keep[id] = 1;
+      if (sheet && sheet.contains(plus)) S.keep[keyOf(id, z2)] = 1;
       if (had) setQty(keyOf(id, z2), -99); else add(id, z2, 1);
       if (sheetOn && S.step === 'cart') paneCart();
       return;
@@ -952,12 +1083,27 @@
     if (qb) { if (qb.disabled) return; if (qb.getAttribute('data-k') === 'pop') popQty(+qb.getAttribute('data-q')); else { var qk = qb.getAttribute('data-k'); setQty(qk, +qb.getAttribute('data-q')); if (sheetOn && S.step === 'cart') cartSoft(qk); } return; }
     var zk = t.closest('[data-zk]');
     if (zk) { var li = zk.closest('.sh-li'), zp = li && $('.sh-zp', li), open = zk.getAttribute('aria-expanded') !== 'true'; zk.setAttribute('aria-expanded', String(open)); if (zp) zp.classList.toggle('open', open); return; }
-    var lz = t.closest('[data-lz]'); if (lz) { setZone(lz.getAttribute('data-k'), lz.getAttribute('data-lz')); paneCart(); return; }
+    var lz = t.closest('[data-lz]'); if (lz) { if (!lz.disabled) { setZone(lz.getAttribute('data-k'), lz.getAttribute('data-lz')); paneCart(); } return; }
+    // „+ Încă o zonă” on a cart line: a new line with a zone not in the cart yet, its zone picker open so she can choose it
+    var za = t.closest('[data-zadd]');
+    if (za) {
+      var zq = byId(za.getAttribute('data-zadd')), nz = zq && freeZone(zq);
+      if (!nz) return;
+      add(zq.id, nz, 1);
+      if (S.step !== 'cart') return;
+      paneCart();
+      var nk = keyOf(zq.id, nz), nli = $$('.sh-li', pane('cart')).filter(function (x) { return x.getAttribute('data-line') === nk; })[0];
+      if (nli) {
+        var nb2 = $('[data-zk]', nli), np = $('.sh-zp', nli);
+        if (nb2) nb2.setAttribute('aria-expanded', 'true'); if (np) np.classList.add('open');
+        setTimeout(function () { try { nli.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }); } catch (x) { /* old browser */ } }, 120);
+      }
+      return;
+    }
     var fb = t.closest('[data-f]');
     if (fb) {
       var k = fb.getAttribute('data-f'); if (k === F.k) return;
       F.k = k; $$('[data-f]').forEach(function (b) { b.setAttribute('aria-selected', String(b === fb)); }); if (fb.closest('.seg')) thumb(fb.closest('.seg'));
-      try { fb.scrollIntoView({ inline: 'center', block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }); } catch (x) { /* old browsers */ }
       try { history.replaceState(null, '', '#' + k); } catch (x) { /* fine */ }
       grid(true);
       var f = $('.bfo-f'); if (f && f.getBoundingClientRect().top < 90) scrollTo({ top: $('[data-bfo]').getBoundingClientRect().top + scrollY - 90, behavior: reduce ? 'auto' : 'smooth' });
@@ -968,16 +1114,23 @@
     if (t.closest('[data-close]')) { closeSheet(); return; }
     if (t.closest('[data-back]')) { go(ORDER[Math.max(0, ORDER.indexOf(S.step) - 1)]); return; }
     var gg = t.closest('[data-go]'); if (gg && sheet && sheet.contains(gg)) { if (!gg.disabled) go(gg.getAttribute('data-go')); return; }
-    var c = t.closest('[data-city]');
+    var c = t.closest('[data-city]') || t.closest('[data-city-to]');
     if (c && !c.disabled && sheet && sheet.contains(c)) {
-      S.city = c.getAttribute('data-city'); save();
-      $$('[data-city]', sheet).forEach(function (b) { b.setAttribute('aria-checked', String(b === c)); }); thumb(c.closest('.seg'));
-      var ad = $('[data-addr] span', sheet); if (ad) ad.textContent = ADDR[S.city];
-      var sm = $('.sh-foot .sh-ft-t small', sheet); if (sm) sm.textContent = 'Centrul360 ' + S.city;
+      setCity(c.getAttribute('data-city') || c.getAttribute('data-city-to'));
+      $$('[data-city]', sheet).forEach(function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-city') === S.city)); }); thumb($('.sh-seg', sheet));
+      whenSync(); return;
+    }
+    // the clinic does not do it: one tap takes it out of the cart
+    var rm = t.closest('[data-rm]');
+    if (rm && sheet && sheet.contains(rm)) { setQty(rm.getAttribute('data-rm'), -99); whenSync(); return; }
+    var v = t.closest('[data-visit]');
+    if (v) {
+      S.visit = v.getAttribute('data-visit');
+      $$('[data-visit]', sheet).forEach(function (b) { b.setAttribute('aria-checked', String(b === v)); }); thumb(v.closest('.seg'));
+      var vn = $('[data-visit-n]', sheet); if (vn) vn.textContent = visitNote();
       days(); return;
     }
-    var v = t.closest('[data-visit]'); if (v) { S.visit = v.getAttribute('data-visit'); $$('[data-visit]', sheet).forEach(function (b) { b.setAttribute('aria-checked', String(b === v)); }); days(); return; }
-    var dy = t.closest('[data-day]'); if (dy) { S.date = dy.getAttribute('data-day'); S.time = ''; drawDays(); return; }
+    var dy = t.closest('[data-day]'); if (dy) { S.date = dy.getAttribute('data-day'); S.time = ''; drawDays(); slotsInView(); return; }
     var tm = t.closest('[data-time]'); if (tm) { S.time = tm.getAttribute('data-time'); $$('[data-time]', sheet).forEach(function (b) { b.setAttribute('aria-checked', String(b === tm)); }); whenFoot(); return; }
     // a whole suggestion card opens its treatment's page
     var row = t.closest('[data-href]'); if (row && !t.closest('a,button')) { location.href = row.getAttribute('data-href'); }
@@ -987,9 +1140,14 @@
   // ================= the catalog =================
   var CAT = null, catOk = null;
   CAT = new Promise(function (ok) { catOk = ok; });
-  function load() {
-    var art = fetch('/v2/art.json', { headers: { Accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; });
-    return Promise.all([fetch('/api/shop', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }), art]).then(function (x) {
+  // the first time, the answers the page's head already asked for (window.C360Pre, v2/build.py: the shop's pages ask from the
+  // head, before the styles, so the first screen does not wait for this script); again later (fresh), new ones
+  function load(fresh) {
+    var pre = fresh !== true && window.C360Pre;
+    var art = (pre && pre.art ? pre.art : fetch('/v2/art.json', { headers: { Accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : {}; })).catch(function () { return {}; });
+    var api = pre && pre.shop ? pre.shop.catch(function () { return fetch('/api/shop', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }); })
+      : fetch('/api/shop', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); });
+    return Promise.all([api, art]).then(function (x) {
       var d = x[0];
       if (!d || !d.ok) throw new Error('shop');
       ART = x[1] && typeof x[1] === 'object' ? x[1] : {};
@@ -1024,6 +1182,7 @@
     },
     catalog: function () { return CAT.then(function () { return D ? { terms: D.terms, products: D.products.map(function (p) { return Object.assign({}, p, { photo: picOf(p) }); }) } : null; }); },
     count: function () { return S.cart.length; },
+    lines: function () { return S.cart.map(function (l) { return { id: l.id, zone: l.zone || '', qty: l.qty || 1 }; }); },
   };
   tick();
   headCart();

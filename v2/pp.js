@@ -5,7 +5,9 @@
      [data-tp-zone]      a zone, in the buy box, on the body or face map, in the chips: one choice everywhere
      [data-tp-add]       puts the chosen session in the cart (window.C360Shop of v2/shop.js), from the button it was pressed on
      [data-tp-anim]      the explainer: three steps that play when it is in sight, a tap jumps to a step
-     [data-tp-bar]       the phone's buy bar, after the hero
+     [data-tp-bar]       the phone's buy bar: from the first screen, away only while the buy box or the last call is in sight;
+                         it carries the cart (its count opens it), so the shop's own cart bar stays away on the phone
+     [data-tp-hp]        the price line under the name (-50%, the price, the list price), the same price as the buy box
      [data-tp-tm]        the time left to the end of Black Friday (the server's clock)
    The price is the server's (/api/shop); the page shows the list price at -50% until it answers. Reduced motion: no loops,
    the explainer shows its last step and changes only when tapped.
@@ -67,6 +69,7 @@
     $$('.tp-map.tp-epi').forEach(function (m) { m.classList.toggle('m', S.g === 'm'); });
     $$('[data-tp-n]').forEach(function (b) { b.setAttribute('aria-pressed', String(+b.getAttribute('data-tp-n') === n)); });
     if (EPI) epiPairs();
+    pairsPaint();
     // the buttons: in the cart already → finish
     var mine = !!S.inCart[keyOf(c.id, c.zone)];
     $$('[data-tp-add]').forEach(function (b) {
@@ -111,15 +114,42 @@
     return true;
   }
   function openCart() { var s = shop(); if (s && typeof s.open === 'function') s.open(); }
-  // what is already in her cart (kept by shop.js on this device)
-  try {
-    var kept = JSON.parse(localStorage.getItem('c360-shop3') || 'null');
-    if (kept && Array.isArray(kept.cart)) kept.cart.forEach(function (l) { if (l && l.id) S.inCart[keyOf(l.id, l.zone)] = 1; });
-  } catch (e) { /* private mode */ }
+  // what is already in her cart (kept by shop.js on this device); read again whenever the cart changes (a line taken out in the
+  // cart, a zone changed in the popup), so the buttons never say „În coș” for something that is not
+  function syncCart() {
+    var list = null, s = shop();
+    if (s && typeof s.lines === 'function') { try { list = s.lines(); } catch (e) { list = null; } }
+    if (!list) { try { var kept = JSON.parse(localStorage.getItem('c360-shop3') || 'null'); list = kept && Array.isArray(kept.cart) ? kept.cart : []; } catch (e) { list = []; } }
+    S.inCart = {};
+    list.forEach(function (l) { if (l && l.id) S.inCart[keyOf(l.id, l.zone)] = 1; });
+    return list.length;
+  }
+  syncCart();
+  document.addEventListener('c360:cart', function () { bagPaint(syncCart()); paint(); });
+  document.addEventListener('c360:shop', function () { bagPaint(syncCart()); paint(); });
+  // the bar's bag: how many lines are in the cart; a tap opens it
+  function bagPaint(n) {
+    var b = $('[data-tp-bag]'); if (!b) return;
+    b.hidden = !n;
+    var i = $('i', b); if (i) i.textContent = n || '';
+    b.setAttribute('aria-label', n ? 'Coșul tău, ' + n + (n === 1 ? ' tratament' : ' tratamente') : 'Coșul tău');
+  }
+  bagPaint(Object.keys(S.inCart).length);
+  // what goes well with it: the paired treatment on the zone she picked here when it has it (Liposonix Coapse → EMS Coapse)
+  function pairZone(p) { return p && p.zones && p.zones.length ? (p.zones.indexOf(S.zone) > -1 ? S.zone : p.zones[0]) : ''; }
+  function pairsPaint() {
+    $$('[data-tp-pair] [data-tp-plus]').forEach(function (b) {
+      var id = b.getAttribute('data-tp-plus'), p = CAT && CAT[id], z = pairZone(p), on = !!S.inCart[keyOf(id, z)];
+      b.classList.toggle('in', on);
+      var nm = p ? p.name + (z ? ' ' + z : '') : '';
+      if (nm) b.setAttribute('aria-label', on ? nm + ', în coș' : 'Adaugă ' + nm + ' în coș');
+    });
+  }
 
   // ---- taps
   root.addEventListener('click', onTap);
-  var bar = $('[data-tp-bar]'); if (bar) bar.addEventListener('click', onTap);
+  // (the bar sits inside the page's root: one listener, else a tap on its button adds and then opens the cart at once)
+  var bar = $('[data-tp-bar]'); if (bar && !root.contains(bar)) bar.addEventListener('click', onTap);
   function onTap(e) {
     var t = e.target;
     var z = t.closest('[data-tp-zone]');
@@ -137,7 +167,7 @@
     }
     var pl = t.closest('[data-tp-plus]');
     if (pl) {
-      var pid = pl.getAttribute('data-tp-plus'), p = CAT && CAT[pid], pz = p && p.zones && p.zones.length ? p.zones[0] : '';
+      var pid = pl.getAttribute('data-tp-plus'), p = CAT && CAT[pid], pz = pairZone(p);
       if (pl.classList.contains('in')) { openCart(); return; }
       if (addToCart(pid, pz, 1, pl, true)) { pl.classList.add('in'); pl.setAttribute('aria-label', 'În coș'); }
       return;
@@ -158,7 +188,10 @@
 
   // ---- the server's catalog and clock
   function load() {
-    return fetch('/api/shop', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (d) {
+    var get = function () { return fetch('/api/shop', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }); };
+    // the answer the page's head already asked for (window.C360Pre, the same one v2/shop.js uses), else its own
+    var pre = window.C360Pre && window.C360Pre.shop;
+    return (pre ? pre.catch(get) : get()).then(function (d) {
       if (!d || !d.ok || !Array.isArray(d.products)) return;
       CAT = {}; d.products.forEach(function (p) { CAT[p.id] = p; });
       if (d.terms) { if (d.terms.end) END = Date.parse(d.terms.end); if (d.terms.now) offset = d.terms.now - Date.now(); if (d.terms.pct) S.pct = d.terms.pct; }
@@ -174,7 +207,6 @@
         if (!p) { if (b) b.hidden = true; return; }
         var pp = $('[data-tp-pp]', el), pf = $('[data-tp-pf]', el);
         if (pp) pp.textContent = lei(p.price); if (pf) pf.textContent = lei(p.full);
-        if (Object.keys(S.inCart).some(function (k) { return k.indexOf(p.id + '|') === 0; })) b.classList.add('in');
       });
       paint(); tick();
     }).catch(function () { /* the page keeps the list price at -50% */ });
@@ -189,15 +221,19 @@
   }
   tick(); setInterval(tick, 1000);
 
-  // ---- the phone's buy bar: after the hero's buy box, not over the last call
-  var buy = $('[data-tp-buy]'), endC = $('.tp-end-c'), pick = $('.tp-pick'), barOn = false, ticking = false;
+  // ---- the phone's buy bar: there from the first screen (the ad's visitor sees the price and the button at once), away only
+  // while the buy box or the last call is in sight (the same price and button twice, one over the other)
+  var buy = $('[data-tp-buy]'), endC = $('.tp-end-c'), pick = $('.tp-pick'), barOn = null, boxOn = null, ticking = false;
+  document.body.classList.add('tp-page');
+  function inSight(el, h) { var r = el && el.getBoundingClientRect(); return !!(r && r.height && r.top < h - 96 && r.bottom > 96); }
   function barCheck() {
     ticking = false;
     if (!bar || !buy) return;
-    var h = innerHeight, past = buy.getBoundingClientRect().bottom < 0, atEnd = endC && endC.getBoundingClientRect().top < h * 0.92;
-    // nor over the zone map's own „Ai ales” call: the same price and button twice, one over the other
+    var h = innerHeight, box = inSight(buy, h) || inSight(endC, h);
     var pr = pick && pick.getBoundingClientRect(), atPick = pr && pr.height && pr.top < h && pr.bottom > 0;
-    var on = past && !atEnd && !atPick && innerWidth < 960;
+    var on = !box && !atPick && innerWidth < 960;
+    // the shop's cart bar never sits over the buy box's own button (on a computer too)
+    if (box !== boxOn) { boxOn = box; document.body.classList.toggle('tp-buy-on', box); }
     if (on !== barOn) {
       barOn = on;
       bar.classList.toggle('on', on); bar.setAttribute('aria-hidden', String(!on));
@@ -205,8 +241,20 @@
       document.body.classList.toggle('tp-bar-on', on); document.body.classList.toggle('pp-bar-on', on);
     }
   }
+
   addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(barCheck); } }, { passive: true });
   addEventListener('resize', barCheck);
+  // the cookie question also sits at the bottom (on the first visit, the ad's visitor): while it is open the bar waits above it
+  var ck = $('.ck');
+  function ckLift() {
+    if (!bar || !ck) return;
+    var on = document.body.classList.contains('ck-open') && !ck.hidden, v = '';
+    if (on) { var cs = getComputedStyle(ck); v = Math.round((parseFloat(cs.bottom) || 10) + ck.offsetHeight + 10) + 'px'; }
+    if (bar.style.bottom !== v) bar.style.bottom = v;
+  }
+  if (ck && window.MutationObserver) new MutationObserver(ckLift).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  addEventListener('resize', ckLift);
+  ckLift();
 
   // ---- the explainer: step 1, 2, 3 while it is in sight; a tap jumps to a step and it goes on from there
   var anim = (function () {
@@ -287,8 +335,9 @@
 
   // ---- the treatment's own picture, when it exists after the page was made (v2/art.json)
   var img = $('[data-tp-img]'), stage = img && img.closest('.tp-stage');
-  if (img && stage && !stage.classList.contains('own')) {
-    fetch('/v2/art.json', { headers: { Accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (a) {
+  // (a page made with its own full photo already has it: nothing to ask)
+  if (img && stage && !stage.classList.contains('own') && !stage.classList.contains('full')) {
+    (window.C360Pre && window.C360Pre.art ? window.C360Pre.art : fetch('/v2/art.json', { headers: { Accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : null; })).then(function (a) {
       var x = a && (a[CFG.id] || a[CFG.page]);
       if (!x || !x.img || img.getAttribute('src') === x.img) return;
       var pre = new Image();

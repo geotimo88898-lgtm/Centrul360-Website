@@ -52,6 +52,10 @@ def pic(x):
     if a.get('img'): return a['img'], True
     f = PHOTO.get(x['id'], ('concern-stralucire', '50% 40%'))[0]
     return '/brand_asset/%s.webp' % f, False
+def small(x, src, w):
+    """the smaller copy of the treatment's picture (v2/tools/pic-sizes.py, art.json "w"), where it is shown small (speed, 25.11)"""
+    a = art(x)
+    return re.sub(r'\.webp(\?|$)', '-%d.webp\\1' % w, src, count=1) if src == a.get('img') and w in (a.get('w') or []) else src
 def pic_pos(x): return PHOTO.get(x['id'], ('', '50% 40%'))[1]
 def full_pos(x):
     """a full photo's focal point (v2/art.json 'pos'), else a little above the middle"""
@@ -721,8 +725,11 @@ def page(x):
                % (' full' if full else (' own ' + (art(x).get('edges') or cut_edges(img))).rstrip() if own else '', e(img), e(x['name']), re.sub(r'[^a-z0-9-]', '', ppid),
                   full_pos(x) if full else pic_pos(x) if not own else 'center bottom',
                   '' if own else '<span class="tp-tag">-%d%% la plata online</span>' % PCT))
-    out.append('<div class="tp-hx">%s<h1>%s</h1><p class="tp-promise">%s</p><ul class="tp-bul">%s</ul>%s%s</div></div></section>' % (
-        eyebrow(x['kind']), name_h, e(x['promise']), ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(b)) for b in x['bullets']),
+    # the price under the name (the audit, 25.11: on a phone the buy box starts below the first screen): -50%, the price, the list
+    # price; pp.js keeps it equal to the buy box's (zone, sessions)
+    hp = '<p class="tp-hp" data-tp-hp><span class="tp-pct">-%d%%</span><b data-tp-price>%s</b><s data-tp-full>%s</s></p>' % (PCT, bf(full), lei(full))
+    out.append('<div class="tp-hx">%s<h1>%s</h1>%s<p class="tp-promise">%s</p><ul class="tp-bul">%s</ul>%s%s</div></div></section>' % (
+        eyebrow(x['kind']), name_h, hp, e(x['promise']), ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(b)) for b in x['bullets']),
         buybox(x, zones, sess, full, epi), trust(x)))
 
     # ---- 2. what it does, in three tiles (not in the lean page: the hero's bullets say it)
@@ -733,7 +740,8 @@ def page(x):
     # ---- 3. the real results: only the approved set, only this treatment
     if x.get('results'):
         rs = x['results']
-        figs = ''.join('<figure class="tp-case rv" style="--ar:%.4f"><img src="%s" alt="Înainte și după: %s, %s" width="%d" height="%d" loading="lazy" decoding="async"><figcaption><small>Cazul %s</small><b>%s</b><span>%s</span></figcaption></figure>' % (
+        # the pictures wait in data-src: the shell puts them in after the page has loaded, when the row comes near (speed, 25.11)
+        figs = ''.join('<figure class="tp-case rv" style="--ar:%.4f"><img data-src="%s" alt="Înainte și după: %s, %s" width="%d" height="%d" loading="lazy" decoding="async"><figcaption><small>Cazul %s</small><b>%s</b><span>%s</span></figcaption></figure>' % (
             r['w'] / r['h'], e(r['src']), e(r['title']), e(r['sub']), r['w'], r['h'], e(r['case']), e(r['title']), e(r['sub'])) for r in rs)
         out.append('<section class="tp-s tp-res" id="rezultate"><div class="wrap">%s<div class="tp-cases n%d">%s</div><p class="tp-note">%s</p></div></section>' % (
             head('Rezultate reale', x.get('resultsH') or 'Nu promitem. <em>Îți arătăm.</em>', x.get('resultsLead') or 'Clientele noastre, fotografiate la noi, înainte și după.'),
@@ -832,6 +840,7 @@ def page(x):
         q = BY.get(p['id'])
         if not q: continue
         qi, qown = pic(q)
+        qi = small(q, qi, 300)
         prs.append('<article class="tp-pair rv" data-tp-pair="%s"><a class="th" href="{{base}}tratament-%s" tabindex="-1" aria-hidden="true"><img src="%s" alt="" loading="lazy" decoding="async" style="object-position:%s"></a>'
                    '<div class="tx"><a href="{{base}}tratament-%s"><b>%s</b></a><p>%s</p><span class="pz"><b data-tp-pp>%s</b> <s data-tp-pf>%s</s></span></div>'
                    '<button type="button" class="tp-plus" data-tp-plus="%s" aria-label="Adaugă %s în coș">%s</button></article>' % (
@@ -841,7 +850,7 @@ def page(x):
     for p in (x.get('epiPairs') or []):
         row = [z for z in EPI if z['key'] == p['key'] and z['g'] == 'f'] or [z for z in EPI if z['key'] == p['key']]
         if not row: continue
-        z = row[0]; qi, _ = pic(x)
+        z = row[0]; qi, _ = pic(x); qi = small(x, qi, 300)
         prs.append('<article class="tp-pair rv" data-tp-ekey="%s"><a class="th" href="#cumpara" tabindex="-1" aria-hidden="true"><img src="%s" alt="" loading="lazy" decoding="async"></a>'
                    '<div class="tx"><a href="#cumpara"><b data-tp-en>Epilare %s</b></a><p>%s</p><span class="pz"><b data-tp-pp>%s</b> <s data-tp-pf>%s</s></span></div>'
                    '<button type="button" class="tp-plus" data-tp-plus="%s" aria-label="Adaugă Epilare %s în coș">%s</button></article>' % (
@@ -865,8 +874,12 @@ def page(x):
                    eyebrow('Black Friday · -50%', ' dk'), e(x['name']), TM_CELLS, bf(full), lei(full), ARROW))
 
     # ---- the phone's buy bar
-    out.append('<div class="tp-bar" data-tp-bar aria-hidden="true"><div class="tx"><b data-tp-name>%s</b><span><b data-tp-price>%s</b> <s data-tp-full>%s</s></span></div><button type="button" class="btn book gold" data-tp-add tabindex="-1">Rezervă%s</button></div>' % (
-        e(x['name'] + (' ' + z0 if hasz else '')), bf(full), lei(full), ARROW))
+    # (with something in the cart, its bag and count sit in the bar: the shop's own cart bar stays away on the phone)
+    bag = ('<button type="button" class="tp-bag" data-tp-bag data-cart hidden tabindex="-1" aria-label="Coșul tău"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+           '<path d="M5.2 8.5h13.6l-.9 10.6a2 2 0 0 1-2 1.9H8.1a2 2 0 0 1-2-1.9z"/><path d="M8.8 10.5V7.2a3.2 3.2 0 0 1 6.4 0v3.3"/></svg><i></i></button>')
+    out.append('<div class="tp-bar" data-tp-bar aria-hidden="true"><div class="tx"><b data-tp-name>%s</b><span><b data-tp-price>%s</b> <s data-tp-full>%s</s></span></div>%s<button type="button" class="btn book gold" data-tp-add tabindex="-1">Rezervă%s</button></div>' % (
+        e(x['name'] + (' ' + z0 if hasz else '')), bf(full), lei(full), bag, ARROW))
+
     out.append('</div><script src="/v2/shop.js" defer></script><script src="/v2/pp.js" defer></script>')
     return '\n'.join(out) + '\n'
 
