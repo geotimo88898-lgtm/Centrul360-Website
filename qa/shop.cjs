@@ -63,9 +63,9 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   check('short names, a zone where it has one, two short lines', tm.concat(ar).every((p) => p.name.length <= (p.need === "epilare" || p.pack ? 40 : p.base ? 30 : 26) && p.b.length >= 2 && p.b.every((x) => x.length <= 36)), tm.filter((p) => p.name.length > (p.need === "epilare" ? 40 : 26) || p.b.some((x) => x.length > 36)).map((p) => p.name));
   // „Toate zonele” (the owner, 25.11): the twin of a body treatment with zones, one session on every zone, the sum of the zones
   const lt = tm.find((p) => p.id === 'liposonix-toate');
-  check('Liposonix Toate zonele: 5 zones, 3.200 → 1.600, no zones of its own, opens the Liposonix page', lt && lt.base === 'liposonix' && lt.full === 3200 && lt.price === 1600 && !lt.zones.length && lt.minutes <= 90, lt);
+  check('Liposonix Full Body: 5 zones, 3.200 → 1.600, no zones of its own, opens the Liposonix page', lt && lt.base === 'liposonix' && lt.full === 3200 && lt.price === 1600 && !lt.zones.length && lt.minutes <= 90, lt);
   const qt = await S.quote('Timișoara', [{ id: 'liposonix-toate', qty: 2 }]);
-  check('the twin in the cart: priced by the server', !qt.error && qt.amount === 3200 && qt.lines[0].name === 'Liposonix Toate zonele', qt);
+  check('the twin in the cart: priced by the server', !qt.error && qt.amount === 3200 && qt.lines[0].name === 'Liposonix Full Body', qt);
   check('no twin for the face or for a treatment with one zone', !tm.some((p) => p.allOf && p.need !== 'corp'));
   // the price list's packages (the owner, 25.11: „-50% și la pachete”), sold from the cart under the session they contain
   const rf6 = tm.find((p) => p.id === 'radiofrecventa-x6'), lp2 = tm.find((p) => p.id === 'liposonix-x2');

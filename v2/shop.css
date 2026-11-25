@@ -901,3 +901,9 @@ body:has(.top.away) .bfo-f{ top:auto; }
 .sh-zone{ overflow:hidden; text-overflow:ellipsis; }
 .sh-li-m{ max-width:100%; }
 .sh-pk-m .inc{ font-size:13.5px; line-height:1.35; color:var(--l1); }
+/* the home's rhythm (the owner, 25.11: „golul dintre recenzii și garanție e prea mare”): the reviews and the guarantee card at
+   the same distance as the other sections */
+.bfh-home ~ #recenzii{ padding-bottom:0; }
+.bfh-home ~ #recenzii + .gs{ padding-top:clamp(48px,7vw,88px); }
+.bfh-home ~ #video{ padding-bottom:clamp(48px,6vw,88px); }
+.bfh-home ~ .band{ margin-bottom:clamp(40px,5vw,72px); }

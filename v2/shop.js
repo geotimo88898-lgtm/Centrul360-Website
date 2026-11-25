@@ -707,7 +707,7 @@
   var FULLF = { hifu: 'hifu-full-face', biolifting: 'biolifting-full-face' };
   function altsOf(bp) {
     var l = [], tw = twinOf(bp), f = FULLF[bp.id] && byId(FULLF[bp.id]);
-    if (tw) l.push({ id: tw.id, label: 'Toate zonele' });
+    if (tw) l.push({ id: tw.id, label: 'Full Body' });
     if (f) l.push({ id: f.id, label: 'Full Face' });
     return l;
   }
@@ -1005,6 +1005,7 @@
       '<div class="sh-stack sh-card"><div><span>Preț normal</span><s data-t-full>' + lei(t.full) + '</s></div><div class="sv"><span>Black Friday -' + pct() + '%</span><span data-t-saved>-' + lei(t.saved) + '</span></div><div class="tot"><span>Total</span><b data-t-amount>' + lei(t.amount) + '</b></div></div>' +
       (t.saved > 0 ? '<p class="sh-save">' + I.tag + '<span data-t-save>Economisești ' + lei(t.saved) + '</span></p>' : '') +
       '<p class="sh-fine">Plata doar online, cu cardul. Programarea se confirmă după plată.</p>';
+    if (window.C360Arrows) window.C360Arrows(el);
     foot('<div class="sh-ft-t"><small data-ft-n>Total, ' + (t.n === 1 ? '1 ședință' : t.n + ' ședințe') + '</small><b><span data-ft-a>' + lei(t.amount) + '</span>' + (t.saved > 0 ? '<s data-ft-f>' + lei(t.full) + '</s>' : '') + '</b></div><button type="button" class="sh-go" data-go="when">Continuă' + I.arrow + '</button>');
   }
   function cartSoft(key) {

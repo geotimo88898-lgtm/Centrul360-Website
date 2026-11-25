@@ -584,3 +584,7 @@ body.tp-buy-on .sh-bar{ transform:translateY(calc(100% + 40px)) !important; visi
 .tp .tp-cells.sm small,.tp-cells small,.tp-pick small,.tp-bag i{ font-size:11.5px; }
 .tp-case small,.tp-ill{ font-size:12px; }
 .tp-steps .n{ font-size:13px; }
+
+/* the packages that hold the treatment (v2/pp.js pkSec): like the pairs, with what she saves */
+.tp-pk .tx p{ color:var(--l1); }
+.tp-pk .sv{ display:block; margin-top:3px; font-size:13.5px; font-weight:650; color:#a2513e; }

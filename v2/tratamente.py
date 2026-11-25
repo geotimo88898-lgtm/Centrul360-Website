@@ -601,7 +601,7 @@ def buybox(x, zones, sess, full, epi):
         out.append('<div class="tp-opt"><p class="tp-l">Zona</p><div class="tp-chips" role="group" aria-label="Zona">%s</div></div>' % (''.join(
             '<button type="button" data-tp-zone="%s" aria-pressed="%s">%s</button>' % (e(z), 'true' if i == 0 else 'false', e(z)) for i, z in enumerate(zones))
             # „Toate zonele” (the owner, 25.11): the server's twin product <id>-toate (api/_lib/shop.js ALLZ)
-            + ('<button type="button" data-tp-zone="Toate zonele" aria-pressed="false" class="all">Toate zonele</button>' if x['id'] in ('liposonix', 'cavitatie', 'radiofrecventa', 'hifu-corp', 'ems') and len(zones) > 1 else '')
+            + ('<button type="button" data-tp-zone="Full Body" aria-pressed="false" class="all">Full Body</button>' if x['id'] in ('liposonix', 'cavitatie', 'radiofrecventa', 'hifu-corp', 'ems') and len(zones) > 1 else '')
             # „Full Face” on the face's zones (the owner, 25.11): HIFU Full Face, BioLifting Full Face (v2/pp.js FULLF)
             + ('<button type="button" data-tp-zone="Full Face" aria-pressed="false" class="all">Full Face</button>' if x['id'] in ('hifu', 'biolifting') else '')))
     out.append('<div class="tp-opt"><p class="tp-l">Câte ședințe</p><div class="tp-seg" role="group" aria-label="Câte ședințe">%s</div></div>' % ''.join(
