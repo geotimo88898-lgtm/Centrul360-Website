@@ -62,8 +62,6 @@ const P = {
   'faciale-tratament-intensiv-antirid-1-sedinta': { id: 'antirid', name: 'Tratament antirid', need: 'fata', ph: 'faciale-closeup.webp', b: ['Diminuează ridurile', 'Regenerează pielea'] },
   'faciale-redness-relief-protocol-1-sedinta': { id: 'redness', name: 'Redness Relief', need: 'fata', ph: 'concern-pete.webp', b: ['Calmează roșeața', 'Pentru pielea sensibilă'] },
   'faciale-sebum-off-protocol-1-sedinta': { id: 'sebum-off', name: 'Sebum Off', need: 'fata', ph: 'concern-ten-problematic.webp', b: ['Curăță porii', 'Reduce imperfecțiunile'] },
-  'faciale-microneedling-exozomi-pdrn-1-sedinta': { id: 'microneedling', name: 'Microneedling Exozomi', need: 'fata', ph: 'oferte/facial.webp', b: ['Estompează cicatricile de acnee', 'Textură mai fină'] },
-  'faciale-microneedling-corector-periocular-1-sedinta': { id: 'periocular', name: 'Microneedling Periocular', need: 'fata', ph: 'ba-hifu-periocular.webp', b: ['Atenuează cearcănele', 'Linii fine în jurul ochilor'] },
 };
 // „Merge bine cu” (the owner: „procedurile se completează între ele”): what goes with each one, best first
 const PAIRS = {
@@ -72,8 +70,7 @@ const PAIRS = {
   hifu: ['biolifting', 'masaj-facial'], biolifting: ['hifu', 'masaj-facial'],
   'hifu-full-face': ['biolifting-full-face', 'restart'], 'biolifting-full-face': ['hifu-full-face', 'restart'],
   restart: ['masaj-facial', 'biolifting-full-face', 'hidratare'], 'masaj-facial': ['restart', 'hidratare'], hidratare: ['masaj-facial', 'restart'],
-  antirid: ['biolifting-full-face', 'hifu-full-face'], redness: ['hidratare', 'masaj-facial'], 'sebum-off': ['microneedling', 'restart'],
-  microneedling: ['hidratare', 'restart'], periocular: ['hidratare', 'biolifting-full-face'],
+  antirid: ['biolifting-full-face', 'hifu-full-face'], redness: ['hidratare', 'masaj-facial'], 'sebum-off': ['restart', 'hidratare'],
 };
 const EPIL_PAIRS = ['epilare-axile', 'epilare-inghinal-total', 'epilare-picior-lung', 'epilare-linie-bikini'];
 // the problem packages (the owner, 25.11: „pachete pe probleme, pentru toate procedurile, ca să avem upsell power”): the treatments
@@ -84,7 +81,7 @@ const BUNDLES = [
   { id: 'pachet-lifting', name: 'Pachet Lifting Full Face', need: 'fata', parts: [['hifu-full-face', 1], ['biolifting-full-face-x4', 1]], for: ['hifu-full-face', 'biolifting-full-face', 'biolifting-full-face-x4'], b: 'Lifting și fermitate pe toată fața' },
   { id: 'pachet-riduri', name: 'Pachet Riduri', need: 'fata', parts: [['antirid-x4', 1], ['biolifting-full-face-x4', 1]], for: ['antirid', 'antirid-x2', 'antirid-x4', 'biolifting-full-face'], b: 'Riduri estompate, piele mai fermă' },
   { id: 'pachet-ten', name: 'Pachet Ten luminos', need: 'fata', parts: [['restart-x2', 1], ['hidratare-x2', 1]], for: ['restart', 'hidratare', 'masaj-facial'], b: 'Ten luminos și hidratat' },
-  { id: 'pachet-acnee', name: 'Pachet Acnee și pori', need: 'fata', parts: [['sebum-off-x4', 1], ['microneedling-x3', 1]], for: ['sebum-off', 'sebum-off-x2', 'microneedling'], b: 'Pori curați, cicatrici estompate' },
+  { id: 'pachet-acnee', name: 'Pachet Acnee și pori', need: 'fata', parts: [['sebum-off-x4', 1], ['hidratare-x2', 1]], for: ['sebum-off', 'sebum-off-x2'], b: 'Pori curați, ten echilibrat' },
   { id: 'pachet-roseata', name: 'Pachet Roșeață', need: 'fata', parts: [['redness-x4', 1], ['hidratare-x2', 1]], for: ['redness', 'redness-x2'], b: 'Piele calmă și hidratată' },
   { id: 'pachet-grasime', name: 'Pachet Grăsime localizată', need: 'corp', parts: [['liposonix-x2', 1], ['radiofrecventa-x4', 1]], for: ['liposonix', 'cavitatie'], b: 'Grăsimea pleacă, pielea rămâne fermă' },
   { id: 'pachet-tonifiere', name: 'Pachet Burtică tonifiată', need: 'corp', parts: [['liposonix-x2', 1], ['ems-x6', 1]], for: ['liposonix', 'ems'], b: 'Mai puțină grăsime, mușchi definit' },

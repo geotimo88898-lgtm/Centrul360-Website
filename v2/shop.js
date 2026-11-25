@@ -389,6 +389,8 @@
   // ================= all the offers: a segmented filter, the cards; the laser zones as a clean list =================
   var F = { k: 'all', sort: 'rec', city: '' }, EPI = { g: 'f' };
   var NEED_ORDER = ['corp', 'gusa', 'fata', 'epilare'];
+  // chosen inside their treatment („Full Face” on HIFU and BioLifting), not offered as cards of their own
+  var OPT_ONLY = { 'hifu-full-face': 1, 'biolifting-full-face': 1 };
   // the most common problems (the owner, 25.11: „la alte oferte cele mai comune probleme, ca să avem add to cart mare”):
   // [the problem, in her words; the treatment that answers it; its zone]
   var COMMON = [['Gușă, bărbie dublă', 'hifu', 'Gușă'], ['Burtică', 'liposonix', 'Abdomen'], ['Celulită', 'radiofrecventa', 'Coapse'], ['Riduri pe față', 'biolifting-full-face', ''],
@@ -447,8 +449,8 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') ddClose(); });
   function listFor(k) {
     var list;
-    if (k === 'top') list = D.terms.show.map(byId).filter(Boolean);
-    else list = D.products.filter(function (p) { return !p.allOf && (k === 'all' || p.need === k) && (p.need !== 'epilare' || p.id === 'epilare-full-body'); });
+    if (k === 'top') list = D.terms.show.map(byId).filter(function (p) { return p && !OPT_ONLY[p.id]; });
+    else list = D.products.filter(function (p) { return !p.allOf && !OPT_ONLY[p.id] && (k === 'all' || p.need === k) && (p.need !== 'epilare' || p.id === 'epilare-full-body'); });
     if (F.city) list = list.filter(function (p) { return p.cities.indexOf(F.city) > -1; });
     var rank = function (p) { var i = D.terms.show.indexOf(p.id); return i > -1 ? i : 100 + NEED_ORDER.indexOf(p.need) * 50 + D.products.indexOf(p) / 100; };
     var cmp = { rec: function (x, y) { return rank(x) - rank(y); }, asc: function (x, y) { return x.price - y.price; }, desc: function (x, y) { return y.price - x.price; },
