@@ -76,8 +76,9 @@ def build(name):
     citybook = ' data-book-city="%s"' % city if city else ''
     slot = ' data-slot="%s"' % city if city else ' data-slot'
     dock = '' if meta.get('dock') == 'off' else (
-        '<div class="dock"><div class="t"%s data-slot-mode="dock"><b>Consultație gratuită</b>+ masaj facial cadou</div>'
-        '<button type="button" class="btn book" data-book data-book-service="consult"%s>Programează-mă</button></div>' % (slot, citybook))
+        # no free consultation any more (the owner, 25.11): the phone's dock leads to the offers, paid online at -50%
+        '<div class="dock"><div class="t"><b>-50%% la plata online</b>până vineri, 27 noiembrie</div>'
+        '<a class="btn book gold" href="%soferte">Vezi ofertele</a></div>' % BASE)
     path = meta.get('path', name)
     url = '' if path == 'index' else path
     og = path if os.path.exists(os.path.join(HERE, '..', 'brand_asset', 'og', path + '.jpg')) else 'index'

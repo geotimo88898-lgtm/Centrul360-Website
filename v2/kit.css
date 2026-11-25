@@ -609,3 +609,4 @@ footer .legal > span a{ white-space:nowrap; }
 .hs-b[hidden]{ display:grid; opacity:0; transform:scale(.8); pointer-events:none; }
 .hs-b:active{ transform:scale(.9); }
 @media (hover:hover){ .hs-b:hover{ background:#fff; } }
+.list b s{ margin-left:4px; color:var(--mute); font-weight:400; font-size:13px; }
