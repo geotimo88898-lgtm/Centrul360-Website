@@ -241,6 +241,17 @@
 
   addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(barCheck); } }, { passive: true });
   addEventListener('resize', barCheck);
+  // the cookie question also sits at the bottom (on the first visit, the ad's visitor): while it is open the bar waits above it
+  var ck = $('.ck');
+  function ckLift() {
+    if (!bar || !ck) return;
+    var on = document.body.classList.contains('ck-open') && !ck.hidden, v = '';
+    if (on) { var cs = getComputedStyle(ck); v = Math.round((parseFloat(cs.bottom) || 10) + ck.offsetHeight + 10) + 'px'; }
+    if (bar.style.bottom !== v) bar.style.bottom = v;
+  }
+  if (ck && window.MutationObserver) new MutationObserver(ckLift).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  addEventListener('resize', ckLift);
+  ckLift();
 
   // ---- the explainer: step 1, 2, 3 while it is in sight; a tap jumps to a step and it goes on from there
   var anim = (function () {

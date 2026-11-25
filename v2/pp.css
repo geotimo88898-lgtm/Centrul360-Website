@@ -571,3 +571,6 @@ body.tp-bar-on .sh-bar{ transform:translateY(160%) !important; visibility:hidden
 .tp-bag i{ position:absolute; top:1px; right:-1px; min-width:17px; height:17px; padding:0 4px; border-radius:9px; font-style:normal; font-size:10.5px; font-weight:700; line-height:17px; text-align:center; color:#3b1c14; background:linear-gradient(125deg,var(--rg1),var(--rg2) 50%,var(--rg3)); }
 @media (max-width:959px){ body.tp-page .sh-bar{ transform:translateY(calc(100% + 40px)) !important; visibility:hidden !important; } }
 body.tp-buy-on .sh-bar{ transform:translateY(calc(100% + 40px)) !important; visibility:hidden !important; }
+/* (above the cookie question while it is open: pp.js sets its bottom; it comes down softly once she answers) */
+.tp-bar{ transition:transform .65s var(--e), visibility 0s linear .65s, bottom .5s var(--e); }
+.tp-bar.on{ transition:transform .65s var(--e), visibility 0s, bottom .5s var(--e); }
