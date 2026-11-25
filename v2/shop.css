@@ -813,3 +813,43 @@ body:has(.top.away) .bfo-f{ top:auto; }
 .bft.rise{ opacity:0; transform:translateY(16px); }
 .bft.rise.up{ opacity:1; transform:none; transition:opacity .7s var(--e), transform .9s var(--e); transition-delay:calc(var(--c, 0) * 80ms); }
 @media (min-width:700px){ .bft h3{ font-size:16.5px; } .bft .btn.book{ height:42px; font-size:14px; } .bft-b{ padding:0 14px 14px; } }
+
+/* the cart (the owner, 25.11): how many sessions bring the result, under the line; the packages that contain her session */
+.sh-rec{ grid-column:1 / -1; margin:8px 0 0; padding:11px 12px 12px; border-radius:14px; font-size:13.5px; line-height:1.4; color:#5b3a2e;
+  background:linear-gradient(125deg,rgba(231,179,163,.18),rgba(248,220,207,.3) 50%,rgba(217,157,140,.16)); }
+.sh-rec > p{ display:flex; align-items:flex-start; gap:8px; margin:0; }
+.sh-rec svg{ flex:none; width:16px; height:16px; margin-top:1px; color:#b06c5c; }
+/* „Da, vreau rezultate optime”: the line goes up to the recommended sessions in one tap */
+.sh-rec-go{ display:flex; align-items:center; justify-content:center; width:100%; height:44px; margin:10px 0 0; padding:0 14px; border:0; border-radius:999px; cursor:pointer;
+  font:inherit; font-size:15px; font-weight:650; letter-spacing:-.01em; color:#3b1c14 !important; -webkit-tap-highlight-color:transparent;
+  background:linear-gradient(125deg,#e7b3a3,#f8dccf 50%,#d99d8c); box-shadow:inset 0 0 0 1px rgba(255,255,255,.6), 0 10px 22px -14px rgba(176,108,92,.8); transition:transform .3s var(--e); }
+.sh-rec-go:active{ transform:scale(.97); }
+.sh-rec > small{ display:block; margin-top:7px; text-align:center; font-size:12.5px; color:#7a4a3a; }
+.sh-rec b{ font-weight:700; color:#3b1c14; }
+.sh-pks{ display:grid; gap:10px; }
+.sh-pk{ display:grid; grid-template-columns:56px minmax(0,1fr) auto; gap:4px 12px; align-items:center; padding:12px; }
+.sh-pk .th{ grid-row:span 2; width:56px; height:56px; border-radius:14px; align-self:start; }
+.sh-pk-m{ display:grid; gap:3px; min-width:0; }
+.sh-pk-m b{ font-size:15px; font-weight:650; letter-spacing:-.015em; line-height:1.25; color:var(--l1); overflow-wrap:anywhere; }
+.sh-pk-m small{ font-size:13px; line-height:1.35; color:var(--l2); }
+.sh-pk .pz{ text-align:right; align-self:start; padding-top:1px; }
+.sh-pk .pz b{ display:block; font-size:16px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; color:var(--l1); }
+.sh-pk .pz s{ display:block; font-size:12.5px; color:var(--l3); }
+.sh-pk-go{ grid-column:2 / -1; justify-self:stretch; display:inline-flex; align-items:center; justify-content:center; gap:6px; height:44px; margin-top:8px; padding:0 16px; border:0; border-radius:999px; cursor:pointer;
+  font:inherit; font-size:15px; font-weight:650; letter-spacing:-.01em; color:#fff !important; background:#1d1d1f; -webkit-tap-highlight-color:transparent; transition:transform .3s var(--e), background .3s var(--e); }
+.sh-pk-go:active{ transform:scale(.97); }
+@media (hover:hover){ .sh-pk-go:hover{ background:#000; } }
+.sh-pk-go svg{ width:16px; height:16px; flex:none; }
+.sh-pk-m small em{ font-style:normal; font-weight:650; color:#a2513e; }
+
+/* the grid's small cards: „Doar Timișoara” under the -50%, never over it */
+.bft > .bft-c{ top:38px; right:auto; left:10px; }
+
+/* the home's first screen (the owner, 25.11): the offers page's short screen and one button under the timer, nothing else */
+.bfh-s .bfh-w{ grid-template-areas:"e" "t" "sub" "tm" "cta"; }
+.bfh-home .bfh-cta{ grid-area:cta; width:min(100%,360px); height:58px; margin-top:26px; font-size:17px; font-weight:650; letter-spacing:-.01em; }
+.bfh-home .bfh-cta .ar{ width:19px; height:19px; }
+@media (min-width:1024px){ .bfh-home .bfh-cta{ height:62px; font-size:18px; } }
+/* the short screen has no fade under it: the results keep their air */
+.bfh-home ~ #rezultate{ padding-top:56px !important; }
+@media (min-width:1024px){ .bfh-home ~ #rezultate{ padding-top:88px !important; } }

@@ -24,7 +24,6 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Centrul360 | Medicină estetică non-invazivă în Timișoara și Arad">
 <meta name="twitter:card" content="summary_large_image">
-<script>/* the shop's data, asked for at once (v2/shop.js and v2/pp.js use these answers) */window.C360Pre={shop:fetch('/api/shop',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}),art:fetch('/v2/art.json',{headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():{}})};C360Pre.shop.catch(function(){});C360Pre.art.catch(function(){});</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@1,9..144,400&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <!-- Montserrat writes only CENTRUL360.COM (the logo) and BLACK FRIDAY (the card's pages): only those letters are loaded, 6 KB in place
@@ -41,7 +40,8 @@
 <link rel="stylesheet" href="/v2/kit-m.css">
 <link rel="stylesheet" href="/v2/kit-m2.css">
 <link rel="stylesheet" href="/v2/book-light.css">
-
+<link rel="stylesheet" href="/v2/xmas.css">
+<link rel="stylesheet" href="/v2/cs-buy.css">
 <link rel="stylesheet" href="/v2/lf.css">
 <link rel="stylesheet" href="/v2/head.css">
 <style>/* „Tap. Don't cut. Carry.” (the owner, 16.11): between the site's pages the screen carries over instead of cutting (View Transitions where the browser has them); the header stays in place */@view-transition{navigation:auto}::view-transition-group(*){animation-duration:.42s;animation-timing-function:cubic-bezier(.16,1,.3,1)}@media (prefers-reduced-motion:reduce){@view-transition{navigation:none}}</style>
@@ -369,18 +369,16 @@ a.home-li:hover{ color:var(--ink); }
 
 
 
-<!-- Black Friday first (the owner, 24-25.11): the title, the timer in cells, the slider of offers (the middle one in front, round
-     and round), „Vezi toate ofertele”; then a clean fade into the light page. v2/shop.css, v2/shop.js -->
+<!-- Black Friday first (the owner, 25.11: „pe home page vreau exact secțiunea de la Toate ofertele, cu un call to action sub timer și
+     atât, fără fade și fără showcase la oferte, e mult mai bun pentru conversie”): the offers page's short dark screen, the title,
+     -50%, the timer, one button to the offers. v2/shop.css, v2/shop.js -->
 <link rel="stylesheet" href="/v2/shop.css">
-<!-- the slider's first card in front is the first screen's picture: asked for at once (the server's first offer, api/_lib/shop.js SHOW,
-     with its picture from v2/art.json; speed, 25.11) -->
-<link rel="preload" as="image" href="/brand_asset/tratamente/liposonix.webp?v=2" fetchpriority="high">
-<section class="bfh" data-dark="150" aria-label="Black Friday"><div class="bfh-grid" aria-hidden="true"></div><div class="wrap bfh-w">
+<section class="bfh bfh-s bfh-home" data-dark="120" aria-label="Black Friday"><div class="bfh-grid" aria-hidden="true"></div><div class="wrap bfh-w">
   <p class="eyb">Black Friday</p>
-  <h1 class="bfh-h"><span class="l1">Prețuri de <em>2X</em> mai mici</span><span class="l2">la <b>TOATE</b> tratamentele</span><span class="l3">la plata <b>ONLINE</b></span></h1>
+  <h1 class="bfh-h">Toate ofertele</h1>
+  <p class="bfh-sub"><span>-50% la <b>TOATE</b> tratamentele</span><span>la plata <b>ONLINE</b></span></p>
   <div data-tm></div>
-  <div class="bfs" data-bfs aria-label="Ofertele de Black Friday"></div>
-  <a class="bfh-all" href="/v2/oferte-bf">Vezi toate ofertele<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  <a class="btn book gold bfh-cta" href="/v2/oferte-bf">Vezi ofertele<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
 </div></section>
 <script>(function(){var t=document.querySelector('.top');if(t)t.classList.add('dk')})()</script>
 <script src="/v2/shop.js" defer></script>
@@ -541,7 +539,9 @@ var v=get();if(v==='y')yes();else if(!v)show();
 b.addEventListener('click',function(e){var t=e.target.closest('[data-ck]');if(!t)return;var y=t.getAttribute('data-ck')==='y';try{localStorage.setItem(K,JSON.stringify({v:y?'y':'n',at:Date.now()}))}catch(x){}b.classList.remove('in');document.body.classList.remove('ck-open');setTimeout(function(){b.hidden=true},600);if(y)yes();else{window.C360_CONSENT=false;c('denied')}});
 document.addEventListener('click',function(e){if(e.target.closest('[data-cookies]')){e.preventDefault();show()}})})();</script>
 <script src="/v2/kit.js" defer></script>
-
+<script src="/v2/xmas.js" defer></script>
+<script src="/v2/cs-buy.js" defer></script>
+<script src="/v2/lf.js" defer></script>
 <script>/* the before/after pictures in the moving rows load all at once (lazy ones never started on phones), but only after the page
    has loaded, when the row comes near: the first screen comes first (speed, 25.11); a row's pictures can wait in data-src (the
    home page's and the treatments' pages', so none of them starts before); a film's poster (video[data-poster]) the same way */
@@ -551,6 +551,5 @@ if(document.readyState==='complete')setTimeout(go,0);else addEventListener('load
 addEventListener('DOMContentLoaded',function(){/* an offer's title never starts a line with its dot (Epilare laser · Full Body) */var nb=function(){document.querySelectorAll('.slip h3').forEach(function(h){if(h.textContent.indexOf(' · ')>-1)h.textContent=h.textContent.split(' · ').join(' · ')})};nb();document.querySelectorAll('.offers').forEach(function(o){new MutationObserver(nb).observe(o,{childList:true})})});</script>
 <script src="/site-pulse.js" defer></script>
 <script src="/c360-book.js" defer></script>
-<script>/* after the first screen (the shop's pages, v2/build.py): xmas.css, cs-buy.css, xmas.js, cs-buy.js, lf.js */(function(){var go=function(){var h=document.querySelector('link[href="/v2/lf.css"]');["/v2/xmas.css", "/v2/cs-buy.css"].forEach(function(u){var l=document.createElement('link');l.rel='stylesheet';l.href=u;document.head.insertBefore(l,h)});["/v2/xmas.js", "/v2/cs-buy.js", "/v2/lf.js"].forEach(function(u){var s=document.createElement('script');s.src=u;s.async=false;document.body.appendChild(s)})};if(document.readyState==='complete')go();else addEventListener('load',go)})();</script>
 </body>
 </html>

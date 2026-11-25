@@ -124,8 +124,21 @@ function catalog(city, at) {
     list.push(Object.assign({}, p, { id: p.id + '-toate', base: p.id, name: p.name + ' ' + ALLZ_NAME, zones: [], allOf: p.zones.slice(), b: ['Toate cele ' + n + ' zone, o ședință', p.b[0]],
       minutes: Math.min(p.minutes * n, 90), full: p.full * n, price: p.price * n }));
   }
+  // the price list's packages (the owner, 25.11: „-50% și la pachete”; in the cart „în ce pachet se regăsește ședința”, instead of
+  // „merge super cu”): N sessions of a treatment, at the package's list price minus the same discount, as its own product
+  // <id>-x<N> (pack: N, base: the session's product, the same zones). Not in the shop's grid (api/shop.js gives them apart):
+  // the cart offers them under the session they contain. Her first session is booked like a session's (the package's row
+  // carries a session's minutes). Not the RF Sculpt (no longer offered) nor the 2-zone EMS (not sold one by one)
+  for (const t of lst()) {
+    if (!t || !(t.sessions > 1) || /^(rfsculpt-|ems-2-zone)/.test(t.id) || (city && !t.cities.includes(city))) continue;
+    const m = t.id === 'epilare-full-body-pachet-6-sedinte' ? out.get('epilare-full-body') : P[t.id.replace(/-\d+-sedinte$/, '-1-sedinta')] && out.get(P[t.id.replace(/-\d+-sedinte$/, '-1-sedinta')].id);
+    if (!m) continue;
+    const n = t.sessions, price = priceOf(t.price, at);
+    list.push(Object.assign({}, m, { id: m.id + '-x' + n, base: m.id, pack: n, name: m.name + ' · ' + n + ' ședințe', ref: t.id, cities: t.cities.slice(),
+      minutes: t.minutes || m.minutes, full: t.price, price, b: [n + ' ședințe, ' + Math.round(price / n) + ' lei ședința', m.b[0]] }));
+  }
   const ids = new Set(list.map((p) => p.id));
-  list.forEach((p) => { p.pairs = (p.need === 'epilare' ? EPIL_PAIRS : PAIRS[p.base || p.id] || []).filter((id) => id !== p.id && id !== p.base && ids.has(id)).slice(0, 3); });
+  list.forEach((p) => { p.pairs = p.pack ? [] : (p.need === 'epilare' ? EPIL_PAIRS : PAIRS[p.base || p.id] || []).filter((id) => id !== p.id && id !== p.base && ids.has(id)).slice(0, 3); });
   return list;
 }
 
@@ -153,7 +166,7 @@ async function quote(city, items, at) {
     if (!p) return { error: 'not_found', id: it.id };
     if (!p.cities.includes(city)) return { error: 'not_in_city', id: it.id };
     const zone = p.zones.length ? (p.zones.includes(it.zone) ? it.zone : p.zones[0]) : '';
-    lines.push({ id: p.id, ref: p.ref, zone, qty: it.qty, name: p.name + (zone ? ' ' + zone : ''), minutes: p.minutes, unit: p.full, unitPrice: p.price, full: p.full * it.qty, price: p.price * it.qty });
+    lines.push({ id: p.id, ref: p.ref, zone, qty: it.qty, name: p.pack && zone ? p.name.replace(' · ', ' ' + zone + ' · ') : p.name + (zone ? ' ' + zone : ''), minutes: p.minutes, unit: p.full, unitPrice: p.price, full: p.full * it.qty, price: p.price * it.qty });
   }
   if (!lines.length) return { error: 'empty' };
   const full = lines.reduce((s, l) => s + l.full, 0), amount = lines.reduce((s, l) => s + l.price, 0);
