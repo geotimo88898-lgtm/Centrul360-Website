@@ -823,6 +823,56 @@ module.exports = async (req, res) => {
     res.status(200).json({ ok: true, forms: out });
     return;
   }
+  // ?cardretier=<card code>: a paid card's order as it stands (tier, sums, how and when it was paid, its sale row), to fix a
+  // card issued on the wrong tier (24.11: a 290 card entered as 990); POST &tier=290[&send=1]: the order, the card's credit,
+  // the sale in Încasări and the picture made again on the right tier; with send=1 the card goes to her again with a short
+  // apology (a plain message inside the 24 h window, else the card template with the apology in its free line)
+  if (req.query && req.query.cardretier) {
+    const C = require('./_lib/card-sarbatori'), { writeJSON } = require('./_lib/store');
+    const list = await readJSON(C.KEY, []);
+    const f = C.findCard(list, String(req.query.cardretier));
+    if (!f) { res.status(404).json({ error: 'not_found' }); return; }
+    const sales = await readJSON('data/sales.json', []);
+    const sale = sales.find((x) => x && x.source === 'incasare' && x.cardOrderId === f.r.id && x.kind !== 'refund');
+    const view = () => ({ status: f.r.status, tier: f.r.tier, qty: f.r.qty, amount: f.r.amount, paidAmount: f.r.paidAmount, credit: f.r.credit, paidVia: f.r.paidVia, payMethod: f.r.payMethod, paidAt: f.r.paidAt, via: f.r.via,
+      match: f.r.match || null, card: { value: f.c.value, used: C.usedOf(f.c), gift: f.c.gift ? f.c.gift.state || 'open' : null }, sale: sale ? { amount: sale.amount, method: sale.method, date: sale.date, treatment: sale.treatment } : null,
+      trail: (f.r.trail || []).slice(-8).map((e) => [String(e.at || '').slice(0, 16), e.ev, String(e.note || '').slice(0, 40)]) });
+    if (req.method !== 'POST') { res.status(200).json(Object.assign({ ok: true }, view())); return; }
+    const tier = Number(req.query.tier);
+    if (!C.TIERS[tier] || C.usedOf(f.c) > 0 || f.r.qty > 1 || f.r.status !== 'platit') { res.status(409).json(Object.assign({ error: 'cannot' }, view())); return; }
+    const before = view();
+    const credit = C.TIERS[tier];
+    Object.assign(f.r, { tier, amount: tier, paidAmount: tier, credit });
+    f.c.value = credit; f.c.img = '';
+    C.mark(f.r, 'retier', tier + ' lei, credit ' + credit + ' (corectat)');
+    await writeJSON(C.KEY, list);
+    if (sale) { sale.amount = tier; sale.treatment = String(sale.treatment || '').replace(/plătești [\d.]+ lei/, 'plătești ' + tier + ' lei'); sale.note = String(sale.note || '') + ' · corectat din ' + before.amount + ' lei'; await writeJSON('data/sales.json', sales); }
+    let sent = null;
+    if (req.query.send === '1') {
+      const l2 = await readJSON(C.KEY, []); const g = C.findCard(l2, String(req.query.cardretier));
+      const sorry = 'Ne cerem scuze pentru greșeala din mesajul anterior: cardul tău corect este cel de mai sus, cu ' + credit.toLocaleString('ro-RO') + ' lei credit.';
+      const inWin = await C.inWindow(g.r.phone, Date.now()).catch(() => false);
+      if (inWin) {
+        const png = await C.image(g.r, g.c);
+        const WA = require('./_lib/whatsapp');
+        const m = C.cardText(g.r, g.c);
+        const y = await WA.sendMedia({ phone: g.r.phone, from: g.r.city, buf: png, mime: 'image/png', filename: 'Cardul de Sarbatori.png', caption: m.text + '\n\n' + sorry });
+        sent = { how: y.sent ? 'direct' : '', error: y.sent ? '' : y.error };
+        if (y.sent) await C.logChat(g.r.phone, y.fromCity || g.r.city, g.r.name, m.text + '\n\n' + sorry, '', y.id, { cardOrder: g.r.id, cardStep: 'card' });
+      } else {
+        const orig = C.cardText; // the card template, its free line carrying the apology
+        const png = await C.image(g.r, g.c);
+        const m = orig(g.r, g.c); m.vars.cadou = sorry + ' ' + (m.vars.cadou || '');
+        const x = await C.say('card', g.r, m.vars, m.text + '\n\n' + sorry, png, g.c.code).catch((e) => ({ sent: false, error: e.message }));
+        sent = { how: x.sent ? x.how : '', error: x.sent ? '' : x.error };
+      }
+      g.c.sent = { at: new Date().toISOString(), how: sent.how || '', error: sent.error || '' };
+      C.mark(g.r, 'card_sent', sent.how ? 'ok, corectat' : 'netrimis');
+      await writeJSON(C.KEY, l2);
+    }
+    res.status(200).json({ ok: true, before, after: view(), sent });
+    return;
+  }
   if (req.query && req.query.cardrecent) {
     const C = require('./_lib/card-sarbatori');
     const list = await readJSON(C.KEY, []);

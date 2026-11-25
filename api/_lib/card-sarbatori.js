@@ -2231,7 +2231,7 @@ async function requestFromTap(i, opt) {
   return { ok: true, id: entry.id };
 }
 
-module.exports = { logChat, leadMsgDue, setWave, requestFromTap, deleteOrder, orderExtras, clinicReply, T, BF: T.BF, creditOf: T.creditOf, bfActive: T.bfActive, bfInfo: T.bfInfo, setBf: T.setBf, onlineCredit, payGet,
+module.exports = { say, logChat, leadMsgDue, setWave, requestFromTap, deleteOrder, orderExtras, clinicReply, T, BF: T.BF, creditOf: T.creditOf, bfActive: T.bfActive, bfInfo: T.bfInfo, setBf: T.setBf, onlineCredit, payGet,
   KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT, GIFT_TM, GIFT_ARAD, giftOf, giftShort, giftFor, DISC_TIERS, discOf, onlineLinks, onlinePay, linkOf, siteLinks, sumOk, embedded, setEmbedded, checkoutAmount, checkoutUrl, payQuote, payPaid, payContact, TPL,
   byId, VIP, SALE, isVip, vipLeft, stockFor, leftFor, lostRace, sarb, norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,
