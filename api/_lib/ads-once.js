@@ -186,7 +186,355 @@ const ELYSION = { id: 'elysion-sale-2026-11-24', why: 'Vânzare laser Elysion Pr
     // a hint for Advantage+ audience (Meta's own names, looked up in its targeting search; one not found is left out)
     interests: ['Beauty salon', 'Cosmetics', 'Aesthetics', 'Laser hair removal'], behaviors: ['Small business owners'] },
 } };
+// 25.11 ~23:30, George: „da”: the shop's Black Friday on the site, one campaign per city, 300 lei a day each, women 30-65+ on
+// 8 km (as the running winners), the site's Purchase; 12 ads each (the 10 zones and the 2 general ones, the white style he
+// chose), each its 4:5 and its 9:16 in the same ad, to the zone's product page (the zone and the city chosen) or to all the
+// offers. No end: George decides when they stop (Friday 10:00 he is asked). Not judged on leads by the guard (no form):
+// the hourly review stops an ad that spends with no sale, Meta then moves the money to the rest
+const BF_SITE = [
+ {
+  "name": "C360 · TM · Black Friday · site",
+  "utm": "c360-tm-bf-site",
+  "city": "Timișoara",
+  "budget": 300,
+  "radiusKm": 8,
+  "adsetName": "Timișoara 8 km · femei 30-65+",
+  "ads": [
+   {
+    "name": "TM · HIFU Gușă · alb",
+    "image": "bf-tm-hifu-gusa.jpg",
+    "story": "bf-tm-hifu-gusa-story.jpg",
+    "path": "tratament-hifu?zona=gusa&oras=timisoara",
+    "utmContent": "bf-hifu-gusa",
+    "cta": "BOOK_NOW",
+    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Gușă: 145 lei în loc de 290 lei.\n✅ Strânge pielea de sub bărbie\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "HIFU GUȘĂ: 145 LEI ÎN LOC DE 290 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "TM · HIFU Gât · alb",
+    "image": "bf-tm-hifu-gat.jpg",
+    "story": "bf-tm-hifu-gat-story.jpg",
+    "path": "tratament-hifu?zona=gat&oras=timisoara",
+    "utmContent": "bf-hifu-gat",
+    "cta": "BOOK_NOW",
+    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Gât: 145 lei în loc de 290 lei.\n✅ Strânge pielea lăsată a gâtului\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "HIFU GÂT: 145 LEI ÎN LOC DE 290 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "TM · HIFU Contur · alb",
+    "image": "bf-tm-hifu-contur.jpg",
+    "story": "bf-tm-hifu-contur-story.jpg",
+    "path": "tratament-hifu?zona=contur-mandibular&oras=timisoara",
+    "utmContent": "bf-hifu-contur",
+    "cta": "BOOK_NOW",
+    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Contur: 145 lei în loc de 290 lei.\n✅ Linia maxilarului mai clară\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "HIFU CONTUR: 145 LEI ÎN LOC DE 290 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "TM · HIFU Pomeți · alb",
+    "image": "bf-tm-hifu-pometi.jpg",
+    "story": "bf-tm-hifu-pometi-story.jpg",
+    "path": "tratament-hifu?zona=pometi&oras=timisoara",
+    "utmContent": "bf-hifu-pometi",
+    "cta": "BOOK_NOW",
+    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Pomeți: 145 lei în loc de 290 lei.\n✅ Aspect de lifting pe pomeți\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "HIFU POMEȚI: 145 LEI ÎN LOC DE 290 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "TM · HIFU Frunte · alb",
+    "image": "bf-tm-hifu-frunte.jpg",
+    "story": "bf-tm-hifu-frunte-story.jpg",
+    "path": "tratament-hifu?zona=frunte&oras=timisoara",
+    "utmContent": "bf-hifu-frunte",
+    "cta": "BOOK_NOW",
+    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Frunte: 145 lei în loc de 290 lei.\n✅ Aspect de lifting pe frunte, privire mai odihnită\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "HIFU FRUNTE: 145 LEI ÎN LOC DE 290 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "TM · HIFU Full Face · alb",
+    "image": "bf-tm-hifu-full-face.jpg",
+    "story": "bf-tm-hifu-full-face-story.jpg",
+    "path": "tratament-hifu-full-face?oras=timisoara",
+    "utmContent": "bf-hifu-full-face",
+    "cta": "BOOK_NOW",
+    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Full Face: 510 lei în loc de 1.020 lei.\n✅ Strânge pielea lăsată a feței\n✅ Frunte, obraji, linia maxilarului și gât\n✅ Fără bisturiu, fără recuperare\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "HIFU FULL FACE: 510 LEI ÎN LOC DE 1.020 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "TM · BioLifting Full Face · alb",
+    "image": "bf-tm-biolifting-full-face.jpg",
+    "story": "bf-tm-biolifting-full-face-story.jpg",
+    "path": "tratament-biolifting-full-face?oras=timisoara",
+    "utmContent": "bf-biolifting-full-face",
+    "cta": "BOOK_NOW",
+    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nBioLifting Full Face: 140 lei în loc de 280 lei.\n✅ Stimulează colagenul și elastina\n✅ Reduce ridurile fine\n✅ 30 de minute, fără ace, fără recuperare\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "BIOLIFTING FULL FACE: 140 LEI ÎN LOC DE 280 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "TM · Red Sculpt Abdomen · alb",
+    "image": "bf-tm-red-sculpt-abdomen.jpg",
+    "story": "bf-tm-red-sculpt-abdomen-story.jpg",
+    "path": "tratament-radiofrecventa?zona=abdomen&oras=timisoara",
+    "utmContent": "bf-red-sculpt-abdomen",
+    "cta": "BOOK_NOW",
+    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nRed Sculpt Abdomen: 140 lei în loc de 280 lei.\n✅ Piele mai fermă pe abdomen\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "RED SCULPT ABDOMEN: 140 LEI ÎN LOC DE 280 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "TM · Red Sculpt Coapse · alb",
+    "image": "bf-tm-red-sculpt-coapse.jpg",
+    "story": "bf-tm-red-sculpt-coapse-story.jpg",
+    "path": "tratament-radiofrecventa?zona=coapse&oras=timisoara",
+    "utmContent": "bf-red-sculpt-coapse",
+    "cta": "BOOK_NOW",
+    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nRed Sculpt Coapse: 140 lei în loc de 280 lei.\n✅ Reduce aspectul de celulită\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "RED SCULPT COAPSE: 140 LEI ÎN LOC DE 280 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "TM · Red Sculpt Brațe · alb",
+    "image": "bf-tm-red-sculpt-brate.jpg",
+    "story": "bf-tm-red-sculpt-brate-story.jpg",
+    "path": "tratament-radiofrecventa?zona=brate&oras=timisoara",
+    "utmContent": "bf-red-sculpt-brate",
+    "cta": "BOOK_NOW",
+    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nRed Sculpt Brațe: 140 lei în loc de 280 lei.\n✅ Piele mai fermă pe brațe\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "RED SCULPT BRAȚE: 140 LEI ÎN LOC DE 280 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "TM · Toate tratamentele · lista de prețuri",
+    "image": "bf-tm-toate-lista.jpg",
+    "story": "bf-tm-toate-lista-story.jpg",
+    "path": "oferte?oras=timisoara",
+    "utmContent": "bf-toate-lista",
+    "cta": "SHOP_NOW",
+    "text": "TIMIȘOARA! 📍 -50% la TOATE tratamentele, doar la plata online.\n\n✅ Liposonix: 320 lei în loc de 640 lei\n✅ HIFU Gușă: 145 lei în loc de 290 lei\n✅ Red Sculpt, 40K Slim, BioLifting Full Face: 140 lei în loc de 280 lei\n\n⏳ Doar 2 zile.\n👉 Alegi tratamentul pe site, plătești cu cardul și îți alegi ziua și ora.",
+    "headlines": [
+     "-50% LA TOATE TRATAMENTELE 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "TM · Toate tratamentele · față și corp",
+    "image": "bf-tm-toate-fata-corp.jpg",
+    "story": "bf-tm-toate-fata-corp-story.jpg",
+    "path": "oferte?oras=timisoara",
+    "utmContent": "bf-toate-fata-corp",
+    "cta": "SHOP_NOW",
+    "text": "TIMIȘOARA! 📍 Jumătate de preț la tot: față și corp, -50% la plata online.\n\n✅ Fără ace, fără operație\n✅ De la 80 de lei\n✅ Îți alegi ziua și ora imediat după plată\n\n⏳ Doar 2 zile.\n👉 Intră pe site și alege-ți tratamentul.",
+    "headlines": [
+     "JUMĂTATE DE PREȚ LA TOT 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   }
+  ]
+ },
+ {
+  "name": "C360 · AR · Black Friday · site",
+  "utm": "c360-ar-bf-site",
+  "city": "Arad",
+  "budget": 300,
+  "radiusKm": 8,
+  "adsetName": "Arad 8 km · femei 30-65+",
+  "ads": [
+   {
+    "name": "AR · HIFU Gușă · alb",
+    "image": "bf-ar-hifu-gusa.jpg",
+    "story": "bf-ar-hifu-gusa-story.jpg",
+    "path": "tratament-hifu?zona=gusa&oras=arad",
+    "utmContent": "bf-hifu-gusa",
+    "cta": "BOOK_NOW",
+    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Gușă: 145 lei în loc de 290 lei.\n✅ Strânge pielea de sub bărbie\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "HIFU GUȘĂ: 145 LEI ÎN LOC DE 290 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "AR · HIFU Gât · alb",
+    "image": "bf-ar-hifu-gat.jpg",
+    "story": "bf-ar-hifu-gat-story.jpg",
+    "path": "tratament-hifu?zona=gat&oras=arad",
+    "utmContent": "bf-hifu-gat",
+    "cta": "BOOK_NOW",
+    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Gât: 145 lei în loc de 290 lei.\n✅ Strânge pielea lăsată a gâtului\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "HIFU GÂT: 145 LEI ÎN LOC DE 290 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "AR · HIFU Contur · alb",
+    "image": "bf-ar-hifu-contur.jpg",
+    "story": "bf-ar-hifu-contur-story.jpg",
+    "path": "tratament-hifu?zona=contur-mandibular&oras=arad",
+    "utmContent": "bf-hifu-contur",
+    "cta": "BOOK_NOW",
+    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Contur: 145 lei în loc de 290 lei.\n✅ Linia maxilarului mai clară\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "HIFU CONTUR: 145 LEI ÎN LOC DE 290 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "AR · HIFU Pomeți · alb",
+    "image": "bf-ar-hifu-pometi.jpg",
+    "story": "bf-ar-hifu-pometi-story.jpg",
+    "path": "tratament-hifu?zona=pometi&oras=arad",
+    "utmContent": "bf-hifu-pometi",
+    "cta": "BOOK_NOW",
+    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Pomeți: 145 lei în loc de 290 lei.\n✅ Aspect de lifting pe pomeți\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "HIFU POMEȚI: 145 LEI ÎN LOC DE 290 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "AR · HIFU Frunte · alb",
+    "image": "bf-ar-hifu-frunte.jpg",
+    "story": "bf-ar-hifu-frunte-story.jpg",
+    "path": "tratament-hifu?zona=frunte&oras=arad",
+    "utmContent": "bf-hifu-frunte",
+    "cta": "BOOK_NOW",
+    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Frunte: 145 lei în loc de 290 lei.\n✅ Aspect de lifting pe frunte, privire mai odihnită\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "HIFU FRUNTE: 145 LEI ÎN LOC DE 290 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "AR · HIFU Full Face · alb",
+    "image": "bf-ar-hifu-full-face.jpg",
+    "story": "bf-ar-hifu-full-face-story.jpg",
+    "path": "tratament-hifu-full-face?oras=arad",
+    "utmContent": "bf-hifu-full-face",
+    "cta": "BOOK_NOW",
+    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Full Face: 510 lei în loc de 1.020 lei.\n✅ Strânge pielea lăsată a feței\n✅ Frunte, obraji, linia maxilarului și gât\n✅ Fără bisturiu, fără recuperare\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "HIFU FULL FACE: 510 LEI ÎN LOC DE 1.020 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "AR · BioLifting Full Face · alb",
+    "image": "bf-ar-biolifting-full-face.jpg",
+    "story": "bf-ar-biolifting-full-face-story.jpg",
+    "path": "tratament-biolifting-full-face?oras=arad",
+    "utmContent": "bf-biolifting-full-face",
+    "cta": "BOOK_NOW",
+    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nBioLifting Full Face: 140 lei în loc de 280 lei.\n✅ Stimulează colagenul și elastina\n✅ Reduce ridurile fine\n✅ 30 de minute, fără ace, fără recuperare\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "BIOLIFTING FULL FACE: 140 LEI ÎN LOC DE 280 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "AR · Red Sculpt Abdomen · alb",
+    "image": "bf-ar-red-sculpt-abdomen.jpg",
+    "story": "bf-ar-red-sculpt-abdomen-story.jpg",
+    "path": "tratament-radiofrecventa?zona=abdomen&oras=arad",
+    "utmContent": "bf-red-sculpt-abdomen",
+    "cta": "BOOK_NOW",
+    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nRed Sculpt Abdomen: 140 lei în loc de 280 lei.\n✅ Piele mai fermă pe abdomen\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "RED SCULPT ABDOMEN: 140 LEI ÎN LOC DE 280 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "AR · Red Sculpt Coapse · alb",
+    "image": "bf-ar-red-sculpt-coapse.jpg",
+    "story": "bf-ar-red-sculpt-coapse-story.jpg",
+    "path": "tratament-radiofrecventa?zona=coapse&oras=arad",
+    "utmContent": "bf-red-sculpt-coapse",
+    "cta": "BOOK_NOW",
+    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nRed Sculpt Coapse: 140 lei în loc de 280 lei.\n✅ Reduce aspectul de celulită\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "RED SCULPT COAPSE: 140 LEI ÎN LOC DE 280 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "AR · Red Sculpt Brațe · alb",
+    "image": "bf-ar-red-sculpt-brate.jpg",
+    "story": "bf-ar-red-sculpt-brate-story.jpg",
+    "path": "tratament-radiofrecventa?zona=brate&oras=arad",
+    "utmContent": "bf-red-sculpt-brate",
+    "cta": "BOOK_NOW",
+    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nRed Sculpt Brațe: 140 lei în loc de 280 lei.\n✅ Piele mai fermă pe brațe\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "headlines": [
+     "RED SCULPT BRAȚE: 140 LEI ÎN LOC DE 280 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "AR · Toate tratamentele · lista de prețuri",
+    "image": "bf-ar-toate-lista.jpg",
+    "story": "bf-ar-toate-lista-story.jpg",
+    "path": "oferte?oras=arad",
+    "utmContent": "bf-toate-lista",
+    "cta": "SHOP_NOW",
+    "text": "ARAD! 📍 -50% la TOATE tratamentele, doar la plata online.\n\n✅ Liposonix: 320 lei în loc de 640 lei\n✅ HIFU Gușă: 145 lei în loc de 290 lei\n✅ Red Sculpt, 40K Slim, BioLifting Full Face: 140 lei în loc de 280 lei\n\n⏳ Doar 2 zile.\n👉 Alegi tratamentul pe site, plătești cu cardul și îți alegi ziua și ora.",
+    "headlines": [
+     "-50% LA TOATE TRATAMENTELE 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   },
+   {
+    "name": "AR · Toate tratamentele · față și corp",
+    "image": "bf-ar-toate-fata-corp.jpg",
+    "story": "bf-ar-toate-fata-corp-story.jpg",
+    "path": "oferte?oras=arad",
+    "utmContent": "bf-toate-fata-corp",
+    "cta": "SHOP_NOW",
+    "text": "ARAD! 📍 Jumătate de preț la tot: față și corp, -50% la plata online.\n\n✅ Fără ace, fără operație\n✅ De la 80 de lei\n✅ Îți alegi ziua și ora imediat după plată\n\n⏳ Doar 2 zile.\n👉 Intră pe site și alege-ți tratamentul.",
+    "headlines": [
+     "JUMĂTATE DE PREȚ LA TOT 👉"
+    ],
+    "description": "Doar online · doar 2 zile"
+   }
+  ]
+ }
+];
 const JOBS = [
+  { id: 'bf-site-2026-11-25', why: 'Black Friday pe site: TM și AR, câte 12 reclame, 300 lei/zi pe oraș', site: {
+    pixelId: '2276074362800484', sharePixel: '1107600260509887', goal: 'purchase', cta: 'BOOK_NOW', ages: [30, 65], urlTags: 'c360_ad={{ad.id}}',
+    campaigns: BF_SITE } },
+  // 25.11 ~23:30, George: „lasă-le numai pe cele care funcționează acum: cost pe lead, leaduri constante, influență asupra
+  // calendarului”; 7 days: these two bring few bookings (sezon v2: 7 leads, 1 booking; copertă 40+: 24 lei a lead)
+  { id: 'old-weak-off-2026-11-25', act: 'act_4502494523405059', why: 'George: rămân doar reclamele vechi care umplu calendarul', actions: [
+    { campaignId: '120252019815200103', name: 'TM HIFU G · sezon v2', status: 'PAUSED', why: '7 leaduri, 1 programare în 7 zile' },
+    { campaignId: '120251796515140103', name: 'TM HIFU G · copertă 40+', status: 'PAUSED', why: '24 lei pe lead, 1 programare' },
+  ] },
   // 25.11 evening, George: „da, oprește-le pe amândouă”: the card ad „fiecare card” (0 leads, in both card campaigns) and
   // TM LIPO · stai întinsă v2 (1 lead, 0 bookings in 2 days); the ads themselves, the rest of their campaigns as they are
   { id: 'weak-off-2026-11-25', act: 'act_4502494523405059', why: 'George: oprite reclamele slabe', actions: [
