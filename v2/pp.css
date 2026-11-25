@@ -588,3 +588,5 @@ body.tp-buy-on .sh-bar{ transform:translateY(calc(100% + 40px)) !important; visi
 /* the packages that hold the treatment (v2/pp.js pkSec): like the pairs, with what she saves */
 .tp-pk .tx p{ color:var(--l1); }
 .tp-pk .sv{ display:block; margin-top:3px; font-size:13.5px; font-weight:650; color:#a2513e; }
+/* the laser's zones wrap inside the buy box (the owner, 25.11: „ai grijă la zone să nu iasă din chenar”), no sideways row */
+.tp-chips.sc{ flex-wrap:wrap; overflow:visible; margin:0; padding:0; -webkit-mask-image:none; mask-image:none; }
