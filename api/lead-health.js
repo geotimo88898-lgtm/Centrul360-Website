@@ -873,6 +873,22 @@ module.exports = async (req, res) => {
     res.status(200).json({ ok: true, before, after: view(), sent });
     return;
   }
+  // POST ?cardvia=<order id>&via=clinica: a card paid on the POS but entered as paid online (25.11, Arad): the payment set to
+  // the clinic's card (POS), so the POS list matches it; the card's credit and gift stay as they were (the owner's call)
+  if (req.query && req.query.cardvia && req.method === 'POST') {
+    const C = require('./_lib/card-sarbatori'), { writeJSON } = require('./_lib/store');
+    const list = await readJSON(C.KEY, []);
+    const r = list.find((x) => x && x.id === String(req.query.cardvia));
+    if (!r || r.status !== 'platit') { res.status(404).json({ error: 'not_found' }); return; }
+    r.paidVia = 'clinica'; r.payMethod = 'card';
+    C.mark(r, 'via', 'plătit în clinică pe POS (corectat; creditul și cadoul rămân)');
+    await writeJSON(C.KEY, list);
+    const sales = await readJSON('data/sales.json', []);
+    const sale = sales.find((x) => x && x.source === 'incasare' && x.cardOrderId === r.id && x.kind !== 'refund');
+    if (sale) { sale.online = false; sale.method = 'card'; sale.note = String(sale.note || '').replace(/^Online \(myPOS\)/, 'În clinică (POS)'); await writeJSON('data/sales.json', sales); }
+    res.status(200).json({ ok: true, sale: sale ? { online: sale.online, method: sale.method, note: sale.note, amount: sale.amount } : null });
+    return;
+  }
   if (req.query && req.query.cardrecent) {
     const C = require('./_lib/card-sarbatori');
     const list = await readJSON(C.KEY, []);

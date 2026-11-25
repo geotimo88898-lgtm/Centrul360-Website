@@ -626,8 +626,11 @@
       from, title: 'Adaugă card plătit', icon: 'gift', width: 520,
       subtitle: 'Pentru o plată văzută în myPOS sau încasată în clinică. Cardul se emite și pleacă pe WhatsApp.',
       body: '<form class="k-form cd-form" data-f>' +
-        K.field('Cardul', K.seg('tier', TIER_SEG, '990')) +
-        K.field('Plătit', K.seg('via', [['clinica', 'În clinică'], ['online', 'Online (PayLink)']], 'clinica'), '', 'Plata online aduce și cadoul (o ședință de BioLifting) și Clubul 360; la VIP, 10% reducere în loc de cadou.') +
+        // no card chosen ahead (the owner, 25.11: a 290 card was issued as the 990 left on by default)
+        K.field('Cardul', K.seg('tier', TIER_SEG, '')) +
+        // where she paid, said plainly (25.11: a POS payment marked as the link gave the online offer)
+        K.field('Unde a plătit', K.seg('via', [['clinica', 'În clinică: POS, cash sau transfer'], ['online', 'Online, prin link de plată']], 'clinica')) +
+        '<p class="cd-via-warn" data-via-warn hidden>' + icon('alert') + '<span>Doar dacă a plătit pe linkul primit pe telefon, nu pe POS. Online primește oferta de online: la cardul de 990, 3.000 lei (Black Friday) și ședința de BioLifting cadou.</span></p>' +
         '<div data-sum hidden>' + K.field('Suma plătită online (VIP)', K.seg('sum', [['full', '9.900 lei'], ['disc', '8.910 lei (10% reducere)']], 'full')) + '</div>' +
         '<div class="k-grid c2">' + K.field('Numele ei', '<input name="name" autocomplete="off" required>') + K.field('Telefon (WhatsApp)', '<input name="phone" inputmode="tel" autocomplete="off" required>') + '</div>' +
         K.field('Pe numele (dacă e cadou)', '<input name="recipient" autocomplete="off" placeholder="gol = pe numele ei">') +
@@ -639,10 +642,12 @@
         // her name or phone: pick her from the contacts (the owner, 24.11), as on „Adaugă cerere”
         contacts(f0);
         // online: the full sum or the 10% one (its PayLink, 22.11)
-        f0.addEventListener('click', () => setTimeout(() => { const v = K.formValues(f0); sum.hidden = !(v.via === 'online' && v.tier === '9900'); }, 0));
+        const warn = root.querySelector('[data-via-warn]');
+        f0.addEventListener('click', () => setTimeout(() => { const v = K.formValues(f0); sum.hidden = !(v.via === 'online' && v.tier === '9900'); warn.hidden = v.via !== 'online'; }, 0));
         root.querySelector('[data-cancel]').addEventListener('click', () => h.close());
         root.querySelector('[data-save]').addEventListener('click', (ev) => K.busy(ev.currentTarget, async () => {
           const v = K.formValues(root.querySelector('[data-f]'));
+          if (!v.tier) { K.ui().toast('Alege cardul pe care l-a plătit.', 'error'); return; }
           try {
             const r = await api({ action: 'add', tier: Number(v.tier), qty: 1, names: [v.recipient || ''], name: v.name, phone: v.phone, city: v.city, via: v.via, method: v.via === 'online' ? 'card' : v.method, disc: v.via === 'online' && v.sum === 'disc' });
             h.close(); K.ui().toast('Card emis: ' + ((r.cards || [])[0] || {}).code, 'success'); await load(true);

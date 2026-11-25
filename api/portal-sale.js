@@ -416,8 +416,19 @@ async function handleRest(req, res, session) {
       dueId: owed.id, toDue: amount, method, split, status: 'recorded', commission: 0, note: '',
       createdAt: new Date().toISOString(), decidedAt: null,
     };
+    // her visit of today in that clinic, not paid yet (the owner, 25.11: the rest paid today is today's payment, never
+    // taken twice): the payment is that visit's, the visit is closed as paid
+    const appointments = await readJSON('data/appointments.json', []);
+    const visit = owed.clientId ? appointments.find((a) => a && !a.block && a.clientId === owed.clientId && a.date === entry.date && a.location === location && !a.paidSaleId && !['anulata', 'concediu', 'finalizata'].includes(a.status)) : null;
+    if (visit) entry.appointmentId = visit.id;
     sales.push(entry);
     await writeJSON('data/sales.json', sales);
+    if (visit) {
+      const before = visit.status;
+      Object.assign(visit, { status: 'finalizata', paidSaleId: entry.id, paidAt: entry.createdAt, updatedAt: entry.createdAt });
+      await writeJSON('data/appointments.json', appointments);
+      if (before !== 'finalizata') { try { await require('./_lib/workflows').emit('appointment_status', { appointment: visit, status: 'finalizata' }); } catch (e) { /* never blocks a payment */ } }
+    }
     const CM = require('./_lib/commission');
     const u = sales.find((x) => x.source === 'comision' && x.incasareId === owed.saleId && x.status === 'approved');
     const gain = u && CM.cashRule(u) ? CM.nextPayLei(u, CM.context(sales, await store.readJSON(D.KEY, []), employees), amount) : 0;
@@ -440,7 +451,7 @@ async function handleRest(req, res, session) {
         });
       } catch (e) { /* never blocks a payment */ }
     }
-    res.status(200).json({ ok: true, entry, due: (p && p.due) || null });
+    res.status(200).json({ ok: true, entry, due: (p && p.due) || null, visit: visit ? { id: visit.id, time: visit.time || '' } : null });
   } catch (err) {
     console.error('portal-sale (rest) error:', err.message);
     res.status(500).json({ error: 'sale_failed' });

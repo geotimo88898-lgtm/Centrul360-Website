@@ -406,8 +406,10 @@
           '<div class="k-stat is-good"><div class="k-stat-top">Comision luna</div><div class="k-stat-value">' + K.lei(st.comm) + '</div></div>' +
           '<div class="k-stat"><div class="k-stat-top">Aprobate</div><div class="k-stat-value">' + st.approved + '</div></div>' +
           '<div class="k-stat is-warn"><div class="k-stat-top">În așteptare</div><div class="k-stat-value">' + st.pending + '</div></div></div>' +
-          (sales.length ? '<div class="k-list">' + sales.map((s) => '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(s.treatment) + '</div><div class="k-row-sub">' + esc(K.dateShort(s.date)) + ' · ' + esc(cat(s.category)) + ' · ' + K.lei(s.amount) + '</div></div>' +
-            '<span class="k-tag is-' + (s.status === 'approved' ? 'good' : s.status === 'pending' ? 'warn' : 'bad') + '">' + (s.status === 'approved' ? K.lei(commOfSale(s), 2) : s.status === 'pending' ? 'În așteptare' : 'Respinsă') + '</span></div>').join('') + '</div>'
+          (sales.length ? '<div class="k-list">' + sales.map((s) => { const t = Date.parse(s.createdAt || ''); const hhmm = Number.isFinite(t) ? ', ' + new Date(t).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' }) : '';
+            // her client and the hour (the owner, 25.11)
+            return '<div class="k-row"><div class="k-row-main"><div class="k-row-title">' + esc(s.treatment) + '</div><div class="k-row-sub">' + esc(K.dateShort(s.date) + hhmm) + (s.client ? ' · <b>' + esc(s.client) + '</b>' : '') + ' · ' + esc(cat(s.category)) + ' · ' + K.lei(s.amount) + '</div></div>' +
+            '<span class="k-tag is-' + (s.status === 'approved' ? 'good' : s.status === 'pending' ? 'warn' : 'bad') + '">' + (s.status === 'approved' ? K.lei(commOfSale(s), 2) : s.status === 'pending' ? 'În așteptare' : 'Respinsă') + '</span></div>'; }).join('') + '</div>'
             : K.empty('receipt', 'Nicio vânzare logată', '')) + '</div>',
       footer: (e.active && e.role !== 'admin' ? '<button type="button" class="k-btn is-outline" data-preview title="Vezi portalul exact cum îl vede ' + esc(e.name.split(' ')[0]) + '">' + icon('eye') + 'Intră în cont</button>' : '') +
         '<span class="k-grow"></span><button type="button" class="k-btn" data-cancel>Închide</button><button type="button" class="k-btn is-primary" data-save' + (tab === 'profile' ? '' : ' hidden') + '>' + icon('check') + 'Salvează</button>',

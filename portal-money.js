@@ -535,7 +535,7 @@
       try {
         const r = await K.api('/api/portal-sale', { source: 'incasare', dueId: due.id, amount: amt, method: st.method, cashAmount: num(st.cash), cardAmount: num(st.card) });
         d.close();
-        K.ui().toast('Încasat ' + K.lei(amt, 2) + ' · ' + (due.client || 'clienta') + '. ' + (r.due && r.due.rest > 0 ? 'Rest: ' + K.lei(r.due.rest, 2) + '.' : 'Pachetul e achitat integral.'), 'success');
+        K.ui().toast('Încasat ' + K.lei(amt, 2) + ' · ' + (due.client || 'clienta') + '. ' + (r.due && r.due.rest > 0 ? 'Rest: ' + K.lei(r.due.rest, 2) + '.' : 'Pachetul e achitat integral.') + (r.visit ? ' Programarea ei de azi' + (r.visit.time ? ' (' + r.visit.time + ')' : '') + ' e trecută ca încasată.' : ''), 'success');
         K.emit('sale:recorded'); DUES.at = 0; loadDues(true); K.reload(); K.emit('remote');
         if (o.done) o.done(r);
       } catch (err) {
