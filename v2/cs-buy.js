@@ -212,7 +212,11 @@
     var vip = Number(tier) === VIP;
     // the shop's cart (the owner, 25.11: „se bagă și el în coș ca restul”): where the page has the cart (/v2's shell defines
     // C360AddCard), „Plătesc online” puts the card in it and opens it; the cart pays it (C360CardBuy below)
-    if (!clinic && typeof window.C360AddCard === 'function') { try { window.C360AddCard(tier, { city: city, from: btn }); return; } catch (e) { /* the old way */ } }
+    // (C360AddCard(tier, city, btn) → Promise<bool>: false, or a failure, and the block pays it the old way)
+    if (!clinic && typeof window.C360AddCard === 'function' && !o.noCart) {
+      var again = function () { order(btn, clinic, Object.assign({}, o, { noCart: true })); };
+      try { Promise.resolve(window.C360AddCard(tier, city, btn)).then(function (ok) { if (ok === false) again(); }, again); return; } catch (e) { /* the old way */ }
+    }
     // the checkout in the page (switched on, or the preview): a sheet over the page at once (embedPay below)
     if (!clinic && emb) { embedPay(btn, tier, city, vip); return; }
     // her phone first, in the small window (the clinic; online with the sheet off), then this again with it
