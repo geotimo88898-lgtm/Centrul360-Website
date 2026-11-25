@@ -41,17 +41,17 @@ PHOTO = {
  'microneedling': ('concern-pete', '50% 45%'), 'periocular': ('concern-riduri', '50% 28%'), 'epilare': ('epilare-legs', '50% 70%'),
 }
 def pic(x):
-    for k in (x.get('pp'), x['id']):
-        a = ART.get(k) if k else None
-        if a and a.get('img'): return a['img'], True
+    a = art(x)
+    if a.get('img'): return a['img'], True
     f = PHOTO.get(x['id'], ('concern-stralucire', '50% 40%'))[0]
     return '/brand_asset/%s.webp' % f, False
 def pic_pos(x): return PHOTO.get(x['id'], ('', '50% 40%'))[1]
-def art_video(x):
-    for k in (x.get('pp'), x['id']):
+def art(x):
+    """the treatment's entry in v2/art.json (by its page id, else its product id): img, video (the 3D loop), poster"""
+    for k in (x['id'], x.get('pp')):
         a = ART.get(k) if k else None
-        if a and a.get('video'): return a['video']
-    return ''
+        if a: return a
+    return {}
 
 # ---------------------------------------------------------------- the laser zones (the price list rows, the server's ids)
 def fold(s):
@@ -502,8 +502,8 @@ def region(shape, g, key):
         return ''.join('<ellipse class="rg" data-tp-region="%s" cx="%d" cy="%d" rx="%d" ry="%d"/>' % (e(key), g[0] + s * g[2], g[1], g[3], g[4]) for s in (-1, 1))
     return ''
 def dot(x, y, key, label, gattr=''):
-    return ('<g class="hs" data-tp-zone="%s"%s aria-label="%s"><circle class="hit" cx="%d" cy="%d" r="20"/><circle class="ring" cx="%d" cy="%d" r="11"/><circle class="pt" cx="%d" cy="%d" r="5"/></g>'
-            % (e(key), gattr, e(label), x, y, x, y, x, y))
+    return ('<g class="hs" data-tp-zone="%s"%s aria-label="%s"><circle class="hit" cx="%d" cy="%d" r="22"/><circle class="halo" cx="%d" cy="%d" r="13"/><circle class="ring" cx="%d" cy="%d" r="8.5"/><circle class="pt" cx="%d" cy="%d" r="3.6"/></g>'
+            % (e(key), gattr, e(label), x, y, x, y, x, y, x, y))
 def dot_at(shape, g):
     return (g[0], g[1]) if shape == 'ellipse' else (g[0] + g[2], g[1])
 
@@ -515,8 +515,8 @@ def body_map(keys, sid, epi=False, labels=None, genders=None):
         sil = ''
         for g in (('w', 'm') if epi else ('w',)):
             parts = body_parts(g == 'm')
-            mark = ('<path d="M150 112 V318" fill="none" stroke="rgba(150,110,90,.28)" stroke-width="1.6" stroke-dasharray="3 6"/>' if side == 'b'
-                    else '<path d="M147 270 q3 3 6 0" fill="none" stroke="rgba(150,110,90,.45)" stroke-width="1.6" stroke-linecap="round"/>')
+            mark = ('<path class="ln" d="M150 112 V318"/><path class="ln" d="M126 150 q24 12 48 0"/>' if side == 'b'
+                    else '<path class="ln" d="M147 270 q3 3 6 0"/><path class="ln" d="M128 186 q22 10 44 0"/><path class="ln" d="M150 300 V336"/>')
             sil += '<g class="fig%s">%s%s</g>' % (' g-' + g if epi else '', ''.join('<path d="%s"/>' % d for d in parts), mark)
         clip = '<clipPath id="%s-%s">%s</clipPath>' % (sid, side, ''.join('<path d="%s"/>' % d for d in body_parts(False)))
         regs = ''.join(region(Z[k][1], Z[k][2], k) for k in keys if k in Z and Z[k][0] == side)
@@ -527,9 +527,10 @@ def body_map(keys, sid, epi=False, labels=None, genders=None):
             if epi and k not in EPI_DOTS: continue
             x, y = dot_at(Z[k][1], Z[k][2])
             dots += dot(x, y, k, (labels or {}).get(k, k), (' data-gx="%s"' % genders[k]) if epi else '')
-        figs.append('<g transform="translate(%d 0)"><defs>%s</defs>%s<g clip-path="url(#%s-%s)">%s</g>%s<text class="cap" x="150" y="640" text-anchor="middle">%s</text></g>'
-                    % (n * 300, clip, sil, sid, side, regs, dots, 'Față' if side == 'f' else 'Spate'))
-    return '<svg class="tp-body" viewBox="-6 6 %d 650" role="img" aria-label="Zonele tratabile">%s</svg>' % (300 * len(sides) + 12, ''.join(figs))
+        figs.append('<g transform="translate(%d 0)"><defs>%s</defs><g clip-path="url(#%s-%s)"><g class="rgs" filter="url(#%s-glow)">%s</g></g>%s%s<text class="cap" x="150" y="640" text-anchor="middle">%s</text></g>'
+                    % (n * 300, clip, sid, side, sid, regs, sil, dots, 'Față' if side == 'f' else 'Spate'))
+    glow = '<defs><filter id="%s-glow" x="-60%%" y="-60%%" width="220%%" height="220%%"><feGaussianBlur stdDeviation="7"/></filter></defs>' % sid
+    return '<svg class="tp-body" viewBox="-6 6 %d 650" role="img" aria-label="Zonele tratabile" style="--glow:url(#%s-glow)">%s%s</svg>' % (300 * len(sides) + 12, sid, glow, ''.join(figs))
 
 FACE_Z = {  # zone → (shape, geometry, dot position) in the bust drawing
  'Scalp': ('path', 'M204 120 C206 70 248 40 300 40 C352 40 394 70 396 120 C380 92 344 82 300 84 C256 82 220 92 204 120Z', (300, 58)),
@@ -539,7 +540,7 @@ FACE_Z = {  # zone → (shape, geometry, dot position) in the bust drawing
  'Gușă': ('ellipse', (300, 350, 44, 16), (300, 352)), 'Gât': ('ellipse', (300, 390, 38, 22), (300, 394)),
  'Decolteu': ('ellipse', (300, 448, 110, 26), (300, 446)), 'Perioral': ('ellipse', (300, 282, 40, 20), (300, 282)),
 }
-def face_map(show, tappable):
+def face_map(show, tappable, sid='mf'):
     hd = ('<path class="hair" d="M300 40 C380 40 424 96 420 170 C418 214 420 250 430 300 C410 250 400 200 396 150 C384 100 340 82 300 84 C260 82 216 100 204 150 C200 200 190 250 170 300 C180 250 182 214 180 170 C176 96 220 40 300 40Z"/>'
           '<path class="sk" d="M130 480 C136 440 200 424 252 414 C262 398 264 372 262 330 H338 C336 372 338 398 348 414 C400 424 464 440 470 480Z"/>'
           '<path class="sk" d="%s"/>' % FACE_D +
@@ -553,7 +554,8 @@ def face_map(show, tappable):
         elif kind == 'ellipse': regs += '<ellipse class="rg" data-tp-region="%s" cx="%d" cy="%d" rx="%d" ry="%d"/>' % (e(z), g[0], g[1], g[2], g[3])
         else: regs += ''.join('<ellipse class="rg" data-tp-region="%s" cx="%d" cy="%d" rx="%d" ry="%d"/>' % (e(z), g[0] + s * g[2], g[1], g[3], g[4]) for s in (-1, 1))
         if tappable: dots += dot(lx, ly, z, z)
-    return '<svg class="tp-face" viewBox="130 24 340 466" role="img" aria-label="Zonele tratate">%s<g class="rgs">%s</g>%s</svg>' % (hd, regs, dots)
+    glow = '<defs><filter id="%s-glow" x="-60%%" y="-60%%" width="220%%" height="220%%"><feGaussianBlur stdDeviation="7"/></filter></defs>' % sid
+    return '<svg class="tp-face" viewBox="130 24 340 466" role="img" aria-label="Zonele tratate">%s<g class="rgs" filter="url(#%s-glow)">%s</g>%s%s</svg>' % (glow, sid, regs, hd, dots)
 
 # ======================================================================================= the page
 def eyebrow(t, cls=''): return '<p class="tp-eye%s">%s</p>' % (cls, e(t))
@@ -561,10 +563,11 @@ def head(eye, h2, lead='', cls=''):
     return '<header class="tp-head%s">%s<h2>%s</h2>%s</header>' % (cls, eyebrow(eye), h2, '<p class="tp-lead">%s</p>' % e(lead) if lead else '')
 def bf(full): return lei(full * (100 - PCT) / 100)
 
+TM_CELLS = ''.join('<i><b data-u="%d">00</b><small data-uu="%d">%s</small></i>' % (k, k, u) for k, u in enumerate(('zile', 'ore', 'min', 'sec')))
 def buybox(x, zones, sess, full, epi):
     out = ['<div class="tp-buy" data-tp-buy id="cumpara">',
-           '<div class="tp-buy-h"><span class="tp-bf"><i></i>Black Friday</span><div class="tp-tm" data-tp-tm aria-label="Timpul rămas"><span>Se încheie în</span>'
-           '<b data-u="0">00</b><small>z</small><b data-u="1">00</b><small>h</small><b data-u="2">00</b><small>m</small><b data-u="3">00</b><small>s</small></div></div>']
+           '<div class="tp-buy-h"><span class="tp-bf"><i></i>Black Friday · -%d%%</span><span class="tp-cd-l">Oferta se încheie în</span></div>' % PCT,
+           '<div class="tp-cells sm" data-tp-tm role="timer" aria-label="Timpul rămas">%s</div>' % TM_CELLS]
     if epi:
         out.append('<div class="tp-opt"><p class="tp-l">Pentru</p><div class="tp-seg" role="group" aria-label="Pentru"><button type="button" data-tp-g="f" aria-pressed="true">Femei</button><button type="button" data-tp-g="m" aria-pressed="false">Bărbați</button></div></div>')
         out.append('<div class="tp-opt"><p class="tp-l">Zona</p><div class="tp-chips sc" role="group" aria-label="Zona">%s</div></div>' % ''.join(
@@ -601,8 +604,9 @@ def page(x):
     # ---- 1. the hero: picture, name, promise, bullets, the Black Friday buy box, the trust row
     name_h = e(x['name']) + (' <em class="tp-zn" data-tp-zn>%s</em>' % e(z0) if hasz else '')
     out.append('<section class="tp-hero"><div class="wrap tp-hero-g">'
-               '<div class="tp-stage%s"><div class="tp-glow" aria-hidden="true"></div><img src="%s" alt="%s" decoding="async" fetchpriority="high" data-tp-img style="view-transition-name:pic-%s;object-position:%s"><span class="tp-tag">-%d%% la plata online</span></div>'
-               % (' own' if own else '', e(img), e(x['name']), re.sub(r'[^a-z0-9-]', '', ppid), pic_pos(x) if not own else 'center bottom', PCT))
+               '<div class="tp-stage%s"><div class="tp-glow" aria-hidden="true"></div><div class="tp-floor" aria-hidden="true"></div><img src="%s" alt="%s" decoding="async" fetchpriority="high" data-tp-img style="view-transition-name:pic-%s;object-position:%s">%s</div>'
+               % (' own' if own else '', e(img), e(x['name']), re.sub(r'[^a-z0-9-]', '', ppid), pic_pos(x) if not own else 'center bottom',
+                  '' if own else '<span class="tp-tag">-%d%% la plata online</span>' % PCT))
     out.append('<div class="tp-hx">%s<h1>%s</h1><p class="tp-promise">%s</p><ul class="tp-bul">%s</ul>%s%s</div></div></section>' % (
         eyebrow(x['kind']), name_h, e(x['promise']), ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(b)) for b in x['bullets']),
         buybox(x, zones, sess, full, epi), trust(x)))
@@ -624,17 +628,18 @@ def page(x):
     # ---- 4. how it works: the explainer, step by step, and the video
     a, svg, leg = scene(x)
     steps = ''.join('<li><button type="button" data-tp-s="%d"><span class="n">0%d</span><span class="t"><b>%s</b> %s</span><i class="bar"><i></i></i></button></li>' % (k + 1, k + 1, e(s['b']), e(s['t'])) for k, s in enumerate(x['how']['steps']))
+    ar = art(x)
+    loop = ''
+    if ar.get('video'):
+        loop = ('<figure class="tp-loop rv"><div class="ph"><video muted loop playsinline preload="none" poster="%s" data-tp-auto data-src="%s" aria-label="%s"></video><span class="tp-ill lt">Ilustrație 3D</span></div></figure>'
+                % (e(ar.get('poster') or ''), e(ar['video']), e('Cum funcționează ' + x['name'] + ', în 3D')))
     vid = ''
     v = x.get('video')
-    av = art_video(x)
-    if av: v = {'src': av, 'title': 'Cum funcționează, pe scurt.', 'sub': 'Video ilustrativ', 'loop': True}
-    if v and v.get('loop'):
-        vid = '<figure class="tp-vid loop rv"><div class="ph"><video src="%s" muted playsinline loop preload="metadata" data-tp-auto aria-label="%s"></video></div><figcaption><b>%s</b><span>%s</span></figcaption></figure>' % (e(v['src']), e(v['title']), e(v['title']), e(v['sub']))
-    elif v:
-        vid = ('<figure class="tp-vid rv%s"><div class="ph"><video src="%s" poster="%s" playsinline preload="none" aria-label="%s"></video><button type="button" class="tp-play" data-tp-play aria-label="Pornește video-ul">%s</button></div><figcaption><b>%s</b><span>%s</span></figcaption></figure>'
-               % (' wide' if v.get('ratio') else '', e(v['src']), e(v['poster']), e(v['title']), icon('play'), e(v['title']), e(v['sub'])))
-    out.append('<section class="tp-s tp-how" id="cum-functioneaza"><div class="wrap">%s<div class="tp-how-g"><figure class="tp-anim a-%s" data-tp-anim data-step="0">%s<figcaption>%s<span class="tp-ill">Ilustrație</span></figcaption></figure><ol class="tp-steps">%s</ol></div>%s</div></section>' % (
-        head('Cum funcționează', x['how']['h'], x['how']['text']), a, svg, leg, steps, vid))
+    if v:
+        vid = ('<div class="tp-vsl">%s<figure class="tp-vid rv%s"><div class="ph"><video src="%s" poster="%s" playsinline preload="none" aria-label="%s"></video><button type="button" class="tp-play" data-tp-play aria-label="Pornește video-ul">%s</button></div><figcaption><b>%s</b><span>%s</span></figcaption></figure></div>'
+               % (eyebrow('Video · pe scurt'), ' wide' if v.get('ratio') else '', e(v['src']), e(v['poster']), e(v['title']), icon('play'), e(v['title']), e(v['sub'])))
+    out.append('<section class="tp-s tp-how" id="cum-functioneaza"><div class="wrap">%s%s<div class="tp-how-g"><figure class="tp-anim a-%s" data-tp-anim data-step="0">%s<figcaption>%s<span class="tp-ill">Ilustrație</span></figcaption></figure><ol class="tp-steps">%s</ol></div>%s</div></section>' % (
+        head('Cum funcționează', x['how']['h'], x['how']['text']), loop, a, svg, leg, steps, vid))
 
     # ---- 5. the zones: tap one, it is chosen in the buy box
     mz = x.get('mapZones') or []
@@ -652,7 +657,7 @@ def page(x):
             side = '<div class="tp-zchips">%s</div>' % ''.join('<button type="button" data-tp-zone="%s" aria-pressed="%s">%s</button>' % (e(z), 'true' if k == 0 else 'false', e(z)) for k, z in enumerate(zones))
             h2, lead = 'Alege zona. <em>Apasă pe ea.</em>', 'Prețul e pe zonă și pe ședință. Zona aleasă trece direct în coș.'
         else:
-            svgm = face_map(zones or mz, bool(zones))
+            svgm = face_map(zones or mz, bool(zones), sid)
             if zones:
                 side = '<div class="tp-zchips">%s</div>' % ''.join('<button type="button" data-tp-zone="%s" aria-pressed="%s">%s</button>' % (e(z), 'true' if k == 0 else 'false', e(z)) for k, z in enumerate(zones))
                 h2, lead = 'Alege zona. <em>Apasă pe ea.</em>', 'O zonă mică a feței, la alegere. Zona aleasă trece direct în coș.'
@@ -668,13 +673,13 @@ def page(x):
     fit = x.get('fit') or {}
     if x.get('voice') or fit.get('yes'):
         body = ''
-        if x.get('voice'): body += '<ul class="tp-voice">%s</ul>' % ''.join('<li class="rv">%s</li>' % e(v) for v in x['voice'])
+        if x.get('voice'): body += '<ul class="tp-probs">%s</ul>' % ''.join('<li class="rv">%s<span>%s</span></li>' % (icon('target'), e(v)) for v in x['voice'])
         if x.get('why'): body += '<p class="tp-why rv"><b>Nu e vina ta.</b> %s</p>' % e(re.sub(r'\s*Nu e vina ta\.$', '', x['why']))
         if fit.get('yes'):
             body += '<div class="tp-fit"><div class="y rv"><h3>E pentru tine dacă</h3><ul>%s</ul></div>%s</div>' % (
                 ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(y)) for y in fit['yes']),
                 '<div class="n rv"><h3>Nu e pentru tine dacă</h3><ul>%s</ul></div>' % ''.join('<li>%s<span>%s</span></li>' % (icon('x'), e(y)) for y in fit['no']) if fit.get('no') else '')
-        out.append('<section class="tp-s tp-who"><div class="wrap">%s%s</div></section>' % (head('Pentru cine e', 'Sună <em>cunoscut?</em>'), body))
+        out.append('<section class="tp-s tp-who"><div class="wrap">%s%s</div></section>' % (head('Pentru cine e', 'Ce <em>rezolvă.</em>'), body))
 
     # ---- 7. the session
     ses = x.get('session') or {}
@@ -731,8 +736,8 @@ def page(x):
     out.append('<section class="tp-s tp-rev" id="recenzii"><div class="wrap"><div class="tp-score rv"><span class="g">%s</span><b>5,0</b><span class="st">%s</span><p>300+ recenzii Google · Timișoara și Arad</p></div><div class="tp-revs">%s</div></div></section>' % (
         GLOGO, STAR * 5, ''.join('<figure class="rv"><span class="st">%s</span><blockquote>„%s”</blockquote><figcaption><b>%s</b> · %s</figcaption></figure>' % (STAR * 5, e(t), e(n), e(c)) for n, c, t in REVIEWS)))
     out.append('<section class="tp-s tp-end"><div class="wrap"><div class="tp-end-c">%s<h2>%s, <em>la jumătate de preț.</em></h2><p>Doar la plata online, cu cardul, până vineri 27.11, la 23:59. Alegi ziua și ora după.</p>'
-               '<div class="tp-cells" data-tp-tm aria-label="Timpul rămas">%s</div><div class="tp-end-pr"><b data-tp-price>%s</b> <s data-tp-full>%s</s></div><button type="button" class="btn book gold tp-cta" data-tp-add>Rezervă oferta%s</button></div></div></section>' % (
-                   eyebrow('Black Friday · -50%', ' dk'), e(x['name']), ''.join('<i><b data-u="%d">00</b><small>%s</small></i>' % (k, u) for k, u in enumerate(('zile', 'ore', 'min', 'sec'))), bf(full), lei(full), ARROW))
+               '<div class="tp-cells" data-tp-tm role="timer" aria-label="Timpul rămas">%s</div><div class="tp-end-pr"><b data-tp-price>%s</b> <s data-tp-full>%s</s></div><button type="button" class="btn book gold tp-cta" data-tp-add>Rezervă oferta%s</button></div></div></section>' % (
+                   eyebrow('Black Friday · -50%', ' dk'), e(x['name']), TM_CELLS, bf(full), lei(full), ARROW))
 
     # ---- the phone's buy bar
     out.append('<div class="tp-bar" data-tp-bar aria-hidden="true"><div class="tx"><b data-tp-name>%s</b><span><b data-tp-price>%s</b> <s data-tp-full>%s</s></span></div><button type="button" class="btn book gold" data-tp-add tabindex="-1">Rezervă%s</button></div>' % (

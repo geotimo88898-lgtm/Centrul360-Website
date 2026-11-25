@@ -92,9 +92,9 @@
   },
   "map": "body",
   "voice": [
-   "Mănânc atent și fac mișcare, dar zona asta nu cedează.",
-   "Slăbesc peste tot, iar abdomenul de jos rămâne.",
-   "Vreau un rezultat fără operație, fără anestezie, fără recuperare."
+   "Mănânci atent și faci mișcare, dar zona nu cedează.",
+   "Slăbești peste tot, iar abdomenul de jos rămâne.",
+   "Vrei un rezultat fără operație, fără anestezie, fără recuperare."
   ],
   "why": "Abdomenul de jos, „colăceii”, interiorul coapselor: acolo grăsimea rezistă la dietă și sport, din motive genetice și hormonale. Nu e vina ta.",
   "fit": {
@@ -224,9 +224,9 @@
   },
   "map": "body",
   "voice": [
-   "Am grăsime pe abdomen, brațe sau coapse care nu pleacă.",
-   "Vreau o siluetă mai definită, fără durere.",
-   "Nu vreau ace și nici zile de recuperare."
+   "Ai grăsime pe abdomen, brațe sau coapse care nu pleacă.",
+   "Vrei o siluetă mai definită, fără durere.",
+   "Nu vrei ace și nici zile de recuperare."
   ],
   "fit": {
    "yes": [
@@ -359,9 +359,9 @@
   },
   "map": "body",
   "voice": [
-   "Vreau mușchi mai fermi, dar nu am timp de sală.",
-   "Vreau să-mi tonifiez abdomenul, brațele sau coapsele.",
-   "Am făcut remodelare și vreau să accentuez rezultatul."
+   "Vrei mușchi mai fermi, dar nu ai timp de sală.",
+   "Vrei să-ți tonifiezi abdomenul, brațele sau coapsele.",
+   "Ai făcut remodelare și vrei să accentuezi rezultatul."
   ],
   "why": "Până la 20.000 de contracții într-o ședință, mult mai intense și mai dese decât la antrenamentul clasic. Imposibil de obținut voluntar, oricât ai trage la sală.",
   "fit": {
@@ -492,9 +492,9 @@
   },
   "map": "body",
   "voice": [
-   "Am celulită, deși sunt slabă.",
+   "Ai celulită, deși ești slabă.",
    "Pielea de pe coapse nu mai e fermă.",
-   "Vreau ceva relaxant, fără recuperare."
+   "Vrei ceva relaxant, fără recuperare."
   ],
   "why": "Celulita ține de structura țesutului, de circulație și de factori hormonali, nu doar de greutate. De aceea apare și la femeile slabe. Nu e vina ta.",
   "fit": {
@@ -637,8 +637,8 @@
   "map": "body",
   "voice": [
    "Pielea de pe abdomen nu mai e fermă.",
-   "Mănânc atent și fac mișcare, dar zona nu cedează.",
-   "Vreau lifting fără bisturiu."
+   "Mănânci atent și faci mișcare, dar zona nu cedează.",
+   "Vrei lifting fără bisturiu."
   ],
   "fit": {
    "yes": [
@@ -755,9 +755,9 @@
   },
   "map": "",
   "voice": [
-   "Am picioarele grele seara.",
-   "Mă simt balonată, cu apă în plus.",
-   "Simt nevoia de un reset pentru corp."
+   "Ai picioarele grele seara.",
+   "Te simți balonată, cu apă în plus.",
+   "Simți nevoia de un reset pentru corp."
   ],
   "why": "Sistemul limfatic e „canalizarea” corpului. Când încetinește, din sedentarism, stres sau alimentație, apar retenția de apă, balonarea și picioarele grele. Nu e vina ta.",
   "fit": {
@@ -928,9 +928,9 @@
   },
   "map": "face",
   "voice": [
-   "Am bărbie dublă, deși nu am kilograme în plus.",
+   "Ai bărbie dublă, deși nu ai kilograme în plus.",
    "Linia mandibulei nu mai e definită ca înainte.",
-   "Nu vreau operație, ace sau cicatrici."
+   "Nu vrei operație, ace sau cicatrici."
   ],
   "why": "Gușa apare dintr-un mix de grăsime localizată și piele relaxată, din genetică, vârstă sau pierderea fermității. Uneori indiferent de greutate. Sportul singur rareori rezolvă zona asta.",
   "fit": {
@@ -1078,9 +1078,9 @@
   },
   "map": "face",
   "voice": [
-   "Am gușă, deși nu am kilograme în plus.",
+   "Ai gușă, deși nu ai kilograme în plus.",
    "Linia mandibulei s-a estompat.",
-   "Vreau un contur definit, fără bisturiu."
+   "Vrei un contur definit, fără bisturiu."
   ],
   "why": "Gușa apare dintr-un mix de grăsime localizată și piele relaxată, din genetică, vârstă sau pierderea fermității. Uneori indiferent de greutate.",
   "fit": {
@@ -1205,8 +1205,8 @@
   "map": "face",
   "voice": [
    "Pielea și-a pierdut fermitatea, iar cremele nu mai ajung.",
-   "Am riduri fine pe care vreau să le estompez.",
-   "Vreau lifting fără bisturiu și fără recuperare."
+   "Ai riduri fine pe care vrei să le estompezi.",
+   "Vrei lifting fără bisturiu și fără recuperare."
   ],
   "why": "Cu vârsta, pielea produce mai puțin colagen și elastină, iar fermitatea scade. Cremele lucrează la suprafață, dar fermitatea vine din straturile profunde.",
   "fit": {
@@ -1333,7 +1333,7 @@
   "voice": [
    "Fața și-a pierdut conturul.",
    "Pielea s-a relaxat, iar cremele nu mai ajung.",
-   "Vreau un lifting fără operație."
+   "Vrei un lifting fără operație."
   ],
   "why": "Cu vârsta, pielea produce mai puțin colagen și elastină, iar fermitatea scade. Cremele lucrează la suprafață, dar fermitatea vine din straturile profunde.",
   "fit": {
@@ -1461,9 +1461,9 @@
   },
   "map": "face",
   "voice": [
-   "Am riduri fine și pielea și-a pierdut elasticitatea.",
+   "Ai riduri fine, iar pielea și-a pierdut elasticitatea.",
    "Cremele nu mai ajung unde trebuie.",
-   "Vreau ceva fără bisturiu și fără recuperare."
+   "Vrei ceva fără bisturiu și fără recuperare."
   ],
   "fit": {
    "yes": [
@@ -1586,8 +1586,8 @@
   "map": "face",
   "voice": [
    "Pielea feței nu mai e fermă.",
-   "Tenul arată obosit și fără tonus.",
-   "Vreau ceva relaxant, fără recuperare."
+   "Tenul arată obosit, fără tonus.",
+   "Vrei ceva relaxant, fără recuperare."
   ],
   "fit": {
    "yes": [
@@ -1714,9 +1714,9 @@
   },
   "map": "",
   "voice": [
-   "Tenul meu arată obosit, gri, fără viață.",
+   "Tenul tău arată obosit, gri, fără viață.",
    "Pielea e deshidratată, iar textura e neuniformă.",
-   "Vreau ceva relaxant, fără recuperare."
+   "Vrei ceva relaxant, fără recuperare."
   ],
   "why": "Stresul, somnul insuficient, soarele și un ritm alert lasă pielea deshidratată, încărcată cu celule moarte și cu bariera slăbită. Nu e vina ta.",
   "fit": {
@@ -1850,8 +1850,8 @@
   },
   "map": "face",
   "voice": [
-   "Am nevoie de o pauză doar pentru mine.",
-   "Tenul meu arată obosit."
+   "Ai nevoie de o pauză doar pentru tine.",
+   "Tenul tău arată obosit."
   ],
   "fit": {},
   "session": {
@@ -1950,9 +1950,9 @@
   },
   "map": "",
   "voice": [
-   "Pielea mea e uscată și trasă.",
+   "Pielea ta e deshidratată.",
    "Tenul arată obosit, gri, fără viață.",
-   "Vreau un tratament relaxant, fără recuperare."
+   "Vrei un tratament relaxant, fără recuperare."
   ],
   "fit": {
    "yes": [
@@ -2073,8 +2073,8 @@
   },
   "map": "",
   "voice": [
-   "Încep să văd linii fine.",
-   "Vreau un ten care arată odihnit."
+   "Începi să vezi linii fine.",
+   "Vrei un ten care arată odihnit."
   ],
   "why": "Cu vârsta, pielea produce mai puțin colagen și elastină, iar fermitatea scade. Nu e vina ta.",
   "fit": {},
@@ -2178,9 +2178,9 @@
   },
   "map": "",
   "voice": [
-   "Pielea mea se înroșește repede.",
-   "Am tenul sensibil și reactiv.",
-   "Vreau ceva blând, care să nu mă irite."
+   "Pielea ta se înroșește repede.",
+   "Ai tenul sensibil și reactiv.",
+   "Vrei ceva blând, care să nu te irite."
   ],
   "fit": {},
   "session": {
@@ -2281,9 +2281,9 @@
   },
   "map": "",
   "voice": [
-   "Am imperfecțiuni care tot revin, chiar și la maturitate.",
-   "Tenul meu e gras, iar porii sunt dilatați.",
-   "Am încercat de toate și nu se echilibrează."
+   "Ai imperfecțiuni care tot revin, chiar și la maturitate.",
+   "Tenul tău e gras, iar porii sunt dilatați.",
+   "Ai încercat de toate și pielea nu se echilibrează."
   ],
   "why": "Glandele produc prea mult sebum, porii se înfundă, iar inflamația și bacteriile fac restul. De aceea spălatul agresiv adesea înrăutățește lucrurile. Nu e vina ta.",
   "fit": {
@@ -2401,8 +2401,8 @@
   },
   "map": "",
   "voice": [
-   "Am pete pe care le acopăr zilnic cu fond de ten.",
-   "Mi-au rămas urme după acnee.",
+   "Ai pete pe care le acoperi zilnic cu fond de ten.",
+   "Ți-au rămas urme după acnee.",
    "Textura pielii nu e uniformă."
   ],
   "why": "Petele apar din soare, din hormoni sau din inflamația lăsată de acnee. Fondul de ten le ascunde, dar nu le rezolvă. Nu e vina ta.",
@@ -2529,9 +2529,9 @@
   },
   "map": "face",
   "voice": [
-   "Am cearcăne pe care nu le acoperă niciun corector.",
+   "Ai cearcăne pe care nu le acoperă niciun corector.",
    "Zona ochilor arată obosită.",
-   "Văd linii fine în jurul ochilor."
+   "Vezi linii fine în jurul ochilor."
   ],
   "fit": {
    "yes": [
@@ -2650,9 +2650,9 @@
   },
   "map": "epilare",
   "voice": [
-   "M-am săturat de ceară și de aparatul de ras.",
-   "Am fire crescute sub piele și iritații după epilare.",
-   "Vreau să scap de întreținerea săptămânală."
+   "Te-ai săturat de ceară și de aparatul de ras.",
+   "Ai fire crescute sub piele și iritații după epilare.",
+   "Vrei să scapi de întreținerea săptămânală."
   ],
   "why": "Părul crește în cicluri. De aceea ceara și aparatul de ras sunt o întreținere fără sfârșit, iar laserul construiește rezultatul în mai multe ședințe. Dar este de durată.",
   "fit": {

@@ -185,6 +185,7 @@
     var ms = Math.max(0, END - (Date.now() + offset)), s = Math.floor(ms / 1000);
     var v = [Math.floor(s / 86400), Math.floor(s % 86400 / 3600), Math.floor(s % 3600 / 60), s % 60];
     $$('[data-tp-tm] [data-u]').forEach(function (b) { var x = v[+b.getAttribute('data-u')]; b.textContent = (x < 10 ? '0' : '') + x; });
+    $$('[data-tp-tm] [data-uu]').forEach(function (el) { var k = +el.getAttribute('data-uu'), one = v[k] === 1; el.textContent = k === 0 ? (one ? 'zi' : 'zile') : k === 1 ? (one ? 'oră' : 'ore') : k === 2 ? 'min' : 'sec'; });
   }
   tick(); setInterval(tick, 1000);
 
@@ -273,11 +274,13 @@
     });
   });
 
-  // ---- the short looping videos play only while in sight
+  // ---- the 3D loops: loaded when close, playing only while in sight (silent, in a loop); with less motion, a still with controls
   $$('video[data-tp-auto]').forEach(function (v) {
-    if (reduce) { v.controls = true; return; }
-    if (!('IntersectionObserver' in window)) return;
-    new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else v.pause(); }); }, { threshold: 0.3 }).observe(v);
+    var load = function () { if (!v.getAttribute('src') && v.getAttribute('data-src')) v.src = v.getAttribute('data-src'); };
+    if (reduce) { load(); v.controls = true; return; }
+    v.muted = true;
+    if (!('IntersectionObserver' in window)) { load(); v.autoplay = true; return; }
+    new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { load(); var p = v.play(); if (p && p.catch) p.catch(function () {}); } else if (v.getAttribute('src')) v.pause(); }); }, { threshold: 0.25, rootMargin: '200px 0px' }).observe(v);
   });
 
   // ---- the treatment's own picture, when it exists after the page was made (v2/art.json)
