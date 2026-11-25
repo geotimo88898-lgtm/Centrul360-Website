@@ -1,0 +1,42 @@
+<style>
+/* tratament intensiv antirid: the explainer (a fine line, flat cells and sparse collagen; the treatment stimulates regeneration, new cells and new collagen fibres; the line is diminished), 7 s loop */
+.par-cells{ animation-name:parCells; transform-origin:50% 100%; } @keyframes parCells{ 0%,40%{ transform:scaleY(.7); } 58%,92%{ transform:scaleY(1); } 100%{ transform:scaleY(.7); } }
+.par-nc{ animation-name:parNc; opacity:0; transform-origin:50% 100%; } @keyframes parNc{ 0%,42%{ opacity:0; transform:scale(.4); } 54%,92%{ opacity:1; transform:none; } 99%,100%{ opacity:0; transform:none; } }
+.par-old{ animation-name:parOld; } @keyframes parOld{ 0%,60%{ opacity:1; } 76%,92%{ opacity:.45; } 100%{ opacity:1; } }
+.par-new{ animation-name:parNew; opacity:0; transform-origin:50% 50%; } @keyframes parNew{ 0%,42%{ opacity:0; transform:scaleX(.8); } 48%{ opacity:1; } 62%,92%{ opacity:1; transform:scaleX(1); } 98%,100%{ opacity:0; transform:scaleX(1); } }
+.par-glow{ animation-name:parGlow; opacity:0; transform-origin:50% 50%; } @keyframes parGlow{ 0%,38%{ opacity:0; transform:scale(.5); } 52%,62%{ opacity:1; transform:scale(1); } 76%,100%{ opacity:0; transform:scale(1.1); } }
+.par-mask{ animation-name:parMask; opacity:0; transform-origin:0 50%; } @keyframes parMask{ 0%,32%{ opacity:0; transform:scaleX(0); } 36%{ opacity:1; } 44%,54%{ opacity:1; transform:scaleX(1); } 62%,100%{ opacity:0; transform:scaleX(1); } }
+.par-bit{ animation-name:parBit; opacity:0; } @keyframes parBit{ 0%,40%{ opacity:0; transform:translate(0,0); } 44%{ opacity:1; } 58%{ opacity:1; transform:translate(0,var(--dy)); } 64%,100%{ opacity:0; transform:translate(0,var(--dy)); } }
+.par-fold{ animation-name:parFold; transform-origin:50% 0; } @keyframes parFold{ 0%,64%{ opacity:1; transform:scaleY(1); } 84%,92%{ opacity:1; transform:scaleY(.28); } 95%{ opacity:0; transform:scaleY(.28); } 96%{ opacity:0; transform:scaleY(1); } 100%{ opacity:1; transform:scaleY(1); } }
+.par-l1{ animation-name:parL1; } @keyframes parL1{ 0%,30%{ opacity:1; } 36%,94%{ opacity:0; } 100%{ opacity:1; } }
+.par-l2{ animation-name:parL2; opacity:0; } @keyframes parL2{ 0%,38%{ opacity:0; transform:translateY(6px); } 44%,90%{ opacity:1; transform:none; } 96%,100%{ opacity:0; transform:none; } }
+.par-l3{ animation-name:parL3; opacity:0; } @keyframes parL3{ 0%,66%{ opacity:0; } 72%,90%{ opacity:1; } 96%,100%{ opacity:0; } }
+</style>
+  <figure class="card proc rv" data-steps=".36,.64" style="margin:0 auto">
+    <svg viewBox="0 0 640 360" role="img" aria-label="Cu vârsta, celulele pielii se reînnoiesc mai greu, colagenul devine mai rar și apare o linie fină; tratamentul stimulează regenerarea, cu celule noi și fibre noi de colagen; linia fină este diminuată.">
+<defs>
+<radialGradient id="parF"><stop offset="0" stop-color="#5fd4c6" stop-opacity=".4"/><stop offset=".55" stop-color="#5fd4c6" stop-opacity=".15"/><stop offset="1" stop-color="#5fd4c6" stop-opacity="0"/></radialGradient>
+<clipPath id="parC"><rect x="0" y="100" width="640" height="240" rx="22"/></clipPath>
+</defs>
+<g clip-path="url(#parC)">
+<rect x="0" y="100" width="640" height="60" fill="#f7efe9"/><rect x="0" y="160" width="640" height="180" fill="#fcf6f1"/>
+<path d="M0 160.5H640" stroke="#efe3d6" stroke-width="1"/>
+<ellipse class="a par-glow" cx="330" cy="226" rx="230" ry="86" fill="url(#parF)"/>
+<g class="a par-old" fill="none" stroke="#e8cdc4" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="58 22"><path d="M130 204q10 -5 20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0"/><path d="M130 240q10 5 20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0"/><path d="M130 276q10 -5 20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0"/></g>
+<g fill="none" stroke-width="2.8" stroke-linecap="round"><path class="a par-new" d="M200 222q10 5 20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0" stroke="#5fd4c6"/><path class="a par-new" d="M180 258q10 -5 20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0" stroke="#14a596" style="animation-delay:160ms"/><path class="a par-new" d="M230 186q10 -5 20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0" stroke="#5fd4c6" style="animation-delay:320ms"/></g>
+<g class="a par-cells" fill="#fffaf6" stroke="#ecd9cf" stroke-width="1.4"><ellipse cx="144" cy="143" rx="19" ry="13"/><ellipse cx="188" cy="143" rx="19" ry="13"/><ellipse cx="232" cy="143" rx="19" ry="13"/><ellipse cx="276" cy="143" rx="19" ry="13"/><ellipse cx="320" cy="143" rx="19" ry="13"/><ellipse cx="364" cy="143" rx="19" ry="13"/><ellipse cx="408" cy="143" rx="19" ry="13"/><ellipse cx="452" cy="143" rx="19" ry="13"/><ellipse cx="496" cy="143" rx="19" ry="13"/><ellipse cx="540" cy="143" rx="19" ry="13"/><ellipse cx="584" cy="143" rx="19" ry="13"/><ellipse cx="628" cy="143" rx="19" ry="13"/></g>
+<g fill="#effaf8" stroke="#5fd4c6" stroke-width="1.6"><ellipse class="a par-nc" cx="320" cy="143" rx="19" ry="13"/><ellipse class="a par-nc" cx="276" cy="143" rx="19" ry="13" style="animation-delay:90ms"/><ellipse class="a par-nc" cx="364" cy="143" rx="19" ry="13" style="animation-delay:180ms"/><ellipse class="a par-nc" cx="232" cy="143" rx="19" ry="13" style="animation-delay:270ms"/><ellipse class="a par-nc" cx="408" cy="143" rx="19" ry="13" style="animation-delay:360ms"/><ellipse class="a par-nc" cx="188" cy="143" rx="19" ry="13" style="animation-delay:450ms"/><ellipse class="a par-nc" cx="452" cy="143" rx="19" ry="13" style="animation-delay:540ms"/></g>
+</g>
+<rect x="0.5" y="100.5" width="639" height="239" rx="22" fill="none" stroke="rgba(11,11,13,.08)"/>
+<path class="a par-fold" d="M278 99.4C300 99.4 312 130 320 130C328 130 340 99.4 362 99.4Z" fill="#fff"/>
+<rect class="a par-mask" x="22" y="92" width="596" height="6" rx="3" fill="#5fd4c6" fill-opacity=".55"/>
+<g fill="#14a596"><circle class="a par-bit" cx="200" cy="92" r="3.4" style="--dy:100px;animation-delay:0ms"/><circle class="a par-bit" cx="262" cy="88" r="3.4" style="--dy:120px;animation-delay:80ms;fill:#5fd4c6"/><circle class="a par-bit" cx="330" cy="92" r="3.4" style="--dy:96px;animation-delay:160ms"/><circle class="a par-bit" cx="392" cy="88" r="3.4" style="--dy:126px;animation-delay:240ms;fill:#5fd4c6"/><circle class="a par-bit" cx="458" cy="92" r="3.4" style="--dy:104px;animation-delay:320ms"/><circle class="a par-bit" cx="520" cy="88" r="3.4" style="--dy:118px;animation-delay:400ms;fill:#5fd4c6"/><circle class="a par-bit" cx="586" cy="92" r="3.4" style="--dy:98px;animation-delay:480ms"/><circle class="a par-bit" cx="296" cy="86" r="3.4" style="--dy:140px;animation-delay:300ms;fill:#5fd4c6"/><circle class="a par-bit" cx="430" cy="86" r="3.4" style="--dy:150px;animation-delay:120ms"/></g>
+<g font-size="17" font-weight="600" letter-spacing="2" fill="#8a9099"><text x="22" y="138">PIELE</text><text x="22" y="324">DERMĂ</text>
+<text class="a par-l1" x="368" y="82">LINIE FINĂ</text><text class="a par-l3" x="368" y="82">LINIE DIMINUATĂ</text><text class="a par-l2" x="618" y="324" text-anchor="end" fill="#0b7f74">REGENERARE</text></g>
+</svg>
+    <ol class="psteps">
+      <li><b>1 · Cu vârsta</b>pielea se reînnoiește mai greu, apar liniile fine</li>
+      <li><b>2 · Tratamentul</b>stimulează regenerarea pielii</li>
+      <li><b>3 · Ridurile și liniile fine</b>sunt diminuate</li>
+    </ol>
+  </figure>

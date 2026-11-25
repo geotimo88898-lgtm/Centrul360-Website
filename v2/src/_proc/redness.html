@@ -1,0 +1,44 @@
+<style>
+/* redness: the explainer (a weakened barrier lets irritants in, the capillaries dilate and the skin reddens; the protocol calms it; the barrier is rebuilt, an even tone), 7 s loop */
+.prr-irr{ animation-name:prrIrr; opacity:0; } @keyframes prrIrr{ 0%{ opacity:0; transform:translateY(0); } 5%{ opacity:1; } 22%{ opacity:1; transform:translateY(var(--dy)); } 28%,100%{ opacity:0; transform:translateY(var(--dy)); } }
+.prr-inf{ animation-name:prrInf; transform-origin:50% 50%; } @keyframes prrInf{ 0%{ opacity:0; transform:scale(.8); } 12%,36%{ opacity:1; transform:scale(1); } 58%,94%{ opacity:0; transform:scale(1.06); } 100%{ opacity:0; transform:scale(.8); } }
+.prr-red{ animation-name:prrRed; } @keyframes prrRed{ 0%{ opacity:.35; } 12%,38%{ opacity:1; } 58%,95%{ opacity:0; } 100%{ opacity:.35; } }
+.prr-d{ animation-name:prrD; opacity:0; } @keyframes prrD{ 0%,36%{ opacity:0; transform:translateY(-12px); } 42%{ opacity:1; } 52%{ opacity:1; } 56%,100%{ opacity:0; transform:translateY(46px); } }
+.prr-wash{ animation-name:prrWash; opacity:0; } @keyframes prrWash{ 0%,42%{ opacity:0; } 54%,62%{ opacity:1; } 76%,100%{ opacity:0; } }
+.prr-new{ animation-name:prrNew; opacity:0; transform-origin:50% 50%; } @keyframes prrNew{ 0%,64%{ opacity:0; transform:scale(.3); } 74%,92%{ opacity:1; transform:none; } 99%,100%{ opacity:0; transform:none; } }
+.prr-calm{ animation-name:prrCalm; opacity:0; transform-origin:50% 50%; } @keyframes prrCalm{ 0%,64%{ opacity:0; transform:scaleX(.15); } 78%,92%{ opacity:1; transform:scaleX(1); } 99%,100%{ opacity:0; transform:scaleX(1); } }
+.prr-n1{ animation-name:prrN1; opacity:0; } @keyframes prrN1{ 0%,2%{ opacity:0; transform:translateY(6px); } 8%,32%{ opacity:1; transform:none; } 38%,100%{ opacity:0; transform:translateY(-6px); } }
+.prr-n2{ animation-name:prrN2; opacity:0; } @keyframes prrN2{ 0%,38%{ opacity:0; transform:translateY(6px); } 44%,60%{ opacity:1; transform:none; } 66%,100%{ opacity:0; transform:translateY(-6px); } }
+.prr-n3{ animation-name:prrN3; opacity:0; } @keyframes prrN3{ 0%,66%{ opacity:0; transform:translateY(6px); } 72%,92%{ opacity:1; transform:none; } 98%,100%{ opacity:0; transform:translateY(-6px); } }
+</style>
+  <figure class="card proc rv" data-steps=".36,.64" style="margin:0 auto">
+    <svg viewBox="0 0 640 360" role="img" aria-label="Bariera pielii sensibile are goluri prin care pătrund iritanții, iar capilarele se dilată și pielea se înroșește; protocolul calmează roșeața; apoi bariera este refăcută, iar tenul este reechilibrat.">
+<defs>
+<clipPath id="prrC"><rect x="0" y="100" width="640" height="240" rx="22"/></clipPath>
+<radialGradient id="prrI"><stop offset="0" stop-color="#e7aa9e" stop-opacity=".5"/><stop offset=".55" stop-color="#efd6d1" stop-opacity=".45"/><stop offset="1" stop-color="#efd6d1" stop-opacity="0"/></radialGradient>
+</defs>
+<g clip-path="url(#prrC)">
+<rect x="0" y="100" width="640" height="70" fill="#f7efe9"/><rect x="0" y="170" width="640" height="170" fill="#fcf6f1"/>
+<path d="M0 170.5H640" stroke="#efe3d6" stroke-width="1"/>
+<ellipse class="a prr-inf" cx="390" cy="196" rx="270" ry="126" fill="url(#prrI)"/>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M120 300H660M158 300C158 262 152 240 152 216C152 203 172 203 172 216C172 240 178 262 178 300M253 300C253 262 258 240 258 224C258 211 276 211 276 224C276 240 271 262 271 300M341 300C341 262 337 240 337 210C337 197 359 197 359 210C359 240 363 262 363 300M437 300C437 262 443 240 443 222C443 209 461 209 461 222C461 240 455 262 455 300M527 300C527 262 522 240 522 212C522 199 544 199 544 212C544 240 549 262 549 300M617 300C617 262 621 240 621 220C621 207 639 207 639 220C639 240 635 262 635 300" stroke="#efd6d1" stroke-width="3"/><path class="a prr-red" d="M120 300H660M158 300C158 262 152 240 152 216C152 203 172 203 172 216C172 240 178 262 178 300M253 300C253 262 258 240 258 224C258 211 276 211 276 224C276 240 271 262 271 300M341 300C341 262 337 240 337 210C337 197 359 197 359 210C359 240 363 262 363 300M437 300C437 262 443 240 443 222C443 209 461 209 461 222C461 240 455 262 455 300M527 300C527 262 522 240 522 212C522 199 544 199 544 212C544 240 549 262 549 300M617 300C617 262 621 240 621 220C621 207 639 207 639 220C639 240 635 262 635 300" stroke="#e7aa9e" stroke-width="6"/></g>
+<rect class="a prr-wash" x="0" y="100" width="640" height="70" fill="#effaf8"/>
+<g fill="#fffaf6" stroke="#ecd9cf" stroke-width="1.4"><rect x="2" y="103" width="42" height="14" rx="5"/><rect x="48" y="103" width="42" height="14" rx="5"/><rect x="94" y="103" width="42" height="14" rx="5"/><rect x="140" y="103" width="42" height="14" rx="5"/><rect x="186" y="103" width="42" height="14" rx="5"/><rect x="278" y="103" width="42" height="14" rx="5"/><rect x="324" y="103" width="42" height="14" rx="5"/><rect x="416" y="103" width="42" height="14" rx="5"/><rect x="462" y="103" width="42" height="14" rx="5"/><rect x="554" y="103" width="42" height="14" rx="5"/><rect x="600" y="103" width="42" height="14" rx="5"/><rect x="-21" y="120" width="42" height="14" rx="5"/><rect x="25" y="120" width="42" height="14" rx="5"/><rect x="71" y="120" width="42" height="14" rx="5"/><rect x="117" y="120" width="42" height="14" rx="5"/><rect x="163" y="120" width="42" height="14" rx="5"/><rect x="209" y="120" width="42" height="14" rx="5"/><rect x="301" y="120" width="42" height="14" rx="5"/><rect x="347" y="120" width="42" height="14" rx="5"/><rect x="439" y="120" width="42" height="14" rx="5"/><rect x="485" y="120" width="42" height="14" rx="5"/><rect x="577" y="120" width="42" height="14" rx="5"/><rect x="623" y="120" width="42" height="14" rx="5"/></g>
+<g fill="#effaf8" stroke="#5fd4c6" stroke-width="1.6"><rect class="a prr-new" x="232" y="103" width="42" height="14" rx="5"/><rect class="a prr-new" x="370" y="103" width="42" height="14" rx="5" style="animation-delay:120ms"/><rect class="a prr-new" x="508" y="103" width="42" height="14" rx="5" style="animation-delay:240ms"/><rect class="a prr-new" x="255" y="120" width="42" height="14" rx="5" style="animation-delay:360ms"/><rect class="a prr-new" x="393" y="120" width="42" height="14" rx="5" style="animation-delay:480ms"/><rect class="a prr-new" x="531" y="120" width="42" height="14" rx="5" style="animation-delay:600ms"/></g>
+</g>
+<g fill="#c8a28c"><circle class="a prr-irr" cx="261" cy="74" r="4" style="--dy:74px;animation-delay:0ms"/><circle class="a prr-irr" cx="270" cy="62" r="4" style="--dy:86px;animation-delay:420ms"/><circle class="a prr-irr" cx="399" cy="74" r="4" style="--dy:74px;animation-delay:260ms"/><circle class="a prr-irr" cx="408" cy="62" r="4" style="--dy:86px;animation-delay:680ms"/><circle class="a prr-irr" cx="537" cy="74" r="4" style="--dy:74px;animation-delay:520ms"/><circle class="a prr-irr" cx="546" cy="62" r="4" style="--dy:86px;animation-delay:940ms"/></g>
+<path class="a prr-d" d="M232 40 C225 52 225 60 232 60 C239 60 239 52 232 40 Z" fill="#5fd4c6"/>
+<path class="a prr-d" d="M340 40 C333 52 333 60 340 60 C347 60 347 52 340 40 Z" fill="#5fd4c6" style="animation-delay:300ms"/>
+<path class="a prr-d" d="M448 40 C441 52 441 60 448 60 C455 60 455 52 448 40 Z" fill="#5fd4c6" style="animation-delay:150ms"/>
+<path class="a prr-d" d="M556 40 C549 52 549 60 556 60 C563 60 563 52 556 40 Z" fill="#5fd4c6" style="animation-delay:450ms"/>
+<path class="a prr-calm" d="M32 100.5H608" stroke="#5fd4c6" stroke-width="3.2" stroke-linecap="round"/>
+<rect x="0.5" y="100.5" width="639" height="239" rx="22" fill="none" stroke="rgba(11,11,13,.08)"/>
+<g font-size="17" font-weight="600" letter-spacing="2" fill="#8a9099"><text x="22" y="160">EPIDERMĂ</text><text x="22" y="324">DERMĂ</text></g>
+<g font-size="17" font-weight="600" letter-spacing="1.6"><text class="a prr-n1" x="22" y="56" fill="#b39894">ROȘEAȚĂ + IRITAȚIE</text><text class="a prr-n2" x="22" y="56" fill="#0b7f74">ROȘEAȚA SE CALMEAZĂ</text><text class="a prr-n3" x="22" y="56" fill="#0b7f74">BARIERĂ REFĂCUTĂ</text></g>
+</svg>
+    <ol class="psteps">
+      <li><b>1 · Pielea sensibilă</b>reacționează și se înroșește</li>
+      <li><b>2 · Protocolul</b>calmează roșeața</li>
+      <li><b>3 · Bariera pielii</b>e refăcută, tenul reechilibrat</li>
+    </ol>
+  </figure>

@@ -1,0 +1,46 @@
+<style>
+/* masaj facial: the explainer (calm circles travel from the scalp to the face, then down the gușă, the neck and the décolleté; a rested, luminous skin), 7 s loop */
+.pmf-spot{ animation-name:pmfSpot; opacity:0; transform-origin:50% 50%; } @keyframes pmfSpot{ 0%{ opacity:0; transform:scale(.6); } 3%,13%{ opacity:1; transform:scale(1); } 17%,100%{ opacity:0; transform:scale(1.12); } }
+.pmf-rot{ animation-name:pmfRot; transform-origin:50% 50%; } @keyframes pmfRot{ 0%{ transform:rotate(0deg); } 17%,100%{ transform:rotate(540deg); } }
+.pmf-hl{ animation-name:pmfHl; opacity:0; } @keyframes pmfHl{ 0%{ opacity:0; } 3%,15%{ opacity:1; } 19%,100%{ opacity:0; } }
+.pmf-hl2{ animation-name:pmfHl2; opacity:0; } @keyframes pmfHl2{ 0%{ opacity:0; } 3%,26%{ opacity:1; } 30%,100%{ opacity:0; } }
+.pmf-glow{ animation-name:pmfGlow; opacity:0; transform-origin:50% 50%; } @keyframes pmfGlow{ 0%,62%{ opacity:0; transform:scale(.7); } 76%,92%{ opacity:1; transform:scale(1); } 100%{ opacity:0; transform:scale(1.05); } }
+.pmf-col{ animation-name:pmfCol; opacity:0; } @keyframes pmfCol{ 0%,64%{ opacity:0; transform:translateX(-8px); } 74%,92%{ opacity:1; transform:none; } 98%,100%{ opacity:0; transform:none; } }
+.pmf-sp{ animation-name:pmfSp; opacity:0; transform-origin:50% 50%; } @keyframes pmfSp{ 0%,68%{ opacity:0; transform:scale(.2) rotate(-40deg); } 78%,92%{ opacity:1; transform:none; } 99%,100%{ opacity:0; transform:scale(.6); } }
+.pmf-n3{ animation-name:pmfN3; opacity:0; } @keyframes pmfN3{ 0%,66%{ opacity:0; transform:translateY(6px); } 72%,92%{ opacity:1; transform:none; } 98%,100%{ opacity:0; transform:translateY(-6px); } }
+</style>
+  <figure class="card proc rv" data-steps=".36,.64" style="margin:0 auto">
+    <svg viewBox="0 0 640 360" role="img" aria-label="Masajul începe cu scalpul și fața, cu mișcări circulare calme, apoi coboară pe rând pe gușă, pe gât și pe decolteu; la final corpul e relaxat, iar pielea arată odihnită și luminoasă.">
+<defs>
+<radialGradient id="pmfG"><stop offset="0" stop-color="#14a596" stop-opacity=".4"/><stop offset=".45" stop-color="#5fd4c6" stop-opacity=".2"/><stop offset="1" stop-color="#5fd4c6" stop-opacity="0"/></radialGradient>
+<radialGradient id="pmfR"><stop offset="0" stop-color="#5fd4c6" stop-opacity=".3"/><stop offset=".6" stop-color="#5fd4c6" stop-opacity=".1"/><stop offset="1" stop-color="#5fd4c6" stop-opacity="0"/></radialGradient>
+<clipPath id="pmfC"><rect x="0" y="0" width="640" height="360" rx="22"/></clipPath>
+</defs>
+<g clip-path="url(#pmfC)">
+<ellipse class="a pmf-glow" cx="300" cy="150" rx="190" ry="150" fill="url(#pmfR)"/>
+<path d="M330 24C300 24 272 40 262 64C256 78 253 94 253 104C253 110 257 112 257 116C254 126 244 136 237 142C233 146 236 151 242 151C247 151 251 152 253 154C251 158 248 161 249 163C250 165 254 166 255 167C252 169 249 172 251 175C253 178 258 179 258 182C255 186 252 192 254 198C256 204 262 207 270 207C282 208 296 210 306 214C309 236 312 264 316 288C312 310 304 334 298 362L642 362L642 312C560 304 470 296 430 276C406 264 392 250 390 228C390 212 398 198 404 186C414 166 420 136 420 108C420 56 380 24 330 24Z" fill="#f7efe9" stroke="#e7d3c6" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="434" cy="78" r="24" fill="#f1e3d7" stroke="#e7d3c6" stroke-width="2"/>
+<path d="M256 76C256 50 286 18 334 18C384 18 422 50 425 100C426 136 418 166 404 188C390 176 380 150 377 124C375 106 360 98 340 98C316 98 296 94 282 84C272 78 264 76 256 76Z" fill="#f1e3d7" stroke="#e7d3c6" stroke-width="2" stroke-linejoin="round"/>
+<g fill="none" stroke="#e7d3c6" stroke-width="2" stroke-linecap="round"><path d="M266 60C300 32 370 32 416 62"/><path d="M286 84C322 62 380 60 420 80"/><path d="M346 124C347.1 110.8 363.6 106.4 370.2 118.5C375.7 128.4 371.3 140.5 364.7 146C360.3 150.4 359.2 155.9 354.8 159.2C350.4 162.5 344.9 159.2 346 153.7"/><path d="M355.9 127.3C361.4 125.1 365.8 129.5 362.5 136.1"/><path d="M262 119C266 123 272 123 277 119"/><path d="M244 145C248 142 253 143 255 147"/><path d="M255 167L263 168"/><path d="M298 210C320 204 338 190 348 168"/><path d="M332 304C356 310 390 310 420 304"/></g>
+<path class="a pmf-col" d="M262 64C256 78 253 94 253 104C253 110 257 112 257 116C254 126 244 136 237 142C233 146 236 151 242 151C247 151 251 152 253 154C251 158 248 161 249 163C250 165 254 166 255 167C252 169 249 172 251 175C253 178 258 179 258 182C255 186 252 192 254 198C256 204 262 207 270 207C282 208 296 210 306 214" fill="none" stroke="#5fd4c6" stroke-width="2.6" stroke-linecap="round"/>
+<g transform="translate(312 42)"><g class="a pmf-spot" style="animation-delay:200ms"><circle r="26" fill="url(#pmfG)"/><g class="a pmf-rot" style="animation-delay:200ms"><circle r="14" fill="none"/><path d="M13 0A13 13 0 1 1 0 -13M-4 -17L0 -13L-4 -9" fill="none" stroke="#14a596" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></g></g>
+<g transform="translate(378 46)"><g class="a pmf-spot" style="animation-delay:450ms"><circle r="26" fill="url(#pmfG)"/><g class="a pmf-rot" style="animation-delay:450ms"><circle r="14" fill="none"/><path d="M13 0A13 13 0 1 1 0 -13M-4 -17L0 -13L-4 -9" fill="none" stroke="#14a596" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></g></g>
+<g transform="translate(274 96)"><g class="a pmf-spot" style="animation-delay:1050ms"><circle r="26" fill="url(#pmfG)"/><g class="a pmf-rot" style="animation-delay:1050ms"><circle r="14" fill="none"/><path d="M13 0A13 13 0 1 1 0 -13M-4 -17L0 -13L-4 -9" fill="none" stroke="#14a596" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></g></g>
+<g transform="translate(300 148)"><g class="a pmf-spot" style="animation-delay:1300ms"><circle r="26" fill="url(#pmfG)"/><g class="a pmf-rot" style="animation-delay:1300ms"><circle r="14" fill="none"/><path d="M13 0A13 13 0 1 1 0 -13M-4 -17L0 -13L-4 -9" fill="none" stroke="#14a596" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></g></g>
+<g transform="translate(288 216)"><g class="a pmf-spot" style="animation-delay:2500ms"><circle r="26" fill="url(#pmfG)"/><g class="a pmf-rot" style="animation-delay:2500ms"><circle r="14" fill="none"/><path d="M13 0A13 13 0 1 1 0 -13M-4 -17L0 -13L-4 -9" fill="none" stroke="#14a596" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></g></g>
+<g transform="translate(350 240)"><g class="a pmf-spot" style="animation-delay:2700ms"><circle r="26" fill="url(#pmfG)"/><g class="a pmf-rot" style="animation-delay:2700ms"><circle r="14" fill="none"/><path d="M13 0A13 13 0 1 1 0 -13M-4 -17L0 -13L-4 -9" fill="none" stroke="#14a596" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></g></g>
+<g transform="translate(340 322)"><g class="a pmf-spot" style="animation-delay:3300ms"><circle r="26" fill="url(#pmfG)"/><g class="a pmf-rot" style="animation-delay:3300ms"><circle r="14" fill="none"/><path d="M13 0A13 13 0 1 1 0 -13M-4 -17L0 -13L-4 -9" fill="none" stroke="#14a596" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></g></g>
+<g transform="translate(396 316)"><g class="a pmf-spot" style="animation-delay:3500ms"><circle r="26" fill="url(#pmfG)"/><g class="a pmf-rot" style="animation-delay:3500ms"><circle r="14" fill="none"/><path d="M13 0A13 13 0 1 1 0 -13M-4 -17L0 -13L-4 -9" fill="none" stroke="#14a596" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></g></g>
+<path class="a pmf-sp" d="M232 72C233.8 82.5 235.5 84.2 246 86C235.5 87.8 233.8 89.5 232 100C230.2 89.5 228.5 87.8 218 86C228.5 84.2 230.2 82.5 232 72Z" fill="#14a596"/><path class="a pmf-sp" d="M300 125C301.1 131.8 302.2 132.9 309 134C302.2 135.1 301.1 136.2 300 143C298.9 136.2 297.8 135.1 291 134C297.8 132.9 298.9 131.8 300 125Z" fill="#5fd4c6" style="animation-delay:200ms"/><path class="a pmf-sp" d="M222 188C223 194 224 195 230 196C224 197 223 198 222 204C221 198 220 197 214 196C220 195 221 194 222 188Z" fill="#5fd4c6" style="animation-delay:400ms"/>
+</g>
+<rect x="0.5" y="0.5" width="639" height="359" rx="22" fill="none" stroke="rgba(11,11,13,.08)"/>
+<g font-size="17" font-weight="600" letter-spacing="2" fill="#8a9099"><text x="244" y="44" text-anchor="end">SCALP</text><text x="222" y="132" text-anchor="end">FAȚĂ</text><text x="284" y="300" text-anchor="end">GÂT ȘI DECOLTEU</text>
+<text class="a pmf-hl" x="244" y="44" text-anchor="end" fill="#0b7f74" style="animation-delay:200ms">SCALP</text><text class="a pmf-hl" x="222" y="132" text-anchor="end" fill="#0b7f74" style="animation-delay:1050ms">FAȚĂ</text><text class="a pmf-hl2" x="284" y="300" text-anchor="end" fill="#0b7f74" style="animation-delay:2500ms">GÂT ȘI DECOLTEU</text>
+<text class="a pmf-n3" x="618" y="336" text-anchor="end" fill="#0b7f74">RELAXARE</text></g>
+</svg>
+    <ol class="psteps">
+      <li><b>1 · Scalpul și fața</b>primele, masate calm</li>
+      <li><b>2 · Gușa, gâtul și decolteul</b>urmează, pe rând</li>
+      <li><b>3 · Relaxare profundă</b>pielea arată odihnită și luminoasă</li>
+    </ol>
+  </figure>
