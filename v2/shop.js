@@ -192,7 +192,7 @@
   // brand_asset/tratamente/problem/<id>.webp (900) and -450, the subject in the upper right, fading into black
   var PROB = { hifu: 1, biolifting: 1, 'hifu-corp': 1, liposonix: 1, cavitatie: 1, radiofrecventa: 1, ems: 1, impachetare: 1, restart: 1, hidratare: 1, antirid: 1, redness: 1, 'sebum-off': 1, 'masaj-facial': 1 };
   var tileImg = function (p) {
-    if (PROB[p.id]) { var pb = '/brand_asset/tratamente/problem/' + p.id; return 'class="pb" src="' + pb + '-450.webp" srcset="' + pb + '-450.webp 450w, ' + pb + '.webp 900w" sizes="(max-width:640px) calc(40vw - 20px), 230px"'; } var s = picW(p, 600), u = picOf(p); return 'src="' + esc(s) + '"' + (s !== u ? ' srcset="' + esc(s) + ' 600w, ' + esc(u) + ' 966w" sizes="(max-width:640px) calc(50vw - 31px), 270px"' : ''); };
+    if (PROB[p.id]) { var pb = '/brand_asset/tratamente/problem/' + p.id; return 'class="pb" src="' + pb + '-450.webp?v=3" srcset="' + pb + '-450.webp?v=3 450w, ' + pb + '.webp?v=3 900w" sizes="(max-width:640px) calc(40vw - 20px), 230px"'; } var s = picW(p, 600), u = picOf(p); return 'src="' + esc(s) + '"' + (s !== u ? ' srcset="' + esc(s) + ' 600w, ' + esc(u) + ' 966w" sizes="(max-width:640px) calc(50vw - 31px), 270px"' : ''); };
   var sesWord = function (n) { return n === 1 ? '1 ședință' : n + ' ședințe'; };
   var qOf = function (v) { return clamp(Math.floor(Number(v) || 1), 1, 10); };
   // the clinic: hers (the offers' filter, ?oras=, the checkout: one choice everywhere); with no choice, the one clinic her cart
@@ -456,7 +456,7 @@
       '<div class="bfo-tools">' +
       ddHtml('city', 'Clinica', CITIES_F, F.city, 'l') + ddHtml('sort', 'Sortează', SORTS, F.sort, 'r') +
       '</div></div>' +
-      '<div class="bfo-head"><h2 data-fh></h2></div><div class="bfo-g tiles" data-grid></div>';
+      '<div class="bfo-head"><h2 data-fh></h2><p class="bfo-trust"><span class="st" aria-hidden="true">★★★★★</span><b>5,0</b> pe Google · 300+ recenzii</p></div><div class="bfo-g tiles" data-grid></div>';
     el.style.minHeight = '';
     grid(false);
     // back from a treatment (not from the browser's page cache): where she was in the list
@@ -511,12 +511,35 @@
     cavitatie: 'Cavitație', biolifting: 'BioLifting', 'epilare-full-body': 'Epilare laser Full Body', 'epilare-axile': 'Epilare laser axile',
     'epilare-inghinal-total': 'Epilare laser inghinal' };
   var cardName = function (p) { return CARD[p.id] || p.name; };
+  // two reasons on every card, the result said plainly (the owner, 25.11: „două bullet points clare, directe: elimină grăsimea
+  // localizată, strânge pielea lăsată, aspect de lifting; nu «fără ace»”)
+  var WHY2 = {
+    liposonix: ['Elimină grăsimea localizată', 'Contur mai suplu'],
+    hifu: ['Strânge pielea lăsată', 'Aspect de lifting'],
+    'hifu-corp': ['Strânge pielea lăsată', 'Piele mai fermă'],
+    biolifting: ['Piele mai fermă', 'Mai puține riduri fine'],
+    restart: ['Ten luminos imediat', 'Ten curat și odihnit'],
+    radiofrecventa: ['Reduce celulita', 'Strânge pielea'],
+    cavitatie: ['Reduce grăsimea localizată', 'Piele mai netedă'],
+    ems: ['Tonifiază mușchii', 'Abdomen mai ferm'],
+    impachetare: ['Reduce retenția de apă', 'Picioare ușoare'],
+    hidratare: ['Hidratare în profunzime', 'Ten fin, catifelat'],
+    antirid: ['Diminuează ridurile', 'Piele mai fermă'],
+    redness: ['Calmează roșeața', 'Ten mai uniform'],
+    'sebum-off': ['Curăță porii', 'Ten fără luciu'],
+    'masaj-facial': ['Relaxare profundă', 'Ten odihnit, fără tensiune'],
+    'epilare-full-body': ['Piele fină, fără ras', 'Distruge foliculul'],
+    'epilare-axile': ['Axile fine, fără ras', 'Distruge foliculul'],
+    'epilare-inghinal-total': ['Fără ras, fără iritații', 'Distruge foliculul'],
+  };
+  var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
+  var why2Html = function (p) { var w = WHY2[p.id] || (p.b || []).slice(0, 2); return w.length ? '<ul class="bft-l">' + w.map(function (x) { return '<li>' + TICK + '<span>' + esc(x) + '</span></li>'; }).join('') + '</ul>' : ''; };
   function tileHtml(p, k) {
     var z = zoneOf(p), n = nOf(p), mine = has(p), u = urlOf(p);
     return '<article class="bfc bft' + (mine ? ' in' : '') + '" data-p="' + esc(p.id) + '" data-href="' + u + '" data-w="1">' +
       '<span class="pic" aria-hidden="true"><img ' + tileImg(p) + ' alt=""' + (k === 0 ? ' fetchpriority="high"' : k < 4 ? '' : ' loading="lazy"') + ' decoding="async"' + (PROB[p.id] ? '' : posOf(p)) + '></span>' +
       '<span class="pct">-' + pct() + '%</span>' + onlyHtml(p, 'bft-c') +
-      '<div class="bft-b"><h3><a href="' + u + '">' + esc(cardName(p)) + '</a></h3>' +
+      '<div class="bft-b"><h3><a href="' + u + '">' + esc(cardName(p)) + '</a></h3>' + why2Html(p) +
       '<div class="pr"><b data-pr>' + lei(p.price * n) + '</b><s data-full>' + lei(p.full * n) + '</s></div>' +
       '<button type="button" class="btn book gold bfc-cta" data-add>' + ctaHtml(mine) + '</button></div></article>';
   }

@@ -949,3 +949,16 @@ body:has(.top.away) .bfo-f{ top:auto; }
 .bft > .pic img.pb{ object-position:100% 0;
   -webkit-mask-image:linear-gradient(to left,#000 72%,transparent 100%),linear-gradient(to bottom,#000 74%,transparent 100%);
   mask-image:linear-gradient(to left,#000 72%,transparent 100%),linear-gradient(to bottom,#000 74%,transparent 100%); }
+
+/* two reasons on every card (the owner, 25.11): the result, plainly, a rose-gold tick; the price and the button at the card's foot */
+.bft h3{ min-height:0; }
+.bft-l{ list-style:none; margin:7px 0 0; padding:0; display:grid; gap:4px; }
+.bft-l li{ display:flex; align-items:flex-start; gap:6px; font-size:13.5px; font-weight:550; line-height:1.28; letter-spacing:-.01em; color:rgba(255,255,255,.86); }
+.bft-l svg{ flex:none; width:13px; height:13px; margin-top:2px; color:#e9b8a8; }
+.bft .pr{ margin-top:auto; padding-top:10px; }
+@media (min-width:700px){ .bft-l li{ font-size:14.5px; } .bft-l svg{ width:14px; height:14px; } }
+/* the Google rating above the cards */
+.bfo-head{ display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:4px 14px; }
+.bfo-trust{ margin:0; font-size:14px; font-weight:500; color:var(--l2,#5c5c66); white-space:nowrap; }
+.bfo-trust .st{ margin-right:6px; color:#f5b301; letter-spacing:1px; }
+.bfo-trust b{ color:var(--l1,#0b0b0d); font-weight:700; margin-right:3px; }
