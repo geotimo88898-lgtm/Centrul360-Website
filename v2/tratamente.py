@@ -629,12 +629,14 @@ def hero(x, zones, sess, full, epi, img, own, ppid, z0, hasz):
         % (e(src), e(x['name']), re.sub(r'[^a-z0-9-]', '', ppid), pos),
         '<div class="tp-in">',
         '<div class="tp-top"><span class="tp-bf"><i></i>Black Friday · doar online</span><div class="tp-cells xs" data-tp-tm role="timer" aria-label="Oferta se încheie în">%s</div></div>' % TM_CELLS,
-        '<p class="tp-eye">%s</p><h1>%s</h1>' % (e(x['kind']), name_h),
+        '<p class="tp-eye" data-tp-eye>%s</p><h1>%s</h1>' % (e(x['kind']), name_h),
         '<div class="tp-pr"><b data-tp-price>%s</b><s data-tp-full>%s</s><span class="tp-pct">-%d%%</span></div>' % (bf(full), lei(full), PCT),
         '<p class="tp-save"><span data-tp-save>Economisești %s</span><span class="tp-per" data-tp-per>o ședință</span></p>' % bf(full),
         rate,
-        '<p class="tp-promise">%s</p>' % e(x['promise']),
-        '<ul class="tp-bul">%s</ul>' % ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(t)) for t in x['bullets']),
+        '<p class="tp-promise" data-tp-promise>%s</p>' % e(x['promise']),
+        '<ul class="tp-bul" data-tp-bul>%s</ul>' % ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(t)) for t in x['bullets']),
+        # the words of the zone she chose (25.11, the ads per zone: HIFU Gât lands on a page that speaks of the neck), v2/pp.js
+        ('<script type="application/json" data-tp-zc>%s</script>' % json.dumps(dict(x['zoneCopy'], _={'kind': x['kind'], 'promise': x['promise'], 'bullets': x['bullets']}), ensure_ascii=False).replace('</', '<\\/')) if x.get('zoneCopy') else '',
         opts,
         '<button type="button" class="btn book gold tp-cta" data-tp-add>Rezervă oferta%s</button>' % ARROW,
         '<ul class="tp-mini"><li>%s<span>Plătești online, cu cardul, în siguranță</span></li><li>%s<span>Îți alegi ziua și ora imediat după plată</span></li><li>%s<span>%s</span></li></ul>'

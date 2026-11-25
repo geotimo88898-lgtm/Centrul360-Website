@@ -556,7 +556,36 @@
    "v2/src/celulita.html"
   ],
   "video": null,
-  "mapZones": []
+  "mapZones": [],
+  "zoneCopy": {
+   "Abdomen": {
+    "kind": "Corp · abdomen",
+    "promise": "Pentru un abdomen mai ferm și mai neted.",
+    "bullets": [
+     "Piele mai fermă pe abdomen",
+     "Stimulează colagenul și fermitatea",
+     "Fără ace, fără recuperare"
+    ]
+   },
+   "Coapse": {
+    "kind": "Corp · coapse",
+    "promise": "Coapse mai netede, nu coajă de portocală.",
+    "bullets": [
+     "Reduce aspectul de celulită",
+     "Stimulează colagenul și fermitatea",
+     "Fără ace, fără recuperare"
+    ]
+   },
+   "Brațe": {
+    "kind": "Corp · brațe",
+    "promise": "Pentru brațe mai ferme.",
+    "bullets": [
+     "Piele mai fermă pe brațe",
+     "Stimulează colagenul și fermitatea",
+     "Fără ace, fără recuperare"
+    ]
+   }
+  }
  },
  {
   "id": "hifu-corp",
@@ -988,7 +1017,54 @@
    "v2/src/gusa-barbie-dubla.html",
    "v2/src/home-bf.html"
   ],
-  "mapZones": []
+  "mapZones": [],
+  "zoneCopy": {
+   "Gât": {
+    "kind": "Gât · fermitate",
+    "promise": "Pentru pielea gâtului care a început să se lase.",
+    "bullets": [
+     "Strânge pielea lăsată a gâtului",
+     "Fără ace, fără operație, fără cicatrici",
+     "10-15 minute, apoi te întorci la ale tale"
+    ]
+   },
+   "Contur mandibular": {
+    "kind": "Contur · linia maxilarului",
+    "promise": "Pentru o linie a maxilarului mai clară.",
+    "bullets": [
+     "Conturul feței mai definit",
+     "Fără ace, fără operație, fără cicatrici",
+     "10-15 minute, apoi te întorci la ale tale"
+    ]
+   },
+   "Pomeți": {
+    "kind": "Pomeți · lifting",
+    "promise": "Pentru pomeți care și-au pierdut din fermitate.",
+    "bullets": [
+     "Aspect de lifting pe pomeți",
+     "Fără ace, fără operație, fără cicatrici",
+     "10-15 minute, apoi te întorci la ale tale"
+    ]
+   },
+   "Frunte": {
+    "kind": "Frunte · privire",
+    "promise": "Pentru o privire mai odihnită.",
+    "bullets": [
+     "Aspect de lifting pe frunte",
+     "Fără ace, fără operație, fără cicatrici",
+     "10-15 minute, apoi te întorci la ale tale"
+    ]
+   },
+   "Full Face": {
+    "kind": "Toată fața",
+    "promise": "Lifting pe toată fața, fără bisturiu.",
+    "bullets": [
+     "Strânge pielea lăsată a feței",
+     "Frunte, obraji, linia maxilarului și gât",
+     "Fără bisturiu, fără recuperare"
+    ]
+   }
+  }
  },
  {
   "id": "biolifting",
