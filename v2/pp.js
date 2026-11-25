@@ -102,7 +102,7 @@
   function isNew(s) { return typeof s.catalog === 'function' || typeof s.price === 'function'; }
   function addToCart(id, zone, qty, from, quiet) {
     var s = shop();
-    if (!s) { location.href = BASE + 'oferte-bf'; return false; }
+    if (!s) { location.href = BASE + (BASE === '/v2/' ? 'oferte-bf' : 'oferte'); return false; }
     try {
       if (isNew(s)) s.add({ id: id, zone: zone || '', qty: qty || 1 }, from);
       else { s.add(id, zone || '', qty || 1); if (!quiet && typeof s.open === 'function') setTimeout(function () { s.open(); }, 80); }
@@ -190,12 +190,14 @@
   tick(); setInterval(tick, 1000);
 
   // ---- the phone's buy bar: after the hero's buy box, not over the last call
-  var buy = $('[data-tp-buy]'), endC = $('.tp-end-c'), barOn = false, ticking = false;
+  var buy = $('[data-tp-buy]'), endC = $('.tp-end-c'), pick = $('.tp-pick'), barOn = false, ticking = false;
   function barCheck() {
     ticking = false;
     if (!bar || !buy) return;
     var h = innerHeight, past = buy.getBoundingClientRect().bottom < 0, atEnd = endC && endC.getBoundingClientRect().top < h * 0.92;
-    var on = past && !atEnd && innerWidth < 960;
+    // nor over the zone map's own „Ai ales” call: the same price and button twice, one over the other
+    var pr = pick && pick.getBoundingClientRect(), atPick = pr && pr.height && pr.top < h && pr.bottom > 0;
+    var on = past && !atEnd && !atPick && innerWidth < 960;
     if (on !== barOn) {
       barOn = on;
       bar.classList.toggle('on', on); bar.setAttribute('aria-hidden', String(!on));
@@ -294,6 +296,16 @@
       pre.src = x.img;
     }).catch(function () { /* keep the cut-out */ });
   }
+
+  // ---- Meta: the treatment's page was seen (ViewContent), once, only with her consent (like the cart's AddToCart)
+  var vcDone = false;
+  function vc() {
+    if (vcDone || !window.fbq || !window.C360_CONSENT) return;
+    vcDone = true;
+    try { var c = cur(); window.fbq('track', 'ViewContent', { content_ids: [c.id], content_type: 'product', content_name: c.name, value: c.price, currency: 'RON' }); } catch (e) { /* no pixel */ }
+  }
+  setTimeout(vc, 1200);
+  document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('[data-ck="y"]')) setTimeout(vc, 300); });
 
   paint(); barCheck(); load();
 })();

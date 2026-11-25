@@ -3,6 +3,7 @@ title: Detox și drenaj | Împachetare la cald, presoterapie și termocuvertă �
 description: Drenaj limfatic, detoxifiere și mai puțină retenție de apă, cu împachetare la cald, presoterapie și termocuvertă. Te simți mai ușoară. Doar în Timișoara. Consultație gratuită.
 city: Timișoara
 -->
+<link rel="stylesheet" href="/v2/shop.css">
 <script type="application/ld+json">
 {
   "@context":"https://schema.org","@type":"MedicalProcedure",
@@ -38,6 +39,7 @@ city: Timișoara
 /* the three treatments (no real before/after photos for detox) */
 .dtx-trio{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
 .dtx-trio .card{ padding:32px; display:grid; gap:12px; align-content:start; }
+.dtx-go{ justify-self:start; margin-top:4px; font-size:14.5px; } /* the treatment's own page (tratament-impachetare) */
 .dtx-trio .k{ font-size:12px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--mute2); }
 .dtx-trio b{ font-size:1.22rem; font-weight:700; letter-spacing:-.025em; line-height:1.25; }
 .dtx-trio p{ color:var(--mute); font-size:15px; }
@@ -102,7 +104,7 @@ city: Timișoara
 <section class="s" id="tratamente" style="padding-top:0"><div class="wrap">
   <div class="head rv"><span class="eye">Ce folosim</span><h2>Trei tratamente, <em>un singur reset.</em></h2><p class="lead">Adesea le combinăm într-o cură de detoxifiere. Planul exact îl stabilim la consultația gratuită.</p></div>
   <div class="dtx-trio">
-    <div class="card rv"><span class="k">Recomandat</span><b>Împachetare la cald</b><p>Căldura activează eliminarea: detoxifiere, circulație și drenaj, pentru o piele mai netedă.</p></div>
+    <div class="card rv"><span class="k">Recomandat</span><b>Împachetare la cald</b><p>Căldura activează eliminarea: detoxifiere, circulație și drenaj, pentru o piele mai netedă.</p><a class="more dtx-go" href="{{base}}tratament-impachetare">Vezi tratamentul{{arrow}}</a></div>
     <div class="card rv"><span class="k">Compresie</span><b>Presoterapie</b><p>Drenaj limfatic prin compresie ritmică și ușoară: picioare mai ușoare, mai puțină retenție.</p></div>
     <div class="card rv"><span class="k">Căldură</span><b>Termocuvertă</b><p>Căldură care susține detoxifierea și relaxarea profundă.</p></div>
   </div>
@@ -130,11 +132,12 @@ city: Timișoara
 
 <section class="s" id="oferta" style="padding-top:0"><div class="wrap">
   <div class="head rv"><span class="eye bf">Ofertele de Black Friday</span><h2>Prețul de azi, <em>pentru corp.</em></h2></div>
-  <div class="offers dtx-offers" data-offers="remodelare" data-match="detox|drenaj|impachet|împachet|presoter|termocuv|cavita" data-city="timisoara"></div>
+  <!-- the offers here are the shop's own cards (v2/shop.js [data-shop-ids]): one session at the online price, the same as on every page -->
+  <div class="shop-need" data-shop-ids="impachetare,cavitatie,radiofrecventa"></div>
   <div class="card list rv">
-    <div><span><span class="t">Împachetare la cald</span>detoxifiere, circulație și drenaj</span><b>de la 190 lei <small>/ ședință</small></b></div>
-    <div><span><span class="t">Pachet 6 ședințe · împachetare</span></span><b>800 lei</b></div>
-    <div><span><span class="t">Pachet 8 ședințe · împachetare</span></span><b>1020 lei</b></div>
+    <div class="tg"><span><a class="t" href="{{base}}tratament-impachetare">Împachetare la cald</a>detoxifiere, circulație și drenaj</span><b>de la 190 lei <small>/ ședință</small></b></div>
+    <div class="tg"><span><a class="t" href="{{base}}tratament-impachetare">Pachet 6 ședințe · împachetare</a></span><b>800 lei</b></div>
+    <div class="tg"><span><a class="t" href="{{base}}tratament-impachetare">Pachet 8 ședințe · împachetare</a></span><b>1020 lei</b></div>
     <div><span><span class="t">Presoterapie</span>drenaj limfatic prin compresie</span><b>la consultație</b></div>
     <div><span><span class="t">Termocuvertă</span>detoxifiere și relaxare</span><b>la consultație</b></div>
   </div>
@@ -179,3 +182,4 @@ city: Timișoara
   <div class="rv"><button type="button" class="btn book halo" data-book data-book-service="consult" data-book-city="Timișoara">Programează consultația gratuită{{arrow}}</button></div>
   <div class="slot rv" data-slot="Timișoara"></div>
 </div></section>
+<script src="/v2/shop.js" defer></script>

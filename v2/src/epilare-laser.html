@@ -3,6 +3,7 @@ title: Epilare laser definitivă · Elysion Pro | Centrul360 Timișoara
 description: Epilare laser definitivă în Timișoara cu Elysion Pro. Garanție scrisă: dacă, după protocolul complet, părul crește la loc, continuăm gratuit până nu mai e nevoie. Consultație gratuită.
 city: Timișoara
 -->
+<link rel="stylesheet" href="/v2/shop.css">
 <script type="application/ld+json">
 {
   "@context":"https://schema.org",
@@ -253,24 +254,15 @@ city: Timișoara
 
 <section class="s" id="oferta" style="padding-top:0"><div class="wrap">
   <div class="head rv"><span class="eye">Prețuri</span><h2>Tot corpul <em>sau doar zonele tale.</em></h2><p class="lead">Seria completă (de obicei 6 ședințe) ți-o calculăm gratuit la consultație, pe zonele tale. Epilarea laser se face doar în clinica din Timișoara.</p></div>
-  <div class="offers ep-fb">
-    <div class="slip rv"><span class="k"><b>Full Body</b> · o ședință</span><h3>Epilare laser Full Body</h3><p class="ep-fb-t">Toate zonele de corp, fără față: axile, inghinal total, brațe total, picior lung.</p>
-      <div class="pr"><b data-count="920" data-suffix=" lei">920 lei</b></div>
-      <span class="where">Timișoara</span>
-      <button type="button" class="btn book gold" data-book data-book-service="custom" data-book-label="Epilare Full Body" data-book-city="Timișoara">Programează-te{{arrow}}</button></div>
-    <div class="slip rv"><span class="pct">-10%</span><span class="k"><b>Pachet</b> · 6 ședințe</span><h3>Epilare laser Full Body</h3><p class="ep-fb-t">6 ședințe Full Body, toate zonele de corp, fără față.</p>
-      <div class="pr"><b data-count="4968" data-suffix=" lei">4.968 lei</b><s>5.520 lei</s></div>
-      <span class="save">Doar la plata integrală</span>
-      <span class="where">Timișoara</span>
-      <button type="button" class="btn book gold" data-book data-book-service="custom" data-book-label="Epilare Full Body · pachet 6 ședințe" data-book-price="4968" data-book-old="5520" data-book-city="Timișoara">Programează-te{{arrow}}</button></div>
-  </div>
+  <!-- the offers here are the shop's own cards (v2/shop.js [data-shop-ids]): one session at the online price, the same as on every page -->
+  <div class="shop-need" data-shop-ids="epilare-full-body,epilare-axile,epilare-inghinal-total" data-city="Timișoara"></div>
   <div class="card list ep-zones rv">
-    <div><span><span class="t">Axile</span></span><b>de la 120 lei <small>/ ședință</small></b></div>
-    <div><span><span class="t">Linie bikini</span></span><b>de la 120 lei <small>/ ședință</small></b></div>
-    <div><span><span class="t">Inghinal total</span></span><b>de la 220 lei <small>/ ședință</small></b></div>
-    <div><span><span class="t">Față complet</span></span><b>de la 200 lei <small>/ ședință</small></b></div>
-    <div><span><span class="t">Spate integral</span></span><b>de la 250 lei <small>/ ședință</small></b></div>
-    <div><span><span class="t">Picior lung</span></span><b>de la 390 lei <small>/ ședință</small></b></div>
+    <div class="tg"><span><a class="t" href="{{base}}tratament-epilare">Axile</a></span><b>de la 120 lei <small>/ ședință</small></b></div>
+    <div class="tg"><span><a class="t" href="{{base}}tratament-epilare">Linie bikini</a></span><b>de la 120 lei <small>/ ședință</small></b></div>
+    <div class="tg"><span><a class="t" href="{{base}}tratament-epilare">Inghinal total</a></span><b>de la 220 lei <small>/ ședință</small></b></div>
+    <div class="tg"><span><a class="t" href="{{base}}tratament-epilare">Față complet</a></span><b>de la 200 lei <small>/ ședință</small></b></div>
+    <div class="tg"><span><a class="t" href="{{base}}tratament-epilare">Spate integral</a></span><b>de la 250 lei <small>/ ședință</small></b></div>
+    <div class="tg"><span><a class="t" href="{{base}}tratament-epilare">Picior lung</a></span><b>de la 390 lei <small>/ ședință</small></b></div>
   </div>
   <p class="fine rv">Prețuri orientative per ședință, pentru femei. <a href="{{base}}preturi">Vezi toate prețurile pe zone</a></p>
   <div class="card ep-gar rv" id="garantie"><span class="fl"><img src="/brand_asset/mascota/ipostaze/aprobare.webp" alt="Nuki cu degetul mare ridicat" loading="lazy"></span><div>
@@ -434,3 +426,4 @@ city: Timișoara
   }); }, { threshold: .35 }).observe(v);
 })();
 </script>
+<script src="/v2/shop.js" defer></script>
