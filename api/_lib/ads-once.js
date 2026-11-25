@@ -1273,14 +1273,18 @@ async function run() {
             const pic = await sitePicture(a.image);
             if (pic.error) { failed = a.name + ': ' + pic.error; break; }
             media = { base64: pic.base64, name: a.image };
+            // its 9:16 for stories and reels, in the same ad (a.story, 25.11)
+            if (a.story) { const p2 = await sitePicture(a.story); if (p2.error) { failed = a.name + ' (story): ' + p2.error; break; } media.story = p2.base64; }
           }
           // each ad its own utm_content (23.11, the card: which ad brought whom), after the campaign's tags
-          const adLink = link && a.utmContent ? link + '&utm_content=' + encodeURIComponent(a.utmContent) : link;
+          // an ad to its own page (a.path, 25.11: each zone's product page, the zone and the city chosen), else the campaign's
+          const own = a.path && !formId ? 'https://www.centrul360.com/' + a.path + (a.path.includes('?') ? '&' : '?') + 'utm_source=facebook&utm_medium=paid&utm_campaign=' + c.utm : link;
+          const adLink = own && a.utmContent ? own + '&utm_content=' + encodeURIComponent(a.utmContent) : own;
           const v = ads.cleanSettings({
             adsetId: sc.adsetId || '', campaignName: c.name, adsetName: c.adsetName || (c.city + ' ' + (c.radiusKm || d.radiusKm) + ' km · ' + (c.everyone ? 'femei și bărbați ' : 'femei ') + j.site.ages.join('-')), adName: a.name,
             city: c.city, radiusKm: c.radiusKm || d.radiusKm, women: !c.everyone, ageMin: j.site.ages[0], ageMax: j.site.ages[1], placements: d.placements, budget: c.budget,
             link: adLink, formId, goal: formId ? '' : (j.site.goal || 'purchase'), pixelId: j.site.pixelId, urlTags: j.site.urlTags || '', primaryText: a.text, headline: a.headlines[0], headline2: a.headlines[1], headline3: a.headlines[2],
-            description: a.description, cta: j.site.cta, startNow: true,
+            description: a.description, cta: a.cta || j.site.cta, startNow: true, endTime: j.site.endTime || '',
           });
           if (v.error) { failed = a.name + ': ' + v.error; break; }
           if (sc.targeting && !sc.adsetId) v.s.rawTargeting = sc.targeting;

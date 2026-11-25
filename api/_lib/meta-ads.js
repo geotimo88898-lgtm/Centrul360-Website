@@ -202,6 +202,8 @@ function cleanSettings(x) {
   // 23.11 (the card's traffic ads): Meta's URL parameters of the ad, with its dynamic ones (e.g. c360_ad={{ad.id}}), added
   // to the link; and a traffic ad (goal views) still counts the pixel's events (Purchase, Lead, Schedule) per ad
   s.urlTags = /^[\w{}.=&-]{1,200}$/.test(String(x.urlTags || '')) ? String(x.urlTags) : '';
+  // the ad set's end (an offer that ends, 25.11: Black Friday until Friday 23:59): ISO time with its zone, else none
+  s.endTime = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d\d:?\d\d$/.test(String(x.endTime || '')) ? String(x.endTime) : '';
   // several cities in one ad set (the card: Timișoara and Arad together)
   s.cities = (Array.isArray(x.cities) ? x.cities : []).filter((c) => CITIES[c]);
   if (s.cities.length && !s.city) s.city = s.cities[0];
@@ -325,6 +327,15 @@ async function publish(conn, image, s) {
       hash = (imgs[Object.keys(imgs)[0]] || {}).hash;
       if (!hash) return { error: 'Imaginea: Meta n-a întors codul imaginii' };
     }
+    // a second picture for stories and reels (9:16), in the same ad (25.11, George: the story in the same campaign as the 4:5):
+    // Meta shows the 4:5 in the feeds and the 9:16 in stories and reels (placement customization below)
+    let storyHash = '';
+    if (image.story && hash) {
+      const im2 = await call('POST', '/' + act + '/adimages', tok, { bytes: image.story, name: String(image.name || 'creative').replace(/\.\w+$/, '') + '-story.jpg' });
+      if (!im2.ok) return { error: metaError(im2.j, 'Imaginea de story') };
+      const i2 = im2.j.images || {};
+      storyHash = (i2[Object.keys(i2)[0]] || {}).hash || '';
+    }
 
     let campaignId = '', adsetId = s.adsetId;
     if (!adsetId) {
@@ -339,6 +350,8 @@ async function publish(conn, image, s) {
       const adset = await call('POST', '/' + act + '/adsets', tok, {
         name: s.adsetName, campaign_id: campaignId, daily_budget: cents(conn, s.budget), billing_event: 'IMPRESSIONS',
         bid_strategy: 'LOWEST_COST_WITHOUT_CAP', targeting: s.rawTargeting || targeting(s), status: 'PAUSED', ...(await dsaOf(conn)),
+        // an offer that ends (Black Friday): the ad set stops by itself then (ISO time with its zone)
+        ...(s.endTime ? { end_time: s.endTime } : {}),
         ...(s.link
           ? (s.goal === 'purchase'
             ? { optimization_goal: 'OFFSITE_CONVERSIONS', destination_type: 'WEBSITE', promoted_object: { pixel_id: s.pixelId, custom_event_type: 'PURCHASE' } }
@@ -368,13 +381,36 @@ async function publish(conn, image, s) {
     const feed = multi ? { bodies: bodies.map((text) => ({ text })), titles: titles.map((text) => ({ text })), descriptions: s.description ? [{ text: s.description }] : undefined, optimization_type: 'DEGREES_OF_FREEDOM' } : null;
     // a link that names its own UTM tags (23.11: utm_source=facebook on the site ads) keeps them, without Meta's second set
     const tags = s.link && s.urlTags ? { url_tags: s.urlTags } : s.link && !/[?&]utm_source=/.test(s.link) ? { url_tags: 'utm_source=meta&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}' } : {};
-    let creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name: s.adName, object_story_spec: spec }, tags, feed ? { asset_feed_spec: feed } : {}));
-    let textNote = '';
+    let creative = null, textNote = '';
+    // the 4:5 in the feeds, the 9:16 in stories and reels: one text, one title, the same link (labels name each piece for the rules)
+    if (storyHash && s.link) {
+      const L = (n) => [{ name: n }], lab = (n) => ({ name: n });
+      const tall = (s.placements || []).filter((p) => /story|reels/.test(p)), flat = (s.placements || []).filter((p) => !/story|reels/.test(p));
+      const pos = (list, net) => list.filter((p) => PLACEMENTS[p] && PLACEMENTS[p][0] === net).map((p) => PLACEMENTS[p][1]);
+      const spec2 = (list) => { const o = { publisher_platforms: [] }; const f = pos(list, 'facebook'), i = pos(list, 'instagram'); if (f.length) { o.publisher_platforms.push('facebook'); o.facebook_positions = f; } if (i.length) { o.publisher_platforms.push('instagram'); o.instagram_positions = i; } return o; };
+      const same = Object.assign({ body_label: lab('c360_body'), title_label: lab('c360_title'), link_url_label: lab('c360_link') }, s.description ? { description_label: lab('c360_desc') } : {});
+      const rules = [];
+      if (tall.length) rules.push(Object.assign({ customization_spec: spec2(tall), image_label: lab('c360_story'), priority: 1 }, same));
+      if (flat.length) rules.push(Object.assign({ customization_spec: spec2(flat), image_label: lab('c360_feed'), priority: 2 }, same));
+      const afs = {
+        images: [{ hash, adlabels: L('c360_feed') }, { hash: storyHash, adlabels: L('c360_story') }],
+        bodies: [{ text: s.primaryText, adlabels: L('c360_body') }],
+        titles: [{ text: s.headline || '', adlabels: L('c360_title') }],
+        link_urls: [{ website_url: s.link, adlabels: L('c360_link') }],
+        call_to_action_types: [s.cta], ad_formats: ['SINGLE_IMAGE'], optimization_type: 'PLACEMENT', asset_customization_rules: rules,
+      };
+      if (s.description) afs.descriptions = [{ text: s.description, adlabels: L('c360_desc') }];
+      const os2 = { page_id: conn.pageId }; if (spec.instagram_user_id) os2.instagram_user_id = spec.instagram_user_id;
+      creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name: s.adName, object_story_spec: os2, asset_feed_spec: afs }, tags));
+      // refused: the ad goes with the 4:5 alone, and says so
+      if (!creative.ok) { textNote = 'Meta n-a primit varianta de story (' + metaError(creative.j, '') + '), reclama are doar 4:5.'; creative = null; }
+    }
+    if (!creative) creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name: s.adName, object_story_spec: spec }, tags, feed ? { asset_feed_spec: feed } : {}));
     // Meta refusing the second text: the ad goes with the first one, and says so
     if (!creative.ok && feed) {
       const why = metaError(creative.j, '');
       creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name: s.adName, object_story_spec: spec }, tags));
-      if (creative.ok) textNote = 'Meta n-a primit al doilea text / titlu (' + why + '), reclama are doar primul.';
+      if (creative.ok) textNote = (textNote ? textNote + ' ' : '') + 'Meta n-a primit al doilea text / titlu (' + why + '), reclama are doar primul.';
     }
     if (!creative.ok) { await undo(); return { error: metaError(creative.j, 'Reclama (textele și imaginea)') }; }
     made.push(creative.j.id);
