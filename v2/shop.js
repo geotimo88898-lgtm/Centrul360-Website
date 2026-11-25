@@ -1068,7 +1068,7 @@
     foot('<div class="sh-ft-t"><small data-ft-c>' + esc(S.city ? 'Centrul360 ' + S.city : 'Clinica') + '</small><b class="sm" data-when>' + esc(whenLine()) + '</b></div><button type="button" class="sh-go" data-go="pay" disabled>Spre plată' + I.arrow + '</button>');
     whenSync();
   }
-  function visitNote() { var m = mainLine(); return S.visit === 'consult' ? '30 de minute, gratuit: îți spunem ce ți se potrivește.' : m ? 'Prima ședință: ' + nameOf(m.p, m.zone) + ', ' + m.p.minutes + ' min.' : ''; }
+  function visitNote() { var m = mainLine(); return m ? 'Prima ședință: ' + nameOf(m.p, m.zone) + ', ' + m.p.minutes + ' min.' : ''; }
   // after the clinic changed or a line went: the address, what her clinic does not do, the hours
   function whenSync() {
     var el = pane('when');
