@@ -721,8 +721,11 @@ def page(x):
                % (' full' if full else (' own ' + (art(x).get('edges') or cut_edges(img))).rstrip() if own else '', e(img), e(x['name']), re.sub(r'[^a-z0-9-]', '', ppid),
                   full_pos(x) if full else pic_pos(x) if not own else 'center bottom',
                   '' if own else '<span class="tp-tag">-%d%% la plata online</span>' % PCT))
-    out.append('<div class="tp-hx">%s<h1>%s</h1><p class="tp-promise">%s</p><ul class="tp-bul">%s</ul>%s%s</div></div></section>' % (
-        eyebrow(x['kind']), name_h, e(x['promise']), ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(b)) for b in x['bullets']),
+    # the price under the name (the audit, 25.11: on a phone the buy box starts below the first screen): -50%, the price, the list
+    # price; pp.js keeps it equal to the buy box's (zone, sessions)
+    hp = '<p class="tp-hp" data-tp-hp><span class="tp-pct">-%d%%</span><b data-tp-price>%s</b><s data-tp-full>%s</s></p>' % (PCT, bf(full), lei(full))
+    out.append('<div class="tp-hx">%s<h1>%s</h1>%s<p class="tp-promise">%s</p><ul class="tp-bul">%s</ul>%s%s</div></div></section>' % (
+        eyebrow(x['kind']), name_h, hp, e(x['promise']), ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(b)) for b in x['bullets']),
         buybox(x, zones, sess, full, epi), trust(x)))
 
     # ---- 2. what it does, in three tiles (not in the lean page: the hero's bullets say it)
@@ -865,8 +868,12 @@ def page(x):
                    eyebrow('Black Friday · -50%', ' dk'), e(x['name']), TM_CELLS, bf(full), lei(full), ARROW))
 
     # ---- the phone's buy bar
-    out.append('<div class="tp-bar" data-tp-bar aria-hidden="true"><div class="tx"><b data-tp-name>%s</b><span><b data-tp-price>%s</b> <s data-tp-full>%s</s></span></div><button type="button" class="btn book gold" data-tp-add tabindex="-1">Rezervă%s</button></div>' % (
-        e(x['name'] + (' ' + z0 if hasz else '')), bf(full), lei(full), ARROW))
+    # (with something in the cart, its bag and count sit in the bar: the shop's own cart bar stays away on the phone)
+    bag = ('<button type="button" class="tp-bag" data-tp-bag data-cart hidden tabindex="-1" aria-label="Coșul tău"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+           '<path d="M5.2 8.5h13.6l-.9 10.6a2 2 0 0 1-2 1.9H8.1a2 2 0 0 1-2-1.9z"/><path d="M8.8 10.5V7.2a3.2 3.2 0 0 1 6.4 0v3.3"/></svg><i></i></button>')
+    out.append('<div class="tp-bar" data-tp-bar aria-hidden="true"><div class="tx"><b data-tp-name>%s</b><span><b data-tp-price>%s</b> <s data-tp-full>%s</s></span></div>%s<button type="button" class="btn book gold" data-tp-add tabindex="-1">Rezervă%s</button></div>' % (
+        e(x['name'] + (' ' + z0 if hasz else '')), bf(full), lei(full), bag, ARROW))
+
     out.append('</div><script src="/v2/shop.js" defer></script><script src="/v2/pp.js" defer></script>')
     return '\n'.join(out) + '\n'
 
