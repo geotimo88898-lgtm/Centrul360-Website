@@ -650,7 +650,7 @@
       '<div class="sh-li-m"><a class="sh-li-n" href="' + u + '">' + esc(x.p.name) + '</a>' +
       (x.p.zones.length ? '<button type="button" class="sh-zone" data-zk="' + esc(x.key) + '" aria-expanded="false">' + esc(x.zone) + I.down + '</button>' : '<span class="sh-li-x">' + esc(NEED[x.p.need] || '') + ' · ' + x.p.minutes + ' min</span>') + '</div>' +
       '<div class="pz"><b>' + lei(x.p.price * x.qty) + '</b><s>' + lei(x.p.full * x.qty) + '</s></div>' +
-      '<div class="sh-li-b"><small>' + (x.qty > 1 ? lei(x.p.price) + ' / ședință' : 'Ședințe') + '</small>' + stepHtml(x.key, x.qty, 0) + '</div>' +
+      '<div class="sh-li-b"><small>' + (lei(x.p.price) + ' / ședință') + '</small>' + stepHtml(x.key, x.qty, 0) + '</div>' +
       (x.p.zones.length ? '<div class="sh-zp"><div><div class="sh-chips" role="radiogroup" aria-label="Zona">' + x.p.zones.map(function (z) { return '<button type="button" role="radio" data-lz="' + esc(z) + '" data-k="' + esc(x.key) + '" aria-checked="' + (z === x.zone) + '">' + I.check + esc(z) + '</button>'; }).join('') + '</div></div></div>' : '') + '</li>';
   }
   function paneCart() {
@@ -689,7 +689,7 @@
     }
     var p = byId(l.id), q = l.qty, t = totals();
     roll($('.pz b', li), lei(p.price * q)); $('.pz s', li).textContent = lei(p.full * q);
-    $('.sh-li-b small', li).textContent = q > 1 ? lei(p.price) + ' / ședință' : 'Ședințe';
+    $('.sh-li-b small', li).textContent = lei(p.price) + ' / ședință';
     stepPaint($('.sh-step', li), q, 0);
     var set = function (sel, v) { var x = $(sel, el); if (x) roll(x, v); };
     set('[data-t-full]', lei(t.full)); set('[data-t-saved]', '-' + lei(t.saved)); set('[data-t-amount]', lei(t.amount)); set('[data-t-save]', 'Economisești ' + lei(t.saved));

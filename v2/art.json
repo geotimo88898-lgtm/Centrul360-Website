@@ -26,7 +26,8 @@
   "hifu": {
     "img": "/brand_asset/tratamente/hifu.webp",
     "video": "/video/hifu.mp4",
-    "poster": "/video/hifu.jpg"
+    "poster": "/video/hifu.jpg",
+    "edges": "ct cl"
   },
   "rf-sculpt-gusa": {
     "img": "/brand_asset/tratamente/rf-sculpt-gusa.webp",

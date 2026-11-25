@@ -57,7 +57,12 @@
   .bfh-all{ align-self:start; }
 }
 /* the short first screen of the offers page */
-.bfh.bfh-s{ --fade:120px; padding-bottom:calc(var(--fade) - 6px); }
+/* no fade here (the owner disliked the grey band on this page): the black block ends in a clean rounded edge on the light page */
+.bfh.bfh-s{ --fade:0px; padding-bottom:40px; border-radius:0 0 30px 30px; }
+.bfh.bfh-s::after{ display:none; }
+body.bfo-page .bfo{ padding-top:18px; }
+@media (min-width:1024px){ .bfh.bfh-s{ padding-bottom:56px; border-radius:0 0 44px 44px; } body.bfo-page .bfo{ padding-top:26px; } }
+@media (max-width:640px){ .bfo-g{ gap:16px; } .bfo-g > .bfc.slip{ --ph:96px; } }
 .bfh-s .bfh-w{ grid-template-areas:"e" "t" "sub" "tm"; grid-template-columns:1fr; justify-items:center; text-align:center; }
 .bfh-s .bfh-h{ max-width:none; font-size:clamp(2.6rem,10.4vw,4.6rem); }
 .bfh-s .bfh-sub{ grid-area:sub; margin:14px 0 0; font-size:clamp(1.05rem,4.4vw,1.35rem); font-weight:600; letter-spacing:-.02em; line-height:1.3; color:rgba(245,245,247,.7); }
@@ -426,7 +431,8 @@ body.ck-open .sh-bar{ transform:translateY(calc(100% + 40px)); visibility:hidden
 .sh-sheet .cp-note{ color:var(--l2); }
 .sh-sheet .cp-btn{ position:sticky; z-index:2; bottom:12px; min-height:56px; margin-top:18px; color:#fff; background:#1d1d1f; font-size:16.5px; font-weight:700; box-shadow:0 1px 0 rgba(255,255,255,.12) inset, 0 16px 32px -14px rgba(0,0,0,.55); }
 .sh-sheet .cp-btn:active{ background:#000; }
-.sh-sheet .cp-safe{ color:var(--l3); }
+.sh-sheet .cp-safe{ color:var(--l3); align-items:flex-start; justify-content:flex-start; gap:8px; text-align:left; line-height:1.45; }
+.sh-sheet .cp-safe svg{ flex:none; width:14px; height:14px; margin-top:2px; }
 .sh-sheet .cp-ico{ background:var(--l-bg); box-shadow:none; }
 /* the end */
 .sh-done{ text-align:center; padding-top:16px; }

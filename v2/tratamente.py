@@ -615,7 +615,7 @@ def page(x):
     name_h = e(x['name']) + (' <em class="tp-zn" data-tp-zn>%s</em>' % e(z0) if hasz else '')
     out.append('<section class="tp-hero"><div class="wrap tp-hero-g">'
                '<div class="tp-stage%s"><div class="tp-glow" aria-hidden="true"></div><div class="tp-floor" aria-hidden="true"></div><img src="%s" alt="%s" decoding="async" fetchpriority="high" data-tp-img style="view-transition-name:pic-%s;object-position:%s">%s</div>'
-               % ((' own ' + cut_edges(img)).rstrip() if own else '', e(img), e(x['name']), re.sub(r'[^a-z0-9-]', '', ppid), pic_pos(x) if not own else 'center bottom',
+               % ((' own ' + (art(x).get('edges') or cut_edges(img))).rstrip() if own else '', e(img), e(x['name']), re.sub(r'[^a-z0-9-]', '', ppid), pic_pos(x) if not own else 'center bottom',
                   '' if own else '<span class="tp-tag">-%d%% la plata online</span>' % PCT))
     out.append('<div class="tp-hx">%s<h1>%s</h1><p class="tp-promise">%s</p><ul class="tp-bul">%s</ul>%s%s</div></div></section>' % (
         eyebrow(x['kind']), name_h, e(x['promise']), ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(b)) for b in x['bullets']),

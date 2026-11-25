@@ -39,16 +39,17 @@
 /* the site's studio photo (until the treatment's own cut-out comes): full bleed */
 .tp-stage:not(.own) img{ left:0; top:0; width:100%; max-width:none; height:100%; transform:none; object-fit:cover; }
 .tp-stage:not(.own) .tp-glow,.tp-stage:not(.own) .tp-floor{ display:none; }
-.tp-stage.own{ overflow:visible; border-radius:0; background:none; box-shadow:none; height:min(38vh,340px); min-height:230px; }
-.tp-stage.own .tp-glow{ top:54%; width:min(600px,104%); aspect-ratio:1.1; background:radial-gradient(closest-side,rgba(95,212,198,.2) 0%,rgba(226,238,236,.7) 48%,rgba(240,244,243,.45) 72%,rgba(245,247,247,0) 100%); }
-@media (min-width:960px){ .tp-stage.own{ height:min(720px,calc(100vh - 110px)); min-height:540px; } }
-.tp-floor{ position:absolute; z-index:-1; left:50%; bottom:1.5%; width:62%; height:30px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(closest-side,rgba(11,40,38,.17),rgba(11,40,38,.06) 60%,rgba(11,40,38,0)); }
-/* the cut-out at its own proportions (so the fades sit on its edges), the crop's edges melting into the light */
-.tp-stage.own img{ bottom:3%; width:auto; height:auto; max-width:100%; max-height:95%; object-fit:contain;
-  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 16%),radial-gradient(ellipse 66% 76% at 50% 56%,#000 70%,transparent 100%); -webkit-mask-composite:source-in;
-  mask-image:linear-gradient(to bottom,transparent 0,#000 16%),radial-gradient(ellipse 66% 76% at 50% 56%,#000 70%,transparent 100%); mask-composite:intersect; }
-/* a cut-out cropped at the top or on a side: one soft oval vignette, so the crop melts into the light (no band, no wedge) */
-.tp-stage.own.ct img,.tp-stage.own.cr img,.tp-stage.own.cl img{ -webkit-mask-image:radial-gradient(ellipse 56% 62% at 50% 62%,#000 46%,rgba(0,0,0,.55) 74%,transparent 100%); mask-image:radial-gradient(ellipse 56% 62% at 50% 62%,#000 46%,rgba(0,0,0,.55) 74%,transparent 100%); -webkit-mask-composite:source-over; mask-composite:add; }
+/* the treatment's own cut-out on a studio tile (like an Apple or Nike product tile): where the photo is cropped, the crop sits
+   on the tile's clean edge, so there is no fade, no grey haze and no wedge */
+.tp-stage.own{ overflow:hidden; border-radius:30px; height:min(40vh,350px); min-height:250px;
+  background:radial-gradient(120% 95% at 50% 0%,#ffffff 0%,#f3f6f6 52%,#e5edec 100%); box-shadow:0 0 0 1px rgba(11,11,13,.05) inset; }
+.tp-stage.own .tp-glow{ top:60%; width:94%; aspect-ratio:1; background:radial-gradient(closest-side,rgba(95,212,198,.2),rgba(95,212,198,0)); }
+.tp-stage.own .tp-floor{ display:none; }
+.tp-stage.own img{ bottom:0; height:94%; width:auto; max-width:none; max-height:none; object-fit:contain; -webkit-mask-image:none; mask-image:none; }
+.tp-stage.own.ct img{ top:0; height:100%; }
+.tp-stage.own.cr img{ left:auto; right:0; transform:none; }
+.tp-stage.own.cl img{ left:0; transform:none; }
+@media (min-width:960px){ .tp-stage.own{ border-radius:36px; height:min(620px,calc(100vh - 140px)); min-height:480px; } }
 .tp-stage:not(.own)::after{ content:''; position:absolute; inset:0; border-radius:inherit; box-shadow:0 0 0 1px rgba(11,11,13,.06) inset; pointer-events:none; }
 .tp-stage img.fade{ opacity:0; }
 .tp-tag{ position:absolute; left:14px; top:14px; display:inline-flex; align-items:center; height:30px; padding:0 13px; border-radius:999px; font-size:12.5px; font-weight:600; letter-spacing:-.005em;
