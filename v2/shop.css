@@ -618,3 +618,29 @@ body:has(.sh-pop.on) .ck{ opacity:0 !important; pointer-events:none !important; 
   .shop-ng{ grid-auto-flow:row; grid-template-columns:repeat(3,minmax(0,1fr)); grid-auto-columns:auto; overflow:visible; margin:0; padding:6px 0 28px; }
   .shop-ng > .bfc.slip{ --ph:110px; }
 }
+
+/* ================= the first screen on a computer (the owner, 25.11: „first view mi se pare că e cam mic pe calculator”): it
+   fills the screen, wider, a bigger title, timer and cards ================= */
+@media (min-width:1024px){
+  .bfh:not(.bfh-s){ min-height:100vh; min-height:100svh; display:flex; flex-direction:column; justify-content:center; padding-top:calc(84px + 28px); }
+  .bfh:not(.bfh-s) > .wrap{ width:min(1320px, calc(100% - 96px)); }
+  .bfh:not(.bfh-s) .bfh-w{ column-gap:clamp(40px,5vw,96px); }
+  .bfh:not(.bfh-s) .bfh-h{ font-size:clamp(4.6rem,5.3vw,6.6rem); max-width:none; }
+  .bfh:not(.bfh-s) .eyb{ font-size:12.5px; }
+  .bfh:not(.bfh-s) .bfh-w > .tm{ margin-top:34px; }
+  .bfh:not(.bfh-s) .tm-l{ font-size:12px; }
+  .bfh:not(.bfh-s) .tm-c{ gap:10px; }
+  .bfh:not(.bfh-s) .tm-c i{ width:80px; height:80px; border-radius:21px; }
+  .bfh:not(.bfh-s) .tm-c b{ font-size:33px; }
+  .bfh:not(.bfh-s) .tm-c small{ font-size:10.5px; }
+  .bfh:not(.bfh-s) .bfh-all{ margin-top:30px; height:56px; padding:0 28px; font-size:16.5px; }
+  .bfh:not(.bfh-s) .bfs{ --cw:340px; min-height:560px; }
+  .bfh:not(.bfh-s) .bfs .bfc.slip{ --ph:124px; }
+  .bfh:not(.bfh-s) .bfs .bfc.slip h3{ font-size:1.42rem; }
+  .bfh:not(.bfh-s) .bfs .bfc-b li{ font-size:14.5px; }
+  .bfh:not(.bfh-s) .bfs .bfc.slip .pr b{ font-size:2.4rem; }
+  .bfh:not(.bfh-s) .bfs .bfc.slip > .btn.book{ height:50px; font-size:15.5px; }
+}
+@media (min-width:1440px){
+  .bfh:not(.bfh-s) .bfs{ --cw:372px; min-height:600px; }
+}
