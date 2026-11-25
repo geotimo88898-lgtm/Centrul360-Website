@@ -190,12 +190,14 @@
   tick(); setInterval(tick, 1000);
 
   // ---- the phone's buy bar: after the hero's buy box, not over the last call
-  var buy = $('[data-tp-buy]'), endC = $('.tp-end-c'), barOn = false, ticking = false;
+  var buy = $('[data-tp-buy]'), endC = $('.tp-end-c'), pick = $('.tp-pick'), barOn = false, ticking = false;
   function barCheck() {
     ticking = false;
     if (!bar || !buy) return;
     var h = innerHeight, past = buy.getBoundingClientRect().bottom < 0, atEnd = endC && endC.getBoundingClientRect().top < h * 0.92;
-    var on = past && !atEnd && innerWidth < 960;
+    // nor over the zone map's own „Ai ales” call: the same price and button twice, one over the other
+    var pr = pick && pick.getBoundingClientRect(), atPick = pr && pr.height && pr.top < h && pr.bottom > 0;
+    var on = past && !atEnd && !atPick && innerWidth < 960;
     if (on !== barOn) {
       barOn = on;
       bar.classList.toggle('on', on); bar.setAttribute('aria-hidden', String(!on));
