@@ -124,3 +124,16 @@
 .top{ view-transition-name:c360-top; }
 /* with reduced motion the logo's mark is drawn at once (its draw-in animation is off, so it stayed invisible) */
 @media (prefers-reduced-motion:reduce){ .brand .mk .ring{ stroke-dashoffset:0; } .brand .mk .ev,.brand .mk .eh{ opacity:1; } }
+/* the card's button in the menu (the owner, 25.11: „roz plin, ca al cardului”): the card's own pink, white letters, the gold gift */
+.hx-mc{ color:#fff !important; background:linear-gradient(150deg,#d9497f,#9c0f4a); box-shadow:inset 0 0 0 1px rgba(255,255,255,.18), 0 16px 30px -16px rgba(156,15,74,.75); }
+.hx-mc small{ color:rgba(255,255,255,.8); }
+.hx-mc > svg:first-child{ color:#f3d589; }
+.hx-mc > svg:last-child{ opacity:.9; }
+/* the header a little more present (the owner, 25.11: „îmi place mult, dar e puțin prea invizibil”): the same glass, denser, so the
+   title under it does not show through */
+@media (max-width:920px){
+  .top .bar{ background:rgba(255,255,255,.9); -webkit-backdrop-filter:blur(28px) saturate(180%); backdrop-filter:blur(28px) saturate(180%); }
+  .top.dk .bar{ background:rgba(20,20,22,.88); -webkit-backdrop-filter:blur(28px) saturate(160%); backdrop-filter:blur(28px) saturate(160%);
+    box-shadow:0 0 0 .5px rgba(255,255,255,.2), inset 0 1px 0 rgba(255,255,255,.08), 0 16px 36px -18px rgba(0,0,0,.8); }
+}
+.top.dk .bar{ background:rgba(20,20,22,.9); }

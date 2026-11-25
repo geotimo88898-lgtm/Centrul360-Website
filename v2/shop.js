@@ -1037,15 +1037,14 @@
     S.city = cityNow(); save();
     fev('checkout');
     px('InitiateCheckout', { value: totals().amount, currency: 'RON', num_items: totals().n });
+    S.visit = 'first';
     el.innerHTML = '<p class="sh-lab" style="margin-top:10px">Clinica</p><div class="seg sh-seg" role="radiogroup" aria-label="Clinica"><i class="sg-i" aria-hidden="true"></i>' +
       ['Timișoara', 'Arad'].map(function (c) { return '<button type="button" role="radio" data-city="' + c + '" aria-checked="' + (c === S.city) + '">' + c + '</button>'; }).join('') + '</div>' +
       '<p class="sh-addr" data-addr' + (S.city ? '' : ' hidden') + '>' + I.pin + '<span>' + esc(ADDR[S.city] || '') + '</span></p>' +
       '<p class="sh-note" data-pick-c' + (S.city ? ' hidden' : '') + '>Alege clinica și îți arătăm orele libere.</p>' +
       '<p class="sh-note" data-only hidden></p><div data-clash hidden></div>' +
       '<div data-wh' + (S.city ? '' : ' hidden') + '>' +
-      '<p class="sh-lab">La prima vizită</p><div class="seg sh-seg sh-vis" role="radiogroup" aria-label="La prima vizită"><i class="sg-i" aria-hidden="true"></i>' +
-      '<button type="button" role="radio" data-visit="first" aria-checked="' + (S.visit === 'first') + '">Încep direct</button>' +
-      '<button type="button" role="radio" data-visit="consult" aria-checked="' + (S.visit === 'consult') + '">Consultație gratuită</button></div>' +
+      // no free consultation any more (the owner, 25.11): her first visit is her first session
       '<p class="sh-note" data-visit-n>' + esc(visitNote()) + '</p>' +
       '<p class="sh-lab">Ziua</p><div data-days><div class="sh-wait">Caut orele libere…</div></div><div data-slots></div></div>';
     foot('<div class="sh-ft-t"><small data-ft-c>' + esc(S.city ? 'Centrul360 ' + S.city : 'Clinica') + '</small><b class="sm" data-when>' + esc(whenLine()) + '</b></div><button type="button" class="sh-go" data-go="pay" disabled>Spre plată' + I.arrow + '</button>');
