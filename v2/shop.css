@@ -962,3 +962,19 @@ body:has(.top.away) .bfo-f{ top:auto; }
 .bfo-trust{ margin:0; font-size:14px; font-weight:500; color:var(--l2,#5c5c66); white-space:nowrap; }
 .bfo-trust .st{ margin-right:6px; color:#f5b301; letter-spacing:1px; }
 .bfo-trust b{ color:var(--l1,#0b0b0d); font-weight:700; margin-right:3px; }
+
+/* her plan, made from her cart (25.11): the packages one under the other, their sum, one button */
+.sh-plan{ display:grid; gap:8px; padding:14px; }
+.sh-plan.rec{ box-shadow:inset 0 0 0 1.5px #d99d8c, 0 18px 34px -22px rgba(176,108,92,.6); background:linear-gradient(180deg,#fff8f5,#fff 40%); }
+.sh-plan .sh-pk-rec{ margin:0; }
+.sh-plan-t{ font-size:17px; font-weight:750; letter-spacing:-.02em; color:var(--l1); }
+.sh-plan-l{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.sh-plan-l li{ display:flex; gap:10px; align-items:flex-start; justify-content:space-between; padding:9px 0 0; border-top:1px solid rgba(11,11,13,.07); }
+.sh-plan-l li span{ display:grid; gap:2px; min-width:0; }
+.sh-plan-l li b{ font-size:15px; font-weight:650; line-height:1.25; letter-spacing:-.01em; color:var(--l1); }
+.sh-plan-l li small{ font-size:13px; line-height:1.35; color:var(--l2); }
+.sh-plan-l li em{ flex:none; font-style:normal; font-size:15px; font-weight:650; color:var(--l1); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.sh-plan-f{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:10px; border-top:1px solid rgba(11,11,13,.07); }
+.sh-plan-f .pz b{ display:block; font-size:20px; font-weight:800; letter-spacing:-.03em; color:var(--l1); font-variant-numeric:tabular-nums; }
+.sh-plan-f .pz s{ font-size:13px; color:var(--l3); }
+.sh-plan-f .sh-pk-go{ margin:0; flex:1; max-width:220px; }

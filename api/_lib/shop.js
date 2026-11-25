@@ -120,7 +120,7 @@ const BUNDLES = [
   { id: 'pachet-tonifiere', tier: 2, name: 'Abdomen tonifiat în 8 săptămâni', need: 'corp', b: 'Mai puțină grăsime, mușchi definit', parts: [['liposonix-x2', 1], ['ems-x6', 1]] },
   { id: 'pachet-fermitate', tier: 2, name: 'Piele strânsă în 90 de zile', need: 'corp', b: 'Piele lăsată: protocolul complet', parts: [['hifu-corp-x2', 1], ['radiofrecventa-x4', 1]] },
   { id: 'pachet-corp-definit', tier: 2, name: 'Corp definit în 6 săptămâni', need: 'corp', b: 'Corp ferm, fără sală', parts: [['ems-x8', 1], ['radiofrecventa-x4', 1]] },
-  { id: 'pachet-mami', tier: 3, name: 'Mami · burtică nouă în 90 de zile', need: 'corp', b: 'Burtica de după sarcină: grăsime, piele lăsată, mușchi', parts: [['liposonix-x2', 1], ['hifu-corp', 1], ['ems-x6', 1]], only: ['Abdomen'] },
+  { id: 'pachet-mami', tier: 3, niche: true, name: 'Mami · burtică nouă în 90 de zile', need: 'corp', b: 'Burtica de după sarcină: grăsime, piele lăsată, mușchi', parts: [['liposonix-x2', 1], ['hifu-corp', 1], ['ems-x6', 1]], only: ['Abdomen'] },
   { id: 'pachet-celulita', tier: 2, name: 'Piele netedă în 6 săptămâni', need: 'corp', b: 'Celulită vizibilă: protocolul complet', parts: [['radiofrecventa-x6', 1], ['cavitatie', 6]] },
   { id: 'pachet-body-reset', tier: 3, name: 'Body Reset în 90 de zile', need: 'corp', b: 'Grăsime, tonus și fermitate pe aceeași zonă', parts: [['liposonix-x2', 1], ['ems-x8', 1], ['radiofrecventa-x6', 1]] },
   { id: 'pachet-complet-360', tier: 3, name: 'Transformare 360 în 90 de zile', need: 'corp', b: 'O zonă a corpului și toată fața', parts: [['liposonix-x2', 1], ['radiofrecventa-x6', 1], ['hifu-full-face', 1], ['biolifting-full-face-x4', 1], ['restart-x2', 1]] },
@@ -206,7 +206,7 @@ function catalog(city, at) {
     if (!cities.length) continue;
     const first = parts[0].p, ses = parts.reduce((s, x) => s + x.n * (x.p.pack || 1), 0);
     const word = (x) => { const k = x.n * (x.p.pack || 1); return (x.p.base ? (out.get(x.p.base) || x.p).name : x.p.name) + ', ' + (k === 1 ? '1 ședință' : k + ' ședințe'); };
-    list.push({ id: B.id, name: B.name, need: B.need, bundle: true, tier: B.tier || 2, home: first.base || first.id, for: forIds, zones, cities, ref: first.ref, minutes: first.minutes, ses,
+    list.push({ id: B.id, name: B.name, need: B.need, bundle: true, tier: B.tier || 2, niche: !!B.niche, home: first.base || first.id, for: forIds, zones, cities, ref: first.ref, minutes: first.minutes, ses,
       inc: parts.map(word).join(' + '), parts: parts.map((x) => ({ id: x.p.id, n: x.n })), full: parts.reduce((s, x) => s + x.p.full * x.n, 0), price: parts.reduce((s, x) => s + x.p.price * x.n, 0),
       b: [B.b, ses + ' ședințe în total'], photo: first.photo, pairs: [] });
   }
