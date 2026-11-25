@@ -855,6 +855,21 @@ module.exports = async (req, res) => {
     res.status(200).json({ ok: true, amount, url: l.url, orderId: o.orderId });
     return;
   }
+  // ?mypostx=6: myPOS's transactions of the last N hours (25.11: two clients' online payments „could not be processed”): type,
+  // sum, status words and the keys myPOS sends; never a card number, a name, an email or a phone
+  if (req.query && req.query.mypostx) {
+    const M = require('./_lib/mypos'), ST = require('./_lib/store');
+    const conn = await M.loadConn(ST.readJSON);
+    const h = Math.min(72, Math.max(1, Number(req.query.mypostx) || 6));
+    try {
+      const list = await M.listTransactions(conn, Date.now() - h * 3600e3, Date.now());
+      const SECRET = /pan|card|name|email|mail|phone|gsm|client|customer|holder|address|ip/i;
+      const keys = [...new Set(list.flatMap((t) => Object.keys(t || {})))].filter((k) => !SECRET.test(k));
+      const rows = list.slice(-60).map((t) => { const o = {}; keys.forEach((k) => { const v = t[k]; if (v !== null && v !== undefined && v !== '' && typeof v !== 'object') o[k] = String(v).slice(0, 60); }); return o; });
+      res.status(200).json({ ok: true, hours: h, n: list.length, keys, rows });
+    } catch (e) { res.status(200).json({ error: e.code || 'mypos_failed', status: e.status || 0, message: String(e.message || '').slice(0, 200) }); }
+    return;
+  }
   // ?payopen=1: the checkout's open orders and what myPOS says of each payment request now (kind, sum, status as myPOS writes
   // it, the booking text match), no names or phones; ?payopen=sweep runs the sweep once
   if (req.query && req.query.payopen) {
