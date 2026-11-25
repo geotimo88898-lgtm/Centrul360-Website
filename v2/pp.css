@@ -450,7 +450,7 @@
 .tp-plus.in{ color:#fff !important; background:var(--ink); box-shadow:none; }
 .tp-plus.in .ic{ transform:rotate(45deg); }
 .tp-plus[hidden],.tp-pair[hidden],.tp-s[hidden]{ display:none; }
-@media (min-width:760px){ .tp-pairs{ grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr)); gap:16px; } }
+@media (min-width:760px){ .tp-pairs{ grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr)); gap:16px; } }
 
 /* ---- 9. the questions */
 .tp-q-g{ display:grid; gap:4px; }
