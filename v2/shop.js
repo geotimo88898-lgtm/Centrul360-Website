@@ -64,6 +64,7 @@
     trash: svg('<path d="M5 7h14M10 11v6M14 11v6M6.5 7l.8 12a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9l.8-12M9.5 7V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/>', 1.8),
     pin: svg('<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>', 1.8),
     cal: svg('<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>', 1.8),
+    star: svg('<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>', 1.8),
     spark: svg('<path d="M12 3v3M12 18v3M3 12h3M18 12h3M6.3 6.3l2.1 2.1M15.6 15.6l2.1 2.1M6.3 17.7l2.1-2.1M15.6 8.4l2.1-2.1"/>', 1.8),
     tag: svg('<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3"/>', 1.8),
   };
@@ -938,7 +939,7 @@
       var t = esc(b.name + ', ' + (n === 1 ? '1 ședință' : n + ' ședințe'));
       return mine(b.id) ? '<mark>' + I.check + t + '</mark>' : '<span>' + t + '</span>';
     }).join('<i>+</i>') : '<mark>' + I.check + esc(byId(k.base) ? byId(k.base).name : k.name) + '</mark><span>' + k.pack + ' ședințe, ' + lei(perSes(k)) + ' ședința</span>';
-    return '<div class="sh-pk sh-card"><span class="th"><img src="' + esc(picW(k, 300)) + '" alt="" loading="lazy" decoding="async"' + posOf(k) + '></span>' +
+    return '<div class="sh-pk sh-card' + (o.rec ? ' rec' : '') + '">' + (o.rec ? '<p class="sh-pk-rec">' + I.star + 'Recomandăm acest pachet</p>' : '') + '<span class="th"><img src="' + esc(picW(k, 300)) + '" alt="" loading="lazy" decoding="async"' + posOf(k) + '></span>' +
       '<div class="sh-pk-m"><b>' + esc(nameOf(k, o.x.zone)) + '</b><span class="inc">' + inc + '</span></div>' +
       '<div class="pz"><b>' + lei(k.price) + '</b><s>' + lei(k.full) + '</s></div>' +
       '<button type="button" class="sh-pk-go" data-pack="' + esc(k.id) + '" data-pk-from="' + esc(o.x.key) + '">' + (k.bundle ? 'Aleg pachetul' : 'Trec la pachet') + I.arrow + '</button></div>';
@@ -1000,6 +1001,15 @@
     });
     // the problem packages first (the complete answer), then the price list's
     packs = packs.filter(function (y) { return y.k.bundle; }).concat(packs.filter(function (y) { return !y.k.bundle; })).slice(0, 4);
+    // one package recommended (the owner, 25.11: „tot timpul un singur pachet recomandat, în funcție de ce are deja în coș; dacă l-a
+    // ales deja, să nu apară la celelalte”): the problem package that holds most of what she has; none once she took a package
+    var tookPack = t.lines.some(function (x) { return x.p.bundle; });
+    if (!tookPack && packs.length) {
+      var have = function (k) { return k.bundle ? (k.parts || []).filter(function (x) { var q = byId(x.id), b = q && (q.base ? byId(q.base) : q); return b && t.lines.some(function (l) { return l.p.id === b.id || l.p.base === b.id; }); }).length : 1; };
+      var best = packs.slice().sort(function (a, b) { return (have(b.k) - have(a.k)) || ((b.k.bundle ? 1 : 0) - (a.k.bundle ? 1 : 0)) || (packs.indexOf(a) - packs.indexOf(b)); })[0];
+      best.rec = true;
+      packs = [best].concat(packs.filter(function (y) { return y !== best; }));
+    }
     var common = COMMON.map(function (c) { var q = byId(c[1]); return q && here(q) && !S.cart.some(function (l) { var lp = byId(l.id); return l.id === q.id || (lp && (lp.base === q.id || (lp.bundle && lp.for.indexOf(q.id) > -1))); }) ? { c: c, q: q } : null; }).filter(Boolean).slice(0, 6);
     var rest = D.terms.show.map(byId).filter(function (p) { return p && here(p) && !pairs.some(function (y) { return y.q === p; }) && !S.cart.some(function (l) { return (l.id === p.id || l.id.indexOf(p.id + '-x') === 0) && !S.keep[keyOf(l.id, l.zone)]; }); }).slice(0, 5);
     el.innerHTML = '<div class="sh-tmw">' + tmHtml('s') + '</div>' +
