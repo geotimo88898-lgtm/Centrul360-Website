@@ -94,7 +94,7 @@ const BUNDLES = [
 const IMPULSE = { 'Timișoara': 'epilare-axile', Arad: 'masaj-facial' };
 // the first screen's slider (the owner, 24.11): these, in this order
 // (RF Sculpt is no longer offered, the owner 25.11: BioLifting in its place)
-const ALLZ = new Set(['liposonix', 'cavitatie', 'radiofrecventa', 'hifu-corp', 'ems']), ALLZ_NAME = 'Toate zonele';
+const ALLZ = new Set(['liposonix', 'cavitatie', 'radiofrecventa', 'hifu-corp', 'ems']), ALLZ_NAME = 'Full Body'; // (the owner, 25.11: „în loc de toate zonele scrie Full Body / Full Face, e mai powerful”)
 const SHOW = ['liposonix', 'hifu', 'restart', 'biolifting', 'epilare-full-body', 'hifu-full-face', 'ems'];
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const lst = () => require('./pay').priceList();

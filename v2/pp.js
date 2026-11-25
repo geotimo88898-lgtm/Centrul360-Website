@@ -26,7 +26,7 @@
   var END = Date.parse('2026-11-27T21:59:59.000Z'), offset = 0;
   var S = { zone: (CFG.zones && CFG.zones[0]) || '', key: 'full-body', g: 'f', n: 1, pct: CFG.pct || 50, inCart: {} };
   var CAT = null; // the server's products by id
-  var ALLZ = 'Toate zonele';
+  var ALLZ = 'Full Body'; // the twin <id>-toate (the owner, 25.11: „Full Body”, not „Toate zonele”)
   // „Full Face” on the face's zones (the owner, 25.11): HIFU Full Face, BioLifting Full Face
   var FF = 'Full Face', FULLF = { hifu: 'hifu-full-face', biolifting: 'biolifting-full-face' };
 
@@ -56,8 +56,40 @@
 
   // ---- painting: every price, name and choice on the page from the same state
   function setText(el, t) { if (!el || el.textContent === t) return; el.textContent = t; if (!reduce) { el.classList.remove('tp-flip'); void el.offsetWidth; el.classList.add('tp-flip'); } }
+  // the packages that hold this treatment (the owner, 25.11: „și aici, regăsit în pachetele X”, instead of „mai bine împreună”):
+  // the price list's packages and the problem packages (api/_lib/shop.js), on the zone she picked; a tap puts one in the cart.
+  // A treatment in no package keeps its pairs.
+  var PK = null, pkKey = '';
+  function pkName(k, z) { return k.bundle ? k.name + (z ? ', ' + z : '') : z ? k.name.replace(' · ', ' ' + z + ' · ') : k.name; }
+  function pkSave(k) {
+    var one = function (id) { var q = CAT[id]; if (!q) return 0; var b = q.base ? CAT[q.base] : q; return b ? b.price * (q.pack || 1) : 0; };
+    return k.bundle ? (k.parts || []).reduce(function (s, x) { return s + one(x.id) * x.n; }, 0) - k.price : one(k.id) - k.price;
+  }
+  function pkSec() {
+    var sec = $('.tp-pairs-s');
+    if (!sec || !PK || EPI) return;
+    var z = S.zone && S.zone !== ALLZ && S.zone !== FF ? S.zone : '';
+    var list = PK.filter(function (k) { return (k.base === CFG.id || (k.bundle && (k.for || []).indexOf(CFG.id) > -1)) && (!k.zones.length || !z || k.zones.indexOf(z) > -1); });
+    list = list.filter(function (k) { return k.bundle; }).concat(list.filter(function (k) { return !k.bundle; }).sort(function (a, b) { return a.pack - b.pack; })).slice(0, 4);
+    var key = z + '|' + list.map(function (k) { return k.id + (S.inCart[keyOf(k.id, k.zones.length ? z : '')] ? '+' : ''); }).join();
+    if (!list.length || key === pkKey) return;
+    pkKey = key;
+    var PLUS = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+    var CHECK = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
+    var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    $('.wrap', sec).innerHTML = '<header class="tp-head"><p class="tp-eye">Se regăsește în pachetele</p><h2>Mai avantajos <em>în pachet.</em></h2><p class="tp-lead">Aceeași procedură, în pachetul care îți aduce rezultatul complet. Tot la -' + S.pct + '%.</p></header>' +
+      '<div class="tp-pairs">' + list.map(function (k) {
+        var kz = k.zones.length ? z || k.zones[0] : '', on = !!S.inCart[keyOf(k.id, kz)], sv = pkSave(k), home = k.home || k.base || CFG.id;
+        return '<article class="tp-pair tp-pk"><span class="th" aria-hidden="true"><img src="/brand_asset/tratamente/' + esc(home) + '-300.webp?v=2" alt="" loading="lazy" decoding="async"></span>' +
+          '<div class="tx"><b>' + esc(pkName(k, kz)) + '</b><p>' + esc(k.bundle ? k.inc : k.pack + ' ședințe, ' + lei(Math.round(k.price / k.pack)) + ' ședința') + '</p>' +
+          '<span class="pz"><b>' + lei(k.price) + '</b> <s>' + lei(k.full) + '</s></span>' + (sv > 0 ? '<span class="sv">Economisești ' + lei(sv) + '</span>' : '') + '</div>' +
+          '<button type="button" class="tp-plus' + (on ? ' in' : '') + '" data-tp-pk="' + esc(k.id) + '" data-tp-pkz="' + esc(kz) + '" aria-label="' + (on ? 'În coș' : 'Adaugă ' + esc(pkName(k, kz)) + ' în coș') + '">' + (on ? CHECK : PLUS) + '</button></article>';
+      }).join('') + '</div>';
+    sec.hidden = false;
+  }
   function paint() {
     var c = cur(), n = S.n;
+    pkSec();
     $$('[data-tp-price]').forEach(function (el) { setText(el, lei(c.price * n)); });
     $$('[data-tp-full]').forEach(function (el) { setText(el, lei(c.full * n)); });
     $$('[data-tp-save]').forEach(function (el) { setText(el, 'Economisești ' + lei((c.full - c.price) * n)); });
@@ -177,6 +209,12 @@
       if (addToCart(c.id, c.zone, S.n, a)) paint();
       return;
     }
+    var pk = t.closest('[data-tp-pk]');
+    if (pk) {
+      if (pk.classList.contains('in')) { openCart(); return; }
+      if (addToCart(pk.getAttribute('data-tp-pk'), pk.getAttribute('data-tp-pkz'), 1, pk, true)) { pkKey = ''; pkSec(); }
+      return;
+    }
     var pl = t.closest('[data-tp-plus]');
     if (pl) {
       var pid = pl.getAttribute('data-tp-plus'), p = CAT && CAT[pid], pz = pairZone(p);
@@ -206,6 +244,7 @@
     return (pre ? pre.catch(get) : get()).then(function (d) {
       if (!d || !d.ok || !Array.isArray(d.products)) return;
       CAT = {}; d.products.forEach(function (p) { CAT[p.id] = p; });
+      PK = Array.isArray(d.packs) ? d.packs : []; PK.forEach(function (p) { CAT[p.id] = CAT[p.id] || p; });
       if (d.terms) { if (d.terms.end) END = Date.parse(d.terms.end); if (d.terms.now) offset = d.terms.now - Date.now(); if (d.terms.pct) S.pct = d.terms.pct; }
       // the zones the server sells (a chip it does not know goes away)
       var q = CAT[CFG.id];
