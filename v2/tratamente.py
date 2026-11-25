@@ -583,6 +583,8 @@ def face_map(show, tappable, sid='mf'):
     return '<svg class="tp-face" viewBox="130 24 340 466" role="img" aria-label="Zonele tratate">%s<g class="rgs" filter="url(#%s-glow)">%s</g>%s%s</svg>' % (glow, sid, regs, hd, dots)
 
 # ======================================================================================= the page
+import os
+R_HERO = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'brand_asset', 'tratamente', 'hero') + os.sep
 def eyebrow(t, cls=''): return '<p class="tp-eye%s">%s</p>' % (cls, e(t))
 def head(eye, h2, lead='', cls=''):
     return '<header class="tp-head%s">%s<h2>%s</h2>%s</header>' % (cls, eyebrow(eye), h2, '<p class="tp-lead">%s</p>' % e(lead) if lead else '')
@@ -612,6 +614,49 @@ def buybox(x, zones, sess, full, epi):
     out.append('<p class="tp-fine">%s Plata doar online, cu cardul. Alegi ziua și ora după.</p></div>' % icon('lock'))
     return ''.join(out)
 
+def hero(x, zones, sess, full, epi, img, own, ppid, z0, hasz):
+    i = x['id']
+    hx = R_HERO + i + '.webp'
+    src = '/brand_asset/tratamente/hero/%s.webp' % i if os.path.exists(hx) else img
+    pos = '50% 45%' if src != img else (full_pos(x) if art(x).get('full') else pic_pos(x) if not own else 'center bottom')
+    name_h = e(x['name']) + (' <em class="tp-zn" data-tp-zn>%s</em>' % e(z0) if hasz else '')
+    rate = '<a class="tp-rate" href="#recenzii"><span class="st" aria-hidden="true">%s</span><b>5,0</b><span>· 300+ recenzii Google</span></a>' % (STAR * 5)
+    opts = buybox_opts(x, zones, sess, epi)
+    city = 'Doar în Timișoara' if x['cities'] == ['Timișoara'] else 'Timișoara și Arad'
+    return ''.join([
+        '<section class="tp-hero tp-h2"><div class="wrap"><div class="tp-card" data-tp-buy id="cumpara">',
+        '<div class="tp-ph"><img src="%s" alt="%s" decoding="async" fetchpriority="high" data-tp-img style="view-transition-name:pic-%s;object-position:%s"></div>'
+        % (e(src), e(x['name']), re.sub(r'[^a-z0-9-]', '', ppid), pos),
+        '<div class="tp-in">',
+        '<div class="tp-top"><span class="tp-bf"><i></i>Black Friday · doar online</span><div class="tp-cells xs" data-tp-tm role="timer" aria-label="Oferta se încheie în">%s</div></div>' % TM_CELLS,
+        '<p class="tp-eye">%s</p><h1>%s</h1>' % (e(x['kind']), name_h),
+        '<div class="tp-pr"><b data-tp-price>%s</b><s data-tp-full>%s</s><span class="tp-pct">-%d%%</span></div>' % (bf(full), lei(full), PCT),
+        '<p class="tp-save"><span data-tp-save>Economisești %s</span><span class="tp-per" data-tp-per>o ședință</span></p>' % bf(full),
+        rate,
+        '<p class="tp-promise">%s</p>' % e(x['promise']),
+        '<ul class="tp-bul">%s</ul>' % ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(t)) for t in x['bullets']),
+        opts,
+        '<button type="button" class="btn book gold tp-cta" data-tp-add>Rezervă oferta%s</button>' % ARROW,
+        '<ul class="tp-mini"><li>%s<span>Plătești online, cu cardul, în siguranță</span></li><li>%s<span>Îți alegi ziua și ora imediat după plată</span></li><li>%s<span>%s</span></li></ul>'
+        % (icon('lock'), icon('calendar'), icon('pin'), city),
+        '</div></div></div></section>'])
+
+def buybox_opts(x, zones, sess, epi):
+    out = []
+    if epi:
+        out.append('<div class="tp-opt"><p class="tp-l">Pentru</p><div class="tp-seg" role="group" aria-label="Pentru"><button type="button" data-tp-g="f" aria-pressed="true">Femei</button><button type="button" data-tp-g="m" aria-pressed="false">Bărbați</button></div></div>')
+        out.append('<div class="tp-opt"><p class="tp-l">Alege zona</p><div class="tp-chips sc" role="group" aria-label="Zona">%s</div></div>' % ''.join(
+            '<button type="button" data-tp-zone="%s" data-gx="%s" aria-pressed="%s"%s>%s</button>' % (k, g, 'true' if k == 'full-body' else 'false', '' if 'f' in g else ' hidden', e(lab)) for k, lab, g in epi_keys()))
+    elif zones:
+        out.append('<div class="tp-opt"><p class="tp-l">Alege zona</p><div class="tp-chips" role="group" aria-label="Zona">%s</div></div>' % (''.join(
+            '<button type="button" data-tp-zone="%s" aria-pressed="%s">%s</button>' % (e(z), 'true' if i == 0 else 'false', e(z)) for i, z in enumerate(zones))
+            + ('<button type="button" data-tp-zone="Full Body" aria-pressed="false" class="all">Full Body</button>' if x['id'] in ('liposonix', 'cavitatie', 'radiofrecventa', 'hifu-corp', 'ems') and len(zones) > 1 else '')
+            + ('<button type="button" data-tp-zone="Full Face" aria-pressed="false" class="all">Full Face</button>' if x['id'] in ('hifu', 'biolifting') else '')))
+    out.append('<div class="tp-opt"><p class="tp-l">Câte ședințe</p><div class="tp-seg" role="group" aria-label="Câte ședințe">%s</div></div>' % ''.join(
+        '<button type="button" data-tp-n="%d" aria-pressed="%s">%d×</button>' % (n, 'true' if n == 1 else 'false', n) for n in sess))
+    return '<div class="tp-opts">%s</div>' % ''.join(out)
+
+
 def trust(x):
     city = 'Doar în Timișoara' if x['cities'] == ['Timișoara'] else 'Timișoara și Arad'
     return ('<ul class="tp-trust"><li><a href="#recenzii">%s<span><b>5,0</b> Google · 300+ recenzii</span></a></li><li>%s<span>Plată securizată</span></li><li>%s<span>%s</span></li></ul>'
@@ -628,8 +673,8 @@ PROC = {
         'aria': 'Aplicatorul HIFU trimite ultrasunete focalizate prin piele, fără să o afecteze; în punctele țintite celulele de grăsime sunt distruse și țesutul se strânge, iar corpul elimină celulele în săptămânile următoare.',
         'steps': [('1 · Ultrasunetele focalizate', 'trec prin piele fără să o afecteze'), ('2 · Punct cu punct', 'grăsimea e distrusă, țesutul se strânge'), ('3 · Corpul', 'elimină natural celulele, în săptămânile următoare')]}),
     'cavitatie': ('grasime-localizata', {
-        'text': [('APLICATORUL LIPOSONIX', 'CAVITAȚIE')],
-        'aria': 'Cavitația trimite unde de ultrasunete de joasă frecvență prin piele, până în stratul de grăsime; depozitele din zona tratată sunt lucrate, iar corpul elimină treptat grăsimea în săptămânile următoare.',
+        'text': [('APLICATORUL LIPOSONIX', '40K SLIM')],
+        'aria': '40K Slim trimite unde de ultrasunete de joasă frecvență prin piele, până în stratul de grăsime; depozitele din zona tratată sunt lucrate, iar corpul elimină treptat grăsimea în săptămânile următoare.',
         'steps': [('1 · Undele de joasă frecvență', 'ajung în stratul de grăsime'), ('2 · Depozitele de grăsime', 'din zona tratată sunt lucrate'), ('3 · Corpul', 'elimină treptat grăsimea, în săptămânile următoare')]}),
     'ems': ('tonifiere-musculara', {}),
     'epilare': ('epilare-laser', {}),
@@ -722,19 +767,11 @@ def page(x):
     out.append('<script type="application/json" id="tp-data">%s</script>' % json.dumps(data, ensure_ascii=False).replace('</', '<\\/'))
     out.append('<div class="tp" data-tp="%s">' % e(i))
 
-    # ---- 1. the hero: picture, name, promise, bullets, the Black Friday buy box, the trust row
-    name_h = e(x['name']) + (' <em class="tp-zn" data-tp-zn>%s</em>' % e(z0) if hasz else '')
-    out.append('<section class="tp-hero"><div class="wrap tp-hero-g">'
-               '<div class="tp-stage%s"><div class="tp-glow" aria-hidden="true"></div><div class="tp-floor" aria-hidden="true"></div><img src="%s" alt="%s" decoding="async" fetchpriority="high" data-tp-img style="view-transition-name:pic-%s;object-position:%s">%s</div>'
-               % (' full' if full else (' own ' + (art(x).get('edges') or cut_edges(img))).rstrip() if own else '', e(img), e(x['name']), re.sub(r'[^a-z0-9-]', '', ppid),
-                  full_pos(x) if full else pic_pos(x) if not own else 'center bottom',
-                  '' if own else '<span class="tp-tag">-%d%% la plata online</span>' % PCT))
-    # the price under the name (the audit, 25.11: on a phone the buy box starts below the first screen): -50%, the price, the list
-    # price; pp.js keeps it equal to the buy box's (zone, sessions)
-    hp = '<p class="tp-hp" data-tp-hp><span class="tp-pct">-%d%%</span><b data-tp-price>%s</b><s data-tp-full>%s</s></p>' % (PCT, bf(full), lei(full))
-    out.append('<div class="tp-hx">%s<h1>%s</h1>%s<p class="tp-promise">%s</p><ul class="tp-bul">%s</ul>%s%s</div></div></section>' % (
-        eyebrow(x['kind']), name_h, hp, e(x['promise']), ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(b)) for b in x['bullets']),
-        buybox(x, zones, sess, full, epi), trust(x)))
+    # ---- 1. the hero, one black card (the owner, 25.11: „bagă totul în cardul negru: numele, bullet-urile, descrierea, prețul;
+    #      poza după zonă, ca un e-commerce pe bune; ordinea e haotică, pagina trebuie să vândă”). In order: the photo of the zone
+    #      (v2/pp.js swaps it, brand_asset/tratamente/hero/), Black Friday and the time left, the name and its zone, the price ONCE,
+    #      the Google rating, the promise, the reasons, the zone and the sessions, the one button, what happens after it.
+    out.append(hero(x, zones, sess, full, epi, img, own, ppid, z0, hasz))
 
     # ---- 2. what it does, in three tiles (not in the lean page: the hero's bullets say it)
     if not LEAN: out.append('<section class="tp-s tp-what"><div class="wrap">%s<div class="tp-tiles">%s</div></div></section>' % (

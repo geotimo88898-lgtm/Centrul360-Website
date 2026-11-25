@@ -590,3 +590,47 @@ body.tp-buy-on .sh-bar{ transform:translateY(calc(100% + 40px)) !important; visi
 .tp-pk .sv{ display:block; margin-top:3px; font-size:13.5px; font-weight:650; color:#a2513e; }
 /* the laser's zones wrap inside the buy box (the owner, 25.11: „ai grijă la zone să nu iasă din chenar”), no sideways row */
 .tp-chips.sc{ flex-wrap:wrap; overflow:visible; margin:0; padding:0; -webkit-mask-image:none; mask-image:none; }
+
+/* ===== the product's first screen, one black card (the owner, 25.11: „bagă totul în cardul negru; poza după zonă; ordinea clară,
+   pagina trebuie să vândă”): the photo of the zone fading into the black, Black Friday and the time left, the name, the price once,
+   the rating, the promise, the reasons, the choices, one button, what happens after it */
+.tp-h2{ padding:calc(70px + clamp(10px,2.4vw,30px)) 0 0; }
+.tp-card{ position:relative; isolation:isolate; overflow:hidden; display:grid; grid-template-columns:minmax(0,1fr); border-radius:30px; color:#f5f5f7; background:#0a0908;
+  box-shadow:0 34px 70px -44px rgba(11,20,30,.6), 0 0 0 1px rgba(255,255,255,.04) inset; }
+.tp-card::before{ content:''; position:absolute; z-index:-1; right:-40%; bottom:-30%; width:110%; aspect-ratio:1; border-radius:50%; background:radial-gradient(closest-side,rgba(242,198,181,.13),rgba(242,198,181,0)); pointer-events:none; }
+.tp-ph{ position:relative; aspect-ratio:4 / 3; max-height:46vh; overflow:hidden; background:#0a0908; }
+.tp-ph img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition:opacity .4s var(--e);
+  -webkit-mask-image:linear-gradient(to bottom,#000 60%,transparent 100%); mask-image:linear-gradient(to bottom,#000 60%,transparent 100%); }
+.tp-ph img.fade{ opacity:0; }
+.tp-in{ position:relative; display:grid; gap:13px; min-width:0; padding:0 18px 20px; margin-top:-34px; }
+.tp-top{ display:flex; align-items:center; justify-content:space-between; gap:8px 12px; flex-wrap:wrap; }
+.tp .tp-cells.xs{ display:flex; gap:4px; margin:0; }
+.tp .tp-cells.xs i{ width:auto; min-width:40px; padding:5px 6px 4px; border-radius:10px; }
+.tp .tp-cells.xs b{ font-size:15px; }
+.tp .tp-cells.xs small{ font-size:8.5px; letter-spacing:.08em; }
+.tp-h2 .tp-eye{ margin:2px 0 -6px; color:rgba(245,245,247,.55); }
+.tp-h2 h1{ margin:0; font-size:clamp(2.2rem,9.4vw,3.4rem); font-weight:800; line-height:1.02; letter-spacing:-.045em; color:#fff; }
+.tp-h2 h1 em{ font-style:normal; color:var(--acc); }
+.tp-h2 .tp-pr{ margin:2px 0 0; }
+.tp-h2 .tp-save{ margin:-8px 0 0; color:rgba(245,245,247,.62); }
+.tp-rate{ display:inline-flex; align-items:center; flex-wrap:wrap; gap:4px 7px; justify-self:start; font-size:14.5px; color:rgba(245,245,247,.74) !important; text-decoration:none !important; }
+.tp-rate .st{ display:inline-flex; gap:1px; color:#f5b301; }
+.tp-rate .st svg{ width:14px; height:14px; }
+.tp-rate b{ color:#fff; font-weight:700; }
+.tp-h2 .tp-promise{ margin:2px 0 0; max-width:none; font-size:17px; line-height:1.42; color:rgba(245,245,247,.9); }
+.tp-h2 .tp-bul{ margin:0; gap:9px; }
+.tp-h2 .tp-bul li{ font-size:16px; color:rgba(245,245,247,.88); }
+.tp-h2 .tp-bul .ic{ color:#0a0908; background:var(--acc); }
+.tp-opts{ display:grid; gap:14px; margin-top:4px; padding:14px; border-radius:20px; background:rgba(255,255,255,.045); box-shadow:0 0 0 1px rgba(255,255,255,.08) inset; }
+.tp-opts .tp-chips.sc{ margin:0 -14px; padding:0 14px 2px; }
+.tp-h2 .tp-cta{ width:100%; height:58px; margin-top:4px; font-size:17.5px; }
+.tp-mini{ list-style:none; margin:2px 0 0; padding:0; display:grid; gap:8px; }
+.tp-mini li{ display:flex; align-items:center; gap:10px; font-size:14px; line-height:1.35; color:rgba(245,245,247,.7); }
+.tp-mini .ic{ flex:none; width:18px; height:18px; color:var(--acc); }
+@media (min-width:900px){
+  .tp-card{ grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); }
+  .tp-ph{ aspect-ratio:auto; max-height:none; min-height:640px; }
+  .tp-ph img{ -webkit-mask-image:linear-gradient(to right,#000 72%,transparent 100%); mask-image:linear-gradient(to right,#000 72%,transparent 100%); }
+  .tp-in{ margin-top:0; padding:34px 34px 30px 10px; align-content:center; }
+  .tp-h2 h1{ font-size:clamp(2.6rem,3.6vw,3.6rem); }
+}
