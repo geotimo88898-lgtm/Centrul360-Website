@@ -114,6 +114,12 @@ body.bfo-page .bfo{ padding-top:18px; }
 .bfc.slip:hover{ transform:none; }
 .bfc.slip > .pic{ width:74%; height:var(--ph); background:radial-gradient(70% 80% at 72% 30%,rgba(233,184,168,.18),transparent 70%); }
 .bfc.slip > .pic img{ -webkit-mask-image:linear-gradient(to bottom,#000 62%,transparent); mask-image:linear-gradient(to bottom,#000 62%,transparent); }
+/* a whole photo on black (the owner, 25.11): across the card's top, a little taller than the words' start, melting into the
+   card toward the bottom and the left; its sides and top are the card's own edges, so no rectangle shows */
+.bfc.slip > .pic.full{ width:100%; height:calc(var(--ph) + 30px); background:none; }
+.bfc.slip > .pic.full img{ left:0; width:100%; max-width:none; object-fit:cover; object-position:50% 35%;
+  -webkit-mask-image:radial-gradient(95% 100% at 70% 0%,#000 28%,rgba(0,0,0,.7) 50%,rgba(0,0,0,.25) 74%,transparent 100%);
+  mask-image:radial-gradient(95% 100% at 70% 0%,#000 28%,rgba(0,0,0,.7) 50%,rgba(0,0,0,.25) 74%,transparent 100%); }
 .bfc.slip .pct{ top:16px; left:16px; padding:4px 10px; font-size:12.5px; letter-spacing:-.01em; }
 .bfc.slip .k{ padding-right:0; font-size:10.5px; letter-spacing:.17em; }
 .bfc.slip h3{ margin-top:7px; padding-right:0; font-size:1.24rem; font-weight:700; line-height:1.14; letter-spacing:-.03em; }
@@ -643,4 +649,13 @@ body:has(.sh-pop.on) .ck{ opacity:0 !important; pointer-events:none !important; 
 }
 @media (min-width:1440px){
   .bfh:not(.bfh-s) .bfs{ --cw:372px; min-height:600px; }
+}
+
+/* the slider on the phone (the owner, 25.11: a visual bug under the cards): the side fade (mask) cut the cards' shadows and
+   the side cards with hard straight edges. The faded box now reaches the screen's edges and goes well below the cards, and it
+   fades to nothing at the sides, so nothing is cut */
+@media (max-width:640px){
+  .bfs-st{ margin:-30px -20px -80px; padding:30px 20px 80px;
+    -webkit-mask-image:linear-gradient(90deg,transparent 0,rgba(0,0,0,.55) 9%,#000 24%,#000 76%,rgba(0,0,0,.55) 91%,transparent 100%);
+    mask-image:linear-gradient(90deg,transparent 0,rgba(0,0,0,.55) 9%,#000 24%,#000 76%,rgba(0,0,0,.55) 91%,transparent 100%); }
 }
