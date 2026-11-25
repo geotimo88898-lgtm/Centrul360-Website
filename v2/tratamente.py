@@ -46,6 +46,16 @@ def pic(x):
     f = PHOTO.get(x['id'], ('concern-stralucire', '50% 40%'))[0]
     return '/brand_asset/%s.webp' % f, False
 def pic_pos(x): return PHOTO.get(x['id'], ('', '50% 40%'))[1]
+def cut_edges(src):
+    """which edges of a cut-out are a hard crop (opaque pixels on the border): 'ct' top, 'cr' right, 'cl' left; the stage melts those"""
+    try:
+        from PIL import Image
+        im = Image.open(os.path.join(ROOT, src.split('?')[0].lstrip('/'))).convert('RGBA')
+        a = im.getchannel('A'); w, h = im.size
+        mean = lambda box: sum(i * c for i, c in enumerate(a.crop(box).histogram())) / max(1, (box[2] - box[0]) * (box[3] - box[1]))
+        return ' '.join(k for k, box in (('ct', (0, 0, w, 3)), ('cr', (w - 3, 0, w, h)), ('cl', (0, 0, 3, h))) if mean(box) > 40)
+    except Exception:
+        return 'ct'
 def art(x):
     """the treatment's entry in v2/art.json (by its page id, else its product id): img, video (the 3D loop), poster"""
     for k in (x['id'], x.get('pp')):
@@ -605,7 +615,7 @@ def page(x):
     name_h = e(x['name']) + (' <em class="tp-zn" data-tp-zn>%s</em>' % e(z0) if hasz else '')
     out.append('<section class="tp-hero"><div class="wrap tp-hero-g">'
                '<div class="tp-stage%s"><div class="tp-glow" aria-hidden="true"></div><div class="tp-floor" aria-hidden="true"></div><img src="%s" alt="%s" decoding="async" fetchpriority="high" data-tp-img style="view-transition-name:pic-%s;object-position:%s">%s</div>'
-               % (' own' if own else '', e(img), e(x['name']), re.sub(r'[^a-z0-9-]', '', ppid), pic_pos(x) if not own else 'center bottom',
+               % ((' own ' + cut_edges(img)).rstrip() if own else '', e(img), e(x['name']), re.sub(r'[^a-z0-9-]', '', ppid), pic_pos(x) if not own else 'center bottom',
                   '' if own else '<span class="tp-tag">-%d%% la plata online</span>' % PCT))
     out.append('<div class="tp-hx">%s<h1>%s</h1><p class="tp-promise">%s</p><ul class="tp-bul">%s</ul>%s%s</div></div></section>' % (
         eyebrow(x['kind']), name_h, e(x['promise']), ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(b)) for b in x['bullets']),
