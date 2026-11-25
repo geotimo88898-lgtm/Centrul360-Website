@@ -90,7 +90,7 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   check('the main treatment is the dearest session (Liposonix, 45 min)', q.main.minutes === 45 && q.main.id === 'liposonix-o-zona-corporala-1-sedinta', q.main);
   check('EMS in Arad: not in the city', (await S.quote('Arad', [{ id: 'ems' }])).error === 'not_in_city');
   check('an empty cart', (await S.quote('Timișoara', [])).error === 'empty');
-  check('the massage is in the list: 120 → 60', (tm.find((p) => p.id === 'masaj-facial') || {}).price === 60);
+  check('the massage is in the list: 160 → 80 (the owner, 25.11)', (tm.find((p) => p.id === 'masaj-facial') || {}).price === 80);
   // ---- after Black Friday: the list price minus the usual online bonus
   setNow('2026-11-27T22:00:01Z');
   q = await S.quote('Timișoara', [{ id: 'liposonix' }]);
