@@ -42,8 +42,9 @@
   var MO = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
   var MOS = ['ian.', 'feb.', 'mar.', 'apr.', 'mai', 'iun.', 'iul.', 'aug.', 'sept.', 'oct.', 'nov.', 'dec.'];
   var NEED = { corp: 'Corp', gusa: 'Gușă', fata: 'Față', epilare: 'Epilare' };
-  var FILTERS = [['top', 'Cele mai cerute'], ['corp', 'Corp'], ['gusa', 'Gușă'], ['fata', 'Față'], ['epilare', 'Epilare']];
-  var FILTER_T = { top: 'Cele mai cerute', corp: 'Corp', gusa: 'Gușă și contur', fata: 'Față', epilare: 'Epilare laser' };
+  var FILTERS = [['all', 'Toate'], ['top', 'Cele mai cerute'], ['corp', 'Corp'], ['gusa', 'Gușă'], ['fata', 'Față'], ['epilare', 'Epilare']];
+  var FILTER_T = { all: 'Toate tratamentele', top: 'Cele mai cerute', corp: 'Corp', gusa: 'Gușă și contur', fata: 'Față', epilare: 'Epilare laser' };
+  var SORTS = [['rec', 'Recomandate'], ['asc', 'Preț: de la mic la mare'], ['desc', 'Preț: de la mare la mic'], ['az', 'Nume, A la Z']];
   var svg = function (d, w) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 2) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>'; };
   var I = {
     bag: svg('<path d="M5.2 8.5h13.6l-.9 10.6a2 2 0 0 1-2 1.9H8.1a2 2 0 0 1-2-1.9z"/><path d="M8.8 10.5V7.2a3.2 3.2 0 0 1 6.4 0v3.3"/>', 1.6),
@@ -305,32 +306,61 @@
   }
 
   // ================= all the offers: a segmented filter, the cards; the laser zones as a clean list =================
-  var F = { k: 'top' }, EPI = { g: 'f' };
+  var F = { k: 'all', sort: 'rec', city: '' }, EPI = { g: 'f' };
+  var NEED_ORDER = ['corp', 'gusa', 'fata', 'epilare'];
+  var CHEV_D = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
   function offers() {
     var el = $('[data-bfo]');
     if (!el || !D) return;
     var h = (location.hash || '').slice(1);
     if (FILTERS.some(function (f) { return f[0] === h; })) F.k = h;
-    el.innerHTML = '<div class="bfo-f"><div class="seg" role="tablist" aria-label="Alege">' + '<i class="sg-i" aria-hidden="true"></i>' +
-      FILTERS.map(function (f) { return '<button type="button" role="tab" data-f="' + f[0] + '" aria-selected="' + (f[0] === F.k) + '">' + f[1] + '</button>'; }).join('') + '</div></div>' +
-      '<div class="bfo-head"><h2 data-fh></h2><span data-fn></span></div><div class="bfo-g" data-grid></div>';
+    el.innerHTML = '<div class="bfo-f"><div class="bfo-cats" role="tablist" aria-label="Categorie">' +
+      FILTERS.map(function (f) { return '<button type="button" role="tab" data-f="' + f[0] + '" aria-selected="' + (f[0] === F.k) + '">' + f[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="bfo-tools">' +
+      '<label class="bfo-sel"><span class="sr">Clinica</span><select data-fcity aria-label="Clinica"><option value="">Ambele clinici</option><option value="Timișoara">Timișoara</option><option value="Arad">Arad</option></select>' + CHEV_D + '</label>' +
+      '<label class="bfo-sel"><span class="sr">Sortează</span><select data-fsort aria-label="Sortează">' + SORTS.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === F.sort ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' + CHEV_D + '</label>' +
+      '</div></div>' +
+      '<div class="bfo-head"><h2 data-fh></h2><span data-fn></span></div><div class="bfo-g tiles" data-grid></div>';
+    $$('select', el).forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        if (sel.hasAttribute('data-fsort')) F.sort = sel.value; else F.city = sel.value;
+        grid(true);
+      });
+    });
     grid(false);
-    thumbAll();
   }
   function listFor(k) {
-    if (k === 'top') return D.terms.show.map(byId).filter(Boolean);
-    return D.products.filter(function (p) { return p.need === k && (k !== 'epilare' || p.id === 'epilare-full-body'); });
+    var list;
+    if (k === 'top') list = D.terms.show.map(byId).filter(Boolean);
+    else list = D.products.filter(function (p) { return (k === 'all' || p.need === k) && (p.need !== 'epilare' || p.id === 'epilare-full-body'); });
+    if (F.city) list = list.filter(function (p) { return p.cities.indexOf(F.city) > -1; });
+    var rank = function (p) { var i = D.terms.show.indexOf(p.id); return i > -1 ? i : 100 + NEED_ORDER.indexOf(p.need) * 50 + D.products.indexOf(p) / 100; };
+    var cmp = { rec: function (x, y) { return rank(x) - rank(y); }, asc: function (x, y) { return x.price - y.price; }, desc: function (x, y) { return y.price - x.price; },
+      az: function (x, y) { return x.name.localeCompare(y.name, 'ro'); } }[F.sort] || null;
+    return cmp && (k !== 'top' || F.sort !== 'rec') ? list.slice().sort(cmp) : list;
+  }
+  // a small product card for the grid: the picture, -50%, the name, the price, „Rezervă oferta”; a tap on it opens the treatment
+  function tileHtml(p) {
+    var z = zoneOf(p), n = nOf(p), mine = inCart(p.id), u = urlOf(p);
+    return '<article class="bfc bft' + (mine ? ' in' : '') + '" data-p="' + esc(p.id) + '" data-href="' + u + '" data-w="1">' +
+      '<span class="pic" aria-hidden="true"><img src="' + esc(picOf(p)) + '" alt="" loading="lazy" decoding="async"></span>' +
+      '<span class="pct">-' + pct() + '%</span>' + (p.cities.length === 1 ? '<span class="bft-c">Doar ' + esc(p.cities[0]) + '</span>' : '') +
+      '<div class="bft-b"><span class="k">' + esc(NEED[p.need] || '') + '</span>' +
+      '<h3><a href="' + u + '">' + esc(nameOf(p, z)) + '</a></h3>' +
+      '<div class="pr"><b data-pr>' + lei(p.price * n) + '</b><s data-full>' + lei(p.full * n) + '</s></div>' +
+      '<button type="button" class="btn book gold bfc-cta" data-add>' + ctaHtml(mine) + '</button></div></article>';
   }
   function grid(anim) {
     var g = $('[data-grid]');
     if (!g) return;
-    var list = listFor(F.k), epi = F.k === 'epilare';
+    var list = listFor(F.k), epi = F.k === 'epilare' && F.city !== 'Arad';
     var zones = epi ? D.products.filter(function (p) { return p.need === 'epilare' && p.id !== 'epilare-full-body'; }).length : 0;
     $('[data-fh]').textContent = FILTER_T[F.k];
-    $('[data-fn]').textContent = epi ? 'Doar în Timișoara' : list.length + (list.length === 1 ? ' ofertă' : ' oferte');
-    g.innerHTML = list.map(cardHtml).join('') + (epi ? '<div class="epi"><div class="epi-h"><b>Pe zone</b><div class="seg" role="radiogroup" aria-label="Pentru"><i class="sg-i" aria-hidden="true"></i><button type="button" role="radio" data-g="f" aria-checked="' + (EPI.g === 'f') + '">Femei</button><button type="button" role="radio" data-g="m" aria-checked="' + (EPI.g === 'm') + '">Bărbați</button></div></div><ul data-epi aria-label="' + zones + ' zone"></ul>' +
+    $('[data-fn]').textContent = list.length + (list.length === 1 ? ' tratament' : ' tratamente') + (epi ? ' + ' + zones + ' zone' : '');
+    g.innerHTML = (list.length ? list.map(tileHtml).join('') : '<p class="bfo-none">Nu e niciun tratament aici' + (F.city ? ' în ' + esc(F.city) : '') + '.</p>') +
+      (epi ? '<div class="epi"><div class="epi-h"><b>Pe zone</b><div class="seg" role="radiogroup" aria-label="Pentru"><i class="sg-i" aria-hidden="true"></i><button type="button" role="radio" data-g="f" aria-checked="' + (EPI.g === 'f') + '">Femei</button><button type="button" role="radio" data-g="m" aria-checked="' + (EPI.g === 'm') + '">Bărbați</button></div></div><ul data-epi aria-label="' + zones + ' zone"></ul>' +
       '<a class="epi-more" href="' + BASE + 'tratament-epilare">Tot despre epilarea laser' + I.chev + '</a></div>' : '');
-    if (anim && !reduce) $$('.bfc, .epi', g).forEach(function (c, k) { c.style.setProperty('--k', k); c.classList.add('enter'); c.addEventListener('animationend', function () { c.classList.remove('enter'); }, { once: true }); });
+    if (anim && !reduce) $$('.bfc, .epi', g).forEach(function (c, k) { c.style.setProperty('--k', Math.min(k, 8)); c.classList.add('enter'); c.addEventListener('animationend', function () { c.classList.remove('enter'); }, { once: true }); });
     watch(g); epiList(); thumbAll();
   }
   function epiList() {
@@ -905,7 +935,8 @@
     var fb = t.closest('[data-f]');
     if (fb) {
       var k = fb.getAttribute('data-f'); if (k === F.k) return;
-      F.k = k; $$('[data-f]').forEach(function (b) { b.setAttribute('aria-selected', String(b === fb)); }); thumb(fb.closest('.seg'));
+      F.k = k; $$('[data-f]').forEach(function (b) { b.setAttribute('aria-selected', String(b === fb)); }); if (fb.closest('.seg')) thumb(fb.closest('.seg'));
+      try { fb.scrollIntoView({ inline: 'center', block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }); } catch (x) { /* old browsers */ }
       try { history.replaceState(null, '', '#' + k); } catch (x) { /* fine */ }
       grid(true);
       var f = $('.bfo-f'); if (f && f.getBoundingClientRect().top < 90) scrollTo({ top: $('[data-bfo]').getBoundingClientRect().top + scrollY - 90, behavior: reduce ? 'auto' : 'smooth' });
