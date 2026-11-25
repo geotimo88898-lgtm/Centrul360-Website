@@ -1,80 +1,97 @@
 {
   "liposonix": {
-    "img": "/brand_asset/tratamente/liposonix.webp",
-    "video": "/video/liposonix.mp4",
-    "poster": "/video/liposonix.jpg"
+    "img": "/brand_asset/tratamente/liposonix.webp?v=2",
+    "full": true,
+    "pos": "50% 55%"
   },
   "cavitatie": {
-    "img": "/brand_asset/tratamente/cavitatie.webp",
-    "video": "/video/cavitatie.mp4",
-    "poster": "/video/cavitatie.jpg"
+    "img": "/brand_asset/tratamente/cavitatie.webp?v=2",
+    "full": true,
+    "pos": "50% 42%"
   },
   "ems": {
-    "img": "/brand_asset/tratamente/ems.webp",
-    "video": "/video/ems.mp4",
-    "poster": "/video/ems.jpg"
+    "img": "/brand_asset/tratamente/ems.webp?v=2",
+    "full": true,
+    "pos": "50% 42%"
   },
   "radiofrecventa": {
-    "img": "/brand_asset/tratamente/radiofrecventa.webp"
+    "img": "/brand_asset/tratamente/radiofrecventa.webp?v=2",
+    "full": true,
+    "pos": "50% 55%"
   },
   "hifu-corp": {
-    "img": "/brand_asset/tratamente/hifu-corp.webp"
+    "img": "/brand_asset/tratamente/hifu-corp.webp?v=2",
+    "full": true,
+    "pos": "50% 55%"
   },
   "impachetare": {
-    "img": "/brand_asset/tratamente/impachetare.webp"
+    "img": "/brand_asset/tratamente/impachetare.webp?v=2",
+    "full": true,
+    "pos": "50% 40%"
   },
   "hifu": {
-    "img": "/brand_asset/tratamente/hifu.webp",
-    "video": "/video/hifu.mp4",
-    "poster": "/video/hifu.jpg",
-    "edges": "ct cl"
-  },
-  "rf-sculpt-gusa": {
-    "img": "/brand_asset/tratamente/rf-sculpt-gusa.webp",
-    "video": "/video/rf-sculpt-gusa.mp4",
-    "poster": "/video/rf-sculpt-gusa.jpg"
+    "img": "/brand_asset/tratamente/hifu.webp?v=2",
+    "full": true,
+    "pos": "50% 30%"
   },
   "biolifting": {
-    "img": "/brand_asset/tratamente/biolifting.webp",
-    "video": "/video/biolifting.mp4",
-    "poster": "/video/biolifting.jpg"
+    "img": "/brand_asset/tratamente/biolifting.webp?v=2",
+    "full": true,
+    "pos": "50% 28%"
   },
   "hifu-full-face": {
-    "img": "/brand_asset/tratamente/hifu-full-face.webp"
+    "img": "/brand_asset/tratamente/hifu-full-face.webp?v=2",
+    "full": true,
+    "pos": "50% 38%"
   },
   "biolifting-full-face": {
-    "img": "/brand_asset/tratamente/biolifting-full-face.webp"
-  },
-  "rf-sculpt-full-face": {
-    "img": "/brand_asset/tratamente/rf-sculpt-full-face.webp"
+    "img": "/brand_asset/tratamente/biolifting-full-face.webp?v=2",
+    "full": true,
+    "pos": "50% 35%"
   },
   "restart": {
-    "img": "/brand_asset/tratamente/restart.webp"
+    "img": "/brand_asset/tratamente/restart.webp?v=2",
+    "full": true,
+    "pos": "50% 40%"
   },
   "masaj-facial": {
-    "img": "/brand_asset/tratamente/masaj-facial.webp"
+    "img": "/brand_asset/tratamente/masaj-facial.webp?v=2",
+    "full": true,
+    "pos": "50% 38%"
   },
   "hidratare": {
-    "img": "/brand_asset/tratamente/hidratare.webp"
+    "img": "/brand_asset/tratamente/hidratare.webp?v=2",
+    "full": true,
+    "pos": "50% 40%"
   },
   "antirid": {
-    "img": "/brand_asset/tratamente/antirid.webp"
+    "img": "/brand_asset/tratamente/antirid.webp?v=2",
+    "full": true,
+    "pos": "50% 33%"
   },
   "redness": {
-    "img": "/brand_asset/tratamente/redness.webp"
+    "img": "/brand_asset/tratamente/redness.webp?v=2",
+    "full": true,
+    "pos": "50% 38%"
   },
   "sebum-off": {
-    "img": "/brand_asset/tratamente/sebum-off.webp"
+    "img": "/brand_asset/tratamente/sebum-off.webp?v=2",
+    "full": true,
+    "pos": "50% 38%"
   },
   "microneedling": {
-    "img": "/brand_asset/tratamente/microneedling.webp"
+    "img": "/brand_asset/tratamente/microneedling.webp?v=2",
+    "full": true,
+    "pos": "50% 42%"
   },
   "periocular": {
-    "img": "/brand_asset/tratamente/periocular.webp"
+    "img": "/brand_asset/tratamente/periocular.webp?v=2",
+    "full": true,
+    "pos": "50% 45%"
   },
   "epilare": {
-    "img": "/brand_asset/tratamente/epilare.webp",
-    "video": "/video/epilare.mp4",
-    "poster": "/video/epilare.jpg"
+    "img": "/brand_asset/tratamente/epilare.webp?v=2",
+    "full": true,
+    "pos": "50% 45%"
   }
 }

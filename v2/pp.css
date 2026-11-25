@@ -50,6 +50,12 @@
 .tp-stage.own.cr img{ left:auto; right:0; transform:none; }
 .tp-stage.own.cl img{ left:0; transform:none; }
 @media (min-width:960px){ .tp-stage.own{ border-radius:36px; height:min(620px,calc(100vh - 140px)); min-height:480px; } }
+/* the treatment's own photo (the owner, 25.11: the warm light of the old pictures, on black): the whole photo, full bleed, in a
+   rounded dark tile; its focal point comes with it (v2/art.json pos). On the phone it stays low enough for the name and the
+   start of the buy box to share the first screen */
+.tp-stage.full{ height:min(42vh,400px); min-height:240px; border-radius:30px; background:#0b0a09; box-shadow:none; }
+.tp-stage.full img{ left:0; top:0; width:100%; max-width:none; height:100%; transform:none; object-fit:cover; -webkit-mask-image:none; mask-image:none; }
+.tp-stage.full:not(.own)::after{ box-shadow:0 0 0 1px rgba(255,255,255,.04) inset; }
 .tp-stage:not(.own)::after{ content:''; position:absolute; inset:0; border-radius:inherit; box-shadow:0 0 0 1px rgba(11,11,13,.06) inset; pointer-events:none; }
 .tp-stage img.fade{ opacity:0; }
 .tp-tag{ position:absolute; left:14px; top:14px; display:inline-flex; align-items:center; height:30px; padding:0 13px; border-radius:999px; font-size:12.5px; font-weight:600; letter-spacing:-.005em;
@@ -66,6 +72,7 @@
 @media (min-width:960px){
   .tp-hero-g{ grid-template-columns:minmax(0,1.06fr) minmax(0,.94fr); gap:clamp(40px,5vw,72px); align-items:start; }
   .tp-stage{ position:sticky; top:92px; height:min(700px,calc(100vh - 116px)); min-height:520px; }
+  .tp-stage.full{ border-radius:36px; height:min(700px,calc(100vh - 116px)); min-height:520px; }
   .tp-hx{ padding-top:8px; }
 }
 
