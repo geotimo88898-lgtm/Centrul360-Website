@@ -21,6 +21,10 @@ PRICES = json.load(open(os.path.join(ROOT, 'api', '_lib', 'price-list.gen.json')
 e = lambda s: html.escape(str(s if s is not None else ''), quote=True)
 lei = lambda n: '{:,}'.format(int(round(n))).replace(',', '.') + ' lei'
 PCT = 50
+# the owner, 25.11: „nu vreau lucruri de genul copilărești, aș vrea să păstrăm doar lucrurile profesionale”: no generated 3D
+# loops and no drawn zone maps on the pages (the site's scientific explainers, the real photos and results stay)
+NO_3D = True
+NO_MAP = True
 ARROW = '{{arrow}}'
 def ro_min(m):
     """Romanian minutes: 15 minute, 10-15 minute, 30 de minute"""
@@ -731,7 +735,7 @@ def page(x):
     steps = ''.join('<li><button type="button" data-tp-s="%d"><span class="n">0%d</span><span class="t"><b>%s</b> %s</span><i class="bar"><i></i></i></button></li>' % (k + 1, k + 1, e(s['b']), e(s['t'])) for k, s in enumerate(x['how']['steps']))
     ar = art(x)
     loop = ''
-    if ar.get('video'):
+    if ar.get('video') and not NO_3D:
         loop = ('<figure class="tp-loop rv"><div class="ph"><video muted loop playsinline preload="none" poster="%s" data-tp-auto data-src="%s" aria-label="%s"></video><span class="tp-ill lt">Ilustrație 3D</span></div></figure>'
                 % (e(ar.get('poster') or ''), e(ar['video']), e('Cum funcționează ' + x['name'] + ', în 3D')))
     vid = ''
@@ -749,8 +753,10 @@ def page(x):
             head('Cum funcționează', x['how']['h'], x['how']['text']), loop, a, svg, leg, steps, vid))
 
     # ---- 5. the zones: tap one, it is chosen in the buy box
+    # (the owner, 25.11: „nu vreau lucruri de genul copilărești, doar lucrurile profesionale”): no drawn body or face map; the
+    # zone is chosen in the buy box. Kept behind NO_MAP in case a real, photographic map comes later
     mz = x.get('mapZones') or []
-    if x.get('map') and (zones or mz or epi):
+    if not NO_MAP and x.get('map') and (zones or mz or epi):
         sid = 'm' + re.sub(r'[^a-z0-9]', '', i)
         tap = bool(zones) or epi
         if epi:
