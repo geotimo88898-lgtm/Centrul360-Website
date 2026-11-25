@@ -134,6 +134,7 @@
   // 25.11); the shop loaded when the page does not have it
   var shopP = null;
   window.C360AddCard = function (tier, city, from) {
+    if (city && typeof city === 'object') { from = city.from; city = city.city; } // (tier, { city, from }) as v2/cs-buy.js calls it
     if (!shopP) shopP = window.C360Shop ? Promise.resolve(window.C360Shop) : new Promise(function (ok, no) {
       if (!document.querySelector('link[href="/v2/shop.css"]')) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/v2/shop.css'; document.head.appendChild(l); }
       var s = document.createElement('script'); s.src = '/v2/shop.js'; s.onload = function () { if (window.C360Shop) ok(window.C360Shop); else no(new Error('shop')); }; s.onerror = function () { shopP = null; no(new Error('shop')); }; document.head.appendChild(s);

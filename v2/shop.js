@@ -566,6 +566,7 @@
   }
   // the light segmented controls: the white thumb sits under the chosen part, and slides to the next one
   function thumb(seg, still) {
+    if (!seg) return;
     var b = $('[aria-selected="true"], [aria-checked="true"]', seg), i = $('.sg-i', seg);
     if (!b || !i) return;
     if (still) seg.classList.add('still');
