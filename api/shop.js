@@ -43,7 +43,10 @@ async function hold(req, res, b) {
     // the sessions and the zone she chose travel with the hold (the payment is priced from them, api/_lib/shop.js payQuote)
     // the Card de Sărbători in the same cart (one card, its tier): priced and confirmed by the card's code (api/_lib/shop.js payQuote)
     cart: { items: q.lines.map((l) => ({ id: l.id, zone: l.zone, qty: l.qty })), visit, at: new Date().toISOString(), ...(b.card && [490, 990, 9900].includes(Number(b.card.tier)) ? { card: { tier: Number(b.card.tier), qty: 1 } } : {}) },
-    date, time, endTime: B.hhmm(B.toMin(time) + minutes), page: clip(b.page, 120), src: b.src && typeof b.src === 'object' ? b.src : null,
+    // what she bought, for the desk (25.11, the audit: the title is clipped; the rest of the sessions are planned by the desk)
+    order: q.lines.map((l) => clip(l.name + (l.qty > 1 ? ' × ' + l.qty : ''), 90)).slice(0, 12),
+    multi: q.lines.length > 1 || q.lines.some((l) => l.qty > 1 || /ședințe/.test(l.name || '') || /^pachet-/.test(l.id || '')),
+    date, time, endTime: B.hhmm(B.toMin(time) + minutes), page: clip(b.page, 120), src: b.src && typeof b.src === 'object' && JSON.stringify(b.src).length < 4000 ? b.src : null,
     cookie: /(^|;\s*)_fbc=fb\./.test(String((req.headers && req.headers.cookie) || '')) ? '_fbc=fb.' : '',
     app: B.appOf(req.headers && req.headers['user-agent']), track: capi.fromRequest(req, b.page),
   });

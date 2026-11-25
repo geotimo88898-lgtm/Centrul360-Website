@@ -92,13 +92,15 @@ async function place(o) {
     id: crypto.randomUUID(), date, time, endTime: B.hhmm(B.toMin(time) + svc.minutes),
     clientId: client.id, clientName: client.name || name, clientPhone: client.phone || phone,
     treatment: svc.title, categories: [svc.cat || 'corporale'], category: svc.cat || 'corporale',
-    amount: svc.price || 0, location: city, cosmeticianId: who ? who.id : '', cosmeticianName: who ? who.name : '', status: 'programata', package: false,
-    note: clip(['Programare online pe site', svc.id === 'consult' ? '' : svc.price ? svc.price + ' lei' : '', payAmount ? 'Plată online ' + payAmount + ' lei' + (viaCheckout ? ', pe site' : ', de verificat în myPOS') : '',
+    amount: svc.price || 0, location: city, cosmeticianId: who ? who.id : '', cosmeticianName: who ? who.name : '', status: 'programata', package: !!o.multi,
+    note: clip([Array.isArray(o.order) && o.order.length ? 'Comandă online plătită: ' + o.order.join('; ') + (o.multi ? '. Azi e prima ședință; restul se programează de recepție' : '') : '', 'Programare online pe site', svc.id === 'consult' ? '' : svc.price ? svc.price + ' lei' : '', payAmount ? 'Plată online ' + payAmount + ' lei' + (viaCheckout ? ', pe site' : ', de verificat în myPOS') : '',
       o.bonus && o.bonus.type === 'gift' ? 'Cadou la plata online: ' + o.bonus.gift : '', clip(o.page, 120)].filter(Boolean).join(' · '), 500),
     // track: her browser's ids, for the Purchase when she pays
     ...(payAmount ? { pay, payAmount, track: o.track || null, ...(viaCheckout ? { payVia: 'checkout', payBonus: o.bonus && o.bonus.type === 'gift' ? 0 : (o.bonus && o.bonus.pct) || P.BONUS_PCT, ...(o.bonus && o.bonus.type === 'gift' ? { payGift: o.bonus.gift } : {}) } : {}) } : pay === 'clinic' ? { pay } : {}),
     ...(svc.treatment ? { priceListId: svc.treatment } : {}),
     ...(o.holdId ? { holdId: o.holdId } : {}),
+    // paid before it was made (the shop, 25.11): it is confirmed, so no „confirm it” message and no call to confirm it
+    ...(o.paid ? { paidOnSite: true } : {}),
     online: true, createdBy: 'site', createdAt: at, updatedAt: at,
     src: B.sourceOf(o.src, o.cookie, o.ua), // where she came from: saved, not shown in the Calendar
   };
@@ -152,7 +154,7 @@ async function place(o) {
 
   // valid once she confirms it (_lib/site-confirm.js): the message asking for it went → the reminder after 4 hours
   // and the cancel; it didn't (no WhatsApp, not approved, the flow off) or the booking is too close → Giovanna calls
-  try {
+  if (!o.paid) try {
     const R = require('./_lib/reminders');
     const [convos, tdoc] = await Promise.all([readJSON('data/whatsapp-conversations.json', []), require('./_lib/wa-templates').load()]);
     const sent = [].concat(...convos.map((c) => (c.messages || []).filter((m) => m.appt === entry.id && m.direction === 'out')));
@@ -182,7 +184,11 @@ module.exports = async (req, res) => {
       for (const x of list.concat(svc && svc.id === 'custom' ? [svc] : [])) { const bb = await P.bonusFor(x, offers); if (bb) x.bonus = bb; }
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=10, stale-while-revalidate=50');
       if (!cfg.on) { res.status(200).json({ on: false, city, services: list }); return; }
-      res.status(200).json({ on: true, city, services: list, service: s, step: cfg.step, days: B.days(cfg, city, s.minutes, appts) });
+      // the shop's visit can be longer than the price list's row (Full Body: every zone, up to 90 min, 25.11): the hours for
+      // the length the hold will check (api/shop.js, the quote's main line)
+      const mins = Math.round(Number(q.minutes));
+      const dur = svc && svc.id === 'custom' && mins >= 10 && mins <= 240 ? Math.max(mins, s.minutes || 0) : s.minutes;
+      res.status(200).json({ on: true, city, services: list, service: s, step: cfg.step, days: B.days(cfg, city, dur, appts) });
       return;
     }
     const cfg = await B.settings({ team: true });

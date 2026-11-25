@@ -983,3 +983,11 @@ body:has(.top.away) .bfo-f{ top:auto; }
 .tm-c i{ -webkit-backdrop-filter:none !important; backdrop-filter:none !important; transform:translateZ(0); contain:paint; }
 .tm-c b.tk{ animation-name:tmTick2; }
 @keyframes tmTick2{ from{ opacity:.25; } }
+
+/* the payment's quiet trust lines (25.11): small, grey, under the payment */
+.sh-trust{ margin:18px 4px 4px; display:grid; gap:6px; text-align:center; font-size:12.5px; line-height:1.4; color:var(--mute,#7a7a80); }
+.sh-trust p{ margin:0; }
+.sh-trust .st{ color:#e0a92a; letter-spacing:1px; font-size:11.5px; }
+.sh-trust .cards{ display:flex; align-items:center; justify-content:center; gap:8px; opacity:.8; }
+.sh-trust .cards svg{ height:13px; width:auto; color:currentColor; }
+.sh-trust .cards span{ font-size:12px; }

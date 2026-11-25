@@ -155,7 +155,8 @@ const KINDS = {
       if (!apptId) {
         const B = require('./booking');
         const r = await require('../booking').place({ cfg: await B.settings({ team: true }), city: h.city, svc: h.svc, date: h.date, time: h.time, name: c.name || 'Clientă site', phone: c.phone,
-          page: h.page, src: h.src, cookie: h.cookie, ua: h.app, track: h.track, pay: 'online-pending', payAmount: o.amount, viaCheckout: true, paid: true, holdId: h.id, bonus: o.bonus });
+          page: h.page, src: h.src, cookie: h.cookie, ua: h.app, track: h.track, pay: 'online-pending', payAmount: o.amount, viaCheckout: true, paid: true, holdId: h.id, bonus: o.bonus,
+          order: h.order, multi: h.multi });
         if (!r || !r.entry) throw new Error('hold_booking_failed');
         apptId = r.entry.id;
         if (r.entry.overbooked) await ring(o, 'PLĂTITĂ ONLINE, ORA S-A OCUPAT ⚠️', (c.name || '') + ' a plătit ' + h.date + ' ' + h.time + ', dar ora s-a ocupat între timp. Sun-o să mutați ora.');
@@ -163,6 +164,11 @@ const KINDS = {
       await H.patch(h.id, (x) => { if (x.bookingId === apptId) return false; x.bookingId = apptId; });
       const BP = require('./booking-pay');
       const x = await BP.markPaid(apptId, { amount: o.amount, ref: o.mypos.ref || o.id, at: o.mypos.at || o.paidAt, src: 'mypos-checkout', orderId: o.id }, 'myPOS');
+      if (!x) {
+        // not put on the booking (it doesn't wait for a payment any more, or the calendar kept changing): unless this order paid it already, the desk is told
+        const a = (await readJSON('data/appointments.json', [])).find((y) => y && y.id === apptId);
+        if (!(a && a.paidOnline && a.paidOnline.orderId === o.id)) await ring(o, 'PLATĂ ONLINE DE VERIFICAT 💳', (c.name || '') + ' a plătit ' + o.amount + ' lei pentru ' + h.date + ' ' + h.time + ', dar plata nu s-a trecut pe programare (comanda ' + o.id + '). Trece-o în Încasări și verifică programarea.');
+      }
       return { appt: apptId, sale: x && x.sale && x.sale.id, msg: x && x.msg && (x.msg.sent || x.msg.dup) ? 'sent' : 'no' };
     },
   },
@@ -406,6 +412,8 @@ async function markPaid(orderId, info, src) {
     if (a && a.paidOnline && a.paidOnline.orderId && a.paidOnline.orderId !== orderId) {
       await update(orderId, (o) => { if (o.status !== 'open') return false; Object.assign(o, { status: 'failed', failWhy: 'double', mypos: { ref: clip(info.ref, 80), src, at: clip(info.at, 40) } }); });
       await openList((l) => l.filter((x) => x.id !== orderId));
+      // the desk is told (25.11, the audit): on the request way nothing sends the money back by itself
+      try { await ring(first, 'PLATĂ DUBLĂ DE VERIFICAT 💳', (first.name || 'O clientă') + ' a plătit de două ori aceeași programare (' + first.amount + ' lei, comanda ' + orderId + '). Verifică în myPOS și returnează a doua plată.'); } catch (e) { /* told on the next sweep */ }
       return { double: true };
     }
   }
@@ -446,6 +454,11 @@ async function runHandler(orderId) {
     delete x.handlerError;
   });
   await listEdit(RETRY, (l) => (err ? (l.includes(orderId) ? null : l.concat(orderId)) : l.includes(orderId) ? l.filter((x) => x !== orderId) : null));
+  // paid, but what follows the payment failed (25.11, the audit): said the first time, and when the retries end
+  if (err) {
+    const n = (Number(o.tries) || 1) + 1;
+    if (n === 2 || n >= 8) try { await ring(o, n >= 8 ? 'PLATĂ ONLINE NEPROCESATĂ ⚠️' : 'PLATĂ ONLINE, DE VERIFICAT ⚠️', (o.name || 'O clientă') + ' a plătit ' + o.amount + ' lei online (' + (o.title || o.kind) + ', comanda ' + orderId + '), dar ' + (n >= 8 ? 'programarea sau încasarea nu s-a putut face. Fă-le de mână și sun-o.' : 'pasul de după plată a dat eroare (' + err + '). Reîncerc singur; verifică în Calendar.')); } catch (e) { /* the next run says it */ }
+  }
 }
 
 // she says the payment went through (the form's onSuccess): myPOS is asked (signed answer), never believed on her word
@@ -656,8 +669,10 @@ async function sweep(opts) {
   // the 5-minute round asks the newest first (25.11: with 25 orders of two days ago at the front, a link paid this morning was
   // never asked and stayed „open”), then the oldest, so they still expire: up to 40 a round
   const byNew = list.slice().sort((a, b) => (a.at < b.at ? 1 : -1));
+  // (25.11, the audit: every visit to the shop's pay step makes an order, so the list grows with the ads; an order that never got
+  // its myPOS request can't be paid: it is let go after 2 hours without asking anyone, so every real request is asked)
   const items = fresh ? byNew.filter((it) => { const a = now - Date.parse(it.at); return a >= 20e3 && a < 3 * 3600e3; }).slice(0, 25)
-    : (byNew.length > 40 ? byNew.slice(0, 30).concat(byNew.slice(-10)) : byNew);
+    : byNew.slice(0, 150);
   for (const it of items) {
     const age = now - Date.parse(it.at);
     if (!fresh && age < 120e3) continue;
@@ -665,6 +680,10 @@ async function sweep(opts) {
     const { data: o } = await readOrder(it.id);
     if (!o || o.status !== 'open') { if (!fresh) { await openList((l) => l.filter((x) => x.id !== it.id)); out.gone++; } continue; }
     if (fresh && o.provider === 'requests' && !(o.request && o.request.code)) continue;
+    if (!fresh && o.provider === 'requests' && !(o.request && o.request.code)) {
+      if (age > 2 * 3600e3) { await update(o.id, (x) => { if (x.status !== 'open' || (x.request && x.request.code)) return false; x.status = 'expired'; x.failWhy = 'no_request'; }); await openList((l) => l.filter((x) => x.id !== it.id)); out.gone++; }
+      continue;
+    }
     // (every minute only for the 15 minutes after her last sign of life: then the 5-minute round, George 23.11)
     if (fresh && now - lastActivity(o) > 15 * 60e3) continue;
     out.asked++;

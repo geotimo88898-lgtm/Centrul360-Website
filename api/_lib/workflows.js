@@ -718,7 +718,7 @@ const cityOf = (ctx) => (ctx.appointment && ctx.appointment.location) || (ctx.le
 const verOf = (t) => { const m = /· v(\d+)$/.exec(String((t && t.label) || '')); return m ? Number(m[1]) : 1; };
 function siteSwap(wa, id, ctx, from) {
   const a = ctx && ctx.appointment;
-  if (!a || !a.online) return id;
+  if (!a || !a.online || a.paidOnSite) return id; // paid on the site: confirmed already, the usual confirmation
   const tpls = wa.tpls || [];
   const t = tpls.find((x) => x.id === id);
   if (!t || !/^Reamintiri · Confirmare · /.test(t.label || '')) return id;

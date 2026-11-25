@@ -1294,7 +1294,7 @@
     if (S.days) { drawDays(); return; }
     var box = $('[data-days]', el); if (box) box.innerHTML = '<div class="sh-wait">Caut orele libere…</div>';
     var sl = $('[data-slots]', el); if (sl) sl.innerHTML = '';
-    var url = '/api/booking?city=' + encodeURIComponent(S.city) + (S.visit === 'consult' ? '&service=consult' : '&service=custom&treatment=' + encodeURIComponent(m.p.ref));
+    var url = '/api/booking?city=' + encodeURIComponent(S.city) + (S.visit === 'consult' ? '&service=consult' : '&service=custom&treatment=' + encodeURIComponent(m.p.ref) + (m.p.minutes ? '&minutes=' + m.p.minutes : ''));
     fetch(url, { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (d) {
       if (k !== daysKey) return;
       S.days = (d && d.on && d.days) || [];
@@ -1331,6 +1331,13 @@
     var h = S.hold; S.hold = null;
     if (h) fetch('/api/booking', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ release: h.id, key: h.key }) }).catch(function () {});
   }
+  // a few quiet reasons to trust the payment, under it (the owner, 25.11: „elemente de încredere subtile, nu foarte evidente”):
+  // the real Google rating, that a visit can be moved (the terms: „anunți din timp orice reprogramare”), the cards taken
+  var TRUST = '<div class="sh-trust" aria-label="De ce e sigur">' +
+    '<p><span class="st" aria-hidden="true">★★★★★</span> 5,0 pe Google · 300+ recenzii</p>' +
+    '<p>Nu mai poți ajunge? Ne anunți din timp și mutăm programarea.</p>' +
+    '<p class="cards" aria-label="Plătești cu Visa sau Mastercard"><svg viewBox="0 0 48 16" aria-hidden="true"><text x="0" y="13" font-family="Arial,sans-serif" font-size="15" font-weight="800" font-style="italic" letter-spacing="-.5" fill="currentColor">VISA</text></svg>' +
+    '<svg viewBox="0 0 30 18" aria-hidden="true"><circle cx="10" cy="9" r="8" fill="currentColor" opacity=".55"/><circle cx="20" cy="9" r="8" fill="currentColor" opacity=".35"/></svg><span>Plată securizată</span></p></div>';
   function panePay() {
     var el = pane('pay'), t = totals(), mine = {};
     S.payRun = mine;
@@ -1341,7 +1348,7 @@
     t = { lines: pl, amount: pl.reduce(function (s, x) { return s + x.p.price * x.qty; }, 0), full: pl.reduce(function (s, x) { return s + x.p.full * x.qty; }, 0) };
     el.innerHTML = '<div class="sh-sum sh-card"><div><i>' + I.cal + '</i><span><b>' + esc(nice(S.date).replace(/^./, function (c) { return c.toUpperCase(); })) + ', ora ' + esc(S.time) + '</b><small>' + (S.visit === 'consult' ? 'Consultația gratuită, 30 min' : 'Prima ședință') + ' · Centrul360 ' + esc(S.city) + '</small></span></div>' +
       '<div><i>' + I.bag + '</i><span><b>' + t.lines.map(function (x) { return esc(nameOf(x.p, x.zone)) + (x.qty > 1 ? ' × ' + x.qty : ''); }).join('<br>') + '</b><small>' + esc(ADDR[S.city]) + '</small></span></div></div>' +
-      '<div data-pay><div class="sh-wait">Pregătesc plata…</div></div>';
+      '<div data-pay><div class="sh-wait">Pregătesc plata…</div></div>' + TRUST;
     fev('pay');
     var src = null; try { src = window.C360Src ? window.C360Src() : null; } catch (e) { /* none */ }
     var fail = function () { if (S.payRun === mine) $('[data-pay]', el).innerHTML = '<div class="sh-alert">Nu am putut porni plata. Verifică internetul și încearcă din nou.</div><button type="button" class="sh-go" data-go="when" style="margin-top:14px">Înapoi</button>'; };
@@ -1640,5 +1647,7 @@
   headCart();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
   setInterval(tick, 1000);
-  addEventListener('pagehide', function () { if (S.hold) release(); });
+  // no release when the page goes away (25.11, the audit): in Instagram's and Facebook's browsers she pays on myPOS in this same
+  // tab, so leaving the page is how the payment starts; the hour stays hers until she goes back or closes the sheet here, or for
+  // the hold's 15 minutes when she never comes back
 })();
