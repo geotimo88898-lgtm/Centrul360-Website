@@ -587,6 +587,16 @@ async function askRequest(r, o) {
   return { orderId: st.bookingText === o.id ? o.id : st.bookingText, status: map[st.status] || 0, amount: st.amount, currency: st.currency, ref: o.request.code, method: 'request', at: nowISO(), raw: st.status };
 }
 
+// what myPOS says now of one order's payment request (read only; the diagnostics): { status, amount, currency } or null
+async function requestState(orderId) {
+  const { data: o } = await readOrder(orderId);
+  if (!o || !o.request || !o.request.code) return null;
+  const r = await RQ.active(S);
+  if (!r || r.error) return { error: 'off' };
+  const st = await RQ.status(r, o.request.code);
+  return { status: st.status, amount: st.amount, currency: st.currency, booking: st.bookingText === o.id };
+}
+
 // she gives up paying online: the booking goes back to „plătesc în clinică” at the full price (only while nothing was paid)
 async function toClinic(orderId, key) {
   const { data: o } = await readOrder(orderId);
@@ -626,7 +636,11 @@ async function sweep(opts) {
   const list = await readJSON(OPEN, []);
   const now = Date.now();
   const out = { open: list.length, paid: 0, gone: 0, retried: 0, asked: 0 };
-  const items = fresh ? list.filter((it) => { const a = now - Date.parse(it.at); return a >= 20e3 && a < 3 * 3600e3; }).sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 25) : list.slice(0, 25);
+  // the 5-minute round asks the newest first (25.11: with 25 orders of two days ago at the front, a link paid this morning was
+  // never asked and stayed „open”), then the oldest, so they still expire: up to 40 a round
+  const byNew = list.slice().sort((a, b) => (a.at < b.at ? 1 : -1));
+  const items = fresh ? byNew.filter((it) => { const a = now - Date.parse(it.at); return a >= 20e3 && a < 3 * 3600e3; }).slice(0, 25)
+    : (byNew.length > 40 ? byNew.slice(0, 30).concat(byNew.slice(-10)) : byNew);
   for (const it of items) {
     const age = now - Date.parse(it.at);
     if (!fresh && age < 120e3) continue;
@@ -785,4 +799,4 @@ async function cardGo(cardId) {
   return { error: 'busy', page };
 }
 
-module.exports = { cardLink, cardTokenOk, cardGo, INDEX, touch, lastActivity, markRecovery, requestWords, later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
+module.exports = { requestState, cardLink, cardTokenOk, cardGo, INDEX, touch, lastActivity, markRecovery, requestWords, later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };

@@ -868,6 +868,12 @@ module.exports = async (req, res) => {
         code: (o.request && o.request.code) || null, requestAt: (o.request && o.request.at) || null, requestTried: o.requestTried || null, linkError: o.linkError || null, fallback: o.fallback || null, trace: o.trace || [] });
       return;
     }
+    // ?payopen=ask&id=<order>: what myPOS says now of that order's payment request (read only)
+    if (req.query.payopen === 'ask') {
+      try { res.status(200).json(await P.requestState(String(req.query.id || '').replace(/[^\w-]/g, '')) || { error: 'no_request' }); }
+      catch (e) { res.status(200).json({ error: e.code || 'mypos_failed', status: e.status || 0, message: String(e.message || '').slice(0, 200) }); }
+      return;
+    }
     // ?payopen=byref&ref=<card or booking id>: the checkout's orders for it (paid recently or open), no names or phones;
     // POST ?payopen=marktest&ref=…: those orders marked as a test (the owner's own payments: out of the checkout's counts)
     if (req.query.payopen === 'byref' || (req.query.payopen === 'marktest' && req.method === 'POST')) {
