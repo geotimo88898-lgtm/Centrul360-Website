@@ -846,7 +846,7 @@ module.exports = async (req, res) => {
     f.c.value = credit; f.c.img = '';
     C.mark(f.r, 'retier', tier + ' lei, credit ' + credit + ' (corectat)');
     await writeJSON(C.KEY, list);
-    if (sale) { sale.amount = tier; sale.treatment = String(sale.treatment || '').replace(/plătești [\d.]+ lei/, 'plătești ' + tier + ' lei'); sale.note = String(sale.note || '') + ' · corectat din ' + before.amount + ' lei'; await writeJSON('data/sales.json', sales); }
+    if (sale) { sale.amount = tier; sale.treatment = 'Card de Sărbători · plătești ' + tier + ' lei, credit ' + credit.toLocaleString('ro-RO') + ' lei'; sale.note = String(sale.note || '') + ' · corectat din ' + before.amount + ' lei'; await writeJSON('data/sales.json', sales); }
     let sent = null;
     if (req.query.send === '1') {
       const l2 = await readJSON(C.KEY, []); const g = C.findCard(l2, String(req.query.cardretier));
