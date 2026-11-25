@@ -854,7 +854,7 @@
       ['Timișoara', 'Arad'].map(function (c) { return '<button type="button" role="radio" data-city="' + c + '" aria-checked="' + (c === S.city) + '">' + c + '</button>'; }).join('') + '</div>' +
       '<p class="sh-addr" data-addr' + (S.city ? '' : ' hidden') + '>' + I.pin + '<span>' + esc(ADDR[S.city] || '') + '</span></p>' +
       '<p class="sh-note" data-pick-c' + (S.city ? ' hidden' : '') + '>Alege clinica și îți arătăm orele libere.</p>' +
-      '<div data-clash hidden></div>' +
+      '<p class="sh-note" data-only hidden></p><div data-clash hidden></div>' +
       '<div data-wh' + (S.city ? '' : ' hidden') + '>' +
       '<p class="sh-lab">La prima vizită</p><div class="seg sh-seg sh-vis" role="radiogroup" aria-label="La prima vizită"><i class="sg-i" aria-hidden="true"></i>' +
       '<button type="button" role="radio" data-visit="first" aria-checked="' + (S.visit === 'first') + '">Încep direct</button>' +
@@ -873,6 +873,9 @@
     var bad = clashOf(), ok = !!S.city && !bad.length;
     var ad = $('[data-addr]', el); if (ad) { ad.hidden = !S.city; $('span', ad).textContent = ADDR[S.city] || ''; }
     var pc = $('[data-pick-c]', el); if (pc) pc.hidden = !!S.city;
+    // why this clinic (the cart has what only it does)
+    var only = ok ? lines().filter(function (x) { return x.p.cities.length === 1; }).map(function (x) { return nameOf(x.p, x.zone); }) : [];
+    var on1 = $('[data-only]', el); if (on1) { on1.hidden = !only.length; on1.textContent = only.length ? only.join(', ') + (only.length === 1 ? ' se face' : ' se fac') + ' doar în ' + S.city + '.' : ''; }
     var cl = $('[data-clash]', el);
     if (cl) {
       var to = fixCity(), one = bad.length === 1;
