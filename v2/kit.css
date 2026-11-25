@@ -589,3 +589,10 @@ footer .legal > span a{ white-space:nowrap; }
   .slip.has-pic{ --ph:150px; padding-top:calc(var(--ph) - 12px); }
   .slip.has-pic .pct{ top:22px; left:22px; }
 }
+
+/* Nuki stays, quietly (the owner, 25.11: „să rămână mascota noastră, dar subtil, să nu deranjeze”): smaller, a softer float */
+.nuki img{ width:min(220px,48vw); filter:drop-shadow(0 18px 22px rgba(11,60,55,.12)); }
+.end .nuki img{ width:min(200px,46vw); }
+.stick img{ width:min(200px,46vw); }
+.nuki .fl,.stick .fl{ animation-duration:9s; }
+@media (max-width:640px){ .nuki img,.hero .nuki img{ width:min(150px,38vw); } .end .nuki img{ width:min(140px,36vw); } .stick img{ width:min(120px,32vw); } }

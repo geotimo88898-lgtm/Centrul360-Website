@@ -1036,7 +1036,24 @@
     "s": "Ridul se estompează treptat."
    }
   ],
-  "results": [],
+  "results": [
+   {
+    "case": "35",
+    "src": "/brand_asset/catalog/cazul-35-rf-sculpt-tm.webp",
+    "w": 1283,
+    "h": 1400,
+    "title": "BioLifting + masaj",
+    "sub": "Timișoara · 6 ședințe"
+   },
+   {
+    "case": "37",
+    "src": "/brand_asset/catalog/cazul-37-rf-sculpt-tm-2.webp",
+    "w": 1400,
+    "h": 945,
+    "title": "BioLifting + masaj",
+    "sub": "Timișoara · 3 ședințe"
+   }
+  ],
   "how": {
    "h": "Pielea fermă <em>înseamnă colagen.</em>",
    "text": "BioLifting duce energie termică controlată în dermă și stimulează colagenul și elastina. Fibrele de colagen se contractă și pielea se strânge, iar colagenul nou estompează treptat ridul.",
