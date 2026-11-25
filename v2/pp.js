@@ -158,7 +158,10 @@
 
   // ---- the server's catalog and clock
   function load() {
-    return fetch('/api/shop', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (d) {
+    var get = function () { return fetch('/api/shop', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }); };
+    // the answer the page's head already asked for (window.C360Pre, the same one v2/shop.js uses), else its own
+    var pre = window.C360Pre && window.C360Pre.shop;
+    return (pre ? pre.catch(get) : get()).then(function (d) {
       if (!d || !d.ok || !Array.isArray(d.products)) return;
       CAT = {}; d.products.forEach(function (p) { CAT[p.id] = p; });
       if (d.terms) { if (d.terms.end) END = Date.parse(d.terms.end); if (d.terms.now) offset = d.terms.now - Date.now(); if (d.terms.pct) S.pct = d.terms.pct; }
@@ -287,8 +290,9 @@
 
   // ---- the treatment's own picture, when it exists after the page was made (v2/art.json)
   var img = $('[data-tp-img]'), stage = img && img.closest('.tp-stage');
-  if (img && stage && !stage.classList.contains('own')) {
-    fetch('/v2/art.json', { headers: { Accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (a) {
+  // (a page made with its own full photo already has it: nothing to ask)
+  if (img && stage && !stage.classList.contains('own') && !stage.classList.contains('full')) {
+    (window.C360Pre && window.C360Pre.art ? window.C360Pre.art : fetch('/v2/art.json', { headers: { Accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : null; })).then(function (a) {
       var x = a && (a[CFG.id] || a[CFG.page]);
       if (!x || !x.img || img.getAttribute('src') === x.img) return;
       var pre = new Image();
