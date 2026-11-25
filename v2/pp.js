@@ -132,9 +132,20 @@
   if (heroImg && !EPI) fetch('/brand_asset/tratamente/hero/index.json?t=' + Math.floor(Date.now() / 600000), { headers: { Accept: 'application/json' } })
     .then(function (r) { return r.ok ? r.json() : null; }).then(function (d) { HX = d && typeof d === 'object' ? d : null; heroPaint(); }).catch(function () { /* the treatment's picture stays */ });
 
+  // the words of the zone she chose (25.11): the eyebrow, the promise and the three reasons follow the zone, like the picture
+  var ZC = null;
+  try { var zcEl = document.querySelector('[data-tp-zc]'); if (zcEl) ZC = JSON.parse(zcEl.textContent); } catch (e) { ZC = null; }
+  function copyPaint() {
+    if (!ZC || EPI) return;
+    var c = ZC[S.zone] || ZC._; if (!c) return;
+    var eye = document.querySelector('[data-tp-eye]'), pr = document.querySelector('[data-tp-promise]'), ul = document.querySelector('[data-tp-bul]');
+    if (eye) eye.textContent = c.kind;
+    if (pr) pr.textContent = c.promise;
+    if (ul) [].forEach.call(ul.querySelectorAll('li > span'), function (sp, i) { if (c.bullets[i]) sp.textContent = c.bullets[i]; });
+  }
   function paint() {
     var c = cur(), n = S.n;
-    pkSec(); heroPaint();
+    pkSec(); heroPaint(); copyPaint();
     $$('[data-tp-price]').forEach(function (el) { setText(el, lei(c.price * n)); });
     $$('[data-tp-full]').forEach(function (el) { setText(el, lei(c.full * n)); });
     $$('[data-tp-save]').forEach(function (el) { setText(el, 'Economisești ' + lei((c.full - c.price) * n)); });
@@ -194,7 +205,7 @@
   function isNew(s) { return typeof s.catalog === 'function' || typeof s.price === 'function'; }
   function addToCart(id, zone, qty, from, quiet) {
     var s = shop();
-    if (!s) { location.href = BASE + (BASE === '/v2/' ? 'oferte-bf' : 'oferte'); return false; }
+    if (!s) { location.href = BASE + 'oferte'; return false; }
     try {
       if (isNew(s)) s.add({ id: id, zone: zone || '', qty: qty || 1 }, from);
       else { s.add(id, zone || '', qty || 1); if (!quiet && typeof s.open === 'function') setTimeout(function () { s.open(); }, 80); }

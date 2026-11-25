@@ -629,12 +629,14 @@ def hero(x, zones, sess, full, epi, img, own, ppid, z0, hasz):
         % (e(src), e(x['name']), re.sub(r'[^a-z0-9-]', '', ppid), pos),
         '<div class="tp-in">',
         '<div class="tp-top"><span class="tp-bf"><i></i>Black Friday · doar online</span><div class="tp-cells xs" data-tp-tm role="timer" aria-label="Oferta se încheie în">%s</div></div>' % TM_CELLS,
-        '<p class="tp-eye">%s</p><h1>%s</h1>' % (e(x['kind']), name_h),
+        '<p class="tp-eye" data-tp-eye>%s</p><h1>%s</h1>' % (e(x['kind']), name_h),
         '<div class="tp-pr"><b data-tp-price>%s</b><s data-tp-full>%s</s><span class="tp-pct">-%d%%</span></div>' % (bf(full), lei(full), PCT),
         '<p class="tp-save"><span data-tp-save>Economisești %s</span><span class="tp-per" data-tp-per>o ședință</span></p>' % bf(full),
         rate,
-        '<p class="tp-promise">%s</p>' % e(x['promise']),
-        '<ul class="tp-bul">%s</ul>' % ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(t)) for t in x['bullets']),
+        '<p class="tp-promise" data-tp-promise>%s</p>' % e(x['promise']),
+        '<ul class="tp-bul" data-tp-bul>%s</ul>' % ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(t)) for t in x['bullets']),
+        # the words of the zone she chose (25.11, the ads per zone: HIFU Gât lands on a page that speaks of the neck), v2/pp.js
+        ('<script type="application/json" data-tp-zc>%s</script>' % json.dumps(dict(x['zoneCopy'], _={'kind': x['kind'], 'promise': x['promise'], 'bullets': x['bullets']}), ensure_ascii=False).replace('</', '<\\/')) if x.get('zoneCopy') else '',
         opts,
         '<button type="button" class="btn book gold tp-cta" data-tp-add>Rezervă oferta%s</button>' % ARROW,
         '<ul class="tp-mini"><li>%s<span>Plătești online, cu cardul, în siguranță</span></li><li>%s<span>Îți alegi ziua și ora imediat după plată</span></li><li>%s<span>%s</span></li></ul>'
@@ -924,9 +926,16 @@ def page(x):
     out.append('</div><script src="/v2/shop.js" defer></script><script src="/v2/pp.js" defer></script>')
     return '\n'.join(out) + '\n'
 
+EPI_SALE = False  # the same switch as api/_lib/shop.js
+
 if __name__ == '__main__':
     for x in ITEMS:
         s = page(x)
+        # laser epilation, not sold for now (the owner, 25.11; api/_lib/shop.js EPI_SALE): its shop page leads to the device's page
+        if x['id'] == 'epilare' and not EPI_SALE:
+            s = ('<!--meta\ntitle: Epilare laser · Elysion Pro · Centrul360\ndescription: Epilare laser cu Elysion Pro, la Centrul360 Timișoara.\n'
+                 'robots: noindex,follow\ndock: off\n-->\n<script>location.replace("{{base}}epilare-laser" + location.hash)</script>\n'
+                 '<section class="s"><div class="wrap"><p class="lead"><a href="{{base}}epilare-laser">Epilare laser · Elysion Pro</a></p></div></section>\n')
         if '—' in s or '–' in s: raise SystemExit(x['id'] + ': a long dash slipped in')
         open(os.path.join(SRC, 'tratament-%s.html' % x['id']), 'w', encoding='utf-8').write(s)
     print('wrote', len(ITEMS), 'pages')

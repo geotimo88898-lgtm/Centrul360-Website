@@ -25,7 +25,17 @@
 <meta property="og:image:alt" content="Centrul360 | Începe aici">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@1,9..144,400&family=Montserrat:wght@300;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@1,9..144,400&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Montserrat writes only CENTRUL360.COM (the logo) and BLACK FRIDAY (the card's pages): only those letters are loaded, 6 KB in place
+     of 36 (speed, 25.11). A new text in Montserrat needs its letters added to text= -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;800&display=swap&text=CENTRUL360.COMBLACKFRIDAY%20" rel="stylesheet">
+<!-- the Romanian letters (ă ș ț, Ă Ș Ț and the cedilla forms) from Google's own copy of only these letters of each font, in place
+     of the whole latin-ext file of Inter, Fraunces and Geist Mono (about 120 KB less on the first visit; the same glyphs, the same
+     descriptors, defined after Google's so they are used first; if one ever fails, the latin-ext file serves them as before).
+     Geist Mono writes only capital labels (text-transform:uppercase): its capitals, digits and signs come from Google's copy of
+     only those (11 KB in place of 23; a monospace font has no kerning, so nothing changes); a lowercase letter, if one ever comes,
+     brings the whole file as before -->
+<style>@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/l/font?kit=UcC73FwrK3iLTeHuS_nVMrMxCp50SjIq15j8eUYDv5VG7BWvZVzDSTZFBSpLvJNIuk_S5__3KuG1tHP1p-2n&skey=c491285d6722e4fa&v=v20) format('woff2');unicode-range:U+102-103,U+15E-15F,U+162-163,U+218-21B}@font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/l/font?kit=UcC73FwrK3iLTeHuS_nVMrMxCp50SjIq15j8eUYDv5VG7BWvZVzDSTZFBSpLvJNIuk_S5__3KuG1tHP1p-2n&skey=c491285d6722e4fa&v=v20) format('woff2');unicode-range:U+102-103,U+15E-15F,U+162-163,U+218-21B}@font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url(https://fonts.gstatic.com/l/font?kit=UcC73FwrK3iLTeHuS_nVMrMxCp50SjIq15j8eUYDv5VG7BWvZVzDSTZFBSpLvJNIuk_S5__3KuG1tHP1p-2n&skey=c491285d6722e4fa&v=v20) format('woff2');unicode-range:U+102-103,U+15E-15F,U+162-163,U+218-21B}@font-face{font-family:'Inter';font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/l/font?kit=UcC73FwrK3iLTeHuS_nVMrMxCp50SjIq15j8eUYDv5VG7BWvZVzDSTZFBSpLvJNIuk_S5__3KuG1tHP1p-2n&skey=c491285d6722e4fa&v=v20) format('woff2');unicode-range:U+102-103,U+15E-15F,U+162-163,U+218-21B}@font-face{font-family:'Inter';font-style:normal;font-weight:800;font-display:swap;src:url(https://fonts.gstatic.com/l/font?kit=UcC73FwrK3iLTeHuS_nVMrMxCp50SjIq15j8eUYDv5VG7BWvZVzDSTZFBSpLvJNIuk_S5__3KuG1tHP1p-2n&skey=c491285d6722e4fa&v=v20) format('woff2');unicode-range:U+102-103,U+15E-15F,U+162-163,U+218-21B}@font-face{font-family:'Fraunces';font-style:italic;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/l/font?kit=6NUs8FyLNQOQZAnv9ZwNjucMHVn85Ni7emAe9lKqZTnbB-gzTK0K1ChJdt9hFwpX9W37ll9_qv8oRcTnYqJdLAzifaoSD47N8qsgyKp6kDEIQWzO0Bh7ZTJbGUDkAg&skey=a711426ad14db1be&v=v38) format('woff2');unicode-range:U+102-103,U+15E-15F,U+162-163,U+218-21B}@font-face{font-family:'Geist Mono';font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/l/font?kit=or3nQ6H-1_WfwkMZI_qYJrUXnTPmtGpUPrWUGMqXRujR_3ZW8xxe8lU-0aAOd1NFOcTnckyFfA&skey=f2030a904b731103&v=v6) format('woff2');unicode-range:U+102-103,U+15E-15F,U+162-163,U+218-21B}@font-face{font-family:'Geist Mono';font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/l/font?kit=or3nQ6H-1_WfwkMZI_qYJrUXnTPmtGpUPrWUGMqXRujR_3ZW8xxe8lU-0aAOd1NFOcTnckyFfA&skey=f2030a904b731103&v=v6) format('woff2');unicode-range:U+102-103,U+15E-15F,U+162-163,U+218-21B}@font-face{font-family:'Geist Mono';font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/l/font?kit=or3nQ6H-1_WfwkMZI_qYJrUXnTPmtMEUTcDXTpl77Qd-F8a8XOjOBMLDf1-vhvO2nUkj_a4MnfVleN_zvJEwYv9O8UvxoEZlWJ1TWXOluBljAELBx2jMJOs74CklJlJsFfYbCzVbbK1y3v3dVTiLlJTeblGu5-wYHvm4ykhNT2XJi3ophWCzyw7oZz2WRZjy44yuTDHQ5eU1z55wZzXSu-zC5g&skey=f2030a904b731103&v=v6) format('woff2');unicode-range:U+20-22,U+25,U+27-29,U+2B-3B,U+3F,U+41-5A,U+B7,U+C2,U+CE,U+D7,U+102,U+15E,U+162,U+218,U+21A,U+201D-201E}@font-face{font-family:'Geist Mono';font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/l/font?kit=or3nQ6H-1_WfwkMZI_qYJrUXnTPmtMEUTcDXTpl77Qd-F8a8XOjOBMLDf1-vhvO2nUkj_a4MnfVleN_zvJEwYv9O8UvxoEZlWJ1TWXOluBljAELBx2jMJOs74CklJlJsFfYbCzVbbK1y3v3dVTiLlJTeblGu5-wYHvm4ykhNT2XJi3ophWCzyw7oZz2WRZjy44yuTDHQ5eU1z55wZzXSu-zC5g&skey=f2030a904b731103&v=v6) format('woff2');unicode-range:U+20-22,U+25,U+27-29,U+2B-3B,U+3F,U+41-5A,U+B7,U+C2,U+CE,U+D7,U+102,U+15E,U+162,U+218,U+21A,U+201D-201E}</style>
 <link rel="stylesheet" href="/v2/kit.css">
 <link rel="stylesheet" href="/v2/kit-m.css">
 <link rel="stylesheet" href="/v2/kit-m2.css">
@@ -33,6 +43,43 @@
 <link rel="stylesheet" href="/v2/xmas.css">
 <link rel="stylesheet" href="/v2/cs-buy.css">
 <link rel="stylesheet" href="/v2/lf.css">
+<link rel="stylesheet" href="/v2/head.css">
+<style>/* „Tap. Don't cut. Carry.” (the owner, 16.11): between the site's pages the screen carries over instead of cutting (View Transitions where the browser has them); the header stays in place */@view-transition{navigation:auto}::view-transition-group(*){animation-duration:.42s;animation-timing-function:cubic-bezier(.16,1,.3,1)}@media (prefers-reduced-motion:reduce){@view-transition{navigation:none}}</style>
+<style>/* the treatments' own pages (v2/src/tratament-<id>.html), linked from everywhere a treatment is shown (the owner, 25.11).
+   A price row (.list > .tg): the whole row is the link (its name, stretched over the row), a small arrow at the end. */
+.list > .tg{ position:relative; padding-right:50px; }
+.list > .tg a.t{ text-decoration:none; text-underline-offset:4px; text-decoration-thickness:1px; }
+.list > .tg a.t::after{ content:""; position:absolute; inset:0; z-index:1; border-radius:14px; }
+.list > .tg::after{ content:""; position:absolute; right:0; top:50%; width:34px; height:34px; margin-top:-17px; border-radius:50%; pointer-events:none;
+  background:rgba(11,11,13,.04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230b0b0d' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9.5 6l6 6-6 6'/%3E%3C/svg%3E") 53% 50%/15px no-repeat; box-shadow:0 0 0 1px var(--line) inset; transition:transform .5s var(--e), background-color .35s; }
+.list > .tg:hover::after{ transform:translateX(3px); background-color:rgba(11,11,13,.08); }
+.list > .tg:hover a.t{ text-decoration-line:underline; text-decoration-color:var(--line2); }
+.list > .tg a.t:focus-visible{ outline:none; } .list > .tg a.t:focus-visible::after{ outline:2px solid var(--teal); outline-offset:2px; }
+/* an offer card (the kit's .slip) opens its treatment's page: its title is the link, stretched over the card; the button keeps booking */
+.slip h3 a.tp-go{ color:inherit; text-decoration:none; }
+.slip h3 a.tp-go::after{ content:""; position:absolute; inset:0; z-index:1; border-radius:inherit; }
+.slip.has-tp .btn{ z-index:2; }
+.slip h3 a.tp-go:focus-visible{ outline:none; } .slip h3 a.tp-go:focus-visible::after{ outline:2px solid rgba(239,194,178,.9); outline-offset:-3px; border-radius:var(--r); }
+/* the menu: the main treatments, as small pills under the offers */
+.hx-tp{ display:grid; gap:12px; padding:0 18px; opacity:0; transform:translateY(14px); }
+.menu.open .hx-tp{ opacity:1; transform:none; transition:opacity .6s var(--e) .2s, transform .8s var(--e) .2s; }
+.menu .hx-tp .eye{ margin-bottom:0; }
+.hx-tp > div{ display:flex; flex-wrap:wrap; gap:8px; }
+.menu .hx-tp a{ display:inline-flex; align-items:center; height:42px; padding:0 18px; border-radius:999px; font-size:15px; font-weight:600; letter-spacing:-.015em; color:var(--ink); text-decoration:none;
+  background:rgba(11,11,13,.035); box-shadow:0 0 0 1px var(--line) inset; transition:background-color .35s, color .3s, transform .5s var(--e); }
+.menu .hx-tp a:hover{ background:rgba(11,11,13,.07); }
+.menu .hx-tp a:active{ transform:scale(.97); }
+.menu .hx-tp a[aria-current]{ color:#fff; background:var(--ink); box-shadow:none; }
+@media (max-width:640px){ .hx-tp{ padding:0 14px; } .menu .hx-tp a{ height:40px; padding:0 15px; font-size:14.5px; } }
+/* the footer: a column for the treatments next to the one for the problems */
+@media (min-width:921px){ footer .wrap{ grid-template-columns:1.3fr repeat(4,1fr); gap:32px; } }
+/* results with only one or two cases (the approved set, 21.11): centred and a good size, not a half empty row */
+.cases.few{ justify-content:center; overflow:visible; cursor:default; scroll-snap-type:none; }
+.cases.few .case.ar{ --h:min(400px,34vw); flex:0 1 calc(var(--h) * var(--ar)) !important; width:auto; min-width:0; }
+.cases.few.n1 .case.ar{ --h:min(460px,44vw); }
+.cases.few ~ .wrap .dots{ display:none; }
+@media (max-width:640px){ .cases.few{ flex-direction:column; align-items:center; gap:26px; } .cases.few .case.ar{ flex:none !important; width:100%; } }
+</style>
 <script>/* Christmas on the site (v2/xmas.css, v2/xmas.js): on until XMAS_UNTIL, 7 January 2027 00:00 in Romania; then the site is as before */var XMAS_UNTIL='2027-01-06T22:00:00Z';if(Date.now()<Date.parse(XMAS_UNTIL))document.documentElement.classList.add('xmas');</script>
 <script>
 /* tracking waits for consent (the owner, 7.11): the Meta pixel only queues until „Accept” loads it; Google Consent Mode v2, denied by default */
@@ -51,29 +98,102 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
 
 <header class="top"><div class="bar">
   <a class="brand" href="/" aria-label="Centrul360, acasă"><svg class="mk" viewBox="130 130 550 550" aria-hidden="true" fill="none" stroke="currentColor"><circle class="ring" cx="405" cy="405" r="262" stroke-width="1.6" vector-effect="non-scaling-stroke" pathLength="100"/><ellipse class="ev" cx="405" cy="405" rx="104" ry="207" stroke-width="1.6" vector-effect="non-scaling-stroke"/><ellipse class="eh" cx="405" cy="405" rx="207" ry="113" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg><span class="wm">CENTRUL360<span>.COM</span></span></a>
-  <nav aria-label="Principal"><button type="button" class="nl" data-menu>Tratamente</button><a class="nl" href="/rezultate">Rezultate</a><a class="nl" href="/preturi">Prețuri</a><a class="nl xm-only" href="/oferte">Black Friday</a></nav>
-  <a class="bf-pill xm-pill" href="/card-sarbatori"><svg class="xmi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span>Cardul de Sărbători</span></a>
-  <a class="bf-pill" href="/oferte"><svg class="bfi" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="bfgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe3d9"/><stop offset=".45" stop-color="#eab5a5"/><stop offset="1" stop-color="#cf8f7d"/></linearGradient></defs><path fill="url(#bfgA)" d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="M7.2 6.4a6 6 0 0 1 9.2 1.4" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.1" stroke-linecap="round"/><g fill="#3a1a10"><circle cx="9.3" cy="9.3" r="1.55"/><circle cx="14.7" cy="14.7" r="1.55"/></g><path d="M15.2 8.8 8.8 15.2" stroke="#3a1a10" stroke-width="1.7" stroke-linecap="round"/></svg><span>Black Friday</span></a>
-  <button type="button" class="btn book top-cta" data-book data-book-service="consult">Programează-mă<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  <nav aria-label="Principal"><button type="button" class="nl" data-menu>Tratamente</button><a class="nl" href="/preturi">Prețuri</a><a class="nl hx-card" href="/card-sarbatori"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span>Cardul de Sărbători</span></a></nav>
+  <a class="hx-off" href="/oferte"><span>Oferte</span><b>-50%</b></a>
+  <button type="button" class="hx-cart" data-cart aria-label="Coșul tău"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.2 8.5h13.6l-.9 10.6a2 2 0 0 1-2 1.9H8.1a2 2 0 0 1-2-1.9z"/><path d="M8.8 10.5V7.2a3.2 3.2 0 0 1 6.4 0v3.3"/></svg><i data-hx-n></i></button>
   <button type="button" class="burger" data-menu aria-label="Meniu" aria-expanded="false"><i></i><i></i></button>
 </div></header>
 
 <div class="menu" id="menu" aria-hidden="true">
   <div class="wrap">
     <div class="mh"><a class="brand" href="/"><svg class="mk" viewBox="130 130 550 550" aria-hidden="true" fill="none" stroke="currentColor"><circle class="ring" cx="405" cy="405" r="262" stroke-width="1.6" vector-effect="non-scaling-stroke" pathLength="100"/><ellipse class="ev" cx="405" cy="405" rx="104" ry="207" stroke-width="1.6" vector-effect="non-scaling-stroke"/><ellipse class="eh" cx="405" cy="405" rx="207" ry="113" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg><span class="wm">CENTRUL360<span>.COM</span></span></a><button type="button" class="mx" data-menu-close aria-label="Închide meniul"><i></i><i></i></button></div>
-    <a class="bf-pill bf-menu xm-pill" href="/card-sarbatori" data-menu-close><svg class="xmi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span>Cardul de Sărbători · de la 490 lei</span></a>
-    <a class="bf-pill bf-menu" href="/oferte" data-menu-close><svg class="bfi" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="bfgC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe3d9"/><stop offset=".45" stop-color="#eab5a5"/><stop offset="1" stop-color="#cf8f7d"/></linearGradient></defs><path fill="url(#bfgC)" d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="M7.2 6.4a6 6 0 0 1 9.2 1.4" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.1" stroke-linecap="round"/><g fill="#3a1a10"><circle cx="9.3" cy="9.3" r="1.55"/><circle cx="14.7" cy="14.7" r="1.55"/></g><path d="M15.2 8.8 8.8 15.2" stroke="#3a1a10" stroke-width="1.7" stroke-linecap="round"/></svg><span>Ofertele de Black Friday</span></a>
+    <div class="hx-mp">
+      <a class="hx-mo" href="/oferte" data-menu-close><span class="hx-mo-t"><small>Black Friday</small><b>Toate ofertele</b></span><b class="hx-50">-50%</b></a>
+      <a class="hx-mc" href="/card-sarbatori" data-menu-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span><b>Cardul de Sărbători</b><small>de la 490 lei</small></span><svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="hx-tp"><span class="eye">Tratamente</span><div><a href="/tratament-liposonix">Liposonix</a><a href="/tratament-hifu">HIFU</a><a href="/tratament-ems">EMS</a><a href="/tratament-cavitatie">40K Slim</a><a href="/epilare-laser">Epilare laser · Elysion Pro</a><a href="/tratament-biolifting">BioLifting</a><a href="/tratament-restart">Restart</a></div></div>
     <div class="mg">
       <div><span class="eye">Corp</span><a href="/grasime-localizata">Grăsime localizată</a><a href="/celulita">Celulită</a><a href="/tonifiere-musculara">Tonifiere musculară</a><a href="/detox-drenaj">Detox și drenaj</a></div>
-      <div><span class="eye">Față</span><a href="/riduri-linii-fine">Riduri și lifting</a><a href="/gusa-barbie-dubla">Gușă și bărbie dublă</a><a href="/pete-pigmentare">Pete și pigmentare</a><a href="/ten-problematic">Ten problematic</a><a href="/ten-lipsit-de-stralucire">Ten fără strălucire</a></div>
-      <div><span class="eye">Epilare</span><a href="/epilare-laser">Epilare laser</a><span class="eye" style="margin-top:28px">Clinica</span><a href="/card-sarbatori">Cardul de Sărbători</a><a href="/oferte">Oferte Black Friday</a><a href="/preturi">Prețuri</a><a href="/rezultate">Rezultate</a><a href="/timisoara">Timișoara</a><a href="/arad">Arad</a></div>
+      <div><span class="eye">Față</span><a href="/riduri-linii-fine">Riduri și lifting</a><a href="/gusa-barbie-dubla">Gușă și bărbie dublă</a><a href="/ten-problematic">Ten problematic</a><a href="/ten-lipsit-de-stralucire">Ten fără strălucire</a></div>
+      <div><span class="eye">Epilare</span><a href="/epilare-laser">Epilare laser · Elysion Pro</a><span class="eye" style="margin-top:28px">Clinica</span><a href="/preturi">Prețuri</a><a href="/echipa">Despre noi</a></div>
     </div>
-    <button type="button" class="btn book" data-book data-book-service="consult" data-menu-close>Programează consultația gratuită<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    <a class="btn book gold hx-mcta" href="/oferte" data-menu-close>Vezi ofertele -50%<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
   </div>
 </div>
 
+<script>/* the header (v2/head.css), on every page: the cart's count (the shop keeps the cart on this device), dark glass over a dark
+   first screen ([data-dark]), the menu grows from the button that opened it; the cart opens the shop's sheet (v2/shop.js, loaded
+   when a page does not have it). */
+(function () {
+  var B = /^\/v2\//.test(location.pathname) ? '/v2/' : '/', top = document.querySelector('.top'), menu = document.getElementById('menu');
+  var count = function () { try { var k = JSON.parse(localStorage.getItem('c360-shop3') || 'null'); return k && Array.isArray(k.cart) ? k.cart.length : 0; } catch (e) { return 0; } };
+  var n = count();
+  [].forEach.call(document.querySelectorAll('.hx-cart'), function (b) { b.classList.toggle('has', n > 0); b.querySelector('i').textContent = n || ''; });
+  document.addEventListener('click', function (e) {
+    var m = e.target.closest && e.target.closest('[data-menu]');
+    if (m && menu) { var r = m.getBoundingClientRect(); menu.style.setProperty('--ox', (r.left + r.width / 2) + 'px'); menu.style.setProperty('--oy', (r.top + r.height / 2) + 'px'); }
+    var c = e.target.closest && e.target.closest('.hx-cart');
+    if (!c || window.C360Shop) return;
+    c.setAttribute('aria-busy', 'true');
+    if (!document.querySelector('link[href="/v2/shop.css"]')) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/v2/shop.css'; document.head.appendChild(l); }
+    var s = document.createElement('script'); s.src = '/v2/shop.js'; s.onload = function () { c.removeAttribute('aria-busy'); if (window.C360Shop) window.C360Shop.open(c); }; document.head.appendChild(s);
+  }, true);
+  // the Card de Sărbători (its page, v2/cs-buy.js): the card into the cart and the cart open, like every other product (the owner,
+  // 25.11); the shop loaded when the page does not have it
+  var shopP = null;
+  window.C360AddCard = function (tier, city, from) {
+    if (city && typeof city === 'object') { from = city.from; city = city.city; } // (tier, { city, from }) as v2/cs-buy.js calls it
+    if (!shopP) shopP = window.C360Shop ? Promise.resolve(window.C360Shop) : new Promise(function (ok, no) {
+      if (!document.querySelector('link[href="/v2/shop.css"]')) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/v2/shop.css'; document.head.appendChild(l); }
+      var s = document.createElement('script'); s.src = '/v2/shop.js'; s.onload = function () { if (window.C360Shop) ok(window.C360Shop); else no(new Error('shop')); }; s.onerror = function () { shopP = null; no(new Error('shop')); }; document.head.appendChild(s);
+    });
+    return shopP.then(function (S) { return S.addCard(tier, city, from); });
+  };
+  var darks = [], busy = false;
+  var paint = function () {
+    busy = false; if (!top) return;
+    var y = top.getBoundingClientRect().top + 30, dk = false;
+    for (var i = 0; i < darks.length; i++) { var r = darks[i].getBoundingClientRect(); if (r.top <= y && r.bottom - (parseFloat(darks[i].getAttribute('data-dark')) || 0) > y) { dk = true; break; } }
+    top.classList.toggle('dk', dk);
+  };
+  var on = function () { if (!busy) { busy = true; requestAnimationFrame(paint); } };
+  var init = function () { darks = [].slice.call(document.querySelectorAll('[data-dark]')); if (darks.length) { paint(); addEventListener('scroll', on, { passive: true }); addEventListener('resize', on); } };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();</script>
+
+<script>/* an offer card (the kit's .slip, in .offers, live from Admin or written in the page) leads to its treatment's own page
+   (tratament-<id>, the owner, 25.11): its title becomes the link, stretched over the card (the shell's style); the button
+   still books the offer. The treatment is found from the offer's key, label and title; a card with no page stays as it is. */
+(function () {
+  var B = /^\/v2\//.test(location.pathname) ? '/v2/' : '/';
+  var MAP = [[/hifu.*full.?face|full.?face.*hifu/i, 'hifu-full-face'], [/hifu.*(corp|abdomen|bra[tț]|coaps|lombar|talie)/i, 'hifu-corp'], [/hifu/i, 'hifu'],
+    [/biolifting.*full.?face/i, 'biolifting-full-face'], [/biolifting/i, 'biolifting'],
+    [/liposonix|mini.?belly/i, 'liposonix'], [/cavita|40k\s*slim/i, 'cavitatie'], [/\bems\b/i, 'ems'], [/radiofrecv|red\s*sculpt/i, 'radiofrecventa'], [/restart/i, 'restart'],
+    [/hidrat/i, 'hidratare'], [/periocular/i, 'periocular'], [/microneedl|exozom|pdrn/i, 'microneedling'], [/antirid/i, 'antirid'], [/redness/i, 'redness'],
+    [/sebum/i, 'sebum-off'], [/masaj.?facial/i, 'masaj-facial'], [/[iî]mpachet/i, 'impachetare'], [/epil|laser|full.?body/i, 'epilare']];
+  var idOf = function (t) { for (var i = 0; i < MAP.length; i++) if (MAP[i][0].test(t)) return MAP[i][1]; return ''; };
+  var link = function (box) {
+    [].forEach.call(box.querySelectorAll('.slip:not(.bfc):not([data-href]):not([data-tp])'), function (el) {
+      el.setAttribute('data-tp', '');
+      var h = el.querySelector('h3'), b = el.querySelector('[data-book]');
+      if (!h || h.querySelector('a')) return;
+      var id = idOf([b ? b.getAttribute('data-book-service') : '', b ? b.getAttribute('data-book-label') : '', h.textContent].join(' '));
+      if (!id) return;
+      var a = document.createElement('a'); a.className = 'tp-go'; a.href = B + 'tratament-' + id;
+      while (h.firstChild) a.appendChild(h.firstChild);
+      h.appendChild(a); el.classList.add('has-tp');
+    });
+  };
+  var init = function () {
+    [].forEach.call(document.querySelectorAll('.offers'), function (box) {
+      link(box);
+      if ('MutationObserver' in window) new MutationObserver(function () { link(box); }).observe(box, { childList: true });
+    });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();</script>
+
 <main>
-<button type="button" class="xm-band" data-cs-buy><svg class="xmi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span class="xm-l">Cardul de Sărbători: <b>plătești 990 lei</b>, primești 2.500 lei în tratamente</span><span class="xm-s"><b>Plătești 990 lei</b>, primești 2.500 lei</span><svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
 <style>
 /* ---- the link in bio (the owner, 21.11): who comes from a reel or a story sees in 3 seconds what she can do here, and
    does it in one tap. The four ways, the biggest first; the topic of the reel she came from (?din=) on top. */
@@ -162,9 +282,10 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
 </main>
 
 <footer><div class="wrap">
-  <div><a class="brand" href="/"><svg class="mk" viewBox="130 130 550 550" aria-hidden="true" fill="none" stroke="currentColor"><circle class="ring" cx="405" cy="405" r="262" stroke-width="1.6" vector-effect="non-scaling-stroke" pathLength="100"/><ellipse class="ev" cx="405" cy="405" rx="104" ry="207" stroke-width="1.6" vector-effect="non-scaling-stroke"/><ellipse class="eh" cx="405" cy="405" rx="207" ry="113" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg><span class="wm">CENTRUL360<span>.COM</span></span></a><p>Medicină estetică non-invazivă, în Timișoara și Arad. Consultația e gratuită.</p>
+  <div><a class="brand" href="/"><svg class="mk" viewBox="130 130 550 550" aria-hidden="true" fill="none" stroke="currentColor"><circle class="ring" cx="405" cy="405" r="262" stroke-width="1.6" vector-effect="non-scaling-stroke" pathLength="100"/><ellipse class="ev" cx="405" cy="405" rx="104" ry="207" stroke-width="1.6" vector-effect="non-scaling-stroke"/><ellipse class="eh" cx="405" cy="405" rx="207" ry="113" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg><span class="wm">CENTRUL360<span>.COM</span></span></a><p>Medicină estetică non-invazivă, în Timișoara și Arad.</p>
     <div class="soc"><a href="https://instagram.com/centrul360" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1" fill="currentColor" stroke="none"/></svg></a><a href="https://tiktok.com/@centrul360" target="_blank" rel="noopener" aria-label="TikTok"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 3c.3 2.1 1.6 3.6 3.7 3.9v2.6c-1.3.1-2.6-.3-3.7-1v6.1c0 3.2-2.4 5.4-5.3 5.4A5.2 5.2 0 0 1 5.5 14c.1-2.7 2.3-4.9 5-4.9.3 0 .6 0 .9.1v2.7c-.3-.1-.6-.2-.9-.2-1.3 0-2.4 1.1-2.4 2.4 0 1.4 1.1 2.4 2.4 2.4 1.4 0 2.5-1.1 2.5-2.6V3H16z"/></svg></a><a href="https://facebook.com/centrul360" target="_blank" rel="noopener" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9h2.5V6H14c-2 0-3.3 1.3-3.3 3.3V11H8.5v3h2.2v7h3v-7h2.3l.5-3h-2.8V9.8c0-.5.3-.8.9-.8z"/></svg></a></div></div>
-  <div class="lk"><b>Tratamente</b><a href="/grasime-localizata">Grăsime localizată</a><a href="/celulita">Celulită</a><a href="/tonifiere-musculara">Tonifiere musculară</a><a href="/riduri-linii-fine">Riduri și lifting</a><a href="/gusa-barbie-dubla">Gușă și bărbie dublă</a><a href="/epilare-laser">Epilare laser</a></div>
+  <div class="lk"><b>Ce rezolvăm</b><a href="/grasime-localizata">Grăsime localizată</a><a href="/celulita">Celulită</a><a href="/tonifiere-musculara">Tonifiere musculară</a><a href="/riduri-linii-fine">Riduri și lifting</a><a href="/gusa-barbie-dubla">Gușă și bărbie dublă</a><a href="/epilare-laser">Epilare laser</a></div>
+  <div class="lk"><b>Tratamente</b><a href="/tratament-liposonix">Liposonix</a><a href="/tratament-hifu">HIFU</a><a href="/tratament-ems">EMS</a><a href="/tratament-cavitatie">40K Slim</a><a href="/epilare-laser">Epilare laser · Elysion Pro</a><a href="/tratament-biolifting">BioLifting</a><a href="/tratament-restart">Restart</a></div>
   <div class="lk"><b>Timișoara</b><span>Str. Bucegi 7</span><a href="tel:+40750452002">0750 452 002</a><b style="margin-top:18px">Arad</b><span>Str. Ioan Alexandru <span class="nw">16-18</span></span><a href="tel:+40750277394">0750 277 394</a></div>
   <div class="lk"><b>Clinica</b><a href="/card-sarbatori">Cardul de Sărbători</a><a href="/oferte">Oferte</a><a href="/preturi">Prețuri</a><a href="/rezultate">Rezultate</a><a href="/echipa">Echipa</a><a href="/programare">Programare online</a></div>
 </div>
@@ -183,10 +304,45 @@ var v=get();if(v==='y')yes();else if(!v)show();
 b.addEventListener('click',function(e){var t=e.target.closest('[data-ck]');if(!t)return;var y=t.getAttribute('data-ck')==='y';try{localStorage.setItem(K,JSON.stringify({v:y?'y':'n',at:Date.now()}))}catch(x){}b.classList.remove('in');document.body.classList.remove('ck-open');setTimeout(function(){b.hidden=true},600);if(y)yes();else{window.C360_CONSENT=false;c('denied')}});
 document.addEventListener('click',function(e){if(e.target.closest('[data-cookies]')){e.preventDefault();show()}})})();</script>
 <script src="/v2/kit.js" defer></script>
+<script>/* the rows that slide sideways (reviews, results, offers, the cart's rails) get two round arrows on their sides (the owner,
+   25.11: „fă niște săgeți, doamnele nu o să știe să dea slide”); an arrow shows only where there is more to see. The cart calls
+   C360Arrows(itself) after it draws its rails. */
+(function () {
+  var SEL = ".revs, .tp-cases, .shop-ng, .sh-rail, .ech-gal";
+  var ic = function (d) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + d + '"/></svg>'; };
+  function one(row) {
+    if (row.__hs || !row.parentNode) return;
+    row.__hs = 1;
+    var box = document.createElement("div"); box.className = "hs";
+    row.parentNode.insertBefore(box, row); box.appendChild(row);
+    var p = document.createElement("button"), n = document.createElement("button");
+    p.type = n.type = "button"; p.className = "hs-b p"; n.className = "hs-b n";
+    p.setAttribute("aria-label", "Înapoi"); n.setAttribute("aria-label", "Mai departe");
+    p.innerHTML = ic("M15 18l-6-6 6-6"); n.innerHTML = ic("M9 6l6 6-6 6");
+    box.appendChild(p); box.appendChild(n);
+    var step = function (d) { row.scrollBy({ left: d * Math.max(200, row.clientWidth * 0.8), behavior: "smooth" }); };
+    p.addEventListener("click", function () { step(-1); }); n.addEventListener("click", function () { step(1); });
+    var upd = function () {
+      var max = row.scrollWidth - row.clientWidth, img = row.querySelector("img");
+      p.hidden = max < 12 || row.scrollLeft < 8; n.hidden = max < 12 || row.scrollLeft > max - 8;
+      if (img && img.offsetHeight) { var b = box.getBoundingClientRect(), r = img.getBoundingClientRect(); box.style.setProperty("--hs-top", Math.round(r.top - b.top + r.height / 2) + "px"); }
+    };
+    row.addEventListener("scroll", upd, { passive: true }); addEventListener("resize", upd);
+    row.addEventListener("load", upd, true); upd(); setTimeout(upd, 700);
+  }
+  window.C360Arrows = function (root) { [].forEach.call((root || document).querySelectorAll(SEL), one); };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { window.C360Arrows(); }); else window.C360Arrows();
+})();</script>
 <script src="/v2/xmas.js" defer></script>
 <script src="/v2/cs-buy.js" defer></script>
 <script src="/v2/lf.js" defer></script>
-<script>/* the before/after pictures in the moving rows load at once (lazy ones never started on phones) */addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.cases img').forEach(function(i){i.loading='eager'});/* an offer's title never starts a line with its dot (Epilare laser · Full Body) */var nb=function(){document.querySelectorAll('.slip h3').forEach(function(h){if(h.textContent.indexOf(' · ')>-1)h.textContent=h.textContent.split(' · ').join(' · ')})};nb();document.querySelectorAll('.offers').forEach(function(o){new MutationObserver(nb).observe(o,{childList:true})})});</script>
+<script>/* the before/after pictures in the moving rows load all at once (lazy ones never started on phones), but only after the page
+   has loaded, when the row comes near: the first screen comes first (speed, 25.11); a row's pictures can wait in data-src (the
+   home page's and the treatments' pages', so none of them starts before); a film's poster (video[data-poster]) the same way */
+(function(){var near=function(el,fn){if(!('IntersectionObserver' in window))return fn();var io=new IntersectionObserver(function(es){if(es.some(function(e){return e.isIntersecting})){io.disconnect();fn()}},{rootMargin:'0px 0px 1000px 0px'});io.observe(el)};
+var go=function(){document.querySelectorAll('.cases, .tp-cases').forEach(function(c){near(c,function(){c.querySelectorAll('img').forEach(function(i){i.loading='eager';if(i.getAttribute('data-src')){i.src=i.getAttribute('data-src');i.removeAttribute('data-src')}})})});document.querySelectorAll('video[data-poster]').forEach(function(v){near(v,function(){v.poster=v.getAttribute('data-poster')})})};
+if(document.readyState==='complete')setTimeout(go,0);else addEventListener('load',function(){setTimeout(go,0)})})();
+addEventListener('DOMContentLoaded',function(){/* an offer's title never starts a line with its dot (Epilare laser · Full Body) */var nb=function(){document.querySelectorAll('.slip h3').forEach(function(h){if(h.textContent.indexOf(' · ')>-1)h.textContent=h.textContent.split(' · ').join(' · ')})};nb();document.querySelectorAll('.offers').forEach(function(o){new MutationObserver(nb).observe(o,{childList:true})})});</script>
 <script src="/site-pulse.js" defer></script>
 <script src="/c360-book.js" defer></script>
 </body>

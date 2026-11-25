@@ -38,7 +38,7 @@
   if (window.C360Shop) return;
   var KEY = 'c360-shop3';
   var BASE = /^\/v2\//.test(location.pathname) ? '/v2/' : '/';
-  var OFFERS = BASE + (BASE === '/v2/' ? 'oferte-bf' : 'oferte');
+  var OFFERS = BASE + 'oferte';
   var END0 = '2026-11-27T21:59:59.000Z'; // the server's end (api/_lib/shop.js BF.end); the timer starts with it, the server's word replaces it
   var ADDR = { 'Timișoara': 'Str. Bucegi 7, Timișoara', Arad: 'Str. Ioan Alexandru 16-18, Arad' };
   var MAPS = { 'Timișoara': 'https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Bucegi%207%20Timisoara', Arad: 'https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Ioan%20Alexandru%2016-18%20Arad' };
@@ -446,6 +446,9 @@
   function offers() {
     var el = $('[data-bfo]');
     if (!el || !D) return;
+    // nothing to sell under a filter (laser epilation, not sold for now, 25.11): no such filter
+    FILTERS = FILTERS.filter(function (f) { return f[0] !== 'epilare' || D.products.some(function (p) { return p.need === 'epilare'; }); });
+    if (F.k === 'epilare' && !FILTERS.some(function (f) { return f[0] === 'epilare'; })) F.k = 'all';
     var h = (location.hash || '').slice(1);
     if (FILTERS.some(function (f) { return f[0] === h; })) F.k = h;
     // the clinic is hers (kept, or ?oras=); the order is kept for this visit (back from a treatment, it is as she left it)

@@ -101,10 +101,6 @@ def build(name):
     out = late(out) if SHOP_MARK.search(body) else LATE.sub(lambda m: m.group(1), out)
     if '—' in out or '–' in out: sys.exit(name + ': a long dash slipped in')
     os.makedirs(OUT, exist_ok=True)
-    # the preview (/v2): until the swap, the shop's new pages are home-bf and oferte-bf, so every link to the homepage and to the
-    # offers goes there (the owner, 25.11: „dă link la butoane cu cele corecte”); the live build (V2_BASE='/') is not touched
-    if BASE == '/v2/':
-        out = out.replace('href="/v2/oferte"', 'href="/v2/oferte-bf"').replace('href="/v2/oferte#', 'href="/v2/oferte-bf#').replace('href="/v2/"', 'href="/v2/home-bf"')
     open(os.path.join(OUT, path + '.html'), 'w', encoding='utf-8').write(out)
     print('built', path + '.html')
 
