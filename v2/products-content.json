@@ -1,57 +1,102 @@
 [
  {
   "id": "liposonix",
-  "title": "Liposonix",
-  "lead": "Ultrasunete focalizate care distrug celulele de grăsime din zonele tratate: remodelare corporală fără recuperare.",
-  "problems": [
-   "Grăsime localizată rezistentă la dietă",
-   "Abdomenul de jos, „colăceii”, interiorul coapselor",
-   "Depozite mici sau medii de grăsime pe abdomen, șolduri, coapse sau brațe",
-   "Zona nu cedează, deși mănânci atent și faci mișcare"
+  "name": "Liposonix",
+  "need": "corp",
+  "kind": "Corp · grăsime localizată",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "Ultrasunete care țintesc doar grăsimea. Pielea rămâne neatinsă. Celulele de grăsime din zona tratată sunt distruse, iar corpul le elimină singur, în săptămânile următoare.",
-   "steps": [
-    "Prima vizită, gratuită: evaluăm zona și obiectivul, măsurăm și alegem combinația potrivită.",
-    "Ședința: simți căldură și o presiune ușoară. Te întorci imediat la ce aveai de făcut.",
-    "La 6-8 săptămâni diferența se vede: reducere vizibilă în zona tratată, în majoritatea cazurilor. La reevaluare măsurăm din nou."
-   ],
-   "explainerFrom": "grasime-localizata.html"
-  },
-  "session": {
-   "minutes": 45,
-   "feel": "Simți căldură și o presiune ușoară. Nu necesită recuperare; îți poți relua activitățile imediat.",
-   "sessions": "O ședință; la reevaluare stabilim împreună dacă mai e nevoie de una."
-  },
   "zones": [
    "Abdomen",
-   "Șolduri",
-   "Brațe",
+   "Flancuri",
    "Coapse",
+   "Brațe",
    "Zona lombară"
+  ],
+  "sess": [
+   1,
+   2,
+   3
+  ],
+  "minutes": 45,
+  "full": 640,
+  "promise": "Pentru grăsimea care nu cedează la dietă și sport.",
+  "bullets": [
+   "Distruge celulele de grăsime din zona tratată",
+   "Fără ace, fără operație, fără recuperare",
+   "O ședință de 45 de minute"
+  ],
+  "tiles": [
+   {
+    "icon": "target",
+    "t": "Țintește doar grăsimea",
+    "s": "Ultrasunetele trec prin piele fără să o afecteze."
+   },
+   {
+    "icon": "cells",
+    "t": "Distruge celulele de grăsime",
+    "s": "Doar în zona tratată. Pielea rămâne neatinsă."
+   },
+   {
+    "icon": "flow",
+    "t": "Corpul le elimină singur",
+    "s": "Natural, în săptămânile de după ședință."
+   }
   ],
   "results": [
    {
-    "src": "/brand_asset/ba-liposonix-premium.webp",
-    "zone": "Abdomen",
-    "caption": "Liposonix"
-   },
-   {
+    "case": "05",
     "src": "/brand_asset/catalog/cazul-05-liposonix-solduri.webp",
-    "zone": "Șolduri",
-    "caption": "Liposonix · Timișoara · 1 ședință"
+    "w": 1400,
+    "h": 944,
+    "title": "Liposonix șolduri",
+    "sub": "Timișoara · 1 ședință"
    },
    {
-    "src": "/brand_asset/catalog/cazul-20-liposonix-abdomen-tm-2.webp",
-    "zone": "Abdomen",
-    "caption": "Liposonix · Timișoara · 1 ședință"
-   },
-   {
-    "src": "/brand_asset/catalog/cazul-14-liposonix-abdomen-total-arad.webp",
-    "zone": "Abdomen",
-    "caption": "Liposonix abdomen total · Arad · 1 ședință"
+    "case": "08",
+    "src": "/brand_asset/catalog/cazul-08-pachet-mini-belly.webp",
+    "w": 1287,
+    "h": 1400,
+    "title": "Liposonix + EMS, abdomen",
+    "sub": "Timișoara · 1 ședință Liposonix + 4 EMS"
    }
   ],
+  "resultsNote": "Rezultatele diferă de la o persoană la alta, în funcție de zonă, metabolism și stil de viață.",
+  "how": {
+   "h": "Ultrasunete care țintesc <em>doar grăsimea.</em>",
+   "text": "Pielea rămâne neatinsă. Celulele de grăsime din zona tratată sunt distruse, iar corpul le elimină singur, în săptămânile următoare.",
+   "steps": [
+    {
+     "b": "Ultrasunetele",
+     "t": "trec prin piele fără să o afecteze"
+    },
+    {
+     "b": "Celulele de grăsime",
+     "t": "din zona țintită sunt distruse"
+    },
+    {
+     "b": "Corpul",
+     "t": "le elimină natural, în săptămânile următoare"
+    }
+   ],
+   "anim": "liposonix"
+  },
+  "video": {
+   "src": "/brand_asset/vsl/grasime-localizata-169.mp4",
+   "poster": "/brand_asset/vsl/grasime-localizata-169.webp",
+   "title": "De ce nu pleacă și cum o tratăm.",
+   "sub": "Video · 88 de secunde, cu Nuki",
+   "ratio": "16/9"
+  },
+  "map": "body",
+  "voice": [
+   "Mănânci atent și faci mișcare, dar zona nu cedează.",
+   "Slăbești peste tot, iar abdomenul de jos rămâne.",
+   "Vrei un rezultat fără operație, fără anestezie, fără recuperare."
+  ],
+  "why": "Abdomenul de jos, „colăceii”, interiorul coapselor: acolo grăsimea rezistă la dietă și sport, din motive genetice și hormonale. Nu e vina ta.",
   "fit": {
    "yes": [
     "ai depozite mici sau medii de grăsime pe abdomen, șolduri, coapse sau brațe",
@@ -63,6 +108,12 @@
     "ești însărcinată sau alăptezi",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Căldură și o presiune ușoară.",
+   "recovery": "Fără recuperare. Îți reiei activitățile imediat.",
+   "sessions": "O ședință. La reevaluare stabilim împreună dacă mai e nevoie de una.",
+   "when": "Reducere vizibilă în general la 6-8 săptămâni, în majoritatea cazurilor."
   },
   "faq": [
    {
@@ -86,41 +137,97 @@
     "a": "Celulele de grăsime distruse nu revin, dar cele rămase se pot mări dacă iei în greutate. Cu un stil de viață echilibrat, rezultatul se menține pe termen lung."
    }
   ],
+  "pairs": [
+   {
+    "id": "ems",
+    "why": "Grăsimea pleacă, mușchiul de sub ea se tonifiază"
+   },
+   {
+    "id": "radiofrecventa",
+    "why": "Strânge pielea după ce scade grăsimea"
+   },
+   {
+    "id": "cavitatie",
+    "why": "Lucrează și pe celelalte depozite"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/grasime-localizata.html",
-   "v2/src/catalog-rezultate.html"
-  ]
+   "v2/src/home-bf.html"
+  ],
+  "mapZones": []
  },
  {
   "id": "cavitatie",
-  "title": "Cavitație",
-  "lead": "Ultrasunete de joasă frecvență pentru reducerea grăsimii localizate și remodelarea siluetei, fără durere, fără recuperare.",
-  "problems": [
-   "Grăsime localizată pe abdomen, brațe, coapse",
-   "Remodelarea siluetei",
-   "Celulită: cavitația lucrează pe depozitele de grăsime, în plan combinat cu radiofrecvența"
+  "name": "Cavitație",
+  "need": "corp",
+  "kind": "Corp · grăsime localizată",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "Celulita nu e doar grăsime. Radiofrecvența stimulează colagenul și fermitatea, cavitația lucrează pe depozitele de grăsime, iar drenajul elimină lichidele.",
-   "steps": [
-    "Prima vizită, gratuită: evaluăm zona și obiectivul, măsurăm și alegem combinația potrivită.",
-    "Ședința: simți căldură și o presiune ușoară. Te întorci imediat la ce aveai de făcut.",
-    "În săptămânile următoare corpul elimină treptat grăsimea din zona tratată; la reevaluare măsurăm din nou."
-   ],
-   "explainerFrom": "celulita.html"
-  },
-  "session": {
-   "minutes": 60,
-   "feel": "Proceduri non-invazive, bine tolerate: căldură și o senzație de presiune. Nu necesită recuperare; îți poți relua activitățile imediat.",
-   "sessions": "O cură de cavitație; combinația și numărul exact le stabilim la consultația gratuită."
-  },
   "zones": [
    "Abdomen",
-   "Brațe",
-   "Coapse"
+   "Coapse",
+   "Brațe"
+  ],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 60,
+  "full": 280,
+  "promise": "Remodelează silueta, fără durere și fără recuperare.",
+  "bullets": [
+   "Reduce grăsimea localizată",
+   "Fără durere, fără ace, fără recuperare",
+   "O ședință de 60 de minute"
+  ],
+  "tiles": [
+   {
+    "icon": "wave",
+    "t": "Unde de joasă frecvență",
+    "s": "Ultrasunete care ajung până în stratul de grăsime."
+   },
+   {
+    "icon": "cells",
+    "t": "Lucrează pe depozite",
+    "s": "Pe grăsimea localizată de pe abdomen, brațe sau coapse."
+   },
+   {
+    "icon": "flow",
+    "t": "Silueta, remodelată",
+    "s": "Corpul elimină treptat grăsimea din zona tratată."
+   }
   ],
   "results": [],
+  "how": {
+   "h": "Unde blânde, <em>pe depozitele de grăsime.</em>",
+   "text": "Cavitația folosește ultrasunete de joasă frecvență, pentru reducerea grăsimii localizate și remodelarea siluetei. Lucrează pe depozitele de grăsime, iar corpul elimină treptat grăsimea din zona tratată.",
+   "steps": [
+    {
+     "b": "Undele de joasă frecvență",
+     "t": "ajung în stratul de grăsime"
+    },
+    {
+     "b": "Depozitele de grăsime",
+     "t": "din zona tratată sunt lucrate"
+    },
+    {
+     "b": "Corpul",
+     "t": "elimină treptat grăsimea, în săptămânile următoare"
+    }
+   ],
+   "anim": "cavitatie"
+  },
+  "map": "body",
+  "voice": [
+   "Ai grăsime pe abdomen, brațe sau coapse care nu pleacă.",
+   "Vrei o siluetă mai definită, fără durere.",
+   "Nu vrei ace și nici zile de recuperare."
+  ],
   "fit": {
    "yes": [
     "ai depozite mici sau medii de grăsime pe abdomen, șolduri, coapse sau brațe",
@@ -132,6 +239,12 @@
     "ești însărcinată sau alăptezi",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Căldură și o senzație de presiune. E bine tolerată.",
+   "recovery": "Fără recuperare. Îți reiei activitățile imediat.",
+   "sessions": "O cură de cavitație. Numărul exact îl stabilim la consultația gratuită.",
+   "when": "Corpul elimină treptat grăsimea în săptămânile următoare. La reevaluare măsurăm din nou."
   },
   "faq": [
    {
@@ -147,68 +260,114 @@
     "a": "Radiofrecvența și cavitația sunt disponibile la ambele clinici. EMS și împachetarea la cald sunt disponibile doar la Timișoara. Construim planul în funcție de locația ta."
    }
   ],
+  "pairs": [
+   {
+    "id": "ems",
+    "why": "Mai puțină grăsime, mușchi mai definit"
+   },
+   {
+    "id": "radiofrecventa",
+    "why": "Pielea rămâne fermă"
+   },
+   {
+    "id": "liposonix",
+    "why": "Pentru grăsimea cea mai încăpățânată"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/grasime-localizata.html",
    "v2/src/celulita.html"
-  ]
+  ],
+  "video": null,
+  "mapZones": []
  },
  {
   "id": "ems",
-  "title": "Electrostimulare Magnetică (EMS)",
-  "lead": "Contracții musculare intense și controlate: tonifiere, fermitate și definirea zonelor corporale. Doar în Timișoara.",
-  "problems": [
-   "Mușchi lipsiți de fermitate",
-   "Siluetă nedefinită, fără ore la sală",
-   "Tonifierea abdomenului, brațelor, coapselor sau feselor",
-   "Accentuarea rezultatului după remodelarea corporală"
+  "name": "EMS",
+  "need": "corp",
+  "kind": "Corp · tonifiere",
+  "cities": [
+   "Timișoara"
   ],
-  "how": {
-   "text": "Electrostimularea magnetică trimite impulsuri care fac mușchiul să se contracte mult mai intens și mai des decât la antrenamentul clasic: până la 20.000 de contracții într-o ședință. Câmpul magnetic trece prin piele până la mușchi.",
-   "steps": [
-    "Prima vizită, gratuită: alegem zonele și numărul de ședințe în funcție de obiectivul tău de tonifiere.",
-    "Ședința: contracții intense, dar nedureroase, în timp ce stai întinsă. Intensitatea crește treptat, în confortul tău.",
-    "Cura: 2 ședințe pe săptămână, 6-8 ședințe, apoi întreținere la 2-4 săptămâni."
-   ],
-   "explainerFrom": "tonifiere-musculara.html"
-  },
-  "session": {
-   "minutes": 30,
-   "feel": "Contracții musculare intense, dar nedureroase, ca un antrenament foarte concentrat, în timp ce stai întinsă. Intensitatea crește treptat, în confortul tău.",
-   "sessions": "O cură de 6-8 ședințe, 2 pe săptămână la început, apoi o ședință de întreținere la 2-4 săptămâni."
-  },
   "zones": [
    "Abdomen",
-   "Brațe",
    "Coapse",
-   "Fese"
+   "Brațe"
+  ],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 30,
+  "full": 250,
+  "promise": "20.000 de contracții. Zero efort.",
+  "bullets": [
+   "Până la 20.000 de contracții într-o ședință",
+   "Tonifiază mușchii fără efort și fără transpirație",
+   "30 de minute, stai întinsă și relaxată"
+  ],
+  "tiles": [
+   {
+    "icon": "magnet",
+    "t": "Trece prin piele",
+    "s": "Câmpul magnetic ajunge direct la mușchi."
+   },
+   {
+    "icon": "bolt",
+    "t": "Contracții intense",
+    "s": "Mult mai dese decât la antrenamentul clasic."
+   },
+   {
+    "icon": "muscle",
+    "t": "Mușchi mai fermi",
+    "s": "O siluetă mai definită, fără ore la sală."
+   }
   ],
   "results": [
    {
-    "src": "/brand_asset/catalog/cazul-17-pachet-mini-belly-2.webp",
-    "zone": "Abdomen",
-    "caption": "Liposonix + 4 EMS · Timișoara"
-   },
-   {
-    "src": "/brand_asset/catalog/cazul-25-liposonix-ems-tm-2.webp",
-    "zone": "Abdomen",
-    "caption": "Liposonix + EMS · Timișoara"
-   },
-   {
+    "case": "08",
     "src": "/brand_asset/catalog/cazul-08-pachet-mini-belly.webp",
-    "zone": "Abdomen",
-    "caption": "Liposonix + 4 EMS · Timișoara"
-   },
-   {
-    "src": "/brand_asset/catalog/cazul-13-liposonix-ems.webp",
-    "zone": "Abdomen",
-    "caption": "Liposonix + 1 EMS · Timișoara"
+    "w": 1287,
+    "h": 1400,
+    "title": "Liposonix + EMS, abdomen",
+    "sub": "Timișoara · 1 ședință Liposonix + 4 EMS"
    }
   ],
+  "resultsH": "Rezultat real, <em>în combinație cu Liposonix.</em>",
+  "resultsLead": "EMS combinat cu Liposonix, în același program, la o clientă din Timișoara.",
+  "resultsNote": "Rezultatele diferă de la o persoană la alta, în funcție de masa musculară inițială, alimentație și activitatea fizică.",
+  "how": {
+   "h": "Mușchii lucrează intens, <em>fără să transpiri.</em>",
+   "text": "Electrostimularea magnetică trimite impulsuri care fac mușchiul să se contracte mult mai intens și mai des decât la antrenamentul clasic: până la 20.000 de contracții într-o ședință.",
+   "steps": [
+    {
+     "b": "Câmpul magnetic",
+     "t": "trece prin piele până la mușchi"
+    },
+    {
+     "b": "Mușchiul",
+     "t": "se contractă mult mai intens decât la sală"
+    },
+    {
+     "b": "Rezultatul",
+     "t": "musculatură mai fermă și tonifiată"
+    }
+   ],
+   "anim": "ems"
+  },
+  "map": "body",
+  "voice": [
+   "Vrei mușchi mai fermi, dar nu ai timp de sală.",
+   "Vrei să-ți tonifiezi abdomenul, brațele sau coapsele.",
+   "Ai făcut remodelare și vrei să accentuezi rezultatul."
+  ],
+  "why": "Până la 20.000 de contracții într-o ședință, mult mai intense și mai dese decât la antrenamentul clasic. Imposibil de obținut voluntar, oricât ai trage la sală.",
   "fit": {
    "yes": [
     "vrei mușchi mai fermi și o siluetă mai definită, fără ore la sală",
-    "vrei să tonifiezi abdomenul, brațele, coapsele sau fesele",
+    "vrei să tonifiezi abdomenul, brațele sau coapsele",
     "vrei să accentuezi rezultatul după remodelarea corporală"
    ],
    "no": [
@@ -216,6 +375,12 @@
     "ești însărcinată sau alăptezi",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Contracții intense, dar nedureroase, ca un antrenament foarte concentrat. Intensitatea crește treptat, în confortul tău.",
+   "recovery": "Fără recuperare și fără transpirație.",
+   "sessions": "O cură de 6-8 ședințe, 2 pe săptămână, apoi întreținere la 2-4 săptămâni.",
+   "when": "Un tonus mai bun după primele ședințe, rezultat vizibil la finalul curei."
   },
   "faq": [
    {
@@ -239,53 +404,116 @@
     "a": "EMS este disponibil momentan doar la clinica din Timișoara. La Arad îți putem recomanda alternative pentru remodelare și fermitate."
    }
   ],
+  "pairs": [
+   {
+    "id": "liposonix",
+    "why": "Scapi și de grăsimea de deasupra mușchiului"
+   },
+   {
+    "id": "cavitatie",
+    "why": "Mai puțină grăsime, mușchi mai definit"
+   },
+   {
+    "id": "impachetare",
+    "why": "Detox și drenaj după tonifiere"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/tonifiere-musculara.html",
-   "v2/src/catalog-rezultate.html"
-  ]
+   "v2/src/home-bf.html"
+  ],
+  "video": null,
+  "mapZones": []
  },
  {
   "id": "radiofrecventa",
-  "title": "Radiofrecvență corporală",
-  "lead": "Energie termică controlată pe corp: stimulează colagenul și elastina pentru fermitate și reducerea celulitei.",
-  "problems": [
-   "Celulită pe coapse, fese sau abdomen",
-   "Celulită chiar și la femeile slabe",
-   "Lipsa fermității",
-   "Depozite mici de grăsime"
+  "name": "Radiofrecvență",
+  "need": "corp",
+  "kind": "Corp · celulită și fermitate",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "Celulita nu e doar grăsime. E și circulație, și fermitate. Radiofrecvența stimulează colagenul și fermitatea, cavitația lucrează pe depozitele de grăsime, iar drenajul elimină lichidele.",
-   "steps": [
-    "Prima vizită, gratuită: evaluăm gradul de celulită și construim combinația potrivită: radiofrecvență, cavitație, EMS sau împachetare.",
-    "Ședința: tratamente confortabile, multe chiar relaxante: căldură și masaj. Te întorci imediat la ce aveai de făcut.",
-    "Cura: 1-2 ședințe pe săptămână, apoi întreținere la 3-4 săptămâni."
-   ],
-   "explainerFrom": "celulita.html"
-  },
-  "session": {
-   "minutes": 30,
-   "feel": "Tratamentele sunt confortabile. Multe sunt chiar relaxante: căldură, masaj. Fără recuperare; te poți întoarce imediat la activități.",
-   "sessions": "În planul combinat pentru celulită: o cură de 6-10 ședințe, 1-2 pe săptămână, apoi întreținere la 3-4 săptămâni."
-  },
   "zones": [
    "Abdomen",
-   "Brațe",
-   "Coapse"
+   "Coapse",
+   "Brațe"
+  ],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 30,
+  "full": 280,
+  "promise": "Piele netedă, nu coajă de portocală.",
+  "bullets": [
+   "Reduce aspectul de celulită",
+   "Stimulează colagenul și fermitatea",
+   "Fără ace, fără recuperare"
+  ],
+  "tiles": [
+   {
+    "icon": "heat",
+    "t": "Căldură controlată",
+    "s": "Energia ajunge în piele, pe abdomen, brațe sau coapse."
+   },
+   {
+    "icon": "fibers",
+    "t": "Colagen și elastină",
+    "s": "Sunt stimulate, pentru o piele mai fermă."
+   },
+   {
+    "icon": "smooth",
+    "t": "Piele mai netedă",
+    "s": "Aspectul de celulită scade pe parcursul curei."
+   }
   ],
   "results": [],
+  "how": {
+   "h": "Celulita nu e doar grăsime. <em>E și fermitate.</em>",
+   "text": "Radiofrecvența duce energie termică controlată în piele și stimulează colagenul și elastina, pentru fermitate și reducerea celulitei.",
+   "steps": [
+    {
+     "b": "Septurile",
+     "t": "trag pielea în jos și apar gropițele"
+    },
+    {
+     "b": "Căldura controlată",
+     "t": "stimulează colagenul și fermitatea"
+    },
+    {
+     "b": "Pielea",
+     "t": "arată mai fermă și mai netedă"
+    }
+   ],
+   "anim": "radiofrecventa"
+  },
+  "map": "body",
+  "voice": [
+   "Ai celulită, deși ești slabă.",
+   "Pielea de pe coapse nu mai e fermă.",
+   "Vrei ceva relaxant, fără recuperare."
+  ],
+  "why": "Celulita ține de structura țesutului, de circulație și de factori hormonali, nu doar de greutate. De aceea apare și la femeile slabe. Nu e vina ta.",
   "fit": {
    "yes": [
     "ai celulită pe coapse, fese sau abdomen",
     "ai celulită deși ești slabă: ține de structura țesutului, nu doar de greutate",
-    "vrei un plan combinat, fără recuperare"
+    "vrei un plan fără recuperare"
    ],
    "no": [
     "cauți rezultatul dintr-o singură ședință: celulita răspunde la o cură constantă",
     "ești însărcinată sau alăptezi",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Căldură și masaj. Confortabil, chiar relaxant.",
+   "recovery": "Fără recuperare. Te întorci imediat la activități.",
+   "sessions": "Pentru celulită: o cură de 6-10 ședințe, 1-2 pe săptămână, apoi întreținere la 3-4 săptămâni.",
+   "when": "Textura arată mai netedă de obicei de la jumătatea curei."
   },
   "faq": [
    {
@@ -309,64 +537,108 @@
     "a": "Radiofrecvența și cavitația sunt disponibile la ambele clinici. EMS și împachetarea la cald sunt disponibile doar la Timișoara. Construim planul în funcție de locația ta."
    }
   ],
+  "pairs": [
+   {
+    "id": "liposonix",
+    "why": "Și grăsimea care nu pleacă cu sportul"
+   },
+   {
+    "id": "impachetare",
+    "why": "Celulita, lucrată din două părți"
+   },
+   {
+    "id": "hifu-corp",
+    "why": "Lifting mai profund pe aceeași zonă"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/celulita.html"
-  ]
+  ],
+  "video": null,
+  "mapZones": []
  },
  {
   "id": "hifu-corp",
-  "title": "HIFU corp",
-  "lead": "Ultrasunete focalizate de mare intensitate: lifting non-chirurgical, fermitate și redefinirea conturului facial și corporal.",
-  "problems": [
-   "Grăsime localizată pe abdomen",
-   "Laxitatea pielii pe abdomen",
-   "Lipsa fermității",
-   "Zona nu cedează, deși mănânci atent și faci mișcare"
+  "name": "HIFU",
+  "need": "corp",
+  "kind": "Corp · fermitate",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "HIFU corporal: ultrasunete focalizate care distrug celulele de grăsime din zona tratată. Corpul le elimină apoi natural, în săptămânile următoare. Pe abdomenul cu laxitate, tonifică pielea și reduce laxitatea din zona tratată.",
-   "steps": [
-    "Prima vizită, gratuită: evaluăm zona și obiectivul, măsurăm și alegem combinația potrivită.",
-    "Ședința: simți căldură și o presiune ușoară. Te întorci imediat la ce aveai de făcut.",
-    "În săptămânile următoare corpul elimină treptat grăsimea din zona tratată; la reevaluare măsurăm din nou."
-   ],
-   "explainerFrom": ""
-  },
-  "session": {
-   "minutes": 50,
-   "feel": "Proceduri non-invazive, bine tolerate: căldură și o senzație de presiune. Nu necesită recuperare; îți poți relua activitățile imediat.",
-   "sessions": ""
-  },
   "zones": [
    "Abdomen",
    "Brațe",
    "Coapse",
    "Gambe",
-   "Zona lombară",
-   "Zona sutien"
+   "Zona lombară"
+  ],
+  "sess": [
+   1,
+   2,
+   3
+  ],
+  "minutes": 50,
+  "full": 620,
+  "promise": "Lifting fără operație, pe abdomen, brațe sau coapse.",
+  "bullets": [
+   "Strânge pielea lăsată",
+   "Distruge celulele de grăsime din zona tratată",
+   "O ședință de 50 de minute, fără recuperare"
+  ],
+  "tiles": [
+   {
+    "icon": "target",
+    "t": "Energie în profunzime",
+    "s": "Ultrasunete focalizate, sub piele, punct cu punct."
+   },
+   {
+    "icon": "cells",
+    "t": "Grăsime redusă",
+    "s": "Celulele de grăsime din zona tratată sunt distruse."
+   },
+   {
+    "icon": "lift",
+    "t": "Piele tonifiată",
+    "s": "Pe abdomenul cu laxitate, reduce laxitatea."
+   }
   ],
   "results": [
    {
-    "src": "/brand_asset/catalog/cazul-01-hifu-abdomen-total.webp",
-    "zone": "Abdomen",
-    "caption": "HIFU abdomen total · Arad · 1 ședință"
-   },
-   {
+    "case": "39",
     "src": "/brand_asset/catalog/cazul-39-hifu-abdomen-tm.webp",
-    "zone": "Abdomen",
-    "caption": "HIFU abdomen · Timișoara · 1 ședință"
-   },
-   {
-    "src": "/brand_asset/catalog/cazul-09-hifu-laxitate-abdomen-tm.webp",
-    "zone": "Abdomen",
-    "caption": "HIFU laxitate abdomen · Timișoara · 1 ședință"
-   },
-   {
-    "src": "/brand_asset/catalog/cazul-12-hifu-abdomen-inferior-arad.webp",
-    "zone": "Abdomen",
-    "caption": "HIFU abdomen inferior · Arad · 1 ședință"
+    "w": 1400,
+    "h": 946,
+    "title": "HIFU abdomen",
+    "sub": "Timișoara · 1 ședință"
    }
+  ],
+  "resultsNote": "Rezultatele diferă de la o persoană la alta, în funcție de zonă, metabolism și stil de viață.",
+  "how": {
+   "h": "Energie focalizată, <em>punct cu punct.</em>",
+   "text": "HIFU corporal: ultrasunete focalizate care distrug celulele de grăsime din zona tratată. Corpul le elimină apoi natural, în săptămânile următoare. Pe abdomenul cu laxitate, tonifică pielea și reduce laxitatea din zona tratată.",
+   "steps": [
+    {
+     "b": "Punctele de energie",
+     "t": "ajung în profunzime, sub piele"
+    },
+    {
+     "b": "Celulele de grăsime",
+     "t": "din zona tratată sunt distruse"
+    },
+    {
+     "b": "Pielea",
+     "t": "se tonifiază, laxitatea scade"
+    }
+   ],
+   "anim": "hifu-corp"
+  },
+  "map": "body",
+  "voice": [
+   "Pielea de pe abdomen nu mai e fermă.",
+   "Mănânci atent și faci mișcare, dar zona nu cedează.",
+   "Vrei lifting fără bisturiu."
   ],
   "fit": {
    "yes": [
@@ -379,6 +651,12 @@
     "ești însărcinată sau alăptezi",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Căldură și o senzație de presiune.",
+   "recovery": "Fără recuperare. Îți reiei activitățile imediat.",
+   "sessions": "Cazul din poze e după o singură ședință. Planul exact îl stabilim la consultația gratuită.",
+   "when": "Reducerea devine vizibilă în general la 6-8 săptămâni de la ședință."
   },
   "faq": [
    {
@@ -394,38 +672,94 @@
     "a": "Sunt proceduri non-invazive, bine tolerate: căldură și o senzație de presiune. Nu necesită recuperare; îți poți relua activitățile imediat."
    }
   ],
+  "pairs": [
+   {
+    "id": "radiofrecventa",
+    "why": "Fermitate și la suprafață"
+   },
+   {
+    "id": "ems",
+    "why": "Și mușchiul tonifiat"
+   },
+   {
+    "id": "liposonix",
+    "why": "Și grăsimea redusă"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/grasime-localizata.html",
    "v2/src/catalog-rezultate.html"
-  ]
+  ],
+  "video": null,
+  "mapZones": []
  },
  {
   "id": "impachetare",
-  "title": "Împachetare la cald",
-  "lead": "Tratament relaxant și detoxifiant: stimulează circulația, drenajul și absorbția ingredientelor active. Doar în Timișoara.",
-  "problems": [
-   "Celulită",
-   "Retenție de apă",
-   "Picioare grele sau senzație de balonare",
-   "Nevoia de detoxifiere și de un reset pentru corp"
+  "name": "Împachetare la cald",
+  "need": "corp",
+  "kind": "Corp · detox și drenaj",
+  "cities": [
+   "Timișoara"
   ],
-  "how": {
-   "text": "Căldura activează eliminarea: detoxifiere, circulație și drenaj, pentru o piele mai netedă. Adesea o combinăm cu presoterapia și termocuverta, într-o cură de detoxifiere.",
-   "steps": [
-    "Prima vizită, gratuită: stabilim combinația de detox potrivită: împachetare, presoterapie sau termocuvertă.",
-    "Ședința: căldură plăcută. Efectul se simte adesea chiar de la prima ședință.",
-    "Cura: 1-2 ședințe pe săptămână, apoi o ședință periodică de reset."
-   ],
-   "explainerFrom": ""
-  },
-  "session": {
-   "minutes": 50,
-   "feel": "Căldură plăcută, un moment de răsfăț. Fără recuperare.",
-   "sessions": "O cură de câteva ședințe într-un interval scurt, 1-2 pe săptămână, apoi întreținere."
-  },
   "zones": [],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 50,
+  "full": 190,
+  "promise": "Căldură plăcută care pornește drenajul și detoxifierea.",
+  "bullets": [
+   "Detoxifiere, circulație și drenaj",
+   "Piele mai netedă",
+   "50 de minute de căldură plăcută"
+  ],
+  "tiles": [
+   {
+    "icon": "heat",
+    "t": "Căldură plăcută",
+    "s": "Te învăluie și te relaxează, ca un moment de răsfăț."
+   },
+   {
+    "icon": "flow",
+    "t": "Circulație și drenaj",
+    "s": "Căldura activează eliminarea."
+   },
+   {
+    "icon": "smooth",
+    "t": "Piele mai netedă",
+    "s": "Și o senzație reală de ușurare."
+   }
+  ],
   "results": [],
+  "how": {
+   "h": "Căldura <em>activează eliminarea.</em>",
+   "text": "Împachetarea la cald stimulează circulația, drenajul și absorbția ingredientelor active: detoxifiere, pentru o piele mai netedă. Adesea o combinăm cu presoterapia și termocuverta.",
+   "steps": [
+    {
+     "b": "Căldura",
+     "t": "te învăluie, plăcut și relaxant"
+    },
+    {
+     "b": "Circulația și drenajul",
+     "t": "sunt activate"
+    },
+    {
+     "b": "Pielea",
+     "t": "mai netedă, corpul mai ușor"
+    }
+   ],
+   "anim": "impachetare"
+  },
+  "map": "",
+  "voice": [
+   "Ai picioarele grele seara.",
+   "Te simți balonată, cu apă în plus.",
+   "Simți nevoia de un reset pentru corp."
+  ],
+  "why": "Sistemul limfatic e „canalizarea” corpului. Când încetinește, din sedentarism, stres sau alimentație, apar retenția de apă, balonarea și picioarele grele. Nu e vina ta.",
   "fit": {
    "yes": [
     "ai retenție de apă, picioare grele sau senzație de balonare",
@@ -437,6 +771,12 @@
     "ești însărcinată sau alăptezi",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Căldură plăcută, un moment de răsfăț.",
+   "recovery": "Fără recuperare.",
+   "sessions": "O cură de câteva ședințe, 1-2 pe săptămână, apoi o ședință periodică de reset.",
+   "when": "Efectul se simte adesea chiar de la prima ședință."
   },
   "faq": [
    {
@@ -460,67 +800,139 @@
     "a": "Aceste tratamente de detox și drenaj sunt disponibile momentan doar la clinica din Timișoara. La Arad îți putem recomanda alternative potrivite."
    }
   ],
+  "pairs": [
+   {
+    "id": "radiofrecventa",
+    "why": "Fermitate după detox"
+   },
+   {
+    "id": "cavitatie",
+    "why": "Și grăsimea localizată"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/detox-drenaj.html",
    "v2/src/celulita.html"
-  ]
+  ],
+  "video": null,
+  "mapZones": []
  },
  {
   "id": "hifu",
-  "title": "HIFU · o zonă mică facială",
-  "lead": "Ultrasunete focalizate de mare intensitate: lifting non-chirurgical, fermitate și redefinirea conturului facial.",
-  "problems": [
-   "Gușă sau bărbie dublă",
-   "O linie a mandibulei care s-a estompat",
-   "Piele relaxată, pierderea fermității",
-   "Riduri fine în jurul ochilor sau pe gât"
+  "name": "HIFU",
+  "need": "gusa",
+  "kind": "Gușă și contur",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "HIFU lucrează în stratul profund, pentru lifting și fermitate. Punctele de energie ajung în stratul profund (SMAS), țesutul se contractă și se ridică, iar colagenul nou definește conturul în săptămânile următoare. Fără operație, fără cicatrici.",
-   "steps": [
-    "Prima vizită, gratuită: evaluăm raportul grăsime/laxitate și alegem combinația potrivită.",
-    "Ședința: durează 10-15 minute. Simți căldură și ușoare furnicături. Te întorci imediat la activitățile zilnice.",
-    "La 8-12 săptămâni conturul e vizibil mai definit, în majoritatea cazurilor; la reevaluare ajustăm dacă e nevoie."
-   ],
-   "explainerFrom": "gusa-barbie-dubla.html"
-  },
-  "session": {
-   "minutes": 15,
-   "feel": "Simți căldură și ușoare furnicături. Fără recuperare; te poți întoarce imediat la activitățile zilnice.",
-   "sessions": "Frecvent o ședință HIFU, plus o cură de 4-6 ședințe RF Sculpt pentru gușă; întreținere cu o ședință la 9-12 luni."
-  },
   "zones": [
    "Gușă",
    "Gât",
    "Contur mandibular",
    "Pomeți",
-   "Periocular",
-   "Perioral",
    "Frunte"
+  ],
+  "sess": [
+   1,
+   2,
+   3
+  ],
+  "minutes": 15,
+  "minutesLabel": "10-15 min",
+  "full": 290,
+  "promise": "Pentru bărbia dublă care apare și fără kilograme în plus.",
+  "bullets": [
+   "Strânge pielea de sub bărbie",
+   "Fără ace, fără operație, fără cicatrici",
+   "10-15 minute, apoi te întorci la ale tale"
+  ],
+  "tiles": [
+   {
+    "icon": "target",
+    "t": "Energie în profunzime",
+    "s": "Puncte de energie în stratul profund (SMAS)."
+   },
+   {
+    "icon": "lift",
+    "t": "Țesutul se ridică",
+    "s": "Se contractă și se ridică, fără bisturiu."
+   },
+   {
+    "icon": "spark",
+    "t": "Contur definit",
+    "s": "Colagenul nou lucrează în săptămânile următoare."
+   }
   ],
   "results": [
    {
-    "src": "/brand_asset/catalog/cazul-18-hifu-gusa-tm-5.webp",
-    "zone": "Gușă",
-    "caption": "HIFU · Timișoara · la o lună de la o ședință"
+    "case": "02",
+    "src": "/brand_asset/catalog/cazul-02-hifu-gusa.webp",
+    "w": 1391,
+    "h": 1400,
+    "title": "HIFU gușă",
+    "sub": "Timișoara · 1 ședință"
    },
    {
-    "src": "/brand_asset/catalog/cazul-36-hifu-gusa-contur-arad.webp",
-    "zone": "Gușă și contur",
-    "caption": "HIFU · Arad · 1 ședință"
+    "case": "16",
+    "src": "/brand_asset/catalog/cazul-16-hifu-gusa-tm-4.webp",
+    "w": 1283,
+    "h": 1400,
+    "title": "HIFU gușă și contur",
+    "sub": "Timișoara · 1 ședință"
    },
    {
+    "case": "24",
     "src": "/brand_asset/catalog/cazul-24-hifu-gat-arad.webp",
-    "zone": "Gât",
-    "caption": "HIFU · Arad · 1 ședință"
+    "w": 1400,
+    "h": 946,
+    "title": "HIFU gât",
+    "sub": "Arad · 1 ședință"
    },
    {
+    "case": "23",
     "src": "/brand_asset/catalog/cazul-23-hifu-periocular-tm.webp",
-    "zone": "Periocular",
-    "caption": "HIFU periocular · Timișoara · 1 ședință"
+    "w": 1400,
+    "h": 946,
+    "title": "HIFU periocular",
+    "sub": "Timișoara · 1 ședință"
    }
   ],
+  "resultsNote": "Rezultatele diferă de la o persoană la alta, în funcție de raportul grăsime/piele, vârstă și stilul de viață.",
+  "how": {
+   "h": "Energie în profunzime. <em>Contur redefinit.</em>",
+   "text": "HIFU lucrează în stratul profund, pentru lifting și fermitate. Punctele de energie ajung în stratul SMAS, țesutul se contractă și se ridică, iar colagenul nou definește conturul în săptămânile următoare. Fără operație, fără cicatrici.",
+   "steps": [
+    {
+     "b": "Punctele de energie",
+     "t": "ajung în stratul profund (SMAS)"
+    },
+    {
+     "b": "Țesutul",
+     "t": "se contractă și se ridică"
+    },
+    {
+     "b": "Colagenul nou",
+     "t": "definește conturul în săptămânile următoare"
+    }
+   ],
+   "anim": "hifu"
+  },
+  "video": {
+   "src": "/brand_asset/vsl/gusa-barbie-dubla-169.mp4",
+   "poster": "/brand_asset/vsl/gusa-barbie-dubla-169.webp",
+   "title": "De unde vine gușa și cum o tratăm.",
+   "sub": "Video · 87 de secunde, cu Nuki",
+   "ratio": "16/9"
+  },
+  "map": "face",
+  "voice": [
+   "Ai bărbie dublă, deși nu ai kilograme în plus.",
+   "Linia mandibulei nu mai e definită ca înainte.",
+   "Nu vrei operație, ace sau cicatrici."
+  ],
+  "why": "Gușa apare dintr-un mix de grăsime localizată și piele relaxată, din genetică, vârstă sau pierderea fermității. Uneori indiferent de greutate. Sportul singur rareori rezolvă zona asta.",
   "fit": {
    "yes": [
     "ai gușă, bărbie dublă sau o linie a mandibulei care s-a estompat",
@@ -532,6 +944,12 @@
     "ești însărcinată sau alăptezi",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Căldură și ușoare furnicături.",
+   "recovery": "Fără recuperare. Te întorci imediat la activitățile zilnice.",
+   "sessions": "Frecvent o ședință HIFU, plus o cură RF Sculpt pentru gușă. Întreținere cu o ședință la 9-12 luni.",
+   "when": "Contur vizibil mai definit la 8-12 săptămâni, în majoritatea cazurilor."
   },
   "faq": [
    {
@@ -555,62 +973,116 @@
     "a": "De regulă 9-12 luni, menținut cu o ședință periodică. Un stil de viață stabil ajută la păstrarea rezultatului pe termen lung."
    }
   ],
+  "pairs": [
+   {
+    "id": "rf-sculpt-gusa",
+    "why": "Gușa redusă, conturul redefinit"
+   },
+   {
+    "id": "biolifting",
+    "why": "Piele mai fermă pe aceeași zonă"
+   },
+   {
+    "id": "masaj-facial",
+    "why": "Relaxare pentru față și gât"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/gusa-barbie-dubla.html",
-   "v2/src/riduri-linii-fine.html",
-   "v2/src/catalog-rezultate.html"
-  ]
+   "v2/src/home-bf.html"
+  ],
+  "mapZones": []
  },
  {
   "id": "rf-sculpt-gusa",
-  "title": "RF Sculpt · Gușă + Contur Mandibular",
-  "lead": "Radiofrecvență + masaj modelator pentru rezultate accelerate: reduce gușa și redefinește linia mandibulei.",
-  "problems": [
-   "Gușă sau bărbie dublă",
-   "O linie a mandibulei care s-a estompat",
-   "Grăsime localizată și piele relaxată pe bărbie și gât"
+  "name": "RF Sculpt Gușă",
+  "need": "gusa",
+  "kind": "Gușă și contur",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "RF Sculpt remodelează linia mandibulei: radiofrecvență care tonifiază pielea și remodelează zona tratată, stimulând producția de colagen. Fără bisturiu, fără timp de recuperare.",
-   "steps": [
-    "Prima vizită, gratuită: evaluăm raportul grăsime/laxitate și alegem combinația HIFU + RF Sculpt potrivită.",
-    "Cura RF Sculpt: 4-6 ședințe, pentru remodelarea conturului.",
-    "Rezultatul devine tot mai vizibil pe parcursul ședințelor, pe măsură ce colagenul nou se formează."
-   ],
-   "explainerFrom": ""
-  },
-  "session": {
-   "minutes": 30,
-   "feel": "Proceduri non-invazive, bine tolerate: căldură și ușoare furnicături. Fără recuperare; te poți întoarce imediat la activitățile zilnice.",
-   "sessions": "O cură de 4-6 ședințe RF Sculpt, frecvent după o ședință HIFU."
-  },
-  "zones": [
+  "zones": [],
+  "mapZones": [
    "Gușă",
    "Contur mandibular"
   ],
-  "results": [
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 30,
+  "full": 210,
+  "promise": "Reduce gușa și redefinește linia mandibulei.",
+  "bullets": [
+   "Reduce gușa",
+   "Conturează linia mandibulei",
+   "Radiofrecvență + masaj modelator, 30 de minute"
+  ],
+  "tiles": [
    {
-    "src": "/brand_asset/catalog/cazul-34-rf-sculpt-arad.webp",
-    "zone": "Gușă și contur",
-    "caption": "RF Sculpt · Arad · 1 ședință"
+    "icon": "heat",
+    "t": "Radiofrecvență",
+    "s": "Tonifiază pielea și stimulează colagenul."
    },
    {
-    "src": "/brand_asset/catalog/cazul-37-rf-sculpt-tm-2.webp",
-    "zone": "Bărbie și gât",
-    "caption": "RF Sculpt · Timișoara · 3 ședințe"
+    "icon": "hand",
+    "t": "Masaj modelator",
+    "s": "Remodelează zona, pentru rezultate accelerate."
    },
    {
-    "src": "/brand_asset/catalog/cazul-40-rf-sculpt-tm-3.webp",
-    "zone": "Bărbie și gât",
-    "caption": "RF Sculpt · Timișoara · 6 ședințe"
-   },
-   {
-    "src": "/brand_asset/catalog/cazul-35-rf-sculpt-tm.webp",
-    "zone": "Gușă și contur",
-    "caption": "RF Sculpt · Timișoara · 6 ședințe"
+    "icon": "spark",
+    "t": "Contur redefinit",
+    "s": "Tot mai vizibil, de la o ședință la alta."
    }
   ],
+  "results": [
+   {
+    "case": "35",
+    "src": "/brand_asset/catalog/cazul-35-rf-sculpt-tm.webp",
+    "w": 1283,
+    "h": 1400,
+    "title": "RF Sculpt gușă și contur",
+    "sub": "Timișoara · 6 ședințe"
+   },
+   {
+    "case": "37",
+    "src": "/brand_asset/catalog/cazul-37-rf-sculpt-tm-2.webp",
+    "w": 1400,
+    "h": 945,
+    "title": "RF Sculpt gușă și contur",
+    "sub": "Timișoara · 3 ședințe"
+   }
+  ],
+  "resultsNote": "Rezultatele diferă de la o persoană la alta, în funcție de raportul grăsime/piele, vârstă și stilul de viață.",
+  "how": {
+   "h": "Căldură și masaj, <em>pe linia mandibulei.</em>",
+   "text": "RF Sculpt remodelează linia mandibulei: radiofrecvență care tonifiază pielea și remodelează zona tratată, stimulând producția de colagen, plus masaj modelator pentru rezultate accelerate. Fără bisturiu, fără timp de recuperare.",
+   "steps": [
+    {
+     "b": "Radiofrecvența",
+     "t": "tonifiază pielea și stimulează colagenul"
+    },
+    {
+     "b": "Masajul modelator",
+     "t": "remodelează zona, pentru rezultate accelerate"
+    },
+    {
+     "b": "Colagenul nou",
+     "t": "redefinește linia mandibulei"
+    }
+   ],
+   "anim": "rf-sculpt-gusa"
+  },
+  "map": "face",
+  "voice": [
+   "Ai gușă, deși nu ai kilograme în plus.",
+   "Linia mandibulei s-a estompat.",
+   "Vrei un contur definit, fără bisturiu."
+  ],
+  "why": "Gușa apare dintr-un mix de grăsime localizată și piele relaxată, din genetică, vârstă sau pierderea fermității. Uneori indiferent de greutate.",
   "fit": {
    "yes": [
     "ai gușă, bărbie dublă sau o linie a mandibulei care s-a estompat",
@@ -622,6 +1094,12 @@
     "ești însărcinată sau alăptezi",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Căldură și ușoare furnicături. Bine tolerată.",
+   "recovery": "Fără recuperare. Te întorci imediat la activitățile zilnice.",
+   "sessions": "O cură de 4-6 ședințe RF Sculpt, frecvent după o ședință HIFU.",
+   "when": "Rezultatul devine tot mai vizibil pe parcursul ședințelor."
   },
   "faq": [
    {
@@ -641,46 +1119,96 @@
     "a": "Proceduri non-invazive, bine tolerate: căldură și ușoare furnicături. Fără recuperare; te poți întoarce imediat la activitățile zilnice."
    }
   ],
+  "pairs": [
+   {
+    "id": "hifu",
+    "why": "Strânge și pielea de sub bărbie"
+   },
+   {
+    "id": "biolifting",
+    "why": "Colagen și fermitate"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/gusa-barbie-dubla.html",
-   "v2/src/catalog-rezultate.html"
-  ]
+   "v2/src/home-bf.html"
+  ],
+  "video": null
  },
  {
   "id": "biolifting",
-  "title": "BioLifting · o zonă mică facială",
-  "lead": "Energie termică controlată pe față: stimulează colagenul și elastina pentru fermitate și reducerea ridurilor.",
-  "problems": [
-   "Riduri fine",
-   "Pierderea fermității",
-   "Fermitate pe bărbie și gât",
-   "Un contur care „cade”"
+  "name": "BioLifting",
+  "need": "gusa",
+  "kind": "Față · fermitate",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "Energie termică controlată pe față: stimulează colagenul și elastina. Energia ajunge în dermă, fibrele de colagen se contractă și pielea se strânge, iar colagenul nou estompează treptat ridul. BioLifting lucrează pentru fermitate și riduri fine pe suprafață.",
-   "steps": [
-    "Prima vizită, gratuită: evaluăm gradul de laxitate și recomandăm HIFU, BioLifting sau o combinație.",
-    "Ședința: simți căldură sau ușoare furnicături. Te întorci imediat la activități.",
-    "Colagenul nou se formează treptat; efectul de lifting e maxim la 8-12 săptămâni."
-   ],
-   "explainerFrom": "riduri-linii-fine.html"
-  },
-  "session": {
-   "minutes": 15,
-   "feel": "Simți căldură sau ușoare furnicături. Nu necesită recuperare; te poți întoarce imediat la activități.",
-   "sessions": ""
-  },
   "zones": [
    "Gușă",
    "Gât",
    "Contur mandibular",
    "Pomeți",
-   "Periocular",
-   "Perioral",
    "Frunte"
   ],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 15,
+  "full": 170,
+  "promise": "Piele mai fermă, cu colagenul tău. Fără bisturiu.",
+  "bullets": [
+   "Stimulează colagenul și elastina",
+   "Fermitate și riduri fine estompate treptat",
+   "15 minute, fără recuperare"
+  ],
+  "tiles": [
+   {
+    "icon": "heat",
+    "t": "Căldură controlată",
+    "s": "Energia ajunge în dermă."
+   },
+   {
+    "icon": "fibers",
+    "t": "Fibrele se strâng",
+    "s": "Colagenul se contractă, pielea se strânge."
+   },
+   {
+    "icon": "spark",
+    "t": "Colagen nou",
+    "s": "Ridul se estompează treptat."
+   }
+  ],
   "results": [],
+  "how": {
+   "h": "Pielea fermă <em>înseamnă colagen.</em>",
+   "text": "BioLifting duce energie termică controlată în dermă și stimulează colagenul și elastina. Fibrele de colagen se contractă și pielea se strânge, iar colagenul nou estompează treptat ridul.",
+   "steps": [
+    {
+     "b": "Energia",
+     "t": "ajunge în dermă"
+    },
+    {
+     "b": "Fibrele de colagen",
+     "t": "se contractă, pielea se strânge"
+    },
+    {
+     "b": "Colagenul nou",
+     "t": "estompează treptat ridul"
+    }
+   ],
+   "anim": "biolifting"
+  },
+  "map": "face",
+  "voice": [
+   "Pielea și-a pierdut fermitatea, iar cremele nu mai ajung.",
+   "Ai riduri fine pe care vrei să le estompezi.",
+   "Vrei lifting fără bisturiu și fără recuperare."
+  ],
+  "why": "Cu vârsta, pielea produce mai puțin colagen și elastină, iar fermitatea scade. Cremele lucrează la suprafață, dar fermitatea vine din straturile profunde.",
   "fit": {
    "yes": [
     "ai riduri, linii fine sau un contur care „cade”",
@@ -692,6 +1220,12 @@
     "ești însărcinată sau alăptezi",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Căldură sau ușoare furnicături.",
+   "recovery": "Fără recuperare. Te întorci imediat la activități.",
+   "sessions": "Numărul de ședințe îl stabilim la consultația gratuită.",
+   "when": "Fermitatea se simte imediat. Efectul crește treptat, maxim la 8-12 săptămâni."
   },
   "faq": [
    {
@@ -711,54 +1245,97 @@
     "a": "Se poate începe preventiv de la primele semne de laxitate (în jur de 30+), dar e eficient la orice vârstă. La consultație stabilim dacă e momentul potrivit pentru tine."
    }
   ],
+  "pairs": [
+   {
+    "id": "hifu",
+    "why": "Lifting mai profund"
+   },
+   {
+    "id": "rf-sculpt-gusa",
+    "why": "Gușa redusă, conturul redefinit"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/riduri-linii-fine.html",
    "v2/src/gusa-barbie-dubla.html"
-  ]
+  ],
+  "video": null,
+  "mapZones": []
  },
  {
   "id": "hifu-full-face",
-  "title": "HIFU Full Face",
-  "lead": "Laxitate la nivelul întregii fețe, riduri și pierderea conturului facial: ultrasunete focalizate care stimulează colagenul și liftează pielea pe toată fața.",
-  "problems": [
-   "Laxitate la nivelul întregii fețe",
-   "Riduri și linii fine",
-   "Pierderea conturului facial",
-   "Pielea și-a pierdut fermitatea, iar cremele nu mai ajung"
+  "name": "HIFU Full Face",
+  "need": "fata",
+  "kind": "Față · lifting",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "HIFU Full Face: ultrasunete focalizate care stimulează colagenul și liftează pielea pe toată fața: frunte, obraji, linia maxilarului și gât. HIFU acționează în profunzime pentru un lifting mai pronunțat; colagenul nou se formează treptat, în straturile profunde ale pielii.",
-   "steps": [
-    "Prima vizită, gratuită: evaluăm gradul de laxitate și recomandăm HIFU, BioLifting sau o combinație.",
-    "Ședința: simți căldură sau ușoare furnicături. Te întorci imediat la activități.",
-    "La 8-12 săptămâni efectul de lifting e maxim; reevaluare la 9-12 luni."
-   ],
-   "explainerFrom": "riduri-linii-fine.html"
-  },
-  "session": {
-   "minutes": 90,
-   "feel": "O senzație de căldură sau ușoare furnicături. Nu necesită recuperare; te poți întoarce imediat la activități.",
-   "sessions": ""
-  },
-  "zones": [
+  "zones": [],
+  "mapZones": [
    "Frunte",
-   "Obraji",
-   "Linia maxilarului",
+   "Pomeți",
+   "Contur mandibular",
    "Gât"
   ],
-  "results": [
+  "sess": [
+   1,
+   2,
+   3
+  ],
+  "minutes": 90,
+  "full": 1020,
+  "promise": "Lifting pe toată fața, fără bisturiu.",
+  "bullets": [
+   "Strânge pielea lăsată a feței",
+   "Frunte, obraji, linia maxilarului și gât",
+   "Fără bisturiu, fără recuperare"
+  ],
+  "tiles": [
    {
-    "src": "/brand_asset/catalog/cazul-06-hifu-full-face-tm.webp",
-    "zone": "Toată fața",
-    "caption": "HIFU Full Face · Timișoara · 1 ședință"
+    "icon": "face",
+    "t": "Pe toată fața",
+    "s": "Frunte, obraji, linia maxilarului și gât."
    },
    {
-    "src": "/brand_asset/catalog/cazul-07-hifu-full-face-arad.webp",
-    "zone": "Toată fața",
-    "caption": "HIFU Full Face · Arad · 1 ședință"
+    "icon": "target",
+    "t": "În profunzime",
+    "s": "Pentru un lifting mai pronunțat."
+   },
+   {
+    "icon": "spark",
+    "t": "Colagen nou",
+    "s": "Se formează treptat, maxim la 8-12 săptămâni."
    }
   ],
+  "results": [],
+  "how": {
+   "h": "Lifting prin colagen, <em>pe toată fața.</em>",
+   "text": "Ultrasunete focalizate care stimulează colagenul și liftează pielea pe toată fața: frunte, obraji, linia maxilarului și gât. HIFU acționează în profunzime, pentru un lifting mai pronunțat; colagenul nou se formează treptat.",
+   "steps": [
+    {
+     "b": "Punctele de energie",
+     "t": "ajung în profunzime, pe toată fața"
+    },
+    {
+     "b": "Țesutul",
+     "t": "se contractă și se ridică"
+    },
+    {
+     "b": "Colagenul nou",
+     "t": "redefinește conturul în 8-12 săptămâni"
+    }
+   ],
+   "anim": "hifu-full-face"
+  },
+  "map": "face",
+  "voice": [
+   "Fața și-a pierdut conturul.",
+   "Pielea s-a relaxat, iar cremele nu mai ajung.",
+   "Vrei un lifting fără operație."
+  ],
+  "why": "Cu vârsta, pielea produce mai puțin colagen și elastină, iar fermitatea scade. Cremele lucrează la suprafață, dar fermitatea vine din straturile profunde.",
   "fit": {
    "yes": [
     "ai riduri, linii fine sau un contur care „cade”",
@@ -770,6 +1347,12 @@
     "ești însărcinată sau alăptezi",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Căldură sau ușoare furnicături.",
+   "recovery": "Fără recuperare. Te întorci imediat la activități.",
+   "sessions": "Reevaluare la 9-12 luni. O ședință periodică menține conturul.",
+   "when": "Efectul de lifting e maxim la 8-12 săptămâni."
   },
   "faq": [
    {
@@ -793,40 +1376,95 @@
     "a": "Se poate începe preventiv de la primele semne de laxitate (în jur de 30+), dar e eficient la orice vârstă. La consultație stabilim dacă e momentul potrivit pentru tine."
    }
   ],
+  "pairs": [
+   {
+    "id": "biolifting-full-face",
+    "why": "Fermitate și la suprafață"
+   },
+   {
+    "id": "restart",
+    "why": "Ten luminos imediat"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
-   "v2/src/riduri-linii-fine.html",
-   "v2/src/catalog-rezultate.html"
-  ]
+   "v2/src/riduri-linii-fine.html"
+  ],
+  "video": null
  },
  {
   "id": "biolifting-full-face",
-  "title": "BioLifting Full Face",
-  "lead": "Laxitate la nivelul întregii fețe, riduri și pierderea elasticității: energie termică controlată care stimulează colagenul și elastina.",
-  "problems": [
-   "Laxitate la nivelul întregii fețe",
-   "Riduri",
-   "Pierderea elasticității",
-   "Riduri fine pe suprafață"
+  "name": "BioLifting Full Face",
+  "need": "fata",
+  "kind": "Față · fermitate",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "Energie termică controlată pe față: stimulează colagenul și elastina. Energia ajunge în dermă, fibrele de colagen se contractă și pielea se strânge, iar colagenul nou estompează treptat ridul. BioLifting lucrează pentru fermitate și riduri fine pe suprafață.",
-   "steps": [
-    "Prima vizită, gratuită: evaluăm gradul de laxitate și recomandăm HIFU, BioLifting sau o combinație.",
-    "Ședința: simți căldură sau ușoare furnicături. Te întorci imediat la activități.",
-    "Colagenul nou se formează treptat; efectul de lifting e maxim la 8-12 săptămâni."
-   ],
-   "explainerFrom": "riduri-linii-fine.html"
-  },
-  "session": {
-   "minutes": 30,
-   "feel": "Simți căldură sau ușoare furnicături. Nu necesită recuperare; te poți întoarce imediat la activități.",
-   "sessions": ""
-  },
-  "zones": [
-   "Toată fața"
+  "zones": [],
+  "mapZones": [
+   "Frunte",
+   "Pomeți",
+   "Contur mandibular",
+   "Gât",
+   "Periocular"
+  ],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 30,
+  "full": 280,
+  "promise": "Fermitate pe toată fața, cu colagenul tău.",
+  "bullets": [
+   "Reduce ridurile fine",
+   "Stimulează colagenul și elastina",
+   "30 de minute, fără recuperare"
+  ],
+  "tiles": [
+   {
+    "icon": "face",
+    "t": "Toată fața",
+    "s": "Căldură controlată, zonă cu zonă."
+   },
+   {
+    "icon": "fibers",
+    "t": "Colagen și elastină",
+    "s": "Sunt stimulate, pielea se strânge."
+   },
+   {
+    "icon": "smooth",
+    "t": "Riduri fine estompate",
+    "s": "Treptat, pe măsură ce se formează colagen nou."
+   }
   ],
   "results": [],
+  "how": {
+   "h": "Căldură controlată, <em>pe toată fața.</em>",
+   "text": "Energie termică controlată pe față: stimulează colagenul și elastina. BioLifting lucrează pentru fermitate și riduri fine pe suprafață, iar colagenul nou estompează treptat ridurile.",
+   "steps": [
+    {
+     "b": "Căldura controlată",
+     "t": "trece pe toată fața, zonă cu zonă"
+    },
+    {
+     "b": "Colagenul și elastina",
+     "t": "sunt stimulate, pielea se strânge"
+    },
+    {
+     "b": "Ridurile fine",
+     "t": "se estompează treptat"
+    }
+   ],
+   "anim": "biolifting-full-face"
+  },
+  "map": "face",
+  "voice": [
+   "Ai riduri fine, iar pielea și-a pierdut elasticitatea.",
+   "Cremele nu mai ajung unde trebuie.",
+   "Vrei ceva fără bisturiu și fără recuperare."
+  ],
   "fit": {
    "yes": [
     "ai riduri, linii fine sau un contur care „cade”",
@@ -838,6 +1476,12 @@
     "ești însărcinată sau alăptezi",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Căldură sau ușoare furnicături.",
+   "recovery": "Fără recuperare. Te întorci imediat la activități.",
+   "sessions": "Numărul de ședințe îl stabilim la consultația gratuită.",
+   "when": "Fermitatea se simte imediat. Efectul crește treptat, maxim la 8-12 săptămâni."
   },
   "faq": [
    {
@@ -857,33 +1501,94 @@
     "a": "Se poate începe preventiv de la primele semne de laxitate (în jur de 30+), dar e eficient la orice vârstă. La consultație stabilim dacă e momentul potrivit pentru tine."
    }
   ],
+  "pairs": [
+   {
+    "id": "hifu-full-face",
+    "why": "Lifting mai profund"
+   },
+   {
+    "id": "restart",
+    "why": "Ten luminos imediat"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/riduri-linii-fine.html"
-  ]
+  ],
+  "video": null
  },
  {
   "id": "rf-sculpt-full-face",
-  "title": "RF Sculpt Full Face",
-  "lead": "Radiofrecvență + masaj modelator: tonifiere și revitalizare la nivelul întregii fețe.",
-  "problems": [
-   "Lipsa fermității",
-   "Tonifiere și revitalizare la nivelul întregii fețe"
+  "name": "RF Sculpt Full Face",
+  "need": "fata",
+  "kind": "Față · tonifiere",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "Radiofrecvență + masaj modelator pentru rezultate accelerate: remodelare, tonifiere și drenaj. După HIFU sau BioLifting, o cură RF Sculpt susține fermitatea.",
-   "steps": [],
-   "explainerFrom": ""
-  },
-  "session": {
-   "minutes": 90,
-   "feel": "",
-   "sessions": ""
-  },
-  "zones": [
-   "Toată fața"
+  "zones": [],
+  "mapZones": [
+   "Frunte",
+   "Pomeți",
+   "Contur mandibular",
+   "Periocular"
+  ],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 90,
+  "full": 350,
+  "promise": "Tonifiere și revitalizare pe toată fața.",
+  "bullets": [
+   "Tonifiază toată fața",
+   "Radiofrecvență + masaj modelator",
+   "Remodelare, tonifiere și drenaj"
+  ],
+  "tiles": [
+   {
+    "icon": "heat",
+    "t": "Radiofrecvență",
+    "s": "Căldură care tonifiază pielea."
+   },
+   {
+    "icon": "hand",
+    "t": "Masaj modelator",
+    "s": "Pentru rezultate accelerate."
+   },
+   {
+    "icon": "flow",
+    "t": "Drenaj",
+    "s": "Tenul arată tonifiat și revitalizat."
+   }
   ],
   "results": [],
+  "how": {
+   "h": "Radiofrecvență + masaj, <em>pentru toată fața.</em>",
+   "text": "Radiofrecvență + masaj modelator pentru rezultate accelerate: remodelare, tonifiere și drenaj, pe toată fața. După HIFU sau BioLifting, o cură RF Sculpt susține fermitatea.",
+   "steps": [
+    {
+     "b": "Radiofrecvența",
+     "t": "încălzește controlat pielea feței"
+    },
+    {
+     "b": "Masajul modelator",
+     "t": "remodelează și drenează"
+    },
+    {
+     "b": "Tenul",
+     "t": "arată tonifiat și revitalizat"
+    }
+   ],
+   "anim": "rf-sculpt-full-face"
+  },
+  "map": "face",
+  "voice": [
+   "Pielea feței nu mai e fermă.",
+   "Tenul arată obosit, fără tonus.",
+   "Vrei ceva relaxant, fără recuperare."
+  ],
   "fit": {
    "yes": [
     "ai riduri, linii fine sau un contur care „cade”",
@@ -896,61 +1601,124 @@
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
   },
-  "faq": [],
+  "session": {
+   "feel": "Căldură și ușoare furnicături, bine tolerate.",
+   "recovery": "Fără timp de recuperare.",
+   "sessions": "Se face în cură. Numărul de ședințe îl stabilim la consultația gratuită.",
+   "when": "Rezultatul devine tot mai vizibil pe parcursul ședințelor."
+  },
+  "faq": [
+   {
+    "q": "Ce este RF Sculpt?",
+    "a": "Radiofrecvență + masaj modelator, pentru rezultate accelerate: remodelare, tonifiere și drenaj. Full Face înseamnă tonifiere și revitalizare la nivelul întregii fețe."
+   },
+   {
+    "q": "Doare? Am nevoie de recuperare?",
+    "a": "E o procedură non-invazivă, bine tolerată: căldură și ușoare furnicături. Fără timp de recuperare; te poți întoarce imediat la activitățile zilnice."
+   },
+   {
+    "q": "Se combină cu HIFU sau BioLifting?",
+    "a": "Da. După HIFU sau BioLifting, o cură RF Sculpt susține fermitatea. Recomandarea exactă o facem la consultație."
+   },
+   {
+    "q": "Câte ședințe îmi trebuie?",
+    "a": "RF Sculpt se face în cură, iar rezultatul devine tot mai vizibil pe parcursul ședințelor. Numărul exact îl stabilim la consultația gratuită."
+   }
+  ],
+  "pairs": [
+   {
+    "id": "hifu-full-face",
+    "why": "Lifting mai profund"
+   },
+   {
+    "id": "restart",
+    "why": "Ten luminos imediat"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
-   "v2/src/riduri-linii-fine.html"
-  ]
+   "v2/src/riduri-linii-fine.html",
+   "v2/src/catalog-rezultate.html"
+  ],
+  "video": null
  },
  {
   "id": "restart",
-  "title": "Tratament Restart",
-  "lead": "Revitalizează pielea, îmbunătățește textura și redă luminozitatea naturală.",
-  "problems": [
-   "Ten obosit, gri sau fără viață",
-   "Ten fără strălucire",
-   "Textură neuniformă",
-   "Ten neuniform"
+  "name": "Tratament Restart",
+  "need": "fata",
+  "kind": "Față · ten luminos",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "Tratament facial Restart: hidratare profundă, exfoliere și stimulare a colagenului, pentru un ten mai luminos și mai uniform. Celulele moarte și deshidratarea împrăștie lumina; exfoliem blând și rehidratăm în profunzime, iar suprafața netedă o reflectă din nou.",
-   "steps": [
-    "Prima vizită, gratuită: evaluăm tipul de ten și nevoile pielii și alegem împreună tratamentul potrivit.",
-    "Ședința: strălucirea se vede de la prima ședință. E confortabil și relaxant, fără recuperare.",
-    "Cura continuă la 1-2 săptămâni, apoi întreținere la 4-6 săptămâni."
-   ],
-   "explainerFrom": "ten-lipsit-de-stralucire.html"
-  },
-  "session": {
-   "minutes": 50,
-   "feel": "Confortabil și relaxant, fără recuperare. Rezultatul devine vizibil imediat după ședință, cu efect de prospețime și luminozitate.",
-   "sessions": "De obicei o cură de 3-4 ședințe la interval de 1-2 săptămâni, apoi o ședință de întreținere la 4-6 săptămâni."
-  },
-  "zones": [
-   "Toată fața"
+  "zones": [],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 50,
+  "full": 300,
+  "promise": "Ten luminos, de la prima ședință.",
+  "bullets": [
+   "Strălucirea se vede de la prima ședință",
+   "Hidratare, exfoliere și stimularea colagenului",
+   "50 de minute, fără recuperare"
+  ],
+  "tiles": [
+   {
+    "icon": "layers",
+    "t": "Exfoliere blândă",
+    "s": "Scoate celulele moarte care împrăștie lumina."
+   },
+   {
+    "icon": "drop",
+    "t": "Hidratare profundă",
+    "s": "Pielea primește apa de care are nevoie."
+   },
+   {
+    "icon": "spark",
+    "t": "Glow din prima",
+    "s": "Strălucirea se vede de la prima ședință."
+   }
   ],
   "results": [
    {
+    "case": "11",
     "src": "/brand_asset/catalog/cazul-11-facial-restart-arad.webp",
-    "zone": "Toată fața",
-    "caption": "Facial Restart · Arad · după o ședință"
-   },
-   {
-    "src": "/brand_asset/catalog/cazul-30-facial-restart-arad-2.webp",
-    "zone": "Toată fața",
-    "caption": "Facial Restart · Arad · după o ședință"
-   },
-   {
-    "src": "/brand_asset/catalog/cazul-31-facial-restart-arad-3.webp",
-    "zone": "Toată fața",
-    "caption": "Facial Restart · Arad · după o ședință"
-   },
-   {
-    "src": "/brand_asset/catalog/cazul-32-facial-restart-arad-4.webp",
-    "zone": "Toată fața",
-    "caption": "Facial Restart · Arad · după o ședință"
+    "w": 1400,
+    "h": 944,
+    "title": "Tratament Restart",
+    "sub": "Arad · 1 ședință"
    }
   ],
+  "resultsNote": "Rezultatele diferă de la o persoană la alta, în funcție de tipul de ten și stilul de viață.",
+  "how": {
+   "h": "Un ten fără strălucire e, de obicei, <em>un ten însetat.</em>",
+   "text": "Celulele moarte și deshidratarea împrăștie lumina. Exfoliem blând și rehidratăm în profunzime, iar suprafața netedă o reflectă din nou.",
+   "steps": [
+    {
+     "b": "Celulele moarte",
+     "t": "și deshidratarea împrăștie lumina"
+    },
+    {
+     "b": "Exfoliem blând",
+     "t": "și rehidratăm în profunzime"
+    },
+    {
+     "b": "Suprafața netedă",
+     "t": "reflectă lumina: ten luminos"
+    }
+   ],
+   "anim": "restart"
+  },
+  "map": "",
+  "voice": [
+   "Tenul tău arată obosit, gri, fără viață.",
+   "Pielea e deshidratată, iar textura e neuniformă.",
+   "Vrei ceva relaxant, fără recuperare."
+  ],
+  "why": "Stresul, somnul insuficient, soarele și un ritm alert lasă pielea deshidratată, încărcată cu celule moarte și cu bariera slăbită. Nu e vina ta.",
   "fit": {
    "yes": [
     "tenul arată obosit, gri sau fără viață",
@@ -962,6 +1730,12 @@
     "cauți un efect care să țină fără întreținere: strălucirea se menține cu o cură completă și ședințe periodice",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Confortabil și relaxant.",
+   "recovery": "Fără recuperare. Te poți machia chiar a doua zi.",
+   "sessions": "De obicei 3-4 ședințe la 1-2 săptămâni, apoi întreținere la 4-6 săptămâni.",
+   "when": "Strălucirea se vede de la prima ședință."
   },
   "faq": [
    {
@@ -985,71 +1759,201 @@
     "a": "Da. De multe ori combinăm hidratarea cu microneedling pentru textură sau cu tratamente anti-aging. Planul personalizat îl construim la consultație."
    }
   ],
+  "pairs": [
+   {
+    "id": "masaj-facial",
+    "why": "Relaxare și ten odihnit"
+   },
+   {
+    "id": "biolifting-full-face",
+    "why": "Și fermitate"
+   },
+   {
+    "id": "hidratare",
+    "why": "Și hidratare în profunzime"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/ten-lipsit-de-stralucire.html",
-   "v2/src/pete-pigmentare.html",
-   "v2/src/catalog-rezultate.html"
-  ]
+   "v2/src/home-bf.html"
+  ],
+  "video": null,
+  "mapZones": []
  },
  {
   "id": "masaj-facial",
-  "title": "Masaj facial clasic",
-  "lead": "Masajul scalpului, feței, gușii, gâtului și decolteului. Relaxare profundă, pielea arată odihnită și luminoasă.",
-  "problems": [],
-  "how": {
-   "text": "",
-   "steps": [],
-   "explainerFrom": ""
-  },
-  "session": {
-   "minutes": 30,
-   "feel": "Relaxare profundă, pielea arată odihnită și luminoasă.",
-   "sessions": ""
-  },
-  "zones": [
+  "name": "Masaj facial clasic",
+  "need": "fata",
+  "kind": "Față · relaxare",
+  "cities": [
+   "Timișoara",
+   "Arad"
+  ],
+  "zones": [],
+  "mapZones": [
    "Scalp",
    "Față",
    "Gușă",
    "Gât",
    "Decolteu"
   ],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 30,
+  "full": 120,
+  "promise": "Relaxare profundă. Pielea arată odihnită și luminoasă.",
+  "bullets": [
+   "Scalp, față, gușă, gât și decolteu",
+   "Relaxare profundă",
+   "30 de minute doar pentru tine"
+  ],
+  "tiles": [
+   {
+    "icon": "hand",
+    "t": "Scalp și față",
+    "s": "Masajul începe de sus, calm."
+   },
+   {
+    "icon": "flow",
+    "t": "Gușă, gât, decolteu",
+    "s": "Fiecare zonă își primește rândul."
+   },
+   {
+    "icon": "spark",
+    "t": "Ten odihnit",
+    "s": "Pielea arată odihnită și luminoasă."
+   }
+  ],
   "results": [],
-  "fit": {
-   "yes": [],
-   "no": []
+  "how": {
+   "h": "Treizeci de minute <em>doar pentru tine.</em>",
+   "text": "Masajul scalpului, feței, gușii, gâtului și decolteului. Relaxare profundă, iar pielea arată odihnită și luminoasă.",
+   "steps": [
+    {
+     "b": "Scalpul și fața",
+     "t": "primele, masate calm"
+    },
+    {
+     "b": "Gușa, gâtul și decolteul",
+     "t": "urmează, pe rând"
+    },
+    {
+     "b": "Relaxare profundă",
+     "t": "pielea arată odihnită și luminoasă"
+    }
+   ],
+   "anim": "masaj-facial"
   },
-  "faq": [],
+  "map": "face",
+  "voice": [
+   "Ai nevoie de o pauză doar pentru tine.",
+   "Tenul tău arată obosit."
+  ],
+  "fit": {},
+  "session": {
+   "feel": "Relaxare profundă.",
+   "recovery": "Fără recuperare.",
+   "when": "Pielea arată odihnită și luminoasă."
+  },
+  "faq": [
+   {
+    "q": "Ce zone include masajul?",
+    "a": "Scalpul, fața, gușa, gâtul și decolteul."
+   },
+   {
+    "q": "Cât durează?",
+    "a": "O ședință durează 30 de minute."
+   },
+   {
+    "q": "Unde se face?",
+    "a": "În ambele clinici, în Timișoara și în Arad."
+   }
+  ],
+  "pairs": [
+   {
+    "id": "restart",
+    "why": "Ten luminos imediat"
+   },
+   {
+    "id": "hidratare",
+    "why": "Hidratare în profunzime"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html"
-  ]
+  ],
+  "video": null
  },
  {
   "id": "hidratare",
-  "title": "Tratament de hidratare profundă",
-  "lead": "Reface nivelul optim de apă al pielii și întărește bariera cutanată.",
-  "problems": [
-   "Piele deshidratată",
-   "Barieră cutanată slăbită",
-   "Ten obosit, gri sau fără viață",
-   "Textură neuniformă"
+  "name": "Hidratare profundă",
+  "need": "fata",
+  "kind": "Față · hidratare",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "Un ten fără strălucire e, de obicei, un ten însetat. Celulele moarte și deshidratarea împrăștie lumina. Curățăm, exfoliem blând și rehidratăm în profunzime, iar suprafața netedă o reflectă din nou.",
-   "steps": [
-    "Prima vizită, gratuită: evaluăm tipul de ten și nevoile pielii și alegem împreună tratamentul potrivit.",
-    "Ședința: strălucirea se vede de la prima ședință. E confortabil și relaxant, fără recuperare.",
-    "Cura continuă la 1-2 săptămâni, apoi întreținere la 4-6 săptămâni."
-   ],
-   "explainerFrom": "ten-lipsit-de-stralucire.html"
-  },
-  "session": {
-   "minutes": 60,
-   "feel": "Confortabil și relaxant, fără perioadă de recuperare. Te poți întoarce la activitățile zilnice imediat.",
-   "sessions": "De obicei o cură de 3-4 ședințe la interval de 1-2 săptămâni, apoi o ședință de întreținere la 4-6 săptămâni."
-  },
   "zones": [],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 60,
+  "full": 350,
+  "promise": "Reface apa din piele și îi întărește bariera.",
+  "bullets": [
+   "Hidratează în profunzime",
+   "Întărește bariera pielii",
+   "60 de minute, fără recuperare"
+  ],
+  "tiles": [
+   {
+    "icon": "layers",
+    "t": "Curățare și exfoliere",
+    "s": "Blânde, ca pielea să primească tot."
+   },
+   {
+    "icon": "drop",
+    "t": "Rehidratare profundă",
+    "s": "Reface nivelul optim de apă al pielii."
+   },
+   {
+    "icon": "shield",
+    "t": "Barieră întărită",
+    "s": "O piele mai puternică și mai luminoasă."
+   }
+  ],
   "results": [],
+  "how": {
+   "h": "Pielea însetată <em>nu strălucește.</em>",
+   "text": "Un ten fără strălucire e, de obicei, un ten însetat. Curățăm, exfoliem blând și rehidratăm în profunzime. Tratamentul reface nivelul optim de apă al pielii și întărește bariera cutanată.",
+   "steps": [
+    {
+     "b": "Pielea deshidratată",
+     "t": "are bariera slăbită"
+    },
+    {
+     "b": "Rehidratăm",
+     "t": "în profunzime"
+    },
+    {
+     "b": "Bariera",
+     "t": "e întărită, pielea strălucește"
+    }
+   ],
+   "anim": "hidratare"
+  },
+  "map": "",
+  "voice": [
+   "Pielea ta e deshidratată.",
+   "Tenul arată obosit, gri, fără viață.",
+   "Vrei un tratament relaxant, fără recuperare."
+  ],
   "fit": {
    "yes": [
     "tenul arată obosit, gri sau fără viață",
@@ -1061,6 +1965,12 @@
     "cauți un efect care să țină fără întreținere: strălucirea se menține cu o cură completă și ședințe periodice",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Confortabil și relaxant.",
+   "recovery": "Fără perioadă de recuperare.",
+   "sessions": "De obicei 3-4 ședințe la 1-2 săptămâni, apoi întreținere la 4-6 săptămâni.",
+   "when": "Strălucirea se vede de la prima ședință."
   },
   "faq": [
    {
@@ -1084,80 +1994,205 @@
     "a": "Da. De multe ori combinăm hidratarea cu microneedling pentru textură sau cu tratamente anti-aging. Planul personalizat îl construim la consultație."
    }
   ],
+  "pairs": [
+   {
+    "id": "masaj-facial",
+    "why": "Relaxare și ten odihnit"
+   },
+   {
+    "id": "restart",
+    "why": "Ten luminos imediat"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/ten-lipsit-de-stralucire.html"
-  ]
+  ],
+  "video": null,
+  "mapZones": []
  },
  {
   "id": "antirid",
-  "title": "Tratament intensiv antirid",
-  "lead": "Diminuează ridurile și liniile fine, stimulând regenerarea pielii.",
-  "problems": [
-   "Riduri",
-   "Linii fine"
+  "name": "Tratament antirid",
+  "need": "fata",
+  "kind": "Față · riduri",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "",
-   "steps": [],
-   "explainerFrom": ""
-  },
-  "session": {
-   "minutes": 60,
-   "feel": "",
-   "sessions": ""
-  },
   "zones": [],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 60,
+  "full": 370,
+  "promise": "Diminuează ridurile și liniile fine.",
+  "bullets": [
+   "Diminuează ridurile și liniile fine",
+   "Stimulează regenerarea pielii",
+   "60 de minute, în Timișoara și Arad"
+  ],
+  "tiles": [
+   {
+    "icon": "lines",
+    "t": "Riduri și linii fine",
+    "s": "Tratamentul lucrează direct pe ele."
+   },
+   {
+    "icon": "spark",
+    "t": "Regenerare",
+    "s": "Stimulează regenerarea pielii."
+   },
+   {
+    "icon": "clock",
+    "t": "O oră pentru ten",
+    "s": "60 de minute, în ambele clinici."
+   }
+  ],
   "results": [],
-  "fit": {
-   "yes": [
-    "ai riduri, linii fine sau un contur care „cade”",
-    "pielea și-a pierdut fermitatea, iar cremele nu mai ajung",
-    "vrei lifting fără bisturiu și fără recuperare, chiar și preventiv, de la primele semne"
+  "how": {
+   "h": "Regenerare, <em>pentru riduri.</em>",
+   "text": "Tratamentul intensiv antirid diminuează ridurile și liniile fine, stimulând regenerarea pielii.",
+   "steps": [
+    {
+     "b": "Cu vârsta",
+     "t": "pielea se reînnoiește mai greu, apar liniile fine"
+    },
+    {
+     "b": "Tratamentul",
+     "t": "stimulează regenerarea pielii"
+    },
+    {
+     "b": "Ridurile",
+     "t": "și liniile fine sunt diminuate"
+    }
    ],
-   "no": [
-    "vrei efectul de a doua zi, ca la injectabile: lifting-ul prin colagen e gradual",
-    "ești însărcinată sau alăptezi",
-    "ai o contraindicație medicală: o verificăm împreună la consultație"
-   ]
+   "anim": "antirid"
   },
-  "faq": [],
+  "map": "",
+  "voice": [
+   "Începi să vezi linii fine.",
+   "Vrei un ten care arată odihnit."
+  ],
+  "why": "Cu vârsta, pielea produce mai puțin colagen și elastină, iar fermitatea scade. Nu e vina ta.",
+  "fit": {},
+  "session": {
+   "sessions": "Numărul de ședințe îl stabilim la consultația gratuită, după tenul tău."
+  },
+  "faq": [
+   {
+    "q": "Ce face tratamentul?",
+    "a": "Diminuează ridurile și liniile fine, stimulând regenerarea pielii."
+   },
+   {
+    "q": "Cât durează o ședință?",
+    "a": "60 de minute."
+   },
+   {
+    "q": "Câte ședințe îmi trebuie?",
+    "a": "Numărul exact îl stabilim la consultația gratuită, în funcție de tenul tău."
+   },
+   {
+    "q": "Unde se face?",
+    "a": "În ambele clinici, în Timișoara și în Arad."
+   }
+  ],
+  "pairs": [
+   {
+    "id": "biolifting-full-face",
+    "why": "Colagen pentru riduri"
+   },
+   {
+    "id": "hifu-full-face",
+    "why": "Lifting fără operație"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/riduri-linii-fine.html"
-  ]
+  ],
+  "video": null,
+  "mapZones": []
  },
  {
   "id": "redness",
-  "title": "Redness Relief Protocol",
-  "lead": "Calmează roșeața și reechilibrează pielea sensibilă, reactivă sau cuperozică.",
-  "problems": [
-   "Roșeață",
-   "Piele sensibilă",
-   "Piele reactivă",
-   "Piele cuperozică"
+  "name": "Redness Relief",
+  "need": "fata",
+  "kind": "Față · ten sensibil",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "Protocoalele noastre lucrează pe cauză: curăță porii în profunzime, reglează sebumul și calmează inflamația, refăcând bariera pielii.",
-   "steps": [
-    "Prima vizită, gratuită: identificăm tipul de ten și cauzele imperfecțiunilor și alegem protocolul potrivit.",
-    "Ședința: curățare profundă și reechilibrare. E confortabil; după curățare poate apărea o ușoară roșeață, trecătoare.",
-    "Cura continuă la 2-3 săptămâni, plus o rutină simplă acasă, potrivită tenului tău."
-   ],
-   "explainerFrom": ""
-  },
-  "session": {
-   "minutes": 50,
-   "feel": "Protocoalele faciale sunt confortabile. După curățare poate apărea o ușoară roșeață trecătoare.",
-   "sessions": ""
-  },
   "zones": [],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 50,
+  "full": 300,
+  "promise": "Calmează roșeața și reechilibrează pielea sensibilă.",
+  "bullets": [
+   "Calmează roșeața",
+   "Pentru pielea sensibilă, reactivă sau cuperozică",
+   "50 de minute"
+  ],
+  "tiles": [
+   {
+    "icon": "calm",
+    "t": "Calmează",
+    "s": "Roșeața se liniștește."
+   },
+   {
+    "icon": "balance",
+    "t": "Reechilibrează",
+    "s": "Pielea sensibilă își recapătă echilibrul."
+   },
+   {
+    "icon": "shield",
+    "t": "Barieră refăcută",
+    "s": "Lucrăm pe cauză, nu doar pe simptom."
+   }
+  ],
   "results": [],
-  "fit": {
-   "yes": [],
-   "no": []
+  "how": {
+   "h": "Calm, <em>pentru pielea sensibilă.</em>",
+   "text": "Redness Relief calmează roșeața și reechilibrează pielea sensibilă, reactivă sau cuperozică. Protocoalele noastre lucrează pe cauză și refac bariera pielii.",
+   "steps": [
+    {
+     "b": "Pielea sensibilă",
+     "t": "reacționează și se înroșește"
+    },
+    {
+     "b": "Protocolul",
+     "t": "calmează roșeața"
+    },
+    {
+     "b": "Bariera pielii",
+     "t": "e refăcută, tenul reechilibrat"
+    }
+   ],
+   "anim": "redness"
+  },
+  "map": "",
+  "voice": [
+   "Pielea ta se înroșește repede.",
+   "Ai tenul sensibil și reactiv.",
+   "Vrei ceva blând, care să nu te irite."
+  ],
+  "fit": {},
+  "session": {
+   "feel": "Confortabil.",
+   "recovery": "După curățare poate apărea o ușoară roșeață, trecătoare.",
+   "sessions": "Numărul de ședințe îl stabilim la consultația gratuită."
   },
   "faq": [
+   {
+    "q": "Pentru ce ten e potrivit?",
+    "a": "Pentru pielea sensibilă, reactivă sau cuperozică: calmează roșeața și reechilibrează pielea."
+   },
    {
     "q": "Doare sau am nevoie de recuperare?",
     "a": "Protocoalele faciale sunt confortabile. După curățare poate apărea o ușoară roșeață trecătoare. Microneedlingul are 1-2 zile de roșeață ușoară. Îți explicăm tot înainte."
@@ -1167,37 +2202,90 @@
     "a": "O rutină simplă și corectă (curățare blândă, hidratare, protecție solară) face diferența. Îți recomandăm pașii potriviți tenului tău, fără să-l usuci sau să-l iriți."
    }
   ],
+  "pairs": [
+   {
+    "id": "hidratare",
+    "why": "Bariera pielii refăcută"
+   },
+   {
+    "id": "masaj-facial",
+    "why": "Relaxare pentru ten sensibil"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/ten-problematic.html"
-  ]
+  ],
+  "video": null,
+  "mapZones": []
  },
  {
   "id": "sebum-off",
-  "title": "Sebum Off Protocol",
-  "lead": "Reglează secreția de sebum, curăță porii și reduce imperfecțiunile.",
-  "problems": [
-   "Acnee",
-   "Exces de sebum",
-   "Pori dilatați",
-   "Imperfecțiuni care tot revin, chiar și la maturitate"
+  "name": "Sebum Off",
+  "need": "fata",
+  "kind": "Față · ten acneic",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "Acneea nu ține de igienă. Ține de echilibru. Protocoalele noastre lucrează pe cauză: curăță porii în profunzime, reglează sebumul și calmează inflamația, refăcând bariera pielii.",
-   "steps": [
-    "Prima vizită, gratuită: identificăm tipul de ten și cauzele imperfecțiunilor și alegem protocolul potrivit.",
-    "Ședința: curățare profundă și reechilibrare. E confortabil; după curățare poate apărea o ușoară roșeață, trecătoare.",
-    "Cura continuă la 2-3 săptămâni, plus o rutină simplă acasă, potrivită tenului tău."
-   ],
-   "explainerFrom": "ten-problematic.html"
-  },
-  "session": {
-   "minutes": 110,
-   "feel": "E confortabil. După curățare poate apărea o ușoară roșeață, trecătoare.",
-   "sessions": "De obicei o cură de 4 ședințe la 2-3 săptămâni, apoi întreținere la 4-6 săptămâni."
-  },
   "zones": [],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 110,
+  "full": 420,
+  "promise": "Pori curați, sebum echilibrat, mai puține imperfecțiuni.",
+  "bullets": [
+   "Curăță porii în profunzime",
+   "Reglează secreția de sebum",
+   "Reduce imperfecțiunile"
+  ],
+  "tiles": [
+   {
+    "icon": "pore",
+    "t": "Pori curați",
+    "s": "Curățăm porii în profunzime, fără agresiune."
+   },
+   {
+    "icon": "balance",
+    "t": "Sebum echilibrat",
+    "s": "Reglăm secreția de sebum."
+   },
+   {
+    "icon": "calm",
+    "t": "Mai puțină inflamație",
+    "s": "Calmăm roșeața și refacem bariera pielii."
+   }
+  ],
   "results": [],
+  "how": {
+   "h": "Acneea nu ține de igienă. <em>Ține de echilibru.</em>",
+   "text": "Protocolul lucrează pe cauză: curăță porii în profunzime, reglează sebumul și calmează inflamația, refăcând bariera pielii.",
+   "steps": [
+    {
+     "b": "Porul",
+     "t": "se înfundă cu sebum, apare inflamația"
+    },
+    {
+     "b": "Curățăm porii",
+     "t": "în profunzime, fără agresiune"
+    },
+    {
+     "b": "Echilibrăm sebumul",
+     "t": "și calmăm roșeața"
+    }
+   ],
+   "anim": "sebum-off"
+  },
+  "map": "",
+  "voice": [
+   "Ai imperfecțiuni care tot revin, chiar și la maturitate.",
+   "Tenul tău e gras, iar porii sunt dilatați.",
+   "Ai încercat de toate și pielea nu se echilibrează."
+  ],
+  "why": "Glandele produc prea mult sebum, porii se înfundă, iar inflamația și bacteriile fac restul. De aceea spălatul agresiv adesea înrăutățește lucrurile. Nu e vina ta.",
   "fit": {
    "yes": [
     "ai acnee, exces de sebum sau pori dilatați",
@@ -1209,6 +2297,12 @@
     "nu vrei nicio rutină acasă: curățarea blândă, hidratarea și protecția solară fac diferența",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Confortabil.",
+   "recovery": "După curățare poate apărea o ușoară roșeață, trecătoare.",
+   "sessions": "De obicei o cură de 4 ședințe la 2-3 săptămâni, apoi întreținere la 4-6 săptămâni.",
+   "when": "Ten vizibil mai curat după a treia ședință, în majoritatea cazurilor."
   },
   "faq": [
    {
@@ -1228,38 +2322,90 @@
     "a": "O rutină simplă și corectă (curățare blândă, hidratare, protecție solară) face diferența. Îți recomandăm pașii potriviți tenului tău, fără să-l usuci sau să-l iriți."
    }
   ],
+  "pairs": [
+   {
+    "id": "microneedling",
+    "why": "Și urmele de acnee"
+   },
+   {
+    "id": "restart",
+    "why": "Ten luminos imediat"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/ten-problematic.html"
-  ]
+  ],
+  "video": null,
+  "mapZones": []
  },
  {
   "id": "microneedling",
-  "title": "Microneedling Exozomi PDRN",
-  "lead": "Regenerare prin microperforații: cicatrici post-acneice, textură și fermitate.",
-  "problems": [
-   "Pete pigmentare și ton neuniform",
-   "Semne lăsate de acnee",
-   "Cicatrici post-acneice",
-   "Textură neuniformă",
-   "Fermitate"
+  "name": "Microneedling Exozomi",
+  "need": "fata",
+  "kind": "Față · pete și textură",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "Regenerare, nu camuflaj. Micro-canale controlate pornesc reînnoirea pielii, iar exozomii și PDRN susțin regenerarea, pentru un ton mai uniform în timp. Protecția solară zilnică previne reapariția petelor.",
-   "steps": [
-    "Prima vizită, gratuită: identificăm tipul de pete și cauza, apoi alegem tratamentul potrivit.",
-    "Ședința: cu cremă anesteziantă, disconfortul e minim. Pielea poate fi roșie 1-2 zile.",
-    "Protecție solară zilnică pe tot parcursul: pasul esențial care previne reapariția petelor."
-   ],
-   "explainerFrom": "pete-pigmentare.html"
-  },
-  "session": {
-   "minutes": 60,
-   "feel": "Cu cremă anesteziantă, disconfortul e minim. După, pielea poate fi roșie 1-2 zile, ca o ușoară arsură solară.",
-   "sessions": "Pentru pete: de obicei o cură de 3 ședințe la 3-4 săptămâni, apoi reevaluare."
-  },
   "zones": [],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 60,
+  "full": 520,
+  "promise": "Regenerare, nu camuflaj. Pentru pete, urme de acnee și textură.",
+  "bullets": [
+   "Estompează cicatricile de acnee",
+   "Ton mai uniform în timp",
+   "Cu cremă anesteziantă, disconfort minim"
+  ],
+  "tiles": [
+   {
+    "icon": "dots",
+    "t": "Micro-canale",
+    "s": "Controlate, pornesc reînnoirea pielii."
+   },
+   {
+    "icon": "spark",
+    "t": "Exozomi + PDRN",
+    "s": "Susțin regenerarea."
+   },
+   {
+    "icon": "smooth",
+    "t": "Ton uniform",
+    "s": "În timp, cu protecție solară zilnică."
+   }
+  ],
   "results": [],
+  "how": {
+   "h": "Regenerare, <em>nu camuflaj.</em>",
+   "text": "Micro-canale controlate pornesc reînnoirea pielii, iar exozomii și PDRN susțin regenerarea, pentru un ton mai uniform în timp. Protecția solară zilnică previne reapariția petelor.",
+   "steps": [
+    {
+     "b": "Micro-canalele",
+     "t": "controlate pornesc reînnoirea pielii"
+    },
+    {
+     "b": "Exozomii + PDRN",
+     "t": "susțin regenerarea"
+    },
+    {
+     "b": "Tonul",
+     "t": "devine mai uniform; SPF-ul zilnic previne reapariția"
+    }
+   ],
+   "anim": "microneedling"
+  },
+  "map": "",
+  "voice": [
+   "Ai pete pe care le acoperi zilnic cu fond de ten.",
+   "Ți-au rămas urme după acnee.",
+   "Textura pielii nu e uniformă."
+  ],
+  "why": "Petele apar din soare, din hormoni sau din inflamația lăsată de acnee. Fondul de ten le ascunde, dar nu le rezolvă. Nu e vina ta.",
   "fit": {
    "yes": [
     "ai pete pigmentare sau un ten neuniform",
@@ -1271,6 +2417,12 @@
     "ești însărcinată sau alăptezi",
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
+  },
+  "session": {
+   "feel": "Cu cremă anesteziantă, disconfortul e minim.",
+   "recovery": "Pielea poate fi roșie 1-2 zile, ca o ușoară arsură solară.",
+   "sessions": "Pentru pete: de obicei 3 ședințe la 3-4 săptămâni, apoi reevaluare.",
+   "when": "Pete vizibil estompate după a treia ședință, în majoritatea cazurilor."
   },
   "faq": [
    {
@@ -1294,36 +2446,93 @@
     "a": "Da, după ce acneea e sub control, microneedlingul cu exozomi PDRN ajută la textură și la estomparea semnelor post-acneice. Le abordăm în etapa potrivită din plan."
    }
   ],
+  "pairs": [
+   {
+    "id": "hidratare",
+    "why": "Hidratare după regenerare"
+   },
+   {
+    "id": "restart",
+    "why": "Ten luminos imediat"
+   }
+  ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/pete-pigmentare.html",
-   "v2/src/ten-problematic.html",
-   "v2/src/ten-lipsit-de-stralucire.html"
-  ]
+   "v2/src/ten-problematic.html"
+  ],
+  "video": null,
+  "mapZones": []
  },
  {
   "id": "periocular",
-  "title": "Microneedling Corector Periocular",
-  "lead": "Țintit pe zona ochilor: cearcăne, hidratare și linii fine.",
-  "problems": [
-   "Cearcăne",
-   "Lipsa hidratării în jurul ochilor",
-   "Linii fine în jurul ochilor"
+  "name": "Microneedling Periocular",
+  "need": "fata",
+  "kind": "Față · zona ochilor",
+  "cities": [
+   "Timișoara",
+   "Arad"
   ],
-  "how": {
-   "text": "Microneedlingul corector periocular lucrează țintit pe zona ochilor, pentru cearcăne, hidratare și linii fine. Micro-canale controlate pornesc reînnoirea pielii. Rezultatul depinde de tipul de cearcăn (pigmentar, vascular sau structural).",
-   "steps": [],
-   "explainerFrom": "pete-pigmentare.html"
-  },
-  "session": {
-   "minutes": 30,
-   "feel": "Aplicăm o cremă anesteziantă, așa că disconfortul e minim. După, pielea poate fi roșie 1-2 zile.",
-   "sessions": ""
-  },
-  "zones": [
-   "Zona ochilor"
+  "zones": [],
+  "mapZones": [
+   "Periocular"
+  ],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 30,
+  "full": 520,
+  "promise": "Țintit pe zona ochilor: cearcăne, hidratare și linii fine.",
+  "bullets": [
+   "Lucrează țintit pe zona ochilor",
+   "Pentru cearcăne, hidratare și linii fine",
+   "30 de minute, cu cremă anesteziantă"
+  ],
+  "tiles": [
+   {
+    "icon": "eye",
+    "t": "Doar zona ochilor",
+    "s": "O zonă delicată, tratată țintit."
+   },
+   {
+    "icon": "dots",
+    "t": "Micro-canale fine",
+    "s": "Pornesc reînnoirea pielii."
+   },
+   {
+    "icon": "drop",
+    "t": "Hidratare",
+    "s": "Pentru cearcăne și linii fine."
+   }
   ],
   "results": [],
+  "how": {
+   "h": "Țintit, <em>pe zona ochilor.</em>",
+   "text": "Microneedlingul corector periocular lucrează țintit pe zona ochilor, pentru cearcăne, hidratare și linii fine. Micro-canale controlate pornesc reînnoirea pielii. Rezultatul depinde de tipul de cearcăn: pigmentar, vascular sau structural.",
+   "steps": [
+    {
+     "b": "Micro-canalele fine",
+     "t": "pornesc reînnoirea pielii din jurul ochilor"
+    },
+    {
+     "b": "Pielea",
+     "t": "primește hidratare și se reînnoiește"
+    },
+    {
+     "b": "Cearcănele și liniile fine",
+     "t": "sunt lucrate țintit"
+    }
+   ],
+   "anim": "periocular"
+  },
+  "map": "face",
+  "voice": [
+   "Ai cearcăne pe care nu le acoperă niciun corector.",
+   "Zona ochilor arată obosită.",
+   "Vezi linii fine în jurul ochilor."
+  ],
   "fit": {
    "yes": [
     "ai pete pigmentare sau un ten neuniform",
@@ -1336,6 +2545,12 @@
     "ai o contraindicație medicală: o verificăm împreună la consultație"
    ]
   },
+  "session": {
+   "feel": "Cu cremă anesteziantă, disconfortul e minim.",
+   "recovery": "Pielea poate fi roșie 1-2 zile.",
+   "sessions": "Numărul de ședințe îl stabilim la consultația gratuită.",
+   "when": "Rezultatul depinde de tipul de cearcăn: pigmentar, vascular sau structural."
+  },
   "faq": [
    {
     "q": "Cearcănele se pot trata?",
@@ -1344,65 +2559,102 @@
    {
     "q": "Microneedlingul doare? Am nevoie de recuperare?",
     "a": "Aplicăm o cremă anesteziantă, așa că disconfortul e minim. După, pielea poate fi roșie 1-2 zile, ca o ușoară arsură solară. Îți dăm toate indicațiile de îngrijire."
+   },
+   {
+    "q": "Cât durează o ședință?",
+    "a": "30 de minute."
+   }
+  ],
+  "pairs": [
+   {
+    "id": "hidratare",
+    "why": "Hidratare în profunzime"
+   },
+   {
+    "id": "biolifting-full-face",
+    "why": "Fermitate pe toată fața"
    }
   ],
   "sourcePages": [
    "v2/src/preturi.html",
    "v2/src/pete-pigmentare.html"
-  ]
+  ],
+  "video": null
  },
  {
   "id": "epilare",
-  "title": "Epilare laser · Elysion Pro",
-  "lead": "Scapi de firele nedorite cu laserul diodă Elysion Pro și sistemul lui de răcire: confortabil, sigur pe orice tip de piele și eficient ședință după ședință. Doar în Timișoara.",
-  "problems": [
-   "Ceara și aparatul de ras, o întreținere fără sfârșit",
-   "Fire crescute sub piele",
-   "Iritații după epilare",
-   "Păr închis la culoare, pe față sau pe corp"
+  "pp": "epilare-full-body",
+  "name": "Epilare",
+  "need": "epilare",
+  "kind": "Epilare laser · Elysion Pro",
+  "cities": [
+   "Timișoara"
   ],
-  "how": {
-   "text": "Lumina laserului e absorbită de pigmentul firului și transformată în căldură, care dezactivează progresiv folicul cu folicul. Părul crește în cicluri, de aceea laserul construiește rezultatul în mai multe ședințe.",
-   "steps": [
-    "Prima vizită, gratuită: evaluăm pielea și pilozitatea, stabilim planul și îți programăm prima ședință.",
-    "Ședința: o ușoară senzație de căldură sau o înțepătură fină, atenuată de răcire. Îți reiei ziua imediat.",
-    "Ședințele următoare, la intervalele recomandate, tratează părul în fiecare fază de creștere."
-   ],
-   "explainerFrom": "epilare-laser.html"
-  },
-  "session": {
-   "minutes": "",
-   "feel": "O ușoară senzație de căldură sau o înțepătură fină, atenuată de răcire. Îți reiei ziua imediat.",
-   "sessions": "În general 6-8 ședințe, la interval de câteva săptămâni; seria completă (de obicei 6 ședințe) o calculăm gratuit la consultație."
-  },
-  "zones": [
-   "Axile",
-   "Antebrațe",
-   "Brațe total",
-   "Mâini / Laba piciorului",
-   "Areole mamare",
-   "Piept",
-   "Umeri",
-   "Abdomen",
-   "Linie bikini",
-   "Linia albă",
-   "Inghinal total",
-   "Fese",
-   "Labii / Interfesieri",
-   "Zona lombară",
-   "Spate integral",
-   "Picior scurt (până la genunchi)",
-   "Picior lung (complet)",
-   "Mustață",
-   "Bărbie",
-   "Perciuni",
-   "Obraji",
-   "Gât",
-   "Față complet",
-   "Contur barbă / gât",
-   "Full Body"
+  "zones": [],
+  "sess": [
+   1,
+   3,
+   6
+  ],
+  "minutes": 90,
+  "full": 920,
+  "promise": "Epilare laser care chiar ține.",
+  "bullets": [
+   "Fără ceară, fără aparat de ras, fără fire crescute",
+   "Răcire activă: senzație mult mai blândă",
+   "Garanție scrisă: dacă părul crește la loc, continuăm gratuit"
+  ],
+  "tiles": [
+   {
+    "icon": "laser",
+    "t": "Lumină pe pigment",
+    "s": "Laserul țintește pigmentul firului de păr."
+   },
+   {
+    "icon": "heat",
+    "t": "Căldură la folicul",
+    "s": "Îl dezactivează, folicul cu folicul."
+   },
+   {
+    "icon": "smooth",
+    "t": "Piele netedă",
+    "s": "Fără iritații și fără fire crescute sub piele."
+   }
   ],
   "results": [],
+  "how": {
+   "h": "Lumina ajunge <em>până la folicul.</em>",
+   "text": "Lumina laserului e absorbită de pigmentul firului și transformată în căldură, care dezactivează progresiv folicul cu folicul. Părul crește în cicluri, de aceea laserul construiește rezultatul în mai multe ședințe.",
+   "steps": [
+    {
+     "b": "Lumina",
+     "t": "e absorbită de pigmentul firului"
+    },
+    {
+     "b": "Căldura",
+     "t": "coboară până la folicul"
+    },
+    {
+     "b": "Foliculul",
+     "t": "nu mai produce păr: piele netedă"
+    }
+   ],
+   "anim": "epilare"
+  },
+  "video": {
+   "src": "/brand_asset/epilare-pas-cu-pas.mp4",
+   "poster": "/brand_asset/epilare-pas-cu-pas.webp",
+   "title": "Așa arată o ședință.",
+   "sub": "De la fișă la laser · Elysion Pro",
+   "ratio": ""
+  },
+  "map": "epilare",
+  "voice": [
+   "Te-ai săturat de ceară și de aparatul de ras.",
+   "Ai fire crescute sub piele și iritații după epilare.",
+   "Vrei să scapi de întreținerea săptămânală."
+  ],
+  "why": "Părul crește în cicluri. De aceea ceara și aparatul de ras sunt o întreținere fără sfârșit, iar laserul construiește rezultatul în mai multe ședințe. Dar este de durată.",
   "fit": {
    "yes": [
     "vrei să scapi de ceară, aparatul de ras și întreținerea săptămânală",
@@ -1415,6 +2667,13 @@
     "vrei să folosești în continuare ceara sau penseta între ședințe"
    ]
   },
+  "session": {
+   "feel": "O ușoară căldură sau o înțepătură fină, atenuată de răcire.",
+   "recovery": "Fără recuperare. Îți reiei ziua imediat.",
+   "sessions": "În general 6-8 ședințe, la câteva săptămâni distanță, ca să prindem părul în fiecare fază de creștere.",
+   "when": "După a cincea ședință, aproximativ 90% din fire au dispărut, în majoritatea cazurilor."
+  },
+  "guarantee": true,
   "faq": [
    {
     "q": "Doare epilarea laser?",
@@ -1437,9 +2696,30 @@
     "a": "Da, cu condiția să eviți expunerea directă la soare și să folosești protecție solară pe zona tratată. Pielea bronzată necesită setări speciale, de aceea consultația și testul sunt importante."
    }
   ],
+  "pairs": [],
   "sourcePages": [
    "v2/src/preturi.html",
-   "v2/src/epilare-laser.html"
+   "v2/src/epilare-laser.html",
+   "v2/src/home-bf.html"
+  ],
+  "mapZones": [],
+  "epiPairs": [
+   {
+    "key": "fata-complet",
+    "why": "Fața nu intră în Full Body"
+   },
+   {
+    "key": "axile",
+    "why": "Încă o zonă, tot la -50%"
+   },
+   {
+    "key": "inghinal-total",
+    "why": "Încă o zonă, tot la -50%"
+   },
+   {
+    "key": "picior-lung",
+    "why": "Încă o zonă, tot la -50%"
+   }
   ]
  }
 ]
