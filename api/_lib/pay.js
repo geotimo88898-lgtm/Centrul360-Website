@@ -213,6 +213,22 @@ const KINDS = {
       return (await C.payPaid({ orderId: o.id, ref: o.ref, amount: o.amount, currency: o.currency, myposRef: o.mypos.ref, method: o.mypos.method, at: o.mypos.at || o.paidAt, sandbox: !!o.sandbox, name: o.name || '', phone: o.phone || '' })) || { ok: true };
     },
   },
+  // a payment link of a set sum (the owner, 25.11: „vreau doar linkul de plată pentru 290 lei, trimite-mi tu”): made by Claude
+  // on his word (api/lead-health.js ?paylink=), never from the site (it is not in api/pay.js KINDS); its sum and words are kept in
+  // data/pay/custom.json. Paid: a row in Încasări and the desk is told, like a prepaid offer
+  custom: {
+    async quote({ ref }) {
+      const l = (await readJSON('data/pay/custom.json', [])) || [];
+      const c = l.find((x) => x && x.ref === ref);
+      if (!c || !(Number(c.amount) >= 1)) return { error: 'not_found' };
+      return { amount: r2(c.amount), full: r2(c.amount), bonusPct: 0, title: clip(c.title || 'Plată Centrul360', 120), city: cityOf(c.city) || '' };
+    },
+    async paid(o) {
+      const sale = await recordSale(o, 'link de plată');
+      await ring(o, 'PLĂTIT ONLINE PRIN LINK 💳', (o.name || 'O clientă') + ' a plătit ' + Math.round(o.amount) + ' lei prin linkul de plată (' + o.title + '). E în Încasări; trece-o la clienta potrivită.');
+      return { sale: sale.id };
+    },
+  },
   // Integrări → myPOS → „Test 1 leu”: the first real payment before the site may use it
   test: {
     async quote({ ref }) {

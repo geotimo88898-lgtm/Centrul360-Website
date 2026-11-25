@@ -833,6 +833,28 @@ module.exports = async (req, res) => {
       checkout: r.checkout ? { opened: r.checkout.openedAt || r.checkout.at || '', back: r.checkout.backAt || '' } : null })));
     return;
   }
+  // ?paylink=290: a myPOS payment link of that sum (the owner, 25.11: „vreau doar linkul de plată pentru 290 lei, trimite-mi tu”).
+  // Only the sums he asked for; one link per sum and day (the same one again on a second call); no names or phones here
+  if (req.query && req.query.paylink) {
+    const ASKED = [290];
+    const amount = Number(req.query.paylink);
+    if (!ASKED.includes(amount)) { res.status(400).json({ error: 'sum_not_asked' }); return; }
+    const S = require('./_lib/store'), P = require('./_lib/pay');
+    const day = new Date(Date.now() + 2 * 3600e3).toISOString().slice(0, 10);
+    const ref = 'link-' + amount + '-' + day;
+    const doc = 'data/pay/custom-' + ref + '.json';
+    let had = await S.readJSON(doc, null);
+    if (had && had.url) { res.status(200).json({ ok: true, amount, url: had.url, orderId: had.orderId, again: true }); return; }
+    const list = (await S.readJSON('data/pay/custom.json', [])) || [];
+    if (!list.some((x) => x && x.ref === ref)) await S.writeJSON('data/pay/custom.json', list.concat({ ref, amount, title: 'Plată Centrul360', at: new Date().toISOString() }).slice(-200));
+    const o = await P.createOrder({ kind: 'custom', ref, input: {}, host: 'www.centrul360.com', track: null });
+    if (!o || o.error) { res.status(500).json({ error: (o && o.error) || 'order_failed' }); return; }
+    const l = await P.link(o.orderId, o.key);
+    if (!l || !l.url) { res.status(500).json({ error: (l && l.error) || 'link_failed', status: l && l.status, message: l && l.message, orderId: o.orderId }); return; }
+    await S.writeJSON(doc, { ref, amount, orderId: o.orderId, url: l.url, at: new Date().toISOString() });
+    res.status(200).json({ ok: true, amount, url: l.url, orderId: o.orderId });
+    return;
+  }
   // ?payopen=1: the checkout's open orders and what myPOS says of each payment request now (kind, sum, status as myPOS writes
   // it, the booking text match), no names or phones; ?payopen=sweep runs the sweep once
   if (req.query && req.query.payopen) {
