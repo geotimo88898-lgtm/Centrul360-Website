@@ -928,10 +928,18 @@
   function bundleSave(k) {
     return (k.parts || []).reduce(function (s, x) { var q = byId(x.id), b = q && (q.base ? byId(q.base) : q); return s + (b ? b.price * x.n * (q.pack || 1) : 0); }, 0) - k.price;
   }
+  // a package's card (the owner, 25.11: „la pachete șterge «economisești» și pune cu highlight ce are deja în coș”): what it holds,
+  // the treatment she already has in the cart marked, its price
   function packHtml(o) {
-    var k = o.k, base = byId(k.base), save = k.bundle ? bundleSave(k) : base ? base.price * k.pack - k.price : 0;
+    var k = o.k, mine = function (id) { return lines().some(function (x) { return x.p.id === id || x.p.base === id; }); };
+    var inc = k.bundle ? (k.parts || []).map(function (x) {
+      var q = byId(x.id), b = q && (q.base ? byId(q.base) : q), n = x.n * ((q && q.pack) || 1);
+      if (!b) return '';
+      var t = esc(b.name + ', ' + (n === 1 ? '1 ședință' : n + ' ședințe'));
+      return mine(b.id) ? '<mark>' + I.check + t + '</mark>' : '<span>' + t + '</span>';
+    }).join('<i>+</i>') : '<mark>' + I.check + esc(byId(k.base) ? byId(k.base).name : k.name) + '</mark><span>' + k.pack + ' ședințe, ' + lei(perSes(k)) + ' ședința</span>';
     return '<div class="sh-pk sh-card"><span class="th"><img src="' + esc(picW(k, 300)) + '" alt="" loading="lazy" decoding="async"' + posOf(k) + '></span>' +
-      '<div class="sh-pk-m"><b>' + esc(nameOf(k, o.x.zone)) + '</b>' + (k.bundle ? '<span class="inc">' + esc(k.inc) + '</span>' : '') + '<small>' + (k.bundle ? '' : lei(perSes(k)) + ' ședința' + (save > 0 ? ' · ' : '')) + (save > 0 ? '<em>economisești ' + lei(save) + '</em>' : '') + '</small></div>' +
+      '<div class="sh-pk-m"><b>' + esc(nameOf(k, o.x.zone)) + '</b><span class="inc">' + inc + '</span></div>' +
       '<div class="pz"><b>' + lei(k.price) + '</b><s>' + lei(k.full) + '</s></div>' +
       '<button type="button" class="sh-pk-go" data-pack="' + esc(k.id) + '" data-pk-from="' + esc(o.x.key) + '">' + (k.bundle ? 'Aleg pachetul' : 'Trec la pachet') + I.arrow + '</button></div>';
   }

@@ -82,7 +82,7 @@
         var kz = k.zones.length ? z || k.zones[0] : '', on = !!S.inCart[keyOf(k.id, kz)], sv = pkSave(k), home = k.home || k.base || CFG.id;
         return '<article class="tp-pair tp-pk"><span class="th" aria-hidden="true"><img src="/brand_asset/tratamente/' + esc(home) + '-300.webp?v=2" alt="" loading="lazy" decoding="async"></span>' +
           '<div class="tx"><b>' + esc(pkName(k, kz)) + '</b><p>' + esc(k.bundle ? k.inc : k.pack + ' ședințe, ' + lei(Math.round(k.price / k.pack)) + ' ședința') + '</p>' +
-          '<span class="pz"><b>' + lei(k.price) + '</b> <s>' + lei(k.full) + '</s></span>' + (sv > 0 ? '<span class="sv">Economisești ' + lei(sv) + '</span>' : '') + '</div>' +
+          '<span class="pz"><b>' + lei(k.price) + '</b> <s>' + lei(k.full) + '</s></span></div>' +
           '<button type="button" class="tp-plus' + (on ? ' in' : '') + '" data-tp-pk="' + esc(k.id) + '" data-tp-pkz="' + esc(kz) + '" aria-label="' + (on ? 'În coș' : 'Adaugă ' + esc(pkName(k, kz)) + ' în coș') + '">' + (on ? CHECK : PLUS) + '</button></article>';
       }).join('') + '</div>';
     sec.hidden = false;
