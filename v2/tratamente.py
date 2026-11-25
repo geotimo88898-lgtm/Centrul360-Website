@@ -25,6 +25,9 @@ PCT = 50
 # loops and no drawn zone maps on the pages (the site's scientific explainers, the real photos and results stay)
 NO_3D = True
 NO_MAP = True
+# the owner, 25.11: „fă product page-urile mai bune, fără informații useless, doar ce trebuie”: no tiles that repeat the hero's
+# bullets, no long video, no problem list; the order: proof, how it works, the session, who it is for, combinations, 4 questions
+LEAN = True
 ARROW = '{{arrow}}'
 def ro_min(m):
     """Romanian minutes: 15 minute, 10-15 minute, 30 de minute"""
@@ -722,8 +725,8 @@ def page(x):
         eyebrow(x['kind']), name_h, e(x['promise']), ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(b)) for b in x['bullets']),
         buybox(x, zones, sess, full, epi), trust(x)))
 
-    # ---- 2. what it does, in three tiles
-    out.append('<section class="tp-s tp-what"><div class="wrap">%s<div class="tp-tiles">%s</div></div></section>' % (
+    # ---- 2. what it does, in three tiles (not in the lean page: the hero's bullets say it)
+    if not LEAN: out.append('<section class="tp-s tp-what"><div class="wrap">%s<div class="tp-tiles">%s</div></div></section>' % (
         head('Ce face, pe scurt', 'Trei lucruri, <em>spuse simplu.</em>'),
         ''.join('<article class="tp-tile rv"><span class="tp-ico">%s</span><h3>%s</h3><p>%s</p></article>' % (icon(t['icon']), e(t['t']), e(t['s'])) for t in x['tiles'])))
 
@@ -746,7 +749,7 @@ def page(x):
                 % (e(ar.get('poster') or ''), e(ar['video']), e('Cum funcționează ' + x['name'] + ', în 3D')))
     vid = ''
     v = x.get('video') or VSL.get(x['id'])
-    if v:
+    if v and not LEAN:
         vid = ('<div class="tp-vsl">%s<figure class="tp-vid rv%s"><div class="ph"><video src="%s" poster="%s" playsinline preload="none" aria-label="%s"></video><button type="button" class="tp-play" data-tp-play aria-label="Pornește video-ul">%s</button></div><figcaption><b>%s</b><span>%s</span></figcaption></figure></div>'
                % (eyebrow('Video · pe scurt'), ' wide' if v.get('ratio') else '', e(v['src']), e(v['poster']), e(v['title']), icon('play'), e(v['title']), e(v['sub'])))
     pr = proc_fig(x)
@@ -788,17 +791,19 @@ def page(x):
         out.append('<section class="tp-s tp-zones" id="zone"><div class="wrap">%s<div class="tp-map-g%s"><div class="tp-map%s%s">%s</div><div class="tp-map-side">%s%s</div></div></div></section>' % (
             head('Zone', h2, lead), ' tp-tapz' if tap else '', ' pick' if tap else '', ' tp-epi' if epi else '', svgm, side, readout))
 
-    # ---- 6. who it is for, in her words
+    # ---- 6. who it is for, in her words (the lean page: only the two lists, after the session)
+    who = ''
     fit = x.get('fit') or {}
-    if x.get('voice') or fit.get('yes'):
+    if (x.get('voice') and not LEAN) or fit.get('yes'):
         body = ''
-        if x.get('voice'): body += '<ul class="tp-probs">%s</ul>' % ''.join('<li class="rv">%s<span>%s</span></li>' % (icon('target'), e(v)) for v in x['voice'])
-        if x.get('why'): body += '<p class="tp-why rv"><b>Nu e vina ta.</b> %s</p>' % e(re.sub(r'\s*Nu e vina ta\.$', '', x['why']))
+        if x.get('voice') and not LEAN: body += '<ul class="tp-probs">%s</ul>' % ''.join('<li class="rv">%s<span>%s</span></li>' % (icon('target'), e(v)) for v in x['voice'])
+        if x.get('why') and not LEAN: body += '<p class="tp-why rv"><b>Nu e vina ta.</b> %s</p>' % e(re.sub(r'\s*Nu e vina ta\.$', '', x['why']))
         if fit.get('yes'):
             body += '<div class="tp-fit"><div class="y rv"><h3>E pentru tine dacă</h3><ul>%s</ul></div>%s</div>' % (
                 ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(y)) for y in fit['yes']),
                 '<div class="n rv"><h3>Nu e pentru tine dacă</h3><ul>%s</ul></div>' % ''.join('<li>%s<span>%s</span></li>' % (icon('x'), e(y)) for y in fit['no']) if fit.get('no') else '')
-        out.append('<section class="tp-s tp-who"><div class="wrap">%s%s</div></section>' % (head('Pentru cine e', 'Ce <em>rezolvă.</em>'), body))
+        who = '<section class="tp-s tp-who"><div class="wrap">%s%s</div></section>' % (head('Pentru cine e', 'E potrivit <em>pentru tine?</em>') if LEAN else head('Pentru cine e', 'Ce <em>rezolvă.</em>'), body)
+        if not LEAN: out.append(who)
 
     # ---- 7. the session
     ses = x.get('session') or {}
@@ -810,6 +815,7 @@ def page(x):
     facts.append(('pin', 'Unde', 'Doar în Timișoara, Str. Bucegi 7' if x['cities'] == ['Timișoara'] else 'În ambele clinici, Timișoara și Arad'))
     out.append('<section class="tp-s tp-ses"><div class="wrap">%s<dl class="tp-facts">%s</dl></div></section>' % (
         head('Ședința', 'Ce te <em>așteaptă.</em>'), ''.join('<div class="rv"><dt>%s<span>%s</span></dt><dd>%s</dd></div>' % (icon(ic), e(a_), e(b_)) for ic, a_, b_ in facts)))
+    if LEAN and who: out.append(who)
 
     # ---- (laser only) the written guarantee, as the site states it
     if x.get('guarantee'):
@@ -849,7 +855,7 @@ def page(x):
     if x.get('faq'):
         out.append('<section class="tp-s tp-q"><div class="wrap tp-q-g">%s<div class="tp-faq">%s</div></div></section>' % (
             head('Întrebări', 'Bine de <em>știut.</em>', '', ' left'),
-            ''.join('<details><summary><span>%s</span><i aria-hidden="true"></i></summary><div class="a"><p>%s</p></div></details>' % (e(f['q']), e(f['a'])) for f in x['faq'])))
+            ''.join('<details><summary><span>%s</span><i aria-hidden="true"></i></summary><div class="a"><p>%s</p></div></details>' % (e(f['q']), e(f['a'])) for f in (x['faq'][:4] if LEAN else x['faq']))))
 
     # ---- 10. the reviews (only the real ones) and the last call
     out.append('<section class="tp-s tp-rev" id="recenzii"><div class="wrap"><div class="tp-score rv"><span class="g">%s</span><b>5,0</b><span class="st">%s</span><p>300+ recenzii Google · Timișoara și Arad</p></div><div class="tp-revs">%s</div></div></section>' % (
