@@ -3,11 +3,13 @@
 // (Gemini, the owner's key in GEMINI_API_KEY) on a plain grey backdrop, so it can be cut out cleanly like the Black Friday
 // cards (brand_asset/oferte/). Kept in the store (site-art/v<V>/<id>-<n>.jpg, every try); looked at by hand, cut out and only
 // then published in brand_asset/tratamente/. Illustrative only: never a before/after (the results are only the clinic's photos).
-// Plus a short silent „how it works” loop for the top treatments (Gemini Omni Flash, the video model of the same key).
-//   make(id, extra)        generates that picture (one per call, up to two minutes), capped per version
-//   image(id, n)           its bytes (the newest try when n is not given)
-//   makeVideo(id, extra)   generates the 8 s loop (up to five minutes), capped per version
-//   video(id)              its bytes (mp4)
+// Plus a short silent „how it works” loop for the top treatments (Veo 3.1). Both go to Vertex AI first (VERTEX_API_KEY, the
+// GCP credit, like api/_lib/media-read.js), then to AI Studio (GEMINI_API_KEY) for the pictures. The keys only go in a header.
+//   make(id, extra)               generates that picture (one per call, up to two minutes), capped per version
+//   image(id, n)                  its bytes (the newest try when n is not given)
+//   makeVideo(id, extra, model)   starts the 8 s loop (Veo, a long-running job), capped per version
+//   pollVideo(id)                 asks how the loop is going; when it is ready, keeps it
+//   video(id)                     its bytes (mp4)
 const { readJSON, writeJSON, writeBinary, readBinary } = require('./store');
 
 const V = 1;
@@ -15,8 +17,9 @@ const MAX = 60; // paid picture generations per version (21 treatments, about tw
 const VMAX = 10; // paid video generations per version (one test, then the six top sellers, a redo or two)
 const KEY = 'data/site-art.json';
 const MODEL = 'gemini-3-pro-image';
-const VMODEL = 'gemini-omni-1.2-flash';
-const USD = { image: 0.134, videoSecond: 0.07 }; // the list prices (2K picture; 720p video), for the report only
+const VMODELS = { 'veo-3.1-generate-001': 0.4, 'veo-3.1-fast-generate-001': 0.15, 'veo-3.1-lite-generate-001': 0.05 }; // USD a second, the upper list price
+const VMODEL = 'veo-3.1-generate-001';
+const USD_IMAGE = 0.134; // a 2K picture, the list price, for the report only
 const VSEC = 8;
 const path = (id, n) => 'site-art/v' + V + '/' + id + '-' + n + '.jpg';
 const vpath = (id) => 'site-art/v' + V + '/' + id + '.mp4';
@@ -69,80 +72,111 @@ const VID = {
   biolifting: 'A cross-section of facial skin as soft translucent layers with fine collagen strands. A small round radiofrequency probe glides on the surface; a gentle warm rose-gold glow spreads evenly into the dermis, the collagen strands warm up, tighten and line up, and the surface becomes smoother and firmer.',
 };
 
-const blank = () => ({ v: V, spent: 0, tries: {}, errors: [], busy: 0, vspent: 0, vseconds: 0, vdone: {}, vbusy: 0 });
+const blank = () => ({ v: V, spent: 0, tries: {}, errors: [], busy: 0, via: {}, vspent: 0, vusd: 0, vops: {}, vdone: {} });
 async function load() { const d = await readJSON(KEY, null); return d && d.v === V ? Object.assign(blank(), d) : blank(); }
-function findMedia(x, kind) {
-  if (!x || typeof x !== 'object') return null;
-  if (typeof x.data === 'string' && x.data.length > 1000 && (x.type === kind || String(x.mime_type || x.mimeType || '').startsWith(kind + '/'))) return x.data;
-  if (kind === 'image' && x.inlineData && typeof x.inlineData.data === 'string') return x.inlineData.data;
-  for (const k of Object.keys(x)) { const f = findMedia(x[k], kind); if (f) return f; }
-  return null;
+const note = (d, s) => { d.errors = d.errors.concat(String(s).slice(0, 400)).slice(-12); };
+function providers() {
+  const out = [];
+  if (process.env.VERTEX_API_KEY) out.push({ name: 'vertex', key: process.env.VERTEX_API_KEY, base: 'https://aiplatform.googleapis.com/v1/publishers/google/models/' });
+  if (process.env.GEMINI_API_KEY) out.push({ name: 'studio', key: process.env.GEMINI_API_KEY, base: 'https://generativelanguage.googleapis.com/v1beta/models/' });
+  return out;
 }
-async function call(body, kind, ms) {
+async function post(url, key, body, ms) {
   const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms);
   try {
-    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
-      method: 'POST', signal: ac.signal,
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
-      body: JSON.stringify(body),
-    });
-    const j = await r.json().catch(() => null);
-    if (!r.ok) return { error: 'http ' + r.status + ': ' + String((j && j.error && j.error.message) || '').slice(0, 300), billed: false };
-    const data = findMedia(j, kind);
-    return data ? { bytes: Buffer.from(data, 'base64'), billed: true } : { error: 'no ' + kind + ' in the answer: ' + JSON.stringify(j || {}).slice(0, 300), billed: true };
+    const r = await fetch(url, { method: 'POST', signal: ac.signal, headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(body) });
+    const text = await r.text();
+    let j = null; try { j = JSON.parse(text); } catch (e) { /* not json */ }
+    return { status: r.status, ok: r.ok, j, text };
   } catch (e) {
-    return { error: e.name === 'AbortError' ? 'timeout' : e.message, billed: e.name === 'AbortError' };
+    return { status: 0, ok: false, j: null, text: e.name === 'AbortError' ? 'timeout' : e.message, timeout: e.name === 'AbortError' };
   } finally { clearTimeout(t); }
+}
+// one picture: Vertex first, AI Studio when Vertex refuses (no credit, not enabled)
+async function picture(text, ar) {
+  const body = { contents: [{ role: 'user', parts: [{ text }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'], imageConfig: { aspectRatio: ar, imageSize: '2K' } } };
+  const tried = [];
+  for (const p of providers()) {
+    const r = await post(p.base + MODEL + ':generateContent', p.key, body, 125000);
+    if (r.timeout) return { error: p.name + ': timeout', billed: true, tried };
+    if (!r.ok) { tried.push(p.name + ' ' + r.status + ': ' + r.text.replace(/\s+/g, ' ').slice(0, 220)); if ([401, 402, 403, 404, 429].includes(r.status)) continue; return { error: tried.join(' | '), billed: false }; }
+    const parts = (r.j && r.j.candidates && r.j.candidates[0] && r.j.candidates[0].content && r.j.candidates[0].content.parts) || [];
+    const img = parts.find((x) => x.inlineData || x.inline_data);
+    if (!img) return { error: p.name + ': no image (' + ((r.j && r.j.candidates && r.j.candidates[0] && r.j.candidates[0].finishReason) || 'unknown') + ') ' + parts.map((x) => x.text || '').join(' ').slice(0, 200), billed: true, via: p.name };
+    return { bytes: Buffer.from((img.inlineData || img.inline_data).data, 'base64'), billed: true, via: p.name };
+  }
+  return { error: tried.join(' | ') || 'no_key', billed: false };
 }
 async function make(id, extra) {
   if (!ART[id]) return { error: 'unknown' };
-  if (!process.env.GEMINI_API_KEY) return { error: 'no_key' };
+  if (!providers().length) return { error: 'no_key' };
   const d = await load();
   if (d.spent >= MAX) return { error: 'cap_reached', spent: d.spent };
   if (Date.now() - d.busy < 130000) return { error: 'busy' };
   d.busy = Date.now();
   await writeJSON(KEY, d, { quiet: true });
-  const text = STYLE + ART[id].t + (extra ? ' ' + String(extra).slice(0, 600) : '');
-  const out = await call({ model: MODEL, input: [{ type: 'text', text }],
-    response_format: { type: 'image', mime_type: 'image/jpeg', aspect_ratio: ART[id].ar, image_size: '2K' } }, 'image', 125000);
+  const out = await picture(STYLE + ART[id].t + (extra ? ' ' + String(extra).slice(0, 600) : ''), ART[id].ar);
   const d2 = await load(); // what changed while it ran (a video) stays
   const n = (d2.tries[id] || 0) + 1;
   if (out.bytes) { await writeBinary(path(id, n), out.bytes, 'image/jpeg'); d2.tries[id] = n; }
-  if (out.billed) d2.spent++;
-  if (out.error) d2.errors = d2.errors.concat(id + ': ' + out.error).slice(-10);
+  if (out.billed) { d2.spent++; d2.via[out.via || '?'] = (d2.via[out.via || '?'] || 0) + 1; }
+  if (out.error) note(d2, id + ': ' + out.error);
   d2.busy = 0;
   await writeJSON(KEY, d2, { quiet: true });
-  return { ok: !!out.bytes, id, n: out.bytes ? n : 0, spent: d2.spent, max: MAX, error: out.error || '' };
+  return { ok: !!out.bytes, id, n: out.bytes ? n : 0, via: out.via || '', spent: d2.spent, max: MAX, error: out.error || '' };
 }
 async function image(id, n) {
   if (!ART[id]) return null;
   if (!n) { const d = await load(); n = d.tries[id] || 0; }
   return n ? readBinary(path(id, Number(n) || 0)) : null;
 }
-async function makeVideo(id, extra) {
+// the loop: Veo 3.1 on Vertex, silent (no audio track is made), 16:9, 720p, 8 s; a long-running job asked about with pollVideo
+async function makeVideo(id, extra, model) {
   if (!VID[id]) return { error: 'unknown' };
-  if (!process.env.GEMINI_API_KEY) return { error: 'no_key' };
+  const key = process.env.VERTEX_API_KEY;
+  if (!key) return { error: 'no_key' };
+  const m = VMODELS[model] ? model : VMODEL;
   const d = await load();
   if (d.vspent >= VMAX) return { error: 'cap_reached', vspent: d.vspent };
-  if (Date.now() - d.vbusy < 310000) return { error: 'busy' };
-  d.vbusy = Date.now();
+  if (d.vops[id] && Date.now() - d.vops[id].at < 15 * 60e3) return { error: 'busy', op: d.vops[id] };
+  const body = { instances: [{ prompt: VSTYLE + VID[id] + (extra ? ' ' + String(extra).slice(0, 600) : '') }],
+    parameters: { aspectRatio: '16:9', durationSeconds: VSEC, resolution: '720p', generateAudio: false, sampleCount: 1, personGeneration: 'dont_allow',
+      negativePrompt: 'text, letters, captions, watermark, logo, people, faces, hands, blood, needles, before and after' } };
+  const r = await post('https://aiplatform.googleapis.com/v1/publishers/google/models/' + m + ':predictLongRunning', key, body, 60000);
+  const name = r.j && r.j.name;
+  if (!r.ok || !name) { note(d, 'video ' + id + ': ' + r.status + ' ' + r.text.replace(/\s+/g, ' ').slice(0, 300)); await writeJSON(KEY, d, { quiet: true }); return { ok: false, id, error: r.status + ' ' + r.text.replace(/\s+/g, ' ').slice(0, 300) }; }
+  d.vops[id] = { op: name, model: m, at: Date.now() };
+  d.vspent++; d.vusd = Math.round((d.vusd + VSEC * VMODELS[m]) * 100) / 100;
   await writeJSON(KEY, d, { quiet: true });
-  const text = VSTYLE + VID[id] + (extra ? ' ' + String(extra).slice(0, 600) : '');
-  const out = await call({ model: VMODEL, input: [{ type: 'text', text }], background: false, store: false,
-    response_format: { type: 'video', aspect_ratio: '16:9', resolution: '720p', duration: VSEC + 's' } }, 'video', 300000);
+  return { ok: true, id, started: true, model: m, vspent: d.vspent, vmax: VMAX };
+}
+function findVideo(x) {
+  if (!x || typeof x !== 'object') return null;
+  if (typeof x.bytesBase64Encoded === 'string') return x.bytesBase64Encoded;
+  if (typeof x.encodedVideo === 'string') return x.encodedVideo;
+  for (const k of Object.keys(x)) { const f = findVideo(x[k]); if (f) return f; }
+  return null;
+}
+async function pollVideo(id) {
+  const d = await load();
+  const o = d.vops[id];
+  if (!o) return { error: 'not_started', done: !!d.vdone[id] };
+  const r = await post('https://aiplatform.googleapis.com/v1/publishers/google/models/' + o.model + ':fetchPredictOperation', process.env.VERTEX_API_KEY, { operationName: o.op }, 60000);
+  if (!r.ok) return { ok: false, id, error: r.status + ' ' + r.text.replace(/\s+/g, ' ').slice(0, 300) };
+  if (!r.j || !r.j.done) return { ok: true, id, done: false, seconds: Math.round((Date.now() - o.at) / 1000) };
+  const data = findVideo(r.j.response || r.j);
   const d2 = await load();
-  if (out.bytes) { await writeBinary(vpath(id), out.bytes, 'video/mp4'); d2.vdone[id] = new Date().toISOString(); }
-  if (out.billed) { d2.vspent++; d2.vseconds += VSEC; }
-  if (out.error) d2.errors = d2.errors.concat('video ' + id + ': ' + out.error).slice(-10);
-  d2.vbusy = 0;
+  delete d2.vops[id];
+  if (data) { await writeBinary(vpath(id), Buffer.from(data, 'base64'), 'video/mp4'); d2.vdone[id] = { at: new Date().toISOString(), model: o.model }; }
+  else note(d2, 'video ' + id + ': ' + JSON.stringify(r.j.error || r.j.response || r.j).slice(0, 300));
   await writeJSON(KEY, d2, { quiet: true });
-  return { ok: !!out.bytes, id, bytes: out.bytes ? out.bytes.length : 0, vspent: d2.vspent, vmax: VMAX, error: out.error || '' };
+  return { ok: !!data, id, done: true, error: data ? '' : JSON.stringify(r.j.error || r.j.response || {}).slice(0, 300) };
 }
 const video = (id) => (VID[id] ? readBinary(vpath(id)) : Promise.resolve(null));
 async function status() {
   const d = await load();
-  return { v: V, spent: d.spent, max: MAX, tries: d.tries, ids: Object.keys(ART), vspent: d.vspent, vmax: VMAX, vseconds: d.vseconds,
-    vdone: Object.keys(d.vdone), vids: Object.keys(VID), usd: Math.round((d.spent * USD.image + d.vseconds * USD.videoSecond) * 100) / 100, errors: d.errors };
+  return { v: V, spent: d.spent, max: MAX, via: d.via, tries: d.tries, ids: Object.keys(ART), vspent: d.vspent, vmax: VMAX, vdone: d.vdone,
+    vbusy: Object.keys(d.vops), vids: Object.keys(VID), usd: { images: Math.round(d.spent * USD_IMAGE * 100) / 100, videos: d.vusd }, errors: d.errors };
 }
 
-module.exports = { V, ART, VID, make, image, makeVideo, video, status };
+module.exports = { V, ART, VID, make, image, makeVideo, pollVideo, video, status };
