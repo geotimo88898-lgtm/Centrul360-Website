@@ -188,7 +188,11 @@
   // the pictures themselves are 966 wide): the 2-up tiles take the 600 one (the big one only on a screen that needs it), the
   // thumbnails the 300 one. A picture without copies stays as it is.
   var picW = function (p, w) { var a = artOf(p), u = picOf(p); return a && a.img && u === a.img && (a.w || []).indexOf(w) > -1 ? u.replace(/\.webp(\?|$)/, '-' + w + '.webp$1') : u; };
-  var tileImg = function (p) { var s = picW(p, 600), u = picOf(p); return 'src="' + esc(s) + '"' + (s !== u ? ' srcset="' + esc(s) + ' 600w, ' + esc(u) + ' 966w" sizes="(max-width:640px) calc(50vw - 31px), 270px"' : ''); };
+  // the offers' cards show the problem (the owner, 25.11: „la HIFU gușă o doamnă cu gușă, la abdomen la fel; la epilare lasă cum e”):
+  // brand_asset/tratamente/problem/<id>.webp (900) and -450, the subject in the upper right, fading into black
+  var PROB = { hifu: 1, biolifting: 1, 'hifu-corp': 1, liposonix: 1, cavitatie: 1, radiofrecventa: 1, ems: 1, impachetare: 1, restart: 1, hidratare: 1, antirid: 1, redness: 1, 'sebum-off': 1, 'masaj-facial': 1 };
+  var tileImg = function (p) {
+    if (PROB[p.id]) { var pb = '/brand_asset/tratamente/problem/' + p.id; return 'class="pb" src="' + pb + '-450.webp" srcset="' + pb + '-450.webp 450w, ' + pb + '.webp 900w" sizes="(max-width:640px) calc(40vw - 20px), 230px"'; } var s = picW(p, 600), u = picOf(p); return 'src="' + esc(s) + '"' + (s !== u ? ' srcset="' + esc(s) + ' 600w, ' + esc(u) + ' 966w" sizes="(max-width:640px) calc(50vw - 31px), 270px"' : ''); };
   var sesWord = function (n) { return n === 1 ? '1 ședință' : n + ' ședințe'; };
   var qOf = function (v) { return clamp(Math.floor(Number(v) || 1), 1, 10); };
   // the clinic: hers (the offers' filter, ?oras=, the checkout: one choice everywhere); with no choice, the one clinic her cart
@@ -510,7 +514,7 @@
   function tileHtml(p, k) {
     var z = zoneOf(p), n = nOf(p), mine = has(p), u = urlOf(p);
     return '<article class="bfc bft' + (mine ? ' in' : '') + '" data-p="' + esc(p.id) + '" data-href="' + u + '" data-w="1">' +
-      '<span class="pic" aria-hidden="true"><img ' + tileImg(p) + ' alt=""' + (k === 0 ? ' fetchpriority="high"' : k < 4 ? '' : ' loading="lazy"') + ' decoding="async"' + posOf(p) + '></span>' +
+      '<span class="pic" aria-hidden="true"><img ' + tileImg(p) + ' alt=""' + (k === 0 ? ' fetchpriority="high"' : k < 4 ? '' : ' loading="lazy"') + ' decoding="async"' + (PROB[p.id] ? '' : posOf(p)) + '></span>' +
       '<span class="pct">-' + pct() + '%</span>' + onlyHtml(p, 'bft-c') +
       '<div class="bft-b"><h3><a href="' + u + '">' + esc(cardName(p)) + '</a></h3>' +
       '<div class="pr"><b data-pr>' + lei(p.price * n) + '</b><s data-full>' + lei(p.full * n) + '</s></div>' +
