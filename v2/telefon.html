@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Centrul360 pe telefon</title>
+<!-- the owner, 25.11: „vreau de pe calculator să pot naviga site-ul de pe telefon, live”. The live preview in an iPhone-sized
+     frame (390 × 844, same origin, so every tap, the cart and the checkout work as on the phone). Not part of the site. -->
+<style>
+:root{ --bg:#eceef1; --ink:#1d1d1f; --mu:#6e6e73; --ln:rgba(11,11,13,.1); --e:cubic-bezier(.16,1,.3,1); }
+*{ box-sizing:border-box; }
+html,body{ height:100%; margin:0; }
+body{ background:radial-gradient(120% 90% at 50% 0%,#f7f8fa 0%,var(--bg) 60%,#e2e5e9 100%); color:var(--ink);
+  font:15px/1.4 Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; display:flex; overflow:hidden; }
+.side{ flex:none; width:300px; height:100%; padding:28px 22px; display:flex; flex-direction:column; gap:22px; overflow:auto; }
+.brand{ font-weight:800; letter-spacing:-.02em; font-size:18px; }
+.brand small{ display:block; font-weight:500; color:var(--mu); font-size:13px; letter-spacing:0; margin-top:4px; }
+.grp b{ display:block; font:500 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--mu); margin:0 0 10px; }
+.grp a{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; margin:0 0 6px; border-radius:12px; color:var(--ink);
+  text-decoration:none; background:rgba(255,255,255,.7); box-shadow:0 0 0 1px var(--ln) inset; transition:background .3s var(--e), transform .3s var(--e); }
+.grp a:hover{ background:#fff; }
+.grp a:active{ transform:scale(.98); }
+.grp a.on{ background:#0b0b0d; color:#fff; box-shadow:none; }
+.grp a span{ color:var(--mu); font-size:12px; }
+.grp a.on span{ color:rgba(255,255,255,.6); }
+.stage{ flex:1; min-width:0; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:16px; }
+.bar{ display:flex; align-items:center; gap:8px; width:min(560px,100%); }
+.bar button{ flex:none; width:38px; height:38px; border:0; border-radius:50%; background:#fff; box-shadow:0 0 0 1px var(--ln) inset; cursor:pointer; display:grid; place-items:center; }
+.bar button:hover{ background:#f5f5f7; }
+.bar svg{ width:17px; height:17px; }
+.url{ flex:1; min-width:0; height:38px; display:flex; align-items:center; padding:0 14px; border-radius:999px; background:#fff; box-shadow:0 0 0 1px var(--ln) inset;
+  color:var(--mu); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.url b{ color:var(--ink); font-weight:600; }
+.phone{ position:relative; width:414px; height:868px; padding:12px; border-radius:62px; background:#0b0b0d;
+  box-shadow:0 0 0 2px #2a2a2e inset, 0 0 0 1px #000, 0 50px 90px -40px rgba(0,0,0,.55), 0 20px 40px -24px rgba(0,0,0,.35);
+  transform-origin:50% 50%; }
+.phone::before{ content:''; position:absolute; z-index:3; left:50%; top:22px; width:120px; height:34px; margin-left:-60px; border-radius:20px; background:#000; pointer-events:none; }
+.screen{ position:relative; width:390px; height:844px; border-radius:50px; overflow:hidden; background:#fff; }
+.screen iframe{ position:absolute; left:0; top:50px; width:390px; height:794px; border:0; display:block; }
+.sb{ position:absolute; left:0; right:0; top:0; height:50px; display:flex; align-items:center; justify-content:space-between; padding:6px 34px 0 40px; font-weight:600; font-size:15px; color:#0b0b0d; background:#fff; }
+.sb i{ display:flex; gap:5px; align-items:center; }
+.sb i span{ width:17px; height:11px; border-radius:3px; background:#0b0b0d; }
+.sb i span:first-child{ width:16px; background:linear-gradient(90deg,#0b0b0d 0 3px,transparent 3px 5px,#0b0b0d 5px 8px,transparent 8px 10px,#0b0b0d 10px 13px,transparent 13px 15px,#0b0b0d 15px); height:10px; border-radius:1px; }
+.sb i span:last-child{ width:25px; height:12px; border-radius:4px; background:#0b0b0d; box-shadow:0 0 0 1px #0b0b0d; }
+.hint{ color:var(--mu); font-size:12.5px; text-align:center; }
+@media (max-width:900px){ .side{ display:none; } }
+</style>
+</head>
+<body>
+<aside class="side">
+  <div class="brand">Centrul360 pe telefon<small>Previzualizarea live, cum o vede o clientă pe iPhone (390 × 844).</small></div>
+  <div class="grp"><b>Magazinul</b>
+    <a href="/v2/home-bf" data-go>Homepage<span>nou</span></a>
+    <a href="/v2/oferte-bf" data-go>Toate ofertele<span>-50%</span></a>
+    <a href="/v2/tratament-liposonix" data-go>Liposonix</a>
+    <a href="/v2/tratament-hifu" data-go>HIFU Gușă</a>
+    <a href="/v2/tratament-rf-sculpt-gusa" data-go>RF Sculpt Gușă</a>
+    <a href="/v2/tratament-epilare" data-go>Epilare laser</a>
+    <a href="/v2/tratament-ems" data-go>EMS</a>
+  </div>
+  <div class="grp"><b>Paginile site-ului</b>
+    <a href="/v2/grasime-localizata" data-go>Grăsime localizată</a>
+    <a href="/v2/gusa-barbie-dubla" data-go>Gușă și bărbie dublă</a>
+    <a href="/v2/preturi" data-go>Prețuri</a>
+    <a href="/v2/rezultate" data-go>Rezultate</a>
+  </div>
+  <div class="grp"><b>Site-ul de acum</b>
+    <a href="/" data-go>Homepage live<span>actual</span></a>
+  </div>
+</aside>
+<main class="stage">
+  <div class="bar">
+    <button type="button" data-back aria-label="Înapoi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <button type="button" data-reload aria-label="Reîncarcă"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+    <div class="url" data-url>centrul360.com</div>
+    <button type="button" data-open aria-label="Deschide în fila nouă"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg></button>
+  </div>
+  <div class="phone" data-phone><div class="screen"><div class="sb" aria-hidden="true"><b data-clock>9:41</b><i><span></span><span></span></i></div><iframe data-frame title="Centrul360 pe telefon" src="about:blank"></iframe></div></div>
+  <div class="hint">Navighezi cu mouse-ul ca pe telefon; derulezi cu rotița. Coșul și plata merg ca pe site.</div>
+</main>
+<script>
+(function () {
+  var f = document.querySelector('[data-frame]'), url = document.querySelector('[data-url]'), phone = document.querySelector('[data-phone]');
+  var links = [].slice.call(document.querySelectorAll('[data-go]'));
+  var start = (location.hash || '').slice(1) || new URLSearchParams(location.search).get('p') || '/v2/home-bf';
+  if (!/^\/[\w\-\/.?=&#%]*$/.test(start)) start = '/v2/home-bf';
+  f.src = start;
+  function fit() { var s = Math.min(1, (innerHeight - 110) / 868, (innerWidth - (innerWidth > 900 ? 340 : 32)) / 414); phone.style.transform = 'scale(' + Math.max(.5, s) + ')'; phone.style.margin = (-(868 * (1 - Math.max(.5, s))) / 2) + 'px 0'; }
+  addEventListener('resize', fit); fit();
+  var clk = document.querySelector('[data-clock]'); function tick() { var d = new Date(); clk.textContent = d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2); } tick(); setInterval(tick, 20000);
+  function sync() {
+    var p = ''; try { p = f.contentWindow.location.pathname + f.contentWindow.location.search; } catch (e) {}
+    if (!p || p === 'blank') return;
+    url.innerHTML = 'centrul360.com<b>' + p.replace(/[<>&]/g, '') + '</b>';
+    links.forEach(function (a) { a.classList.toggle('on', a.getAttribute('href') === f.contentWindow.location.pathname); });
+    try { history.replaceState(null, '', '#' + p); } catch (e) {}
+  }
+  f.addEventListener('load', sync);
+  setInterval(sync, 800);
+  links.forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); f.src = a.getAttribute('href'); }); });
+  document.querySelector('[data-back]').addEventListener('click', function () { try { f.contentWindow.history.back(); } catch (e) {} });
+  document.querySelector('[data-reload]').addEventListener('click', function () { try { f.contentWindow.location.reload(); } catch (e) { f.src = f.src; } });
+  document.querySelector('[data-open]').addEventListener('click', function () { var p = '/'; try { p = f.contentWindow.location.pathname + f.contentWindow.location.search; } catch (e) {} open(p, '_blank'); });
+})();
+</script>
+</body>
+</html>
