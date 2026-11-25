@@ -409,7 +409,7 @@
       '<div class="bfo-tools">' +
       ddHtml('city', 'Clinica', CITIES_F, F.city, 'l') + ddHtml('sort', 'Sortează', SORTS, F.sort, 'r') +
       '</div></div>' +
-      '<div class="bfo-head"><h2 data-fh></h2><span data-fn></span></div><div class="bfo-g tiles" data-grid></div>';
+      '<div class="bfo-head"><h2 data-fh></h2></div><div class="bfo-g tiles" data-grid></div>';
     el.style.minHeight = '';
     grid(false);
     // back from a treatment (not from the browser's page cache): where she was in the list
@@ -474,7 +474,7 @@
     var list = listFor(F.k), epi = F.k === 'epilare' && F.city !== 'Arad';
     var zones = epi ? D.products.filter(function (p) { return p.need === 'epilare' && p.id !== 'epilare-full-body'; }).length : 0;
     $('[data-fh]').textContent = FILTER_T[F.k];
-    $('[data-fn]').textContent = list.length + (list.length === 1 ? ' tratament' : ' tratamente') + (epi ? ' + ' + zones + ' zone' : '');
+    // no count of the treatments (the owner, 25.11: „nu scrie câte sunt”)
     g.innerHTML = (list.length ? list.map(tileHtml).join('') : '<p class="bfo-none">Nu e niciun tratament aici' + (F.city ? ' în ' + esc(F.city) : '') + '.</p>') +
       (epi ? '<div class="epi"><div class="epi-h"><b>Pe zone</b><div class="seg" role="radiogroup" aria-label="Pentru"><i class="sg-i" aria-hidden="true"></i><button type="button" role="radio" data-g="f" aria-checked="' + (EPI.g === 'f') + '">Femei</button><button type="button" role="radio" data-g="m" aria-checked="' + (EPI.g === 'm') + '">Bărbați</button></div></div><ul data-epi aria-label="' + zones + ' zone"></ul>' +
       '<a class="epi-more" href="' + BASE + 'tratament-epilare">Tot despre epilarea laser' + I.chev + '</a></div>' : '');
