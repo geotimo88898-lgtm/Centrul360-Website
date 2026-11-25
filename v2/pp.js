@@ -27,6 +27,8 @@
   var S = { zone: (CFG.zones && CFG.zones[0]) || '', key: 'full-body', g: 'f', n: 1, pct: CFG.pct || 50, inCart: {} };
   var CAT = null; // the server's products by id
   var ALLZ = 'Toate zonele';
+  // „Full Face” on the face's zones (the owner, 25.11): HIFU Full Face, BioLifting Full Face
+  var FF = 'Full Face', FULLF = { hifu: 'hifu-full-face', biolifting: 'biolifting-full-face' };
 
   // ---- what she picked → the product, its name and price
   function epiId(key, g) { return key === 'full-body' ? 'epilare-full-body' : 'epilare-' + key + (g === 'm' ? '-barbati' : ''); }
@@ -41,6 +43,10 @@
     if (S.zone === ALLZ) {
       var t = CAT && CAT[CFG.id + '-toate'], tf = t ? t.full : CFG.full * Math.max(1, (CFG.zones || []).length);
       return { id: CFG.id + '-toate', zone: '', label: ALLZ, name: CFG.name + ' ' + ALLZ, full: tf, price: t ? t.price : Math.round(tf * (100 - S.pct) / 100), ok: !CAT || !!t };
+    }
+    if (S.zone === FF && FULLF[CFG.id]) {
+      var ff = CAT && CAT[FULLF[CFG.id]];
+      return { id: FULLF[CFG.id], zone: '', label: FF, name: ff ? ff.name : CFG.name + ' ' + FF, full: ff ? ff.full : CFG.full, price: ff ? ff.price : Math.round(CFG.full * (100 - S.pct) / 100), ok: !CAT || !!ff };
     }
     var q = CAT && CAT[CFG.id];
     var full = q ? q.full : CFG.full;
@@ -204,8 +210,8 @@
       // the zones the server sells (a chip it does not know goes away)
       var q = CAT[CFG.id];
       if (!EPI && q && q.zones && q.zones.length) {
-        $$('[data-tp-zone]').forEach(function (b) { var z = b.getAttribute('data-tp-zone'), ok = q.zones.indexOf(z) > -1 || (z === ALLZ && !!CAT[CFG.id + '-toate']); if (b.tagName === 'BUTTON') b.hidden = !ok; else b.style.display = ok ? '' : 'none'; });
-        if (q.zones.indexOf(S.zone) < 0 && !(S.zone === ALLZ && CAT[CFG.id + '-toate'])) S.zone = q.zones[0];
+        $$('[data-tp-zone]').forEach(function (b) { var z = b.getAttribute('data-tp-zone'), ok = q.zones.indexOf(z) > -1 || (z === ALLZ && !!CAT[CFG.id + '-toate']) || (z === FF && !!(FULLF[CFG.id] && CAT[FULLF[CFG.id]])); if (b.tagName === 'BUTTON') b.hidden = !ok; else b.style.display = ok ? '' : 'none'; });
+        if (q.zones.indexOf(S.zone) < 0 && !(S.zone === ALLZ && CAT[CFG.id + '-toate']) && !(S.zone === FF && FULLF[CFG.id] && CAT[FULLF[CFG.id]])) S.zone = q.zones[0];
       }
       // what goes well with it: the server's prices; a treatment it does not sell keeps only its link
       $$('[data-tp-pair]').forEach(function (el) {

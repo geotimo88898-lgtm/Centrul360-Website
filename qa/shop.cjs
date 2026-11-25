@@ -72,6 +72,12 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   check('packages: Radiofrecvență 6 ședințe 1.250 → 625, on its zones, its own row', rf6 && rf6.pack === 6 && rf6.base === 'radiofrecventa' && rf6.full === 1250 && rf6.price === 625 && rf6.zones.length === 3 && rf6.ref === 'radiofrecventa-o-zona-corporala-6-sedinte', rf6);
   check('packages: Liposonix 2 ședințe 980 → 490; no RF Sculpt, no EMS 2 zones; EMS only in Timișoara', lp2 && lp2.price === 490 && !tm.concat(ar).some((p) => /rfsculpt|ems-2-zone/.test(p.ref)) && tm.some((p) => p.id === 'ems-x6') && !ar.some((p) => p.id === 'ems-x6'));
   check('every package costs less than its sessions one by one', tm.concat(ar).filter((p) => p.pack).every((p) => { const b = tm.concat(ar).find((x) => x.id === p.base); return b && p.price < b.price * p.pack; }));
+  // the problem packages (the owner, 25.11): their treatments at the price list (its packages), the sum at -50%
+  const bg = tm.find((p) => p.id === 'pachet-gusa'), bt = ar.find((p) => p.id === 'pachet-tonifiere');
+  check('problem package: Gușă și contur = HIFU 290 + BioLifting × 4 580 = 870 → 435, on the face zones, booked as HIFU', bg && bg.bundle && bg.full === 870 && bg.price === 435 && bg.zones.length === 5 && bg.ref === 'hifu-o-zona-mica-faciala-1-sedinta' && bg.ses === 5, bg);
+  check('problem package: none in a city without one of its treatments (EMS in Arad)', !bt && tm.some((p) => p.id === 'pachet-tonifiere'));
+  const qb = await S.quote('Timișoara', [{ id: 'pachet-grasime', zone: 'Coapse' }]);
+  check('a problem package in the cart: „Pachet Grăsime localizată, Coapse” 985', !qb.error && qb.amount === 985 && qb.lines[0].name === 'Pachet Grăsime localizată, Coapse', qb);
   const qp = await S.quote('Arad', [{ id: 'biolifting-x4', zone: 'Gușă' }]);
   check('a package in the cart: BioLifting Gușă · 4 ședințe = 290, its first session booked on the package', !qp.error && qp.amount === 290 && qp.lines[0].name === 'BioLifting Gușă · 4 ședințe' && qp.main.id === 'radiofrecventa-o-zona-mica-faciala-4-sedinte', qp);
   check('pairs only of the same city', ar.every((p) => p.pairs.every((id) => ar.some((x) => x.id === id))));

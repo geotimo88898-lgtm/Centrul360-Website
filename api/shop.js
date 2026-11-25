@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=60');
       const all = S.catalog(city);
       // the packages apart: the shop's grids show the sessions, the cart offers the packages
-      res.status(200).json({ ok: true, city, terms: await S.terms(), products: all.filter((p) => !p.pack), packs: all.filter((p) => p.pack) });
+      res.status(200).json({ ok: true, city, terms: await S.terms(), products: all.filter((p) => !p.pack && !p.bundle), packs: all.filter((p) => p.pack || p.bundle) });
       return;
     }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
