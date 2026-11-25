@@ -198,16 +198,17 @@ a.home-li:hover{ color:var(--ink); }
 
 
 
-<!-- Black Friday first (the owner, 24.11 evening): „Prețuri de 2X mai mici la plata ONLINE”, the offers slider, all the offers -->
+<!-- Black Friday first (the owner, 24-25.11): the title, the timer in cells, the slider of offers (the middle one in front, round
+     and round), „Vezi toate ofertele”; then a clean fade into the light page. v2/shop.css, v2/shop.js -->
 <link rel="stylesheet" href="/v2/shop.css">
-<section class="bfh" aria-label="Black Friday"><div class="wrap">
+<section class="bfh" data-dark="150" aria-label="Black Friday"><div class="bfh-grid" aria-hidden="true"></div><div class="wrap bfh-w">
   <p class="eyb">Black Friday</p>
-  <h1>Prețuri de <em>2X</em> mai mici<span>la <b>TOATE</b> tratamentele</span><span>la plata <b>ONLINE</b></span></h1>
+  <h1 class="bfh-h"><span class="l1">Prețuri de <em>2X</em> mai mici</span><span class="l2">la <b>TOATE</b> tratamentele</span><span class="l3">la plata <b>ONLINE</b></span></h1>
   <div data-tm></div>
-</div>
-<div class="bfs" data-bfs></div>
-<div class="wrap" style="display:flex;justify-content:center;margin-top:26px"><a class="ghostpill" href="{{base}}oferte-bf">Vezi toate ofertele{{arrow}}</a></div>
-</section>
+  <div class="bfs" data-bfs aria-label="Ofertele de Black Friday"></div>
+  <a class="bfh-all" href="{{base}}oferte">Vezi toate ofertele{{arrow}}</a>
+</div></section>
+<script>(function(){var t=document.querySelector('.top');if(t)t.classList.add('dk')})()</script>
 <script src="/v2/shop.js" defer></script>
 
 
@@ -272,7 +273,7 @@ a.home-li:hover{ color:var(--ink); }
       <li class="rv"><small>Pasul 2</small><b>Alegi ora și plătești online</b><p>Prima ședință sau consultația gratuită, la ora care îți convine. Plătești cu cardul, direct pe site.</p></li>
       <li class="rv"><small>Pasul 3</small><b>Vii la clinică</b><p>Programarea e confirmată imediat, iar confirmarea vine pe WhatsApp. Aparatură medicală certificată, în Timișoara și Arad.</p></li>
     </ol>
-    <div class="rv" style="margin-top:28px"><a class="btn book" href="{{base}}oferte-bf">Vezi toate ofertele{{arrow}}</a></div>
+    <div class="rv" style="margin-top:28px"><a class="btn book" href="{{base}}oferte">Vezi toate ofertele{{arrow}}</a></div>
   </div>
   <div class="stick rv"><span class="fl"><img src="/brand_asset/mascota/ipostaze/fisa.webp" alt="Nuki cu fișa" width="300" height="300" loading="lazy"></span><q>Alegi, plătești, vii. Restul îl facem noi.</q><small>Nuki</small></div>
 </div></section>
@@ -280,7 +281,7 @@ a.home-li:hover{ color:var(--ink); }
 
 
 <section class="s film-s" id="video"><div class="wrap film">
-  <div class="film-t rv"><span class="eye">Video · 78 de secunde</span><h2>Centrul360, <em>pe scurt.</em></h2><p class="lead">Ce facem, cum arată consultația gratuită și rezultate reale ale clientelor noastre, spuse de Nuki.</p><div class="ctas"><a class="btn book" href="{{base}}oferte-bf">Vezi ofertele -50%{{arrow}}</a></div></div>
+  <div class="film-t rv"><span class="eye">Video · 78 de secunde</span><h2>Centrul360, <em>pe scurt.</em></h2><p class="lead">Ce facem, cum arată consultația gratuită și rezultate reale ale clientelor noastre, spuse de Nuki.</p><div class="ctas"><a class="btn book" href="{{base}}oferte">Vezi ofertele -50%{{arrow}}</a></div></div>
   <figure class="film-v rv"><video src="/brand_asset/vsl/acasa-169.mp4" poster="/brand_asset/vsl/acasa-169.webp" playsinline preload="none" aria-label="Video cu Nuki"></video><button type="button" class="film-play" aria-label="Pornește video-ul"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg></button></figure>
 </div></section>
 
@@ -297,7 +298,7 @@ a.home-li:hover{ color:var(--ink); }
         <span class="home-li"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Luni - Vineri · 09:00-20:00</span>
         <a class="home-li" href="tel:+40750452002"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>0750 452 002</a>
         
-        <div class="home-la"><a class="btn book" href="{{base}}oferte-bf">Vezi ofertele</a><a class="more" href="{{base}}timisoara">Vezi clinica{{arrow}}</a></div>
+        <div class="home-la"><a class="btn book" href="{{base}}oferte">Vezi ofertele</a><a class="more" href="{{base}}timisoara">Vezi clinica{{arrow}}</a></div>
       </div>
     </div>
     <div class="card home-loc rv">
@@ -308,7 +309,7 @@ a.home-li:hover{ color:var(--ink); }
         <span class="home-li"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Luni - Vineri · 11:00-19:00</span>
         <a class="home-li" href="tel:+40750277394"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>0750 277 394</a>
         
-        <div class="home-la"><a class="btn book" href="{{base}}oferte-bf">Vezi ofertele</a><a class="more" href="{{base}}arad">Vezi clinica{{arrow}}</a></div>
+        <div class="home-la"><a class="btn book" href="{{base}}oferte">Vezi ofertele</a><a class="more" href="{{base}}arad">Vezi clinica{{arrow}}</a></div>
       </div>
     </div>
   </div>
@@ -335,73 +336,6 @@ a.home-li:hover{ color:var(--ink); }
     <span class="shadow"></span>
   </div>
   <h2 class="rv">Începe <em>transformarea</em> ta astăzi.</h2>
-  <p class="lead rv">Toate tratamentele la jumătate de preț, doar la plata online, până vineri 27.11.</p>
-  <div class="rv"><a class="btn book halo" href="{{base}}oferte-bf">Vezi toate ofertele{{arrow}}</a></div>
+  <p class="lead rv">Toate tratamentele la jumătate de preț, doar la plata online.</p>
+  <div class="rv"><a class="btn book halo" href="{{base}}oferte">Vezi toate ofertele{{arrow}}</a></div>
 </div></section>
-
-<script>
-/* home: the gift card, one question at a time (kit.js sends the form), and the offer dots on the phone */
-(function () {
-  var card = document.querySelector('.home-q'), f = document.getElementById('lead');
-  if (card && f) {
-    var steps = [].slice.call(card.querySelectorAll('.home-st')), segs = [].slice.call(card.querySelectorAll('.home-bar i'));
-    var back = card.querySelector('.home-back'), cnt = card.querySelector('.home-cnt'), sum = card.querySelector('.home-sum');
-    var cur = 0, hist = [], ptr = 0;
-    var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-    var val = function (n) { var r = f.querySelector('input[name="' + n + '"]:checked'); return r ? r.value : ''; };
-    var mark = function () { [].forEach.call(f.querySelectorAll('.home-o'), function (l) { l.classList.toggle('sel', l.querySelector('input').checked); }); };
-    var go = function (n, focus) {
-      cur = n;
-      steps.forEach(function (s, i) { s.classList.toggle('on', i === n); s.classList.toggle('prev', i < n); s.setAttribute('aria-hidden', String(i !== n)); });
-      segs.forEach(function (s, i) { s.classList.toggle('on', i <= n); });
-      cnt.textContent = 'Pasul ' + (n + 1) + ' din 3';
-      back.classList.toggle('off', n === 0);
-      if (n === 2) {
-        var i = val('interes'), o = val('oras');
-        sum.innerHTML = (i ? '<span>' + esc(i) + '</span>' : '') + (o ? '<span>' + (i === 'Epilare laser' ? 'doar la ' : '') + esc(o) + '</span>' : '');
-      }
-      if (focus) { var t = steps[n].querySelector('.home-qt'); if (t) t.focus({ preventScroll: true }); }
-    };
-    var next = function (focus) {
-      if (cur === 0) {
-        if (!val('interes')) return;
-        hist.push(0);
-        if (val('interes') === 'Epilare laser') { var tm = f.querySelector('input[name="oras"][value="Timișoara"]'); tm.checked = true; mark(); go(2, focus); }
-        else go(1, focus);
-      } else if (cur === 1) { if (!val('oras')) return; hist.push(1); go(2, focus); }
-    };
-    card.addEventListener('pointerdown', function (e) { if (e.target.closest('.home-o')) ptr = Date.now(); });
-    f.addEventListener('click', function (e) {
-      var r = e.target.closest('.home-o input');
-      if (!r) return;
-      mark();
-      if (Date.now() - ptr < 1200) { ptr = 0; setTimeout(function () { next(false); }, 380); }
-    });
-    f.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' && e.target.matches('.home-o input')) { e.preventDefault(); if (!e.target.checked) { e.target.checked = true; mark(); } next(true); }
-    });
-    f.addEventListener('change', mark);
-    var err = f.querySelector('.err');
-    f.addEventListener('input', function (e) { if (err && e.target.matches('input[name="nume"], input[name="tel"], input[name="ok"]')) err.textContent = ''; });
-    back.addEventListener('click', function () { if (hist.length) go(hist.pop(), true); });
-    go(0, false);
-  }
-
-  // the offers slide sideways on the phone: a dot for each one
-  var box = document.querySelector('.home-of .offers'), dots = document.querySelector('.home-od');
-  if (box && dots && window.MutationObserver) {
-    var paint = function () {
-      var items = [].slice.call(box.querySelectorAll('.slip'));
-      dots.innerHTML = items.map(function () { return '<i></i>'; }).join('');
-      var mark = function () {
-        var mid = box.scrollLeft + box.clientWidth / 2, best = 0, bd = 1e9;
-        items.forEach(function (it, k) { var d = Math.abs(it.offsetLeft + it.offsetWidth / 2 - mid); if (d < bd) { bd = d; best = k; } });
-        [].forEach.call(dots.children, function (d, k) { d.classList.toggle('on', k === best); });
-      };
-      box.onscroll = function () { requestAnimationFrame(mark); };
-      mark();
-    };
-    new MutationObserver(paint).observe(box, { childList: true });
-  }
-})();
-</script>

@@ -5,10 +5,13 @@ dock: off
 -->
 <link rel="stylesheet" href="/v2/shop.css">
 <script>document.body.classList.add('bfo-page')</script>
-<section class="bfh" style="padding-bottom:40px;-webkit-mask-image:none;mask-image:none" aria-label="Black Friday"><div class="wrap">
+<!-- all the offers (the owner, 25.11): a light page, black only in a short first screen and on the cards; the filter, the grid -->
+<section class="bfh bfh-s" data-dark="120" aria-label="Black Friday"><div class="bfh-grid" aria-hidden="true"></div><div class="wrap bfh-w">
   <p class="eyb">Black Friday</p>
-  <h1>Toate ofertele<span>-50% la <b>TOATE</b> tratamentele, la plata <b>ONLINE</b></span></h1>
+  <h1 class="bfh-h">Toate ofertele</h1>
+  <p class="bfh-sub"><span>-50% la <b>TOATE</b> tratamentele</span><span>la plata <b>ONLINE</b></span></p>
   <div data-tm></div>
 </div></section>
+<script>(function(){var t=document.querySelector('.top');if(t)t.classList.add('dk')})()</script>
 <div class="bfo"><div class="wrap" data-bfo><div class="sh-wait">Încarc ofertele…</div></div></div>
 <script src="/v2/shop.js" defer></script>

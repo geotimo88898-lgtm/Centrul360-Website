@@ -40,7 +40,8 @@ async function hold(req, res, b) {
   const h = await H.add({
     key: crypto.randomBytes(12).toString('hex'), city,
     svc: { id: 'custom', title: title.slice(0, 200), price: q.amount, old: q.full, minutes, cat: visit === 'consult' ? '' : main && main.cat === 'epilare' ? 'epilare' : (main && main.cat) || 'corporale', treatment: visit === 'consult' ? '' : q.main.id },
-    cart: { items: q.lines.map((l) => l.id), visit, at: new Date().toISOString() },
+    // the sessions and the zone she chose travel with the hold (the payment is priced from them, api/_lib/shop.js payQuote)
+    cart: { items: q.lines.map((l) => ({ id: l.id, zone: l.zone, qty: l.qty })), visit, at: new Date().toISOString() },
     date, time, endTime: B.hhmm(B.toMin(time) + minutes), page: clip(b.page, 120), src: b.src && typeof b.src === 'object' ? b.src : null,
     cookie: /(^|;\s*)_fbc=fb\./.test(String((req.headers && req.headers.cookie) || '')) ? '_fbc=fb.' : '',
     app: B.appOf(req.headers && req.headers['user-agent']), track: capi.fromRequest(req, b.page),

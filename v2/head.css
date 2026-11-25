@@ -1,0 +1,124 @@
+/* Centrul360, the header and its menu, on every page (the owner, 25.11: „headerul are nevoie de EXTREM de mult de lucru”).
+   Loaded by v2/src/_shell.html after the kit, so these rules win over kit.css / kit-m*.css / xmas.css for the bar.
+     phone (to 920px): the logo; on the right the cart (with the count) and the menu, at the edge
+     computer: the logo, the links (Cardul de Sărbători highlighted), the „Oferte -50%” pill, the cart
+   Glass: a light frosted bar with a hairline; over a dark first screen ([data-dark], the shell's script sets .dk) it turns
+   dark glass. The menu opens from its button (a circle that grows from it) and closes back into it.
+   No link blue anywhere: every button and link sets its own colour (iOS paints unset ones blue). */
+.top{ top:12px; }
+.top .bar{ height:60px; gap:4px; padding:0 8px 0 20px; color:var(--ink);
+  background:rgba(255,255,255,.7); -webkit-backdrop-filter:blur(24px) saturate(180%); backdrop-filter:blur(24px) saturate(180%);
+  box-shadow:0 0 0 .5px rgba(11,11,13,.12), inset 0 1px 0 rgba(255,255,255,.8), 0 14px 34px -20px rgba(11,20,30,.32);
+  transition:background-color .6s var(--e), box-shadow .6s var(--e), color .6s var(--e); }
+.top .bar a,.top .bar button{ color:inherit; -webkit-tap-highlight-color:transparent; }
+.top .brand{ color:inherit; margin-right:auto; }
+.top .brand .mk{ width:27px; height:27px; }
+
+/* the links */
+.top nav{ margin-left:0; gap:2px; align-items:center; }
+.top nav .nl{ height:36px; display:inline-flex; align-items:center; gap:7px; padding:0 13px; font-size:14px; font-weight:500; letter-spacing:-.005em; color:rgba(11,11,13,.62); border-radius:999px; }
+.top nav .nl:hover,.top nav .nl.on{ color:var(--ink); background:rgba(11,11,13,.045); }
+/* the Card de Sărbători: its own warm red, quiet, highlighted */
+.top nav .hx-card{ margin-left:4px; color:#8e1546; background:rgba(176,23,90,.07); box-shadow:inset 0 0 0 .5px rgba(176,23,90,.2); font-weight:600; }
+.top nav .hx-card:hover{ color:#7a0f3c; background:rgba(176,23,90,.11); }
+.hx-card svg,.hx-mc > svg:first-child{ width:15px; height:15px; flex:none; }
+
+/* the Black Friday pill: black, the rose gold -50% inside */
+.hx-off{ display:inline-flex; align-items:center; gap:9px; height:40px; margin-left:10px; padding:0 5px 0 16px; border-radius:999px; flex:none; text-decoration:none;
+  font-size:14px; font-weight:600; letter-spacing:-.01em; color:#fff !important; background:linear-gradient(160deg,#232428,#0b0b0d);
+  box-shadow:inset 0 0 0 .5px rgba(242,198,181,.55), inset 0 1px 0 rgba(255,255,255,.08), 0 10px 22px -14px rgba(120,60,45,.7);
+  transition:transform .5s var(--e), box-shadow .4s var(--e); }
+.hx-off b{ display:inline-flex; align-items:center; height:30px; padding:0 10px; border-radius:999px; font-size:13px; font-weight:700; letter-spacing:-.01em; color:#3b1c14;
+  background:linear-gradient(125deg,#e7b3a3,#f8dccf 50%,#d99d8c); box-shadow:inset 0 0 0 .5px rgba(255,255,255,.6); }
+.hx-off:hover{ transform:translateY(-1px); box-shadow:inset 0 0 0 .5px rgba(246,214,203,.9), 0 14px 28px -14px rgba(120,60,45,.8); }
+.hx-off:active{ transform:scale(.97); }
+
+/* the cart: a bag, the count in a small black badge */
+.hx-cart{ position:relative; flex:none; width:44px; height:44px; margin-left:6px; padding:0; border:0; border-radius:50%; background:transparent; cursor:pointer;
+  display:grid; place-items:center; transition:background-color .3s var(--e), transform .4s var(--e); -webkit-appearance:none; appearance:none; }
+.hx-cart:hover{ background:rgba(11,11,13,.05); }
+.hx-cart:active{ transform:scale(.92); }
+.hx-cart svg{ width:23px; height:23px; }
+.hx-cart i{ position:absolute; top:5px; right:3px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; font-style:normal; font-size:10.5px; font-weight:700; line-height:18px;
+  text-align:center; font-variant-numeric:tabular-nums; color:#fff; background:#0b0b0d; box-shadow:0 0 0 2px rgba(255,255,255,.95); transform:scale(0); transition:transform .5s var(--e); }
+.hx-cart.has i{ transform:none; }
+.hx-cart.bump svg{ animation:hxBump .6s var(--e); }
+@keyframes hxBump{ 30%{ transform:scale(1.16) rotate(-6deg); } 60%{ transform:scale(.96); } }
+
+/* the menu button: two lines, the lower one shorter */
+.top .burger{ width:44px; height:44px; margin-left:2px; background:transparent; transition:background-color .3s var(--e); }
+.top .burger:hover{ background:rgba(11,11,13,.05); }
+.top .burger i{ width:18px; height:1.6px; margin-left:-9px; background:currentColor; }
+.top .burger i:last-child{ width:12px; margin-left:-3px; }
+
+/* dark glass over the dark first screen */
+.top.dk .bar{ color:#f5f5f7; background:rgba(22,22,24,.52); box-shadow:0 0 0 .5px rgba(255,255,255,.16), inset 0 1px 0 rgba(255,255,255,.06), 0 14px 34px -20px rgba(0,0,0,.7); }
+.top.dk nav .nl{ color:rgba(245,245,247,.68); }
+.top.dk nav .nl:hover,.top.dk nav .nl.on{ color:#fff; background:rgba(255,255,255,.08); }
+.top.dk nav .hx-card{ color:#ffd0df; background:rgba(217,73,127,.16); box-shadow:inset 0 0 0 .5px rgba(255,170,200,.3); }
+.top.dk .hx-off{ background:linear-gradient(160deg,#2a2b30,#141416); }
+.top.dk .hx-cart:hover,.top.dk .burger:hover{ background:rgba(255,255,255,.08); }
+.top.dk .hx-cart i{ color:#3b1c14; background:linear-gradient(125deg,#e7b3a3,#f8dccf 50%,#d99d8c); box-shadow:0 0 0 2px rgba(22,22,24,.9); }
+
+@media (max-width:920px){
+  .top .bar{ background:rgba(255,255,255,.74); -webkit-backdrop-filter:blur(24px) saturate(180%); backdrop-filter:blur(24px) saturate(180%);
+    box-shadow:0 0 0 .5px rgba(11,11,13,.12), inset 0 1px 0 rgba(255,255,255,.8), 0 14px 34px -20px rgba(11,20,30,.32); }
+  .top.dk .bar{ background:rgba(22,22,24,.55); box-shadow:0 0 0 .5px rgba(255,255,255,.16), inset 0 1px 0 rgba(255,255,255,.06), 0 14px 34px -20px rgba(0,0,0,.7); }
+  .hx-off{ display:none; }
+}
+@media (max-width:640px){
+  .top{ top:10px; }
+  .top .bar{ height:56px; padding:0 6px 0 16px; width:calc(100% - 20px); }
+  .hx-cart{ width:42px; height:42px; margin-left:0; }
+  .top .burger{ width:42px; height:42px; }
+}
+
+/* ---- the menu: a white sheet that grows from the button that opened it (the shell's script sets --ox, --oy) */
+.menu{ opacity:1; background:rgba(255,255,255,.96); -webkit-clip-path:circle(0 at var(--ox,calc(100% - 34px)) var(--oy,38px)); clip-path:circle(0 at var(--ox,calc(100% - 34px)) var(--oy,38px));
+  transition:clip-path .75s var(--e), -webkit-clip-path .75s var(--e), visibility 0s linear .75s; }
+.menu.open{ opacity:1; -webkit-clip-path:circle(150vmax at var(--ox,calc(100% - 34px)) var(--oy,38px)); clip-path:circle(150vmax at var(--ox,calc(100% - 34px)) var(--oy,38px));
+  transition:clip-path .75s var(--e), -webkit-clip-path .75s var(--e), visibility 0s; }
+.menu a,.menu button{ color:inherit; -webkit-tap-highlight-color:transparent; }
+.menu .mh{ height:56px; }
+.menu .mx{ background:rgba(11,11,13,.05); }
+.menu .mx i{ width:17px; margin-left:-8.5px; height:1.6px; }
+.menu .wrap{ gap:30px; }
+.menu .eye{ font-family:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px; font-weight:500; letter-spacing:.14em; color:#86868b; }
+.menu .eye::before{ width:18px; height:1px; border-radius:0; background:currentColor; box-shadow:none; opacity:.6; }
+.menu .mg a{ color:var(--ink); }
+.menu .mg a:hover,.menu .mg a[aria-current]{ color:var(--teal2); }
+/* the two highlighted pills on top: the offers (black, rose gold) and the Card de Sărbători */
+.hx-mp{ display:grid; gap:10px; padding:0 18px; }
+.hx-mp > a{ opacity:0; transform:translateY(14px); }
+.menu.open .hx-mp > a{ opacity:1; transform:none; transition:opacity .6s var(--e) .08s, transform .8s var(--e) .08s; }
+.menu.open .hx-mp > a + a{ transition-delay:.14s; }
+.hx-mo{ display:flex; align-items:center; gap:14px; min-height:74px; padding:12px 12px 12px 22px; border-radius:24px; text-decoration:none; color:#fff !important;
+  background:radial-gradient(120% 140% at 100% 0%,rgba(242,198,181,.22),transparent 55%),linear-gradient(160deg,#1d1e22,#0b0b0d);
+  box-shadow:inset 0 0 0 .5px rgba(242,198,181,.45), 0 18px 36px -22px rgba(90,40,30,.8); }
+.hx-mo-t{ flex:1; min-width:0; display:grid; gap:2px; }
+.hx-mo-t small{ font-family:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-size:10.5px; font-weight:500; letter-spacing:.16em; text-transform:uppercase; color:rgba(242,198,181,.85); }
+.hx-mo-t b{ font-size:1.3rem; font-weight:700; letter-spacing:-.03em; line-height:1.15; }
+.hx-mo .hx-50{ flex:none; display:grid; place-items:center; width:62px; height:50px; border-radius:16px; font-size:17px; font-weight:800; letter-spacing:-.03em; color:#3b1c14;
+  background:linear-gradient(125deg,#e7b3a3,#f8dccf 50%,#d99d8c); box-shadow:inset 0 0 0 .5px rgba(255,255,255,.6), inset 0 1px 0 rgba(255,255,255,.8); }
+.hx-mc{ display:flex; align-items:center; gap:12px; min-height:58px; padding:10px 18px; border-radius:20px; text-decoration:none; color:#8e1546 !important;
+  background:linear-gradient(160deg,#fff6f9,#fdeef4); box-shadow:inset 0 0 0 .5px rgba(176,23,90,.22); }
+.hx-mc > span{ flex:1; min-width:0; display:grid; }
+.hx-mc b{ font-size:15.5px; font-weight:700; letter-spacing:-.015em; }
+.hx-mc small{ font-size:13px; color:rgba(142,21,70,.72); }
+.hx-mc > svg:last-child{ width:17px; height:17px; flex:none; opacity:.7; }
+.hx-mc > svg:first-child{ width:20px; height:20px; color:#c9a04a; }
+.menu .hx-mcta{ align-self:flex-start; margin:0 18px; height:52px; padding:0 26px; font-size:15.5px; }
+@media (min-width:921px){ .hx-mp{ grid-template-columns:1fr 1fr; max-width:760px; } }
+@media (max-width:640px){
+  .menu{ background:#fff; }
+  .menu .mh{ height:56px; padding:0 6px 0 16px; }
+  .hx-mp{ padding:0 14px; }
+  .menu .hx-mcta{ align-self:stretch; margin:0 14px; }
+}
+@media (prefers-reduced-motion:reduce){
+  .menu,.menu.open{ -webkit-clip-path:none; clip-path:none; opacity:0; transition:opacity .2s, visibility 0s linear .2s; }
+  .menu.open{ opacity:1; transition:opacity .2s; }
+  .hx-mp > a{ opacity:1; transform:none; }
+}
+/* the header stays put while a page carries over into the next one (View Transitions, the shell's head) */
+.top{ view-transition-name:c360-top; }
