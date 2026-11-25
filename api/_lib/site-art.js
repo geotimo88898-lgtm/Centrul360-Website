@@ -60,12 +60,13 @@ const ART = {
 // the „how it works” loops: a clean 3D visualisation, no person, no result, no text
 const VSTYLE = 'A clean, elegant, photoreal 3D medical visualisation for a premium aesthetic clinic, one continuous 8-second shot that loops seamlessly ' +
   '(the last frame matches the first). Soft studio lighting on a dark neutral background, warm white and rose-gold accents, slow smooth camera drift. ' +
-  'Calm, minimal, precise, like an Apple product film. No people, no faces, no before/after, no text, no labels, no numbers, no logos. ' +
+  'Calm, minimal, precise, like an Apple product film. No people, no faces, no lips, no hands, no before/after, no text, no labels, no numbers, no logos; ' +
+  'any device is plain and smooth, with no markings or lettering. ' +
   'Silent: no music, no voice, no sound effects. ';
 const VID = {
   liposonix: 'A cross-section of skin seen from the side as soft translucent layers: a thin warm-beige skin surface, the dermis, and below it a layer of round golden fat cells. A sleek white ultrasound applicator rests on the skin surface and sends a narrow, precisely focused cone of soft light pulses that converge at one point deep in the fat layer; where they meet, the fat cells glow warm, then slowly shrink and fade, while the skin surface above stays calm and untouched.',
-  hifu: 'A side cross-section of the area under the chin as soft translucent layers: skin, a thin fat layer and the deep supporting layer (SMAS). Fine, precise points of focused ultrasound light appear one by one in a neat row at the deep layer, each a tiny warm dot; around them the fibres slowly tighten and the layers lift gently upward, the skin surface stays smooth.',
-  'rf-sculpt-gusa': 'A side cross-section of the skin under the jaw as soft translucent layers. A smooth white radiofrequency applicator glides slowly across the surface; soft waves of warm rose-gold heat spread evenly into the deeper layers, the collagen fibres (fine translucent strands) glow, then tighten and become denser and more ordered.',
+  hifu: 'A floating cutaway block of soft tissue, like a clean anatomical model with nothing around it: the skin surface, a thin fat layer and the deep fibrous supporting layer (SMAS). A slim white ultrasound applicator with a rose-gold tip rests on the surface. Fine, precise points of focused ultrasound light appear one by one in a neat row at the deep layer, each a tiny warm dot; around them the fibres slowly tighten and the layers lift gently upward, the skin surface stays smooth.',
+  'rf-sculpt-gusa': 'A floating cutaway block of soft tissue, like a clean anatomical model with nothing around it, its layers soft and translucent. A smooth white radiofrequency applicator glides slowly across the surface; soft waves of warm rose-gold heat spread evenly into the deeper layers, the collagen fibres (fine translucent strands) glow, then tighten and become denser and more ordered.',
   epilare: 'A close macro cross-section of skin with a few hair follicles shown as fine dark roots. A cool white laser handpiece passes above; brief soft pulses of light travel down each hair shaft to its root, the roots glow warm for an instant and then fade away, the skin surface stays cool and calm, a light cooling mist on the surface.',
   ems: 'A stylised translucent view of the abdominal muscles as smooth layered fibres. A flat white applicator rests on top; rhythmic waves of soft electromagnetic light pass through the tissue and the muscle fibres contract and relax in a strong, steady rhythm, each contraction glowing warmly.',
   cavitatie: 'A cross-section of skin with a layer of round golden fat cells. A round chrome ultrasound head glides on the surface; soft circular sound waves ripple down into the fat layer, tiny bubbles form gently between the fat cells and the cells slowly soften and release, the skin surface stays smooth.',
@@ -201,7 +202,11 @@ async function pollVideo(id) {
   const d2 = await load();
   delete d2.vops[id];
   if (data) { await writeBinary(vpath(id), Buffer.from(data, 'base64'), 'video/mp4'); d2.vdone[id] = { at: new Date().toISOString(), model: o.model }; }
-  else note(d2, 'video ' + id + ': ' + JSON.stringify(r.j.error || r.j.response || r.j).slice(0, 300));
+  else {
+    note(d2, 'video ' + id + ': ' + JSON.stringify(r.j.error || r.j.response || r.j).slice(0, 300));
+    const resp = r.j.response || {};
+    if (resp.raiMediaFilteredCount) { d2.vspent = Math.max(0, d2.vspent - 1); d2.vusd = Math.max(0, Math.round((d2.vusd - VSEC * VMODELS[o.model]) * 100) / 100); d2.vfiltered = (d2.vfiltered || 0) + 1; }
+  }
   await writeJSON(KEY, d2, { quiet: true });
   return { ok: !!data, id, done: true, error: data ? '' : JSON.stringify(r.j.error || r.j.response || {}).slice(0, 300) };
 }
