@@ -122,16 +122,13 @@
     restart: [3, '3-4', 0], hidratare: [3, '3-4', 0], 'sebum-off': [4, '4', 0], microneedling: [3, '3', 0], periocular: [3, '3', 0], antirid: [4, '4', 0], redness: [4, '4', 0], impachetare: [4, '4', 0] };
   var recOf = function (p) { var id = p.base || p.id, r = p.need === 'epilare' ? [6, '6-8', 1] : REC[id.replace(/-toate$/, '')]; return r ? r.concat([+String(r[1]).split('-').pop()]) : null; };
   var inCity = function (q) { var c = cityNow(); return !c || q.cities.indexOf(c) > -1; };
-  // „Da, vreau rezultate optime” (the owner, 25.11): the line goes up to the recommended sessions, the cheapest way: the price
-  // list's package in the recommended range when there is one (it costs less), else that many sessions
+  // „Da, vreau rezultate optime” (the owner, 25.11: „să-mi mai bage doar unul în coș, 2 Liposonix Abdomen, e mai logic”): the
+  // line goes up to the recommended sessions of the same treatment (a package line goes back to its sessions)
   function optPlan(x) {
     var r = recOf(x.p);
     if (!r || x.qty * (x.p.pack || 1) >= r[0]) return null;
     var base = x.p.pack ? byId(x.p.base) : x.p;
-    if (!base) return null;
-    var k = x.p.allOf ? null : packsOf(base).filter(function (q) { return q.pack >= r[0] && q.pack <= r[3] && inCity(q); })[0];
-    return k ? { id: k.id, qty: 1, sum: k.price, said: 'Pachet ' + k.pack + ' ședințe: ' + lei(k.price) }
-      : { id: base.id, qty: r[0], sum: base.price * r[0], said: r[0] + ' ședințe: ' + lei(base.price * r[0]) };
+    return base ? { id: base.id, qty: r[0] } : null;
   }
   function optimal(key) {
     var l = lineByKey(key), p = l && byId(l.id);
