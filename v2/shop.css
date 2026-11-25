@@ -795,3 +795,7 @@ body:has(.sh-pop.on) .ck{ opacity:0 !important; pointer-events:none !important; 
   body:has(.dock.in) .sh-bar{ bottom:calc(80px + env(safe-area-inset-bottom)); }
 }
 @media (min-width:641px) and (max-width:920px){ body:has(.dock.in) .sh-bar{ bottom:calc(86px + env(safe-area-inset-bottom)); } }
+
+/* the offers' filters scroll with the page (the owner, 25.11: „nu-l vreau sticky”) */
+.bfo-f{ position:relative; top:auto; }
+body:has(.top.away) .bfo-f{ top:auto; }

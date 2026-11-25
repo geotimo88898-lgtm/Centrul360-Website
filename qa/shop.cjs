@@ -60,7 +60,13 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   const lipo = tm.find((p) => p.id === 'liposonix');
   check('Liposonix, one session, one zone: 640 → 320 during Black Friday (the owner: 2 zones = 1.280)', lipo && lipo.full === 640 && lipo.price === 320, lipo);
   check('one session only: no packages, no combined offers (no EMS 2 zones, no „Gușă + Contur” name)', tm.every((p) => p.full > 0 && !/\+|2 zone/.test(p.name)) && !tm.some((p) => /2-zone/.test(p.ref)), tm.map((p) => p.name));
-  check('short names, a zone where it has one, two short lines', tm.concat(ar).every((p) => p.name.length <= (p.need === "epilare" ? 40 : 26) && p.b.length >= 2 && p.b.every((x) => x.length <= 36)), tm.filter((p) => p.name.length > (p.need === "epilare" ? 40 : 26) || p.b.some((x) => x.length > 36)).map((p) => p.name));
+  check('short names, a zone where it has one, two short lines', tm.concat(ar).every((p) => p.name.length <= (p.need === "epilare" ? 40 : p.base ? 30 : 26) && p.b.length >= 2 && p.b.every((x) => x.length <= 36)), tm.filter((p) => p.name.length > (p.need === "epilare" ? 40 : 26) || p.b.some((x) => x.length > 36)).map((p) => p.name));
+  // „Toate zonele” (the owner, 25.11): the twin of a body treatment with zones, one session on every zone, the sum of the zones
+  const lt = tm.find((p) => p.id === 'liposonix-toate');
+  check('Liposonix Toate zonele: 5 zones, 3.200 → 1.600, no zones of its own, opens the Liposonix page', lt && lt.base === 'liposonix' && lt.full === 3200 && lt.price === 1600 && !lt.zones.length && lt.minutes <= 90, lt);
+  const qt = await S.quote('Timișoara', [{ id: 'liposonix-toate', qty: 2 }]);
+  check('the twin in the cart: priced by the server', !qt.error && qt.amount === 3200 && qt.lines[0].name === 'Liposonix Toate zonele', qt);
+  check('no twin for the face or for a treatment with one zone', !tm.some((p) => p.base && p.need !== 'corp'));
   check('pairs only of the same city', ar.every((p) => p.pairs.every((id) => ar.some((x) => x.id === id))));
   let q = await S.quote('Timișoara', [{ id: 'liposonix', zone: 'Abdomen', qty: 2 }, { id: 'ems', zone: 'Coapse' }]);
   check('cart: Liposonix Abdomen × 2 (2 × 320) + EMS Coapse (125) = 765, full 1.530', q.amount === 765 && q.full === 1530 && q.saved === 765, q);

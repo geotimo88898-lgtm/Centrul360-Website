@@ -79,6 +79,7 @@ const EPIL_PAIRS = ['epilare-axile', 'epilare-inghinal-total', 'epilare-picior-l
 const IMPULSE = { 'Timișoara': 'epilare-axile', Arad: 'masaj-facial' };
 // the first screen's slider (the owner, 24.11): these, in this order
 // (RF Sculpt is no longer offered, the owner 25.11: BioLifting in its place)
+const ALLZ = new Set(['liposonix', 'cavitatie', 'radiofrecventa', 'hifu-corp', 'ems']), ALLZ_NAME = 'Toate zonele';
 const SHOW = ['liposonix', 'hifu', 'restart', 'biolifting', 'epilare-full-body', 'hifu-full-face', 'ems'];
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const lst = () => require('./pay').priceList();
@@ -93,7 +94,8 @@ function productOf(t) {
     const zone = parts.filter((x) => !/^(Epilare laser|Elysion Pro|femei|bărbați|1 ședință)$/.test(x))[0] || '';
     const z = zone.replace(/ \(.*\)/, '');
     return { id: fold('epilare ' + z + (men ? ' barbati' : '')), name: 'Epilare ' + z + (men ? ' bărbați' : ''), need: 'epilare', zones: [],
-      b: [/Full Body/.test(z) ? 'Tot corpul, fără față' : 'Distruge foliculul firului de păr', 'Nedureros, certificat medical'],
+      // (the owner, 25.11: „la epilare scrie aparat certificat medical”)
+      b: ['Aparat certificat medical', /Full Body/.test(z) ? 'Tot corpul, fără față' : 'Distruge foliculul firului de păr'],
       photo: '/brand_asset/oferte/epilare.webp?v=3',
       guarantee: 'Garanția banilor înapoi.' };
   }
@@ -111,8 +113,19 @@ function catalog(city, at) {
     if (!p || out.has(p.id)) continue;
     out.set(p.id, Object.assign(p, { ref: t.id, cities: t.cities.slice(), minutes: t.minutes, full: t.price, price: priceOf(t.price, at) }));
   }
-  const list = [...out.values()];
-  list.forEach((p) => { p.pairs = (p.need === 'epilare' ? EPIL_PAIRS : PAIRS[p.id] || []).filter((id) => id !== p.id && out.has(id)).slice(0, 3); });
+  const list = [];
+  // „Toate zonele” (the owner, 25.11: „la Liposonix să avem și opțiunea toate zonele, lucruri mai costisitoare, mai simplu de ales”): a body
+  // treatment with zones is also sold for all its zones at once, as its own product <id>-toate (one session on every zone, the sum of
+  // the zones' prices); its first visit is booked at most 90 minutes, the desk plans the rest
+  for (const p of out.values()) {
+    list.push(p);
+    if (!ALLZ.has(p.id) || p.zones.length < 2) continue;
+    const n = p.zones.length;
+    list.push(Object.assign({}, p, { id: p.id + '-toate', base: p.id, name: p.name + ' ' + ALLZ_NAME, zones: [], allOf: p.zones.slice(), b: ['Toate cele ' + n + ' zone, o ședință', p.b[0]],
+      minutes: Math.min(p.minutes * n, 90), full: p.full * n, price: p.price * n }));
+  }
+  const ids = new Set(list.map((p) => p.id));
+  list.forEach((p) => { p.pairs = (p.need === 'epilare' ? EPIL_PAIRS : PAIRS[p.base || p.id] || []).filter((id) => id !== p.id && id !== p.base && ids.has(id)).slice(0, 3); });
   return list;
 }
 
