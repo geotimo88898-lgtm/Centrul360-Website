@@ -60,7 +60,7 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   const lipo = tm.find((p) => p.id === 'liposonix');
   check('Liposonix, one session, one zone: 640 → 320 during Black Friday (the owner: 2 zones = 1.280)', lipo && lipo.full === 640 && lipo.price === 320, lipo);
   check('one session only: no packages, no combined offers (no EMS 2 zones, no „Gușă + Contur” name)', tm.every((p) => p.full > 0 && !/\+|2 zone/.test(p.name)) && !tm.some((p) => /2-zone/.test(p.ref)), tm.map((p) => p.name));
-  check('short names, a zone where it has one, two short lines', tm.concat(ar).every((p) => p.name.length <= (p.need === "epilare" || p.pack ? 40 : p.base ? 30 : 26) && p.b.length >= 2 && p.b.every((x) => x.length <= 36)), tm.filter((p) => p.name.length > (p.need === "epilare" ? 40 : 26) || p.b.some((x) => x.length > 36)).map((p) => p.name));
+  check('short names, a zone where it has one, two short lines', tm.concat(ar).every((p) => p.name.length <= (p.bundle ? 62 : p.need === "epilare" || p.pack ? 40 : p.base ? 30 : 26) && p.b.length >= 2 && p.b.every((x) => x.length <= (p.bundle ? 90 : 36))), tm.filter((p) => p.name.length > (p.need === "epilare" ? 40 : 26) || p.b.some((x) => x.length > 36)).map((p) => p.name));
   // „Toate zonele” (the owner, 25.11): the twin of a body treatment with zones, one session on every zone, the sum of the zones
   const lt = tm.find((p) => p.id === 'liposonix-toate');
   check('Liposonix Full Body: 5 zones, 3.200 → 1.600, no zones of its own, opens the Liposonix page', lt && lt.base === 'liposonix' && lt.full === 3200 && lt.price === 1600 && !lt.zones.length && lt.minutes <= 90, lt);
@@ -77,7 +77,7 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   check('problem package: Gușă și contur = HIFU 290 + BioLifting × 4 580 = 870 → 435, on the face zones, booked as HIFU', bg && bg.bundle && bg.full === 870 && bg.price === 435 && bg.zones.length === 5 && bg.ref === 'hifu-o-zona-mica-faciala-1-sedinta' && bg.ses === 5, bg);
   check('problem package: none in a city without one of its treatments (EMS in Arad)', !bt && tm.some((p) => p.id === 'pachet-tonifiere'));
   const qb = await S.quote('Timișoara', [{ id: 'pachet-grasime', zone: 'Coapse' }]);
-  check('a problem package in the cart: „Pachet Grăsime localizată, Coapse” 985', !qb.error && qb.amount === 985 && qb.lines[0].name === 'Pachet Grăsime localizată, Coapse', qb);
+  check('a problem package in the cart: „Zonă mai suplă în 8 săptămâni, Coapse” 985', !qb.error && qb.amount === 985 && qb.lines[0].name === 'Zonă mai suplă în 8 săptămâni, Coapse', qb);
   const qp = await S.quote('Arad', [{ id: 'biolifting-x4', zone: 'Gușă' }]);
   check('a package in the cart: BioLifting Gușă · 4 ședințe = 290, its first session booked on the package', !qp.error && qp.amount === 290 && qp.lines[0].name === 'BioLifting Gușă · 4 ședințe' && qp.main.id === 'radiofrecventa-o-zona-mica-faciala-4-sedinte', qp);
   check('pairs only of the same city', ar.every((p) => p.pairs.every((id) => ar.some((x) => x.id === id))));

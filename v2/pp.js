@@ -70,7 +70,16 @@
     if (!sec || !PK || EPI) return;
     var z = S.zone && S.zone !== ALLZ && S.zone !== FF ? S.zone : '';
     var list = PK.filter(function (k) { return (k.base === CFG.id || (k.bundle && (k.for || []).indexOf(CFG.id) > -1)) && (!k.zones.length || !z || k.zones.indexOf(z) > -1); });
-    list = list.filter(function (k) { return k.bundle; }).concat(list.filter(function (k) { return !k.bundle; }).sort(function (a, b) { return a.pack - b.pack; })).slice(0, 4);
+    // the same choice as the cart (v2/shop.js ladder, the owner 25.11): the solution, a more complete one, the top one, cheapest
+    // first; the first step only when the solution is a big jump from one session; the price list's packages only with no problem
+    // package for this treatment
+    var bs = list.filter(function (k) { return k.bundle; }), one = (CAT[CFG.id] || {}).price || 0;
+    var of = function (t) { return bs.filter(function (k) { return (k.tier || 2) === t; }).sort(function (a, b) { return a.price - b.price; }); };
+    var sol = of(2)[0], more = sol ? of(3).filter(function (k) { return k.price > sol.price; })[0] : of(3)[0];
+    var top = bs.slice().sort(function (a, b) { return b.price - a.price; })[0];
+    var start = !sol || sol.price > one * 2.5 ? of(1).filter(function (k) { return k.price > one; })[0] : null;
+    var pick = [sol, more, top, start].filter(function (k, i, a) { return k && a.indexOf(k) === i; });
+    list = bs.length ? pick.sort(function (a, b) { return a.price - b.price; }) : list.sort(function (a, b) { return a.pack - b.pack; }).slice(0, 3);
     var key = z + '|' + list.map(function (k) { return k.id + (S.inCart[keyOf(k.id, k.zones.length ? z : '')] ? '+' : ''); }).join();
     if (!list.length || key === pkKey) return;
     pkKey = key;

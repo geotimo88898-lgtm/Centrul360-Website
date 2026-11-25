@@ -984,6 +984,30 @@
   function bundleSave(k) {
     return (k.parts || []).reduce(function (s, x) { var q = byId(x.id), b = q && (q.base ? byId(q.base) : q); return s + (b ? b.price * x.n * (q.pack || 1) : 0); }, 0) - k.price;
   }
+  // the packages she sees (the owner, 25.11): first the solution for what she chose, then, when there is one, a more complete one,
+  // and the top one for who can afford it („să nu-i oferim 500 de lei unei cliente care poate 5.000, dar nici să le împingem pe
+  // toate”), and the first step, the cheapest; the price list's packages only when there is room. Cheapest first. „Recomandăm acest
+  // pachet” only on the solution that fits her cart best (the solution of the treatments she has the most of in it); none once she
+  // took a package.
+  function ladder(packs, t) {
+    var mine = {}; t.lines.forEach(function (x) { mine[(x.p.base || x.p.id).replace(/-toate$/, '')] = 1; });
+    var fit = function (k) { return (k.for || []).filter(function (id) { return mine[id]; }).length; };
+    var bs = packs.filter(function (y) { return y.k.bundle; }), ls = packs.filter(function (y) { return !y.k.bundle; });
+    var by = function (a, b) { return (fit(b.k) - fit(a.k)) || (a.k.price - b.k.price); };
+    var of = function (tier) { return bs.filter(function (y) { return (y.k.tier || 2) === tier; }).sort(by); };
+    var sol = of(2)[0], more = sol ? of(3).filter(function (y) { return y.k.price > sol.k.price; })[0] : of(3)[0];
+    var top = bs.slice().sort(function (a, b) { return b.k.price - a.k.price; })[0];
+    // the cheap step (the owner, 25.11: „upsell-urile ieftine sunt bune, nu le elimina, doar oferă-le când chiar e nevoie”): only
+    // when the solution is more than twice and a half what she has of those treatments; the price list's packages only with
+    // no problem package for her
+    var have = t.lines.reduce(function (s, x) { return s + (sol && (sol.k.for || []).indexOf((x.p.base || x.p.id).replace(/-toate$/, '')) > -1 ? x.p.price * x.qty : 0); }, 0);
+    var start = !sol || sol.k.price > have * 2.5 ? of(1).filter(function (y) { return y.k.price > have; })[0] : null;
+    var pick = [sol, more, top, start].filter(function (y, i, a) { return y && a.indexOf(y) === i; });
+    if (!bs.length) ls.forEach(function (y) { if (pick.length < 3) pick.push(y); });
+    pick.sort(function (a, b) { return a.k.price - b.k.price; });
+    if (sol && !t.lines.some(function (x) { return x.p.bundle; })) sol.rec = true;
+    return pick;
+  }
   // a package's card (the owner, 25.11: „la pachete șterge «economisești» și pune cu highlight ce are deja în coș”): what it holds,
   // the treatment she already has in the cart marked, its price
   function packHtml(o) {
@@ -991,7 +1015,7 @@
     var inc = k.bundle ? (k.parts || []).map(function (x) {
       var q = byId(x.id), b = q && (q.base ? byId(q.base) : q), n = x.n * ((q && q.pack) || 1);
       if (!b) return '';
-      var t = esc(b.name + ', ' + (n === 1 ? '1 ședință' : n + ' ședințe'));
+      var t = esc((q.allOf ? q.name : b.name) + ', ' + (n === 1 ? '1 ședință' : n + ' ședințe'));
       return mine(b.id) ? '<mark>' + I.check + t + '</mark>' : '<span>' + t + '</span>';
     }).join('<i>+</i>') : '<mark>' + I.check + esc(byId(k.base) ? byId(k.base).name : k.name) + '</mark><span>' + k.pack + ' ședințe, ' + lei(perSes(k)) + ' ședința</span>';
     return '<div class="sh-pk sh-card' + (o.rec ? ' rec' : '') + '">' + (o.rec ? '<p class="sh-pk-rec">' + I.star + 'Recomandăm acest pachet</p>' : '') + '<span class="th"><img src="' + esc(picW(k, 300)) + '" alt="" loading="lazy" decoding="async"' + posOf(k) + '></span>' +
@@ -1061,17 +1085,7 @@
         if ((!k.zones.length || k.zones.indexOf(x.zone) > -1) && here(k) && !lineOf(k.id, z) && !packs.some(function (y) { return y.k === k; })) packs.push({ x: x, k: k });
       });
     });
-    // the problem packages first (the complete answer), then the price list's
-    packs = packs.filter(function (y) { return y.k.bundle; }).concat(packs.filter(function (y) { return !y.k.bundle; })).slice(0, 4);
-    // one package recommended (the owner, 25.11: „tot timpul un singur pachet recomandat, în funcție de ce are deja în coș; dacă l-a
-    // ales deja, să nu apară la celelalte”): the problem package that holds most of what she has; none once she took a package
-    var tookPack = t.lines.some(function (x) { return x.p.bundle; });
-    if (!tookPack && packs.length) {
-      var have = function (k) { return k.bundle ? (k.parts || []).filter(function (x) { var q = byId(x.id), b = q && (q.base ? byId(q.base) : q); return b && t.lines.some(function (l) { return l.p.id === b.id || l.p.base === b.id; }); }).length : 1; };
-      var best = packs.slice().sort(function (a, b) { return (have(b.k) - have(a.k)) || ((b.k.bundle ? 1 : 0) - (a.k.bundle ? 1 : 0)) || (packs.indexOf(a) - packs.indexOf(b)); })[0];
-      best.rec = true;
-      packs = [best].concat(packs.filter(function (y) { return y !== best; }));
-    }
+    packs = ladder(packs, t);
     var common = COMMON.map(function (c) { var q = byId(c[1]); return q && here(q) && !S.cart.some(function (l) { var lp = byId(l.id); return l.id === q.id || (lp && (lp.base === q.id || (lp.bundle && lp.for.indexOf(q.id) > -1))); }) ? { c: c, q: q } : null; }).filter(Boolean).slice(0, 6);
     var rest = D.terms.show.map(byId).filter(function (p) { return p && here(p) && !pairs.some(function (y) { return y.q === p; }) && !S.cart.some(function (l) { return (l.id === p.id || l.id.indexOf(p.id + '-x') === 0) && !S.keep[keyOf(l.id, l.zone)]; }); }).slice(0, 5);
     el.innerHTML = '<div class="sh-tmw">' + tmHtml('s') + '</div>' +
