@@ -21,7 +21,7 @@
 .tp-eye{ display:flex; align-items:center; gap:10px; margin:0; font-family:var(--mono); font-size:11.5px; font-weight:500; letter-spacing:.15em; text-transform:uppercase; color:var(--mu); }
 .tp-eye::before{ content:''; flex:none; width:22px; height:1px; background:currentColor; opacity:.55; }
 .tp-eye.dk{ color:var(--acc); justify-content:center; }
-.tp-s{ padding:clamp(84px,11vw,150px) 0 0; }
+.tp-s{ padding:clamp(60px,8vw,112px) 0 0; }
 .tp-head{ display:grid; gap:14px; justify-items:start; max-width:48rem; margin-bottom:clamp(30px,4.6vw,56px); }
 .tp-head h2,.tp-gar-c h2{ margin:0; font-size:clamp(2.15rem,5.6vw,3.7rem); font-weight:700; letter-spacing:-.042em; line-height:1.02; color:var(--ink); }
 .tp h2 em,.tp h1 em{ font-family:'Fraunces',Georgia,serif; font-style:italic; font-weight:400; letter-spacing:-.02em; color:var(--teal2); }
