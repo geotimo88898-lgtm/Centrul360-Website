@@ -927,3 +927,11 @@ body:has(.top.away) .bfo-f{ top:auto; }
 /* the home without its results row (hidden for now): the reviews come right after the first screen, at the same distance */
 .bfh-home ~ #rezultate[hidden]{ display:none !important; }
 .bfh-home ~ #rezultate[hidden] ~ #recenzii{ padding-top:clamp(56px,7vw,88px) !important; }
+/* the grid's cards like the first Black Friday cards (the owner, 25.11: „pozele ca înainte, subtile, acum e totul imens”): the
+   picture in the upper right, fading into the card's black on the left and at the bottom; the name and the price over the black */
+.bft > .pic{ aspect-ratio:auto; width:80%; height:clamp(128px,36vw,196px); margin-left:auto; background:none; }
+.bft > .pic img{ object-fit:cover; object-position:60% 30%;
+  -webkit-mask-image:linear-gradient(to left,#000 50%,transparent 100%),linear-gradient(to bottom,#000 52%,transparent 100%); -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to left,#000 50%,transparent 100%),linear-gradient(to bottom,#000 52%,transparent 100%); mask-composite:intersect; }
+.bft-b{ margin-top:-30px; }
+@media (min-width:700px){ .bft > .pic{ height:210px; } }

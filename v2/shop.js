@@ -252,7 +252,7 @@
     if (ses) { ses.style.setProperty('--i', Math.max(0, list.indexOf(n))); $$('[data-n]', ses).forEach(function (b) { b.setAttribute('aria-checked', String(+b.getAttribute('data-n') === n)); }); }
     roll($('[data-pr]', card), lei(p.price * n));
     var f = $('[data-full]', card); if (f) f.textContent = lei(p.full * n);
-    var a = $('h3 a', card); if (a) a.textContent = nameOf(p, zoneOf(p));
+    var a = $('h3 a', card); if (a) a.textContent = card.classList.contains('bft') ? cardName(p) : nameOf(p, zoneOf(p));
     if (card.classList.contains('in') !== mine) { card.classList.toggle('in', mine); $('[data-add]', card).innerHTML = ctaHtml(mine); }
   }
   function repaint(pid) { $$('.bfc[data-p="' + pid + '"]').forEach(paintCard); ppBuy(); }
@@ -391,6 +391,7 @@
   var NEED_ORDER = ['corp', 'gusa', 'fata', 'epilare'];
   // chosen inside their treatment („Full Face” on HIFU and BioLifting), not offered as cards of their own
   var OPT_ONLY = { 'hifu-full-face': 1, 'biolifting-full-face': 1 };
+  var EPI_CARDS = { 'epilare-full-body': 1, 'epilare-axile': 1, 'epilare-inghinal-total': 1 };
   // the most common problems (the owner, 25.11: „la alte oferte cele mai comune probleme, ca să avem add to cart mare”):
   // [the problem, in her words; the treatment that answers it; its zone]
   var COMMON = [['Gușă, bărbie dublă', 'hifu', 'Gușă'], ['Burtică', 'liposonix', 'Abdomen'], ['Celulită', 'radiofrecventa', 'Coapse'], ['Riduri pe față', 'biolifting-full-face', ''],
@@ -450,7 +451,7 @@
   function listFor(k) {
     var list;
     if (k === 'top') list = D.terms.show.map(byId).filter(function (p) { return p && !OPT_ONLY[p.id]; });
-    else list = D.products.filter(function (p) { return !p.allOf && !OPT_ONLY[p.id] && (k === 'all' || p.need === k) && (p.need !== 'epilare' || p.id === 'epilare-full-body'); });
+    else list = D.products.filter(function (p) { return !p.allOf && !OPT_ONLY[p.id] && (k === 'all' || p.need === k) && (p.need !== 'epilare' || EPI_CARDS[p.id]); });
     if (F.city) list = list.filter(function (p) { return p.cities.indexOf(F.city) > -1; });
     var rank = function (p) { var i = D.terms.show.indexOf(p.id); return i > -1 ? i : 100 + NEED_ORDER.indexOf(p.need) * 50 + D.products.indexOf(p) / 100; };
     var cmp = { rec: function (x, y) { return rank(x) - rank(y); }, asc: function (x, y) { return x.price - y.price; }, desc: function (x, y) { return y.price - x.price; },
@@ -459,12 +460,17 @@
   }
   // a small product card for the grid: the picture, -50%, the name, the price, „Rezervă oferta”; a tap on it opens the treatment.
   // The first row's pictures load at once (the first one first), the others when they come near.
+  // the card's name: the treatment, not a zone (the owner, 25.11: „doar procedura, zona o aleg ele”: HIFU facial, HIFU corporal…)
+  var CARD = { hifu: 'HIFU facial', 'hifu-corp': 'HIFU corporal', liposonix: 'Liposonix', radiofrecventa: 'Radiofrecvență corporală', ems: 'EMS',
+    cavitatie: 'Cavitație', biolifting: 'BioLifting', 'epilare-full-body': 'Epilare laser Full Body', 'epilare-axile': 'Epilare laser axile',
+    'epilare-inghinal-total': 'Epilare laser inghinal' };
+  var cardName = function (p) { return CARD[p.id] || p.name; };
   function tileHtml(p, k) {
     var z = zoneOf(p), n = nOf(p), mine = has(p), u = urlOf(p);
     return '<article class="bfc bft' + (mine ? ' in' : '') + '" data-p="' + esc(p.id) + '" data-href="' + u + '" data-w="1">' +
       '<span class="pic" aria-hidden="true"><img ' + tileImg(p) + ' alt=""' + (k === 0 ? ' fetchpriority="high"' : k < 4 ? '' : ' loading="lazy"') + ' decoding="async"' + posOf(p) + '></span>' +
       '<span class="pct">-' + pct() + '%</span>' + onlyHtml(p, 'bft-c') +
-      '<div class="bft-b"><h3><a href="' + u + '">' + esc(nameOf(p, z)) + '</a></h3>' +
+      '<div class="bft-b"><h3><a href="' + u + '">' + esc(cardName(p)) + '</a></h3>' +
       '<div class="pr"><b data-pr>' + lei(p.price * n) + '</b><s data-full>' + lei(p.full * n) + '</s></div>' +
       '<button type="button" class="btn book gold bfc-cta" data-add>' + ctaHtml(mine) + '</button></div></article>';
   }
