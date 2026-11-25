@@ -395,13 +395,21 @@ async function publish(conn, image, s) {
       const afs = {
         images: [{ hash, adlabels: L('c360_feed') }, { hash: storyHash, adlabels: L('c360_story') }],
         bodies: [{ text: s.primaryText, adlabels: L('c360_body') }],
-        titles: [{ text: s.headline || '', adlabels: L('c360_title') }],
+        // its titles (George's three: ⏰💨, 👉 and one more, 26.11) under the same label: Meta shows each person the one that works
+        titles: titles.map((text) => ({ text, adlabels: L('c360_title') })),
         link_urls: [{ website_url: s.link, adlabels: L('c360_link') }],
         call_to_action_types: [s.cta], ad_formats: ['SINGLE_IMAGE'], optimization_type: 'PLACEMENT', asset_customization_rules: rules,
       };
+      if (!afs.titles.length) afs.titles = [{ text: '', adlabels: L('c360_title') }];
       if (s.description) afs.descriptions = [{ text: s.description, adlabels: L('c360_desc') }];
       const os2 = { page_id: conn.pageId }; if (spec.instagram_user_id) os2.instagram_user_id = spec.instagram_user_id;
       creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name: s.adName, object_story_spec: os2, asset_feed_spec: afs }, tags));
+      // several titles refused with the two pictures: the first title alone, the story kept, and said so
+      if (!creative.ok && afs.titles.length > 1) {
+        const why = metaError(creative.j, '');
+        creative = await call('POST', '/' + act + '/adcreatives', tok, Object.assign({ name: s.adName, object_story_spec: os2, asset_feed_spec: Object.assign({}, afs, { titles: afs.titles.slice(0, 1) }) }, tags));
+        if (creative.ok) textNote = 'Meta n-a primit mai multe titluri cu varianta de story (' + why + '), reclama are primul titlu.';
+      }
       // refused: the ad goes with the 4:5 alone, and says so
       if (!creative.ok) { textNote = 'Meta n-a primit varianta de story (' + metaError(creative.j, '') + '), reclama are doar 4:5.'; creative = null; }
     }

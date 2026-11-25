@@ -201,158 +201,182 @@ const BF_SITE = [
   "adsetName": "Timișoara 8 km · femei 30-65+",
   "ads": [
    {
-    "name": "TM · HIFU Gușă · alb",
+    "name": "TM · HIFU Gușă · alb · v2",
     "image": "bf-tm-hifu-gusa.jpg",
     "story": "bf-tm-hifu-gusa-story.jpg",
     "path": "tratament-hifu?zona=gusa&oras=timisoara",
     "utmContent": "bf-hifu-gusa",
     "cta": "SHOP_NOW",
-    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Gușă: 145 lei în loc de 290 lei.\n✅ Strânge pielea de sub bărbie\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "TIMIȘOARA! 📍 Toate tratamentele la -50%, doar la plata online.\n\nHIFU Gușă: 145 lei în loc de 290 lei.\n\n✅ Strânge pielea de sub bărbie\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "HIFU GUȘĂ: 145 LEI ÎN LOC DE 290 👉"
+     "HIFU GUȘĂ LA 145 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ OPERAȚIE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "TM · HIFU Gât · alb",
+    "name": "TM · HIFU Gât · alb · v2",
     "image": "bf-tm-hifu-gat.jpg",
     "story": "bf-tm-hifu-gat-story.jpg",
     "path": "tratament-hifu?zona=gat&oras=timisoara",
     "utmContent": "bf-hifu-gat",
     "cta": "SHOP_NOW",
-    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Gât: 145 lei în loc de 290 lei.\n✅ Strânge pielea lăsată a gâtului\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "TIMIȘOARA! 📍 Toate tratamentele la -50%, doar la plata online.\n\nHIFU Gât: 145 lei în loc de 290 lei.\n\n✅ Strânge pielea lăsată a gâtului\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "HIFU GÂT: 145 LEI ÎN LOC DE 290 👉"
+     "HIFU GÂT LA 145 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ OPERAȚIE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "TM · HIFU Contur · alb",
+    "name": "TM · HIFU Contur · alb · v2",
     "image": "bf-tm-hifu-contur.jpg",
     "story": "bf-tm-hifu-contur-story.jpg",
     "path": "tratament-hifu?zona=contur-mandibular&oras=timisoara",
     "utmContent": "bf-hifu-contur",
     "cta": "SHOP_NOW",
-    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Contur: 145 lei în loc de 290 lei.\n✅ Linia maxilarului mai clară\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "TIMIȘOARA! 📍 Toate tratamentele la -50%, doar la plata online.\n\nHIFU Contur: 145 lei în loc de 290 lei.\n\n✅ Linia maxilarului mai clară\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "HIFU CONTUR: 145 LEI ÎN LOC DE 290 👉"
+     "HIFU CONTUR LA 145 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ OPERAȚIE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "TM · HIFU Pomeți · alb",
+    "name": "TM · HIFU Pomeți · alb · v2",
     "image": "bf-tm-hifu-pometi.jpg",
     "story": "bf-tm-hifu-pometi-story.jpg",
     "path": "tratament-hifu?zona=pometi&oras=timisoara",
     "utmContent": "bf-hifu-pometi",
     "cta": "SHOP_NOW",
-    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Pomeți: 145 lei în loc de 290 lei.\n✅ Aspect de lifting pe pomeți\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "TIMIȘOARA! 📍 Toate tratamentele la -50%, doar la plata online.\n\nHIFU Pomeți: 145 lei în loc de 290 lei.\n\n✅ Aspect de lifting pe pomeți\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "HIFU POMEȚI: 145 LEI ÎN LOC DE 290 👉"
+     "HIFU POMEȚI LA 145 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ OPERAȚIE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "TM · HIFU Frunte · alb",
+    "name": "TM · HIFU Frunte · alb · v2",
     "image": "bf-tm-hifu-frunte.jpg",
     "story": "bf-tm-hifu-frunte-story.jpg",
     "path": "tratament-hifu?zona=frunte&oras=timisoara",
     "utmContent": "bf-hifu-frunte",
     "cta": "SHOP_NOW",
-    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Frunte: 145 lei în loc de 290 lei.\n✅ Aspect de lifting pe frunte, privire mai odihnită\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "TIMIȘOARA! 📍 Toate tratamentele la -50%, doar la plata online.\n\nHIFU Frunte: 145 lei în loc de 290 lei.\n\n✅ Aspect de lifting pe frunte, privire mai odihnită\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "HIFU FRUNTE: 145 LEI ÎN LOC DE 290 👉"
+     "HIFU FRUNTE LA 145 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ OPERAȚIE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "TM · HIFU Full Face · alb",
+    "name": "TM · HIFU Full Face · alb · v2",
     "image": "bf-tm-hifu-full-face.jpg",
     "story": "bf-tm-hifu-full-face-story.jpg",
     "path": "tratament-hifu-full-face?oras=timisoara",
     "utmContent": "bf-hifu-full-face",
     "cta": "SHOP_NOW",
-    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Full Face: 510 lei în loc de 1.020 lei.\n✅ Strânge pielea lăsată a feței\n✅ Frunte, obraji, linia maxilarului și gât\n✅ Fără bisturiu, fără recuperare\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "TIMIȘOARA! 📍 Toate tratamentele la -50%, doar la plata online.\n\nHIFU Full Face: 510 lei în loc de 1.020 lei.\n\n✅ Strânge pielea lăsată a feței\n✅ Frunte, obraji, linia maxilarului și gât\n✅ Fără bisturiu, fără recuperare\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "HIFU FULL FACE: 510 LEI ÎN LOC DE 1.020 👉"
+     "HIFU FULL FACE LA 510 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ OPERAȚIE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "TM · BioLifting Full Face · alb",
+    "name": "TM · BioLifting Full Face · alb · v2",
     "image": "bf-tm-biolifting-full-face.jpg",
     "story": "bf-tm-biolifting-full-face-story.jpg",
     "path": "tratament-biolifting-full-face?oras=timisoara",
     "utmContent": "bf-biolifting-full-face",
     "cta": "SHOP_NOW",
-    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nBioLifting Full Face: 140 lei în loc de 280 lei.\n✅ Stimulează colagenul și elastina\n✅ Reduce ridurile fine\n✅ 30 de minute, fără ace, fără recuperare\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "TIMIȘOARA! 📍 Toate tratamentele la -50%, doar la plata online.\n\nBioLifting Full Face: 140 lei în loc de 280 lei.\n\n✅ Stimulează colagenul și elastina\n✅ Reduce ridurile fine\n✅ 30 de minute, fără ace, fără recuperare\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "BIOLIFTING FULL FACE: 140 LEI ÎN LOC DE 280 👉"
+     "BIOLIFTING FULL FACE LA 140 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ RECUPERARE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "TM · Red Sculpt Abdomen · alb",
+    "name": "TM · Red Sculpt Abdomen · alb · v2",
     "image": "bf-tm-red-sculpt-abdomen.jpg",
     "story": "bf-tm-red-sculpt-abdomen-story.jpg",
     "path": "tratament-radiofrecventa?zona=abdomen&oras=timisoara",
     "utmContent": "bf-red-sculpt-abdomen",
     "cta": "SHOP_NOW",
-    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nRed Sculpt Abdomen: 140 lei în loc de 280 lei.\n✅ Piele mai fermă pe abdomen\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "TIMIȘOARA! 📍 Toate tratamentele la -50%, doar la plata online.\n\nRed Sculpt Abdomen: 140 lei în loc de 280 lei.\n\n✅ Piele mai fermă pe abdomen\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "RED SCULPT ABDOMEN: 140 LEI ÎN LOC DE 280 👉"
+     "RED SCULPT ABDOMEN LA 140 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ EFORT ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "TM · Red Sculpt Coapse · alb",
+    "name": "TM · Red Sculpt Coapse · alb · v2",
     "image": "bf-tm-red-sculpt-coapse.jpg",
     "story": "bf-tm-red-sculpt-coapse-story.jpg",
     "path": "tratament-radiofrecventa?zona=coapse&oras=timisoara",
     "utmContent": "bf-red-sculpt-coapse",
     "cta": "SHOP_NOW",
-    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nRed Sculpt Coapse: 140 lei în loc de 280 lei.\n✅ Reduce aspectul de celulită\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "TIMIȘOARA! 📍 Toate tratamentele la -50%, doar la plata online.\n\nRed Sculpt Coapse: 140 lei în loc de 280 lei.\n\n✅ Reduce aspectul de celulită\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "RED SCULPT COAPSE: 140 LEI ÎN LOC DE 280 👉"
+     "RED SCULPT COAPSE LA 140 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ EFORT ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "TM · Red Sculpt Brațe · alb",
+    "name": "TM · Red Sculpt Brațe · alb · v2",
     "image": "bf-tm-red-sculpt-brate.jpg",
     "story": "bf-tm-red-sculpt-brate-story.jpg",
     "path": "tratament-radiofrecventa?zona=brate&oras=timisoara",
     "utmContent": "bf-red-sculpt-brate",
     "cta": "SHOP_NOW",
-    "text": "TIMIȘOARA! 📍 -50% la toate tratamentele, doar la plata online.\n\nRed Sculpt Brațe: 140 lei în loc de 280 lei.\n✅ Piele mai fermă pe brațe\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "TIMIȘOARA! 📍 Toate tratamentele la -50%, doar la plata online.\n\nRed Sculpt Brațe: 140 lei în loc de 280 lei.\n\n✅ Piele mai fermă pe brațe\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "RED SCULPT BRAȚE: 140 LEI ÎN LOC DE 280 👉"
+     "RED SCULPT BRAȚE LA 140 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ EFORT ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "TM · Toate tratamentele · lista de prețuri",
+    "name": "TM · Toate tratamentele · lista de prețuri · v2",
     "image": "bf-tm-toate-lista.jpg",
     "story": "bf-tm-toate-lista-story.jpg",
     "path": "oferte?oras=timisoara",
     "utmContent": "bf-toate-lista",
     "cta": "SHOP_NOW",
-    "text": "TIMIȘOARA! 📍 -50% la TOATE tratamentele, doar la plata online.\n\n✅ Liposonix: 320 lei în loc de 640 lei\n✅ HIFU Gușă: 145 lei în loc de 290 lei\n✅ Red Sculpt, 40K Slim, BioLifting Full Face: 140 lei în loc de 280 lei\n\n⏳ Doar 2 zile.\n👉 Alegi tratamentul pe site, plătești cu cardul și îți alegi ziua și ora.",
+    "text": "TIMIȘOARA! 📍 Toate tratamentele, la jumătate de preț, doar la plata online.\n\n✅ Liposonix: 320 lei în loc de 640 lei\n✅ HIFU Gușă: 145 lei în loc de 290 lei\n✅ Red Sculpt, 40K Slim, BioLifting Full Face: 140 lei în loc de 280 lei\n\n⏳ Doar 2 zile, apoi prețurile revin la normal.\n👉 Alege-ți tratamentul și ora pe centrul360.com",
     "headlines": [
-     "-50% LA TOATE TRATAMENTELE 👉"
+     "TOATE TRATAMENTELE LA -50% 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "DE LA 80 DE LEI, FĂRĂ ACE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "TM · Toate tratamentele · față și corp",
+    "name": "TM · Toate tratamentele · față și corp · v2",
     "image": "bf-tm-toate-fata-corp.jpg",
     "story": "bf-tm-toate-fata-corp-story.jpg",
     "path": "oferte?oras=timisoara",
     "utmContent": "bf-toate-fata-corp",
     "cta": "SHOP_NOW",
-    "text": "TIMIȘOARA! 📍 Jumătate de preț la tot: față și corp, -50% la plata online.\n\n✅ Fără ace, fără operație\n✅ De la 80 de lei\n✅ Îți alegi ziua și ora imediat după plată\n\n⏳ Doar 2 zile.\n👉 Intră pe site și alege-ți tratamentul.",
+    "text": "TIMIȘOARA! 📍 Toate tratamentele, față și corp, la jumătate de preț, doar la plata online.\n\n✅ Fără ace, fără operație\n✅ De la 80 de lei\n✅ Îți alegi ziua și ora imediat după plată\n\n⏳ Doar 2 zile, apoi prețurile revin la normal.\n👉 Alege-ți tratamentul pe centrul360.com",
     "headlines": [
-     "JUMĂTATE DE PREȚ LA TOT 👉"
+     "JUMĂTATE DE PREȚ LA TOT 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FAȚĂ ȘI CORP, FĂRĂ ACE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    }
@@ -367,158 +391,182 @@ const BF_SITE = [
   "adsetName": "Arad 8 km · femei 30-65+",
   "ads": [
    {
-    "name": "AR · HIFU Gușă · alb",
+    "name": "AR · HIFU Gușă · alb · v2",
     "image": "bf-ar-hifu-gusa.jpg",
     "story": "bf-ar-hifu-gusa-story.jpg",
     "path": "tratament-hifu?zona=gusa&oras=arad",
     "utmContent": "bf-hifu-gusa",
     "cta": "SHOP_NOW",
-    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Gușă: 145 lei în loc de 290 lei.\n✅ Strânge pielea de sub bărbie\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "ARAD! 📍 Toate tratamentele la -50%, doar la plata online.\n\nHIFU Gușă: 145 lei în loc de 290 lei.\n\n✅ Strânge pielea de sub bărbie\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "HIFU GUȘĂ: 145 LEI ÎN LOC DE 290 👉"
+     "HIFU GUȘĂ LA 145 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ OPERAȚIE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "AR · HIFU Gât · alb",
+    "name": "AR · HIFU Gât · alb · v2",
     "image": "bf-ar-hifu-gat.jpg",
     "story": "bf-ar-hifu-gat-story.jpg",
     "path": "tratament-hifu?zona=gat&oras=arad",
     "utmContent": "bf-hifu-gat",
     "cta": "SHOP_NOW",
-    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Gât: 145 lei în loc de 290 lei.\n✅ Strânge pielea lăsată a gâtului\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "ARAD! 📍 Toate tratamentele la -50%, doar la plata online.\n\nHIFU Gât: 145 lei în loc de 290 lei.\n\n✅ Strânge pielea lăsată a gâtului\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "HIFU GÂT: 145 LEI ÎN LOC DE 290 👉"
+     "HIFU GÂT LA 145 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ OPERAȚIE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "AR · HIFU Contur · alb",
+    "name": "AR · HIFU Contur · alb · v2",
     "image": "bf-ar-hifu-contur.jpg",
     "story": "bf-ar-hifu-contur-story.jpg",
     "path": "tratament-hifu?zona=contur-mandibular&oras=arad",
     "utmContent": "bf-hifu-contur",
     "cta": "SHOP_NOW",
-    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Contur: 145 lei în loc de 290 lei.\n✅ Linia maxilarului mai clară\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "ARAD! 📍 Toate tratamentele la -50%, doar la plata online.\n\nHIFU Contur: 145 lei în loc de 290 lei.\n\n✅ Linia maxilarului mai clară\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "HIFU CONTUR: 145 LEI ÎN LOC DE 290 👉"
+     "HIFU CONTUR LA 145 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ OPERAȚIE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "AR · HIFU Pomeți · alb",
+    "name": "AR · HIFU Pomeți · alb · v2",
     "image": "bf-ar-hifu-pometi.jpg",
     "story": "bf-ar-hifu-pometi-story.jpg",
     "path": "tratament-hifu?zona=pometi&oras=arad",
     "utmContent": "bf-hifu-pometi",
     "cta": "SHOP_NOW",
-    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Pomeți: 145 lei în loc de 290 lei.\n✅ Aspect de lifting pe pomeți\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "ARAD! 📍 Toate tratamentele la -50%, doar la plata online.\n\nHIFU Pomeți: 145 lei în loc de 290 lei.\n\n✅ Aspect de lifting pe pomeți\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "HIFU POMEȚI: 145 LEI ÎN LOC DE 290 👉"
+     "HIFU POMEȚI LA 145 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ OPERAȚIE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "AR · HIFU Frunte · alb",
+    "name": "AR · HIFU Frunte · alb · v2",
     "image": "bf-ar-hifu-frunte.jpg",
     "story": "bf-ar-hifu-frunte-story.jpg",
     "path": "tratament-hifu?zona=frunte&oras=arad",
     "utmContent": "bf-hifu-frunte",
     "cta": "SHOP_NOW",
-    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Frunte: 145 lei în loc de 290 lei.\n✅ Aspect de lifting pe frunte, privire mai odihnită\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "ARAD! 📍 Toate tratamentele la -50%, doar la plata online.\n\nHIFU Frunte: 145 lei în loc de 290 lei.\n\n✅ Aspect de lifting pe frunte, privire mai odihnită\n✅ Fără ace, fără operație\n✅ 10-15 minute, apoi te întorci la ale tale\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "HIFU FRUNTE: 145 LEI ÎN LOC DE 290 👉"
+     "HIFU FRUNTE LA 145 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ OPERAȚIE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "AR · HIFU Full Face · alb",
+    "name": "AR · HIFU Full Face · alb · v2",
     "image": "bf-ar-hifu-full-face.jpg",
     "story": "bf-ar-hifu-full-face-story.jpg",
     "path": "tratament-hifu-full-face?oras=arad",
     "utmContent": "bf-hifu-full-face",
     "cta": "SHOP_NOW",
-    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nHIFU Full Face: 510 lei în loc de 1.020 lei.\n✅ Strânge pielea lăsată a feței\n✅ Frunte, obraji, linia maxilarului și gât\n✅ Fără bisturiu, fără recuperare\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "ARAD! 📍 Toate tratamentele la -50%, doar la plata online.\n\nHIFU Full Face: 510 lei în loc de 1.020 lei.\n\n✅ Strânge pielea lăsată a feței\n✅ Frunte, obraji, linia maxilarului și gât\n✅ Fără bisturiu, fără recuperare\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "HIFU FULL FACE: 510 LEI ÎN LOC DE 1.020 👉"
+     "HIFU FULL FACE LA 510 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ OPERAȚIE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "AR · BioLifting Full Face · alb",
+    "name": "AR · BioLifting Full Face · alb · v2",
     "image": "bf-ar-biolifting-full-face.jpg",
     "story": "bf-ar-biolifting-full-face-story.jpg",
     "path": "tratament-biolifting-full-face?oras=arad",
     "utmContent": "bf-biolifting-full-face",
     "cta": "SHOP_NOW",
-    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nBioLifting Full Face: 140 lei în loc de 280 lei.\n✅ Stimulează colagenul și elastina\n✅ Reduce ridurile fine\n✅ 30 de minute, fără ace, fără recuperare\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "ARAD! 📍 Toate tratamentele la -50%, doar la plata online.\n\nBioLifting Full Face: 140 lei în loc de 280 lei.\n\n✅ Stimulează colagenul și elastina\n✅ Reduce ridurile fine\n✅ 30 de minute, fără ace, fără recuperare\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "BIOLIFTING FULL FACE: 140 LEI ÎN LOC DE 280 👉"
+     "BIOLIFTING FULL FACE LA 140 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ RECUPERARE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "AR · Red Sculpt Abdomen · alb",
+    "name": "AR · Red Sculpt Abdomen · alb · v2",
     "image": "bf-ar-red-sculpt-abdomen.jpg",
     "story": "bf-ar-red-sculpt-abdomen-story.jpg",
     "path": "tratament-radiofrecventa?zona=abdomen&oras=arad",
     "utmContent": "bf-red-sculpt-abdomen",
     "cta": "SHOP_NOW",
-    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nRed Sculpt Abdomen: 140 lei în loc de 280 lei.\n✅ Piele mai fermă pe abdomen\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "ARAD! 📍 Toate tratamentele la -50%, doar la plata online.\n\nRed Sculpt Abdomen: 140 lei în loc de 280 lei.\n\n✅ Piele mai fermă pe abdomen\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "RED SCULPT ABDOMEN: 140 LEI ÎN LOC DE 280 👉"
+     "RED SCULPT ABDOMEN LA 140 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ EFORT ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "AR · Red Sculpt Coapse · alb",
+    "name": "AR · Red Sculpt Coapse · alb · v2",
     "image": "bf-ar-red-sculpt-coapse.jpg",
     "story": "bf-ar-red-sculpt-coapse-story.jpg",
     "path": "tratament-radiofrecventa?zona=coapse&oras=arad",
     "utmContent": "bf-red-sculpt-coapse",
     "cta": "SHOP_NOW",
-    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nRed Sculpt Coapse: 140 lei în loc de 280 lei.\n✅ Reduce aspectul de celulită\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "ARAD! 📍 Toate tratamentele la -50%, doar la plata online.\n\nRed Sculpt Coapse: 140 lei în loc de 280 lei.\n\n✅ Reduce aspectul de celulită\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "RED SCULPT COAPSE: 140 LEI ÎN LOC DE 280 👉"
+     "RED SCULPT COAPSE LA 140 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ EFORT ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "AR · Red Sculpt Brațe · alb",
+    "name": "AR · Red Sculpt Brațe · alb · v2",
     "image": "bf-ar-red-sculpt-brate.jpg",
     "story": "bf-ar-red-sculpt-brate-story.jpg",
     "path": "tratament-radiofrecventa?zona=brate&oras=arad",
     "utmContent": "bf-red-sculpt-brate",
     "cta": "SHOP_NOW",
-    "text": "ARAD! 📍 -50% la toate tratamentele, doar la plata online.\n\nRed Sculpt Brațe: 140 lei în loc de 280 lei.\n✅ Piele mai fermă pe brațe\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile.\n👉 Plătești pe site și îți alegi ziua și ora.",
+    "text": "ARAD! 📍 Toate tratamentele la -50%, doar la plata online.\n\nRed Sculpt Brațe: 140 lei în loc de 280 lei.\n\n✅ Piele mai fermă pe brațe\n✅ Stimulează colagenul și fermitatea\n✅ Fără ace, fără efort\n\n⏳ Doar 2 zile, apoi prețul revine la normal.\n👉 Rezervă-ți ora acum pe centrul360.com",
     "headlines": [
-     "RED SCULPT BRAȚE: 140 LEI ÎN LOC DE 280 👉"
+     "RED SCULPT BRAȚE LA 140 LEI 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FĂRĂ ACE, FĂRĂ EFORT ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "AR · Toate tratamentele · lista de prețuri",
+    "name": "AR · Toate tratamentele · lista de prețuri · v2",
     "image": "bf-ar-toate-lista.jpg",
     "story": "bf-ar-toate-lista-story.jpg",
     "path": "oferte?oras=arad",
     "utmContent": "bf-toate-lista",
     "cta": "SHOP_NOW",
-    "text": "ARAD! 📍 -50% la TOATE tratamentele, doar la plata online.\n\n✅ Liposonix: 320 lei în loc de 640 lei\n✅ HIFU Gușă: 145 lei în loc de 290 lei\n✅ Red Sculpt, 40K Slim, BioLifting Full Face: 140 lei în loc de 280 lei\n\n⏳ Doar 2 zile.\n👉 Alegi tratamentul pe site, plătești cu cardul și îți alegi ziua și ora.",
+    "text": "ARAD! 📍 Toate tratamentele, la jumătate de preț, doar la plata online.\n\n✅ Liposonix: 320 lei în loc de 640 lei\n✅ HIFU Gușă: 145 lei în loc de 290 lei\n✅ Red Sculpt, 40K Slim, BioLifting Full Face: 140 lei în loc de 280 lei\n\n⏳ Doar 2 zile, apoi prețurile revin la normal.\n👉 Alege-ți tratamentul și ora pe centrul360.com",
     "headlines": [
-     "-50% LA TOATE TRATAMENTELE 👉"
+     "TOATE TRATAMENTELE LA -50% 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "DE LA 80 DE LEI, FĂRĂ ACE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    },
    {
-    "name": "AR · Toate tratamentele · față și corp",
+    "name": "AR · Toate tratamentele · față și corp · v2",
     "image": "bf-ar-toate-fata-corp.jpg",
     "story": "bf-ar-toate-fata-corp-story.jpg",
     "path": "oferte?oras=arad",
     "utmContent": "bf-toate-fata-corp",
     "cta": "SHOP_NOW",
-    "text": "ARAD! 📍 Jumătate de preț la tot: față și corp, -50% la plata online.\n\n✅ Fără ace, fără operație\n✅ De la 80 de lei\n✅ Îți alegi ziua și ora imediat după plată\n\n⏳ Doar 2 zile.\n👉 Intră pe site și alege-ți tratamentul.",
+    "text": "ARAD! 📍 Toate tratamentele, față și corp, la jumătate de preț, doar la plata online.\n\n✅ Fără ace, fără operație\n✅ De la 80 de lei\n✅ Îți alegi ziua și ora imediat după plată\n\n⏳ Doar 2 zile, apoi prețurile revin la normal.\n👉 Alege-ți tratamentul pe centrul360.com",
     "headlines": [
-     "JUMĂTATE DE PREȚ LA TOT 👉"
+     "JUMĂTATE DE PREȚ LA TOT 👉",
+     "DOAR 2 ZILE ⏰💨",
+     "FAȚĂ ȘI CORP, FĂRĂ ACE ✨"
     ],
     "description": "Doar online · doar 2 zile"
    }
@@ -526,6 +574,15 @@ const BF_SITE = [
  }
 ];
 const JOBS = [
+  // 26.11 ~01:30, George: the copy in his structure (the city, the offer, 3 bullets, the urgency, the CTA with the site; 3 titles in
+  // capitals: 👉, ⏰💨 and one more): the ads are made again as „· v2” in the same ad sets; the 5 of the first copy paused
+  { id: 'bf-site-v1-off-2026-11-26', act: 'act_4502494523405059', why: 'Black Friday: reclamele cu prima copie înlocuite', actions: [
+    { campaignId: '120252119342120103', name: 'TM · HIFU Gușă · alb (v1)', status: 'PAUSED', why: 'copia nouă' },
+    { campaignId: '120252119403650103', name: 'TM · HIFU Gât · alb (v1)', status: 'PAUSED', why: 'copia nouă' },
+    { campaignId: '120252119488920103', name: 'TM · HIFU Contur · alb (v1)', status: 'PAUSED', why: 'copia nouă' },
+    { campaignId: '120252119837450103', name: 'TM · HIFU Pomeți · alb (v1)', status: 'PAUSED', why: 'copia nouă' },
+    { campaignId: '120252119912520103', name: 'TM · HIFU Frunte · alb (v1)', status: 'PAUSED', why: 'copia nouă' },
+  ] },
   { id: 'bf-site-2026-11-25', why: 'Black Friday pe site: TM și AR, câte 12 reclame, 300 lei/zi pe oraș', site: {
     // „Cumpără acum” (25.11 ~00:00: Meta refused BOOK_NOW on a sales ad with the 4:5 and the story in one ad)
     pixelId: '2276074362800484', sharePixel: '1107600260509887', goal: 'purchase', cta: 'SHOP_NOW', ages: [30, 65], urlTags: 'c360_ad={{ad.id}}',
