@@ -112,7 +112,11 @@
   var sessOf = function (p) { return /^(hifu|hifu-full-face|hifu-corp|liposonix)$/.test(p.id) ? [1, 2, 3] : [1, 3, 6]; };
   var nOf = function (p) { var n = S.n[p.id]; return sessOf(p).indexOf(n) > -1 ? n : 1; };
   var urlOf = function (p) { return BASE + 'tratament-' + (p.need === 'epilare' ? 'epilare' : p.id); };
-  var picOf = function (p) { var a = ART[p.id] || (p.need === 'epilare' && ART.epilare); return (a && a.img) || p.photo; };
+  var artOf = function (p) { return ART[p.id] || (p.need === 'epilare' && ART.epilare) || null; };
+  var picOf = function (p) { var a = artOf(p); return (a && a.img) || p.photo; };
+  // a whole photo on black (v2/art.json full, the owner 25.11): its focal point goes on every <img> that shows it
+  var fullOf = function (p) { var a = artOf(p); return !!(a && a.img && a.full); };
+  var posOf = function (p) { var a = artOf(p); return fullOf(p) && a.pos ? ' style="object-position:' + esc(String(a.pos).replace(/[^0-9% .a-z]/g, '')) + '"' : ''; };
   var sesWord = function (n) { return n === 1 ? '1 ședință' : n + ' ședințe'; };
   var qOf = function (v) { return clamp(Math.floor(Number(v) || 1), 1, 10); };
   function cityNow() {
@@ -167,7 +171,7 @@
   function cardHtml(p) {
     var z = zoneOf(p), n = nOf(p), mine = inCart(p.id), u = urlOf(p);
     return '<article class="slip has-pic bfc' + (mine ? ' in' : '') + '" data-p="' + esc(p.id) + '" data-href="' + u + '" data-w="1">' +
-      '<span class="pic" aria-hidden="true"><img src="' + esc(picOf(p)) + '" alt="" decoding="async"></span>' +
+      '<span class="pic' + (fullOf(p) ? ' full' : '') + '" aria-hidden="true"><img src="' + esc(picOf(p)) + '" alt="" decoding="async"' + posOf(p) + '></span>' +
       '<span class="pct">-' + pct() + '%</span>' +
       '<span class="k"><b>Black Friday</b> · ' + esc(NEED[p.need] || '') + '</span>' +
       '<h3><a href="' + u + '">' + esc(nameOf(p, z)) + '</a></h3>' +
@@ -343,7 +347,7 @@
   function tileHtml(p) {
     var z = zoneOf(p), n = nOf(p), mine = inCart(p.id), u = urlOf(p);
     return '<article class="bfc bft' + (mine ? ' in' : '') + '" data-p="' + esc(p.id) + '" data-href="' + u + '" data-w="1">' +
-      '<span class="pic" aria-hidden="true"><img src="' + esc(picOf(p)) + '" alt="" loading="lazy" decoding="async"></span>' +
+      '<span class="pic" aria-hidden="true"><img src="' + esc(picOf(p)) + '" alt="" loading="lazy" decoding="async"' + posOf(p) + '></span>' +
       '<span class="pct">-' + pct() + '%</span>' + (p.cities.length === 1 ? '<span class="bft-c">Doar ' + esc(p.cities[0]) + '</span>' : '') +
       '<div class="bft-b"><span class="k">' + esc(NEED[p.need] || '') + '</span>' +
       '<h3><a href="' + u + '">' + esc(nameOf(p, z)) + '</a></h3>' +
@@ -419,7 +423,7 @@
   }
   function pairHtml(from, q, dark) {
     var z = zoneOf(q), has = inCart(q.id);
-    return '<div class="pair' + (dark ? ' d' : '') + '" data-href="' + urlOf(q) + '"><span class="th"><img src="' + esc(picOf(q)) + '" alt=""></span>' +
+    return '<div class="pair' + (dark ? ' d' : '') + '" data-href="' + urlOf(q) + '"><span class="th"><img src="' + esc(picOf(q)) + '" alt=""' + posOf(q) + '></span>' +
       '<div><a href="' + urlOf(q) + '"><b>' + esc(nameOf(q, z)) + '</b></a><small>' + esc(WHY[from.id + '>' + q.id] || 'Se completează bine') + '</small><span class="pz"><s>' + lei(q.full) + '</s> <b>' + lei(q.price) + '</b></span></div>' +
       '<button type="button" class="sh-plus' + (has ? ' in' : '') + '" data-plus="' + esc(q.id) + '" data-pz="' + esc(z) + '" aria-label="' + (has ? 'În coș' : 'Adaugă') + '">' + (has ? I.check : I.plus) + '</button></div>';
   }
@@ -553,7 +557,7 @@
   function popHtml(p, zone, qty) {
     return '<div class="sp-in">' +
       '<div class="sp-h"><span class="sp-ok">' + I.check + '</span><b>Adăugat în coș</b><button type="button" class="sh-ic" data-pop-x aria-label="Închide">' + I.x + '</button></div>' +
-      '<div class="sp-it"><span class="th"><img src="' + esc(picOf(p)) + '" alt=""></span><div><b data-sp-n>' + esc(nameOf(p, zone)) + '</b><small>Black Friday -' + pct() + '% · ' + p.minutes + ' min</small></div>' +
+      '<div class="sp-it"><span class="th"><img src="' + esc(picOf(p)) + '" alt=""' + posOf(p) + '></span><div><b data-sp-n>' + esc(nameOf(p, zone)) + '</b><small>Black Friday -' + pct() + '% · ' + p.minutes + ' min</small></div>' +
       '<div class="pz"><b data-sp-p>' + lei(p.price * qty) + '</b><s data-sp-f>' + lei(p.full * qty) + '</s></div></div>' +
       (p.zones.length ? '<p class="sp-l">Alege zona</p><div class="sh-chips" role="radiogroup" aria-label="Zona">' + p.zones.map(function (x) { return '<button type="button" role="radio" data-pzone="' + esc(x) + '" aria-checked="' + (x === zone) + '">' + I.check + esc(x) + '</button>'; }).join('') + '</div>' : '') +
       '<div class="sp-row"><span>Ședințe<small data-sp-u>' + (qty > 1 ? lei(p.price) + ' / ședință' : 'o ședință') + '</small></span>' + stepHtml('pop', qty, 1) + '</div>' +
@@ -685,13 +689,13 @@
   // a small card: „Merge super în combinație cu” (with the reason) and the other offers; one tap adds it, the card opens its page
   function miniHtml(q, why, zone) {
     var z = zone || zoneOf(q), has = !!lineOf(q.id, z);
-    return '<div class="sh-pc sh-card" data-href="' + urlOf(q) + '"><span class="th"><img src="' + esc(picOf(q)) + '" alt="" loading="lazy"></span><b>' + esc(nameOf(q, z)) + '</b>' + (why ? '<small>' + esc(why) + '</small>' : '') +
+    return '<div class="sh-pc sh-card" data-href="' + urlOf(q) + '"><span class="th"><img src="' + esc(picOf(q)) + '" alt="" loading="lazy"' + posOf(q) + '></span><b>' + esc(nameOf(q, z)) + '</b>' + (why ? '<small>' + esc(why) + '</small>' : '') +
       '<span class="pz"><b>' + lei(q.price) + '</b><s>' + lei(q.full) + '</s></span>' +
       '<button type="button" class="sh-plus' + (has ? ' in' : '') + '" data-plus="' + esc(q.id) + '" data-pz="' + esc(z) + '" aria-label="' + (has ? 'În coș, scoate ' : 'Adaugă ') + esc(nameOf(q, z)) + '">' + (has ? I.check : I.plus) + '</button></div>';
   }
   function lineHtml(x) {
     var u = urlOf(x.p);
-    return '<li class="sh-li sh-card" data-line="' + esc(x.key) + '"><a class="th" href="' + u + '" aria-hidden="true" tabindex="-1"><img src="' + esc(picOf(x.p)) + '" alt=""></a>' +
+    return '<li class="sh-li sh-card" data-line="' + esc(x.key) + '"><a class="th" href="' + u + '" aria-hidden="true" tabindex="-1"><img src="' + esc(picOf(x.p)) + '" alt=""' + posOf(x.p) + '></a>' +
       '<div class="sh-li-m"><a class="sh-li-n" href="' + u + '">' + esc(x.p.name) + '</a>' +
       (x.p.zones.length ? '<button type="button" class="sh-zone" data-zk="' + esc(x.key) + '" aria-expanded="false">' + esc(x.zone) + I.down + '</button>' : '<span class="sh-li-x">' + esc(NEED[x.p.need] || '') + ' · ' + x.p.minutes + ' min</span>') + '</div>' +
       '<div class="pz"><b>' + lei(x.p.price * x.qty) + '</b><s>' + lei(x.p.full * x.qty) + '</s></div>' +

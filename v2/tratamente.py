@@ -50,6 +50,9 @@ def pic(x):
     f = PHOTO.get(x['id'], ('concern-stralucire', '50% 40%'))[0]
     return '/brand_asset/%s.webp' % f, False
 def pic_pos(x): return PHOTO.get(x['id'], ('', '50% 40%'))[1]
+def full_pos(x):
+    """a full photo's focal point (v2/art.json 'pos'), else a little above the middle"""
+    return re.sub(r'[^0-9% .a-z]', '', str(art(x).get('pos') or '50% 40%'))
 def cut_edges(src):
     """which edges of a cut-out are a hard crop (opaque pixels on the border): 'ct' top, 'cr' right, 'cl' left; the stage melts those"""
     try:
@@ -61,7 +64,8 @@ def cut_edges(src):
     except Exception:
         return 'ct'
 def art(x):
-    """the treatment's entry in v2/art.json (by its page id, else its product id): img, video (the 3D loop), poster"""
+    """the treatment's entry in v2/art.json (by its page id, else its product id): img, full (a whole photo on black, not a
+    cut-out: the owner, 25.11, the warm light of the old pictures), pos (its focal point)"""
     for k in (x['id'], x.get('pp')):
         a = ART.get(k) if k else None
         if a: return a
@@ -697,6 +701,7 @@ def page(x):
     i = x['id']; ppid = x.get('pp') or i; epi = i == 'epilare'
     zones = x.get('zones') or []; sess = x.get('sess') or [1, 3, 6]; full = x['full']
     img, own = pic(x)
+    full = own and bool(art(x).get('full'))
     hasz = bool(zones) or epi
     z0 = 'Full Body' if epi else (zones[0] if zones else '')
     out = ['<!--meta\ntitle: %s -50%% · Black Friday · Centrul360\ndescription: %s\ndock: off\n-->' % (x['name'], x['promise'] + ' ' + ' '.join(b + '.' for b in x['bullets'])),
@@ -710,7 +715,8 @@ def page(x):
     name_h = e(x['name']) + (' <em class="tp-zn" data-tp-zn>%s</em>' % e(z0) if hasz else '')
     out.append('<section class="tp-hero"><div class="wrap tp-hero-g">'
                '<div class="tp-stage%s"><div class="tp-glow" aria-hidden="true"></div><div class="tp-floor" aria-hidden="true"></div><img src="%s" alt="%s" decoding="async" fetchpriority="high" data-tp-img style="view-transition-name:pic-%s;object-position:%s">%s</div>'
-               % ((' own ' + (art(x).get('edges') or cut_edges(img))).rstrip() if own else '', e(img), e(x['name']), re.sub(r'[^a-z0-9-]', '', ppid), pic_pos(x) if not own else 'center bottom',
+               % (' full' if full else (' own ' + (art(x).get('edges') or cut_edges(img))).rstrip() if own else '', e(img), e(x['name']), re.sub(r'[^a-z0-9-]', '', ppid),
+                  full_pos(x) if full else pic_pos(x) if not own else 'center bottom',
                   '' if own else '<span class="tp-tag">-%d%% la plata online</span>' % PCT))
     out.append('<div class="tp-hx">%s<h1>%s</h1><p class="tp-promise">%s</p><ul class="tp-bul">%s</ul>%s%s</div></div></section>' % (
         eyebrow(x['kind']), name_h, e(x['promise']), ''.join('<li>%s<span>%s</span></li>' % (icon('check'), e(b)) for b in x['bullets']),
@@ -823,7 +829,7 @@ def page(x):
         prs.append('<article class="tp-pair rv" data-tp-pair="%s"><a class="th" href="{{base}}tratament-%s" tabindex="-1" aria-hidden="true"><img src="%s" alt="" loading="lazy" decoding="async" style="object-position:%s"></a>'
                    '<div class="tx"><a href="{{base}}tratament-%s"><b>%s</b></a><p>%s</p><span class="pz"><b data-tp-pp>%s</b> <s data-tp-pf>%s</s></span></div>'
                    '<button type="button" class="tp-plus" data-tp-plus="%s" aria-label="Adaugă %s în coș">%s</button></article>' % (
-                       e(q['id']), q['id'], e(qi), 'center top' if qown else pic_pos(q), q['id'], e(q['name']), e(p['why']), bf(q['full']), lei(q['full']), e(q.get('pp') or q['id']), e(q['name']), icon('plus')))
+                       e(q['id']), q['id'], e(qi), (full_pos(q) if art(q).get('full') else 'center top') if qown else pic_pos(q), q['id'], e(q['name']), e(p['why']), bf(q['full']), lei(q['full']), e(q.get('pp') or q['id']), e(q['name']), icon('plus')))
     # the laser: the other zones (the server's EPIL_PAIRS and the face, which Full Body leaves out); pp.js shows the ones that add
     # something to what she picked (with Full Body: only the face) and switches them to the men's rows
     for p in (x.get('epiPairs') or []):
