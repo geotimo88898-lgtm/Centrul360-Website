@@ -156,7 +156,18 @@
    "v2/src/grasime-localizata.html",
    "v2/src/home-bf.html"
   ],
-  "mapZones": []
+  "mapZones": [],
+  "zoneCopy": {
+   "Full Body": {
+    "kind": "Corp · grăsime localizată",
+    "promise": "Pentru grăsimea care nu cedează la dietă și sport.",
+    "bullets": [
+     "Distruge celulele de grăsime din zona tratată",
+     "Fără ace, fără operație, fără recuperare",
+     "Prima vizită de până la 90 de minute; restul zonelor le programăm împreună"
+    ]
+   }
+  }
  },
  {
   "id": "cavitatie",
@@ -280,7 +291,18 @@
    "v2/src/celulita.html"
   ],
   "video": null,
-  "mapZones": []
+  "mapZones": [],
+  "zoneCopy": {
+   "Full Body": {
+    "kind": "Corp · grăsime localizată",
+    "promise": "Remodelează silueta, fără durere și fără recuperare.",
+    "bullets": [
+     "Reduce grăsimea localizată",
+     "Fără durere, fără ace, fără recuperare",
+     "Prima vizită de până la 90 de minute; restul zonelor le programăm împreună"
+    ]
+   }
+  }
  },
  {
   "id": "ems",
@@ -424,7 +446,18 @@
    "v2/src/home-bf.html"
   ],
   "video": null,
-  "mapZones": []
+  "mapZones": [],
+  "zoneCopy": {
+   "Full Body": {
+    "kind": "Corp · tonifiere",
+    "promise": "20.000 de contracții. Zero efort.",
+    "bullets": [
+     "Până la 20.000 de contracții într-o ședință",
+     "Tonifiază mușchii fără efort și fără transpirație",
+     "Toate zonele într-o singură vizită, de 90 de minute"
+    ]
+   }
+  }
  },
  {
   "id": "radiofrecventa",
@@ -584,6 +617,15 @@
      "Stimulează colagenul și fermitatea",
      "Fără ace, fără recuperare"
     ]
+   },
+   "Full Body": {
+    "kind": "Corp · celulită și fermitate",
+    "promise": "Piele netedă, nu coajă de portocală.",
+    "bullets": [
+     "Reduce aspectul de celulită",
+     "Stimulează colagenul și fermitatea",
+     "Toate zonele într-o singură vizită, de 90 de minute"
+    ]
    }
   }
  },
@@ -721,7 +763,18 @@
    "v2/src/catalog-rezultate.html"
   ],
   "video": null,
-  "mapZones": []
+  "mapZones": [],
+  "zoneCopy": {
+   "Full Body": {
+    "kind": "Corp · fermitate",
+    "promise": "Lifting fără operație, pe abdomen, brațe sau coapse.",
+    "bullets": [
+     "Strânge pielea lăsată",
+     "Distruge celulele de grăsime din zona tratată",
+     "Prima vizită de până la 90 de minute; restul zonelor le programăm împreună"
+    ]
+   }
+  }
  },
  {
   "id": "impachetare",
@@ -1208,7 +1261,18 @@
    "v2/src/gusa-barbie-dubla.html"
   ],
   "video": null,
-  "mapZones": []
+  "mapZones": [],
+  "zoneCopy": {
+   "Full Face": {
+    "kind": "Toată fața",
+    "promise": "Fermitate pe toată fața, cu colagenul tău.",
+    "bullets": [
+     "Reduce ridurile fine",
+     "Stimulează colagenul și elastina",
+     "30 de minute, fără recuperare"
+    ]
+   }
+  }
  },
  {
   "id": "hifu-full-face",

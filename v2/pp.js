@@ -62,6 +62,8 @@
     return { id: CFG.id, zone: S.zone, label: S.zone, name: CFG.name + (S.zone ? ' ' + S.zone : ''), full: full, price: q ? q.price : Math.round(full * (100 - S.pct) / 100), ok: !CAT || !!q };
   }
   var keyOf = function (id, zone) { return id + '|' + (zone || ''); };
+  // N sessions that are a package of the price list (<id>-x<N>, 25.11, the audit): the package's price, never the single × N
+  function packFor(c, n) { if (!CAT || !(n > 1)) return null; var k = CAT[c.id + '-x' + n]; return k && k.pack === n ? k : null; }
 
   // ---- painting: every price, name and choice on the page from the same state
   function setText(el, t) { if (!el || el.textContent === t) return; el.textContent = t; if (!reduce) { el.classList.remove('tp-flip'); void el.offsetWidth; el.classList.add('tp-flip'); } }
@@ -78,11 +80,17 @@
     var sec = $('.tp-pairs-s');
     if (!sec || !PK || EPI) return;
     var z = S.zone && S.zone !== ALLZ && S.zone !== FF ? S.zone : '';
-    var list = PK.filter(function (k) { return (k.base === CFG.id || (k.bundle && (k.for || []).indexOf(CFG.id) > -1)) && (!k.zones.length || !z || k.zones.indexOf(z) > -1); });
+    // only what her clinic does (25.11, the audit: EMS packages offered in Arad): the clinic she chose (?oras=, the cart's), else
+    // the packages done in both clinics
+    var city = '';
+    try { var qo = new URLSearchParams(location.search).get('oras') || ''; city = /^arad$/i.test(qo) ? 'Arad' : /^tim/i.test(qo) ? 'Timișoara' : ''; if (!city) { var kc = JSON.parse(localStorage.getItem('c360-shop3') || 'null'); if (kc && (kc.city === 'Arad' || kc.city === 'Timișoara')) city = kc.city; } } catch (e) { /* none */ }
+    var here = function (k) { var cs = k.cities || []; return city ? cs.indexOf(city) > -1 : cs.length > 1; };
+    var list = PK.filter(function (k) { return here(k) && (k.base === CFG.id || (k.bundle && (k.for || []).indexOf(CFG.id) > -1)) && (!k.zones.length || !z || k.zones.indexOf(z) > -1); });
     // the same choice as the cart (v2/shop.js ladder, the owner 25.11): the solution, a more complete one, the top one, cheapest
     // first; the first step only when the solution is a big jump from one session; the price list's packages only with no problem
     // package for this treatment
-    var bs = list.filter(function (k) { return k.bundle; }), one = (CAT[CFG.id] || {}).price || 0;
+    // a niche package (Mami) only when nothing else fits, as in the cart
+    var bs0 = list.filter(function (k) { return k.bundle; }), bsN = bs0.filter(function (k) { return !k.niche; }), bs = bsN.length ? bsN : bs0, one = (CAT[CFG.id] || {}).price || 0;
     var of = function (t) { return bs.filter(function (k) { return (k.tier || 2) === t; }).sort(function (a, b) { return a.price - b.price; }); };
     var sol = of(2)[0], more = sol ? of(3).filter(function (k) { return k.price > sol.price; })[0] : of(3)[0];
     var top = bs.slice().sort(function (a, b) { return b.price - a.price; })[0];
@@ -99,7 +107,8 @@
       '<div class="tp-pairs">' + list.map(function (k) {
         var kz = k.zones.length ? z || k.zones[0] : '', on = !!S.inCart[keyOf(k.id, kz)], sv = pkSave(k), home = k.home || k.base || CFG.id;
         return '<article class="tp-pair tp-pk"><span class="th" aria-hidden="true"><img src="/brand_asset/tratamente/' + esc(home) + '-300.webp?v=2" alt="" loading="lazy" decoding="async"></span>' +
-          '<div class="tx"><b>' + esc(pkName(k, kz)) + '</b><p>' + esc(k.bundle ? k.inc : k.pack + ' ședințe, ' + lei(Math.round(k.price / k.pack)) + ' ședința') + '</p>' +
+          // the zone in the name only when she picked one here (Full Body, Full Face, a page without zones: none chosen for her)
+          '<div class="tx"><b>' + esc(pkName(k, z ? kz : '')) + '</b><p>' + esc(k.bundle ? k.inc : k.pack + ' ședințe, ' + lei(Math.round(k.price / k.pack)) + ' ședința') + '</p>' +
           '<span class="pz"><b>' + lei(k.price) + '</b> <s>' + lei(k.full) + '</s></span></div>' +
           '<button type="button" class="tp-plus' + (on ? ' in' : '') + '" data-tp-pk="' + esc(k.id) + '" data-tp-pkz="' + esc(kz) + '" aria-label="' + (on ? 'În coș' : 'Adaugă ' + esc(pkName(k, kz)) + ' în coș') + '">' + (on ? CHECK : PLUS) + '</button></article>';
       }).join('') + '</div>';
@@ -144,12 +153,13 @@
     if (ul) [].forEach.call(ul.querySelectorAll('li > span'), function (sp, i) { if (c.bullets[i]) sp.textContent = c.bullets[i]; });
   }
   function paint() {
-    var c = cur(), n = S.n;
+    var c = cur(), n = S.n, pk = packFor(c, n);
+    var tot = pk ? pk.price : c.price * n, totF = pk ? pk.full : c.full * n;
     pkSec(); heroPaint(); copyPaint();
-    $$('[data-tp-price]').forEach(function (el) { setText(el, lei(c.price * n)); });
-    $$('[data-tp-full]').forEach(function (el) { setText(el, lei(c.full * n)); });
-    $$('[data-tp-save]').forEach(function (el) { setText(el, 'Economisești ' + lei((c.full - c.price) * n)); });
-    $$('[data-tp-per]').forEach(function (el) { el.textContent = n > 1 ? n + ' ședințe · ' + lei(c.price) + ' / ședință' : 'o ședință'; });
+    $$('[data-tp-price]').forEach(function (el) { setText(el, lei(tot)); });
+    $$('[data-tp-full]').forEach(function (el) { setText(el, lei(totF)); });
+    $$('[data-tp-save]').forEach(function (el) { setText(el, 'Economisești ' + lei(totF - tot)); });
+    $$('[data-tp-per]').forEach(function (el) { el.textContent = n > 1 ? (pk ? 'pachet de ' : '') + n + ' ședințe · ' + lei(Math.round(tot / n)) + ' / ședință' : 'o ședință'; });
     $$('[data-tp-name]').forEach(function (el) { setText(el, c.name); });
     $$('.tp-pct').forEach(function (el) { el.textContent = '-' + S.pct + '%'; });
     var zn = $('[data-tp-zn]');
@@ -171,7 +181,7 @@
     if (EPI) epiPairs();
     pairsPaint();
     // the buttons: in the cart already → finish
-    var mine = !!S.inCart[keyOf(c.id, c.zone)];
+    var mine = !!S.inCart[keyOf(pk ? pk.id : c.id, c.zone)];
     $$('[data-tp-add]').forEach(function (b) {
       var bar = !!b.closest('[data-tp-bar]'), sm = b.classList.contains('sm');
       b.classList.toggle('in', mine);
@@ -260,9 +270,9 @@
     if (nb) { S.n = +nb.getAttribute('data-tp-n') || 1; paint(); return; }
     var a = t.closest('[data-tp-add]');
     if (a) {
-      var c = cur();
-      if (S.inCart[keyOf(c.id, c.zone)]) { openCart(); return; }
-      if (addToCart(c.id, c.zone, S.n, a)) paint();
+      var c = cur(), pk = packFor(c, S.n);
+      if (S.inCart[keyOf(pk ? pk.id : c.id, c.zone)]) { openCart(); return; }
+      if (addToCart(pk ? pk.id : c.id, c.zone, pk ? 1 : S.n, a)) paint();
       return;
     }
     var pk = t.closest('[data-tp-pk]');

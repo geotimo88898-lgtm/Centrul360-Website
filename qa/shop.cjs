@@ -76,7 +76,7 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   check('every package costs less than its sessions one by one', tm.concat(ar).filter((p) => p.pack).every((p) => { const b = tm.concat(ar).find((x) => x.id === p.base); return b && p.price < b.price * p.pack; }));
   // the problem packages (the owner, 25.11): their treatments at the price list (its packages), the sum at -50%
   const bg = tm.find((p) => p.id === 'pachet-gusa'), bt = ar.find((p) => p.id === 'pachet-tonifiere');
-  check('problem package: Gușă și contur = HIFU 290 + BioLifting × 4 580 = 870 → 435, on the face zones, booked as HIFU', bg && bg.bundle && bg.full === 870 && bg.price === 435 && bg.zones.length === 5 && bg.ref === 'hifu-o-zona-mica-faciala-1-sedinta' && bg.ses === 5, bg);
+  check('problem package: Gușă și contur = HIFU 290 + BioLifting × 4 580 = 870 → 435, on the zones its name fits (gușă, contur, gât; 25.11), booked as HIFU', bg && bg.bundle && bg.full === 870 && bg.price === 435 && bg.zones.join() === 'Gușă,Gât,Contur mandibular' && bg.ref === 'hifu-o-zona-mica-faciala-1-sedinta' && bg.ses === 5, bg);
   check('problem package: none in a city without one of its treatments (EMS in Arad)', !bt && tm.some((p) => p.id === 'pachet-tonifiere'));
   const qb = await S.quote('Timișoara', [{ id: 'pachet-grasime', zone: 'Coapse' }]);
   check('a problem package in the cart: „Zonă mai suplă în 8 săptămâni, Coapse” 985', !qb.error && qb.amount === 985 && qb.lines[0].name === 'Zonă mai suplă în 8 săptămâni, Coapse', qb);
@@ -84,12 +84,13 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   check('a package in the cart: BioLifting Gușă · 4 ședințe = 290, its first session booked on the package', !qp.error && qp.amount === 290 && qp.lines[0].name === 'BioLifting Gușă · 4 ședințe' && qp.main.id === 'radiofrecventa-o-zona-mica-faciala-4-sedinte', qp);
   check('pairs only of the same city', ar.every((p) => p.pairs.every((id) => ar.some((x) => x.id === id))));
   let q = await S.quote('Timișoara', [{ id: 'liposonix', zone: 'Abdomen', qty: 2 }, { id: 'ems', zone: 'Coapse' }]);
-  check('cart: Liposonix Abdomen × 2 (2 × 320) + EMS Coapse (125) = 765, full 1.530', q.amount === 765 && q.full === 1530 && q.saved === 765, q);
-  check('the names carry the zone', q.lines[0].name === 'Liposonix Abdomen' && q.lines[1].name === 'EMS Coapse' && S.summary(q) === 'Liposonix Abdomen × 2 + EMS Coapse', S.summary(q));
+  // 2 sessions of Liposonix are its 2-session package of the price list (490, full 980), not 2 × 320 (25.11, the audit)
+  check('cart: Liposonix Abdomen × 2 is its 2-session package (490) + EMS Coapse (125) = 615, full 1.230', q.amount === 615 && q.full === 1230 && q.saved === 615, q);
+  check('the names carry the zone', q.lines[0].name === 'Liposonix Abdomen · 2 ședințe' && q.lines[1].name === 'EMS Coapse' && S.summary(q) === 'Liposonix Abdomen · 2 ședințe + EMS Coapse', S.summary(q));
   check('a zone that is not the product’s: its first zone', (await S.quote('Timișoara', [{ id: 'liposonix', zone: 'Nas' }])).lines[0].zone === 'Abdomen');
   check('at most 10 sessions of one', (await S.quote('Timișoara', [{ id: 'liposonix', qty: 99 }])).lines[0].qty === 10);
   check('no volume bonuses for now', q.reached.length === 0 && !q.next, q.reached);
-  check('the main treatment is the dearest session (Liposonix, 45 min)', q.main.minutes === 45 && q.main.id === 'liposonix-o-zona-corporala-1-sedinta', q.main);
+  check('the main treatment is the dearest line (the Liposonix package, a session of 45 min)', q.main.minutes === 45 && q.main.id === 'liposonix-o-zona-corporala-2-sedinte', q.main);
   check('EMS in Arad: not in the city', (await S.quote('Arad', [{ id: 'ems' }])).error === 'not_in_city');
   check('an empty cart', (await S.quote('Timișoara', [])).error === 'empty');
   check('the massage is in the list: 160 → 80 (the owner, 25.11)', (tm.find((p) => p.id === 'masaj-facial') || {}).price === 80);
@@ -104,10 +105,10 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   check('data/shop-bonus.json brings the steps back', (await S.tiers()).length === 1 && (await S.tiers())[0].at === 600);
   await store.writeJSON('data/shop-bonus.json', null);
   // ---- the payment's sum comes from the hold's cart, never the page
-  const h = await H.add({ key: 'k', city: 'Timișoara', svc: { id: 'custom', title: 'Prima ședință · comandă online: Liposonix Abdomen × 2 + EMS Coapse', price: 765, old: 1530, minutes: 45, cat: 'corporale', treatment: lipo.ref },
+  const h = await H.add({ key: 'k', city: 'Timișoara', svc: { id: 'custom', title: 'Prima ședință · comandă online: Liposonix Abdomen · 2 ședințe + EMS Coapse', price: 615, old: 1230, minutes: 45, cat: 'corporale', treatment: lipo.ref },
     cart: { items: [{ id: 'liposonix', zone: 'Abdomen', qty: 2 }, { id: 'ems', zone: 'Coapse' }], visit: 'first' }, date: '2026-11-26', time: '10:00', endTime: '10:45' });
   const pq = await P.KINDS.shop.quote({ ref: h.id, input: { amount: 1 } });
-  check('pay quote: 765 lei, full 1.530, -50% Black Friday', pq.amount === 765 && pq.full === 1530 && pq.bonus.type === 'pct' && pq.bonus.pct === 50, pq);
+  check('pay quote: 615 lei, full 1.230, -50% Black Friday', pq.amount === 615 && pq.full === 1230 && pq.bonus.type === 'pct' && pq.bonus.pct === 50, pq);
   setNow('2026-11-25T10:20:00Z');
   check('the hold ran out (15 min): nothing to pay', (await P.KINDS.shop.quote({ ref: h.id })).error === 'expired');
   // ---- paid (myPOS's signed word, pay.js markPaid → the handler): the booking made from the hold, paid, in Încasări

@@ -82,9 +82,9 @@ const EPIL_PAIRS = ['epilare-axile', 'epilare-inghinal-total', 'epilare-picior-l
 // only: the zones it is made for. „for” (the treatments it is offered with) comes from its parts.
 const BUNDLES = [
   // gușă și contur
-  { id: 'pachet-gusa-start', tier: 1, name: 'Primul contur în 30 de zile', need: 'gusa', b: 'Prima dată la noi: vezi efectul pe zona ta', parts: [['hifu', 1], ['biolifting', 1]] },
-  { id: 'pachet-gusa', tier: 2, name: 'Contur definit în 28 de zile', need: 'gusa', b: 'HIFU strânge, BioLifting fermizează, o dată pe săptămână', parts: [['hifu', 1], ['biolifting-x4', 1]] },
-  { id: 'pachet-gusa-pro', tier: 3, name: 'Profil nou în 90 de zile', need: 'gusa', b: 'Gușă pronunțată: două HIFU, 4 BioLifting și un masaj', parts: [['hifu', 2], ['biolifting-x4', 1], ['masaj-facial', 1]] },
+  { id: 'pachet-gusa-start', tier: 1, name: 'Primul contur în 30 de zile', need: 'gusa', b: 'Prima dată la noi: vezi efectul pe zona ta', parts: [['hifu', 1], ['biolifting', 1]], only: ['Gușă', 'Contur mandibular', 'Gât'] },
+  { id: 'pachet-gusa', tier: 2, name: 'Contur definit în 28 de zile', need: 'gusa', b: 'HIFU strânge, BioLifting fermizează, o dată pe săptămână', parts: [['hifu', 1], ['biolifting-x4', 1]], only: ['Gușă', 'Contur mandibular', 'Gât'] },
+  { id: 'pachet-gusa-pro', tier: 3, name: 'Profil nou în 90 de zile', need: 'gusa', b: 'Gușă pronunțată: două HIFU, 4 BioLifting și un masaj', parts: [['hifu', 2], ['biolifting-x4', 1], ['masaj-facial', 1]], only: ['Gușă', 'Contur mandibular'] },
   // față
   { id: 'pachet-ten-start', tier: 1, name: 'Ten luminos din prima zi', need: 'fata', b: 'Ten tern, obosit: Restart și masaj, rezultat pe loc', parts: [['restart', 1], ['masaj-facial', 1]] },
   { id: 'pachet-relaxare', tier: 2, name: 'Ten odihnit în 4 săptămâni', need: 'fata', b: 'Un masaj pe săptămână și o hidratare profundă', parts: [['masaj-facial', 4], ['hidratare', 1]] },
@@ -105,7 +105,7 @@ const BUNDLES = [
   { id: 'pachet-ten-lifting', tier: 3, name: 'Ten luminos și liftat în 8 săptămâni', need: 'fata', b: 'Strălucire și lifting: HIFU Full Face, 2 Restart, 2 hidratări', parts: [['hifu-full-face', 1], ['restart-x2', 1], ['hidratare-x2', 1]] },
   { id: 'pachet-riduri-pro', tier: 3, name: 'Riduri și lifting în 12 săptămâni', need: 'fata', b: 'Riduri estompate și față liftată: antirid, HIFU Full Face, BioLifting', parts: [['antirid-x4', 1], ['hifu-full-face', 1], ['biolifting-full-face-x4', 1]] },
   { id: 'pachet-ten-perfect', tier: 3, name: 'Ten perfect în 12 săptămâni', need: 'fata', b: 'Pori curați, roșeață calmată, ten luminos și hidratat', parts: [['sebum-off-x4', 1], ['redness-x2', 1], ['restart-x2', 1], ['hidratare-x4', 1]] },
-  { id: 'pachet-picioare-vara', tier: 3, name: 'Picioare de vară în 90 de zile', need: 'corp', b: 'Grăsime, celulită și retenție pe aceeași zonă', parts: [['liposonix-x2', 1], ['radiofrecventa-x6', 1], ['cavitatie', 6], ['impachetare-x6', 1]] },
+  { id: 'pachet-picioare-vara', tier: 3, name: 'Picioare de vară în 90 de zile', need: 'corp', b: 'Grăsime, celulită și retenție pe aceeași zonă', parts: [['liposonix-x2', 1], ['radiofrecventa-x6', 1], ['cavitatie', 6], ['impachetare-x6', 1]], only: ['Coapse'] },
   { id: 'pachet-corp-ferm', tier: 3, name: 'Corp ferm 360 în 90 de zile', need: 'corp', b: 'Piele strânsă, mușchi tonifiați, fermitate', parts: [['hifu-corp-x2', 1], ['radiofrecventa-x6', 1], ['ems-x8', 1]] },
   { id: 'pachet-fata-360', tier: 3, name: 'Transformare 360 · Față în 6 luni', need: 'fata', b: 'Lifting, fermitate, strălucire și hidratare', parts: [['hifu-full-face-x2', 1], ['biolifting-full-face-x4', 1], ['restart-x2', 1], ['hidratare-x4', 1]] },
   // corp
@@ -115,16 +115,16 @@ const BUNDLES = [
   { id: 'pachet-tonus-start', tier: 1, name: 'Mușchi tonifiați în 21 de zile', need: 'corp', b: '6 EMS, de două ori pe săptămână, și o împachetare', parts: [['ems-x6', 1], ['impachetare', 1]] },
   { id: 'pachet-brate', tier: 2, name: 'Brațe ferme în 8 săptămâni', need: 'corp', b: 'Brațe cu grăsime și piele lăsată', parts: [['liposonix-x2', 1], ['hifu-corp', 1]], only: ['Brațe'] },
   { id: 'pachet-celulita-start', tier: 1, name: 'Piele mai netedă în 28 de zile', need: 'corp', b: 'Coajă de portocală, la început', parts: [['radiofrecventa-x4', 1], ['cavitatie', 3]] },
-  { id: 'pachet-detox', tier: 2, name: 'Picioare ușoare în 6 săptămâni', need: 'corp', b: 'Celulită apoasă, picioare grele', parts: [['impachetare-x6', 1], ['cavitatie', 4]] },
+  { id: 'pachet-detox', tier: 2, name: 'Picioare ușoare în 6 săptămâni', need: 'corp', b: 'Celulită apoasă, picioare grele', parts: [['impachetare-x6', 1], ['cavitatie', 4]], only: ['Coapse'] },
   { id: 'pachet-grasime', tier: 2, name: 'Zonă mai suplă în 8 săptămâni', need: 'corp', b: 'Grăsimea care nu pleacă cu dieta: Liposonix și fermitate', parts: [['liposonix-x2', 1], ['radiofrecventa-x4', 1]] },
-  { id: 'pachet-tonifiere', tier: 2, name: 'Abdomen tonifiat în 8 săptămâni', need: 'corp', b: 'Mai puțină grăsime, mușchi definit', parts: [['liposonix-x2', 1], ['ems-x6', 1]] },
+  { id: 'pachet-tonifiere', tier: 2, name: 'Abdomen tonifiat în 8 săptămâni', need: 'corp', b: 'Mai puțină grăsime, mușchi definit', parts: [['liposonix-x2', 1], ['ems-x6', 1]], only: ['Abdomen'] },
   { id: 'pachet-fermitate', tier: 2, name: 'Piele strânsă în 90 de zile', need: 'corp', b: 'Piele lăsată: protocolul complet', parts: [['hifu-corp-x2', 1], ['radiofrecventa-x4', 1]] },
   { id: 'pachet-corp-definit', tier: 2, name: 'Corp definit în 6 săptămâni', need: 'corp', b: 'Corp ferm, fără sală', parts: [['ems-x8', 1], ['radiofrecventa-x4', 1]] },
   { id: 'pachet-mami', tier: 3, niche: true, name: 'Mami · burtică nouă în 90 de zile', need: 'corp', b: 'Burtica de după sarcină: grăsime, piele lăsată, mușchi', parts: [['liposonix-x2', 1], ['hifu-corp', 1], ['ems-x6', 1]], only: ['Abdomen'] },
   { id: 'pachet-celulita', tier: 2, name: 'Piele netedă în 6 săptămâni', need: 'corp', b: 'Celulită vizibilă: protocolul complet', parts: [['radiofrecventa-x6', 1], ['cavitatie', 6]] },
   { id: 'pachet-body-reset', tier: 3, name: 'Body Reset în 90 de zile', need: 'corp', b: 'Grăsime, tonus și fermitate pe aceeași zonă', parts: [['liposonix-x2', 1], ['ems-x8', 1], ['radiofrecventa-x6', 1]] },
   { id: 'pachet-complet-360', tier: 3, name: 'Transformare 360 în 90 de zile', need: 'corp', b: 'O zonă a corpului și toată fața', parts: [['liposonix-x2', 1], ['radiofrecventa-x6', 1], ['hifu-full-face', 1], ['biolifting-full-face-x4', 1], ['restart-x2', 1]] },
-  { id: 'pachet-corp-360', tier: 3, name: 'Transformare 360 · Full Body în 90 de zile', need: 'corp', b: 'Tot corpul: Liposonix Full Body de două ori, tonus și fermitate', parts: [['liposonix-toate', 2], ['ems-x8', 1], ['radiofrecventa-x6', 1]] },
+  { id: 'pachet-corp-360', tier: 3, name: 'Transformare 360 · tot corpul în 90 de zile', need: 'corp', b: 'Liposonix pe tot corpul de două ori, plus tonus și fermitate pe zona ta', parts: [['liposonix-toate', 2], ['ems-x8', 1], ['radiofrecventa-x6', 1]] },
   // epilare (no time: TEST and COMPLET, with the written guarantee)
   { id: 'pachet-epil-test', tier: 1, name: 'Epilare TEST · Axile și bikini', need: 'epilare', b: 'O ședință pe fiecare zonă: vezi cum e', parts: [['epilare-axile', 1], ['epilare-linie-bikini', 1]] },
   { id: 'pachet-epil-test-fb', tier: 1, name: 'Epilare TEST · Full Body și față', need: 'epilare', b: 'O ședință pe tot corpul și pe față', parts: [['epilare-full-body', 1], ['epilare-fata-complet', 1]] },
@@ -238,7 +238,10 @@ async function quote(city, items, at) {
   const now = at || Date.now();
   const all = new Map(catalog('', now).map((p) => [p.id, p]));
   const lines = [];
-  for (const it of clean(items)) {
+  for (const it0 of clean(items)) {
+    // N sessions that are a package of the price list: the package, at its price (25.11, the audit; v2/shop.js does the same)
+    const pk = it0.qty > 1 && all.get(it0.id + '-x' + it0.qty);
+    const it = pk && pk.pack === it0.qty && pk.base === it0.id ? Object.assign({}, it0, { id: pk.id, qty: 1 }) : it0;
     const p = all.get(it.id);
     if (!p) return { error: 'not_found', id: it.id };
     if (!p.cities.includes(city)) return { error: 'not_in_city', id: it.id };

@@ -759,7 +759,6 @@ def page(x):
     i = x['id']; ppid = x.get('pp') or i; epi = i == 'epilare'
     zones = x.get('zones') or []; sess = x.get('sess') or [1, 3, 6]; full = x['full']
     img, own = pic(x)
-    full = own and bool(art(x).get('full'))
     hasz = bool(zones) or epi
     z0 = 'Full Body' if epi else (zones[0] if zones else '')
     out = ['<!--meta\ntitle: %s -50%% · Black Friday · Centrul360\ndescription: %s\ndock: off\n-->' % (x['name'], x['promise'] + ' ' + ' '.join(b + '.' for b in x['bullets'])),
@@ -934,7 +933,7 @@ if __name__ == '__main__':
         # laser epilation, not sold for now (the owner, 25.11; api/_lib/shop.js EPI_SALE): its shop page leads to the device's page
         if x['id'] == 'epilare' and not EPI_SALE:
             s = ('<!--meta\ntitle: Epilare laser · Elysion Pro · Centrul360\ndescription: Epilare laser cu Elysion Pro, la Centrul360 Timișoara.\n'
-                 'robots: noindex,follow\ndock: off\n-->\n<script>location.replace("{{base}}epilare-laser" + location.hash)</script>\n'
+                 'robots: noindex,follow\ndock: off\n-->\n<script>location.replace("{{base}}epilare-laser" + location.search + location.hash)</script>\n'
                  '<section class="s"><div class="wrap"><p class="lead"><a href="{{base}}epilare-laser">Epilare laser · Elysion Pro</a></p></div></section>\n')
         if '—' in s or '–' in s: raise SystemExit(x['id'] + ': a long dash slipped in')
         open(os.path.join(SRC, 'tratament-%s.html' % x['id']), 'w', encoding='utf-8').write(s)

@@ -1,0 +1,91 @@
+<!--meta
+title: Programare online | Centrul360 · Timișoara și Arad
+description: Programează-te online la Centrul360 Timișoara sau Arad: alegi tratamentul, ziua și ora libere și primești confirmarea pe WhatsApp.
+dock: off
+-->
+<style>
+/* programare: the booking itself, inline (c360-book.js mounts it in [data-book-mount], in the light look of book-light.css) */
+.prg{ position:relative; padding:clamp(132px,13vw,176px) 0 clamp(80px,9vw,128px); }
+.prg::before{ content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px); background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(60% 50% at 70% 26%,#000 0%,transparent 75%); mask-image:radial-gradient(60% 50% at 70% 26%,#000 0%,transparent 75%); opacity:.6; }
+.prg > .wrap{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,468px); grid-template-areas:"intro book" "more book"; gap:0 clamp(48px,7vw,104px); align-items:start; }
+.prg-intro{ grid-area:intro; display:grid; gap:26px; justify-items:start; }
+.prg-intro h1{ font-size:clamp(2.7rem,5.6vw,4.4rem); }
+.prg-book{ grid-area:book; position:relative; min-width:0; }
+.prg-more{ grid-area:more; display:grid; gap:44px; justify-items:start; margin-top:52px; }
+.prg-book .bk-inline .bk{ max-width:none; border-radius:30px; box-shadow:0 0 0 1px var(--line), 0 50px 100px -50px rgba(11,40,38,.5), 0 2px 8px -4px rgba(11,40,38,.12); }
+.prg-book::after{ content:''; position:absolute; inset:-10px; border-radius:38px; box-shadow:0 0 0 2px rgba(20,165,150,.4); opacity:0; pointer-events:none; }
+.prg-book.prg-hi::after{ animation:prgHi 1.6s var(--e); }
+@keyframes prgHi{ 0%{ opacity:0; transform:scale(.97); } 30%{ opacity:1; transform:none; } 100%{ opacity:0; transform:scale(1.02); } }
+.prg-skel{ height:520px; border-radius:30px; background:rgba(255,255,255,.9); box-shadow:0 0 0 1px var(--line), 0 50px 100px -50px rgba(11,40,38,.5); }
+.prg-steps{ list-style:none; margin:0; padding:0; display:grid; gap:18px; }
+.prg-steps li{ display:flex; gap:16px; align-items:center; font-size:17px; color:var(--ink2); }
+.prg-steps b{ flex:none; width:36px; height:36px; border-radius:50%; display:grid; place-items:center; font-size:14px; font-weight:700; color:var(--ink); background:#fff; box-shadow:0 0 0 1px var(--line2) inset, 0 8px 18px -12px rgba(11,40,38,.4); }
+.prg-cl{ display:grid; gap:0; width:100%; max-width:520px; }
+.prg-cl > div{ display:grid; gap:6px; padding:20px 0; border-top:1px solid var(--line2); }
+.prg-cl > div:last-child{ border-bottom:1px solid var(--line2); }
+.prg-cl .n{ display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 16px; }
+.prg-cl .n b{ font-size:1.15rem; font-weight:700; letter-spacing:-.02em; }
+.prg-cl .n span{ font-size:15px; color:var(--mute); }
+.prg-cl .n a{ font-size:15px; color:var(--mute); text-decoration:none; }
+.prg-cl .n a:hover{ color:var(--ink); }
+.prg-cl .slot{ font-size:13.5px; }
+.prg-say{ margin-top:0; }
+.prg-say img{ width:88px; }
+@media (max-width:920px){
+  .prg > .wrap{ grid-template-columns:minmax(0,1fr); grid-template-areas:"intro" "book" "more"; }
+  .prg-book{ margin-top:40px; }
+  .prg-more{ margin-top:64px; }
+}
+@media (max-width:640px){
+  .prg{ padding-top:108px; }
+  .prg-intro{ gap:20px; }
+  .prg-intro h1{ font-size:clamp(2.5rem,11vw,3rem); }
+  .prg-book{ margin-top:32px; }
+  .prg-steps li{ font-size:16px; }
+  .prg-say{ flex-direction:row; align-items:center; }
+  .prg-say img{ width:76px; }
+}
+</style>
+
+<section class="prg"><div class="wrap">
+  <div class="prg-intro">
+    <span class="eye rv in">Programare online · Timișoara și Arad</span>
+    <h1 data-words>Alege-ți ora, <em>noi ne ocupăm</em> de rest.</h1>
+    <p class="lead rv">Programează-ți consultația gratuită în câteva secunde, la o oră liberă din calendarul clinicii. Confirmarea îți vine pe WhatsApp, iar cu o zi înainte îți amintim noi.</p>
+    <div class="trust rv"><span class="g"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.4 5.4 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.96-2.91l-3.86-3c-1.08.72-2.45 1.16-4.1 1.16-3.15 0-5.82-2.13-6.77-4.99H1.24v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.23 14.26a7.2 7.2 0 0 1 0-4.52V6.65H1.24a12 12 0 0 0 0 10.7l3.99-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.24 6.65l3.99 3.09C6.18 6.88 8.85 4.75 12 4.75z"/></svg><b>5,0</b>&nbsp;·&nbsp;300+ recenzii Google</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Consultație gratuită</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fără obligații</span></div>
+  </div>
+
+  <div class="prg-book rv" id="programeaza"><div data-book-mount><div class="prg-skel" aria-hidden="true"></div></div></div>
+
+  <div class="prg-more">
+    <ol class="prg-steps">
+      <li class="rv"><b>1</b><span>Alegi orașul: Timișoara sau Arad.</span></li>
+      <li class="rv"><b>2</b><span>Alegi ziua și ora care îți convin.</span></li>
+      <li class="rv"><b>3</b><span>Lași numele și telefonul. Gata, ești programată.</span></li>
+    </ol>
+    <div class="prg-cl rv">
+      <div><div class="n"><b>Timișoara</b><span>Str. Bucegi 7</span><a href="tel:+40750452002">0750 452 002</a></div><div class="slot" data-slot="Timișoara"></div></div>
+      <div><div class="n"><b>Arad</b><span>Str. Ioan Alexandru 16-18</span><a href="tel:+40750277394">0750 277 394</a></div><div class="slot" data-slot="Arad"></div></div>
+    </div>
+    <div class="say rv prg-say"><span class="fl"><img src="/brand_asset/mascota/ipostaze/calendar.webp" alt="" loading="lazy"></span><div><q>Cu o zi înainte îți amintim noi. Eu nu uit niciodată.</q><small>Nuki</small></div></div>
+  </div>
+</div></section>
+
+<script>
+/* The booking is already on this page: the header's and the menu's "Programează" buttons bring her to it instead of opening
+   it a second time on top (c360-book.js leaves a click that is already handled alone). */
+(function () {
+  var box = document.querySelector('.prg-book');
+  if (!box) return;
+  addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button[data-book]');
+    if (!b || b.closest('[data-book-mount]')) return;
+    e.preventDefault();
+    var y = box.getBoundingClientRect().top + scrollY - (innerWidth > 640 ? 110 : 86);
+    scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    box.classList.remove('prg-hi'); void box.offsetWidth; box.classList.add('prg-hi');
+  }, true);
+})();
+</script>

@@ -105,6 +105,23 @@
   try { var kept = JSON.parse(localStorage.getItem(KEY) || 'null'); if (kept) { if (kept.v === 2 && (kept.city === 'Arad' || kept.city === 'Timișoara')) S.city = kept.city; if (Array.isArray(kept.cart)) S.cart = kept.cart.filter(function (l) { return l && l.id; }).slice(0, 12); } } catch (e) { /* private mode */ }
   var qs = new URLSearchParams(location.search);
   if (/^arad$/i.test(qs.get('oras') || '')) S.city = 'Arad'; else if (/^tim/i.test(qs.get('oras') || '')) S.city = 'Timișoara';
+  // N sessions of a treatment that are a package of the price list (<id>-x<N>): the cart holds the package, at its own (lower)
+  // price, never the single session × N (25.11, the audit: 2 × Liposonix 640 when the 2-session package is 490)
+  // (done when the cart is shown and before the hour and the payment, not while the „added” popup counts its sessions)
+  var packNorm = function () {
+    if (typeof byId !== 'function' || !D) return false;
+    var hit = false;
+    S.cart.forEach(function (l) {
+      if (!l || !(l.qty > 1)) return;
+      var k = byId(l.id + '-x' + l.qty);
+      if (k && k.pack === l.qty && k.base === l.id) { l.id = k.id; l.qty = 1; hit = true; }
+    });
+    if (!hit) return false;
+    var seen = {};
+    S.cart = S.cart.filter(function (l) { var key = l.id + '|' + (l.zone || ''); if (seen[key]) { seen[key].qty += l.qty; return false; } seen[key] = l; return true; });
+    save();
+    return true;
+  };
   var save = function () { try { localStorage.setItem(KEY, JSON.stringify({ v: 2, city: S.city, cart: S.cart })); } catch (e) { /* private mode */ } };
   if (qs.get('oras')) save();
   // this visit only: the offers' order, the slider's card, where the list was (so back from a treatment lands where she was)
@@ -1019,7 +1036,8 @@
   // (the solutions) and the complete one (the complete packages); „Aleg planul” puts the plan in place of those sessions.
   var GRP = { corp: 'corp', gusa: 'fata', fata: 'fata', epilare: 'epilare' };
   function plansOf(t) {
-    var city = cityNow(), here = function (k) { return !city || k.cities.indexOf(city) > -1; };
+    // her clinic's, else (no clinic yet) only what both clinics do (25.11, the audit: EMS plans offered with no clinic chosen)
+    var city = cityNow(), here = function (k) { return city ? k.cities.indexOf(city) > -1 : k.cities.length > 1; };
     var units = t.lines.filter(function (x) { return !x.p.card && !x.p.bundle && !x.p.allOf; }).map(function (x) {
       return { x: x, id: (x.p.base || x.p.id).replace(/-toate$/, ''), zone: x.zone || '', g: GRP[x.p.need] || x.p.need };
     });
@@ -1152,6 +1170,7 @@
       (x.p.zones.length ? '<div class="sh-zp"><div><div class="sh-chips" role="radiogroup" aria-label="Zona">' + zoneChips(x.p, x.zone, 'data-lz', x.key) + '</div></div></div>' : '') + '</li>';
   }
   function paneCart() {
+    if (packNorm()) changed();
     var el = pane('cart'), t = totals(), onlyCard = !t.tl.length && t.cards.length > 0;
     if (!t.lines.length) {
       el.innerHTML = '<div class="sh-empty">' + I.bag + '<h4>Coșul e gol</h4><p>Alege un tratament la -' + pct() + '%.</p><a class="sh-go" href="' + OFFERS + '">Vezi ofertele' + I.arrow + '</a></div>';
@@ -1160,7 +1179,7 @@
     // the suggestions: her clinic's (both, while she has not chosen); a treatment already in the cart is offered on a zone not in
     // the cart yet, or left out; one she added from here stays, checked, so she can take it back
     var city = cityNow(), pairs = [];
-    var here = function (q) { return !city || q.cities.indexOf(city) > -1; };
+    var here = function (q) { return city ? q.cities.indexOf(city) > -1 : q.cities.length > 1; };
     var mine = function (q, z) { return !!lineOf(q.id, z) && !S.keep[keyOf(q.id, z)]; };
     t.lines.forEach(function (x) {
       x.p.pairs.forEach(function (id) {
@@ -1233,6 +1252,7 @@
  = new Date(S.date + 'T12:00:00'); return WDL[x.getDay()].replace(/^./, function (c) { return c.toUpperCase(); }) + ' ' + x.getDate() + ' ' + MOS[x.getMonth()] + ', ' + S.time; }
   // the clinic first (none chosen: she picks, nothing is preselected), then the day and the hour; the first visit is one line
   function paneWhen() {
+    if (packNorm()) changed();
     var el = pane('when'), m = mainLine();
     if (!m) { go('cart'); return; }
     S.city = cityNow(); save();
@@ -1339,6 +1359,7 @@
     '<p class="cards" aria-label="Plătești cu Visa sau Mastercard"><svg viewBox="0 0 48 16" aria-hidden="true"><text x="0" y="13" font-family="Arial,sans-serif" font-size="15" font-weight="800" font-style="italic" letter-spacing="-.5" fill="currentColor">VISA</text></svg>' +
     '<svg viewBox="0 0 30 18" aria-hidden="true"><circle cx="10" cy="9" r="8" fill="currentColor" opacity=".55"/><circle cx="20" cy="9" r="8" fill="currentColor" opacity=".35"/></svg><span>Plată securizată</span></p></div>';
   function panePay() {
+    if (packNorm()) changed();
     var el = pane('pay'), t = totals(), mine = {};
     S.payRun = mine;
     foot('');
@@ -1525,7 +1546,7 @@
       return;
     }
     var qb = t.closest('[data-q]');
-    if (qb) { if (qb.disabled) return; if (qb.getAttribute('data-k') === 'pop') popQty(+qb.getAttribute('data-q')); else { var qk = qb.getAttribute('data-k'); setQty(qk, +qb.getAttribute('data-q')); if (sheetOn && S.step === 'cart') cartSoft(qk); } return; }
+    if (qb) { if (qb.disabled) return; if (qb.getAttribute('data-k') === 'pop') popQty(+qb.getAttribute('data-q')); else { var qk = qb.getAttribute('data-k'); setQty(qk, +qb.getAttribute('data-q')); if (sheetOn && S.step === 'cart') { if (packNorm()) { changed(); paneCart(); } else cartSoft(qk); } } return; }
     var zk = t.closest('[data-zk]');
     if (zk) { var li = zk.closest('.sh-li'), zp = li && $('.sh-zp', li), open = zk.getAttribute('aria-expanded') !== 'true'; zk.setAttribute('aria-expanded', String(open)); if (zp) zp.classList.toggle('open', open); return; }
     var lz = t.closest('[data-lz]'); if (lz) { if (!lz.disabled) { setZone(lz.getAttribute('data-k'), lz.getAttribute('data-lz')); paneCart(); } return; }
