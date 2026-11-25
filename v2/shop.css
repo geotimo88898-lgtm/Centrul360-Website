@@ -444,8 +444,7 @@ body.sh-lock{ overflow:hidden; }
 }
 
 /* ================= a treatment's page (v2/tratamente.py today; v2/pp.css may take over): the buy box shop.js fills ================= */
-.pp-pic,[data-vt-pic]{ view-transition-name:c360-pic; }
-.pp-tx h1,[data-vt-title]{ view-transition-name:c360-title; }
+/* the hero picture's View Transition name (pic-<id>) is the treatment page's own (v2/pp.*); shop.js gives the tapped card the same */
 .pair{ display:flex; gap:12px; align-items:center; padding:12px; border-radius:20px; background:var(--l-bg); cursor:pointer; min-width:0; transition:transform .3s var(--e); }
 .pair:active{ transform:scale(.99); }
 .pair > div{ flex:1; min-width:0; display:grid; gap:2px; }
@@ -587,3 +586,11 @@ body.pp-bar-on .sh-bar{ transform:translateY(calc(100% + 40px)); visibility:hidd
 /* the cookie question never covers the checkout's button: above the sheet's bottom bar, and out of the way of „Adăugat în coș” */
 body.sh-lock .ck{ bottom:calc(90px + env(safe-area-inset-bottom)); }
 body:has(.sh-pop.on) .ck{ opacity:0 !important; pointer-events:none !important; }
+/* the narrowest phones (360): the cart's timer label and the sheet's bottom bar stay on one line */
+.tm.s .tm-p{ font-weight:500; }
+@media (max-width:370px){
+  .tm.s .tm-p{ display:none; }
+  .sh-foot{ gap:10px; }
+  .sh-foot .sh-go{ min-width:0; padding:0 18px; }
+  .sh-ft-t b.sm{ font-size:14px; }
+}

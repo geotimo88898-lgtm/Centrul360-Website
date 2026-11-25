@@ -51,7 +51,7 @@ const P = {
   'ems-o-zona-1-sedinta': { id: 'ems', name: 'EMS', zones: ['Abdomen', 'Coapse', 'Brațe'], need: 'corp', ph: 'concern-tonifiere.webp', b: ['20.000 de contracții într-o ședință', 'Tonifiază mușchii, fără efort'] },
   'radiofrecventa-o-zona-corporala-1-sedinta': { id: 'radiofrecventa', name: 'Radiofrecvență', zones: ['Abdomen', 'Coapse', 'Brațe'], need: 'corp', ph: 'concern-cellulite-2.webp', b: ['Reduce aspectul de celulită', 'Strânge pielea'] },
   'hifu-o-zona-corporala-1-sedinta': { id: 'hifu-corp', name: 'HIFU', zones: ['Abdomen', 'Brațe', 'Coapse', 'Gambe', 'Zona lombară'], need: 'corp', ph: 'concern-belly-2.webp', b: ['Strânge pielea lăsată', 'Lifting fără operație'] },
-  'impachetare-la-cald-1-sedinta': { id: 'impachetare', name: 'Împachetare la cald', need: 'corp', ph: 'concern-detox.webp', b: ['Detoxifiere și drenaj', 'Piele mai netedă'] },
+  'impachetare-impachetare-la-cald-1-sedinta': { id: 'impachetare', name: 'Împachetare la cald', need: 'corp', ph: 'concern-detox.webp', b: ['Detoxifiere și drenaj', 'Piele mai netedă'] },
   'hifu-o-zona-mica-faciala-1-sedinta': { id: 'hifu', name: 'HIFU', zones: ZF, need: 'gusa', ph: 'concern-gusa.webp', b: ['Strânge pielea de sub bărbie', 'Fără ace, fără pauză'] },
   'rfsculpt-gusa-plus-contur-mandibular-1-sedinta': { id: 'rf-sculpt-gusa', name: 'RF Sculpt Gușă', need: 'gusa', ph: 'concern-chin-1.webp', b: ['Reduce gușa', 'Conturează linia mandibulei'] },
   'radiofrecventa-o-zona-mica-faciala-1-sedinta': { id: 'biolifting', name: 'BioLifting', zones: ZF, need: 'gusa', ph: 'concern-chin-3.webp', b: ['Stimulează colagenul', 'Piele mai fermă'] },

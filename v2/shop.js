@@ -21,10 +21,10 @@
      C360Shop.catalog()                         → Promise<{ terms, products } | null> (pictures from v2/art.json applied)
      C360Shop.count()                           → the lines in the cart
      document events: 'c360:cart' (detail { n, amount }) when the cart changes; 'c360:shop' when the catalog is here.
-   Card → treatment page: a View Transition where the browser has it (the shell opts every page in, in its head). The
-   treatment page names its hero picture `view-transition-name: c360-pic` and its title `c360-title` (shop.css does it for
-   .pp-pic / .pp-tx h1; a page with other markup marks them data-vt-pic / data-vt-title, so a card tapped there can take
-   the names over). Back on the list, the same card takes them again (pagereveal).
+   Card → treatment page: a View Transition where the browser has it (@view-transition in shop.css and in the shell's
+   head). The treatment page names its hero picture `view-transition-name: pic-<product id>`; the
+   tapped card's picture takes the same name just before leaving, so the photo carries over; back on the list, the same
+   card takes it again (pagereveal). One name per page: the card never keeps it after the transition.
    Kept on this device only: her cart and her clinic (localStorage 'c360-shop3'; the header reads the count from it).
    ============================================================ */
 (function () {
@@ -145,7 +145,7 @@
   var UNITS = [['zi', 'zile'], ['oră', 'ore'], ['min', 'min'], ['sec', 'sec']];
   function tmHtml(v) {
     var p = parts() || [0, 0, 0, 0];
-    return '<div class="tm' + (v ? ' ' + v : '') + '" data-tmx role="timer" aria-label="Timpul rămas până la final"><span class="tm-l">' + (v === 's' ? '-' + pct() + '% se încheie în' : 'Oferta se încheie în') + '</span><span class="tm-c">' +
+    return '<div class="tm' + (v ? ' ' + v : '') + '" data-tmx role="timer" aria-label="Timpul rămas până la final"><span class="tm-l">' + (v === 's' ? '<b class="tm-p">-' + pct() + '% </b>se încheie în' : 'Oferta se încheie în') + '</span><span class="tm-c">' +
       UNITS.map(function (u, i) { return '<i><b data-tmv="' + i + '">' + two(p[i]) + '</b><small data-tmu="' + i + '">' + (p[i] === 1 ? u[0] : u[1]) + '</small></i>'; }).join('') + '</span></div>';
   }
   var ended = false;
@@ -428,7 +428,8 @@
       document.body.appendChild(b);
     }
     var t = totals();
-    b.classList.toggle('on', t.lines.length > 0 && !sheetOn && !pop);
+    // a page with its own bottom bar (the consultation dock of the content pages) keeps it: the header's bag is enough there
+    b.classList.toggle('on', t.lines.length > 0 && !sheetOn && !pop && !$('.dock'));
     $('.ct i', b).textContent = t.lines.length;
     $('.tx small', b).textContent = t.lines.length === 1 ? nameOf(t.lines[0].p, t.lines[0].zone) : t.lines.length + ' tratamente';
     $('.tx b', b).innerHTML = lei(t.amount) + (t.saved > 0 ? '<s>' + lei(t.full) + '</s>' : '');
@@ -816,27 +817,34 @@
   }
 
   // ================= the card → its treatment page: the picture and the name carry over (View Transitions) =================
+  // the name the treatment page gives its hero picture (v2/tratamente.py): pic-<the product's id> (pic-epilare-full-body on the laser page)
+  var vtOf = function (p) { return 'pic-' + String(p.id).replace(/[^a-z0-9-]/g, ''); };
+  function vtSet(card, on) {
+    var p = byId(card.getAttribute('data-p')), img = $('.pic img', card);
+    if (!p || !img) return null;
+    var name = vtOf(p);
+    if (on) {
+      // one name per page: anything else that carries it gives it up to the card that was tapped
+      $$('img, picture, figure, [class*="pic"], [style*="view-transition-name"]').forEach(function (x) { if (x !== img && getComputedStyle(x).viewTransitionName === name) x.style.viewTransitionName = 'none'; });
+    }
+    img.style.viewTransitionName = on ? name : '';
+    return img;
+  }
   function openCard(card, href) {
     try { sessionStorage.setItem('c360-vt', card.getAttribute('data-p')); } catch (e) { /* private mode */ }
-    var pic = $('.pic', card), h = $('h3', card);
-    // one name per page: on a treatment page its own hero gives the names up to the card that was tapped
-    $$('.pp-pic, .pp-tx h1, [data-vt-pic], [data-vt-title]').forEach(function (x) { x.style.viewTransitionName = 'none'; });
-    if (pic) pic.style.viewTransitionName = 'c360-pic';
-    if (h) h.style.viewTransitionName = 'c360-title';
+    vtSet(card, true);
     if (!reduce && !('onpagereveal' in window)) card.classList.add('press');
     location.href = href;
   }
-  // back from a treatment page: its card takes the names again, so the picture flies back into it
+  // back from a treatment page: its card takes the name again, so the picture flies back into it
   addEventListener('pagereveal', function (e) {
     var id = ''; try { id = sessionStorage.getItem('c360-vt') || ''; } catch (x) { /* private mode */ }
-    $$('.bfc').forEach(function (c) { var p = $('.pic', c), h = $('h3', c); if (p) p.style.viewTransitionName = ''; if (h) h.style.viewTransitionName = ''; c.classList.remove('press'); });
+    $$('.bfc').forEach(function (c) { vtSet(c, false); c.classList.remove('press'); });
     if (!e.viewTransition || !id) return;
     var card = $('.bfs-st > .bfc.mid[data-p="' + id + '"]') || $('.bfo-g > .bfc[data-p="' + id + '"]');
     if (!card) return;
-    var pic = $('.pic', card), h = $('h3', card);
-    if (pic) pic.style.viewTransitionName = 'c360-pic';
-    if (h) h.style.viewTransitionName = 'c360-title';
-    e.viewTransition.finished.then(function () { if (pic) pic.style.viewTransitionName = ''; if (h) h.style.viewTransitionName = ''; });
+    vtSet(card, true);
+    e.viewTransition.finished.then(function () { vtSet(card, false); }, function () { vtSet(card, false); });
   });
   addEventListener('pageshow', function (e) { if (e.persisted) $$('.bfc.press').forEach(function (c) { c.classList.remove('press'); }); });
 
