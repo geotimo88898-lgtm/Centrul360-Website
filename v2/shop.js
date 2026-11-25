@@ -192,7 +192,7 @@
   // brand_asset/tratamente/problem/<id>.webp (900) and -450, the subject in the upper right, fading into black
   var PROB = { hifu: 1, biolifting: 1, 'hifu-corp': 1, liposonix: 1, cavitatie: 1, radiofrecventa: 1, ems: 1, impachetare: 1, restart: 1, hidratare: 1, antirid: 1, redness: 1, 'sebum-off': 1, 'masaj-facial': 1 };
   var tileImg = function (p) {
-    if (PROB[p.id]) { var pb = '/brand_asset/tratamente/problem/' + p.id; return 'class="pb" src="' + pb + '-450.webp?v=3" srcset="' + pb + '-450.webp?v=3 450w, ' + pb + '.webp?v=3 900w" sizes="(max-width:640px) calc(40vw - 20px), 230px"'; } var s = picW(p, 600), u = picOf(p); return 'src="' + esc(s) + '"' + (s !== u ? ' srcset="' + esc(s) + ' 600w, ' + esc(u) + ' 966w" sizes="(max-width:640px) calc(50vw - 31px), 270px"' : ''); };
+    if (PROB[p.id]) { var pb = '/brand_asset/tratamente/problem/' + p.id; return 'class="pb" src="' + pb + '-450.webp?v=4" srcset="' + pb + '-450.webp?v=4 450w, ' + pb + '.webp?v=4 900w" sizes="(max-width:640px) calc(40vw - 20px), 230px"'; } var s = picW(p, 600), u = picOf(p); return 'src="' + esc(s) + '"' + (s !== u ? ' srcset="' + esc(s) + ' 600w, ' + esc(u) + ' 966w" sizes="(max-width:640px) calc(50vw - 31px), 270px"' : ''); };
   var sesWord = function (n) { return n === 1 ? '1 ședință' : n + ' ședințe'; };
   var qOf = function (v) { return clamp(Math.floor(Number(v) || 1), 1, 10); };
   // the clinic: hers (the offers' filter, ?oras=, the checkout: one choice everywhere); with no choice, the one clinic her cart
