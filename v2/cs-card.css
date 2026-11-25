@@ -705,3 +705,6 @@ html.cs-bfwait .csc-xmas > .wrap, html.cs-bfwait .csc-xmas > .csc-snow{ opacity:
    card without an online link keeps its call to the clinic */
 .cst-go:not(.cs-vipcall) [data-cs-reserve],.cs-c:not(.cs-vipcall) [data-cs-reserve]{ display:none !important; }
 .cst-go:not(.cs-vipcall) [data-bf-note],.cs-c:not(.cs-vipcall) [data-bf-note]{ display:none !important; }
+/* the card she chose has its frame in Black Friday too (the owner, 25.11: „când am selectat 490 nu am border deloc”): the gold
+   frame and glow of the chosen one on any card, the 990 one unchosen keeps its thin gold line */
+.cs-bf .csc-xmas .cst-t:not(.vip):has(input:checked){ background:radial-gradient(120% 90% at 50% 0%,#3a2a14,#140e08 72%); box-shadow:0 0 0 2px #e2b458 inset, 0 0 28px -6px rgba(226,180,88,.55); }
