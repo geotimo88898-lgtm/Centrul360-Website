@@ -1294,7 +1294,7 @@
     if (S.days) { drawDays(); return; }
     var box = $('[data-days]', el); if (box) box.innerHTML = '<div class="sh-wait">Caut orele libere…</div>';
     var sl = $('[data-slots]', el); if (sl) sl.innerHTML = '';
-    var url = '/api/booking?city=' + encodeURIComponent(S.city) + (S.visit === 'consult' ? '&service=consult' : '&service=custom&treatment=' + encodeURIComponent(m.p.ref));
+    var url = '/api/booking?city=' + encodeURIComponent(S.city) + (S.visit === 'consult' ? '&service=consult' : '&service=custom&treatment=' + encodeURIComponent(m.p.ref) + (m.p.minutes ? '&minutes=' + m.p.minutes : ''));
     fetch(url, { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (d) {
       if (k !== daysKey) return;
       S.days = (d && d.on && d.days) || [];
@@ -1647,5 +1647,7 @@
   headCart();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
   setInterval(tick, 1000);
-  addEventListener('pagehide', function () { if (S.hold) release(); });
+  // no release when the page goes away (25.11, the audit): in Instagram's and Facebook's browsers she pays on myPOS in this same
+  // tab, so leaving the page is how the payment starts; the hour stays hers until she goes back or closes the sheet here, or for
+  // the hold's 15 minutes when she never comes back
 })();

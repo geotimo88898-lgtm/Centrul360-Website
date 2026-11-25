@@ -61,6 +61,12 @@ async function confirmMsg(a) {
   const t = n && wa.tpls.filter((x) => (x.label === base || String(x.label || '').startsWith(base + ' · v')) && WT.approvedFor(x, n.wabaId))
     .sort((x, y) => String(y.updatedAt || '').localeCompare(String(x.updatedAt || '')))[0];
   if (!t) return { skipped: 'tpl' };
+  // the reminder flow already sent her the confirmation for this booking (a booking paid on the site, 25.11): not twice
+  try {
+    const convos = await readJSON('data/whatsapp-conversations.json', []);
+    const label = (m) => ((wa.tpls.find((x) => x.id === m.templateId) || {}).label || '');
+    if (convos.some((c) => (c.messages || []).some((m) => m.appt === a.id && m.direction === 'out' && label(m).startsWith(base)))) return { dup: true };
+  } catch (e) { /* no record: the message goes, once */ }
   const settings = (await WF.loadDoc()).settings || {};
   const v = WF.vars({ appointment: a, lead: null, clients: [] }, settings);
   return WF.sendOnce('booking-paid|' + a.id, () => WF.sendTemplate(wa, t.id, a.location, a.clientPhone, v, { appt: a.id, akey: WF.apptKey(a) }));
@@ -89,7 +95,7 @@ async function markPaid(apptId, p, by) {
     await require('./notify').notifyMany({ readJSON, writeJSON }, await desk(a.location), {
       kind: 'booking', tone: 'good', go: 'programari', tag: 'paid-' + a.id,
       title: 'PLĂTITĂ ONLINE ' + ({ 'Timișoara': 'TM', Arad: 'AR' })[a.location] + ' 💳 - ' + lei(p.amount) + ' lei',
-      text: (a.clientName || '') + ' · ' + (a.treatment || '') + ' · ' + a.date + ' ' + (a.time || '') + (msg && (msg.sent || msg.dup) ? '' : ' · confirmarea pe WhatsApp nu a plecat, anunț-o tu'),
+      text: (a.clientName || '') + ' · ' + (a.treatment || '') + ' · ' + a.date + ' ' + (a.time || '') + (a.package && a.paidOnSite ? ' · a plătit mai multe ședințe: programează-le pe celelalte' : '') + (msg && (msg.sent || msg.dup) ? '' : ' · confirmarea pe WhatsApp nu a plecat, anunț-o tu'),
     }).catch(() => {});
     // the sale goes back to Meta (Conversions API) as a Purchase in RON, with her browser's ids from the booking (like the card)
     try {

@@ -303,6 +303,8 @@ async function reply(b) {
     }
     if (!(WF.apptStart(a) > now) || from === 'finalizata') { await ask(a, name + ' · ' + when + ' · a răspuns „' + b.text + '” după ora programării. Programarea nu s-a schimbat.'); return true; }
     if (yes && from === 'anulata') { await ask(a, name + ' · ' + when + ' · a răspuns „' + b.text + '”, dar programarea e anulată. Sun-o.'); return true; }
+    // paid online already (the shop, 25.11): not cancelled by itself; the desk calls her to move it (the money stays hers)
+    if (no && (a.pay === 'online-paid' || a.paidOnline)) { await ask(a, name + ' · ' + when + ' · a răspuns „' + b.text + '”, dar programarea e PLĂTITĂ ONLINE' + (a.paidOnline && a.paidOnline.amount ? ' (' + a.paidOnline.amount + ' lei)' : '') + '. Nu am anulat-o. Sun-o și mutați ora.'); return true; }
     // her other bookings that day (two treatments, 18:00 and 19:00) got one reminder, so her answer is for all of them (8.11)
     const k9 = digits(a.clientPhone).slice(-9);
     const sibs = appts.filter((x) => x && x !== a && !x.block && x.date === a.date && x.status !== to && !['anulata', 'finalizata', 'concediu'].includes(x.status) && WF.apptStart(x) > now &&
