@@ -170,7 +170,7 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
   var B = /^\/v2\//.test(location.pathname) ? '/v2/' : '/';
   var MAP = [[/hifu.*full.?face|full.?face.*hifu/i, 'hifu-full-face'], [/hifu.*(corp|abdomen|bra[tț]|coaps|lombar|talie)/i, 'hifu-corp'], [/hifu/i, 'hifu'],
     [/biolifting.*full.?face/i, 'biolifting-full-face'], [/biolifting/i, 'biolifting'],
-    [/liposonix|mini.?belly/i, 'liposonix'], [/cavita/i, 'cavitatie'], [/\bems\b/i, 'ems'], [/radiofrecv/i, 'radiofrecventa'], [/restart/i, 'restart'],
+    [/liposonix|mini.?belly/i, 'liposonix'], [/cavita|40k\s*slim/i, 'cavitatie'], [/\bems\b/i, 'ems'], [/radiofrecv|red\s*sculpt/i, 'radiofrecventa'], [/restart/i, 'restart'],
     [/hidrat/i, 'hidratare'], [/periocular/i, 'periocular'], [/microneedl|exozom|pdrn/i, 'microneedling'], [/antirid/i, 'antirid'], [/redness/i, 'redness'],
     [/sebum/i, 'sebum-off'], [/masaj.?facial/i, 'masaj-facial'], [/[iî]mpachet/i, 'impachetare'], [/epil|laser|full.?body/i, 'epilare']];
   var idOf = function (t) { for (var i = 0; i < MAP.length; i++) if (MAP[i][0].test(t)) return MAP[i][1]; return ''; };
