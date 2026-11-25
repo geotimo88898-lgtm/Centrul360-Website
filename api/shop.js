@@ -41,7 +41,8 @@ async function hold(req, res, b) {
     key: crypto.randomBytes(12).toString('hex'), city,
     svc: { id: 'custom', title: title.slice(0, 200), price: q.amount, old: q.full, minutes, cat: visit === 'consult' ? '' : main && main.cat === 'epilare' ? 'epilare' : (main && main.cat) || 'corporale', treatment: visit === 'consult' ? '' : q.main.id },
     // the sessions and the zone she chose travel with the hold (the payment is priced from them, api/_lib/shop.js payQuote)
-    cart: { items: q.lines.map((l) => ({ id: l.id, zone: l.zone, qty: l.qty })), visit, at: new Date().toISOString() },
+    // the Card de Sărbători in the same cart (one card, its tier): priced and confirmed by the card's code (api/_lib/shop.js payQuote)
+    cart: { items: q.lines.map((l) => ({ id: l.id, zone: l.zone, qty: l.qty })), visit, at: new Date().toISOString(), ...(b.card && [490, 990, 9900].includes(Number(b.card.tier)) ? { card: { tier: Number(b.card.tier), qty: 1 } } : {}) },
     date, time, endTime: B.hhmm(B.toMin(time) + minutes), page: clip(b.page, 120), src: b.src && typeof b.src === 'object' ? b.src : null,
     cookie: /(^|;\s*)_fbc=fb\./.test(String((req.headers && req.headers.cookie) || '')) ? '_fbc=fb.' : '',
     app: B.appOf(req.headers && req.headers['user-agent']), track: capi.fromRequest(req, b.page),
@@ -66,7 +67,7 @@ module.exports = async (req, res) => {
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=60');
       const all = S.catalog(city);
       // the packages apart: the shop's grids show the sessions, the cart offers the packages
-      res.status(200).json({ ok: true, city, terms: await S.terms(), products: all.filter((p) => !p.pack && !p.bundle), packs: all.filter((p) => p.pack || p.bundle) });
+      res.status(200).json({ ok: true, city, terms: await S.terms(), products: all.filter((p) => !p.pack && !p.bundle), packs: all.filter((p) => p.pack || p.bundle), cardMix: !!S.CARD_MIX });
       return;
     }
     if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
