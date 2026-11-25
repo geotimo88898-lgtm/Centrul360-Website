@@ -133,11 +133,14 @@ const BUNDLES = [
   { id: 'pachet-epil-vara', tier: 3, name: 'Epilare COMPLET · Picioare, bikini, axile · rezultat garantat', need: 'epilare', b: 'Picior lung, inghinal total, axile, 6 ședințe, cu garanția scrisă', parts: [['epilare-picior-lung', 6], ['epilare-inghinal-total', 6], ['epilare-axile', 6]] },
   { id: 'pachet-epil-total', tier: 3, name: 'Epilare COMPLET · Full Body și față · rezultat garantat', need: 'epilare', b: 'Tot corpul și fața, 6 ședințe, cu garanția scrisă', parts: [['epilare-full-body-x6', 1], ['epilare-fata-complet', 6]] },
 ];
-const IMPULSE = { 'Timișoara': 'epilare-axile', Arad: 'masaj-facial' };
+// laser epilation is not sold for now (the owner, 25.11: „probabil o să vând aparatul, nu vreau să mai programez, mai ales cu
+// plata în avans”): no product, no package, no booking; its page (/epilare-laser) stays, only to read about it. true sells it again
+const EPI_SALE = false;
+const IMPULSE = { 'Timișoara': EPI_SALE ? 'epilare-axile' : 'masaj-facial', Arad: 'masaj-facial' };
 // the first screen's slider (the owner, 24.11): these, in this order
 // (RF Sculpt is no longer offered, the owner 25.11: BioLifting in its place)
 const ALLZ = new Set(['liposonix', 'cavitatie', 'radiofrecventa', 'hifu-corp', 'ems']), ALLZ_NAME = 'Full Body'; // (the owner, 25.11: „în loc de toate zonele scrie Full Body / Full Face, e mai powerful”)
-const SHOW = ['liposonix', 'hifu', 'restart', 'biolifting', 'epilare-full-body', 'hifu-full-face', 'ems'];
+const SHOW = ['liposonix', 'hifu', 'restart', 'biolifting', 'hifu-full-face', 'ems'].concat(EPI_SALE ? ['epilare-full-body'] : []);
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const lst = () => require('./pay').priceList();
 // the picture of the live Black Friday cards (v2/kit.js PIC): a cut-out of the treated area
@@ -146,6 +149,7 @@ const picOf = (m) => (m.need === 'gusa' ? 'hifu-gusa' : m.need === 'fata' ? 'fac
 function productOf(t) {
   if (!t || t.sessions !== 1) return null;
   if (t.group === 'epilare') {
+    if (!EPI_SALE) return null;
     const parts = t.title.split(' · '); // Epilare laser · [Elysion Pro ·] Zona · femei|bărbați · 1 ședință
     const men = parts.includes('bărbați');
     const zone = parts.filter((x) => !/^(Epilare laser|Elysion Pro|femei|bărbați|1 ședință)$/.test(x))[0] || '';

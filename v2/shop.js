@@ -446,6 +446,9 @@
   function offers() {
     var el = $('[data-bfo]');
     if (!el || !D) return;
+    // nothing to sell under a filter (laser epilation, not sold for now, 25.11): no such filter
+    FILTERS = FILTERS.filter(function (f) { return f[0] !== 'epilare' || D.products.some(function (p) { return p.need === 'epilare'; }); });
+    if (F.k === 'epilare' && !FILTERS.some(function (f) { return f[0] === 'epilare'; })) F.k = 'all';
     var h = (location.hash || '').slice(1);
     if (FILTERS.some(function (f) { return f[0] === h; })) F.k = h;
     // the clinic is hers (kept, or ?oras=); the order is kept for this visit (back from a treatment, it is as she left it)

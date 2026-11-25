@@ -56,7 +56,9 @@ const H = require(path.join(LIB, 'booking-holds.js'));
 (async () => {
   // ---- the catalog and the prices
   const tm = S.catalog('Timișoara'), ar = S.catalog('Arad');
-  check('catalog: Timișoara has EMS, împachetare and epilare; Arad has none of them', tm.some((p) => p.id === 'ems') && tm.some((p) => p.need === 'epilare') && !ar.some((p) => p.need === 'epilare' || /^ems|impachetare/.test(p.id)), ar.map((p) => p.id));
+  // laser epilation is not sold for now (the owner, 25.11): in neither city, no package of it either
+  check('catalog: no laser epilation anywhere (not sold for now), no package with it', !tm.concat(ar).some((p) => p.need === 'epilare' || /epil/.test(p.id)));
+  check('catalog: Timișoara has EMS and împachetare; Arad has none of them', tm.some((p) => p.id === 'ems') && !ar.some((p) => p.need === 'epilare' || /^ems|impachetare/.test(p.id)), ar.map((p) => p.id));
   const lipo = tm.find((p) => p.id === 'liposonix');
   check('Liposonix, one session, one zone: 640 → 320 during Black Friday (the owner: 2 zones = 1.280)', lipo && lipo.full === 640 && lipo.price === 320, lipo);
   check('one session only: no packages, no combined offers (no EMS 2 zones, no „Gușă + Contur” name)', tm.every((p) => p.full > 0 && !/\+|2 zone/.test(p.name)) && !tm.some((p) => /2-zone/.test(p.ref)), tm.map((p) => p.name));

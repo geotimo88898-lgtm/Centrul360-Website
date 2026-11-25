@@ -926,9 +926,16 @@ def page(x):
     out.append('</div><script src="/v2/shop.js" defer></script><script src="/v2/pp.js" defer></script>')
     return '\n'.join(out) + '\n'
 
+EPI_SALE = False  # the same switch as api/_lib/shop.js
+
 if __name__ == '__main__':
     for x in ITEMS:
         s = page(x)
+        # laser epilation, not sold for now (the owner, 25.11; api/_lib/shop.js EPI_SALE): its shop page leads to the device's page
+        if x['id'] == 'epilare' and not EPI_SALE:
+            s = ('<!--meta\ntitle: Epilare laser · Elysion Pro · Centrul360\ndescription: Epilare laser cu Elysion Pro, la Centrul360 Timișoara.\n'
+                 'robots: noindex,follow\ndock: off\n-->\n<script>location.replace("{{base}}epilare-laser" + location.hash)</script>\n'
+                 '<section class="s"><div class="wrap"><p class="lead"><a href="{{base}}epilare-laser">Epilare laser · Elysion Pro</a></p></div></section>\n')
         if '—' in s or '–' in s: raise SystemExit(x['id'] + ': a long dash slipped in')
         open(os.path.join(SRC, 'tratament-%s.html' % x['id']), 'w', encoding='utf-8').write(s)
     print('wrote', len(ITEMS), 'pages')
