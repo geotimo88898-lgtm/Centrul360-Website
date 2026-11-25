@@ -610,3 +610,8 @@ footer .legal > span a{ white-space:nowrap; }
 .hs-b:active{ transform:scale(.9); }
 @media (hover:hover){ .hs-b:hover{ background:#fff; } }
 .list b s{ margin-left:4px; color:var(--mute); font-weight:400; font-size:13px; }
+/* the logo (the owner, 25.11: „scoate animația de intrare de la siglă, lasă doar loop-ul”): drawn at once, only its slow loop */
+.brand .mk .ring{ stroke-dashoffset:0; animation:none; }
+.brand .mk .ev,.brand .mk .eh{ opacity:1; }
+.brand .mk .ev{ animation:mkY 9s var(--e2) 0s infinite; }
+.brand .mk .eh{ animation:mkX 9s var(--e2) 2.25s infinite; }
