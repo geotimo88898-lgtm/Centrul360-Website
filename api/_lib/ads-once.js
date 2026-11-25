@@ -187,6 +187,15 @@ const ELYSION = { id: 'elysion-sale-2026-11-24', why: 'Vânzare laser Elysion Pr
     interests: ['Beauty salon', 'Cosmetics', 'Aesthetics', 'Laser hair removal'], behaviors: ['Small business owners'] },
 } };
 const JOBS = [
+  // 25.11 evening, George: „da, oprește-le pe amândouă”: the card ad „fiecare card” (0 leads, in both card campaigns) and
+  // TM LIPO · stai întinsă v2 (1 lead, 0 bookings in 2 days); the ads themselves, the rest of their campaigns as they are
+  { id: 'weak-off-2026-11-25', act: 'act_4502494523405059', why: 'George: oprite reclamele slabe', actions: [
+    { campaignId: '120252015089890103', name: 'TM LIPO · stai întinsă v2 (reclama)', status: 'PAUSED', why: 'George: 1 lead, 0 programări în 2 zile' },
+  ] },
+  { id: 'card-fiecare-off-2026-11-25', act: 'act_989208510351291', why: 'George: oprită reclama „fiecare card”', actions: [
+    { campaignId: '120250732826060149', name: 'C360 · TM · Card · fiecare card · formular (reclama)', status: 'PAUSED', why: 'George: 0 leaduri' },
+    { campaignId: '120250732739980149', name: 'C360 · TM · Card · fiecare card · site (reclama)', status: 'PAUSED', why: 'George: 0 rezultate' },
+  ] },
   // 25.11 ~00:00: the Elysion Pro ad set's hint „Aesthetics” matched Meta's philosophy interest „Estetică (filosofie)”: taken
   // out, the other hints, the budget and the rest of the ad set as they are
   { id: 'elysion-hint-fix-2026-11-25', why: 'Elysion Pro: interesul greșit „Estetică (filosofie)” scos', dropInterests: {
