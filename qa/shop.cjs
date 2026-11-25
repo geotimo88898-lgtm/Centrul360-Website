@@ -60,13 +60,20 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   const lipo = tm.find((p) => p.id === 'liposonix');
   check('Liposonix, one session, one zone: 640 → 320 during Black Friday (the owner: 2 zones = 1.280)', lipo && lipo.full === 640 && lipo.price === 320, lipo);
   check('one session only: no packages, no combined offers (no EMS 2 zones, no „Gușă + Contur” name)', tm.every((p) => p.full > 0 && !/\+|2 zone/.test(p.name)) && !tm.some((p) => /2-zone/.test(p.ref)), tm.map((p) => p.name));
-  check('short names, a zone where it has one, two short lines', tm.concat(ar).every((p) => p.name.length <= (p.need === "epilare" ? 40 : p.base ? 30 : 26) && p.b.length >= 2 && p.b.every((x) => x.length <= 36)), tm.filter((p) => p.name.length > (p.need === "epilare" ? 40 : 26) || p.b.some((x) => x.length > 36)).map((p) => p.name));
+  check('short names, a zone where it has one, two short lines', tm.concat(ar).every((p) => p.name.length <= (p.need === "epilare" || p.pack ? 40 : p.base ? 30 : 26) && p.b.length >= 2 && p.b.every((x) => x.length <= 36)), tm.filter((p) => p.name.length > (p.need === "epilare" ? 40 : 26) || p.b.some((x) => x.length > 36)).map((p) => p.name));
   // „Toate zonele” (the owner, 25.11): the twin of a body treatment with zones, one session on every zone, the sum of the zones
   const lt = tm.find((p) => p.id === 'liposonix-toate');
   check('Liposonix Toate zonele: 5 zones, 3.200 → 1.600, no zones of its own, opens the Liposonix page', lt && lt.base === 'liposonix' && lt.full === 3200 && lt.price === 1600 && !lt.zones.length && lt.minutes <= 90, lt);
   const qt = await S.quote('Timișoara', [{ id: 'liposonix-toate', qty: 2 }]);
   check('the twin in the cart: priced by the server', !qt.error && qt.amount === 3200 && qt.lines[0].name === 'Liposonix Toate zonele', qt);
-  check('no twin for the face or for a treatment with one zone', !tm.some((p) => p.base && p.need !== 'corp'));
+  check('no twin for the face or for a treatment with one zone', !tm.some((p) => p.allOf && p.need !== 'corp'));
+  // the price list's packages (the owner, 25.11: „-50% și la pachete”), sold from the cart under the session they contain
+  const rf6 = tm.find((p) => p.id === 'radiofrecventa-x6'), lp2 = tm.find((p) => p.id === 'liposonix-x2');
+  check('packages: Radiofrecvență 6 ședințe 1.250 → 625, on its zones, its own row', rf6 && rf6.pack === 6 && rf6.base === 'radiofrecventa' && rf6.full === 1250 && rf6.price === 625 && rf6.zones.length === 3 && rf6.ref === 'radiofrecventa-o-zona-corporala-6-sedinte', rf6);
+  check('packages: Liposonix 2 ședințe 980 → 490; no RF Sculpt, no EMS 2 zones; EMS only in Timișoara', lp2 && lp2.price === 490 && !tm.concat(ar).some((p) => /rfsculpt|ems-2-zone/.test(p.ref)) && tm.some((p) => p.id === 'ems-x6') && !ar.some((p) => p.id === 'ems-x6'));
+  check('every package costs less than its sessions one by one', tm.concat(ar).filter((p) => p.pack).every((p) => { const b = tm.concat(ar).find((x) => x.id === p.base); return b && p.price < b.price * p.pack; }));
+  const qp = await S.quote('Arad', [{ id: 'biolifting-x4', zone: 'Gușă' }]);
+  check('a package in the cart: BioLifting Gușă · 4 ședințe = 290, its first session booked on the package', !qp.error && qp.amount === 290 && qp.lines[0].name === 'BioLifting Gușă · 4 ședințe' && qp.main.id === 'radiofrecventa-o-zona-mica-faciala-4-sedinte', qp);
   check('pairs only of the same city', ar.every((p) => p.pairs.every((id) => ar.some((x) => x.id === id))));
   let q = await S.quote('Timișoara', [{ id: 'liposonix', zone: 'Abdomen', qty: 2 }, { id: 'ems', zone: 'Coapse' }]);
   check('cart: Liposonix Abdomen × 2 (2 × 320) + EMS Coapse (125) = 765, full 1.530', q.amount === 765 && q.full === 1530 && q.saved === 765, q);

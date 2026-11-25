@@ -198,18 +198,16 @@ a.home-li:hover{ color:var(--ink); }
 
 
 
-<!-- Black Friday first (the owner, 24-25.11): the title, the timer in cells, the slider of offers (the middle one in front, round
-     and round), „Vezi toate ofertele”; then a clean fade into the light page. v2/shop.css, v2/shop.js -->
+<!-- Black Friday first (the owner, 25.11: „pe home page vreau exact secțiunea de la Toate ofertele, cu un call to action sub timer și
+     atât, fără fade și fără showcase la oferte, e mult mai bun pentru conversie”): the offers page's short dark screen, the title,
+     -50%, the timer, one button to the offers. v2/shop.css, v2/shop.js -->
 <link rel="stylesheet" href="/v2/shop.css">
-<!-- the slider's first card in front is the first screen's picture: asked for at once (the server's first offer, api/_lib/shop.js SHOW,
-     with its picture from v2/art.json; speed, 25.11) -->
-<link rel="preload" as="image" href="/brand_asset/tratamente/liposonix.webp?v=2" fetchpriority="high">
-<section class="bfh" data-dark="150" aria-label="Black Friday"><div class="bfh-grid" aria-hidden="true"></div><div class="wrap bfh-w">
+<section class="bfh bfh-s bfh-home" data-dark="120" aria-label="Black Friday"><div class="bfh-grid" aria-hidden="true"></div><div class="wrap bfh-w">
   <p class="eyb">Black Friday</p>
-  <h1 class="bfh-h"><span class="l1">Prețuri de <em>2X</em> mai mici</span><span class="l2">la <b>TOATE</b> tratamentele</span><span class="l3">la plata <b>ONLINE</b></span></h1>
+  <h1 class="bfh-h">Toate ofertele</h1>
+  <p class="bfh-sub"><span>-50% la <b>TOATE</b> tratamentele</span><span>la plata <b>ONLINE</b></span></p>
   <div data-tm></div>
-  <div class="bfs" data-bfs aria-label="Ofertele de Black Friday"></div>
-  <a class="bfh-all" href="{{base}}oferte">Vezi toate ofertele{{arrow}}</a>
+  <a class="btn book gold bfh-cta" href="{{base}}oferte">Vezi ofertele{{arrow}}</a>
 </div></section>
 <script>(function(){var t=document.querySelector('.top');if(t)t.classList.add('dk')})()</script>
 <script src="/v2/shop.js" defer></script>

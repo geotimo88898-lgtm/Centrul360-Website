@@ -64,6 +64,7 @@
     trash: svg('<path d="M5 7h14M10 11v6M14 11v6M6.5 7l.8 12a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9l.8-12M9.5 7V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/>', 1.8),
     pin: svg('<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>', 1.8),
     cal: svg('<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>', 1.8),
+    spark: svg('<path d="M12 3v3M12 18v3M3 12h3M18 12h3M6.3 6.3l2.1 2.1M15.6 15.6l2.1 2.1M6.3 17.7l2.1-2.1M15.6 8.4l2.1-2.1"/>', 1.8),
     tag: svg('<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3"/>', 1.8),
   };
   // why each pair helps (the owner: „să dea soluții complete”)
@@ -109,9 +110,37 @@
   var ss = { get: function (k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set: function (k, v) { try { sessionStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
 
   // ---- the data
-  var byId = function (id) { return D && D.products.filter(function (p) { return p.id === id; })[0]; };
+  var byId = function (id) { if (!D) return null; var f = function (p) { return p.id === id; }; return D.products.filter(f)[0] || (D.packs || []).filter(f)[0]; };
+  // the price list's packages of a treatment (api/_lib/shop.js: <id>-x<N>, pack N), smallest first
+  var packsOf = function (p) { return p ? (D.packs || []).filter(function (k) { return k.base === p.id; }).sort(function (a, b) { return a.pack - b.pack; }) : []; };
+  // a package's price for one session
+  var perSes = function (p) { return Math.round(p.price / (p.pack || 1)); };
+  // how many sessions bring the result (the owner, 25.11): [the least, said as, per zone]; HIFU: one is enough (no word)
+  var REC = { liposonix: [2, '2', 1], cavitatie: [6, '6', 1], ems: [6, '6-8', 1], radiofrecventa: [6, '6-10', 1], biolifting: [4, '4', 1], 'biolifting-full-face': [4, '4', 0],
+    restart: [3, '3-4', 0], hidratare: [3, '3-4', 0], 'sebum-off': [4, '4', 0], microneedling: [3, '3', 0], periocular: [3, '3', 0], antirid: [4, '4', 0], redness: [4, '4', 0], impachetare: [4, '4', 0] };
+  var recOf = function (p) { var id = p.base || p.id, r = p.need === 'epilare' ? [6, '6-8', 1] : REC[id.replace(/-toate$/, '')]; return r ? r.concat([+String(r[1]).split('-').pop()]) : null; };
+  var inCity = function (q) { var c = cityNow(); return !c || q.cities.indexOf(c) > -1; };
+  // „Da, vreau rezultate optime” (the owner, 25.11): the line goes up to the recommended sessions, the cheapest way: the price
+  // list's package in the recommended range when there is one (it costs less), else that many sessions
+  function optPlan(x) {
+    var r = recOf(x.p);
+    if (!r || x.qty * (x.p.pack || 1) >= r[0]) return null;
+    var base = x.p.pack ? byId(x.p.base) : x.p;
+    if (!base) return null;
+    var k = x.p.allOf ? null : packsOf(base).filter(function (q) { return q.pack >= r[0] && q.pack <= r[3] && inCity(q); })[0];
+    return k ? { id: k.id, qty: 1, sum: k.price, said: 'Pachet ' + k.pack + ' ședințe: ' + lei(k.price) }
+      : { id: base.id, qty: r[0], sum: base.price * r[0], said: r[0] + ' ședințe: ' + lei(base.price * r[0]) };
+  }
+  function optimal(key) {
+    var l = lineByKey(key), p = l && byId(l.id);
+    if (!p) return;
+    var o = optPlan({ p: p, qty: l.qty || 1, zone: l.zone, key: key });
+    if (!o) return;
+    if (o.id === l.id) { setQty(key, o.qty, true); if (sheetOn && S.step === 'cart') paneCart(); return; }
+    toPack(key, o.id, o.qty);
+  }
   var zoneOf = function (p) { return p.zones.length ? (S.zone[p.id] && p.zones.indexOf(S.zone[p.id]) > -1 ? S.zone[p.id] : p.zones[0]) : ''; };
-  var nameOf = function (p, zone) { return p.name + (zone ? ' ' + zone : ''); };
+  var nameOf = function (p, zone) { return p.pack && zone ? p.name.replace(' · ', ' ' + zone + ' · ') : p.name + (zone ? ' ' + zone : ''); };
   var keyOf = function (id, zone) { return id + '|' + (zone || ''); };
   var lineOf = function (id, zone) { return S.cart.filter(function (l) { return l.id === id && (l.zone || '') === (zone || ''); })[0]; };
   var lineByKey = function (k) { return S.cart.filter(function (l) { return keyOf(l.id, l.zone) === k; })[0]; };
@@ -159,7 +188,7 @@
   }
   function totals() {
     var l = lines(), full = 0, amount = 0, n = 0;
-    l.forEach(function (x) { full += x.p.full * x.qty; amount += x.p.price * x.qty; n += x.qty; });
+    l.forEach(function (x) { full += x.p.full * x.qty; amount += x.p.price * x.qty; n += x.qty * (x.p.pack || 1); });
     return { lines: l, full: full, amount: amount, saved: full - amount, n: n };
   }
   var pct = function () { return D ? D.terms.pct : 50; };
@@ -841,6 +870,35 @@
       '<span class="pz"><b>' + lei(q.price) + '</b><s>' + lei(q.full) + '</s></span>' +
       '<button type="button" class="sh-plus' + (has ? ' in' : '') + '" data-plus="' + esc(q.id) + '" data-pz="' + esc(z) + '" aria-label="' + (has ? 'În coș, scoate ' : 'Adaugă ') + esc(nameOf(q, z)) + '">' + (has ? I.check : I.plus) + '</button></div>';
   }
+  // „Recomandăm X ședințe pentru rezultate optime” (the owner, 25.11), on a line with fewer sessions than that; „pe zonă” where
+  // the sessions are counted per zone
+  function recHtml(x) {
+    var r = recOf(x.p);
+    if (!r || x.qty * (x.p.pack || 1) >= r[0]) return '';
+    var o = optPlan(x);
+    return '<div class="sh-rec"><p>' + I.spark + '<span>Recomandăm <b>' + r[1] + ' ședințe' + (r[2] ? ' pe zonă' : '') + '</b> pentru rezultate optime</span></p>' +
+      (o && x.key ? '<button type="button" class="sh-rec-go" data-opt="' + esc(x.key) + '">Da, vreau rezultate optime</button><small>' + esc(o.said) + '</small>' : '') + '</div>';
+  }
+  // a package that contains her session (the owner, 25.11: „în ce pachet se regăsește ședința”, instead of „merge super cu”):
+  // the package, its price, a session's price in it, what she saves against separate sessions; „Trec la pachet” swaps the line
+  function packHtml(o) {
+    var k = o.k, base = byId(k.base), save = base ? base.price * k.pack - k.price : 0;
+    return '<div class="sh-pk sh-card"><span class="th"><img src="' + esc(picW(k, 300)) + '" alt="" loading="lazy" decoding="async"' + posOf(k) + '></span>' +
+      '<div class="sh-pk-m"><b>' + esc(nameOf(k, o.x.zone)) + '</b><small>' + lei(perSes(k)) + ' ședința' + (save > 0 ? ' · <em>economisești ' + lei(save) + '</em>' : '') + '</small></div>' +
+      '<div class="pz"><b>' + lei(k.price) + '</b><s>' + lei(k.full) + '</s></div>' +
+      '<button type="button" class="sh-pk-go" data-pack="' + esc(k.id) + '" data-pk-from="' + esc(o.x.key) + '">Trec la pachet' + I.arrow + '</button></div>';
+  }
+  // the line becomes the package, on the same zone (one package; one already in the cart gets one more)
+  function toPack(key, packId, n) {
+    var l = lineByKey(key), k = byId(packId);
+    if (!l || !k) return;
+    var from = l.id, z = l.zone || '', had = lineOf(packId, z), i = S.cart.indexOf(l);
+    if (had) { had.qty = qOf((had.qty || 1) + (n || 1)); S.cart.splice(i, 1); } else S.cart[i] = { id: packId, zone: z, qty: n || 1 };
+    fev('cart');
+    px('AddToCart', { value: k.price * (n || 1), currency: 'RON', content_ids: [packId], content_type: 'product', content_name: nameOf(k, z) });
+    changed(true); repaint(from); epiList();
+    if (sheetOn && S.step === 'cart') paneCart();
+  }
   function lineHtml(x) {
     var u = urlOf(x.p);
     return '<li class="sh-li sh-card" data-line="' + esc(x.key) + '"><a class="th" href="' + u + '" aria-hidden="true" tabindex="-1"><img src="' + esc(picW(x.p, 300)) + '" alt=""' + posOf(x.p) + '></a>' +
@@ -849,7 +907,7 @@
         (freeZone(x.p) ? '<button type="button" class="sh-addz s" data-zadd="' + esc(x.p.id) + '">' + I.plus + 'Încă o zonă</button>' : '') + '</div>'
         : '<span class="sh-li-x">' + esc(NEED[x.p.need] || '') + ' · ' + x.p.minutes + ' min</span>') + '</div>' +
       '<div class="pz"><b>' + lei(x.p.price * x.qty) + '</b><s>' + lei(x.p.full * x.qty) + '</s></div>' +
-      '<div class="sh-li-b"><small>' + (lei(x.p.price) + ' / ședință') + '</small>' + stepHtml(x.key, x.qty, 0) + '</div>' +
+      '<div class="sh-li-b"><small>' + (lei(perSes(x.p)) + ' / ședință') + '</small>' + stepHtml(x.key, x.qty, 0) + '</div>' + recHtml(x) +
       (x.p.zones.length ? '<div class="sh-zp"><div><div class="sh-chips" role="radiogroup" aria-label="Zona">' + zoneChips(x.p, x.zone, 'data-lz', x.key) + '</div></div></div>' : '') + '</li>';
   }
   function paneCart() {
@@ -873,10 +931,20 @@
       });
     });
     pairs = pairs.slice(0, 4);
-    var rest = D.terms.show.map(byId).filter(function (p) { return p && here(p) && !pairs.some(function (y) { return y.q === p; }) && !S.cart.some(function (l) { return l.id === p.id && !S.keep[keyOf(l.id, l.zone)]; }); }).slice(0, 5);
+    var packs = [];
+    t.lines.forEach(function (x) {
+      if (x.p.allOf) return;
+      var have = x.qty * (x.p.pack || 1);
+      packsOf(x.p.pack ? byId(x.p.base) : x.p).forEach(function (k) {
+        if (k.pack > have && here(k) && !lineOf(k.id, x.zone)) packs.push({ x: x, k: k });
+      });
+    });
+    packs = packs.slice(0, 4);
+    var rest = D.terms.show.map(byId).filter(function (p) { return p && here(p) && !pairs.some(function (y) { return y.q === p; }) && !S.cart.some(function (l) { return (l.id === p.id || l.id.indexOf(p.id + '-x') === 0) && !S.keep[keyOf(l.id, l.zone)]; }); }).slice(0, 5);
     el.innerHTML = '<div class="sh-tmw">' + tmHtml('s') + '</div>' +
       '<ul class="sh-lines">' + t.lines.map(lineHtml).join('') + '</ul>' +
-      (pairs.length ? '<p class="sh-lab">Merge super în combinație cu</p><div class="sh-rail">' + pairs.map(function (y) { return miniHtml(y.q, y.why, y.zone); }).join('') + '</div>' : '') +
+      (packs.length ? '<p class="sh-lab">Mai avantajos în pachet</p><div class="sh-pks">' + packs.map(packHtml).join('') + '</div>' : '') +
+      (pairs.length && !packs.length ? '<p class="sh-lab">Merge super în combinație cu</p><div class="sh-rail">' + pairs.map(function (y) { return miniHtml(y.q, y.why, y.zone); }).join('') + '</div>' : '') +
       (rest.length ? '<p class="sh-lab">Alte oferte -' + pct() + '%</p><div class="sh-rail">' + rest.map(function (p) { return miniHtml(p, p.b[0]); }).join('') + '</div><a class="sh-link" href="' + OFFERS + '">Vezi toate ofertele' + I.chev + '</a>' : '') +
       '<div class="sh-stack sh-card"><div><span>Preț normal</span><s data-t-full>' + lei(t.full) + '</s></div><div class="sv"><span>Black Friday -' + pct() + '%</span><span data-t-saved>-' + lei(t.saved) + '</span></div><div class="tot"><span>Total</span><b data-t-amount>' + lei(t.amount) + '</b></div></div>' +
       (t.saved > 0 ? '<p class="sh-save">' + I.tag + '<span data-t-save>Economisești ' + lei(t.saved) + '</span></p>' : '') +
@@ -894,7 +962,10 @@
     }
     var p = byId(l.id), q = l.qty, t = totals();
     roll($('.pz b', li), lei(p.price * q)); $('.pz s', li).textContent = lei(p.full * q);
-    $('.sh-li-b small', li).textContent = lei(p.price) + ' / ședință';
+    $('.sh-li-b small', li).textContent = lei(perSes(p)) + ' / ședință';
+    var rc = $('.sh-rec', li), rh = recHtml({ p: p, qty: q, zone: l.zone, key: key });
+    if (rc) rc.remove();
+    if (rh) li.insertAdjacentHTML('beforeend', rh);
     stepPaint($('.sh-step', li), q, 0);
     var set = function (sel, v) { var x = $(sel, el); if (x) roll(x, v); };
     set('[data-t-full]', lei(t.full)); set('[data-t-saved]', '-' + lei(t.saved)); set('[data-t-amount]', lei(t.amount)); set('[data-t-save]', 'Economisești ' + lei(t.saved));
@@ -1118,6 +1189,8 @@
     if (t.closest('[data-pzadd]')) { popMore(); return; }
     var co = t.closest('[data-checkout]'); if (co) { var from = co; closePop(function () { openSheet('cart', from); }); return; }
     if (t.closest('[data-pop-x]')) { closePop(); return; }
+    var op = t.closest('[data-opt]'); if (op) { optimal(op.getAttribute('data-opt')); return; }
+    var pk = t.closest('[data-pack]'); if (pk) { toPack(pk.getAttribute('data-pk-from'), pk.getAttribute('data-pack')); return; }
     var plus = t.closest('[data-plus]');
     if (plus) {
       var id = plus.getAttribute('data-plus'), q = byId(id), z2 = plus.getAttribute('data-pz') || (q ? zoneOf(q) : ''), had = !!lineOf(id, z2);
