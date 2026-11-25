@@ -137,3 +137,10 @@
     box-shadow:0 0 0 .5px rgba(255,255,255,.2), inset 0 1px 0 rgba(255,255,255,.08), 0 16px 36px -18px rgba(0,0,0,.8); }
 }
 .top.dk .bar{ background:rgba(20,20,22,.9); }
+/* the header's pills with whole-pixel rims (the owner, 25.11: „arată puțin deformate chenarele”): a half pixel rim was drawn
+   unevenly on a normal screen */
+.top nav .hx-card{ box-shadow:inset 0 0 0 1px rgba(176,23,90,.16); }
+.hx-off{ box-shadow:inset 0 0 0 1px rgba(242,198,181,.4), 0 10px 22px -14px rgba(120,60,45,.7); }
+.hx-off:hover{ box-shadow:inset 0 0 0 1px rgba(246,214,203,.6), 0 14px 28px -14px rgba(120,60,45,.8); }
+.hx-off b{ box-shadow:none; }
+.top.dk nav .hx-card{ box-shadow:inset 0 0 0 1px rgba(255,170,200,.22); }
