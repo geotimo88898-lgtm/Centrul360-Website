@@ -924,3 +924,6 @@ body:has(.top.away) .bfo-f{ top:auto; }
 .sh-pk-rec{ grid-column:1 / -1; display:inline-flex; justify-self:start; align-items:center; gap:6px; margin:0 0 6px; padding:5px 12px 5px 9px; border-radius:999px; font-size:13.5px; font-weight:700; letter-spacing:-.005em; color:#3b1c14;
   background:linear-gradient(125deg,#e7b3a3,#f8dccf 50%,#d99d8c); }
 .sh-pk-rec svg{ width:14px; height:14px; flex:none; fill:currentColor; }
+/* the home without its results row (hidden for now): the reviews come right after the first screen, at the same distance */
+.bfh-home ~ #rezultate[hidden]{ display:none !important; }
+.bfh-home ~ #rezultate[hidden] ~ #recenzii{ padding-top:clamp(56px,7vw,88px) !important; }
