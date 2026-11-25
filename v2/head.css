@@ -122,3 +122,5 @@
 }
 /* the header stays put while a page carries over into the next one (View Transitions, the shell's head) */
 .top{ view-transition-name:c360-top; }
+/* with reduced motion the logo's mark is drawn at once (its draw-in animation is off, so it stayed invisible) */
+@media (prefers-reduced-motion:reduce){ .brand .mk .ring{ stroke-dashoffset:0; } .brand .mk .ev,.brand .mk .eh{ opacity:1; } }
