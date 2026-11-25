@@ -194,7 +194,7 @@
   function isNew(s) { return typeof s.catalog === 'function' || typeof s.price === 'function'; }
   function addToCart(id, zone, qty, from, quiet) {
     var s = shop();
-    if (!s) { location.href = BASE + (BASE === '/v2/' ? 'oferte-bf' : 'oferte'); return false; }
+    if (!s) { location.href = BASE + 'oferte'; return false; }
     try {
       if (isNew(s)) s.add({ id: id, zone: zone || '', qty: qty || 1 }, from);
       else { s.add(id, zone || '', qty || 1); if (!quiet && typeof s.open === 'function') setTimeout(function () { s.open(); }, 80); }

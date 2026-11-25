@@ -124,10 +124,9 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
 
 <script>/* the header (v2/head.css), on every page: the cart's count (the shop keeps the cart on this device), dark glass over a dark
    first screen ([data-dark]), the menu grows from the button that opened it; the cart opens the shop's sheet (v2/shop.js, loaded
-   when a page does not have it). The preview's links lead to the preview's shop pages. */
+   when a page does not have it). */
 (function () {
   var B = /^\/v2\//.test(location.pathname) ? '/v2/' : '/', top = document.querySelector('.top'), menu = document.getElementById('menu');
-  if (B === '/v2/') [].forEach.call(document.querySelectorAll('a[href="' + B + 'oferte"], a[href="' + B + '"]'), function (a) { a.setAttribute('href', a.getAttribute('href') === '/v2/' ? '/v2/home-bf' : '/v2/oferte-bf'); });
   var count = function () { try { var k = JSON.parse(localStorage.getItem('c360-shop3') || 'null'); return k && Array.isArray(k.cart) ? k.cart.length : 0; } catch (e) { return 0; } };
   var n = count();
   [].forEach.call(document.querySelectorAll('.hx-cart'), function (b) { b.classList.toggle('has', n > 0); b.querySelector('i').textContent = n || ''; });
