@@ -6,7 +6,7 @@ const TREAT = { 'grasime-localizata': 'Corp', celulita: 'Corp', 'tonifiere-muscu
 const FIXED = {
   index: ['Clinică', 'Medicină estetică <em>non-invazivă.</em>', 'salut-pa'],
   oferte: ['Oferte', 'Ofertele de <em>acum.</em>', 'cadou'], preturi: ['Prețuri', 'Prețuri <em>clare.</em>', 'fisa'],
-  rezultate: ['Rezultate', 'Rezultate <em>reale.</em>', 'stea-google'], 'catalog-rezultate': ['Catalog', '40 de cazuri <em>reale.</em>', 'aparat-foto'],
+  rezultate: ['Rezultate', 'Rezultate <em>reale.</em>', 'stea-google'], 'catalog-rezultate': ['Catalog', 'Caz cu caz, <em>toate reale.</em>', 'aparat-foto'],
   echipa: ['Echipa', 'Oamenii din <em>spatele rezultatelor.</em>', 'mana-inima'], timisoara: ['Clinica', 'Centrul360 <em>Timișoara.</em>', 'receptie'],
   arad: ['Clinica', 'Centrul360 <em>Arad.</em>', 'bucurie'], programare: ['Programare', 'Programează-te în <em>30 de secunde.</em>', 'calendar'],
 };
