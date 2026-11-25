@@ -877,7 +877,7 @@
     if (!r || x.qty * (x.p.pack || 1) >= r[0]) return '';
     var o = optPlan(x);
     return '<div class="sh-rec"><p>' + I.spark + '<span>Recomandăm <b>' + r[1] + ' ședințe' + (r[2] ? ' pe zonă' : '') + '</b> pentru rezultate optime</span></p>' +
-      (o && x.key ? '<button type="button" class="sh-rec-go" data-opt="' + esc(x.key) + '">Da, vreau rezultate optime</button><small>' + esc(o.said) + '</small>' : '') + '</div>';
+      (o && x.key ? '<button type="button" class="sh-rec-go" data-opt="' + esc(x.key) + '">Da, vreau rezultate optime</button>' : '') + '</div>';
   }
   // a package that contains her session (the owner, 25.11: „în ce pachet se regăsește ședința”, instead of „merge super cu”):
   // the package, its price, a session's price in it, what she saves against separate sessions; „Trec la pachet” swaps the line
