@@ -29,6 +29,15 @@
   var ALLZ = 'Full Body'; // the twin <id>-toate (the owner, 25.11: „Full Body”, not „Toate zonele”)
   // „Full Face” on the face's zones (the owner, 25.11): HIFU Full Face, BioLifting Full Face
   var FF = 'Full Face', FULLF = { hifu: 'hifu-full-face', biolifting: 'biolifting-full-face' };
+  // the zone an ad sends her to (?zona=gat, ?zona=full-face; the ads per zone, 25.11): that zone is chosen from the start
+  (function () {
+    try {
+      var z = new URLSearchParams(location.search).get('zona'); if (!z || EPI) return;
+      var f = function (t) { return String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
+      var m = (CFG.zones || []).concat([ALLZ, FF]).filter(function (x) { return f(x) === f(z); })[0];
+      if (m) S.zone = m;
+    } catch (e) { /* the first zone */ }
+  })();
 
   // ---- what she picked → the product, its name and price
   function epiId(key, g) { return key === 'full-body' ? 'epilare-full-body' : 'epilare-' + key + (g === 'm' ? '-barbati' : ''); }
