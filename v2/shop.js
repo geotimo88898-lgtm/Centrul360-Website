@@ -347,7 +347,7 @@
   function tileHtml(p) {
     var z = zoneOf(p), n = nOf(p), mine = inCart(p.id), u = urlOf(p);
     return '<article class="bfc bft' + (mine ? ' in' : '') + '" data-p="' + esc(p.id) + '" data-href="' + u + '" data-w="1">' +
-      '<span class="pic" aria-hidden="true"><img src="' + esc(picOf(p)) + '" alt="" loading="lazy" decoding="async"></span>' +
+      '<span class="pic" aria-hidden="true"><img src="' + esc(picOf(p)) + '" alt="" loading="lazy" decoding="async"' + posOf(p) + '></span>' +
       '<span class="pct">-' + pct() + '%</span>' + (p.cities.length === 1 ? '<span class="bft-c">Doar ' + esc(p.cities[0]) + '</span>' : '') +
       '<div class="bft-b"><span class="k">' + esc(NEED[p.need] || '') + '</span>' +
       '<h3><a href="' + u + '">' + esc(nameOf(p, z)) + '</a></h3>' +
