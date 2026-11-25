@@ -106,7 +106,7 @@
    "no": [
     "vrei să slăbești multe kilograme: pentru volume mari, recomandarea e alta și îți spunem sincer",
     "ești însărcinată sau alăptezi",
-    "ai o contraindicație medicală: o verificăm împreună la consultație"
+    "ai o contraindicație medicală: o verificăm împreună la prima ședință"
    ]
   },
   "session": {
@@ -118,7 +118,7 @@
   "faq": [
    {
     "q": "E o alternativă la liposucție?",
-    "a": "Este o opțiune non-invazivă pentru depozite mici și medii de grăsime localizată, fără operație, anestezie sau recuperare. Pentru volume mari, recomandarea poate fi alta. Îți spunem sincer la consultație."
+    "a": "Este o opțiune non-invazivă pentru depozite mici și medii de grăsime localizată, fără operație, anestezie sau recuperare. Pentru volume mari, recomandarea poate fi alta. Îți spunem sincer la prima ședință."
    },
    {
     "q": "Când văd rezultatele?",
@@ -126,7 +126,7 @@
    },
    {
     "q": "Câte ședințe îmi trebuie?",
-    "a": "Depinde de zonă și de volum: de la o ședință Liposonix la o cură de cavitație. Combinația și numărul exact le stabilim la consultația gratuită."
+    "a": "Depinde de zonă și de volum: de la o ședință Liposonix la o cură de 40K Slim. Combinația și numărul exact le stabilim la prima ședință."
    },
    {
     "q": "Doare? Am nevoie de recuperare?",
@@ -160,7 +160,7 @@
  },
  {
   "id": "cavitatie",
-  "name": "Cavitație",
+  "name": "40K Slim",
   "need": "corp",
   "kind": "Corp · grăsime localizată",
   "cities": [
@@ -205,7 +205,7 @@
   "results": [],
   "how": {
    "h": "Unde blânde, <em>pe depozitele de grăsime.</em>",
-   "text": "Cavitația folosește ultrasunete de joasă frecvență, pentru reducerea grăsimii localizate și remodelarea siluetei. Lucrează pe depozitele de grăsime, iar corpul elimină treptat grăsimea din zona tratată.",
+   "text": "40K Slim folosește ultrasunete de joasă frecvență, pentru reducerea grăsimii localizate și remodelarea siluetei. Lucrează pe depozitele de grăsime, iar corpul elimină treptat grăsimea din zona tratată.",
    "steps": [
     {
      "b": "Undele de joasă frecvență",
@@ -237,19 +237,19 @@
    "no": [
     "vrei să slăbești multe kilograme: pentru volume mari, recomandarea e alta și îți spunem sincer",
     "ești însărcinată sau alăptezi",
-    "ai o contraindicație medicală: o verificăm împreună la consultație"
+    "ai o contraindicație medicală: o verificăm împreună la prima ședință"
    ]
   },
   "session": {
    "feel": "Căldură și o senzație de presiune. E bine tolerată.",
    "recovery": "Fără recuperare. Îți reiei activitățile imediat.",
-   "sessions": "O cură de cavitație. Numărul exact îl stabilim la consultația gratuită.",
+   "sessions": "O cură de 40K Slim. Numărul exact îl stabilim la prima ședință.",
    "when": "Corpul elimină treptat grăsimea în săptămânile următoare. La reevaluare măsurăm din nou."
   },
   "faq": [
    {
     "q": "Câte ședințe îmi trebuie?",
-    "a": "Depinde de zonă și de volum: de la o ședință Liposonix la o cură de cavitație. Combinația și numărul exact le stabilim la consultația gratuită."
+    "a": "Depinde de zonă și de volum: de la o ședință Liposonix la o cură de 40K Slim. Combinația și numărul exact le stabilim la prima ședință."
    },
    {
     "q": "Doare? Am nevoie de recuperare?",
@@ -257,7 +257,7 @@
    },
    {
     "q": "Toate tratamentele sunt disponibile în Arad?",
-    "a": "Radiofrecvența și cavitația sunt disponibile la ambele clinici. EMS și împachetarea la cald sunt disponibile doar la Timișoara. Construim planul în funcție de locația ta."
+    "a": "Red Sculpt și 40K Slim sunt disponibile la ambele clinici. EMS și împachetarea la cald sunt disponibile doar la Timișoara. Construim planul în funcție de locația ta."
    }
   ],
   "pairs": [
@@ -373,7 +373,7 @@
    "no": [
     "cauți un înlocuitor pentru mișcare: EMS completează un stil de viață activ, nu îl înlocuiește",
     "ești însărcinată sau alăptezi",
-    "ai o contraindicație medicală: o verificăm împreună la consultație"
+    "ai o contraindicație medicală: o verificăm împreună la prima ședință"
    ]
   },
   "session": {
@@ -389,7 +389,7 @@
    },
    {
     "q": "Câte ședințe îmi trebuie?",
-    "a": "De obicei o cură de 6-8 ședințe, 2 pe săptămână la început, apoi întreținere. Numărul exact depinde de obiectiv și de zone. Îl stabilim la consultație."
+    "a": "De obicei o cură de 6-8 ședințe, 2 pe săptămână la început, apoi întreținere. Numărul exact depinde de obiectiv și de zone. Îl stabilim la prima ședință."
    },
    {
     "q": "Cum se simte o ședință?",
@@ -428,7 +428,7 @@
  },
  {
   "id": "radiofrecventa",
-  "name": "Radiofrecvență",
+  "name": "Red Sculpt",
   "need": "corp",
   "kind": "Corp · celulită și fermitate",
   "cities": [
@@ -473,7 +473,7 @@
   "results": [],
   "how": {
    "h": "Celulita nu e doar grăsime. <em>E și fermitate.</em>",
-   "text": "Radiofrecvența duce energie termică controlată în piele și stimulează colagenul și elastina, pentru fermitate și reducerea celulitei.",
+   "text": "Red Sculpt duce energie termică controlată în piele și stimulează colagenul și elastina, pentru fermitate și reducerea celulitei.",
    "steps": [
     {
      "b": "Septurile",
@@ -506,7 +506,7 @@
    "no": [
     "cauți rezultatul dintr-o singură ședință: celulita răspunde la o cură constantă",
     "ești însărcinată sau alăptezi",
-    "ai o contraindicație medicală: o verificăm împreună la consultație"
+    "ai o contraindicație medicală: o verificăm împreună la prima ședință"
    ]
   },
   "session": {
@@ -522,7 +522,7 @@
    },
    {
     "q": "Câte ședințe îmi trebuie?",
-    "a": "De regulă o cură de 6-10 ședințe combinate, în funcție de grad și de zonă, apoi întreținere. Planul exact îl stabilim la consultație."
+    "a": "De regulă o cură de 6-10 ședințe combinate, în funcție de grad și de zonă, apoi întreținere. Planul exact îl stabilim la prima ședință."
    },
    {
     "q": "Când văd rezultatele?",
@@ -534,7 +534,7 @@
    },
    {
     "q": "Toate tratamentele sunt disponibile în Arad?",
-    "a": "Radiofrecvența și cavitația sunt disponibile la ambele clinici. EMS și împachetarea la cald sunt disponibile doar la Timișoara. Construim planul în funcție de locația ta."
+    "a": "Red Sculpt și 40K Slim sunt disponibile la ambele clinici. EMS și împachetarea la cald sunt disponibile doar la Timișoara. Construim planul în funcție de locația ta."
    }
   ],
   "pairs": [
@@ -649,19 +649,19 @@
    "no": [
     "vrei să slăbești multe kilograme: pentru volume mari, recomandarea e alta și îți spunem sincer",
     "ești însărcinată sau alăptezi",
-    "ai o contraindicație medicală: o verificăm împreună la consultație"
+    "ai o contraindicație medicală: o verificăm împreună la prima ședință"
    ]
   },
   "session": {
    "feel": "Căldură și o senzație de presiune.",
    "recovery": "Fără recuperare. Îți reiei activitățile imediat.",
-   "sessions": "Cazul din poze e după o singură ședință. Planul exact îl stabilim la consultația gratuită.",
+   "sessions": "Cazul din poze e după o singură ședință. Planul exact îl stabilim la prima ședință.",
    "when": "Reducerea devine vizibilă în general la 6-8 săptămâni de la ședință."
   },
   "faq": [
    {
     "q": "E o alternativă la liposucție?",
-    "a": "Este o opțiune non-invazivă pentru depozite mici și medii de grăsime localizată, fără operație, anestezie sau recuperare. Pentru volume mari, recomandarea poate fi alta. Îți spunem sincer la consultație."
+    "a": "Este o opțiune non-invazivă pentru depozite mici și medii de grăsime localizată, fără operație, anestezie sau recuperare. Pentru volume mari, recomandarea poate fi alta. Îți spunem sincer la prima ședință."
    },
    {
     "q": "Când văd rezultatele?",
@@ -769,7 +769,7 @@
    "no": [
     "cauți un înlocuitor pentru un stil de viață sănătos: tratamentele îl susțin, nu îl înlocuiesc",
     "ești însărcinată sau alăptezi",
-    "ai o contraindicație medicală: o verificăm împreună la consultație"
+    "ai o contraindicație medicală: o verificăm împreună la prima ședință"
    ]
   },
   "session": {
@@ -789,7 +789,7 @@
    },
    {
     "q": "Câte ședințe îmi trebuie?",
-    "a": "Pentru un efect de durată, o cură de câteva ședințe într-un interval scurt, apoi întreținere. Numărul exact depinde de obiectiv. Îl stabilim la consultație."
+    "a": "Pentru un efect de durată, o cură de câteva ședințe într-un interval scurt, apoi întreținere. Numărul exact depinde de obiectiv. Îl stabilim la prima ședință."
    },
    {
     "q": "Se combină cu alte tratamente?",
@@ -942,7 +942,7 @@
    "no": [
     "vrei rezultatul de a doua zi: conturul se redefinește treptat, pe măsură ce se formează colagen",
     "ești însărcinată sau alăptezi",
-    "ai o contraindicație medicală: o verificăm împreună la consultație"
+    "ai o contraindicație medicală: o verificăm împreună la prima ședință"
    ]
   },
   "session": {
@@ -958,7 +958,7 @@
    },
    {
     "q": "Câte ședințe îmi trebuie?",
-    "a": "Frecvent o singură ședință HIFU. Planul exact depinde de zonă și de obiectiv. Îl stabilim la consultație."
+    "a": "Frecvent o singură ședință HIFU. Planul exact depinde de zonă și de obiectiv. Îl stabilim la prima ședință."
    },
    {
     "q": "Când văd rezultatul?",
@@ -1089,19 +1089,19 @@
    "no": [
     "vrei efectul de a doua zi, ca la injectabile: lifting-ul prin colagen e gradual",
     "ești însărcinată sau alăptezi",
-    "ai o contraindicație medicală: o verificăm împreună la consultație"
+    "ai o contraindicație medicală: o verificăm împreună la prima ședință"
    ]
   },
   "session": {
    "feel": "Căldură sau ușoare furnicături.",
    "recovery": "Fără recuperare. Te întorci imediat la activități.",
-   "sessions": "Numărul de ședințe îl stabilim la consultația gratuită.",
+   "sessions": "Numărul de ședințe îl stabilim la prima ședință.",
    "when": "Fermitatea se simte imediat. Efectul crește treptat, maxim la 8-12 săptămâni."
   },
   "faq": [
    {
     "q": "HIFU sau BioLifting: care e pentru mine?",
-    "a": "HIFU acționează în profunzime pentru un lifting mai pronunțat, BioLifting pentru fermitate și riduri fine pe suprafață. De multe ori se combină. Recomandarea exactă o facem la consultație."
+    "a": "HIFU acționează în profunzime pentru un lifting mai pronunțat, BioLifting pentru fermitate și riduri fine pe suprafață. De multe ori se combină. Recomandarea exactă o facem la prima ședință."
    },
    {
     "q": "Când se văd rezultatele?",
@@ -1113,7 +1113,7 @@
    },
    {
     "q": "De la ce vârstă are sens?",
-    "a": "Se poate începe preventiv de la primele semne de laxitate (în jur de 30+), dar e eficient la orice vârstă. La consultație stabilim dacă e momentul potrivit pentru tine."
+    "a": "Se poate începe preventiv de la primele semne de laxitate (în jur de 30+), dar e eficient la orice vârstă. La prima ședință stabilim dacă e momentul potrivit pentru tine."
    }
   ],
   "pairs": [
@@ -1216,7 +1216,7 @@
    "no": [
     "vrei efectul de a doua zi, ca la injectabile: lifting-ul prin colagen e gradual",
     "ești însărcinată sau alăptezi",
-    "ai o contraindicație medicală: o verificăm împreună la consultație"
+    "ai o contraindicație medicală: o verificăm împreună la prima ședință"
    ]
   },
   "session": {
@@ -1228,7 +1228,7 @@
   "faq": [
    {
     "q": "HIFU sau BioLifting: care e pentru mine?",
-    "a": "HIFU acționează în profunzime pentru un lifting mai pronunțat, BioLifting pentru fermitate și riduri fine pe suprafață. De multe ori se combină. Recomandarea exactă o facem la consultație."
+    "a": "HIFU acționează în profunzime pentru un lifting mai pronunțat, BioLifting pentru fermitate și riduri fine pe suprafață. De multe ori se combină. Recomandarea exactă o facem la prima ședință."
    },
    {
     "q": "Când se văd rezultatele?",
@@ -1244,7 +1244,7 @@
    },
    {
     "q": "De la ce vârstă are sens?",
-    "a": "Se poate începe preventiv de la primele semne de laxitate (în jur de 30+), dar e eficient la orice vârstă. La consultație stabilim dacă e momentul potrivit pentru tine."
+    "a": "Se poate începe preventiv de la primele semne de laxitate (în jur de 30+), dar e eficient la orice vârstă. La prima ședință stabilim dacă e momentul potrivit pentru tine."
    }
   ],
   "pairs": [
@@ -1345,19 +1345,19 @@
    "no": [
     "vrei efectul de a doua zi, ca la injectabile: lifting-ul prin colagen e gradual",
     "ești însărcinată sau alăptezi",
-    "ai o contraindicație medicală: o verificăm împreună la consultație"
+    "ai o contraindicație medicală: o verificăm împreună la prima ședință"
    ]
   },
   "session": {
    "feel": "Căldură sau ușoare furnicături.",
    "recovery": "Fără recuperare. Te întorci imediat la activități.",
-   "sessions": "Numărul de ședințe îl stabilim la consultația gratuită.",
+   "sessions": "Numărul de ședințe îl stabilim la prima ședință.",
    "when": "Fermitatea se simte imediat. Efectul crește treptat, maxim la 8-12 săptămâni."
   },
   "faq": [
    {
     "q": "HIFU sau BioLifting: care e pentru mine?",
-    "a": "HIFU acționează în profunzime pentru un lifting mai pronunțat, BioLifting pentru fermitate și riduri fine pe suprafață. De multe ori se combină. Recomandarea exactă o facem la consultație."
+    "a": "HIFU acționează în profunzime pentru un lifting mai pronunțat, BioLifting pentru fermitate și riduri fine pe suprafață. De multe ori se combină. Recomandarea exactă o facem la prima ședință."
    },
    {
     "q": "Când se văd rezultatele?",
@@ -1369,7 +1369,7 @@
    },
    {
     "q": "De la ce vârstă are sens?",
-    "a": "Se poate începe preventiv de la primele semne de laxitate (în jur de 30+), dar e eficient la orice vârstă. La consultație stabilim dacă e momentul potrivit pentru tine."
+    "a": "Se poate începe preventiv de la primele semne de laxitate (în jur de 30+), dar e eficient la orice vârstă. La prima ședință stabilim dacă e momentul potrivit pentru tine."
    }
   ],
   "pairs": [
@@ -1474,7 +1474,7 @@
    "no": [
     "vrei să tratezi acneea activă: pentru ea avem protocoale dedicate",
     "cauți un efect care să țină fără întreținere: strălucirea se menține cu o cură completă și ședințe periodice",
-    "ai o contraindicație medicală: o verificăm împreună la consultație"
+    "ai o contraindicație medicală: o verificăm împreună la prima ședință"
    ]
   },
   "session": {
@@ -1490,7 +1490,7 @@
    },
    {
     "q": "Câte ședințe îmi trebuie?",
-    "a": "De obicei o cură de 3-4 ședințe la interval de 1-2 săptămâni, apoi o ședință de întreținere la 4-6 săptămâni. Numărul exact îl stabilim la consultație, în funcție de tenul tău."
+    "a": "De obicei o cură de 3-4 ședințe la interval de 1-2 săptămâni, apoi o ședință de întreținere la 4-6 săptămâni. Numărul exact îl stabilim la prima ședință, în funcție de tenul tău."
    },
    {
     "q": "Doare sau am nevoie de recuperare?",
@@ -1502,7 +1502,7 @@
    },
    {
     "q": "Pot combina cu alte tratamente?",
-    "a": "Da. De multe ori combinăm hidratarea cu microneedling pentru textură sau cu tratamente anti-aging. Planul personalizat îl construim la consultație."
+    "a": "Da. De multe ori combinăm hidratarea cu microneedling pentru textură sau cu tratamente anti-aging. Planul personalizat îl construim la prima ședință."
    }
   ],
   "pairs": [
@@ -1709,7 +1709,7 @@
    "no": [
     "vrei să tratezi acneea activă: pentru ea avem protocoale dedicate",
     "cauți un efect care să țină fără întreținere: strălucirea se menține cu o cură completă și ședințe periodice",
-    "ai o contraindicație medicală: o verificăm împreună la consultație"
+    "ai o contraindicație medicală: o verificăm împreună la prima ședință"
    ]
   },
   "session": {
@@ -1725,7 +1725,7 @@
    },
    {
     "q": "Câte ședințe îmi trebuie?",
-    "a": "De obicei o cură de 3-4 ședințe la interval de 1-2 săptămâni, apoi o ședință de întreținere la 4-6 săptămâni. Numărul exact îl stabilim la consultație, în funcție de tenul tău."
+    "a": "De obicei o cură de 3-4 ședințe la interval de 1-2 săptămâni, apoi o ședință de întreținere la 4-6 săptămâni. Numărul exact îl stabilim la prima ședință, în funcție de tenul tău."
    },
    {
     "q": "Doare sau am nevoie de recuperare?",
@@ -1737,7 +1737,7 @@
    },
    {
     "q": "Pot combina cu alte tratamente?",
-    "a": "Da. De multe ori combinăm hidratarea cu microneedling pentru textură sau cu tratamente anti-aging. Planul personalizat îl construim la consultație."
+    "a": "Da. De multe ori combinăm hidratarea cu microneedling pentru textură sau cu tratamente anti-aging. Planul personalizat îl construim la prima ședință."
    }
   ],
   "pairs": [
@@ -1825,7 +1825,7 @@
   "why": "Cu vârsta, pielea produce mai puțin colagen și elastină, iar fermitatea scade. Nu e vina ta.",
   "fit": {},
   "session": {
-   "sessions": "Numărul de ședințe îl stabilim la consultația gratuită, după tenul tău."
+   "sessions": "Numărul de ședințe îl stabilim la prima ședință, după tenul tău."
   },
   "faq": [
    {
@@ -1838,7 +1838,7 @@
    },
    {
     "q": "Câte ședințe îmi trebuie?",
-    "a": "Numărul exact îl stabilim la consultația gratuită, în funcție de tenul tău."
+    "a": "Numărul exact îl stabilim la prima ședință, în funcție de tenul tău."
    },
    {
     "q": "Unde se face?",
@@ -1932,7 +1932,7 @@
   "session": {
    "feel": "Confortabil.",
    "recovery": "După curățare poate apărea o ușoară roșeață, trecătoare.",
-   "sessions": "Numărul de ședințe îl stabilim la consultația gratuită."
+   "sessions": "Numărul de ședințe îl stabilim la prima ședință."
   },
   "faq": [
    {
@@ -2041,7 +2041,7 @@
    "no": [
     "cauți rezultatul dintr-o singură ședință: tenul acneic răspunde la consecvență, de obicei o cură de 4 ședințe",
     "nu vrei nicio rutină acasă: curățarea blândă, hidratarea și protecția solară fac diferența",
-    "ai o contraindicație medicală: o verificăm împreună la consultație"
+    "ai o contraindicație medicală: o verificăm împreună la prima ședință"
    ]
   },
   "session": {
@@ -2057,7 +2057,7 @@
    },
    {
     "q": "Câte ședințe îmi trebuie?",
-    "a": "De obicei o cură de 4 ședințe la 2-3 săptămâni, apoi întreținere. Tenul acneic răspunde la consecvență. Numărul exact îl stabilim la consultație."
+    "a": "De obicei o cură de 4 ședințe la 2-3 săptămâni, apoi întreținere. Tenul acneic răspunde la consecvență. Numărul exact îl stabilim la prima ședință."
    },
    {
     "q": "Doare sau am nevoie de recuperare?",
@@ -2162,7 +2162,7 @@
     "ai părul închis la culoare, pe față sau pe corp: potrivit la femei și bărbați"
    ],
    "no": [
-    "ai părul foarte deschis, blond sau alb: laserul țintește pigmentul, iar eficiența e mai redusă. Îți spunem sincer la consultație",
+    "ai părul foarte deschis, blond sau alb: laserul țintește pigmentul, iar eficiența e mai redusă. Îți spunem sincer la prima ședință",
     "nu poți respecta intervalele dintre ședințe: rezultatul depinde de ele",
     "vrei să folosești în continuare ceara sau penseta între ședințe"
    ]
@@ -2181,7 +2181,7 @@
    },
    {
     "q": "De câte ședințe am nevoie?",
-    "a": "În general 6-8 ședințe, la interval de câteva săptămâni, pentru a trata părul în fiecare fază de creștere. Numărul exact depinde de zonă, tipul de păr și pielea ta. Îl stabilim la consultație."
+    "a": "În general 6-8 ședințe, la interval de câteva săptămâni, pentru a trata părul în fiecare fază de creștere. Numărul exact depinde de zonă, tipul de păr și pielea ta. Îl stabilim la prima ședință."
    },
    {
     "q": "Cum mă pregătesc pentru ședință?",
@@ -2189,11 +2189,11 @@
    },
    {
     "q": "Funcționează pe părul blond sau alb?",
-    "a": "Laserul țintește pigmentul din păr, deci dă cele mai bune rezultate pe părul închis la culoare. Pe părul foarte deschis, blond sau alb, eficiența este mai redusă. Evaluăm sincer acest aspect la consultație."
+    "a": "Laserul țintește pigmentul din păr, deci dă cele mai bune rezultate pe părul închis la culoare. Pe părul foarte deschis, blond sau alb, eficiența este mai redusă. Evaluăm sincer acest aspect la prima ședință."
    },
    {
     "q": "Pot face epilare laser vara?",
-    "a": "Da, cu condiția să eviți expunerea directă la soare și să folosești protecție solară pe zona tratată. Pielea bronzată necesită setări speciale, de aceea consultația și testul sunt importante."
+    "a": "Da, cu condiția să eviți expunerea directă la soare și să folosești protecție solară pe zona tratată. Pielea bronzată necesită setări speciale, de aceea testul de la prima ședință e important."
    }
   ],
   "pairs": [],

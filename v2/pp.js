@@ -96,9 +96,36 @@
       }).join('') + '</div>';
     sec.hidden = false;
   }
+  // ---- the photo of the zone she picked (the owner, 25.11: „dacă apăs pe gât, tot poza cu gușă apare; ca un e-commerce pe bune”):
+  // brand_asset/tratamente/hero/<page>--<zone>.webp, the treatment's own hero/<page>.webp, as listed in hero/index.json (the photos
+  // arrive one by one); a zone without its photo keeps the treatment's
+  var HX = null, heroImg = $('[data-tp-img]');
+  var slug = function (z) { return String(z).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
+  function heroName() {
+    var z = S.zone, pg = CFG.page || CFG.id;
+    if (z === FF && FULLF[pg] && HX[FULLF[pg]]) return FULLF[pg];
+    if (z && z !== ALLZ && z !== FF && HX[pg + '--' + slug(z)]) return pg + '--' + slug(z);
+    return HX[pg] ? pg : '';
+  }
+  function heroPaint() {
+    if (!HX || !heroImg || EPI) return;
+    var n = heroName(); if (!n) return;
+    var u = '/brand_asset/tratamente/hero/' + n + '.webp?v=' + (HX._v || 1);
+    if (heroImg.getAttribute('src') === u) return;
+    var pre = new Image();
+    pre.onload = function () {
+      if (reduce) { heroImg.src = u; heroImg.style.objectPosition = '50% 45%'; return; }
+      heroImg.classList.add('fade');
+      setTimeout(function () { heroImg.src = u; heroImg.style.objectPosition = '50% 45%'; heroImg.classList.remove('fade'); }, 200);
+    };
+    pre.src = u;
+  }
+  if (heroImg && !EPI) fetch('/brand_asset/tratamente/hero/index.json?t=' + Math.floor(Date.now() / 600000), { headers: { Accept: 'application/json' } })
+    .then(function (r) { return r.ok ? r.json() : null; }).then(function (d) { HX = d && typeof d === 'object' ? d : null; heroPaint(); }).catch(function () { /* the treatment's picture stays */ });
+
   function paint() {
     var c = cur(), n = S.n;
-    pkSec();
+    pkSec(); heroPaint();
     $$('[data-tp-price]').forEach(function (el) { setText(el, lei(c.price * n)); });
     $$('[data-tp-full]').forEach(function (el) { setText(el, lei(c.full * n)); });
     $$('[data-tp-save]').forEach(function (el) { setText(el, 'Economisești ' + lei((c.full - c.price) * n)); });

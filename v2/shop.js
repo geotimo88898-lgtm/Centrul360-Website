@@ -507,8 +507,8 @@
   // a small product card for the grid: the picture, -50%, the name, the price, „Rezervă oferta”; a tap on it opens the treatment.
   // The first row's pictures load at once (the first one first), the others when they come near.
   // the card's name: the treatment, not a zone (the owner, 25.11: „doar procedura, zona o aleg ele”: HIFU facial, HIFU corporal…)
-  var CARD = { hifu: 'HIFU facial', 'hifu-corp': 'HIFU corporal', liposonix: 'Liposonix', radiofrecventa: 'Radiofrecvență corporală', ems: 'EMS',
-    cavitatie: 'Cavitație', biolifting: 'BioLifting', 'epilare-full-body': 'Epilare laser Full Body', 'epilare-axile': 'Epilare laser axile',
+  var CARD = { hifu: 'HIFU facial', 'hifu-corp': 'HIFU corporal', liposonix: 'Liposonix', radiofrecventa: 'Red Sculpt', ems: 'EMS',
+    cavitatie: '40K Slim', biolifting: 'BioLifting', 'epilare-full-body': 'Epilare laser Full Body', 'epilare-axile': 'Epilare laser axile',
     'epilare-inghinal-total': 'Epilare laser inghinal' };
   var cardName = function (p) { return CARD[p.id] || p.name; };
   // two reasons on every card, the result said plainly (the owner, 25.11: „două bullet points clare, directe: elimină grăsimea

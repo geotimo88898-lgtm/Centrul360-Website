@@ -47,9 +47,9 @@ const ZF = ['Gușă', 'Gât', 'Contur mandibular', 'Pomeți', 'Frunte'];
 // the price list row's id (its 1 session) → the product
 const P = {
   'liposonix-o-zona-corporala-1-sedinta': { id: 'liposonix', name: 'Liposonix', zones: ZB, need: 'corp', ph: 'concern-grasime.webp', b: ['Distruge celulele de grăsime', 'Fără ace, fără recuperare'] },
-  'cavitatie-o-zona-corporala-1-sedinta': { id: 'cavitatie', name: 'Cavitație', zones: ['Abdomen', 'Coapse', 'Brațe'], need: 'corp', ph: 'oferte/cavitatie.webp', b: ['Reduce grăsimea localizată', 'Fără durere, fără recuperare'] },
+  'cavitatie-o-zona-corporala-1-sedinta': { id: 'cavitatie', name: '40K Slim', zones: ['Abdomen', 'Coapse', 'Brațe'], need: 'corp', ph: 'oferte/cavitatie.webp', b: ['Reduce grăsimea localizată', 'Fără durere, fără recuperare'] },
   'ems-o-zona-1-sedinta': { id: 'ems', name: 'EMS', zones: ['Abdomen', 'Coapse', 'Brațe'], need: 'corp', ph: 'concern-tonifiere.webp', b: ['20.000 de contracții într-o ședință', 'Tonifiază mușchii, fără efort'] },
-  'radiofrecventa-o-zona-corporala-1-sedinta': { id: 'radiofrecventa', name: 'Radiofrecvență', zones: ['Abdomen', 'Coapse', 'Brațe'], need: 'corp', ph: 'concern-cellulite-2.webp', b: ['Reduce aspectul de celulită', 'Strânge pielea'] },
+  'radiofrecventa-o-zona-corporala-1-sedinta': { id: 'radiofrecventa', name: 'Red Sculpt', zones: ['Abdomen', 'Coapse', 'Brațe'], need: 'corp', ph: 'concern-cellulite-2.webp', b: ['Reduce aspectul de celulită', 'Strânge pielea'] },
   'hifu-o-zona-corporala-1-sedinta': { id: 'hifu-corp', name: 'HIFU', zones: ['Abdomen', 'Brațe', 'Coapse', 'Gambe', 'Zona lombară'], need: 'corp', ph: 'concern-belly-2.webp', b: ['Strânge pielea lăsată', 'Lifting fără operație'] },
   'impachetare-impachetare-la-cald-1-sedinta': { id: 'impachetare', name: 'Împachetare la cald', need: 'corp', ph: 'concern-detox.webp', b: ['Detoxifiere și drenaj', 'Piele mai netedă'] },
   'hifu-o-zona-mica-faciala-1-sedinta': { id: 'hifu', name: 'HIFU', zones: ZF, need: 'gusa', ph: 'concern-gusa.webp', b: ['Strânge pielea de sub bărbie', 'Fără ace, fără pauză'] },
