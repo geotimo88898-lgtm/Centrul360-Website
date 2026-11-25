@@ -2,96 +2,115 @@
   "liposonix": {
     "img": "/brand_asset/tratamente/liposonix.webp?v=2",
     "full": true,
-    "pos": "50% 55%"
+    "pos": "50% 55%",
+    "w": [300, 600]
   },
   "cavitatie": {
     "img": "/brand_asset/tratamente/cavitatie.webp?v=2",
     "full": true,
-    "pos": "50% 42%"
+    "pos": "50% 42%",
+    "w": [300, 600]
   },
   "ems": {
     "img": "/brand_asset/tratamente/ems.webp?v=2",
     "full": true,
-    "pos": "50% 42%"
+    "pos": "50% 42%",
+    "w": [300, 600]
   },
   "radiofrecventa": {
     "img": "/brand_asset/tratamente/radiofrecventa.webp?v=2",
     "full": true,
-    "pos": "50% 55%"
+    "pos": "50% 55%",
+    "w": [300, 600]
   },
   "hifu-corp": {
     "img": "/brand_asset/tratamente/hifu-corp.webp?v=2",
     "full": true,
-    "pos": "50% 55%"
+    "pos": "50% 55%",
+    "w": [300, 600]
   },
   "impachetare": {
     "img": "/brand_asset/tratamente/impachetare.webp?v=2",
     "full": true,
-    "pos": "50% 40%"
+    "pos": "50% 40%",
+    "w": [300, 600]
   },
   "hifu": {
     "img": "/brand_asset/tratamente/hifu.webp?v=2",
     "full": true,
-    "pos": "50% 30%"
+    "pos": "50% 30%",
+    "w": [300, 600]
   },
   "biolifting": {
     "img": "/brand_asset/tratamente/biolifting.webp?v=2",
     "full": true,
-    "pos": "50% 28%"
+    "pos": "50% 28%",
+    "w": [300, 600]
   },
   "hifu-full-face": {
     "img": "/brand_asset/tratamente/hifu-full-face.webp?v=2",
     "full": true,
-    "pos": "50% 38%"
+    "pos": "50% 38%",
+    "w": [300, 600]
   },
   "biolifting-full-face": {
     "img": "/brand_asset/tratamente/biolifting-full-face.webp?v=2",
     "full": true,
-    "pos": "50% 35%"
+    "pos": "50% 35%",
+    "w": [300, 600]
   },
   "restart": {
     "img": "/brand_asset/tratamente/restart.webp?v=2",
     "full": true,
-    "pos": "50% 40%"
+    "pos": "50% 40%",
+    "w": [300, 600]
   },
   "masaj-facial": {
     "img": "/brand_asset/tratamente/masaj-facial.webp?v=2",
     "full": true,
-    "pos": "50% 38%"
+    "pos": "50% 38%",
+    "w": [300, 600]
   },
   "hidratare": {
     "img": "/brand_asset/tratamente/hidratare.webp?v=2",
     "full": true,
-    "pos": "50% 40%"
+    "pos": "50% 40%",
+    "w": [300, 600]
   },
   "antirid": {
     "img": "/brand_asset/tratamente/antirid.webp?v=2",
     "full": true,
-    "pos": "50% 33%"
+    "pos": "50% 33%",
+    "w": [300, 600]
   },
   "redness": {
     "img": "/brand_asset/tratamente/redness.webp?v=2",
     "full": true,
-    "pos": "50% 38%"
+    "pos": "50% 38%",
+    "w": [300, 600]
   },
   "sebum-off": {
     "img": "/brand_asset/tratamente/sebum-off.webp?v=2",
     "full": true,
-    "pos": "50% 38%"
+    "pos": "50% 38%",
+    "w": [300, 600]
   },
   "microneedling": {
     "img": "/brand_asset/tratamente/microneedling.webp?v=2",
     "full": true,
-    "pos": "50% 42%"
+    "pos": "50% 42%",
+    "w": [300, 600]
   },
   "periocular": {
     "img": "/brand_asset/tratamente/periocular.webp?v=2",
     "full": true,
-    "pos": "50% 45%"
+    "pos": "50% 45%",
+    "w": [300, 600]
   },
   "epilare": {
     "img": "/brand_asset/tratamente/epilare.webp?v=2",
     "full": true,
-    "pos": "50% 45%"
+    "pos": "50% 45%",
+    "w": [300, 600]
   }
 }

@@ -40,6 +40,10 @@
 .bfh-h .l2,.bfh-h .l3{ font-size:.46em; font-weight:600; line-height:1.2; letter-spacing:-.028em; color:rgba(245,245,247,.7); }
 .bfh-h b{ font-weight:800; color:#fff; }
 .bfh-w > [data-tm],.bfh-w > .tm{ grid-area:tm; margin-top:24px; }
+/* the timer's place, kept until v2/shop.js writes it (its label line, 11px at the page's 1.6, the gap and the 66px cells), so
+   nothing under it moves when it comes (speed, 25.11) */
+.bfh-w > div[data-tm]:empty{ min-height:94.6px; }
+@media (max-width:360px){ .bfh-w > div[data-tm]:empty{ min-height:90.6px; } }
 .bfh-w > .bfs{ grid-area:s; }
 .bfh-all{ grid-area:b; margin-top:22px; display:inline-flex; align-items:center; gap:10px; height:50px; padding:0 24px; border-radius:999px; font-size:15.5px; font-weight:600; letter-spacing:-.01em;
   color:#0b0b0d !important; background:#fff; box-shadow:0 0 0 1px rgba(255,255,255,.4), 0 14px 34px -14px rgba(242,198,181,.45); transition:transform .5s var(--e), box-shadow .5s var(--e); }

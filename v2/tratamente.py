@@ -52,6 +52,10 @@ def pic(x):
     if a.get('img'): return a['img'], True
     f = PHOTO.get(x['id'], ('concern-stralucire', '50% 40%'))[0]
     return '/brand_asset/%s.webp' % f, False
+def small(x, src, w):
+    """the smaller copy of the treatment's picture (v2/tools/pic-sizes.py, art.json "w"), where it is shown small (speed, 25.11)"""
+    a = art(x)
+    return re.sub(r'\.webp(\?|$)', '-%d.webp\\1' % w, src, count=1) if src == a.get('img') and w in (a.get('w') or []) else src
 def pic_pos(x): return PHOTO.get(x['id'], ('', '50% 40%'))[1]
 def full_pos(x):
     """a full photo's focal point (v2/art.json 'pos'), else a little above the middle"""
@@ -733,7 +737,8 @@ def page(x):
     # ---- 3. the real results: only the approved set, only this treatment
     if x.get('results'):
         rs = x['results']
-        figs = ''.join('<figure class="tp-case rv" style="--ar:%.4f"><img src="%s" alt="Înainte și după: %s, %s" width="%d" height="%d" loading="lazy" decoding="async"><figcaption><small>Cazul %s</small><b>%s</b><span>%s</span></figcaption></figure>' % (
+        # the pictures wait in data-src: the shell puts them in after the page has loaded, when the row comes near (speed, 25.11)
+        figs = ''.join('<figure class="tp-case rv" style="--ar:%.4f"><img data-src="%s" alt="Înainte și după: %s, %s" width="%d" height="%d" loading="lazy" decoding="async"><figcaption><small>Cazul %s</small><b>%s</b><span>%s</span></figcaption></figure>' % (
             r['w'] / r['h'], e(r['src']), e(r['title']), e(r['sub']), r['w'], r['h'], e(r['case']), e(r['title']), e(r['sub'])) for r in rs)
         out.append('<section class="tp-s tp-res" id="rezultate"><div class="wrap">%s<div class="tp-cases n%d">%s</div><p class="tp-note">%s</p></div></section>' % (
             head('Rezultate reale', x.get('resultsH') or 'Nu promitem. <em>Îți arătăm.</em>', x.get('resultsLead') or 'Clientele noastre, fotografiate la noi, înainte și după.'),
@@ -832,6 +837,7 @@ def page(x):
         q = BY.get(p['id'])
         if not q: continue
         qi, qown = pic(q)
+        qi = small(q, qi, 300)
         prs.append('<article class="tp-pair rv" data-tp-pair="%s"><a class="th" href="{{base}}tratament-%s" tabindex="-1" aria-hidden="true"><img src="%s" alt="" loading="lazy" decoding="async" style="object-position:%s"></a>'
                    '<div class="tx"><a href="{{base}}tratament-%s"><b>%s</b></a><p>%s</p><span class="pz"><b data-tp-pp>%s</b> <s data-tp-pf>%s</s></span></div>'
                    '<button type="button" class="tp-plus" data-tp-plus="%s" aria-label="Adaugă %s în coș">%s</button></article>' % (
@@ -841,7 +847,7 @@ def page(x):
     for p in (x.get('epiPairs') or []):
         row = [z for z in EPI if z['key'] == p['key'] and z['g'] == 'f'] or [z for z in EPI if z['key'] == p['key']]
         if not row: continue
-        z = row[0]; qi, _ = pic(x)
+        z = row[0]; qi, _ = pic(x); qi = small(x, qi, 300)
         prs.append('<article class="tp-pair rv" data-tp-ekey="%s"><a class="th" href="#cumpara" tabindex="-1" aria-hidden="true"><img src="%s" alt="" loading="lazy" decoding="async"></a>'
                    '<div class="tx"><a href="#cumpara"><b data-tp-en>Epilare %s</b></a><p>%s</p><span class="pz"><b data-tp-pp>%s</b> <s data-tp-pf>%s</s></span></div>'
                    '<button type="button" class="tp-plus" data-tp-plus="%s" aria-label="Adaugă Epilare %s în coș">%s</button></article>' % (
