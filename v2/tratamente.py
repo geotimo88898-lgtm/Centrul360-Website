@@ -598,6 +598,97 @@ def trust(x):
     return ('<ul class="tp-trust"><li><a href="#recenzii">%s<span><b>5,0</b> Google · 300+ recenzii</span></a></li><li>%s<span>Plată securizată</span></li><li>%s<span>%s</span></li></ul>'
             % (GLOGO, icon('lock'), icon('pin'), city))
 
+# ---------------------------------------------------------------- how it works: the site's own explainers (the owner, 25.11)
+# „ai paginile științifice făcute, iei animațiile și le pui pe product page cele care se potrivesc, unde nu merge faci unele
+# noi”: the animated explainers of the content pages (v2/src/<page>.html, figure.card.proc + its CSS, driven by kit.js), reused
+# where the mechanism is the same (the words fitted to the treatment), and new ones in the same hand in v2/src/_proc/<id>.html.
+PROC = {
+    'liposonix': ('grasime-localizata', {}),
+    'hifu-corp': ('grasime-localizata', {
+        'text': [('APLICATORUL LIPOSONIX', 'APLICATORUL HIFU')],
+        'aria': 'Aplicatorul HIFU trimite ultrasunete focalizate prin piele, fără să o afecteze; în punctele țintite celulele de grăsime sunt distruse și țesutul se strânge, iar corpul elimină celulele în săptămânile următoare.',
+        'steps': [('1 · Ultrasunetele focalizate', 'trec prin piele fără să o afecteze'), ('2 · Punct cu punct', 'grăsimea e distrusă, țesutul se strânge'), ('3 · Corpul', 'elimină natural celulele, în săptămânile următoare')]}),
+    'cavitatie': ('grasime-localizata', {
+        'text': [('APLICATORUL LIPOSONIX', 'CAVITAȚIE')],
+        'aria': 'Cavitația trimite unde de ultrasunete de joasă frecvență prin piele, până în stratul de grăsime; depozitele din zona tratată sunt lucrate, iar corpul elimină treptat grăsimea în săptămânile următoare.',
+        'steps': [('1 · Undele de joasă frecvență', 'ajung în stratul de grăsime'), ('2 · Depozitele de grăsime', 'din zona tratată sunt lucrate'), ('3 · Corpul', 'elimină treptat grăsimea, în săptămânile următoare')]}),
+    'ems': ('tonifiere-musculara', {}),
+    'epilare': ('epilare-laser', {}),
+    'radiofrecventa': ('celulita', {}),
+    'hifu': ('gusa-barbie-dubla', {}),
+    'rf-sculpt-gusa': ('gusa-barbie-dubla', {
+        'text': [('PUNCTE DE ENERGIE', 'RADIOFRECVENȚĂ'), ('SE RIDICĂ', 'SE STRÂNGE')],
+        'aria': 'Aplicatorul de radiofrecvență încălzește controlat țesutul de sub bărbie; pielea se strânge, iar masajul modelator și colagenul nou redefinesc linia mandibulei în săptămânile următoare.',
+        'steps': [('1 · Radiofrecvența', 'tonifiază pielea și stimulează colagenul'), ('2 · Masajul modelator', 'remodelează zona, pentru rezultate accelerate'), ('3 · Colagen nou', 'linia mandibulei se redefinește')]}),
+    'biolifting': ('gusa-barbie-dubla', {
+        'text': [('PUNCTE DE ENERGIE', 'CĂLDURĂ ÎN DERMĂ'), ('SE RIDICĂ', 'SE STRÂNGE')],
+        'aria': 'BioLifting duce energie termică controlată în dermă; fibrele de colagen se contractă și pielea se strânge, iar colagenul nou face pielea mai fermă în săptămânile următoare.',
+        'steps': [('1 · Energia', 'ajunge în dermă, controlat'), ('2 · Fibrele de colagen', 'se contractă, pielea se strânge'), ('3 · Colagen nou', 'pielea devine mai fermă')]}),
+    'hifu-full-face': ('riduri-linii-fine', {
+        'text': [('HIFU · BIOLIFTING', 'HIFU')],
+        'aria': 'Aplicatorul HIFU trimite energie prin piele până în straturile profunde; fibrele de colagen se contractă și pielea se strânge, apoi colagenul nou estompează treptat ridurile.',
+        'steps': [('1 · Energia', 'ajunge în profunzime (HIFU)'), ('2 · Fibrele de colagen', 'se contractă, pielea se strânge'), ('3 · Colagen nou', 'ridurile se estompează treptat')]}),
+    'biolifting-full-face': ('riduri-linii-fine', {
+        'text': [('HIFU · BIOLIFTING', 'BIOLIFTING')],
+        'aria': 'BioLifting trimite energie termică prin piele până în dermă; fibrele de colagen se contractă și pielea se strânge, apoi colagenul nou estompează treptat ridurile.',
+        'steps': [('1 · Energia', 'ajunge în dermă (BioLifting)'), ('2 · Fibrele de colagen', 'se contractă, pielea se strânge'), ('3 · Colagen nou', 'ridul se estompează treptat')]}),
+    'rf-sculpt-full-face': ('riduri-linii-fine', {
+        'text': [('HIFU · BIOLIFTING', 'RADIOFRECVENȚĂ')],
+        'aria': 'Radiofrecvența încălzește controlat dermul; fibrele de colagen se contractă și pielea se strânge, iar masajul modelator și colagenul nou tonifiază toată fața.',
+        'steps': [('1 · Radiofrecvența', 'ajunge în dermă, cu masaj modelator'), ('2 · Fibrele de colagen', 'se contractă, pielea se strânge'), ('3 · Colagen nou', 'fața e tonifiată și remodelată')]}),
+    'restart': ('ten-lipsit-de-stralucire', {}),
+    'hidratare': ('ten-lipsit-de-stralucire', {
+        'steps': [('1 · Pielea deshidratată', 'are bariera slăbită și împrăștie lumina'), ('2 · Exfoliem blând', 'și rehidratăm în profunzime'), ('3 · Bariera e întărită', 'pielea strălucește')]}),
+    'microneedling': ('pete-pigmentare', {}),
+    'periocular': ('pete-pigmentare', {
+        'text': [('>PETE<', '>CEARCĂNE<'), ('>TON UNIFORM<', '>ZONĂ ODIHNITĂ<'), ('>EXOZOMI + PDRN<', '>HIDRATARE<'), ('>SPF ZILNIC<', '>LINII FINE<')],
+        'aria': 'Microneedlingul deschide micro-canale fine în pielea din jurul ochilor; pielea primește hidratare și se reînnoiește, iar cearcănele și liniile fine sunt lucrate țintit.',
+        'steps': [('1 · Micro-canale fine', 'pornesc reînnoirea pielii din jurul ochilor'), ('2 · Pielea', 'primește hidratare și se reînnoiește'), ('3 · Cearcănele și liniile fine', 'sunt lucrate țintit')]}),
+    'sebum-off': ('ten-problematic', {}),
+    'impachetare': ('_proc/impachetare', {}),
+    'masaj-facial': ('_proc/masaj-facial', {}),
+    'redness': ('_proc/redness', {}),
+    'antirid': ('_proc/antirid', {}),
+}
+# a video of the site that tells the same story (x['video'] wins)
+VSL = {
+    'rf-sculpt-gusa': {'src': '/brand_asset/vsl/gusa-barbie-dubla-169.mp4', 'poster': '/brand_asset/vsl/gusa-barbie-dubla-169.webp', 'ratio': '16/9',
+                       'title': 'De unde vine gușa și cum o tratăm.', 'sub': 'Video · 87 de secunde, cu Nuki'},
+}
+
+
+def proc_fig(x):
+    """the explainer of a content page (or of v2/src/_proc/<id>.html), with the words of this treatment: (css, figure) or None"""
+    src, ov = PROC.get(x['id'], (None, None))
+    if not src: return None
+    f = os.path.join(SRC, src + '.html')
+    if not os.path.exists(f): return None
+    s = open(f, encoding='utf-8').read()
+    m = re.search(r'<figure class="card proc[^"]*"[^>]*>.*?</figure>', s, re.S)
+    if not m: return None
+    fig = m.group(0)
+    toks = set()
+    for c in re.findall(r'class="([^"]*)"', fig): toks.update(t for t in c.split() if re.match(r'^[a-z]{1,4}-[a-z0-9-]+$', t))
+    lines = [l for st in re.findall(r'<style>(.*?)</style>', s, re.S) for l in st.split('\n')
+             if l.strip() and any(re.search(r'\.' + re.escape(t) + r'(?![\w-])', l) for t in toks)]
+    names = set(re.findall(r'animation-name:\s*([\w-]+)', '\n'.join(lines)))
+    have = set(re.findall(r'@keyframes\s+([\w-]+)', '\n'.join(lines)))
+    for st in re.findall(r'<style>(.*?)</style>', s, re.S):
+        for l in st.split('\n'):
+            k = re.findall(r'@keyframes\s+([\w-]+)', l)
+            if k and any(n in names and n not in have for n in k) and l not in lines: lines.append(l)
+    css = '\n'.join(lines)
+    # the shop's pages use tp- for their own parts: an explainer drawn with tp- gets another prefix here
+    if any(t.startswith('tp-') for t in toks):
+        fig = re.sub(r'(?<=[\s"])tp-', 'tpq-', fig); css = re.sub(r'\.tp-', '.tpq-', css)
+    for a, b in (ov.get('text') or []): fig = fig.replace(a, b)
+    if ov.get('aria'): fig = re.sub(r'(<svg[^>]*aria-label=")[^"]*(")', lambda mm: mm.group(1) + e(ov['aria']) + mm.group(2), fig, count=1)
+    if ov.get('steps'):
+        li = ''.join('\n      <li><b>%s</b>%s</li>' % (e(b), e(t)) for b, t in ov['steps'])
+        fig = re.sub(r'<ol class="psteps">.*?</ol>', '<ol class="psteps">%s\n    </ol>' % li, fig, count=1, flags=re.S)
+    return css, fig
+
+
 def page(x):
     i = x['id']; ppid = x.get('pp') or i; epi = i == 'epilare'
     zones = x.get('zones') or []; sess = x.get('sess') or [1, 3, 6]; full = x['full']
@@ -644,12 +735,18 @@ def page(x):
         loop = ('<figure class="tp-loop rv"><div class="ph"><video muted loop playsinline preload="none" poster="%s" data-tp-auto data-src="%s" aria-label="%s"></video><span class="tp-ill lt">Ilustrație 3D</span></div></figure>'
                 % (e(ar.get('poster') or ''), e(ar['video']), e('Cum funcționează ' + x['name'] + ', în 3D')))
     vid = ''
-    v = x.get('video')
+    v = x.get('video') or VSL.get(x['id'])
     if v:
         vid = ('<div class="tp-vsl">%s<figure class="tp-vid rv%s"><div class="ph"><video src="%s" poster="%s" playsinline preload="none" aria-label="%s"></video><button type="button" class="tp-play" data-tp-play aria-label="Pornește video-ul">%s</button></div><figcaption><b>%s</b><span>%s</span></figcaption></figure></div>'
                % (eyebrow('Video · pe scurt'), ' wide' if v.get('ratio') else '', e(v['src']), e(v['poster']), e(v['title']), icon('play'), e(v['title']), e(v['sub'])))
-    out.append('<section class="tp-s tp-how" id="cum-functioneaza"><div class="wrap">%s%s<div class="tp-how-g"><figure class="tp-anim a-%s" data-tp-anim data-step="0">%s<figcaption>%s<span class="tp-ill">Ilustrație</span></figcaption></figure><ol class="tp-steps">%s</ol></div>%s</div></section>' % (
-        head('Cum funcționează', x['how']['h'], x['how']['text']), loop, a, svg, leg, steps, vid))
+    pr = proc_fig(x)
+    if pr:
+        css, fig = pr
+        out.append('<section class="tp-s tp-how" id="cum-functioneaza"><div class="wrap">%s%s<div class="tp-proc">%s%s</div>%s</div></section>' % (
+            head('Cum funcționează', x['how']['h'], x['how']['text']), loop, ('<style>\n%s\n</style>' % css) if css else '', fig, vid))
+    else:
+        out.append('<section class="tp-s tp-how" id="cum-functioneaza"><div class="wrap">%s%s<div class="tp-how-g"><figure class="tp-anim a-%s" data-tp-anim data-step="0">%s<figcaption>%s<span class="tp-ill">Ilustrație</span></figcaption></figure><ol class="tp-steps">%s</ol></div>%s</div></section>' % (
+            head('Cum funcționează', x['how']['h'], x['how']['text']), loop, a, svg, leg, steps, vid))
 
     # ---- 5. the zones: tap one, it is chosen in the buy box
     mz = x.get('mapZones') or []
