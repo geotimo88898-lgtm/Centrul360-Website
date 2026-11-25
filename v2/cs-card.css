@@ -701,3 +701,7 @@ html.cs-bfwait .csc-xmas > .wrap, html.cs-bfwait .csc-xmas > .csc-snow{ opacity:
 .cs-bf .csc-xmas h1 em{ color:#f2c6b5; -webkit-text-fill-color:#f2c6b5; }
 @media (max-width:640px){ .cs-bf .csc-xmas{ padding-top:100px; } .cs-bf .bf-mark{ font-size:12.5px; letter-spacing:.2em; } }
 @media (min-width:921px){ .cs-bf .csc-xmas{ padding-top:124px; } }
+/* no booking of the card in the clinic (the owner, 25.11: „ștergem opțiunea de a rezerva cardul în clinică”): only online; the VIP
+   card without an online link keeps its call to the clinic */
+.cst-go:not(.cs-vipcall) [data-cs-reserve],.cs-c:not(.cs-vipcall) [data-cs-reserve]{ display:none !important; }
+.cst-go:not(.cs-vipcall) [data-bf-note],.cs-c:not(.cs-vipcall) [data-bf-note]{ display:none !important; }
