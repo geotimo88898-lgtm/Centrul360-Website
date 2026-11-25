@@ -574,3 +574,13 @@ body.tp-buy-on .sh-bar{ transform:translateY(calc(100% + 40px)) !important; visi
 /* (above the cookie question while it is open: pp.js sets its bottom; it comes down softly once she answers) */
 .tp-bar{ transition:transform .65s var(--e), visibility 0s linear .65s, bottom .5s var(--e); }
 .tp-bar.on{ transition:transform .65s var(--e), visibility 0s, bottom .5s var(--e); }
+
+/* easy for every age (the owner, 25.11): no text under 12px on the treatment pages, the small print a step bigger */
+.tp-eye{ font-size:12.5px; }
+.tp-tag,.tp-cd-l,.tp-l,.tp-pct,.tp-leg{ font-size:13.5px; }
+.tp-fine{ font-size:14px; }
+.tp-bf,.tp-tm small{ font-size:12px; }
+.tp-tm{ font-size:13px; }
+.tp .tp-cells.sm small,.tp-cells small,.tp-pick small,.tp-bag i{ font-size:11.5px; }
+.tp-case small,.tp-ill{ font-size:12px; }
+.tp-steps .n{ font-size:13px; }
