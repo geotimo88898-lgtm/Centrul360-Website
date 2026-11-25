@@ -123,8 +123,10 @@
   // the sessions she can pick (the owner: 1×, 3×, 6×, or 1×, 2×, 3× for HIFU, HIFU Full Face, HIFU corp and Liposonix)
   var sessOf = function (p) { return /^(hifu|hifu-full-face|hifu-corp|liposonix)$/.test(p.id) ? [1, 2, 3] : [1, 3, 6]; };
   var nOf = function (p) { var n = S.n[p.id]; return sessOf(p).indexOf(n) > -1 ? n : 1; };
-  var urlOf = function (p) { return BASE + 'tratament-' + (p.need === 'epilare' ? 'epilare' : p.id); };
-  var artOf = function (p) { return ART[p.id] || (p.need === 'epilare' && ART.epilare) || null; };
+  var urlOf = function (p) { return BASE + 'tratament-' + (p.need === 'epilare' ? 'epilare' : p.base || p.id); };
+  var artOf = function (p) { return ART[p.id] || (p.base && ART[p.base]) || (p.need === 'epilare' && ART.epilare) || null; };
+  // „Toate zonele”: a treatment with zones has a twin <id>-toate (one session on every zone, its own price)
+  var ALLZ = '__toate', twinOf = function (p) { return p && !p.base ? byId(p.id + '-toate') : null; };
   var picOf = function (p) { var a = artOf(p); return (a && a.img) || p.photo; };
   // a whole photo on black (v2/art.json full, the owner 25.11): its focal point goes on every <img> that shows it
   var fullOf = function (p) { var a = artOf(p); return !!(a && a.img && a.full); };
@@ -637,6 +639,14 @@
   // the zone chips of a line: its own zone is checked; a zone already in the cart on another line is shown as such and cannot be
   // picked (two lines never merge by surprise); „+ Încă o zonă” adds a new line with a zone not yet in the cart
   function zoneChips(p, zone, attr, k) {
+    // the popover: the twin („Toate zonele”) shows its treatment's zones to go back to one, the treatment shows „Toate zonele”
+    if (attr === 'data-pzone' && (p.base || twinOf(p))) {
+      var bp = p.base ? byId(p.base) : p;
+      return bp.zones.map(function (x) {
+        var on = !p.base && x === zone, other = !on && !!lineOf(bp.id, x);
+        return '<button type="button" role="radio" data-pzone="' + esc(x) + '" aria-checked="' + on + '"' + (other ? ' disabled class="tk"' : '') + '>' + (on ? I.check : '') + esc(x) + (other ? '<small>în coș</small>' : '') + '</button>';
+      }).join('') + '<button type="button" role="radio" data-pzone="' + ALLZ + '" aria-checked="' + !!p.base + '" class="all">' + (p.base ? I.check : '') + 'Toate zonele</button>';
+    }
     return p.zones.map(function (x) {
       var other = x !== zone && !!lineOf(p.id, x);
       return '<button type="button" role="radio" ' + attr + '="' + esc(x) + '"' + (k ? ' data-k="' + esc(k) + '"' : '') + ' aria-checked="' + (x === zone) + '"' + (other ? ' disabled class="tk" aria-label="' + esc(x) + ', deja în coș"' : '') + '>' + I.check + esc(x) + '</button>';
@@ -647,7 +657,7 @@
       '<div class="sp-h"><span class="sp-ok">' + I.check + '</span><b>Adăugat în coș</b><button type="button" class="sh-ic" data-pop-x aria-label="Închide">' + I.x + '</button></div>' +
       '<div class="sp-it"><span class="th"><img src="' + esc(picW(p, 300)) + '" alt=""' + posOf(p) + '></span><div><b data-sp-n>' + esc(nameOf(p, zone)) + '</b><small>Black Friday -' + pct() + '% · ' + p.minutes + ' min</small>' + onlyHtml(p, 'sp-c') + '</div>' +
       '<div class="pz"><b data-sp-p>' + lei(p.price * qty) + '</b><s data-sp-f>' + lei(p.full * qty) + '</s></div></div>' +
-      (p.zones.length ? '<p class="sp-l">Alege zona</p><div class="sh-chips" role="radiogroup" aria-label="Zona" data-sp-z>' + zoneChips(p, zone, 'data-pzone') + '</div>' +
+      (p.zones.length || p.base ? '<p class="sp-l">Alege zona</p><div class="sh-chips" role="radiogroup" aria-label="Zona" data-sp-z>' + zoneChips(p, zone, 'data-pzone') + '</div>' +
         '<button type="button" class="sh-addz" data-pzadd' + (freeZone(p) ? '' : ' hidden') + '>' + I.plus + 'Încă o zonă</button>' : '') +
       '<div class="sp-row"><span>Ședințe<small data-sp-u>' + (qty > 1 ? lei(p.price) + ' / ședință' : 'o ședință') + '</small></span>' + stepHtml('pop', qty, 1) + '</div>' +
       // the next step is the clinic and the hour (the cart stays one tap back, with what goes well with it)
@@ -710,8 +720,22 @@
     popPaint(); repaint(p.id);
   }
 
+  // from one zone to „Toate zonele” and back: the line becomes the other product, with the same sessions
+  function popSwap(toId, toZone) {
+    var l = lineOf(pop.id, pop.zone), q = l ? l.qty : 1, from = pop.id;
+    if (l) setQty(keyOf(pop.id, pop.zone), -99);
+    if (!lineOf(toId, toZone)) add(toId, toZone, q);
+    pop.id = toId; pop.zone = toZone; if (toZone) S.zone[toId] = toZone;
+    var l2 = lineOf(toId, toZone);
+    pop.el.innerHTML = popHtml(byId(toId), toZone, l2 ? l2.qty : q);
+    repaint(from); repaint(toId);
+  }
   function popZone(zone) {
-    if (!pop || zone === pop.zone) return;
+    if (!pop) return;
+    var pc = byId(pop.id);
+    if (zone === ALLZ) { var tw = twinOf(pc); if (tw) popSwap(tw.id, ''); return; }
+    if (pc && pc.base) { popSwap(pc.base, zone); return; }
+    if (zone === pop.zone) return;
     setZone(keyOf(pop.id, pop.zone), zone);
     pop.zone = zone; S.zone[pop.id] = zone;
     popPaint();
