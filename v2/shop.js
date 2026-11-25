@@ -429,8 +429,7 @@
     return '<article class="bfc bft' + (mine ? ' in' : '') + '" data-p="' + esc(p.id) + '" data-href="' + u + '" data-w="1">' +
       '<span class="pic" aria-hidden="true"><img ' + tileImg(p) + ' alt=""' + (k === 0 ? ' fetchpriority="high"' : k < 4 ? '' : ' loading="lazy"') + ' decoding="async"' + posOf(p) + '></span>' +
       '<span class="pct">-' + pct() + '%</span>' + onlyHtml(p, 'bft-c') +
-      '<div class="bft-b"><span class="k">' + esc(NEED[p.need] || '') + '</span>' +
-      '<h3><a href="' + u + '">' + esc(nameOf(p, z)) + '</a></h3>' +
+      '<div class="bft-b"><h3><a href="' + u + '">' + esc(nameOf(p, z)) + '</a></h3>' +
       '<div class="pr"><b data-pr>' + lei(p.price * n) + '</b><s data-full>' + lei(p.full * n) + '</s></div>' +
       '<button type="button" class="btn book gold bfc-cta" data-add>' + ctaHtml(mine) + '</button></div></article>';
   }
@@ -445,7 +444,31 @@
       (epi ? '<div class="epi"><div class="epi-h"><b>Pe zone</b><div class="seg" role="radiogroup" aria-label="Pentru"><i class="sg-i" aria-hidden="true"></i><button type="button" role="radio" data-g="f" aria-checked="' + (EPI.g === 'f') + '">Femei</button><button type="button" role="radio" data-g="m" aria-checked="' + (EPI.g === 'm') + '">Bărbați</button></div></div><ul data-epi aria-label="' + zones + ' zone"></ul>' +
       '<a class="epi-more" href="' + BASE + 'tratament-epilare">Tot despre epilarea laser' + I.chev + '</a></div>' : '');
     if (anim && !reduce) $$('.bfc, .epi', g).forEach(function (c, k) { c.style.setProperty('--k', Math.min(k, 8)); c.classList.add('enter'); c.addEventListener('animationend', function () { c.classList.remove('enter'); }, { once: true }); });
-    watch(g); epiList(); thumbAll();
+    watch(g); epiList(); thumbAll(); smooth(g);
+  }
+  // the scroll (the owner, 25.11: „uniform și scroll experience nice”): a picture fades in when it arrives (no pop), and the
+  // cards under the first screen rise gently into view, once, a row at a time (the first screen shows at once)
+  function smooth(g) {
+    $$('.bft .pic img', g).forEach(function (im) {
+      if (im.complete && im.naturalWidth) return;
+      im.classList.add('ld');
+      var done = function () { im.classList.toggle('ld', false); };
+      im.addEventListener('load', done, { once: true }); im.addEventListener('error', done, { once: true });
+    });
+    if (reduce || !('IntersectionObserver' in window)) return;
+    var cols = (getComputedStyle(g).gridTemplateColumns || '').split(' ').length || 2, vh = innerHeight;
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var c = e.target; io.unobserve(c);
+        c.classList.add('up');
+        setTimeout(function () { c.classList.toggle('rise', false); c.classList.toggle('up', false); }, 1100);
+      });
+    }, { rootMargin: '0px 0px -6% 0px' });
+    $$('.bft', g).forEach(function (c, k) {
+      if (c.getBoundingClientRect().top < vh) return;
+      c.style.setProperty('--c', k % cols); c.classList.add('rise'); io.observe(c);
+    });
   }
   function epiList() {
     var ul = $('[data-epi]');

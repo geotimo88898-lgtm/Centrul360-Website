@@ -799,3 +799,17 @@ body:has(.sh-pop.on) .ck{ opacity:0 !important; pointer-events:none !important; 
 /* the offers' filters scroll with the page (the owner, 25.11: „nu-l vreau sticky”) */
 .bfo-f{ position:relative; top:auto; }
 body:has(.top.away) .bfo-f{ top:auto; }
+
+/* the grid's cards (the owner, 25.11: „prea mare, un card prea lung; fă-l uniform și un scroll plăcut”): a shorter picture (4:3),
+   no category line (the chips say it), every card the same height; the pictures fade in when they arrive and the cards under the
+   first screen rise gently into view, once (shop.js smooth) */
+.bft > .pic{ aspect-ratio:4 / 3; }
+.bft > .pic img{ transition:opacity .6s var(--e), transform .9s var(--e); -webkit-mask-image:linear-gradient(to bottom,#000 74%,transparent); mask-image:linear-gradient(to bottom,#000 74%,transparent); }
+.bft > .pic img.ld{ opacity:0; }
+.bft-b{ margin-top:-12px; padding:0 12px 12px; }
+.bft h3{ margin:0; font-size:15.5px; line-height:1.22; min-height:2.44em; }
+.bft .pr{ margin-top:6px; }
+.bft .btn.book{ height:40px; font-size:13.5px; }
+.bft.rise{ opacity:0; transform:translateY(16px); }
+.bft.rise.up{ opacity:1; transform:none; transition:opacity .7s var(--e), transform .9s var(--e); transition-delay:calc(var(--c, 0) * 80ms); }
+@media (min-width:700px){ .bft h3{ font-size:16.5px; } .bft .btn.book{ height:42px; font-size:14px; } .bft-b{ padding:0 14px 14px; } }

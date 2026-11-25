@@ -225,6 +225,19 @@ globalThis.__C360_ROUTE = (request) => {
   return route(request, ENV, ctx);
 };
 
+// Android's dark theme (Chrome „Darken websites”, Samsung Internet) repainted the site's pages by itself, light into dark,
+// and broke them (the owner, 25.11: „pe un browser cu dark theme, mai ales pe Android, arată rău”). Every page of the site
+// says it is light only (the pages with their own dark design keep it: their :root color-scheme wins); the portal keeps
+// its own light and dark themes
+function lightOnly(request, r) {
+  try {
+    const u = new URL(request.url), p = u.pathname;
+    if (u.hostname === "admin.centrul360.com" || u.hostname === "staff.centrul360.com" || /^\/(creative|api|portal|fise|academy)/.test(p)) return r;
+    if (!r || r.status !== 200 || !/text\/html/.test(r.headers.get("content-type") || "") || typeof HTMLRewriter === "undefined") return r;
+    return new HTMLRewriter().on("head", { element(el) { el.prepend('<meta name="color-scheme" content="only light">', { html: true }); } }).transform(r);
+  } catch (e) { return r; }
+}
+
 // security headers (audit 8.11): HTTPS always; the portal (admin/staff) can be framed only by itself (Creative opens
 // inside it), never by another site; no MIME sniffing on its files
 function secure(request, r) {
@@ -249,7 +262,7 @@ export default {
     globalThis.__C360_SELF_HOST = new URL(request.url).host;
     await loadSecrets(env, SHARED);
     const r = await als.run({ ctx }, () => route(request, env, ctx));
-    return secure(request, r);
+    return secure(request, lightOnly(request, r));
   },
   // din oră în oră la :17 UTC (wrangler.jsonc): automatizările de fiecare dată (mesajele la rând, leadurile noi, paza
   // reclamelor, schimbările cerute o dată), la 05 întâi producția automată de creative, la 06 automatizările întregi
