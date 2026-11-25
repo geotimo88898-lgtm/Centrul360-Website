@@ -1007,6 +1007,79 @@
   function bundleSave(k) {
     return (k.parts || []).reduce(function (s, x) { var q = byId(x.id), b = q && (q.base ? byId(q.base) : q); return s + (b ? b.price * x.n * (q.pack || 1) : 0); }, 0) - k.price;
   }
+  // ================= her plan: packages made on the spot from what she has in the cart =================
+  // (the owner, 25.11: „un generator de pachete, personalizate din ce bagă în coș, să nu pierdem valoare: Liposonix abdomen și
+  // Liposonix zona lombară → pachet pentru amândouă, nu doar pentru abdomen; corporal și facial → un pachet pentru corp și unul
+  // pentru față; o soluție completă pentru orice caută”). Her treatments (a session or a package of sessions, not a problem package
+  // she already took, not the card) go in groups: body, face (gușă included), epilation. In a group, one package that holds all of
+  // them on the same zone when there is one; else the best package for each treatment and zone. Two plans: the recommended one
+  // (the solutions) and the complete one (the complete packages); „Aleg planul” puts the plan in place of those sessions.
+  var GRP = { corp: 'corp', gusa: 'fata', fata: 'fata', epilare: 'epilare' };
+  function plansOf(t) {
+    var city = cityNow(), here = function (k) { return !city || k.cities.indexOf(city) > -1; };
+    var units = t.lines.filter(function (x) { return !x.p.card && !x.p.bundle && !x.p.allOf; }).map(function (x) {
+      return { x: x, id: (x.p.base || x.p.id).replace(/-toate$/, ''), zone: x.zone || '', g: GRP[x.p.need] || x.p.need };
+    });
+    if (units.length < 2) return null;
+    var B = (D.packs || []).filter(function (k) { return k.bundle && here(k); });
+    // the price list's package of a treatment: the sessions recommended for the result, else its biggest
+    var sessPack = function (u) { var b = byId(u.id), ks = packsOf(b).filter(function (k) { return here(k) && (!u.zone || !k.zones.length || k.zones.indexOf(u.zone) > -1); }), r = b && recOf(b); return ks.filter(function (k) { return r && k.pack >= r[0]; })[0] || ks[ks.length - 1] || null; };
+    var fits = function (k, u) { return (k.for || []).indexOf(u.id) > -1 && (!u.zone || !k.zones.length || k.zones.indexOf(u.zone) > -1); };
+    // the zone a package takes for these treatments: the one zone they share (none: no zone), or false when they are on two zones
+    var zoneFor = function (k, us) { var zs = []; us.forEach(function (u) { if (u.zone && zs.indexOf(u.zone) < 0) zs.push(u.zone); }); return zs.length > 1 ? false : k.zones.length ? zs[0] || k.zones[0] : ''; };
+    var best = function (us, tiers) {
+      var c = B.filter(function (k) { return tiers.indexOf(k.tier || 2) > -1 && us.every(function (u) { return fits(k, u); }) && zoneFor(k, us) !== false; });
+      c.sort(function (a, b) { return ((a.niche ? 1 : 0) - (b.niche ? 1 : 0)) || (tiers.indexOf(a.tier || 2) - tiers.indexOf(b.tier || 2)) || (a.price - b.price); });
+      return c[0] || null;
+    };
+    var build = function (tiers) {
+      var out = [], used = [];
+      var put = function (k, us) { var z = zoneFor(k, us); if (!out.some(function (o) { return o.k === k && o.zone === z; })) out.push({ k: k, zone: z }); used = used.concat(us); };
+      var groups = {}; units.forEach(function (u) { (groups[u.g] = groups[u.g] || []).push(u); });
+      Object.keys(groups).forEach(function (g) {
+        var us = groups[g], one = best(us, tiers);
+        if (one) { put(one, us); return; }
+        // the same zone first (Liposonix and EMS on the abdomen: one package), then each treatment on its zone
+        var byZone = {}; us.forEach(function (u) { (byZone[u.zone] = byZone[u.zone] || []).push(u); });
+        Object.keys(byZone).forEach(function (z) {
+          var zs = byZone[z], k = best(zs, tiers);
+          if (k) { put(k, zs); return; }
+          zs.forEach(function (u) { var k1 = best([u], tiers) || best([u], [2, 3, 1]) || sessPack(u); if (k1) put(k1, [u]); });
+        });
+      });
+      if (!out.length) return null;
+      var price = out.reduce(function (s, o) { return s + o.k.price; }, 0), full = out.reduce(function (s, o) { return s + o.k.full; }, 0);
+      return { items: out, keys: used.map(function (u) { return u.x.key; }), price: price, full: full };
+    };
+    var rec = build([2, 3, 1]), all = build([3, 2, 1]);
+    if (all && rec && all.items.every(function (o, i) { return rec.items[i] && rec.items[i].k === o.k; }) && all.items.length === rec.items.length) all = null;
+    if (!rec) return null;
+    var now = t.lines.filter(function (x) { return rec.keys.indexOf(x.key) > -1; }).reduce(function (s, x) { return s + x.p.price * x.qty; }, 0);
+    if (all && all.price <= rec.price) all = null;
+    return { rec: rec, all: all, now: now };
+  }
+  var PLANS = null;
+  function planHtml(pl, which) {
+    var rec = which === 'rec';
+    return '<div class="sh-plan sh-card' + (rec ? ' rec' : '') + '">' + (rec ? '<p class="sh-pk-rec">' + I.star + 'Recomandat pentru tine</p>' : '') +
+      '<b class="sh-plan-t">' + (rec ? 'Planul tău' : 'Planul complet') + ', ' + (pl.items.length === 1 ? 'un pachet' : pl.items.length + ' pachete') + '</b>' +
+      '<ul class="sh-plan-l">' + pl.items.map(function (o) {
+        return '<li><span><b>' + esc(nameOf(o.k, o.zone)) + '</b><small>' + esc(o.k.inc) + '</small></span><em>' + lei(o.k.price) + '</em></li>';
+      }).join('') + '</ul>' +
+      '<div class="sh-plan-f"><div class="pz"><b>' + lei(pl.price) + '</b><s>' + lei(pl.full) + '</s></div>' +
+      '<button type="button" class="sh-pk-go" data-plan="' + which + '">Aleg planul' + I.arrow + '</button></div></div>';
+  }
+  // the plan in place of the sessions it holds (the card and the rest stay)
+  function choosePlan(which) {
+    var pl = PLANS && PLANS[which];
+    if (!pl) return;
+    S.cart = S.cart.filter(function (l) { return pl.keys.indexOf(keyOf(l.id, l.zone)) < 0; });
+    pl.items.forEach(function (o) { var had = lineOf(o.k.id, o.zone); if (had) had.qty = qOf((had.qty || 1) + 1); else S.cart.push({ id: o.k.id, zone: o.zone, qty: 1 }); });
+    fev('cart');
+    px('AddToCart', { value: pl.price, currency: 'RON', content_ids: pl.items.map(function (o) { return o.k.id; }), content_type: 'product', content_name: which === 'rec' ? 'Planul tău' : 'Planul complet' });
+    changed(true); repaintAll(); epiList();
+    if (sheetOn && S.step === 'cart') { paneCart(); var el = pane('cart'); if (el) el.scrollTop = 0; }
+  }
   // the packages she sees (the owner, 25.11): first the solution for what she chose, then, when there is one, a more complete one,
   // and the top one for who can afford it („să nu-i oferim 500 de lei unei cliente care poate 5.000, dar nici să le împingem pe
   // toate”), and the first step, the cheapest; the price list's packages only when there is room. Cheapest first. „Recomandăm acest
@@ -1016,7 +1089,7 @@
     var mine = {}; t.lines.forEach(function (x) { mine[(x.p.base || x.p.id).replace(/-toate$/, '')] = 1; });
     var fit = function (k) { return (k.for || []).filter(function (id) { return mine[id]; }).length; };
     var bs = packs.filter(function (y) { return y.k.bundle; }), ls = packs.filter(function (y) { return !y.k.bundle; });
-    var by = function (a, b) { return (fit(b.k) - fit(a.k)) || (a.k.price - b.k.price); };
+    var by = function (a, b) { return ((a.k.niche ? 1 : 0) - (b.k.niche ? 1 : 0)) || (fit(b.k) - fit(a.k)) || (a.k.price - b.k.price); };
     var of = function (tier) { return bs.filter(function (y) { return (y.k.tier || 2) === tier; }).sort(by); };
     var sol = of(2)[0], more = sol ? of(3).filter(function (y) { return y.k.price > sol.k.price; })[0] : of(3)[0];
     var top = bs.slice().sort(function (a, b) { return b.k.price - a.k.price; })[0];
@@ -1109,6 +1182,8 @@
       });
     });
     packs = ladder(packs, t);
+    PLANS = t.lines.some(function (x) { return x.p.bundle; }) ? null : plansOf(t);
+    if (PLANS) packs = packs.map(function (y) { y.rec = false; return y; }).slice(0, 3);
     var common = COMMON.map(function (c) { var q = byId(c[1]); return q && here(q) && !S.cart.some(function (l) { var lp = byId(l.id); return l.id === q.id || (lp && (lp.base === q.id || (lp.bundle && lp.for.indexOf(q.id) > -1))); }) ? { c: c, q: q } : null; }).filter(Boolean).slice(0, 6);
     var rest = D.terms.show.map(byId).filter(function (p) { return p && here(p) && !pairs.some(function (y) { return y.q === p; }) && !S.cart.some(function (l) { return (l.id === p.id || l.id.indexOf(p.id + '-x') === 0) && !S.keep[keyOf(l.id, l.zone)]; }); }).slice(0, 5);
     el.innerHTML = '<div class="sh-tmw">' + tmHtml('s') + '</div>' +
@@ -1116,7 +1191,8 @@
       (onlyCard ? '<p class="sh-lab">Clinica ta</p><div class="seg sh-seg" role="radiogroup" aria-label="Clinica"><i class="sg-i" aria-hidden="true"></i>' +
         ['Timișoara', 'Arad'].map(function (c) { return '<button type="button" role="radio" data-city="' + c + '" aria-checked="' + (c === S.city) + '">' + c + '</button>'; }).join('') + '</div>' +
         '<p class="sh-note" data-cd-c hidden>Alege clinica, apoi plata.</p>' : '') +
-      (packs.length ? '<p class="sh-lab">Poți alege pachetul</p><div class="sh-pks">' + packs.map(packHtml).join('') + '</div>' : '') +
+      (PLANS ? '<p class="sh-lab">Planul tău, din ce ai ales</p><div class="sh-pks">' + planHtml(PLANS.rec, 'rec') + (PLANS.all ? planHtml(PLANS.all, 'all') : '') + '</div>' : '') +
+      (packs.length ? '<p class="sh-lab">' + (PLANS ? 'Sau un singur pachet' : 'Poți alege pachetul') + '</p><div class="sh-pks">' + packs.map(packHtml).join('') + '</div>' : '') +
       (false ? '<p class="sh-lab">Merge super în combinație cu</p><div class="sh-rail">' + pairs.map(function (y) { return miniHtml(y.q, y.why, y.zone); }).join('') + '</div>' : '') +
       (common.length ? '<p class="sh-lab">Cele mai întâlnite probleme</p><div class="sh-rail">' + common.map(function (y) { return miniHtml(y.q, nameOf(y.q, y.c[2]), y.c[2], y.c[0]); }).join('') + '</div><a class="sh-link" href="' + OFFERS + '">Vezi toate ofertele' + I.chev + '</a>' : '') +
       (onlyCard ? '' : '<div class="sh-stack sh-card">' + (t.saved > 0 ? '<div><span>Preț normal</span><s data-t-full>' + lei(t.full) + '</s></div><div class="sv"><span>Black Friday -' + pct() + '%</span><span data-t-saved>-' + lei(t.saved) + '</span></div>' : '') + '<div class="tot"><span>Total</span><b data-t-amount>' + lei(t.amount) + '</b></div></div>') +
@@ -1429,6 +1505,7 @@
     if (t.closest('[data-pop-x]')) { closePop(); return; }
     var op = t.closest('[data-opt]'); if (op) { optimal(op.getAttribute('data-opt')); return; }
     var pk = t.closest('[data-pack]'); if (pk) { toPack(pk.getAttribute('data-pk-from'), pk.getAttribute('data-pack')); return; }
+    var pln = t.closest('[data-plan]'); if (pln) { choosePlan(pln.getAttribute('data-plan')); return; }
     var plus = t.closest('[data-plus]');
     if (plus) {
       var id = plus.getAttribute('data-plus'), q = byId(id), z2 = plus.getAttribute('data-pz') || (q ? zoneOf(q) : ''), had = !!lineOf(id, z2);
