@@ -1,0 +1,51 @@
+<style>
+/* împachetare la cald: the explainer (warm bands on the skin, the warmth goes in gently, circulation and drainage carry the fluids away, a smoother skin), 7 s loop */
+.pim-wrap{ animation-name:pimWrap; } @keyframes pimWrap{ 0%,63%{ opacity:1; transform:none; } 72%,92%{ opacity:0; transform:translateY(-12px); } 100%{ opacity:1; transform:none; } }
+.pim-warm{ animation-name:pimWarm; opacity:0; transform-origin:50% 0; } @keyframes pimWarm{ 0%,3%{ opacity:0; transform:scaleY(.3); } 14%,50%{ opacity:1; transform:scaleY(1); } 62%,100%{ opacity:0; transform:scaleY(1); } }
+.pim-heat{ animation-name:pimHeat; opacity:0; } @keyframes pimHeat{ 0%,3%{ opacity:0; } 12%,52%{ opacity:1; } 62%,100%{ opacity:0; } }
+.pim-wave{ animation-name:pimWave; opacity:0; } @keyframes pimWave{ 0%,4%{ opacity:0; transform:translateY(0); } 8%{ opacity:.9; } 26%,100%{ opacity:0; transform:translateY(64px); } }
+.pim-drop{ animation-name:pimDrop; } @keyframes pimDrop{ 0%,36%{ opacity:1; transform:translate(0,0); } 46%{ opacity:1; transform:translate(0,var(--dy)); } 58%{ opacity:1; } 62%{ opacity:0; transform:translate(var(--dx),var(--dy)); } 95%{ opacity:0; transform:translate(0,0); } 100%{ opacity:1; transform:translate(0,0); } }
+.pim-flow{ animation-name:pimFlow; opacity:0; } @keyframes pimFlow{ 0%,38%{ opacity:0; } 46%,58%{ opacity:1; } 66%,100%{ opacity:0; } }
+.pim-node{ animation-name:pimNode; transform-origin:50% 50%; } @keyframes pimNode{ 0%,53%{ transform:scale(1); } 58%{ transform:scale(1.3); } 63%{ transform:scale(1); } 66%{ transform:scale(1.15); } 70%,100%{ transform:scale(1); } }
+.pim-bump{ animation-name:pimBump; transform-origin:50% 100%; } @keyframes pimBump{ 0%,65%{ transform:scaleY(1); } 76%,93%{ transform:scaleY(.06); } 100%{ transform:scaleY(1); } }
+.pim-line{ animation-name:pimLine; opacity:0; transform-origin:0 50%; } @keyframes pimLine{ 0%,67%{ opacity:0; transform:scaleX(0); } 69%{ opacity:1; } 81%,90%{ opacity:1; transform:scaleX(1); } 96%,100%{ opacity:0; transform:scaleX(1); } }
+.pim-n1{ animation-name:pimN1; opacity:0; } @keyframes pimN1{ 0%,2%{ opacity:0; transform:translateY(6px); } 8%,32%{ opacity:1; transform:none; } 38%,100%{ opacity:0; transform:translateY(-6px); } }
+.pim-n2{ animation-name:pimN2; opacity:0; } @keyframes pimN2{ 0%,38%{ opacity:0; transform:translateY(6px); } 44%,60%{ opacity:1; transform:none; } 66%,100%{ opacity:0; transform:translateY(-6px); } }
+.pim-n3{ animation-name:pimN3; opacity:0; } @keyframes pimN3{ 0%,66%{ opacity:0; transform:translateY(6px); } 72%,92%{ opacity:1; transform:none; } 98%,100%{ opacity:0; transform:translateY(-6px); } }
+</style>
+  <figure class="card proc rv" data-steps=".36,.64" style="margin:0 auto">
+    <svg viewBox="0 0 640 360" role="img" aria-label="Benzile calde învelesc zona și o căldură plăcută pătrunde blând în piele; circulația și drenajul sunt activate, iar lichidele sunt duse mai departe prin vase; la final pielea e mai netedă, iar corpul mai ușor.">
+<defs>
+<clipPath id="pimC"><rect x="0" y="60" width="640" height="280" rx="22"/></clipPath>
+<clipPath id="pimT"><rect x="0" y="132" width="640" height="208"/></clipPath>
+<radialGradient id="pimW"><stop offset="0" stop-color="#ead8b3" stop-opacity=".9"/><stop offset=".5" stop-color="#f3e2b4" stop-opacity=".4"/><stop offset="1" stop-color="#f3e2b4" stop-opacity="0"/></radialGradient>
+<path id="pimP" d="M-40 130.5H0C30 130.5 36 122.5 64 122.5C92 122.5 98 130.5 128 130.5C158 130.5 164 122.5 192 122.5C220 122.5 226 130.5 256 130.5C286 130.5 292 122.5 320 122.5C348 122.5 354 130.5 384 130.5C414 130.5 420 122.5 448 122.5C476 122.5 482 130.5 512 130.5C542 130.5 548 122.5 576 122.5C604 122.5 610 130.5 640 130.5H680"/>
+<path id="pimV" d="M158 152Q192 162 226 152M286 152Q320 162 354 152M414 152Q448 162 482 152M542 152Q576 162 610 152"/>
+</defs>
+<g clip-path="url(#pimC)">
+<rect x="0" y="60" width="640" height="80" fill="#fbfcfc"/>
+<rect x="0" y="140" width="640" height="32" fill="#f7efe9"/><rect x="0" y="172" width="640" height="120" fill="#fdf8ef"/><rect x="0" y="292" width="640" height="48" fill="#f6e7e4"/>
+<path d="M0 318H640M0 332H640" stroke="#efd6d1" stroke-width="2"/>
+<path d="M0 172.5H640M0 292.5H640" stroke="#efe3d6" stroke-width="1"/>
+<g fill="#fffaf1" stroke="#ead8b3" stroke-width="1.4"><circle cx="164" cy="199" r="19"/><circle cx="216" cy="199" r="19"/><circle cx="268" cy="199" r="19"/><circle cx="320" cy="199" r="19"/><circle cx="372" cy="199" r="19"/><circle cx="424" cy="199" r="19"/><circle cx="476" cy="199" r="19"/><circle cx="528" cy="199" r="19"/><circle cx="580" cy="199" r="19"/><circle cx="632" cy="199" r="19"/><circle cx="190" cy="243" r="19"/><circle cx="242" cy="243" r="19"/><circle cx="294" cy="243" r="19"/><circle cx="346" cy="243" r="19"/><circle cx="398" cy="243" r="19"/><circle cx="450" cy="243" r="19"/><circle cx="502" cy="243" r="19"/><circle cx="554" cy="243" r="19"/><circle cx="606" cy="243" r="19"/></g>
+<path d="M150 279H596" stroke="#e2f4f1" stroke-width="9" stroke-linecap="round"/>
+<path class="a pim-flow" d="M150 279H596" stroke="#5fd4c6" stroke-opacity=".4" stroke-width="9" stroke-linecap="round"/>
+<g clip-path="url(#pimT)"><ellipse class="a pim-warm" cx="64" cy="140" rx="84" ry="76" fill="url(#pimW)"/><ellipse class="a pim-warm" cx="192" cy="140" rx="84" ry="76" fill="url(#pimW)" style="animation-delay:150ms"/><ellipse class="a pim-warm" cx="320" cy="140" rx="84" ry="76" fill="url(#pimW)" style="animation-delay:300ms"/><ellipse class="a pim-warm" cx="448" cy="140" rx="84" ry="76" fill="url(#pimW)" style="animation-delay:450ms"/><ellipse class="a pim-warm" cx="576" cy="140" rx="84" ry="76" fill="url(#pimW)" style="animation-delay:600ms"/></g>
+<g fill="none" stroke="#e2c98f" stroke-width="2.2" stroke-linecap="round"><use class="a pim-wave" href="#pimV"/><use class="a pim-wave" href="#pimV" style="animation-delay:420ms"/><use class="a pim-wave" href="#pimV" style="animation-delay:840ms"/></g>
+<g fill="#5fd4c6" stroke="#ffffff" stroke-width="1.5"><circle class="a pim-drop" cx="242" cy="199" r="5" style="--dx:340px;--dy:80px;animation-delay:0ms"/><circle class="a pim-drop" cx="216" cy="243" r="5" style="--dx:366px;--dy:36px;animation-delay:80ms"/><circle class="a pim-drop" cx="320" cy="221" r="5" style="--dx:262px;--dy:58px;animation-delay:160ms"/><circle class="a pim-drop" cx="398" cy="199" r="5" style="--dx:184px;--dy:80px;animation-delay:240ms"/><circle class="a pim-drop" cx="372" cy="243" r="5" style="--dx:210px;--dy:36px;animation-delay:320ms"/><circle class="a pim-drop" cx="554" cy="199" r="5" style="--dx:28px;--dy:80px;animation-delay:400ms"/><circle class="a pim-drop" cx="528" cy="243" r="5" style="--dx:54px;--dy:36px;animation-delay:480ms"/></g>
+<g class="a pim-node" fill="#14a596"><circle cx="606" cy="279" r="9"/><circle cx="622" cy="267" r="6"/><circle cx="621" cy="292" r="5"/></g>
+<g class="a pim-bump"><path d="M0 140.5C30 140.5 36 132.5 64 132.5C92 132.5 98 140.5 128 140.5ZM128 140.5C158 140.5 164 132.5 192 132.5C220 132.5 226 140.5 256 140.5ZM256 140.5C286 140.5 292 132.5 320 132.5C348 132.5 354 140.5 384 140.5ZM384 140.5C414 140.5 420 132.5 448 132.5C476 132.5 482 140.5 512 140.5ZM512 140.5C542 140.5 548 132.5 576 132.5C604 132.5 610 140.5 640 140.5Z" fill="#f7efe9"/><path d="M0 140.5C30 140.5 36 132.5 64 132.5C92 132.5 98 140.5 128 140.5C158 140.5 164 132.5 192 132.5C220 132.5 226 140.5 256 140.5C286 140.5 292 132.5 320 132.5C348 132.5 354 140.5 384 140.5C414 140.5 420 132.5 448 132.5C476 132.5 482 140.5 512 140.5C542 140.5 548 132.5 576 132.5C604 132.5 610 140.5 640 140.5" fill="none" stroke="#e5d0c2" stroke-width="1.5"/></g>
+<path d="M0 140.5H640" stroke="#ead9cc" stroke-width="1.5"/>
+<path class="a pim-line" d="M0 140.5H640" stroke="#5fd4c6" stroke-width="2.6" stroke-linecap="round"/>
+<g class="a pim-wrap" fill="none"><use href="#pimP" stroke="#0d0f12" stroke-width="20"/><use href="#pimP" stroke="#f8eedc" stroke-width="16.5"/><path class="a pim-heat" d="M0 130.5C30 130.5 36 122.5 64 122.5C92 122.5 98 130.5 128 130.5" stroke="#ecd6a4" stroke-width="16.5"/><path class="a pim-heat" d="M128 130.5C158 130.5 164 122.5 192 122.5C220 122.5 226 130.5 256 130.5" stroke="#ecd6a4" stroke-width="16.5" style="animation-delay:150ms"/><path class="a pim-heat" d="M256 130.5C286 130.5 292 122.5 320 122.5C348 122.5 354 130.5 384 130.5" stroke="#ecd6a4" stroke-width="16.5" style="animation-delay:300ms"/><path class="a pim-heat" d="M384 130.5C414 130.5 420 122.5 448 122.5C476 122.5 482 130.5 512 130.5" stroke="#ecd6a4" stroke-width="16.5" style="animation-delay:450ms"/><path class="a pim-heat" d="M512 130.5C542 130.5 548 122.5 576 122.5C604 122.5 610 130.5 640 130.5" stroke="#ecd6a4" stroke-width="16.5" style="animation-delay:600ms"/><path d="M128 120V141M256 120V141M384 120V141M512 120V141" stroke="#0d0f12" stroke-width="2"/></g>
+</g>
+<rect x="0.5" y="60.5" width="639" height="279" rx="22" fill="none" stroke="rgba(11,11,13,.08)"/>
+<g font-size="17" font-weight="600" letter-spacing="2" fill="#8a9099"><text x="22" y="162">PIELE</text><text x="22" y="228">GRĂSIME</text><text x="22" y="328" fill="#b39894">MUȘCHI</text><text x="618" y="44" text-anchor="end" letter-spacing="1.6">ÎMPACHETARE LA CALD</text></g>
+<g font-size="17" font-weight="600" letter-spacing="1.6"><text class="a pim-n1" x="22" y="44" fill="#8a9099">CĂLDURĂ PLĂCUTĂ</text><text class="a pim-n2" x="22" y="44" fill="#0b7f74">CIRCULAȚIE + DRENAJ</text><text class="a pim-n3" x="22" y="44" fill="#0b7f74">PIELE MAI NETEDĂ</text></g>
+</svg>
+    <ol class="psteps">
+      <li><b>1 · Căldura</b>te învăluie, plăcut și relaxant</li>
+      <li><b>2 · Circulația</b>și drenajul sunt activate</li>
+      <li><b>3 · Pielea</b>mai netedă, corpul mai ușor</li>
+    </ol>
+  </figure>
