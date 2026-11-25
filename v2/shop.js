@@ -229,10 +229,25 @@
     box.innerHTML = (p.zones.length ? '<p class="pp-l">Zona</p><div class="seg d wr">' + p.zones.map(function (x) { return '<button type="button" data-ppz="' + esc(x) + '" aria-pressed="' + (x === z) + '">' + esc(x) + '</button>'; }).join('') + '</div>' : '') +
       '<p class="pp-l">Ședințe</p>' + sesHtml(p) +
       '<div class="pp-pr"><b>' + lei(p.price * n) + '</b><s>' + lei(p.full * n) + '</s><span>' + (n > 1 ? lei(p.price) + ' / ședință' : '') + '</span></div>' +
+      '<p class="pp-save">Economisești ' + lei((p.full - p.price) * n) + '</p>' +
       '<button type="button" class="btn book gold pp-cta" data-ppadd>' + (mine ? I.check + ' În coș, finalizează' : 'Rezervă oferta' + I.arrow) + '</button>' +
-      (p.cities.length === 1 ? '<p class="pp-n">Doar în ' + esc(p.cities[0]) + '.</p>' : '');
+      '<ul class="pp-trust"><li>Plată securizată cu cardul</li><li>Alegi ora după, confirmare pe WhatsApp</li><li>' + (p.cities.length === 1 ? 'Doar în ' + esc(p.cities[0]) : 'Timișoara și Arad') + '</li></ul>';
+    var hi = $('[data-pp-hi]');
+    if (hi && !hi.childElementCount) hi.innerHTML = p.b.slice(0, 2).map(function (b) { return '<li>' + esc(b) + '</li>'; }).join('') + '<li>' + p.minutes + ' min / ședință</li>';
     var pr = $('[data-pp-pairs]');
     if (pr) pr.innerHTML = p.pairs.map(byId).filter(Boolean).map(function (q) { return pairHtml(p, q, true); }).join('');
+    ppSticky(p, n, mine);
+  }
+  // the treatment page's buy bar (phone): appears when the buy box is out of sight
+  var ppBar = null;
+  function ppSticky(p, n, mine) {
+    if (!ppBar) {
+      ppBar = document.createElement('div'); ppBar.className = 'pp-bar';
+      document.body.appendChild(ppBar);
+      var box = $('[data-pp]');
+      if (window.IntersectionObserver && box) new IntersectionObserver(function (es) { es.forEach(function (e) { ppBar.classList.toggle('on', !e.isIntersecting && e.boundingClientRect.top < 0); document.body.classList.toggle('pp-bar-on', !e.isIntersecting && e.boundingClientRect.top < 0); }); }).observe(box);
+    }
+    ppBar.innerHTML = '<div><b>' + esc(nameOf(p, zoneOf(p))) + '</b><span><s>' + lei(p.full * n) + '</s> ' + lei(p.price * n) + '</span></div><button type="button" class="btn book gold" data-ppadd>' + (mine ? 'Finalizează' : 'Rezervă') + I.arrow + '</button>';
   }
   function pairHtml(from, q, dark) {
     var z = zoneOf(q), has = inCart(q.id);
@@ -555,6 +570,10 @@
   }
   // the preview: the menu's Black Friday links go to the preview's offers page
   if (BASE === '/v2/') $$('a[href="/v2/oferte"]').forEach(function (a) { a.setAttribute('href', '/v2/oferte-bf'); });
+  // no booking without paying (the owner, 24.11): the header's and the menu's booking buttons lead to the offers
+  $$('.top .top-cta, .menu [data-book], .dock [data-book]').forEach(function (b) {
+    var a = document.createElement('a'); a.className = b.className; a.href = BASE + 'oferte-bf'; a.innerHTML = 'Oferte -50%' + I.arrow; b.replaceWith(a);
+  });
   window.C360Shop = { add: add, open: function () { openSheet('cart'); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
   setInterval(tick, 1000);

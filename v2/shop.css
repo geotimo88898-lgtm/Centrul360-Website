@@ -338,3 +338,51 @@ body.bfo-page footer{ background:#fff; }
 .pp::after,.bfo::after{ content:''; display:block; height:160px; background:linear-gradient(var(--bk),#fff); }
 .bfo{ padding-bottom:0; }
 .bfo > .wrap{ padding-bottom:110px; }
+
+/* ---- the treatment page, sold like a great shop page */
+.pp-s h2 em,.pp-end h2 em{ font-style:normal; font-family:inherit; color:var(--acc); }
+.pp-chips{ display:flex; flex-wrap:wrap; gap:8px; }
+.pp-off{ display:inline-flex; align-items:center; height:30px; padding:0 12px; border-radius:999px; font-size:13px; font-weight:700; color:#3b1c14; background:linear-gradient(125deg,var(--rg1),var(--rg2) 50%,var(--rg3)); }
+.pp-g{ display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; font-size:13px; font-weight:500; color:var(--mu) !important; background:var(--gl); box-shadow:0 0 0 1px var(--ln) inset; }
+.pp-g svg{ width:14px; height:14px; color:#fbbc05; }
+.pp-g b{ color:var(--tx); }
+.pp-hi{ margin:0; padding:0; list-style:none; display:grid; gap:8px; }
+.pp-hi li{ display:flex; gap:10px; align-items:center; font-size:15.5px; font-weight:500; color:var(--tx); }
+.pp-hi li::before{ content:''; flex:none; width:20px; height:20px; border-radius:50%; background:var(--acc) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b1c14' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E") center/11px no-repeat; }
+.pp-save{ margin:0; font-size:14px; font-weight:600; color:var(--acc); }
+.pp-trust{ margin:6px 0 0; padding:0; list-style:none; display:grid; gap:6px; }
+.pp-trust li{ display:flex; gap:8px; align-items:center; font-size:13px; color:var(--mu); }
+.pp-trust li::before{ content:''; width:5px; height:5px; border-radius:50%; background:var(--acc); flex:none; }
+.pp-tx > [data-tm],.pp-tx > .tm{ justify-items:start; }
+.pp-tx .tm .tm-l{ font-size:12.5px; }
+.pp-tx .tm-c i{ width:58px; padding:9px 0 7px; }
+.pp-tx .tm-c b{ font-size:21px; }
+.pp-vid{ margin:0 0 18px; border-radius:26px; overflow:hidden; background:#111; position:relative; }
+.pp-vid video{ display:block; width:100%; height:auto; }
+.pp-vid figcaption{ position:absolute; right:12px; bottom:10px; font-size:11px; color:rgba(255,255,255,.55); }
+.pp-res figcaption b{ display:block; color:var(--tx); font-size:14px; }
+.pp-fit .y h3::before{ content:'✓ '; color:var(--acc); }
+.pp-fit .n h3::before{ content:'✕ '; color:var(--mu); }
+.pp-why{ margin:0; padding:0; list-style:none; display:grid; gap:10px; grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr)); }
+.pp-why li{ display:grid; gap:4px; padding:20px; border-radius:22px; background:var(--gl); box-shadow:0 0 0 1px var(--ln) inset; }
+.pp-why b{ font-size:17px; font-weight:600; letter-spacing:-.01em; }
+.pp-why span{ font-size:14px; color:var(--mu); }
+.pp-stars{ display:inline-flex; gap:2px; vertical-align:middle; margin-right:6px; }
+.pp-stars svg{ width:22px; height:22px; color:#fbbc05; }
+.pp-revs{ display:grid; gap:10px; grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr)); }
+.pp-revs figure{ margin:0; padding:22px; border-radius:22px; background:var(--gl); box-shadow:0 0 0 1px var(--ln) inset; display:grid; gap:14px; }
+.pp-revs blockquote{ margin:0; font-size:16px; line-height:1.5; color:var(--tx); }
+.pp-revs figcaption{ font-size:13px; color:var(--mu); }
+.pp-end h2{ margin:14px 0 0; color:var(--tx); font-size:clamp(2rem,5vw,3.2rem); font-weight:700; letter-spacing:-.04em; line-height:1.06; }
+.pp-end .btn.book{ height:52px; padding:0 30px; font-size:16px; font-weight:600; margin-top:6px; }
+/* the phone's buy bar on a treatment page */
+.pp-bar{ position:fixed; left:10px; right:10px; bottom:calc(10px + env(safe-area-inset-bottom)); z-index:71; max-width:520px; margin:0 auto; display:flex; align-items:center; gap:12px; padding:8px 8px 8px 18px; border-radius:999px; color:var(--tx);
+  background:rgba(14,14,16,.84); -webkit-backdrop-filter:blur(20px) saturate(1.5); backdrop-filter:blur(20px) saturate(1.5); box-shadow:0 0 0 1px var(--ln) inset, 0 20px 44px -20px rgba(0,0,0,.6);
+  transform:translateY(160%); visibility:hidden; transition:transform .6s var(--e), visibility 0s linear .6s; }
+.pp-bar.on{ transform:none; visibility:visible; transition:transform .6s var(--e), visibility 0s; }
+.pp-bar > div{ flex:1; min-width:0; display:grid; }
+.pp-bar b{ font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pp-bar span{ font-size:13.5px; color:var(--mu); }
+.pp-bar span s{ color:rgba(255,255,255,.4); }
+.pp-bar .btn.book{ flex:none; width:auto; margin:0; height:44px; padding:0 18px; font-size:14.5px; font-weight:600; }
+body.pp-bar-on .sh-bar{ transform:translateY(160%); visibility:hidden; }
