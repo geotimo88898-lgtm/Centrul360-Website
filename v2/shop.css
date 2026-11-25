@@ -853,3 +853,38 @@ body:has(.top.away) .bfo-f{ top:auto; }
 /* the short screen has no fade under it: the results keep their air */
 .bfh-home ~ #rezultate{ padding-top:56px !important; }
 @media (min-width:1024px){ .bfh-home ~ #rezultate{ padding-top:88px !important; } }
+
+/* easy for every age (the owner, 25.11: „websiteul vreau să fie simplu de folosit și pentru femei mai în vârstă”): no text under
+   12px, the small print a step bigger and darker, the labels calmer, the things she taps at least 40px */
+.eyb{ font-size:12.5px; }
+.tm-l{ font-size:12px; }
+.tm.s .tm-l{ font-size:11px; }
+.bfo-head span,.bfo-n{ font-size:12px; color:var(--l2); }
+.bfo-cats button{ height:42px; padding:0 17px; font-size:15px; }
+.bfo-ddb{ height:42px; font-size:14.5px; }
+.bfo-ddm button{ min-height:46px; font-size:15.5px; }
+.bft > .pct{ font-size:13px; }
+.bft > .bft-c,.bfc.slip > .bfc-c,.sp-it .sp-c{ font-size:12.5px; }
+.bfc.slip .k{ font-size:11.5px; }
+.bft .pr s,.sh-pc .pz s{ font-size:13px; }
+.epi .pz s,.sp-it .pz s,.sh-li .pz s,.sh-pk .pz s{ font-size:13.5px; }
+.sh-bar .ct i{ font-size:11.5px; }
+.sh-bar .tx small,.sh-ft-t small,.sp-row > span small{ font-size:13.5px; }
+.sh-bar .tx b s{ font-size:13px; }
+.sp-l,.sh-lab{ font-size:12px; letter-spacing:.1em; color:var(--l2); }
+.sh-li-x,.sh-li-b > small,.sh-pc > small,.sh-fine,.sh-note,.sh-rec > small{ font-size:14px; }
+.sh-fine{ color:var(--l2); }
+.sh-zone,.sh-addz.s{ font-size:14px; }
+.sh-addz.s{ height:32px; }
+.sh-chips button{ height:42px; padding:0 16px; font-size:15px; }
+.sh-chips button.tk::after{ font-size:12.5px; }
+.sh-step{ height:42px; }
+.sh-step button{ width:36px; height:36px; }
+.sh-step output{ min-width:36px; font-size:16px; }
+.sh-days small{ font-size:11.5px; color:var(--l1); }
+.sh-days em{ font-size:12px; color:var(--l2); }
+.sh-sum small{ font-size:14px; }
+.sh-sheet .cp-f span{ font-size:12px; }
+.pp-l,.pp-facts small,.pp-tx .tm .tm-l{ font-size:14px; }
+.pp-vid figcaption{ font-size:13px; }
+.sh-pc > b{ font-size:15px; }
