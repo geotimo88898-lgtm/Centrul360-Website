@@ -140,6 +140,16 @@ gtag('js', new Date()); gtag('config', 'AW-16691853931');
     if (!document.querySelector('link[href="/v2/shop.css"]')) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/v2/shop.css'; document.head.appendChild(l); }
     var s = document.createElement('script'); s.src = '/v2/shop.js'; s.onload = function () { c.removeAttribute('aria-busy'); if (window.C360Shop) window.C360Shop.open(c); }; document.head.appendChild(s);
   }, true);
+  // the Card de Sărbători (its page, v2/cs-buy.js): the card into the cart and the cart open, like every other product (the owner,
+  // 25.11); the shop loaded when the page does not have it
+  var shopP = null;
+  window.C360AddCard = function (tier, city, from) {
+    if (!shopP) shopP = window.C360Shop ? Promise.resolve(window.C360Shop) : new Promise(function (ok, no) {
+      if (!document.querySelector('link[href="/v2/shop.css"]')) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/v2/shop.css'; document.head.appendChild(l); }
+      var s = document.createElement('script'); s.src = '/v2/shop.js'; s.onload = function () { if (window.C360Shop) ok(window.C360Shop); else no(new Error('shop')); }; s.onerror = function () { shopP = null; no(new Error('shop')); }; document.head.appendChild(s);
+    });
+    return shopP.then(function (S) { return S.addCard(tier, city, from); });
+  };
   var darks = [], busy = false;
   var paint = function () {
     busy = false; if (!top) return;
