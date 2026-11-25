@@ -214,6 +214,8 @@
     $$('[data-csc-credit]').forEach(function (el) { setCredit(el, fmt(get)); });
     $$('[data-cs-only]').forEach(function (el) { el.hidden = el.getAttribute('data-cs-only').split(',').indexOf(String(t)) < 0; });
     $$('[data-cs-ex]').forEach(function (el) { el.hidden = el.getAttribute('data-cs-ex') !== String(vip ? 990 : t); }); // the VIP one: the 990 card's ideas
+    // no ideas for the VIP card (the owner, 25.11: only for the 990 and 490 cards)
+    $$('#exemple').forEach(function (sec) { sec.hidden = !!vip; });
     $$('[data-cs-follow]').forEach(function (el) { el.setAttribute('data-cs-tier', String(t)); });
     $$('[data-cst] input').forEach(function (i) { i.checked = Number(i.value) === t; });
     var link = CSC.state && (CSC.state.open || vip) && CSC.state.links && CSC.state.links[t];
