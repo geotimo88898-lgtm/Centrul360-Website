@@ -164,6 +164,7 @@
 })();</script>
 
 <main>
+<link rel="stylesheet" href="/v2/shop.css">
 <script type="application/ld+json">
 {
   "@context":"https://schema.org","@type":"MedicalProcedure",
@@ -282,7 +283,8 @@
 
 <section class="s" id="oferta" style="padding-top:0"><div class="wrap">
   <div class="head rv"><span class="eye bf">Ofertele de Black Friday</span><h2>Prețul de azi, <em>pentru corp.</em></h2></div>
-  <div class="offers" data-offers="remodelare" data-match="cavita"></div>
+  <!-- the offers here are the shop's own cards (v2/shop.js [data-shop-ids]): one session at the online price, the same as on every page -->
+  <div class="shop-need" data-shop-ids="radiofrecventa,cavitatie,impachetare"></div>
   <div class="card list rv">
     <div class="tg"><span><a class="t" href="/v2/tratament-radiofrecventa">Radiofrecvență</a>o zonă corporală</span><b>de la 280 lei <small>/ ședință</small></b></div>
     <div class="tg"><span><a class="t" href="/v2/tratament-cavitatie">Cavitație</a>o zonă corporală</span><b>de la 280 lei <small>/ ședință</small></b></div>
@@ -330,6 +332,7 @@
   <div class="rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
   <div class="slot rv" data-slot></div>
 </div></section>
+<script src="/v2/shop.js" defer></script>
 </main>
 
 <footer><div class="wrap">

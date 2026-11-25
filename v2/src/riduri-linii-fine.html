@@ -2,6 +2,7 @@
 title: Riduri și lifting non-invaziv | HIFU, BioLifting și RF Sculpt · Centrul360 Timișoara și Arad
 description: Riduri, linii fine și pierderea fermității? Lifting non-invaziv cu HIFU, BioLifting și RF Sculpt, în Timișoara și Arad. Fără bisturiu, fără recuperare. Consultație gratuită.
 -->
+<link rel="stylesheet" href="/v2/shop.css">
 <script type="application/ld+json">
 {
   "@context":"https://schema.org","@type":"MedicalProcedure",
@@ -127,7 +128,8 @@ description: Riduri, linii fine și pierderea fermității? Lifting non-invaziv 
 
 <section class="s" id="oferta" style="padding-top:0"><div class="wrap">
   <div class="head rv"><span class="eye bf">Ofertele de Black Friday</span><h2>Prețul de azi, <em>pentru față.</em></h2></div>
-  <div class="offers" data-offers="faciale" data-match="hifu|restart|lifting|antirid|riduri|radiofrecv|sculpt|full.?face"></div>
+  <!-- the offers here are the shop's own cards (v2/shop.js [data-shop-ids]): one session at the online price, the same as on every page -->
+  <div class="shop-need" data-shop-ids="hifu-full-face,rf-sculpt-full-face,antirid"></div>
   <div class="card list rv">
     <div class="tg"><span><a class="t" href="{{base}}tratament-hifu">HIFU</a>lifting non-chirurgical · o zonă</span><b>de la 290 lei <small>/ ședință</small></b></div>
     <div class="tg"><span><a class="t" href="{{base}}tratament-hifu-full-face">HIFU Full Face</a>toată fața</span><b>de la 1020 lei <small>/ ședință</small></b></div>
@@ -176,3 +178,4 @@ description: Riduri, linii fine și pierderea fermității? Lifting non-invaziv 
   <div class="rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button></div>
   <div class="slot rv" data-slot></div>
 </div></section>
+<script src="/v2/shop.js" defer></script>

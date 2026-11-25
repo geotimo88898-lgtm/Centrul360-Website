@@ -2,6 +2,7 @@
 title: Gușă și bărbie dublă | HIFU și RF Sculpt · Centrul360 Timișoara și Arad
 description: Reduci gușa și bărbia dublă fără operație: HIFU, RF Sculpt și BioLifting pentru un contur mandibular definit, în Timișoara și Arad. Consultație gratuită.
 -->
+<link rel="stylesheet" href="/v2/shop.css">
 <script type="application/ld+json">
 {
   "@context":"https://schema.org","@type":"MedicalProcedure",
@@ -123,7 +124,8 @@ description: Reduci gușa și bărbia dublă fără operație: HIFU, RF Sculpt �
 
 <section class="s" id="oferta" style="padding-top:0"><div class="wrap">
   <div class="head rv"><span class="eye bf">Ofertele de Black Friday</span><h2>Prețul de azi, <em>pentru contur.</em></h2></div>
-  <div class="offers" data-offers="faciale" data-match="gu[sș][aă]|b[aă]rbie|contur|mandibul"></div>
+  <!-- the offers here are the shop's own cards (v2/shop.js [data-shop-ids]): one session at the online price, the same as on every page -->
+  <div class="shop-need" data-shop-ids="hifu,rf-sculpt-gusa,biolifting"></div>
   <div class="card list rv">
     <div class="tg"><span><a class="t" href="{{base}}tratament-hifu">HIFU</a>gușă, gât, contur mandibular · o zonă mică</span><b>de la 290 lei <small>/ ședință</small></b></div>
     <div class="tg"><span><a class="t" href="{{base}}tratament-rf-sculpt-gusa">RF Sculpt · gușă + contur</a>radiofrecvență + masaj modelator</span><b>de la 210 lei <small>/ ședință</small></b></div>
@@ -169,3 +171,4 @@ description: Reduci gușa și bărbia dublă fără operație: HIFU, RF Sculpt �
   <div class="rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button></div>
   <div class="slot rv" data-slot></div>
 </div></section>
+<script src="/v2/shop.js" defer></script>

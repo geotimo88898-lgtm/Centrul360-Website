@@ -2,6 +2,7 @@
 title: Grăsime localizată | Liposonix, cavitație și HIFU corporal · Centrul360 Timișoara și Arad
 description: Grăsimea care nu cedează la dietă și sport, redusă fără bisturiu, fără ace și fără recuperare, cu Liposonix, cavitație și HIFU. Consultație gratuită în Timișoara și Arad.
 -->
+<link rel="stylesheet" href="/v2/shop.css">
 <script type="application/ld+json">
 {
   "@context":"https://schema.org","@type":"MedicalProcedure",
@@ -141,7 +142,8 @@ description: Grăsimea care nu cedează la dietă și sport, redusă fără bist
 
 <section class="s" id="oferta" style="padding-top:0"><div class="wrap">
   <div class="head rv"><span class="eye bf">Ofertele de Black Friday</span><h2>Prețul de azi, <em>pentru corp.</em></h2></div>
-  <div class="offers" data-offers="remodelare"></div>
+  <!-- the offers here are the shop's own cards (v2/shop.js [data-shop-ids]): one session at the online price, the same as on every page -->
+  <div class="shop-need" data-shop-ids="liposonix,cavitatie,hifu-corp"></div>
   <div class="card list rv">
     <div class="tg"><span><a class="t" href="{{base}}tratament-liposonix">Liposonix</a>o zonă corporală</span><b>de la 640 lei <small>/ ședință</small></b></div>
     <div class="tg"><span><a class="t" href="{{base}}tratament-hifu-corp">HIFU corp</a>o zonă corporală</span><b>de la 620 lei <small>/ ședință</small></b></div>
@@ -188,3 +190,4 @@ description: Grăsimea care nu cedează la dietă și sport, redusă fără bist
   <div class="rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button></div>
   <div class="slot rv" data-slot></div>
 </div></section>
+<script src="/v2/shop.js" defer></script>

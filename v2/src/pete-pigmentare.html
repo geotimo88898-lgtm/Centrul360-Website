@@ -2,6 +2,7 @@
 title: Pete și pigmentare | Cearcăne și semne post-acnee · Centrul360 Timișoara și Arad
 description: Pete, pigmentare neuniformă, cearcăne sau semne post-acnee? Tratamente de regenerare și uniformizare a tenului, în Timișoara și Arad. Consultație gratuită.
 -->
+<link rel="stylesheet" href="/v2/shop.css">
 <script type="application/ld+json">
 {
   "@context":"https://schema.org","@type":"MedicalProcedure",
@@ -114,7 +115,8 @@ description: Pete, pigmentare neuniformă, cearcăne sau semne post-acnee? Trata
 
 <section class="s" id="oferta" style="padding-top:0"><div class="wrap">
   <div class="head rv"><span class="eye bf">Ofertele de Black Friday</span><h2>Prețul de azi, <em>pentru ten.</em></h2></div>
-  <div class="offers" data-offers="faciale" data-match="restart|microneedling|pdrn|exozomi|pete|pigment|periocular|cearc"></div>
+  <!-- the offers here are the shop's own cards (v2/shop.js [data-shop-ids]): one session at the online price, the same as on every page -->
+  <div class="shop-need" data-shop-ids="restart,microneedling,hidratare"></div>
   <div class="card list rv">
     <div class="tg"><span><a class="t" href="{{base}}tratament-microneedling">Microneedling Exozomi PDRN</a>pete, ton neuniform, semne post-acnee</span><b>de la 520 lei <small>/ ședință</small></b></div>
     <div class="tg"><span><a class="t" href="{{base}}tratament-periocular">Microneedling Corector Periocular</a>cearcăne, hidratare, linii fine</span><b>de la 520 lei <small>/ ședință</small></b></div>
@@ -160,3 +162,4 @@ description: Pete, pigmentare neuniformă, cearcăne sau semne post-acnee? Trata
   <div class="rv"><button type="button" class="btn book halo" data-book data-book-service="consult">Programează consultația gratuită{{arrow}}</button></div>
   <div class="slot rv" data-slot></div>
 </div></section>
+<script src="/v2/shop.js" defer></script>

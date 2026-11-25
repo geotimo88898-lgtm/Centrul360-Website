@@ -8,6 +8,7 @@
      [data-bfs]          the first screen's slider: the middle card in front, its two neighbours smaller, round and round
      [data-bfo]          all the offers: a segmented filter (Cele mai cerute, Corp, Gușă, Față, Epilare), the cards, the laser zones
      [data-pp="<id>"]    a treatment's buy box (zone, sessions, price, „Rezervă oferta”) + [data-pp-hi], [data-pp-pairs]
+     [data-shop-ids="a,b,c"]  a content page's own offers: the shop's cards for those products (data-city: only that clinic's)
      [data-tm]           the timer: days, hours, minutes, seconds in equal cells
      [data-cart]         any element: opens the cart (the header's bag has it)
 
@@ -287,6 +288,22 @@
   function sliderTo(k) {
     var d = k - SL.pos; d = ((d % SL.n) + SL.n) % SL.n; if (d > SL.n / 2) d -= SL.n;
     SL.pos = Math.round(SL.pos + d); layout(); pause();
+  }
+
+  // ================= a content page's offers (Grăsime localizată, Celulită...): the shop's own cards, the same as everywhere =================
+  function needGrids() {
+    if (!D) return;
+    $$('[data-shop-ids]').forEach(function (box) {
+      if (box.hasAttribute('data-on')) return;
+      var city = box.getAttribute('data-city') || '';
+      var list = box.getAttribute('data-shop-ids').split(',').map(function (x) { return byId(x.trim()); })
+        .filter(function (p) { return p && (!city || p.cities.indexOf(city) > -1); }).slice(0, 3);
+      if (!list.length) return;
+      box.setAttribute('data-on', '');
+      box.innerHTML = '<div class="shop-ng">' + list.map(cardHtml).join('') + '</div>' +
+        '<a class="shop-ng-all" href="' + OFFERS + '">Vezi toate ofertele -' + pct() + '%' + I.arrow + '</a>';
+      watch(box);
+    });
   }
 
   // ================= all the offers: a segmented filter, the cards; the laser zones as a clean list =================
@@ -928,12 +945,12 @@
       ART = x[1] && typeof x[1] === 'object' ? x[1] : {};
       D = d; offset = d.terms.now - Date.now();
       S.cart = S.cart.filter(function (l) { return l && byId(l.id); });
-      slider(); offers(); ppBuy(); watch(document); headCart(); bar(); tick();
+      slider(); offers(); needGrids(); ppBuy(); watch(document); headCart(); bar(); tick();
       catOk(D);
       emit('c360:shop', { terms: D.terms, products: D.products });
       if (/[?&#]cos\b/.test(location.search + location.hash) && lines().length) openSheet('cart');
     }).catch(function () {
-      var g = $('[data-bfo]') || $('[data-bfs]');
+      var g = $('[data-bfo]') || $('[data-bfs]') || $('[data-shop-ids]');
       if (g) g.innerHTML = '<div class="sh-alert" style="max-width:420px;margin:0 auto">Nu am putut încărca ofertele. Reîncarcă pagina.</div>';
       catOk(null);
     });

@@ -600,3 +600,21 @@ body:has(.sh-pop.on) .ck{ opacity:0 !important; pointer-events:none !important; 
   .sh-foot .sh-go{ min-width:0; padding:0 18px; }
   .sh-ft-t b.sm{ font-size:14px; }
 }
+
+/* ================= a content page's offers (Grăsime localizată, Celulită...): the shop's own cards; a row to swipe on the
+   phone (the next card peeks in), three side by side on a computer; then „Vezi toate ofertele” ================= */
+.shop-ng{ display:grid; grid-auto-flow:column; grid-auto-columns:min(84%,340px); gap:14px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none;
+  margin:0 -20px; padding:6px 20px 26px; scroll-padding:0 20px; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; }
+.shop-ng::-webkit-scrollbar{ display:none; }
+.shop-ng > .bfc{ max-width:none; scroll-snap-align:start; }
+.shop-ng > .bfc.slip{ --ph:96px; }
+.shop-ng-all{ text-decoration:none !important; display:flex; width:max-content; max-width:100%; align-items:center; gap:10px; height:48px; margin:4px auto 0; padding:0 22px; border-radius:999px;
+  font-size:15px; font-weight:600; letter-spacing:-.01em; color:#fff !important; background:#0b0b0d; box-shadow:0 14px 30px -16px rgba(0,0,0,.55); transition:transform .5s var(--e); }
+.shop-ng-all svg{ width:17px; height:17px; flex:none; transition:transform .5s var(--e); }
+.shop-ng-all:hover svg{ transform:translateX(3px); }
+.shop-ng-all:active{ transform:scale(.97); }
+[data-shop-ids]:not([data-on]){ min-height:420px; }
+@media (min-width:900px){
+  .shop-ng{ grid-auto-flow:row; grid-template-columns:repeat(3,minmax(0,1fr)); grid-auto-columns:auto; overflow:visible; margin:0; padding:6px 0 28px; }
+  .shop-ng > .bfc.slip{ --ph:110px; }
+}
