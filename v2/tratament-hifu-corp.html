@@ -117,7 +117,7 @@
    when a page does not have it). The preview's links lead to the preview's shop pages. */
 (function () {
   var B = /^\/v2\//.test(location.pathname) ? '/v2/' : '/', top = document.querySelector('.top'), menu = document.getElementById('menu');
-  if (B === '/v2/') [].forEach.call(document.querySelectorAll('a[href="/v2/oferte-bf"], a[href="/v2/home-bf"]'), function (a) { a.setAttribute('href', a.getAttribute('href') === '/v2/' ? '/v2/home-bf' : '/v2/oferte-bf'); });
+  if (B === '/v2/') [].forEach.call(document.querySelectorAll('a[href="' + B + 'oferte"], a[href="' + B + '"]'), function (a) { a.setAttribute('href', a.getAttribute('href') === '/v2/' ? '/v2/home-bf' : '/v2/oferte-bf'); });
   var count = function () { try { var k = JSON.parse(localStorage.getItem('c360-shop3') || 'null'); return k && Array.isArray(k.cart) ? k.cart.length : 0; } catch (e) { return 0; } };
   var n = count();
   [].forEach.call(document.querySelectorAll('.hx-cart'), function (b) { b.classList.toggle('has', n > 0); b.querySelector('i').textContent = n || ''; });
