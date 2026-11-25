@@ -53,11 +53,9 @@ const P = {
   'hifu-o-zona-corporala-1-sedinta': { id: 'hifu-corp', name: 'HIFU', zones: ['Abdomen', 'Brațe', 'Coapse', 'Gambe', 'Zona lombară'], need: 'corp', ph: 'concern-belly-2.webp', b: ['Strânge pielea lăsată', 'Lifting fără operație'] },
   'impachetare-impachetare-la-cald-1-sedinta': { id: 'impachetare', name: 'Împachetare la cald', need: 'corp', ph: 'concern-detox.webp', b: ['Detoxifiere și drenaj', 'Piele mai netedă'] },
   'hifu-o-zona-mica-faciala-1-sedinta': { id: 'hifu', name: 'HIFU', zones: ZF, need: 'gusa', ph: 'concern-gusa.webp', b: ['Strânge pielea de sub bărbie', 'Fără ace, fără pauză'] },
-  'rfsculpt-gusa-plus-contur-mandibular-1-sedinta': { id: 'rf-sculpt-gusa', name: 'RF Sculpt Gușă', need: 'gusa', ph: 'concern-chin-1.webp', b: ['Reduce gușa', 'Conturează linia mandibulei'] },
   'radiofrecventa-o-zona-mica-faciala-1-sedinta': { id: 'biolifting', name: 'BioLifting', zones: ZF, need: 'gusa', ph: 'concern-chin-3.webp', b: ['Stimulează colagenul', 'Piele mai fermă'] },
   'hifu-full-face-1-sedinta': { id: 'hifu-full-face', name: 'HIFU Full Face', need: 'fata', ph: 'concern-face-1.webp', b: ['Strânge pielea lăsată a feței', 'Lifting fără operație'] },
   'radiofrecventa-full-face-1-sedinta': { id: 'biolifting-full-face', name: 'BioLifting Full Face', need: 'fata', ph: 'concern-riduri.webp', b: ['Reduce ridurile fine', 'Piele mai fermă'] },
-  'rfsculpt-full-face-1-sedinta': { id: 'rf-sculpt-full-face', name: 'RF Sculpt Full Face', need: 'fata', ph: 'concern-face-2.webp', b: ['Tonifiază toată fața', 'Revitalizează pielea'] },
   'faciale-tratament-restart-1-sedinta': { id: 'restart', name: 'Tratament Restart', need: 'fata', ph: 'restart-ba-premium.webp', b: ['Ten luminos imediat', 'Fără timp de recuperare'] },
   'faciale-masaj-facial-clasic-1-sedinta': { id: 'masaj-facial', name: 'Masaj facial clasic', need: 'fata', ph: 'offer-facial.webp', b: ['Scalp, față, gușă, gât, decolteu', 'Relaxare profundă'] },
   'faciale-tratament-de-hidratare-profunda-1-sedinta': { id: 'hidratare', name: 'Hidratare profundă', need: 'fata', ph: 'concern-stralucire.webp', b: ['Hidratează în profunzime', 'Întărește bariera pielii'] },
@@ -71,8 +69,8 @@ const P = {
 const PAIRS = {
   liposonix: ['ems', 'radiofrecventa', 'cavitatie'], cavitatie: ['ems', 'radiofrecventa', 'liposonix'], ems: ['liposonix', 'cavitatie', 'impachetare'],
   radiofrecventa: ['liposonix', 'impachetare', 'hifu-corp'], 'hifu-corp': ['radiofrecventa', 'ems', 'liposonix'], impachetare: ['radiofrecventa', 'cavitatie'],
-  hifu: ['rf-sculpt-gusa', 'biolifting', 'masaj-facial'], 'rf-sculpt-gusa': ['hifu', 'biolifting'], biolifting: ['hifu', 'rf-sculpt-gusa'],
-  'hifu-full-face': ['biolifting-full-face', 'restart'], 'biolifting-full-face': ['hifu-full-face', 'restart'], 'rf-sculpt-full-face': ['hifu-full-face', 'restart'],
+  hifu: ['biolifting', 'masaj-facial'], biolifting: ['hifu', 'masaj-facial'],
+  'hifu-full-face': ['biolifting-full-face', 'restart'], 'biolifting-full-face': ['hifu-full-face', 'restart'],
   restart: ['masaj-facial', 'biolifting-full-face', 'hidratare'], 'masaj-facial': ['restart', 'hidratare'], hidratare: ['masaj-facial', 'restart'],
   antirid: ['biolifting-full-face', 'hifu-full-face'], redness: ['hidratare', 'masaj-facial'], 'sebum-off': ['microneedling', 'restart'],
   microneedling: ['hidratare', 'restart'], periocular: ['hidratare', 'biolifting-full-face'],
@@ -80,7 +78,8 @@ const PAIRS = {
 const EPIL_PAIRS = ['epilare-axile', 'epilare-inghinal-total', 'epilare-picior-lung', 'epilare-linie-bikini'];
 const IMPULSE = { 'Timișoara': 'epilare-axile', Arad: 'masaj-facial' };
 // the first screen's slider (the owner, 24.11): these, in this order
-const SHOW = ['liposonix', 'hifu', 'restart', 'rf-sculpt-gusa', 'epilare-full-body', 'hifu-full-face', 'ems'];
+// (RF Sculpt is no longer offered, the owner 25.11: BioLifting in its place)
+const SHOW = ['liposonix', 'hifu', 'restart', 'biolifting', 'epilare-full-body', 'hifu-full-face', 'ems'];
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const lst = () => require('./pay').priceList();
 // the picture of the live Black Friday cards (v2/kit.js PIC): a cut-out of the treated area
