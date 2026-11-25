@@ -26,8 +26,9 @@ Read REDESIGN.md ("Stilul") and the model page source before starting.
   fost exact pe măsura așteptărilor.” · Alina Galuțiu (Arad) „O experiență minunată, d-na Andreea m-a
   abordat cu căldură și profesionalism.” · Simona-Mihaela J. (Timișoara) „Locație frumoasă, curată,
   liniștită. Domnișoara este minunată, rezultatul este vizibil.” Copy the reviews block of the model page.
-- Before/after: only the real photos in `brand_asset/` (ba-*.webp, catalog/cazul-*.webp, the files the current
-  page already uses). Never generated pictures.
+- Before/after: only the owner's approved set (21.11), the cases of the home page's results: catalog cases 02, 05, 08, 11,
+  16, 23, 24, 35, 37, 39 (`brand_asset/catalog/cazul-NN-*.webp`), and on a page only the cases of its own treatments.
+  No other case, even a real one (no `ba-*.webp` either), and never generated pictures.
 - No long dashes (— or –) anywhere; the build refuses them. Romanian with correct diacritics (ș ț ă î â).
 - Colour only on the booking button. No new colours, no boxes inside boxes, a lot of white space.
 - Motion: only the kit's clean motion (below) plus the page's explainer. One easing (`var(--e)`, `var(--e2)`),

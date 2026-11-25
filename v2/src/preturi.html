@@ -83,6 +83,10 @@ description: Prețuri transparente pentru tratamente faciale, HIFU, BioLifting, 
 .prt-fn a{ color:var(--ink); font-weight:600; text-decoration:none; white-space:nowrap; }
 .prt-fn a .ar{ display:inline-block; width:15px; height:15px; vertical-align:-2px; margin-left:4px; transition:transform .5s var(--e); }
 .prt-fn a:hover .ar{ transform:translateX(4px); }
+/* every treatment leads to its own page (tratament-<id>, the owner, 25.11) */
+.prt-go{ margin-top:12px; font-size:14px; }
+.prt-go svg{ width:15px; height:15px; }
+.prt-gh .prt-go{ margin-top:2px; justify-self:start; }
 .prt-pk{ display:flex; align-items:center; justify-content:space-between; gap:28px; margin-top:clamp(64px,8vw,96px); padding:clamp(28px,4vw,44px); }
 .prt-pk h3{ font-size:clamp(1.4rem,2.4vw,1.8rem); letter-spacing:-.035em; margin:12px 0 8px; }
 .prt-pk p{ color:var(--mute); }
@@ -138,21 +142,21 @@ description: Prețuri transparente pentru tratamente faciale, HIFU, BioLifting, 
   <div class="prt-grp" id="faciale">
     <div class="prt-gh rv"><h3>Tratamente faciale</h3><p>Proceduri faciale pentru hidratare, anti-aging, ten sensibil sau acneic și regenerare profundă.</p></div>
     <div class="card prt-list rv">
-      <div class="prt-it"><div class="prt-nm"><b>Tratament de hidratare profundă</b><span class="prt-d">60 min</span><p>Reface nivelul optim de apă al pielii și întărește bariera cutanată.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>Tratament de hidratare profundă</b><span class="prt-d">60 min</span><p>Reface nivelul optim de apă al pielii și întărește bariera cutanată.</p><a class="more prt-go" href="{{base}}tratament-hidratare">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>350 lei</b></div><div><span>2 ședințe <i>-11%</i></span><b>620 lei</b></div><div><span>4 ședințe <i>-22%</i></span><b>1090 lei</b></div></div></div>
-      <div class="prt-it"><div class="prt-nm"><b>Tratament intensiv antirid</b><span class="prt-d">60 min</span><p>Diminuează ridurile și liniile fine, stimulând regenerarea pielii.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>Tratament intensiv antirid</b><span class="prt-d">60 min</span><p>Diminuează ridurile și liniile fine, stimulând regenerarea pielii.</p><a class="more prt-go" href="{{base}}tratament-antirid">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>370 lei</b></div><div><span>2 ședințe <i>-12%</i></span><b>650 lei</b></div><div><span>4 ședințe <i>-22%</i></span><b>1150 lei</b></div></div></div>
-      <div class="prt-it"><div class="prt-nm"><b>Redness Relief Protocol</b><span class="prt-d">50 min</span><p>Calmează roșeața și reechilibrează pielea sensibilă, reactivă sau cuperozică.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>Redness Relief Protocol</b><span class="prt-d">50 min</span><p>Calmează roșeața și reechilibrează pielea sensibilă, reactivă sau cuperozică.</p><a class="more prt-go" href="{{base}}tratament-redness">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>300 lei</b></div><div><span>2 ședințe <i>-12%</i></span><b>530 lei</b></div><div><span>4 ședințe <i>-22%</i></span><b>940 lei</b></div></div></div>
-      <div class="prt-it"><div class="prt-nm"><b>Sebum Off Protocol</b><span class="prt-d">110 min</span><p>Reglează secreția de sebum, curăță porii și reduce imperfecțiunile.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>Sebum Off Protocol</b><span class="prt-d">110 min</span><p>Reglează secreția de sebum, curăță porii și reduce imperfecțiunile.</p><a class="more prt-go" href="{{base}}tratament-sebum-off">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>420 lei</b></div><div><span>2 ședințe <i>-12%</i></span><b>740 lei</b></div><div><span>4 ședințe <i>-22%</i></span><b>1310 lei</b></div></div></div>
-      <div class="prt-it"><div class="prt-nm"><b>Tratament Restart</b><span class="prt-d">50 min</span><p>Revitalizează pielea, îmbunătățește textura și redă luminozitatea naturală.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>Tratament Restart</b><span class="prt-d">50 min</span><p>Revitalizează pielea, îmbunătățește textura și redă luminozitatea naturală.</p><a class="more prt-go" href="{{base}}tratament-restart">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>300 lei</b></div><div><span>2 ședințe <i>-10%</i></span><b>540 lei</b></div></div></div>
-      <div class="prt-it"><div class="prt-nm"><b>Masaj facial clasic</b><span class="prt-d">30 min</span><p>Masajul scalpului, feței, gușii, gâtului și decolteului. Relaxare profundă, pielea arată odihnită și luminoasă.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>Masaj facial clasic</b><span class="prt-d">30 min</span><p>Masajul scalpului, feței, gușii, gâtului și decolteului. Relaxare profundă, pielea arată odihnită și luminoasă.</p><a class="more prt-go" href="{{base}}tratament-masaj-facial">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>120 lei</b></div></div></div>
-      <div class="prt-it"><div class="prt-nm"><b>Microneedling Exozomi PDRN</b><span class="prt-d">60 min</span><p>Regenerare prin microperforații: cicatrici post-acneice, textură și fermitate.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>Microneedling Exozomi PDRN</b><span class="prt-d">60 min</span><p>Regenerare prin microperforații: cicatrici post-acneice, textură și fermitate.</p><a class="more prt-go" href="{{base}}tratament-microneedling">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>520 lei</b></div><div><span>3 ședințe <i>-19%</i></span><b>1290 lei</b></div></div></div>
-      <div class="prt-it"><div class="prt-nm"><b>Microneedling Corector Periocular</b><span class="prt-d">30 min</span><p>Țintit pe zona ochilor: cearcăne, hidratare și linii fine.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>Microneedling Corector Periocular</b><span class="prt-d">30 min</span><p>Țintit pe zona ochilor: cearcăne, hidratare și linii fine.</p><a class="more prt-go" href="{{base}}tratament-periocular">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>520 lei</b></div><div><span>3 ședințe <i>-19%</i></span><b>1290 lei</b></div></div></div>
     </div>
   </div>
@@ -160,11 +164,11 @@ description: Prețuri transparente pentru tratamente faciale, HIFU, BioLifting, 
   <div class="prt-grp" id="hifu">
     <div class="prt-gh rv"><h3>HIFU</h3><p>Ultrasunete focalizate de mare intensitate: lifting non-chirurgical, fermitate și redefinirea conturului facial și corporal.</p></div>
     <div class="card prt-list rv">
-      <div class="prt-it"><div class="prt-nm"><b>O zonă mică facială</b><span class="prt-d">10-15 min</span><p>Gușă, gât, contur mandibular, pomeți, periocular, perioral, frunte.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>O zonă mică facială</b><span class="prt-d">10-15 min</span><p>Gușă, gât, contur mandibular, pomeți, periocular, perioral, frunte.</p><a class="more prt-go" href="{{base}}tratament-hifu">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>290 lei</b></div></div></div>
-      <div class="prt-it"><div class="prt-nm"><b>Full Face</b><span class="prt-d">90 min</span><p>Laxitate la nivelul întregii fețe, riduri și pierderea conturului facial.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>Full Face</b><span class="prt-d">90 min</span><p>Laxitate la nivelul întregii fețe, riduri și pierderea conturului facial.</p><a class="more prt-go" href="{{base}}tratament-hifu-full-face">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>1020 lei</b></div><div><span>2 ședințe <i>-12%</i></span><b>1790 lei</b></div></div></div>
-      <div class="prt-it"><div class="prt-nm"><b>O zonă corporală</b><span class="prt-d">50 min</span><p>Abdomen, brațe, coapse, gambe, zona lombară, zona sutien.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>O zonă corporală</b><span class="prt-d">50 min</span><p>Abdomen, brațe, coapse, gambe, zona lombară, zona sutien.</p><a class="more prt-go" href="{{base}}tratament-hifu-corp">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>620 lei</b></div><div><span>2 ședințe <i>-12%</i></span><b>1090 lei</b></div></div></div>
     </div>
   </div>
@@ -173,9 +177,9 @@ description: Prețuri transparente pentru tratamente faciale, HIFU, BioLifting, 
   <div class="prt-grp" id="biolifting" data-idg="radiofrecventa">
     <div class="prt-gh rv"><h3>BioLifting</h3><p>Energie termică controlată pe față: stimulează colagenul și elastina pentru fermitate și reducerea ridurilor.</p></div>
     <div class="card prt-list rv">
-      <div class="prt-it"><div class="prt-nm"><b>O zonă mică facială</b><span class="prt-d">15 min</span><p>Gușă, gât, contur mandibular, pomeți, periocular, perioral, frunte.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>O zonă mică facială</b><span class="prt-d">15 min</span><p>Gușă, gât, contur mandibular, pomeți, periocular, perioral, frunte.</p><a class="more prt-go" href="{{base}}tratament-biolifting">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>170 lei</b></div><div><span>4 ședințe <i>-15%</i></span><b>580 lei</b></div></div></div>
-      <div class="prt-it"><div class="prt-nm"><b>Full Face</b><span class="prt-d">30 min</span><p>Laxitate la nivelul întregii fețe, riduri și pierderea elasticității.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>Full Face</b><span class="prt-d">30 min</span><p>Laxitate la nivelul întregii fețe, riduri și pierderea elasticității.</p><a class="more prt-go" href="{{base}}tratament-biolifting-full-face">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>280 lei</b></div><div><span>4 ședințe <i>-22%</i></span><b>880 lei</b></div></div></div>
     </div>
   </div>
@@ -183,7 +187,7 @@ description: Prețuri transparente pentru tratamente faciale, HIFU, BioLifting, 
   <div class="prt-grp" id="radiofrecventa">
     <div class="prt-gh rv"><h3>Radiofrecvență</h3><p>Energie termică controlată pe corp: stimulează colagenul și elastina pentru fermitate și reducerea celulitei.</p></div>
     <div class="card prt-list rv">
-      <div class="prt-it"><div class="prt-nm"><b>O zonă corporală</b><span class="prt-d">30 min</span><p>Abdomen, brațe, coapse: celulită, fermitate și depozite mici de grăsime.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>O zonă corporală</b><span class="prt-d">30 min</span><p>Abdomen, brațe, coapse: celulită, fermitate și depozite mici de grăsime.</p><a class="more prt-go" href="{{base}}tratament-radiofrecventa">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>280 lei</b></div><div><span>4 ședințe <i>-12%</i></span><b>990 lei</b></div><div><span>6 ședințe <i>-26%</i></span><b>1250 lei</b></div></div></div>
     </div>
   </div>
@@ -191,9 +195,9 @@ description: Prețuri transparente pentru tratamente faciale, HIFU, BioLifting, 
   <div class="prt-grp" id="rfsculpt">
     <div class="prt-gh rv"><h3>RF Sculpt</h3><p>Radiofrecvență + masaj modelator pentru rezultate accelerate: remodelare, tonifiere și drenaj.</p></div>
     <div class="card prt-list rv">
-      <div class="prt-it"><div class="prt-nm"><b>Gușă + Contur Mandibular</b><span class="prt-d">30 min</span><p>Reduce gușa și redefinește linia mandibulei.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>Gușă + Contur Mandibular</b><span class="prt-d">30 min</span><p>Reduce gușa și redefinește linia mandibulei.</p><a class="more prt-go" href="{{base}}tratament-rf-sculpt-gusa">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>210 lei</b></div><div><span>4 ședințe <i>-18%</i></span><b>690 lei</b></div><div><span>6 ședințe <i>-27%</i></span><b>890 lei</b></div></div></div>
-      <div class="prt-it"><div class="prt-nm"><b>Full Face</b><span class="prt-d">90 min</span><p>Tonifiere și revitalizare la nivelul întregii fețe.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>Full Face</b><span class="prt-d">90 min</span><p>Tonifiere și revitalizare la nivelul întregii fețe.</p><a class="more prt-go" href="{{base}}tratament-rf-sculpt-full-face">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>350 lei</b></div><div><span>4 ședințe <i>-22%</i></span><b>1090 lei</b></div><div><span>6 ședințe <i>-30%</i></span><b>1470 lei</b></div></div></div>
     </div>
   </div>
@@ -201,7 +205,7 @@ description: Prețuri transparente pentru tratamente faciale, HIFU, BioLifting, 
   <div class="prt-grp" id="liposonix">
     <div class="prt-gh rv"><h3>Liposonix</h3><p>Ultrasunete focalizate care distrug celulele de grăsime din zonele tratate: remodelare corporală fără recuperare.</p></div>
     <div class="card prt-list rv">
-      <div class="prt-it"><div class="prt-nm"><b>O zonă corporală</b><span class="prt-d">45 min</span><p>Abdomen, brațe, coapse, zona lombară: grăsime localizată rezistentă la dietă.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>O zonă corporală</b><span class="prt-d">45 min</span><p>Abdomen, brațe, coapse, zona lombară: grăsime localizată rezistentă la dietă.</p><a class="more prt-go" href="{{base}}tratament-liposonix">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>640 lei</b></div><div><span>2 ședințe <i>-24%</i></span><b>980 lei</b></div></div></div>
     </div>
   </div>
@@ -209,9 +213,9 @@ description: Prețuri transparente pentru tratamente faciale, HIFU, BioLifting, 
   <div class="prt-grp" id="ems">
     <div class="prt-gh rv"><h3>Electrostimulare Magnetică (EMS) <span class="prt-loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Doar Timișoara</span></h3><p>Contracții musculare intense și controlate: tonifiere, fermitate și definirea zonelor corporale.</p></div>
     <div class="card prt-list rv">
-      <div class="prt-it"><div class="prt-nm"><b>O zonă</b><span class="prt-d">30 min</span><p>Abdomen, brațe sau coapse.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>O zonă</b><span class="prt-d">30 min</span><p>Abdomen, brațe sau coapse.</p><a class="more prt-go" href="{{base}}tratament-ems">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>250 lei</b></div><div><span>6 ședințe <i>-30%</i></span><b>1050 lei</b></div><div><span>8 ședințe <i>-33%</i></span><b>1340 lei</b></div></div></div>
-      <div class="prt-it"><div class="prt-nm"><b>2 zone</b><span class="prt-d">60 min</span><p>Două grupe musculare în aceeași ședință.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>2 zone</b><span class="prt-d">60 min</span><p>Două grupe musculare în aceeași ședință.</p><a class="more prt-go" href="{{base}}tratament-ems">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>390 lei</b></div><div><span>6 ședințe <i>-30%</i></span><b>1640 lei</b></div><div><span>8 ședințe <i>-33%</i></span><b>2090 lei</b></div></div></div>
     </div>
   </div>
@@ -219,7 +223,7 @@ description: Prețuri transparente pentru tratamente faciale, HIFU, BioLifting, 
   <div class="prt-grp" id="cavitatie">
     <div class="prt-gh rv"><h3>Cavitație</h3><p>Ultrasunete de joasă frecvență pentru reducerea grăsimii localizate și remodelarea siluetei, fără durere, fără recuperare.</p></div>
     <div class="card prt-list rv">
-      <div class="prt-it"><div class="prt-nm"><b>O zonă corporală</b><span class="prt-d">60 min</span><p>Abdomen, brațe, coapse: grăsime localizată.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>O zonă corporală</b><span class="prt-d">60 min</span><p>Abdomen, brațe, coapse: grăsime localizată.</p><a class="more prt-go" href="{{base}}tratament-cavitatie">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>280 lei</b></div></div></div>
     </div>
   </div>
@@ -227,13 +231,13 @@ description: Prețuri transparente pentru tratamente faciale, HIFU, BioLifting, 
   <div class="prt-grp" id="impachetare">
     <div class="prt-gh rv"><h3>Împachetare la cald <span class="prt-loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Doar Timișoara</span></h3><p>Tratament relaxant și detoxifiant: stimulează circulația, drenajul și absorbția ingredientelor active.</p></div>
     <div class="card prt-list rv">
-      <div class="prt-it"><div class="prt-nm"><b>Împachetare la cald</b><span class="prt-d">50 min</span><p>Celulită, retenție de apă și detoxifiere: piele mai netedă și revitalizată.</p></div>
+      <div class="prt-it"><div class="prt-nm"><b>Împachetare la cald</b><span class="prt-d">50 min</span><p>Celulită, retenție de apă și detoxifiere: piele mai netedă și revitalizată.</p><a class="more prt-go" href="{{base}}tratament-impachetare">Vezi tratamentul{{arrow}}</a></div>
         <div class="prt-tr"><div><span>1 ședință</span><b>190 lei</b></div><div><span>6 ședințe <i>-30%</i></span><b>800 lei</b></div><div><span>8 ședințe <i>-33%</i></span><b>1020 lei</b></div></div></div>
     </div>
   </div>
 
   <div class="prt-grp" id="epilare">
-    <div class="prt-gh rv"><h3>Epilare laser · Elysion Pro <span class="prt-loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Doar Timișoara</span></h3><p>Prețuri per ședință. Pentru rezultat progresiv definitiv sunt necesare în general 6-8 ședințe, în funcție de tipul de păr și de piele.</p></div>
+    <div class="prt-gh rv"><h3>Epilare laser · Elysion Pro <span class="prt-loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Doar Timișoara</span></h3><p>Prețuri per ședință. Pentru rezultat progresiv definitiv sunt necesare în general 6-8 ședințe, în funcție de tipul de păr și de piele.</p><a class="more prt-go" href="{{base}}tratament-epilare">Vezi tratamentul{{arrow}}</a></div>
     <div class="prt-seg rv" role="group" aria-label="Arată prețurile pentru"><button type="button" data-g="f" aria-pressed="true">Femei</button><button type="button" data-g="m" aria-pressed="false">Bărbați</button></div>
     <div class="card prt-list prt-epi rv" data-g="f">
       <div class="prt-cap">Zone corporale</div>
@@ -308,6 +312,8 @@ description: Prețuri transparente pentru tratamente faciale, HIFU, BioLifting, 
   // a row is "off" when its offer is not active (on the row, or on its list for the laser offers);
   // only the row and its own list count, never the group, so a group can come back after the offers arrive
   var isOff = function (r) { var l = r.closest('.prt-list'); return r.classList.contains('prt-off') || (!!l && l.classList.contains('prt-off')); };
+  // the search reads the rows without their „Vezi tratamentul” links
+  var txt = function (r) { var t = r.textContent; $$('.prt-go', r).forEach(function (a) { t = t.replace(a.textContent, ' '); }); return t; };
   var shown = function (r) { return !isOff(r) && !r.classList.contains('prt-x') && !gHid(r); };
   // which rows, items, groups are left to show (offers that are not active + the search)
   function settle() {
@@ -315,7 +321,7 @@ description: Prețuri transparente pentru tratamente faciale, HIFU, BioLifting, 
     groups.forEach(function (g) {
       var gname = norm((g.querySelector('h3') || {}).textContent);
       $$('.prt-it, .prt-z', g).forEach(function (r) {
-        var hay = gname + ' ' + norm(r.textContent);
+        var hay = gname + ' ' + norm(txt(r));
         r.classList.toggle('prt-x', words.some(function (w) { return hay.indexOf(w) < 0; }));
       });
     });
