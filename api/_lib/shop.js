@@ -216,8 +216,19 @@ async function payQuote({ ref }) {
   const q = await quote(h.city, h.cart.items);
   if (q.error) return { error: q.error };
   const gifts = giftsOf(q);
+  // the Card de Sărbători in the same cart (the owner, 25.11), h.cart.card = { tier, qty: 1 }: its order made by the card's
+  // module (card-sarbatori.js shopOrder, its id kept on the hold), its own price on top (no -50%, not counted for the gifts'
+  // steps); paid → api/_lib/pay.js shop.paid gives the card its share
+  let card = null;
+  if (h.cart.card && Number(h.cart.card.tier)) {
+    const C = require('./card-sarbatori');
+    const x = await C.shopOrder({ tier: h.cart.card.tier, city: h.city, holdId: h.id, page: h.page, src: h.src, id: h.cart.cardOrder });
+    if (!x || x.error) return { error: x && x.error === 'closed' ? 'closed' : x && x.error === 'already_paid' ? 'already_paid' : 'sold_out' };
+    if (x.id !== h.cart.cardOrder) await H.patch(h.id, (y) => { y.cart = Object.assign({}, y.cart, { cardOrder: x.id }); });
+    card = x;
+  }
   return {
-    amount: q.amount, full: q.full, title: ('Comandă online: ' + summary(q)).slice(0, 120), city: h.city,
+    amount: q.amount + (card ? card.amount : 0), full: q.full + (card ? card.full : 0), title: ('Comandă online: ' + summary(q) + (card ? ' + ' + card.title : '')).slice(0, 120), city: h.city,
     name: (h.contact || {}).name || '', phone: (h.contact || {}).phone || '', src: h.src, cookie: h.cookie, app: h.app,
     bonus: gifts ? { type: 'gift', gift: gifts, line: q.bf ? '-' + q.pct + '% Black Friday + cadouri' : '-' + q.pct + '% la plata online' } : { type: 'pct', pct: q.pct, line: q.bf ? '-' + q.pct + '% Black Friday' : '-' + q.pct + '% la plata online' },
     bonusText: q.bf ? '-' + q.pct + '% Black Friday, plătit online' : '-' + q.pct + '% la plata online',
@@ -225,3 +236,5 @@ async function payQuote({ ref }) {
 }
 
 module.exports = { BF, bfOn, TIERS_DEFAULT, tiers, NEEDS, catalog, terms, quote, clean, summary, giftsOf, payQuote, productOf, priceOf };
+// the card and the treatments in one payment work on the server (payQuote above, api/_lib/pay.js shop.paid): the cart may mix them
+module.exports.CARD_MIX = true;

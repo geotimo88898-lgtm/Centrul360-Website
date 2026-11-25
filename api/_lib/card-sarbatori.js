@@ -2182,6 +2182,46 @@ async function orderExtras(orders) {
   return out;
 }
 
+// ---- the shop's cart with the card and treatments, one payment (the owner, 25.11: „se bagă și el în coș ca restul”):
+// api/_lib/shop.js payQuote makes her card's order here, tied to the cart's hold, exactly like the card block's own online
+// order with the payment in the page (the sheet asks her name and phone; api/_lib/pay.js shop.paid hands them and the card's
+// share of the money to payPaid, which issues it like any card: codes, WhatsApp, Încasări). The same hold again: the same
+// order while it waits (its 2 h hold taken again when it lapsed). → { id, amount, full, credit, title } | { error }
+async function shopOrder({ tier, city, holdId, page, src, id }) {
+  const t = Number(tier);
+  if (!SALE.includes(t)) return { error: 'bad_tier' };
+  if (!['Timișoara', 'Arad'].includes(city)) return { error: 'missing_city' };
+  const now = Date.now();
+  if (now >= Date.parse(DEADLINE)) return { error: 'closed' };
+  let list = await readJSON(KEY, []);
+  let r = id ? byId(list, String(id)) : null;
+  if (r && r.status === 'platit') return { error: 'already_paid' };
+  if (r && r.shopHold === holdId && Number(r.tier) === t && r.city === city && ['asteptare', 'anulat'].includes(r.status) && r.cancelledBy !== 'team') {
+    norm(r);
+    const h = await rehold(list, r, now);
+    if (h !== 'ok') { await writeJSON(KEY, list); return { error: h === 'closed' ? 'closed' : 'sold_out' }; }
+  } else {
+    const st0 = await stockFor(list, t, city, 1, now);
+    if (!st0.ok) return { error: st0.error === 'closed' ? 'closed' : 'sold_out' };
+    r = { id: crypto.randomUUID(), created: nowISO(), name: '', phone: '', city, tier: t, qty: 1, amount: checkoutAmount(t, 1), credit: TIERS[t], forWho: 'eu', disc: isVip(t) ? true : undefined,
+      checkout: { at: nowISO() }, cards: [{ code: '', recipient: '' }], recipient: '', status: 'asteptare', via: 'site', pay: 'online', page: String(page || '').slice(0, 200),
+      src: src && typeof src === 'object' ? src : undefined, shopHold: String(holdId || '').slice(0, 60) };
+    mark(r, 'created', 'coșul magazinului');
+    mark(r, 'to_checkout');
+    list.push(r);
+    await writeJSON(KEY, list);
+    list = await readJSON(KEY, []);
+    if (await lostRace(list, r)) { await writeJSON(KEY, list.filter((x) => x.id !== r.id)); return { error: 'sold_out' }; }
+    r = byId(list, r.id);
+    if (!r) return { error: 'sold_out' };
+  }
+  r.amount = checkoutAmount(r.tier, 1);
+  r.credit = onlineCredit(r, await T.bfSwitch().catch(() => ({ on: false }))); // Black Friday: 3.000 for a 990 card (card-terms.js)
+  await writeJSON(KEY, list, { quiet: true });
+  const title = (isVip(r) ? 'Cardul VIP Transformarea 360' : 'Cardul de Sărbători ' + lei(r.tier) + ' lei') + ' (' + lei(r.credit) + ' lei în tratamente)';
+  return { id: r.id, amount: r.amount, full: isVip(r) ? Number(r.tier) : r.amount, credit: r.credit, title };
+}
+
 // ---- „Rezerv în clinică” tapped in a campaign's WhatsApp message (api/_lib/card-blast.js, the owner 22.11: „bagă-le și pe ele
 // în cereri”): a request like the portal's, the card of the message she got, her name from our files when we have it. One per
 // phone (an open order: nothing new). A full wave opens the next one rather than turning her away. opt.quiet: no alert and
@@ -2231,7 +2271,7 @@ async function requestFromTap(i, opt) {
   return { ok: true, id: entry.id };
 }
 
-module.exports = { say, logChat, leadMsgDue, setWave, requestFromTap, deleteOrder, orderExtras, clinicReply, T, BF: T.BF, creditOf: T.creditOf, bfActive: T.bfActive, bfInfo: T.bfInfo, setBf: T.setBf, onlineCredit, payGet,
+module.exports = { say, logChat, leadMsgDue, setWave, requestFromTap, shopOrder, deleteOrder, orderExtras, clinicReply, T, BF: T.BF, creditOf: T.creditOf, bfActive: T.bfActive, bfInfo: T.bfInfo, setBf: T.setBf, onlineCredit, payGet,
   KEY, CLUB, PROBE, LINKS, STOCK, TOTAL, WAVE, MAX, total, settings, setStock, openNext, publicCount, count, ordered, TIERS, MAXQ, DEADLINE, VALID_UNTIL, VALID_TXT, HOLD_MS, MATCH_MS, CLUB_URL, GIFT, GIFT_TM, GIFT_ARAD, giftOf, giftShort, giftFor, DISC_TIERS, discOf, onlineLinks, onlinePay, linkOf, siteLinks, sumOk, embedded, setEmbedded, checkoutAmount, checkoutUrl, payQuote, payPaid, payContact, TPL,
   byId, VIP, SALE, isVip, vipLeft, stockFor, leftFor, lostRace, sarb, norm, qtyOf, live, counter, expired, usedOf, leftOf, stateOf, codeOf, findCard, links, setLinks, okLink,
   image, deliver, cardText, reservedMsg, fill, confirm, recordSale, voidPaid, backfillSales, saleOf, PAY_METHODS, matchPayments, scanMypos, autoMatch, signed, notified, redeem, undo, clubAdd, reminders, ensureTemplates, templates, tick, cardView,

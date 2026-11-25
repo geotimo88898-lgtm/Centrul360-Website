@@ -194,7 +194,24 @@ const KINDS = {
   // steps); paid → the booking is made from the hold, then paid, exactly like 'hold'
   shop: {
     async quote({ ref }) { return require('./shop').payQuote({ ref }); },
-    async paid(o) { return KINDS.hold.paid(o); },
+    // with the Card de Sărbători in the cart (h.cart.cardOrder, api/_lib/shop.js payQuote): the card's share goes to the card
+    // (payPaid: issued, her WhatsApp, its own row in Încasări), the rest to the booking (its row in Încasări), so the money is
+    // counted once; both are safe to run again when one of them threw
+    async paid(o) {
+      const h = await require('./booking-holds').get(o.ref);
+      const cid = h && h.cart && h.cart.cardOrder;
+      if (!cid) return KINDS.hold.paid(o);
+      const C = cardModule();
+      if (!C || typeof C.payPaid !== 'function') throw new Error('card_hook_missing');
+      const r = C.byId(await readJSON(C.KEY, []), cid);
+      if (!r) throw new Error('card_order_missing');
+      const share = r2(r.amount);
+      const a = await KINDS.hold.paid(Object.assign({}, o, { amount: r2(o.amount - share) }));
+      const c = (h.contact || {});
+      const x = await C.payPaid({ orderId: o.id, ref: cid, amount: share, currency: o.currency, myposRef: o.mypos.ref, method: o.mypos.method, at: o.mypos.at || o.paidAt, sandbox: !!o.sandbox, name: c.name || o.name || '', phone: c.phone || o.phone || '' });
+      if (x && x.error) throw new Error('card_' + x.error);
+      return Object.assign({}, a, { card: cid, cards: (x && x.cards) || [] });
+    },
   },
   // the Card de Sărbători: its module (api/_lib/card-sarbatori.js, owned by the card's work) exports
   //   payQuote({ ref, input }) → { amount, title, city?, name?, phone? } | null     its own price and bonuses

@@ -210,6 +210,9 @@
     if (phone) put(localStorage, K_PHONE, phone);
     put(localStorage, K_CITY, city);
     var vip = Number(tier) === VIP;
+    // the shop's cart (the owner, 25.11: „se bagă și el în coș ca restul”): where the page has the cart (/v2's shell defines
+    // C360AddCard), „Plătesc online” puts the card in it and opens it; the cart pays it (C360CardBuy below)
+    if (!clinic && typeof window.C360AddCard === 'function') { try { window.C360AddCard(tier, { city: city, from: btn }); return; } catch (e) { /* the old way */ } }
     // the checkout in the page (switched on, or the preview): a sheet over the page at once (embedPay below)
     if (!clinic && emb) { embedPay(btn, tier, city, vip); return; }
     // her phone first, in the small window (the clinic; online with the sheet off), then this again with it
@@ -323,7 +326,7 @@
           if (c && c.name) put(localStorage, K_NAME, String(c.name).slice(0, 100));
           if (o.lead) { px('Lead', o.lead.val, o.lead.eid); o.lead = null; }
         },
-        onPaid: function (x) { put(sessionStorage, K_ORDER, null); fev('paid'); paidBox(x && x.confirmed); },
+        onPaid: function (x) { put(sessionStorage, K_ORDER, null); fev('paid'); paidBox(x && x.confirmed); if (o.onPaid) { try { o.onPaid(x); } catch (e) {} } },
         onClose: function () { if (failed) return; refP.then(function (x) { put(sessionStorage, K_ORDER, x); back(false); }, function () {}); },
         onError: function (code) {
           failed = true;
@@ -335,7 +338,9 @@
     if (window.C360Pay && payReady === true) { try { return Promise.resolve(go(window.C360Pay)); } catch (e) { return Promise.reject(e); } }
     return payLib().then(function (P) { return P.ready().then(function (ok) { if (!ok) { if (o.onError) o.onError('no_link'); return null; } return go(P); }); });
   }
-  function embedPay(btn, tier, city, vip) {
+  // opt (the cart, C360CardBuy): { onError(code) in place of the block's word, onPaid(x) }; → the sheet's promise
+  function embedPay(btn, tier, city, vip, opt) {
+    opt = opt || {};
     phMsg('');
     // no phone here: the sheet asks it (contactLater; the server makes the order without it)
     var body = { embedded: true, preview: PREVIEW, contactLater: true, tier: tier, qty: 1, pay: 'online', forWho: 'eu', phone: '', city: city, website: '', page: location.href, src: window.C360Src ? window.C360Src() : undefined };
@@ -352,11 +357,12 @@
     }, function () { throw Object.assign(new Error('net'), { code: 'net' }); });
     // a word in the block when it could not be made (the sheet closes)
     var said = function (code) {
+      if (opt.onError) { opt.onError(code); return; }
       if (vip && (code === 'sold_out' || code === 'not_enough')) phMsg(vipOut(city));
       else phMsg(PMSG[code] || 'Nu am putut trimite. Încearcă din nou.');
       if (btn && btn.focus) btn.focus({ preventScroll: true });
     };
-    openCheckout(order, city, btn, { ask: true, tier: tier, lead: { val: val, eid: body.event_id }, onError: said }).catch(function () { said('net'); });
+    return openCheckout(order, city, btn, { ask: true, tier: tier, lead: { val: val, eid: body.event_id }, onError: said, onPaid: opt.onPaid }).catch(function () { said('net'); });
   }
   // the recovery message's link: ?plata=<her order> opens her checkout again
   var reopen = (/[?&]plata=([0-9a-f-]{36})\b/.exec(location.search) || [])[1];
@@ -584,4 +590,31 @@
   if (/#cumpara\b/.test(location.hash)) addEventListener('load', function () { setTimeout(function () { carry(0); }, 300); });
   load();
   window.CSB = { carry: carry, close: close };
+  // the shop's cart pays a card with only the card in it (the owner, 25.11): exactly „Plătesc online” of the card's block
+  // (the same order on the server, the pixel, the funnel, the payment sheet asking her name and phone, the window when she
+  // leaves it unpaid). pay({ tier, city, from, onPaid }) → resolves once the sheet is open; rejects { code } when it cannot
+  // be paid here (no_embed: the checkout in the page is off, the cart sends her to the card's page; sold_out, not_enough,
+  // closed, no_link, net, …: err.text has the words); o.onError(err) also hears a refusal that comes once the sheet is open
+  window.C360CardBuy = {
+    pay: function (o) {
+      o = o || {};
+      var tier = Number(o.tier), city = String(o.city || '');
+      return new Promise(function (ok, no) {
+        // (the order is made while the sheet is open already: a refusal after the promise resolved reaches onError)
+        var fail = function (code) {
+          var err = Object.assign(new Error(code), { code: code, text: (Number(tier) === VIP && (code === 'sold_out' || code === 'not_enough') && city ? vipOut(city) : PMSG[code]) || 'Nu am putut trimite. Încearcă din nou.' });
+          if (o.onError) { try { o.onError(err); } catch (e) {} }
+          no(err);
+        };
+        if (!tierOf(tier) || tierOf(tier)[0] !== tier || tier === 290) { fail('bad_tier'); return; }
+        if (city !== 'Timișoara' && city !== 'Arad') { fail('missing_city'); return; }
+        (st.loaded || PREVIEW ? Promise.resolve() : load()).then(function () {
+          if (!embedOn()) { fail('no_embed'); return; }
+          put(localStorage, K_CITY, city);
+          var p = embedPay(o.from || null, tier, city, tier === VIP, { onError: fail, onPaid: o.onPaid });
+          Promise.resolve(p).then(function () { ok({ ok: true }); }, function () { fail('net'); });
+        }, function () { fail('net'); });
+      });
+    },
+  };
 })();
