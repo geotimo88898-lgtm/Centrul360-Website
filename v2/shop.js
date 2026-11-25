@@ -651,7 +651,7 @@
         '<button type="button" class="sh-addz" data-pzadd' + (freeZone(p) ? '' : ' hidden') + '>' + I.plus + 'Încă o zonă</button>' : '') +
       '<div class="sp-row"><span>Ședințe<small data-sp-u>' + (qty > 1 ? lei(p.price) + ' / ședință' : 'o ședință') + '</small></span>' + stepHtml('pop', qty, 1) + '</div>' +
       // the next step is the clinic and the hour (the cart stays one tap back, with what goes well with it)
-      '<button type="button" class="sh-go" data-checkout>Alege ziua și ora' + I.arrow + '</button>' +
+      '<button type="button" class="sh-go" data-checkout>Finalizează rezervarea' + I.arrow + '</button>' +
       '<button type="button" class="sh-more" data-pop-x>Mai adaug și altele</button></div>';
   }
   function stepHtml(key, qty, min) {
@@ -1069,7 +1069,7 @@
     if (card && t.closest('h3 a')) { e.preventDefault(); openCard(card, t.closest('a').getAttribute('href')); return; }
     var pz = t.closest('[data-pzone]'); if (pz) { if (!pz.disabled) popZone(pz.getAttribute('data-pzone')); return; }
     if (t.closest('[data-pzadd]')) { popMore(); return; }
-    var co = t.closest('[data-checkout]'); if (co) { var from = co; closePop(function () { openSheet('when', from); }); return; }
+    var co = t.closest('[data-checkout]'); if (co) { var from = co; closePop(function () { openSheet('cart', from); }); return; }
     if (t.closest('[data-pop-x]')) { closePop(); return; }
     var plus = t.closest('[data-plus]');
     if (plus) {
