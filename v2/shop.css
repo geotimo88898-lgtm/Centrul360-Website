@@ -662,10 +662,17 @@ body:has(.sh-pop.on) .ck{ opacity:0 !important; pointer-events:none !important; 
 
 /* ================= all the offers, like an online shop (the owner, 25.11: „să vezi toate ofertele din prima, 2 pe un rând, cu
    sortare și filtrare”): category chips that scroll, the clinic and the order as two pills, then small product cards ================= */
-.bfo-f{ display:block; padding:10px 0 8px; margin:0 calc(50% - 50vw) 14px; background:rgba(255,255,255,.88); -webkit-backdrop-filter:blur(22px) saturate(180%); backdrop-filter:blur(22px) saturate(180%);
+.bfo-f{ display:block; padding:10px 0 8px; margin:0 calc(50% - 50vw) 14px; background:rgba(255,255,255,.97); -webkit-backdrop-filter:blur(22px) saturate(180%); backdrop-filter:blur(22px) saturate(180%);
   box-shadow:0 1px 0 rgba(11,11,13,.06); }
-.bfo-cats{ display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; padding:2px 20px 4px; scroll-padding:0 20px; }
-.bfo-cats::-webkit-scrollbar{ display:none; }
+/* the owner hates anything cut: the chips never scroll sideways. On the phone two rows that fill the width (the two lists, then
+   the four areas), on a tablet one centred row, on a computer one row in the pill */
+.bfo-cats{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:2px 20px 4px; }
+@media (max-width:699px){
+  .bfo-cats{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; padding:0 16px 2px; }
+  .bfo-cats button:nth-child(-n+2){ grid-column:span 2; }
+  .bfo-cats button{ min-width:0; height:36px; padding:0 6px; font-size:14px; }
+}
+@media (max-width:359px){ .bfo-cats button{ font-size:13px; padding:0 4px; } }
 .bfo-cats button{ flex:none; height:38px; padding:0 16px; border:0; border-radius:999px; font-size:14px; font-weight:600; letter-spacing:-.01em; color:var(--l1);
   background:#f1f1f4; box-shadow:inset 0 0 0 .5px rgba(11,11,13,.06); cursor:pointer; transition:background .35s var(--e), color .35s var(--e), transform .3s var(--e); }
 .bfo-cats button:active{ transform:scale(.96); }
@@ -679,10 +686,18 @@ body:has(.sh-pop.on) .ck{ opacity:0 !important; pointer-events:none !important; 
 .bfo-sel svg{ position:absolute; right:11px; width:14px; height:14px; pointer-events:none; color:var(--l2); }
 .bfo-sel .sr,.bfo .sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
 .bfo-head{ margin:6px 2px 12px; }
-.bft > .bft-c{ position:absolute; z-index:2; top:11px; right:10px; padding:3px 8px; border-radius:999px; font-size:10.5px; font-weight:600; letter-spacing:-.005em; color:#fff; background:rgba(11,11,13,.62); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); box-shadow:inset 0 0 0 .5px rgba(255,255,255,.18); }
+.bft > .bft-c{ position:absolute; z-index:2; top:10px; right:10px; padding:3px 9px; border-radius:999px; font-size:11.5px; font-weight:600; letter-spacing:-.01em; color:#fff; background:rgba(11,11,13,.62); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); box-shadow:inset 0 0 0 .5px rgba(255,255,255,.18); }
 .bfo-none{ grid-column:1 / -1; margin:20px 0; text-align:center; color:var(--l2); }
 .bfo-g.tiles{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 .bfo-g.tiles > .epi{ grid-column:1 / -1; }
+/* a category with one treatment (Epilare: Full Body): that card takes the whole row, the picture on the left */
+.bfo-g.tiles > .bft:only-of-type{ grid-column:1 / -1; flex-direction:row; min-height:180px; }
+.bfo-g.tiles > .bft:only-of-type > .pic{ flex:0 0 46%; aspect-ratio:auto; }
+.bfo-g.tiles > .bft:only-of-type > .pic img{ -webkit-mask-image:linear-gradient(to right,#000 72%,transparent); mask-image:linear-gradient(to right,#000 72%,transparent); }
+.bfo-g.tiles > .bft:only-of-type > .bft-c{ top:auto; right:auto; bottom:10px; left:10px; }
+.bfo-g.tiles > .bft:only-of-type .bft-b{ flex:1; justify-content:center; margin:0; padding:16px 14px 14px 6px; }
+@media (min-width:700px){ .bfo-g.tiles > .bft:only-of-type{ grid-column:span 2; min-height:220px; } }
+
 @media (min-width:700px){ .bfo-g.tiles{ grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; } }
 @media (min-width:1024px){
   .bfo-f{ margin:0 0 18px; border-radius:999px; padding:8px; display:flex; align-items:center; gap:10px; box-shadow:inset 0 0 0 .5px rgba(11,11,13,.08), 0 14px 34px -24px rgba(11,20,30,.35); }
@@ -701,7 +716,7 @@ body:has(.sh-pop.on) .ck{ opacity:0 !important; pointer-events:none !important; 
 .bft > .pct{ position:absolute; z-index:2; top:10px; left:10px; padding:3px 9px; border-radius:999px; font-size:12px; font-weight:800; letter-spacing:-.01em; color:#3b1c14;
   background:linear-gradient(125deg,#e7b3a3,#f8dccf 50%,#d99d8c); box-shadow:0 6px 14px -8px rgba(0,0,0,.6); }
 .bft-b{ display:flex; flex-direction:column; flex:1; padding:2px 12px 12px; margin-top:-18px; position:relative; }
-.bft .k{ font-family:var(--mono); font-size:9.5px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--acc); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bft .k{ font-family:var(--mono); font-size:10.5px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--acc); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .bft h3{ margin:5px 0 0; font-size:15px; font-weight:700; line-height:1.2; letter-spacing:-.02em; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.4em; }
 .bft h3 a{ color:#fff; text-decoration:none; }
 .bft .pr{ display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; margin-top:8px; }
@@ -738,3 +753,41 @@ body:has(.sh-pop.on) .ck{ opacity:0 !important; pointer-events:none !important; 
 .bfo-ddm button[aria-selected="true"] svg{ opacity:1; }
 @media (hover:hover){ .bfo-ddm button:hover{ background:#f5f5f7; } }
 @media (prefers-reduced-motion:reduce){ .bfo-ddm{ transition:none; } }
+
+/* ================= the fixes after the audit (25.11) ================= */
+/* „Doar Timișoara” on the slider's cards and in the popup (the grid's small cards have .bft-c) */
+.bfc.slip > .bfc-c{ position:absolute; z-index:3; top:16px; right:16px; padding:4px 10px; border-radius:999px; font-size:11.5px; font-weight:600; letter-spacing:-.01em; color:#fff;
+  background:rgba(11,11,13,.62); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); box-shadow:inset 0 0 0 .5px rgba(255,255,255,.18); transition:opacity .6s var(--e); }
+.bfs-st > .bfc:not(.mid) .bfc-c{ opacity:0; }
+.sp-it .sp-c{ justify-self:start; margin-top:4px; padding:2px 9px; border-radius:999px; font-size:11.5px; font-weight:600; letter-spacing:-.005em; color:#7a3b2a; background:#fbe9e2; }
+/* a zone already in the cart on another line: shown, not pickable; „+ Încă o zonă” adds one */
+.sh-chips button.tk{ color:var(--l3) !important; background:var(--l-bg); box-shadow:none; cursor:default; }
+.sh-chips button.tk::after{ content:'în coș'; margin-left:6px; font-size:11.5px; font-weight:600; }
+.sh-addz{ display:inline-flex; align-items:center; gap:6px; height:38px; margin-top:10px; padding:0 14px 0 11px; border:1px dashed rgba(11,11,13,.3); border-radius:999px; cursor:pointer; background:transparent;
+  font-size:14px; font-weight:600; letter-spacing:-.01em; color:var(--l1) !important; transition:background-color .3s, transform .3s var(--e); }
+.sh-addz:active{ transform:scale(.97); background:var(--l-bg); }
+.sh-addz svg{ width:14px; height:14px; flex:none; }
+.sh-addz[hidden]{ display:none; }
+.sh-addz.s{ height:28px; margin:0; padding:0 10px 0 8px; font-size:12.8px; gap:4px; }
+.sh-addz.s svg{ width:12px; height:12px; }
+.sh-zr{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+/* the checkout's second step: nothing preselected; what her clinic does not do, with a one-tap way out */
+.sh-addr[hidden],.sh-note[hidden],[data-wh][hidden],[data-clash][hidden]{ display:none; }
+.sh-vis + .sh-note{ margin-top:8px; }
+.sh-clash{ margin-top:14px; padding:14px; box-shadow:inset 0 0 0 1px rgba(184,92,64,.32), 0 8px 24px -18px rgba(11,20,30,.3); }
+.sh-clash p{ margin:0 2px; font-size:13.5px; line-height:1.45; color:var(--l2); }
+.sh-clash p b{ display:block; margin-bottom:2px; font-size:15px; font-weight:650; letter-spacing:-.01em; color:var(--l1); }
+.sh-clash ul{ list-style:none; margin:12px 0 0; padding:0; display:grid; gap:6px; }
+.sh-clash li{ display:flex; align-items:center; justify-content:space-between; gap:10px; min-width:0; padding:6px 6px 6px 12px; border-radius:14px; background:var(--l-bg); }
+.sh-clash li span{ min-width:0; font-size:14px; font-weight:600; letter-spacing:-.01em; overflow-wrap:anywhere; }
+.sh-clash button[data-rm]{ flex:none; height:32px; padding:0 14px; border:0; border-radius:999px; cursor:pointer; font-size:13.5px; font-weight:600; color:var(--l1) !important; background:#fff;
+  box-shadow:inset 0 0 0 1px rgba(11,11,13,.14); transition:transform .3s var(--e); }
+.sh-clash button[data-rm]:active{ transform:scale(.95); }
+.sh-clash .sh-go{ margin-top:12px; height:46px; font-size:15px; }
+/* the cart bar on the content pages: above their consultation dock, not hidden behind it */
+@media (max-width:920px){
+  .sh-bar{ transition:transform .75s var(--e), visibility 0s linear .75s, bottom .6s var(--e); }
+  .sh-bar.on{ transition:transform .75s var(--e), visibility 0s, bottom .6s var(--e); }
+  body:has(.dock.in) .sh-bar{ bottom:calc(80px + env(safe-area-inset-bottom)); }
+}
+@media (min-width:641px) and (max-width:920px){ body:has(.dock.in) .sh-bar{ bottom:calc(86px + env(safe-area-inset-bottom)); } }
