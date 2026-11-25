@@ -129,6 +129,11 @@
   // a whole photo on black (v2/art.json full, the owner 25.11): its focal point goes on every <img> that shows it
   var fullOf = function (p) { var a = artOf(p); return !!(a && a.img && a.full); };
   var posOf = function (p) { var a = artOf(p); return fullOf(p) && a.pos ? ' style="object-position:' + esc(String(a.pos).replace(/[^0-9% .a-z]/g, '')) + '"' : ''; };
+  // where the picture is small, a smaller copy of it (v2/tools/pic-sizes.py: <id>-600.webp, <id>-300.webp, listed in art.json "w";
+  // the pictures themselves are 966 wide): the 2-up tiles take the 600 one (the big one only on a screen that needs it), the
+  // thumbnails the 300 one. A picture without copies stays as it is.
+  var picW = function (p, w) { var a = artOf(p), u = picOf(p); return a && a.img && u === a.img && (a.w || []).indexOf(w) > -1 ? u.replace(/\.webp(\?|$)/, '-' + w + '.webp$1') : u; };
+  var tileImg = function (p) { var s = picW(p, 600), u = picOf(p); return 'src="' + esc(s) + '"' + (s !== u ? ' srcset="' + esc(s) + ' 600w, ' + esc(u) + ' 966w" sizes="(max-width:640px) calc(50vw - 31px), 270px"' : ''); };
   var sesWord = function (n) { return n === 1 ? '1 ședință' : n + ' ședințe'; };
   var qOf = function (v) { return clamp(Math.floor(Number(v) || 1), 1, 10); };
   // the clinic: hers (the offers' filter, ?oras=, the checkout: one choice everywhere); with no choice, the one clinic her cart
@@ -184,7 +189,7 @@
     $$('[data-tm]').forEach(function (el) { if (!el.hasAttribute('data-tmx')) el.outerHTML = tmHtml(el.getAttribute('data-tm')); });
     $$('[data-tmv]').forEach(function (b) { var i = +b.getAttribute('data-tmv'), t = p ? two(p[i]) : '00'; if (b.textContent !== t) { b.textContent = t; if (!reduce) { b.classList.remove('tk'); void b.offsetWidth; b.classList.add('tk'); } } });
     $$('[data-tmu]').forEach(function (u) { var i = +u.getAttribute('data-tmu'); u.textContent = p && p[i] === 1 ? UNITS[i][0] : UNITS[i][1]; });
-    if (D && D.terms.bf && !p && !ended) { ended = true; load(); }
+    if (D && D.terms.bf && !p && !ended) { ended = true; load(true); }
   }
 
   // ================= the card: the site's Black Friday card =================
@@ -194,10 +199,12 @@
       list.map(function (k) { return '<button type="button" role="radio" data-n="' + k + '" aria-checked="' + (k === n) + '" aria-label="' + sesWord(k) + '">' + k + '×</button>'; }).join('') + '</div>';
   }
   function ctaHtml(mine) { return mine ? I.check + '<span>În coș</span>' : '<span>Rezervă oferta</span>' + I.arrow; }
-  function cardHtml(p) {
+  // o.wait: the picture waits (data-src) until the card comes near the front of the slider; o.first: the slider's first picture
+  function cardHtml(p, o) {
     var z = zoneOf(p), n = nOf(p), mine = has(p), u = urlOf(p);
+    o = o || {};
     return '<article class="slip has-pic bfc' + (mine ? ' in' : '') + '" data-p="' + esc(p.id) + '" data-href="' + u + '" data-w="1">' +
-      '<span class="pic' + (fullOf(p) ? ' full' : '') + '" aria-hidden="true"><img src="' + esc(picOf(p)) + '" alt="" decoding="async"' + posOf(p) + '></span>' +
+      '<span class="pic' + (fullOf(p) ? ' full' : '') + '" aria-hidden="true"><img ' + (o.wait ? 'data-src' : 'src') + '="' + esc(picOf(p)) + '" alt=""' + (o.first ? ' fetchpriority="high"' : ' decoding="async"') + posOf(p) + '></span>' +
       '<span class="pct">-' + pct() + '%</span>' + onlyHtml(p, 'bfc-c') +
       '<span class="k"><b>Black Friday</b> · ' + esc(NEED[p.need] || '') + '</span>' +
       '<h3><a href="' + u + '">' + esc(nameOf(p, z)) + '</a></h3>' +
@@ -235,7 +242,8 @@
     if (!list.length) return;
     box.setAttribute('data-on', '');
     box.setAttribute('aria-roledescription', 'carusel');
-    box.innerHTML = '<div class="bfs-st">' + list.map(cardHtml).join('') + '</div><div class="bfs-dots">' +
+    // only the card in front and its two neighbours show at first: the others' pictures load after the page (speed, 25.11)
+    box.innerHTML = '<div class="bfs-st">' + list.map(function (p, k) { return cardHtml(p, { wait: Math.min(k, list.length - k) > 1, first: k === 0 }); }).join('') + '</div><div class="bfs-dots">' +
       list.map(function (p, k) { return '<button type="button" data-dot="' + k + '" aria-label="' + esc(p.name) + '"></button>'; }).join('') + '</div>';
     SL.el = box; SL.cards = $$('.bfs-st > .bfc', box); SL.n = SL.cards.length;
     // back on the page in this visit: the card she left in front is in front again
@@ -280,7 +288,11 @@
     addEventListener('resize', function () { measure(); layout(true); });
     if (window.IntersectionObserver) new IntersectionObserver(function (es) { SL.vis = es[0].isIntersecting; }).observe(box);
     if (!reduce) SL.timer = setInterval(function () { if (document.hidden || !SL.vis || SL.over || SL.drag || sheetOn || pop || Date.now() < SL.hold) return; SL.pos += 1; layout(); }, 5200);
+    afterLoad(function () { SL.cards.forEach(warm); });
   }
+  // a waiting picture starts loading (it comes near the front, or the page has loaded)
+  function warm(c) { var i = $('img[data-src]', c); if (i) { i.src = i.getAttribute('data-src'); i.removeAttribute('data-src'); } }
+  function afterLoad(fn) { var go = function () { setTimeout(fn, 400); }; if (document.readyState === 'complete') go(); else addEventListener('load', go, { once: true }); }
   function measure() {
     var c = SL.cards[0];
     if (!c) return;
@@ -306,6 +318,7 @@
       if (instant) c.style.transition = 'none';
       c.style.transform = P.t; c.style.opacity = P.o; c.style.zIndex = P.z;
       c.style.visibility = Math.abs(d) > 2.4 ? 'hidden' : '';
+      if (Math.abs(d) < 2) warm(c);
       if (instant) { void c.offsetWidth; c.style.transition = ''; }
     });
     if (mid !== SL.mid) {
@@ -360,6 +373,7 @@
       ddHtml('city', 'Clinica', CITIES_F, F.city, 'l') + ddHtml('sort', 'Sortează', SORTS, F.sort, 'r') +
       '</div></div>' +
       '<div class="bfo-head"><h2 data-fh></h2><span data-fn></span></div><div class="bfo-g tiles" data-grid></div>';
+    el.style.minHeight = '';
     grid(false);
     // back from a treatment (not from the browser's page cache): where she was in the list
     var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0], y = +ss.get('c360-bfo-y') || 0;
@@ -406,11 +420,12 @@
       az: function (x, y) { return x.name.localeCompare(y.name, 'ro'); } }[F.sort] || null;
     return cmp && (k !== 'top' || F.sort !== 'rec') ? list.slice().sort(cmp) : list;
   }
-  // a small product card for the grid: the picture, -50%, the name, the price, „Rezervă oferta”; a tap on it opens the treatment
-  function tileHtml(p) {
+  // a small product card for the grid: the picture, -50%, the name, the price, „Rezervă oferta”; a tap on it opens the treatment.
+  // The first row's pictures load at once (the first one first), the others when they come near.
+  function tileHtml(p, k) {
     var z = zoneOf(p), n = nOf(p), mine = has(p), u = urlOf(p);
     return '<article class="bfc bft' + (mine ? ' in' : '') + '" data-p="' + esc(p.id) + '" data-href="' + u + '" data-w="1">' +
-      '<span class="pic" aria-hidden="true"><img src="' + esc(picOf(p)) + '" alt="" loading="lazy" decoding="async"' + posOf(p) + '></span>' +
+      '<span class="pic" aria-hidden="true"><img ' + tileImg(p) + ' alt=""' + (k === 0 ? ' fetchpriority="high"' : k < 4 ? '' : ' loading="lazy"') + ' decoding="async"' + posOf(p) + '></span>' +
       '<span class="pct">-' + pct() + '%</span>' + onlyHtml(p, 'bft-c') +
       '<div class="bft-b"><span class="k">' + esc(NEED[p.need] || '') + '</span>' +
       '<h3><a href="' + u + '">' + esc(nameOf(p, z)) + '</a></h3>' +
@@ -486,7 +501,7 @@
   }
   function pairHtml(from, q, dark) {
     var z = q.zones.indexOf(zoneOf(from)) > -1 ? zoneOf(from) : zoneOf(q), on = !!lineOf(q.id, z);
-    return '<div class="pair' + (dark ? ' d' : '') + '" data-href="' + urlOf(q) + '"><span class="th"><img src="' + esc(picOf(q)) + '" alt=""' + posOf(q) + '></span>' +
+    return '<div class="pair' + (dark ? ' d' : '') + '" data-href="' + urlOf(q) + '"><span class="th"><img src="' + esc(picW(q, 300)) + '" alt="" decoding="async"' + posOf(q) + '></span>' +
       '<div><a href="' + urlOf(q) + '"><b>' + esc(nameOf(q, z)) + '</b></a><small>' + esc(WHY[from.id + '>' + q.id] || 'Se completează bine') + '</small><span class="pz"><s>' + lei(q.full) + '</s> <b>' + lei(q.price) + '</b></span></div>' +
       '<button type="button" class="sh-plus' + (on ? ' in' : '') + '" data-plus="' + esc(q.id) + '" data-pz="' + esc(z) + '" aria-label="' + (on ? 'În coș' : 'Adaugă') + '">' + (on ? I.check : I.plus) + '</button></div>';
 
@@ -630,7 +645,7 @@
   function popHtml(p, zone, qty) {
     return '<div class="sp-in">' +
       '<div class="sp-h"><span class="sp-ok">' + I.check + '</span><b>Adăugat în coș</b><button type="button" class="sh-ic" data-pop-x aria-label="Închide">' + I.x + '</button></div>' +
-      '<div class="sp-it"><span class="th"><img src="' + esc(picOf(p)) + '" alt=""' + posOf(p) + '></span><div><b data-sp-n>' + esc(nameOf(p, zone)) + '</b><small>Black Friday -' + pct() + '% · ' + p.minutes + ' min</small>' + onlyHtml(p, 'sp-c') + '</div>' +
+      '<div class="sp-it"><span class="th"><img src="' + esc(picW(p, 300)) + '" alt=""' + posOf(p) + '></span><div><b data-sp-n>' + esc(nameOf(p, zone)) + '</b><small>Black Friday -' + pct() + '% · ' + p.minutes + ' min</small>' + onlyHtml(p, 'sp-c') + '</div>' +
       '<div class="pz"><b data-sp-p>' + lei(p.price * qty) + '</b><s data-sp-f>' + lei(p.full * qty) + '</s></div></div>' +
       (p.zones.length ? '<p class="sp-l">Alege zona</p><div class="sh-chips" role="radiogroup" aria-label="Zona" data-sp-z>' + zoneChips(p, zone, 'data-pzone') + '</div>' +
         '<button type="button" class="sh-addz" data-pzadd' + (freeZone(p) ? '' : ' hidden') + '>' + I.plus + 'Încă o zonă</button>' : '') +
@@ -775,13 +790,13 @@
   // a small card: „Merge super în combinație cu” (with the reason) and the other offers; one tap adds it, the card opens its page
   function miniHtml(q, why, zone) {
     var z = zone || zoneOf(q), has = !!lineOf(q.id, z);
-    return '<div class="sh-pc sh-card" data-href="' + urlOf(q) + '"><span class="th"><img src="' + esc(picOf(q)) + '" alt="" loading="lazy"' + posOf(q) + '></span><b>' + esc(nameOf(q, z)) + '</b>' + (why ? '<small>' + esc(why) + '</small>' : '') +
+    return '<div class="sh-pc sh-card" data-href="' + urlOf(q) + '"><span class="th"><img src="' + esc(picW(q, 600)) + '" alt="" loading="lazy" decoding="async"' + posOf(q) + '></span><b>' + esc(nameOf(q, z)) + '</b>' + (why ? '<small>' + esc(why) + '</small>' : '') +
       '<span class="pz"><b>' + lei(q.price) + '</b><s>' + lei(q.full) + '</s></span>' +
       '<button type="button" class="sh-plus' + (has ? ' in' : '') + '" data-plus="' + esc(q.id) + '" data-pz="' + esc(z) + '" aria-label="' + (has ? 'În coș, scoate ' : 'Adaugă ') + esc(nameOf(q, z)) + '">' + (has ? I.check : I.plus) + '</button></div>';
   }
   function lineHtml(x) {
     var u = urlOf(x.p);
-    return '<li class="sh-li sh-card" data-line="' + esc(x.key) + '"><a class="th" href="' + u + '" aria-hidden="true" tabindex="-1"><img src="' + esc(picOf(x.p)) + '" alt=""' + posOf(x.p) + '></a>' +
+    return '<li class="sh-li sh-card" data-line="' + esc(x.key) + '"><a class="th" href="' + u + '" aria-hidden="true" tabindex="-1"><img src="' + esc(picW(x.p, 300)) + '" alt=""' + posOf(x.p) + '></a>' +
       '<div class="sh-li-m"><a class="sh-li-n" href="' + u + '">' + esc(x.p.name) + '</a>' +
       (x.p.zones.length ? '<div class="sh-zr"><button type="button" class="sh-zone" data-zk="' + esc(x.key) + '" aria-expanded="false">' + esc(x.zone) + I.down + '</button>' +
         (freeZone(x.p) ? '<button type="button" class="sh-addz s" data-zadd="' + esc(x.p.id) + '">' + I.plus + 'Încă o zonă</button>' : '') + '</div>'
@@ -1125,9 +1140,14 @@
   // ================= the catalog =================
   var CAT = null, catOk = null;
   CAT = new Promise(function (ok) { catOk = ok; });
-  function load() {
-    var art = fetch('/v2/art.json', { headers: { Accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; });
-    return Promise.all([fetch('/api/shop', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }), art]).then(function (x) {
+  // the first time, the answers the page's head already asked for (window.C360Pre, v2/build.py: the shop's pages ask from the
+  // head, before the styles, so the first screen does not wait for this script); again later (fresh), new ones
+  function load(fresh) {
+    var pre = fresh !== true && window.C360Pre;
+    var art = (pre && pre.art ? pre.art : fetch('/v2/art.json', { headers: { Accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : {}; })).catch(function () { return {}; });
+    var api = pre && pre.shop ? pre.shop.catch(function () { return fetch('/api/shop', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }); })
+      : fetch('/api/shop', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); });
+    return Promise.all([api, art]).then(function (x) {
       var d = x[0];
       if (!d || !d.ok) throw new Error('shop');
       ART = x[1] && typeof x[1] === 'object' ? x[1] : {};

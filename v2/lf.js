@@ -276,7 +276,8 @@
   var qs = {}; try { new URLSearchParams(location.search).forEach(function (v, k) { qs[k] = v; }); } catch (e) {}
   var linkZone = qs.zona || TOPIC[fold(qs.din || '').replace(/[^a-z-]/g, '')] || '';
   window.C360LF = { open: open, close: close, zone: linkZone, topic: TOPIC, load: load };
-  if (qs.lf || /#pachet\b/.test(location.hash)) addEventListener('load', function () { open(null, { zone: linkZone, city: qs.oras || '' }); });
+  // (on the shop's pages this file comes after the page has loaded: then it opens at once)
+  if (qs.lf || /#pachet\b/.test(location.hash)) { var auto = function () { open(null, { zone: linkZone, city: qs.oras || '' }); }; if (document.readyState === 'complete') auto(); else addEventListener('load', auto); }
   // the phone dock waits until she has scrolled past the lead filter section (the owner, 21.11): on the card block and on
   // the section the page's own actions are in sight; once the section's bottom has gone up out of view the dock comes,
   // and goes again if she scrolls back above it. Pages without the section keep the kit's own rule.

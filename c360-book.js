@@ -885,8 +885,10 @@
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auto); else auto();
   // the payment ready before the tap (c360-pay.js and its status, 23.11: the sheet must open at once)
+  // (after the page has loaded: the first screen comes first, speed 25.11)
   const warm = () => embedOn().then((on) => { if (on && window.C360Pay && window.C360Pay.preload) window.C360Pay.preload(); });
-  if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 2500 }); else setTimeout(warm, 1200);
+  const idle = () => { if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 2500 }); else setTimeout(warm, 1200); };
+  if (document.readyState === 'complete') idle(); else window.addEventListener('load', idle, { once: true });
   // back on the site with a payment made on myPOS's page (the Partners way) not yet confirmed, or /?plata=<order>&k=<key>:
   // c360-pay.js says „Plătit” as soon as myPOS does
   try {

@@ -13,5 +13,8 @@ dock: off
   <div data-tm></div>
 </div></section>
 <script>(function(){var t=document.querySelector('.top');if(t)t.classList.add('dk')})()</script>
-<div class="bfo"><div class="wrap" data-bfo><div class="sh-wait">Încarc ofertele…</div></div></div>
+<!-- the grid's place is kept while the offers load (the footer does not jump), and its first picture is asked for at once (the
+     server's first offer, api/_lib/shop.js SHOW; the 600 copy, v2/tools/pic-sizes.py; speed, 25.11) -->
+<link rel="preload" as="image" href="/brand_asset/tratamente/liposonix-600.webp?v=2" imagesrcset="/brand_asset/tratamente/liposonix-600.webp?v=2 600w, /brand_asset/tratamente/liposonix.webp?v=2 966w" imagesizes="(max-width:640px) calc(50vw - 31px), 270px" fetchpriority="high">
+<div class="bfo"><div class="wrap" data-bfo style="min-height:100vh"><div class="sh-wait">Încarc ofertele…</div></div></div>
 <script src="/v2/shop.js" defer></script>
