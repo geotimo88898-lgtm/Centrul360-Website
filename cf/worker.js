@@ -284,6 +284,8 @@ export default {
     else if (event.cron === "* * * * *") paths.push("/api/pay-tick");
     // every 5 minutes: the organic posts that are due (api/content-post-tick.js), so a 19:30 reel leaves at 19:30
     if (event.cron === "* * * * *" && new Date(event.scheduledTime).getUTCMinutes() % 5 === 2) paths.push("/api/content-post-tick");
+    // every 5 minutes: the site ads still being made (api/ads-site-tick.js; nothing once they are all made)
+    if (event.cron === "* * * * *" && new Date(event.scheduledTime).getUTCMinutes() % 5 === 3) paths.push("/api/ads-site-tick");
     if (event.cron !== "* * * * *") {
       paths.push(hour === 6 ? "/api/automation-tick" : "/api/automation-tick?light=1");
       if (hour === 19) paths.push("/api/daily-report");
@@ -295,7 +297,7 @@ export default {
       if (!globalThis.__C360_CRON_TOKEN) globalThis.__C360_CRON_TOKEN = crypto.randomUUID() + crypto.randomUUID();
       const req = new Request("https://admin.centrul360.com" + path, { headers: { authorization: "Bearer " + (path.startsWith("/creative") ? (env.CRON_SECRET || "") : globalThis.__C360_CRON_TOKEN), "user-agent": "vercel-cron/1.0" } });
       const r = await als.run({ ctx }, () => route(req, env, ctx)).catch((e) => ({ status: "eroare " + e.message }));
-      if (path !== "/api/fastcash-tick" && path !== "/api/content-story-tick" && path !== "/api/card-tick" && path !== "/api/content-post-tick" && path !== "/api/booking-pay-tick" && path !== "/api/pay-tick") console.log("cron", path, r.status);
+      if (path !== "/api/fastcash-tick" && path !== "/api/content-story-tick" && path !== "/api/card-tick" && path !== "/api/content-post-tick" && path !== "/api/booking-pay-tick" && path !== "/api/pay-tick" && path !== "/api/ads-site-tick") console.log("cron", path, r.status);
     }
   }
 };
