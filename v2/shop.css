@@ -978,3 +978,8 @@ body:has(.top.away) .bfo-f{ top:auto; }
 .sh-plan-f .pz b{ display:block; font-size:20px; font-weight:800; letter-spacing:-.03em; color:var(--l1); font-variant-numeric:tabular-nums; }
 .sh-plan-f .pz s{ font-size:13px; color:var(--l3); }
 .sh-plan-f .sh-pk-go{ margin:0; flex:1; max-width:220px; }
+/* the timer's cells stay alike (the owner, 25.11: „după un timp apare așa, bug”: on Android the cell whose number had just rolled
+   kept a layer of its own and was drawn bigger and brighter): no glass blur behind them, every cell on its own layer from the start */
+.tm-c i{ -webkit-backdrop-filter:none !important; backdrop-filter:none !important; transform:translateZ(0); contain:paint; }
+.tm-c b.tk{ animation-name:tmTick2; }
+@keyframes tmTick2{ from{ opacity:.25; } }
