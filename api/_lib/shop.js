@@ -76,6 +76,21 @@ const PAIRS = {
   microneedling: ['hidratare', 'restart'], periocular: ['hidratare', 'biolifting-full-face'],
 };
 const EPIL_PAIRS = ['epilare-axile', 'epilare-inghinal-total', 'epilare-picior-lung', 'epilare-linie-bikini'];
+// the problem packages (the owner, 25.11: „pachete pe probleme, pentru toate procedurile, ca să avem upsell power”): the treatments
+// that solve one problem together. Every part at its price list price (the price list's package where there is one), the sum
+// at the same -50%: no price of their own. for: the treatments in the cart that offer it. A proposal until the owner's „da”.
+const BUNDLES = [
+  { id: 'pachet-gusa', name: 'Pachet Gușă și contur', need: 'gusa', parts: [['hifu', 1], ['biolifting-x4', 1]], for: ['hifu', 'biolifting', 'biolifting-x4'], b: 'Strânge și fermizează zona' },
+  { id: 'pachet-lifting', name: 'Pachet Lifting Full Face', need: 'fata', parts: [['hifu-full-face', 1], ['biolifting-full-face-x4', 1]], for: ['hifu-full-face', 'biolifting-full-face', 'biolifting-full-face-x4'], b: 'Lifting și fermitate pe toată fața' },
+  { id: 'pachet-riduri', name: 'Pachet Riduri', need: 'fata', parts: [['antirid-x4', 1], ['biolifting-full-face-x4', 1]], for: ['antirid', 'antirid-x2', 'antirid-x4', 'biolifting-full-face'], b: 'Riduri estompate, piele mai fermă' },
+  { id: 'pachet-ten', name: 'Pachet Ten luminos', need: 'fata', parts: [['restart-x2', 1], ['hidratare-x2', 1]], for: ['restart', 'hidratare', 'masaj-facial'], b: 'Ten luminos și hidratat' },
+  { id: 'pachet-acnee', name: 'Pachet Acnee și pori', need: 'fata', parts: [['sebum-off-x4', 1], ['microneedling-x3', 1]], for: ['sebum-off', 'sebum-off-x2', 'microneedling'], b: 'Pori curați, cicatrici estompate' },
+  { id: 'pachet-roseata', name: 'Pachet Roșeață', need: 'fata', parts: [['redness-x4', 1], ['hidratare-x2', 1]], for: ['redness', 'redness-x2'], b: 'Piele calmă și hidratată' },
+  { id: 'pachet-grasime', name: 'Pachet Grăsime localizată', need: 'corp', parts: [['liposonix-x2', 1], ['radiofrecventa-x4', 1]], for: ['liposonix', 'cavitatie'], b: 'Grăsimea pleacă, pielea rămâne fermă' },
+  { id: 'pachet-tonifiere', name: 'Pachet Burtică tonifiată', need: 'corp', parts: [['liposonix-x2', 1], ['ems-x6', 1]], for: ['liposonix', 'ems'], b: 'Mai puțină grăsime, mușchi definit' },
+  { id: 'pachet-celulita', name: 'Pachet Celulită', need: 'corp', parts: [['radiofrecventa-x6', 1], ['cavitatie', 6]], for: ['radiofrecventa', 'cavitatie', 'impachetare'], b: 'Piele netedă, mai fermă' },
+  { id: 'pachet-fermitate', name: 'Pachet Piele lăsată', need: 'corp', parts: [['hifu-corp-x2', 1], ['radiofrecventa-x4', 1]], for: ['hifu-corp', 'radiofrecventa'], b: 'Piele strânsă, fără operație' },
+];
 const IMPULSE = { 'Timișoara': 'epilare-axile', Arad: 'masaj-facial' };
 // the first screen's slider (the owner, 24.11): these, in this order
 // (RF Sculpt is no longer offered, the owner 25.11: BioLifting in its place)
@@ -137,8 +152,23 @@ function catalog(city, at) {
     list.push(Object.assign({}, m, { id: m.id + '-x' + n, base: m.id, pack: n, name: m.name + ' · ' + n + ' ședințe', ref: t.id, cities: t.cities.slice(),
       minutes: t.minutes || m.minutes, full: t.price, price, b: [n + ' ședințe, ' + Math.round(price / n) + ' lei ședința', m.b[0]] }));
   }
+  // the problem packages, from the products above (a part missing in this city: no package)
+  const byId = new Map(list.map((p) => [p.id, p]));
+  for (const B of BUNDLES) {
+    const parts = B.parts.map(([id, n]) => ({ p: byId.get(id), n }));
+    if (parts.some((x) => !x.p)) continue;
+    const zoned = parts.filter((x) => x.p.zones.length), zones = zoned.length ? zoned[0].p.zones.filter((z) => zoned.every((x) => x.p.zones.includes(z))) : [];
+    if (zoned.length && !zones.length) continue;
+    const cities = parts.reduce((c, x) => c.filter((y) => x.p.cities.includes(y)), parts[0].p.cities.slice());
+    if (!cities.length) continue;
+    const first = parts[0].p, ses = parts.reduce((s, x) => s + x.n * (x.p.pack || 1), 0);
+    const word = (x) => { const k = x.n * (x.p.pack || 1); return (x.p.base ? (out.get(x.p.base) || x.p).name : x.p.name) + ', ' + (k === 1 ? '1 ședință' : k + ' ședințe'); };
+    list.push({ id: B.id, name: B.name, need: B.need, bundle: true, home: first.base || first.id, for: B.for.slice(), zones, cities, ref: first.ref, minutes: first.minutes, ses,
+      inc: parts.map(word).join(' + '), parts: parts.map((x) => ({ id: x.p.id, n: x.n })), full: parts.reduce((s, x) => s + x.p.full * x.n, 0), price: parts.reduce((s, x) => s + x.p.price * x.n, 0),
+      b: [B.b, ses + ' ședințe în total'], photo: first.photo, pairs: [] });
+  }
   const ids = new Set(list.map((p) => p.id));
-  list.forEach((p) => { p.pairs = p.pack ? [] : (p.need === 'epilare' ? EPIL_PAIRS : PAIRS[p.base || p.id] || []).filter((id) => id !== p.id && id !== p.base && ids.has(id)).slice(0, 3); });
+  list.forEach((p) => { if (p.bundle) return; p.pairs = p.pack ? [] : (p.need === 'epilare' ? EPIL_PAIRS : PAIRS[p.base || p.id] || []).filter((id) => id !== p.id && id !== p.base && ids.has(id)).slice(0, 3); });
   return list;
 }
 
@@ -166,7 +196,7 @@ async function quote(city, items, at) {
     if (!p) return { error: 'not_found', id: it.id };
     if (!p.cities.includes(city)) return { error: 'not_in_city', id: it.id };
     const zone = p.zones.length ? (p.zones.includes(it.zone) ? it.zone : p.zones[0]) : '';
-    lines.push({ id: p.id, ref: p.ref, zone, qty: it.qty, name: p.pack && zone ? p.name.replace(' · ', ' ' + zone + ' · ') : p.name + (zone ? ' ' + zone : ''), minutes: p.minutes, unit: p.full, unitPrice: p.price, full: p.full * it.qty, price: p.price * it.qty });
+    lines.push({ id: p.id, ref: p.ref, zone, qty: it.qty, name: p.bundle ? p.name + (zone ? ', ' + zone : '') : p.pack && zone ? p.name.replace(' · ', ' ' + zone + ' · ') : p.name + (zone ? ' ' + zone : ''), minutes: p.minutes, unit: p.full, unitPrice: p.price, full: p.full * it.qty, price: p.price * it.qty });
   }
   if (!lines.length) return { error: 'empty' };
   const full = lines.reduce((s, l) => s + l.full, 0), amount = lines.reduce((s, l) => s + l.price, 0);

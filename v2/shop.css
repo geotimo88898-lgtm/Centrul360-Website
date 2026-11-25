@@ -888,3 +888,16 @@ body:has(.top.away) .bfo-f{ top:auto; }
 .pp-l,.pp-facts small,.pp-tx .tm .tm-l{ font-size:14px; }
 .pp-vid figcaption{ font-size:13px; }
 .sh-pc > b{ font-size:15px; }
+
+/* the popover's zones (the owner, 25.11): the zones she took as clear rows, then the next zone from the ones left */
+.sp-zl{ display:grid; gap:8px; margin:0 0 4px; }
+.sp-zr{ display:flex; align-items:center; gap:10px; min-height:48px; padding:0 6px 0 14px; border-radius:16px; background:#f1f1f4; }
+.sp-zr > svg{ flex:none; width:16px; height:16px; color:#0b0b0d; }
+.sp-zr b{ font-size:15.5px; font-weight:650; letter-spacing:-.015em; color:var(--l1); }
+.sp-zr small{ margin-left:auto; font-size:13.5px; color:var(--l2); }
+.sp-zr .sh-ic{ flex:none; width:36px; height:36px; }
+/* the cart line's zone: one line, never broken inside its pill */
+.sh-zone{ max-width:100%; white-space:nowrap; }
+.sh-zone{ overflow:hidden; text-overflow:ellipsis; }
+.sh-li-m{ max-width:100%; }
+.sh-pk-m .inc{ font-size:13.5px; line-height:1.35; color:var(--l1); }
