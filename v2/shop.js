@@ -44,7 +44,7 @@
   var NEED = { corp: 'Corp', gusa: 'Gușă', fata: 'Față', epilare: 'Epilare' };
   var FILTERS = [['all', 'Toate'], ['top', 'Cele mai cerute'], ['corp', 'Corp'], ['gusa', 'Gușă'], ['fata', 'Față'], ['epilare', 'Epilare']];
   var FILTER_T = { all: 'Toate tratamentele', top: 'Cele mai cerute', corp: 'Corp', gusa: 'Gușă și contur', fata: 'Față', epilare: 'Epilare laser' };
-  var SORTS = [['rec', 'Recomandate'], ['asc', 'Preț: de la mic la mare'], ['desc', 'Preț: de la mare la mic'], ['az', 'Nume, A la Z']];
+  var SORTS = [['rec', 'Recomandate'], ['asc', 'Preț crescător'], ['desc', 'Preț descrescător'], ['az', 'Nume, A la Z']];
   var svg = function (d, w) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 2) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>'; };
   var I = {
     bag: svg('<path d="M5.2 8.5h13.6l-.9 10.6a2 2 0 0 1-2 1.9H8.1a2 2 0 0 1-2-1.9z"/><path d="M8.8 10.5V7.2a3.2 3.2 0 0 1 6.4 0v3.3"/>', 1.6),
@@ -321,18 +321,35 @@
     el.innerHTML = '<div class="bfo-f"><div class="bfo-cats" role="tablist" aria-label="Categorie">' +
       FILTERS.map(function (f) { return '<button type="button" role="tab" data-f="' + f[0] + '" aria-selected="' + (f[0] === F.k) + '">' + f[1] + '</button>'; }).join('') + '</div>' +
       '<div class="bfo-tools">' +
-      '<label class="bfo-sel"><span class="sr">Clinica</span><select data-fcity aria-label="Clinica"><option value="">Ambele clinici</option><option value="Timișoara">Timișoara</option><option value="Arad">Arad</option></select>' + CHEV_D + '</label>' +
-      '<label class="bfo-sel"><span class="sr">Sortează</span><select data-fsort aria-label="Sortează">' + SORTS.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === F.sort ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' + CHEV_D + '</label>' +
+      ddHtml('city', 'Clinica', CITIES_F, F.city, 'l') + ddHtml('sort', 'Sortează', SORTS, F.sort, 'r') +
       '</div></div>' +
       '<div class="bfo-head"><h2 data-fh></h2><span data-fn></span></div><div class="bfo-g tiles" data-grid></div>';
-    $$('select', el).forEach(function (sel) {
-      sel.addEventListener('change', function () {
-        if (sel.hasAttribute('data-fsort')) F.sort = sel.value; else F.city = sel.value;
-        grid(true);
-      });
-    });
     grid(false);
   }
+  var CITIES_F = [['', 'Ambele clinici'], ['Timișoara', 'Timișoara'], ['Arad', 'Arad']];
+  function ddHtml(key, label, opts, val, side) {
+    var cur = opts.filter(function (o) { return o[0] === val; })[0] || opts[0];
+    return '<div class="bfo-dd ' + side + '" data-dd="' + key + '"><button type="button" class="bfo-ddb" aria-haspopup="listbox" aria-expanded="false" aria-label="' + label + ': ' + esc(cur[1]) + '">' +
+      '<span data-ddv>' + esc(cur[1]) + '</span>' + CHEV_D + '</button><div class="bfo-ddm" role="listbox" aria-label="' + label + '">' +
+      opts.map(function (o) { return '<button type="button" role="option" data-ddo="' + esc(o[0]) + '" aria-selected="' + (o[0] === cur[0]) + '">' + I.check + '<span>' + esc(o[1]) + '</span></button>'; }).join('') + '</div></div>';
+  }
+  function ddClose(except) { $$('.bfo-dd.open').forEach(function (d) { if (d === except) return; d.classList.remove('open'); $('.bfo-ddb', d).setAttribute('aria-expanded', 'false'); }); }
+  document.addEventListener('click', function (e) {
+    var t = e.target; if (!t.closest) return;
+    var b = t.closest('.bfo-ddb');
+    if (b) { var d = b.closest('.bfo-dd'), on = !d.classList.contains('open'); ddClose(d); d.classList.toggle('open', on); b.setAttribute('aria-expanded', String(on)); return; }
+    var o = t.closest('[data-ddo]');
+    if (o) {
+      var dd = o.closest('.bfo-dd'), key = dd.getAttribute('data-dd'), v = o.getAttribute('data-ddo');
+      if (key === 'sort') F.sort = v; else F.city = v;
+      $$('[data-ddo]', dd).forEach(function (x) { x.setAttribute('aria-selected', String(x === o)); });
+      $('[data-ddv]', dd).textContent = $('span', o).textContent;
+      $('.bfo-ddb', dd).setAttribute('aria-label', (key === 'sort' ? 'Sortează' : 'Clinica') + ': ' + $('span', o).textContent);
+      ddClose(); grid(true); return;
+    }
+    if (!t.closest('.bfo-dd')) ddClose();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') ddClose(); });
   function listFor(k) {
     var list;
     if (k === 'top') list = D.terms.show.map(byId).filter(Boolean);
