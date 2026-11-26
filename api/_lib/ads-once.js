@@ -574,6 +574,13 @@ const BF_SITE = [
  }
 ];
 const JOBS = [
+  // 26.11 ~12:00, George: „n-au mers deloc reclamele (Black Friday pe site, oprite de el), pune iară pe leaduri ce a funcționat”:
+  // the two lead campaigns with the most bookings and clients of the last 2 weeks in Timișoara back on, at their 75 lei a day
+  // (HIFU G sezon: 56 leads at 11 lei, 24 bookings, 13 clients; the iPad video: 23 leads, 12 bookings, 3 clients)
+  { id: 'leads-back-2026-11-26', act: 'act_4502494523405059', why: 'George: înapoi pe leaduri, ce a mers', actions: [
+    { campaignId: '120251401215320103', name: 'TM HIFU G · sezon', status: 'ACTIVE', why: '56 leaduri la 11 lei, 13 cliente în 2 săptămâni' },
+    { campaignId: '120251585544900103', name: 'TM VIDEO · HIFU gușă · iPad', status: 'ACTIVE', why: '23 leaduri, 12 programări, 3 cliente în 2 săptămâni' },
+  ] },
   // 26.11 ~01:30, George: the copy in his structure (the city, the offer, 3 bullets, the urgency, the CTA with the site; 3 titles in
   // capitals: 👉, ⏰💨 and one more): the ads are made again as „· v2” in the same ad sets; the 5 of the first copy paused
   { id: 'bf-site-v1-off-2026-11-26', act: 'act_4502494523405059', why: 'Black Friday: reclamele cu prima copie înlocuite', actions: [
