@@ -415,7 +415,8 @@
   const canHire = () => !!(S.ctx.isAdmin || (S.ctx.me && S.ctx.me.role === 'manager'));
   const ownerHires = () => !!S.ctx.isAdmin; // only the owner sets „Angajat”
   let hireList = null;
-  const KINDS = [['clienti', 'Cliente'], ['site', 'Site'], ['angajari', 'Angajări'], ['carduri', 'Carduri de Sărbători'], ['aparate', 'Aparate']];
+  // [key, label, the label on a phone with five tabs (26.11: „Carduri de Sărbători” broke inside a word at 360px)]
+  const KINDS = [['clienti', 'Cliente'], ['site', 'Site'], ['angajari', 'Angajări'], ['carduri', 'Carduri de Sărbători', 'Carduri'], ['aparate', 'Aparate']];
   const EYEBROW = { clienti: 'Vânzări', site: 'Site', angajari: 'Angajări', carduri: 'Carduri de Sărbători', aparate: 'Aparate' };
   const kinds = () => KINDS.filter(([k]) => (k !== 'angajari' || canHire()) && (k !== 'aparate' || S.ctx.isAdmin));
   // the tab bar: each kind with how many are in it (in the city chosen; the lost leads and the turned-down candidates not
@@ -430,8 +431,9 @@
     const known = (k) => S.loaded && (k !== 'angajari' || hireList);
     bar.style.setProperty('--n', list.length);
     bar.style.setProperty('--at', Math.max(0, list.findIndex(([k]) => k === cur)));
-    bar.innerHTML = '<i class="pl-kinds-thumb" aria-hidden="true"></i>' + list.map(([k, label]) => '<button type="button" role="tab" data-kind="' + k + '" aria-selected="' + (k === cur) + '"' +
-      (k === cur ? ' class="is-on"' : '') + '><span>' + label + '</span><b>' + (known(k) ? n[k] : '…') + '</b></button>').join('');
+    const tight = list.length >= 5 && window.matchMedia('(max-width: 640px)').matches;
+    bar.innerHTML = '<i class="pl-kinds-thumb" aria-hidden="true"></i>' + list.map(([k, label, short]) => '<button type="button" role="tab" data-kind="' + k + '" aria-selected="' + (k === cur) + '"' +
+      (k === cur ? ' class="is-on"' : '') + (tight && short ? ' aria-label="' + label + '"' : '') + '><span>' + (tight && short ? short : label) + '</span><b>' + (known(k) ? n[k] : '…') + '</b></button>').join('');
   }
   function setMode(m, quiet) {
     if (!KINDS.some(([k]) => k === m) || (m === 'angajari' && !canHire()) || (m === 'aparate' && !S.ctx.isAdmin)) m = 'clienti';
