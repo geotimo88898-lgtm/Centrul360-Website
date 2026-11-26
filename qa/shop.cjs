@@ -81,6 +81,10 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   check('no price anywhere is more than 50% off its sessions one by one (packages and problem packages included)', !deep.length, deep.map((p) => p.id + ' ' + p.price + '/' + listOf(p)));
   check('the full price shown is the sessions one by one, so the crossed price is real', ALL.every((p) => p.full === listOf(p)), ALL.filter((p) => p.full !== listOf(p)).map((p) => p.id + ' ' + p.full + '/' + listOf(p)));
   const after = S.catalog('Timișoara', Date.parse('2026-11-28T10:00:00Z')).concat(S.catalog('Arad', Date.parse('2026-11-28T10:00:00Z')));
+  const aBy = (id) => after.find((x) => x.id === id);
+  const aList = (p) => (p.bundle ? p.parts.reduce((s, x) => { const q = aBy(x.id); return s + (q ? aList(q) * x.n : 1e9); }, 0) : p.pack ? (aBy(p.base) || { full: 1e9 }).full * p.pack : p.full);
+  const aDeep = after.filter((p) => p.price * 2 < aList(p) - 1);
+  check('after Black Friday too, no price is more than 50% off its sessions one by one', !aDeep.length, aDeep.map((p) => p.id + ' ' + p.price + '/' + aList(p)));
   check('after Black Friday every package costs less than its sessions one by one', after.filter((p) => p.pack).every((p) => { const b = after.find((x) => x.id === p.base); return b && p.price < b.price * p.pack; }));
   // the problem packages (the owner, 25.11): their treatments at the price list (its packages), the sum at -50%
   const bg = tm.find((p) => p.id === 'pachet-gusa'), bt = ar.find((p) => p.id === 'pachet-tonifiere');
