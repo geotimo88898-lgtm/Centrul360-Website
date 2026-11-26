@@ -90,7 +90,8 @@ async function collect(inWin) {
     // a card's checkout order: the card's ad (its lead form's, inherited: src.ad = { adId, campaignId, ... }) names it exactly
     const m = tagsOf(s), inh = o.src && o.src.ad && typeof o.src.ad === 'object' ? o.src.ad : null;
     if (inh && /^\d{5,25}$/.test(String(inh.adId || ''))) { m.ad = String(inh.adId); m.source = m.source || 'facebook'; }
-    items.push({ kind: 'pay', saved, from: s ? s.from : '', m, paid: o.status === 'paid', payKind: o.kind, lei: o.amount, phone: o.phone, at: o.createdAt, id: o.id, ref: o.ref, paidAt: o.paidAt });
+    items.push({ kind: 'pay', saved, from: s ? s.from : '', m, paid: o.status === 'paid', payKind: o.kind, lei: o.amount, phone: o.phone, at: o.createdAt, id: o.id, ref: o.ref, paidAt: o.paidAt,
+      det: s ? { land: s.land || '', first: s.at || '', app: s.app || '', fbc: !!s.fbc, ref: s.ref || '', tag: s.tag || null } : null });
   });
 
   // leads of the site's forms
@@ -197,4 +198,14 @@ async function byAd(days) {
   return { ok: true, days: days || null, ads, pairs: Object.values(pairs), touches, orders };
 }
 
-module.exports = { report, byAd, SITE_ZERO };
+// the checkout's paid orders of the last days, newest first, each with where she came from (`from`), the page she landed on,
+// when her visit began, the app's browser, Meta's click cookie and the address's tags; never a name, a phone or an order id
+// (GET /api/lead-health?sources=paid&days=N, read only; 26.11: „spune-mi de unde a venit clienta”)
+async function paid(days) {
+  const d = Math.max(1, Math.min(60, Math.round(Number(days) || 3)));
+  const since = Date.now() - d * 86400e3;
+  const items = await collect((iso) => (Date.parse(iso) || 0) >= since);
+  return items.filter((x) => x.kind === 'pay' && x.paid).sort((a, b) => String(b.paidAt || b.at).localeCompare(String(a.paidAt || a.at)))
+    .map((x) => Object.assign({ kind: x.payKind, lei: x.lei, at: x.at, paidAt: x.paidAt || '', from: x.from || NONE }, x.det || {}));
+}
+module.exports = { report, byAd, paid, SITE_ZERO };

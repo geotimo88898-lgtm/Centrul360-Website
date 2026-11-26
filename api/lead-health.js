@@ -8,6 +8,7 @@
 //   ?wa=1: also the template messages one by one, newest first (time, template, status, why), no name or phone
 //   ?voice=1: the voice notes' transcription (Gemini) works, in length and time only
 //   ?sources=1&days=N: where the site's bookings, payments, leads and card orders come from, counts and lei per source
+//   ?sources=paid&days=N: the paid checkout orders one by one, where each came from (page, first visit, app), no name or phone
 
 const crypto = require('crypto');
 const { readJSON } = require('./_lib/store');
@@ -1216,6 +1217,7 @@ module.exports = async (req, res) => {
   if (req.query && req.query.voice) { res.status(200).json(await require('./_lib/media-read').probe().catch((e) => ({ ok: false, error: String((e && (e.code || e.name)) || 'error').slice(0, 60) }))); return; }
   // ?sources=1&days=N: where the site's customers come from, per kind (bookings, the checkout's orders paid / unpaid, the
   // forms' leads, the Card de Sărbători orders), counts and lei per `from` only (api/_lib/site-sources.js). Read only.
+  if (req.query && req.query.sources === 'paid') { res.status(200).json({ ok: true, paid: await require('./_lib/site-sources').paid(req.query.days) }); return; }
   if (req.query && req.query.sources) { res.status(200).json(await require('./_lib/site-sources').report(req.query.days)); return; }
   // ?sitebook=1: where the site's own bookings come from (the owner, 13.11: „de unde vin toate?”). The site keeps no
   // source with a booking, so for each one: the page it was made on, what we had of her before it (a lead from an ad
