@@ -205,7 +205,18 @@ async function paid(days) {
   const d = Math.max(1, Math.min(60, Math.round(Number(days) || 3)));
   const since = Date.now() - d * 86400e3;
   const items = await collect((iso) => (Date.parse(iso) || 0) >= since);
+  // known before? her number (last 9 digits, never shown) among the leads (which form, campaign and ad) and the Calendar's
+  // visits made before this order
+  const [leads, appts] = await Promise.all([readJSON('data/leads.json', []), readJSON('data/appointments.json', [])]);
+  const d9 = (v) => String(v || '').replace(/\D/g, '').slice(-9);
   return items.filter((x) => x.kind === 'pay' && x.paid).sort((a, b) => String(b.paidAt || b.at).localeCompare(String(a.paidAt || a.at)))
-    .map((x) => Object.assign({ kind: x.payKind, lei: x.lei, at: x.at, paidAt: x.paidAt || '', from: x.from || NONE }, x.det || {}));
+    .map((x) => {
+      const k = d9(x.phone), before = (iso) => k.length === 9 && String(iso || '') < String(x.at || '');
+      const ls = (leads || []).filter((l) => l && d9(l.phone) === k && before(l.createdAt)).map((l) => ({ at: l.createdAt, source: l.source || l.createdBy || '',
+        campaign: (l.form && l.form.campaign) || '', ad: (l.form && l.form.ad) || '', interest: String(l.interest || '').slice(0, 60) }));
+      const vs = (appts || []).filter((a) => a && !a.block && d9(a.clientPhone) === k && before(a.createdAt));
+      return Object.assign({ kind: x.payKind, lei: x.lei, at: x.at, paidAt: x.paidAt || '', from: x.from || NONE }, x.det || {},
+        { known: { leads: ls.slice(-5), visitsBefore: vs.length, firstVisit: vs.map((a) => a.date).sort()[0] || '' } });
+    });
 }
 module.exports = { report, byAd, paid, SITE_ZERO };
