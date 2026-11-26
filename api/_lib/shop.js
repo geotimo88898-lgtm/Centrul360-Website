@@ -194,9 +194,14 @@ function catalog(city, at) {
     if (!t || !(t.sessions > 1) || /^(rfsculpt-|ems-2-zone)/.test(t.id) || (city && !t.cities.includes(city))) continue;
     const m = t.id === 'epilare-full-body-pachet-6-sedinte' ? out.get('epilare-full-body') : P[t.id.replace(/-\d+-sedinte$/, '-1-sedinta')] && out.get(P[t.id.replace(/-\d+-sedinte$/, '-1-sedinta')].id);
     if (!m) continue;
-    const n = t.sessions, price = priceOf(t.price, at);
+    // never more than 50% off (the owner, 26.11, after a 2-session Liposonix sold at 490 in place of 640: „nu vreau să fie
+    // reduceri mai mari de 50%”): the package's own list price is already lower than its sessions one by one, so during Black
+    // Friday it costs half of its sessions' full price (the same as the sessions one by one), never -50% on top of it
+    const n = t.sessions, bf = bfOn(at);
+    const full = bf ? m.full * n : t.price;
+    const price = Math.max(priceOf(t.price, at), Math.round(m.full * n * (100 - BF.pct) / 100));
     list.push(Object.assign({}, m, { id: m.id + '-x' + n, base: m.id, pack: n, name: m.name + ' · ' + n + ' ședințe', ref: t.id, cities: t.cities.slice(),
-      minutes: t.minutes || m.minutes, full: t.price, price, b: [n + ' ședințe, ' + Math.round(price / n) + ' lei ședința', m.b[0]] }));
+      minutes: t.minutes || m.minutes, full, price, b: [n + ' ședințe, ' + Math.round(price / n) + ' lei ședința', m.b[0]] }));
   }
   // the problem packages, from the products above (a part missing in this city: no package)
   const byId = new Map(list.map((p) => [p.id, p]));
