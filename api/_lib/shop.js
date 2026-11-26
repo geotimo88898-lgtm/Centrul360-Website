@@ -167,8 +167,11 @@ function productOf(t) {
 // online”): 49 lei, the clinic's own deposit (the confirmation's „avansul de 49 RON”, not given back on a no-show). Paid
 // online, it keeps the cart's price (Black Friday -50% included) on the booking; the rest is paid at the clinic. Not with
 // the Card de Sărbători in the cart (the card is paid whole), not on a sum of 49 lei or less
+// OFF since 26.11 ~18:00 (the owner: „șterge asta cu avansul, vreau înapoi cu plata integral”): no new hold takes a deposit;
+// a booking already reserved with one keeps it (the Calendar, Încasări and the desk still show what is left to cash)
+const DEPOSIT_ON = false;
 const DEPOSIT = 49;
-const depositOf = (amount, withCard) => (!withCard && Number(amount) > DEPOSIT ? DEPOSIT : 0);
+const depositOf = (amount, withCard) => (DEPOSIT_ON && !withCard && Number(amount) > DEPOSIT ? DEPOSIT : 0);
 const priceOf = (full, at) => (bfOn(at) ? Math.round(full * (100 - BF.pct) / 100) : require('./pay').bonusPrice(full, require('./pay').BONUS_PCT));
 
 // the catalog of a city (or both), at this moment's prices: one session each
@@ -309,6 +312,6 @@ async function payQuote({ ref }) {
   };
 }
 
-module.exports = { DEPOSIT, depositOf, BF, bfOn, TIERS_DEFAULT, tiers, NEEDS, catalog, terms, quote, clean, summary, giftsOf, payQuote, productOf, priceOf };
+module.exports = { DEPOSIT_ON, DEPOSIT, depositOf, BF, bfOn, TIERS_DEFAULT, tiers, NEEDS, catalog, terms, quote, clean, summary, giftsOf, payQuote, productOf, priceOf };
 // the card and the treatments in one payment work on the server (payQuote above, api/_lib/pay.js shop.paid): the cart may mix them
 module.exports.CARD_MIX = true;

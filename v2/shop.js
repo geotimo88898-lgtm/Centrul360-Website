@@ -1354,7 +1354,8 @@
   // a few quiet reasons to trust the payment, under it (the owner, 25.11: „elemente de încredere subtile, nu foarte evidente”):
   // the real Google rating, that a visit can be moved (the terms: „anunți din timp orice reprogramare”), the cards taken
   // the deposit that keeps the cart's price (api/_lib/shop.js DEPOSIT; the server's sum is the one paid)
-  var DEPOSIT = 49;
+  // off since 26.11 (the owner: „vreau înapoi cu plata integral”): the whole sum is paid online, no choice shown
+  var DEPOSIT = 49, DEPOSIT_ON = false;
   var TRUST = '<div class="sh-trust" aria-label="De ce e sigur">' +
     '<p><span class="st" aria-hidden="true">★★★★★</span> 5,0 pe Google · 300+ recenzii</p>' +
     '<p>Nu mai poți ajunge? Ne anunți din timp și mutăm programarea.</p>' +
@@ -1371,7 +1372,7 @@
     t = { lines: pl, amount: pl.reduce(function (s, x) { return s + x.p.price * x.qty; }, 0), full: pl.reduce(function (s, x) { return s + x.p.full * x.qty; }, 0) };
     // „Rezerv cu avans” (the owner, 26.11: new clients reached the payment and did not pay the whole treatment online): 49 lei now,
     // the price kept, the rest at the clinic (api/_lib/shop.js DEPOSIT); the first choice. Not with the card in the cart
-    var canDep = !mix && t.amount > DEPOSIT, dep = canDep && S.payFull !== true, rest = t.amount - DEPOSIT;
+    var canDep = DEPOSIT_ON && !mix && t.amount > DEPOSIT, dep = canDep && S.payFull !== true, rest = t.amount - DEPOSIT;
     var modes = canDep ? '<div class="sh-paymode" role="radiogroup" aria-label="Cum plătești">' +
       '<button type="button" role="radio" class="sh-pm sh-card' + (dep ? ' on' : '') + '" aria-checked="' + dep + '" data-paymode="dep"><i></i><span><b>Rezerv cu ' + lei(DEPOSIT) + ' avans</b><small>Prețul de ' + lei(t.amount) + ' rămâne al tău. Restul de ' + lei(rest) + ' îl plătești la clinică.</small></span></button>' +
       '<button type="button" role="radio" class="sh-pm sh-card' + (dep ? '' : ' on') + '" aria-checked="' + !dep + '" data-paymode="full"><i></i><span><b>Plătesc tot acum, ' + lei(t.amount) + '</b><small>La clinică nu mai plătești nimic.</small></span></button></div>' : '';

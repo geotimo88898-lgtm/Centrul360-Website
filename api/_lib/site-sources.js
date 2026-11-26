@@ -91,7 +91,7 @@ async function collect(inWin) {
     const m = tagsOf(s), inh = o.src && o.src.ad && typeof o.src.ad === 'object' ? o.src.ad : null;
     if (inh && /^\d{5,25}$/.test(String(inh.adId || ''))) { m.ad = String(inh.adId); m.source = m.source || 'facebook'; }
     items.push({ kind: 'pay', saved, from: s ? s.from : '', m, paid: o.status === 'paid', payKind: o.kind, lei: o.amount, phone: o.phone, at: o.createdAt, id: o.id, ref: o.ref, paidAt: o.paidAt,
-      det: s ? { land: s.land || '', first: s.at || '', app: s.app || '', fbc: !!s.fbc, ref: s.ref || '', tag: s.tag || null } : null });
+      det: s ? { land: s.land || '', first: s.at || '', app: s.app || '', fbc: !!s.fbc, ref: s.ref || '', tag: s.tag || null } : null, handled: !!o.handled });
   });
 
   // leads of the site's forms
@@ -215,8 +215,11 @@ async function paid(days) {
       const ls = (leads || []).filter((l) => l && d9(l.phone) === k && before(l.createdAt)).map((l) => ({ at: l.createdAt, source: l.source || l.createdBy || '',
         campaign: (l.form && l.form.campaign) || '', ad: (l.form && l.form.ad) || '', interest: String(l.interest || '').slice(0, 60) }));
       const vs = (appts || []).filter((a) => a && !a.block && d9(a.clientPhone) === k && before(a.createdAt));
+      // the booking this payment made (a hold's or the shop's: holdId; any: the order on paidOnline): is it there, paid, confirmed
+      const bk = (appts || []).find((a) => a && ((a.paidOnline && a.paidOnline.orderId === x.id) || (x.ref && a.holdId === x.ref)));
       return Object.assign({ kind: x.payKind, lei: x.lei, at: x.at, paidAt: x.paidAt || '', from: x.from || NONE }, x.det || {},
-        { known: { leads: ls.slice(-5), visitsBefore: vs.length, firstVisit: vs.map((a) => a.date).sort()[0] || '' } });
+        { known: { leads: ls.slice(-5), visitsBefore: vs.length, firstVisit: vs.map((a) => a.date).sort()[0] || '' },
+          handled: x.handled, booking: bk ? { date: bk.date, time: bk.time, location: bk.location, status: bk.status, amount: bk.amount, paidOnline: bk.paidOnline ? bk.paidOnline.amount : 0, rest: bk.deposit ? bk.deposit.rest : 0, sale: !!(bk.paidOnline && bk.paidOnline.saleId) } : null });
     });
 }
 module.exports = { report, byAd, paid, SITE_ZERO };

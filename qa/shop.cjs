@@ -138,7 +138,8 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   const r2 = await P.KINDS.shop.paid(o);
   check('the handler twice: one booking, one sale', r2.appt === a.id && (await store.readJSON('data/appointments.json', [])).length === 1 && (await store.readJSON('data/sales.json', [])).length === 1, r2);
   // ---- „Rezerv cu avans” (the owner, 26.11): 49 lei online, the price of the cart kept on the booking, the rest at the clinic
-  check('the deposit: 49 lei, only above 49 lei and never with the card in the cart', S.DEPOSIT === 49 && S.depositOf(640, false) === 49 && S.depositOf(49, false) === 0 && S.depositOf(640, true) === 0);
+  // the deposit is off (the owner, 26.11 evening: „vreau înapoi cu plata integral”): no new hold takes one; a hold made with one still pays it
+  check('the deposit is off: no new hold takes one (the whole sum is paid)', S.DEPOSIT_ON === false && S.depositOf(640, false) === 0 && S.depositOf(640, true) === 0);
   const hd = await H.add({ key: 'k2', city: 'Timișoara', deposit: 49, svc: { id: 'custom', title: 'Prima ședință · comandă online: Liposonix Abdomen · 2 ședințe', price: 640, old: 1280, minutes: 45, cat: 'corporale', treatment: lipo.ref },
     cart: { items: [{ id: 'liposonix', zone: 'Abdomen', qty: 2 }], visit: 'first' }, order: ['Liposonix Abdomen · 2 ședințe'], multi: true, date: '2026-11-27', time: '11:00', endTime: '11:45' });
   const dq = await P.KINDS.shop.quote({ ref: hd.id, input: { amount: 1 } });
