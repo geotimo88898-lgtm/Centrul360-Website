@@ -574,6 +574,13 @@ const BF_SITE = [
  }
 ];
 const JOBS = [
+  // 26.11 ~12:30, George: „campaniile cu cel mai mare ROAS, HIFU gușă / Liposonix, rulează?”: by ROAS since 16.10 (Admin →
+  // Clasament), the two Liposonix Timișoara with sales back on at their 50 lei a day: stai întinsă v2 (its ad, paused 25.11 by
+  // weak-off; a 2.000 lei client came from it: ROAS 21,8) and fără efort (2 clients, 1.770 lei, ROAS 12,2)
+  { id: 'lipo-roas-back-2026-11-26', act: 'act_4502494523405059', why: 'George: Liposonix cu ROAS mare, pornit', actions: [
+    { campaignId: '120252015089890103', name: 'TM LIPO · stai întinsă v2 (reclama)', status: 'ACTIVE', why: 'ROAS 21,8: o clientă de 2.000 lei' },
+    { campaignId: '120251505897650103', name: 'TM LIPO · fără efort', status: 'ACTIVE', why: 'ROAS 12,2: 2 cliente, 1.770 lei' },
+  ] },
   // 26.11 ~12:00, George: „n-au mers deloc reclamele (Black Friday pe site, oprite de el), pune iară pe leaduri ce a funcționat”:
   // the two lead campaigns with the most bookings and clients of the last 2 weeks in Timișoara back on, at their 75 lei a day
   // (HIFU G sezon: 56 leads at 11 lei, 24 bookings, 13 clients; the iPad video: 23 leads, 12 bookings, 3 clients)
