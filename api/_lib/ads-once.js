@@ -577,6 +577,23 @@ const JOBS = [
   // 26.11 ~12:30, George: „campaniile cu cel mai mare ROAS, HIFU gușă / Liposonix, rulează?”: by ROAS since 16.10 (Admin →
   // Clasament), the two Liposonix Timișoara with sales back on at their 50 lei a day: stai întinsă v2 (its ad, paused 25.11 by
   // weak-off; a 2.000 lei client came from it: ROAS 21,8) and fără efort (2 clients, 1.770 lei, ROAS 12,2)
+  // 26.11 ~17:50, George: the site again tonight, „doar cele mai bune”, 150 lei a day a city, now that the site takes a 49 lei
+  // deposit (new clients reached the payment and did not pay the whole treatment): in each Black Friday site campaign only the
+  // two ads with the cheapest clicks stay (TM: HIFU Gușă 31 clicks at 2 lei, HIFU Pomeți 10 at 2,4; AR: BioLifting Full Face
+  // 8 at 1,8, HIFU Frunte 10 at 2,9), the other v2 ads paused, the budget 150 lei, then the campaign on
+  { id: 'bf-site-best-2026-11-26', act: 'act_4502494523405059', why: 'George: site-ul din nou, doar cele mai bune, 150 lei pe oraș', actions: [
+    ...[['120252120000310103', 'TM · HIFU Gât · v2'], ['120252120091190103', 'TM · HIFU Contur · v2'], ['120252120092360103', 'TM · HIFU Frunte · v2'], ['120252120093170103', 'TM · HIFU Full Face · v2'],
+      ['120252120095230103', 'TM · BioLifting Full Face · v2'], ['120252120099900103', 'TM · Red Sculpt Abdomen · v2'], ['120252120103120103', 'TM · Red Sculpt Coapse · v2'], ['120252120109830103', 'TM · Red Sculpt Brațe · v2'],
+      ['120252120118000103', 'TM · Toate tratamentele · lista · v2'], ['120252120121050103', 'TM · Toate tratamentele · față și corp · v2'],
+      ['120252120123520103', 'AR · HIFU Gușă · v2'], ['120252120126460103', 'AR · HIFU Gât · v2'], ['120252120129000103', 'AR · HIFU Contur · v2'], ['120252120132800103', 'AR · HIFU Pomeți · v2'],
+      ['120252120139910103', 'AR · HIFU Full Face · v2'], ['120252120145180103', 'AR · Red Sculpt Abdomen · v2'], ['120252120147440103', 'AR · Red Sculpt Coapse · v2'], ['120252120149350103', 'AR · Red Sculpt Brațe · v2'],
+      ['120252120151230103', 'AR · Toate tratamentele · lista · v2'], ['120252120153330103', 'AR · Toate tratamentele · față și corp · v2']]
+      .map(([id, name]) => ({ campaignId: id, name, status: 'PAUSED', why: 'nu e printre cele mai bune' })),
+    { campaignId: '120252119339640103', name: 'C360 · TM · Black Friday · site', daily: 150, why: 'George: 150 lei pe oraș' },
+    { campaignId: '120252120121800103', name: 'C360 · AR · Black Friday · site', daily: 150, why: 'George: 150 lei pe oraș' },
+    { campaignId: '120252119339640103', name: 'C360 · TM · Black Friday · site', status: 'ACTIVE', why: 'HIFU Gușă și HIFU Pomeți' },
+    { campaignId: '120252120121800103', name: 'C360 · AR · Black Friday · site', status: 'ACTIVE', why: 'BioLifting Full Face și HIFU Frunte' },
+  ] },
   { id: 'lipo-roas-back-2026-11-26', act: 'act_4502494523405059', why: 'George: Liposonix cu ROAS mare, pornit', actions: [
     { campaignId: '120252015089890103', name: 'TM LIPO · stai întinsă v2 (reclama)', status: 'ACTIVE', why: 'ROAS 21,8: o clientă de 2.000 lei' },
     { campaignId: '120251505897650103', name: 'TM LIPO · fără efort', status: 'ACTIVE', why: 'ROAS 12,2: 2 cliente, 1.770 lei' },
