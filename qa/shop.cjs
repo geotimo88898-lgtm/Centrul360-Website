@@ -137,6 +137,31 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   check('the hold knows its booking', (await H.get(h.id)).bookingId === a.id);
   const r2 = await P.KINDS.shop.paid(o);
   check('the handler twice: one booking, one sale', r2.appt === a.id && (await store.readJSON('data/appointments.json', [])).length === 1 && (await store.readJSON('data/sales.json', [])).length === 1, r2);
+  // ---- „Rezerv cu avans” (the owner, 26.11): 49 lei online, the price of the cart kept on the booking, the rest at the clinic
+  check('the deposit: 49 lei, only above 49 lei and never with the card in the cart', S.DEPOSIT === 49 && S.depositOf(640, false) === 49 && S.depositOf(49, false) === 0 && S.depositOf(640, true) === 0);
+  const hd = await H.add({ key: 'k2', city: 'Timișoara', deposit: 49, svc: { id: 'custom', title: 'Prima ședință · comandă online: Liposonix Abdomen · 2 ședințe', price: 640, old: 1280, minutes: 45, cat: 'corporale', treatment: lipo.ref },
+    cart: { items: [{ id: 'liposonix', zone: 'Abdomen', qty: 2 }], visit: 'first' }, order: ['Liposonix Abdomen · 2 ședințe'], multi: true, date: '2026-11-27', time: '11:00', endTime: '11:45' });
+  const dq = await P.KINDS.shop.quote({ ref: hd.id, input: { amount: 1 } });
+  check('deposit quote: 49 lei now, the rest (591) said, the title says „Avans”', dq.amount === 49 && dq.full === 49 && /^Avans · /.test(dq.title) && /591 lei la clinică/.test(dq.bonusText) && dq.deposit.rest === 591, dq);
+  await H.patch(hd.id, (x) => { x.contact = { name: 'Proba Avans', phone: '0700000124', consent: true }; });
+  const od = { id: 'C360-test2', kind: 'shop', ref: hd.id, amount: 49, full: 49, bonus: dq.bonus, title: dq.title, city: 'Timișoara', name: 'Proba Avans', phone: '0700000124', mypos: { ref: 'R2', at: new RealDate(NOW).toISOString() }, paidAt: new RealDate(NOW).toISOString() };
+  const rd = await P.KINDS.shop.paid(od).catch((e) => ({ err: e.message, stack: e.stack }));
+  const ad = (await store.readJSON('data/appointments.json', [])).find((x) => x.id === rd.appt);
+  check('deposit paid: the booking is confirmed, 640 lei, 49 paid online, 591 to cash at the clinic', ad && ad.status === 'confirmata' && ad.amount === 640 && ad.paidOnline.amount === 49 && ad.deposit && ad.deposit.rest === 591 && /AVANS ONLINE 49 lei\. DE ÎNCASAT LA CLINICĂ: 591 lei/.test(ad.note) && !/Plată online 49/.test(ad.note), ad && { n: ad.note, d: ad.deposit, s: ad.status, amt: ad.amount });
+  const sd = (await store.readJSON('data/sales.json', [])).find((x) => x.id === rd.sale);
+  check('deposit in Încasări: 49 lei, „Avans online programare”, the rest said', sd && sd.amount === 49 && sd.label === 'Avans online programare' && /restul de 591 lei la clinică/.test(sd.treatment), sd);
+  // ---- the orders started and not paid → the Pipeline's Site tab (the owner, 26.11), once, after 20 minutes, no message to her
+  const hu = await H.add({ key: 'k3', city: 'Arad', svc: { id: 'custom', title: 'Prima ședință · comandă online: HIFU Gușă', price: 145, old: 290, minutes: 15, cat: 'faciale', treatment: 'hifu-o-zona-mica-faciala-1-sedinta' },
+    cart: { items: [{ id: 'hifu', zone: 'Gușă' }], visit: 'first' }, date: '2026-11-27', time: '12:00', endTime: '12:15' });
+  const ou = { id: 'C360-testunpaid1', kind: 'shop', ref: hu.id, amount: 145, full: 290, title: 'Comandă online: HIFU Gușă', city: 'Arad', name: 'Proba Neplătit', phone: '+40700000125', status: 'open', createdAt: new RealDate(NOW).toISOString(), request: { code: 'X1', at: new RealDate(NOW).toISOString() }, src: { from: 'Reclamă Facebook/Instagram' } };
+  await store.writeJSON('data/pay/' + ou.id + '.json', ou);
+  await store.writeJSON('data/pay-open.json', [{ id: ou.id, at: ou.createdAt }]);
+  const early = await P.checkoutLeads();
+  setNow(new RealDate(NOW + 25 * 60e3).toISOString());
+  const made = await P.checkoutLeads(), again = await P.checkoutLeads();
+  const ul = (await store.readJSON('data/leads.json', [])).find((l) => l.phone && /700000125$/.test(l.phone));
+  check('an unpaid order with her phone: a Site lead after 20 minutes, once, with what she chose, the sum and the hour', early.made === 0 && made.made === 1 && again.made === 0 && ul && ul.source === 'site' && ul.createdBy === 'site-checkout' && ul.location === 'Arad' && /Comandă neplătită: HIFU Gușă/.test(ul.interest) && (ul.activities || []).some((x) => /145 lei\. Alesese 27\.11\.2026 12:00/.test(x.text || '')), { early, made, again, ul: ul && { i: ul.interest, s: ul.source, a: (ul.activities || []).map((x) => x.text) } });
+  check('the order knows its lead', (await store.readJSON('data/pay/' + ou.id + '.json', {})).leadId === (ul && ul.id));
   console.log('\n' + ok + ' ok, ' + fails.length + ' failed');
   process.exit(fails.length ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

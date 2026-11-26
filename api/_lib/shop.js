@@ -163,6 +163,12 @@ function productOf(t) {
   const m = P[t.id];
   return m ? { id: m.id, name: m.name, need: m.need, zones: m.zones || [], b: m.b, photo: '/brand_asset/oferte/' + picOf(m) + '.webp?v=3' } : null;
 }
+// the deposit (the owner, 26.11: new clients reached the payment and did not pay the whole treatment online; „avans mic
+// online”): 49 lei, the clinic's own deposit (the confirmation's „avansul de 49 RON”, not given back on a no-show). Paid
+// online, it keeps the cart's price (Black Friday -50% included) on the booking; the rest is paid at the clinic. Not with
+// the Card de Sărbători in the cart (the card is paid whole), not on a sum of 49 lei or less
+const DEPOSIT = 49;
+const depositOf = (amount, withCard) => (!withCard && Number(amount) > DEPOSIT ? DEPOSIT : 0);
 const priceOf = (full, at) => (bfOn(at) ? Math.round(full * (100 - BF.pct) / 100) : require('./pay').bonusPrice(full, require('./pay').BONUS_PCT));
 
 // the catalog of a city (or both), at this moment's prices: one session each
@@ -285,6 +291,16 @@ async function payQuote({ ref }) {
     if (x.id !== h.cart.cardOrder) await H.patch(h.id, (y) => { y.cart = Object.assign({}, y.cart, { cardOrder: x.id }); });
     card = x;
   }
+  // the deposit chosen at the payment (the hold's own sum, never more than the cart's): 49 lei now, the rest at the clinic
+  const dep = !card && Number(h.deposit) > 0 && q.amount > Number(h.deposit) ? Number(h.deposit) : 0;
+  if (dep) {
+    return {
+      amount: dep, full: dep, title: ('Avans · ' + summary(q)).slice(0, 120), city: h.city, deposit: { paid: dep, total: q.amount, rest: q.amount - dep },
+      name: (h.contact || {}).name || '', phone: (h.contact || {}).phone || '', src: h.src, cookie: h.cookie, app: h.app,
+      bonus: { type: 'pct', pct: q.pct, line: q.bf ? '-' + q.pct + '% Black Friday' : '-' + q.pct + '% la plata online' },
+      bonusText: 'Avans · restul de ' + (q.amount - dep).toLocaleString('ro-RO') + ' lei la clinică',
+    };
+  }
   return {
     amount: q.amount + (card ? card.amount : 0), full: q.full + (card ? card.full : 0), title: ('Comandă online: ' + summary(q) + (card ? ' + ' + card.title : '')).slice(0, 120), city: h.city,
     name: (h.contact || {}).name || '', phone: (h.contact || {}).phone || '', src: h.src, cookie: h.cookie, app: h.app,
@@ -293,6 +309,6 @@ async function payQuote({ ref }) {
   };
 }
 
-module.exports = { BF, bfOn, TIERS_DEFAULT, tiers, NEEDS, catalog, terms, quote, clean, summary, giftsOf, payQuote, productOf, priceOf };
+module.exports = { DEPOSIT, depositOf, BF, bfOn, TIERS_DEFAULT, tiers, NEEDS, catalog, terms, quote, clean, summary, giftsOf, payQuote, productOf, priceOf };
 // the card and the treatments in one payment work on the server (payQuote above, api/_lib/pay.js shop.paid): the cart may mix them
 module.exports.CARD_MIX = true;

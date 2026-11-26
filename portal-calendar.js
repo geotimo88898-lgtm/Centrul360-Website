@@ -430,10 +430,12 @@
   // two bookings waiting for the same sum: the desk says which one paid (desk = the button, only in the editing drawer)
   const payOn = (a) => a && a.pay === 'online-pending' && a.payAmount > 0 && !a.paidSaleId;
   const payPaid = (a) => a && a.pay === 'online-paid' && a.paidOnline && a.paidOnline.amount > 0;
-  const payNote = (a, desk) => (payPaid(a) ? '<div class="mo-note is-good">' + icon('checkCircle') + '<span>Plătită online <b>' + K.lei(a.paidOnline.amount) + '</b> (myPOS), apare în Încasări. Nu se mai încasează la clinică.</span></div>'
+  // a deposit (the site, 26.11): 49 lei paid online, the rest is cashed at the clinic, at the order's price
+  const payNote = (a, desk) => (payPaid(a) && a.deposit && a.deposit.rest > 0 ? '<div class="mo-note is-good">' + icon('checkCircle') + '<span>Avans online <b>' + K.lei(a.paidOnline.amount) + '</b> plătit (myPOS), apare în Încasări. <b>De încasat la clinică: ' + K.lei(a.deposit.rest) + '</b> (prețul comenzii, păstrat).</span></div>'
+    : payPaid(a) ? '<div class="mo-note is-good">' + icon('checkCircle') + '<span>Plătită online <b>' + K.lei(a.paidOnline.amount) + '</b> (myPOS), apare în Încasări. Nu se mai încasează la clinică.</span></div>'
     : payOn(a) ? '<div class="mo-note">' + icon('wallet') + '<span>Plată online <b>' + K.lei(a.payAmount) + '</b> · ' + (a.payCheck > 1 ? 'de verificat: ' + a.payCheck + ' programări așteaptă aceeași sumă. Vezi în myPOS cine a plătit.' : 'de verificat în myPOS') + '</span>' +
       (desk && a.payCheck > 1 ? '<button type="button" class="k-btn is-outline is-sm" data-paypick>Ea a plătit</button>' : '') + '</div>' : '');
-  const subOf = (a) => [pkgOf(a), a.online ? '🌐 online' : '', payPaid(a) ? 'plătită online' : payOn(a) ? 'plată online ' + K.lei(a.payAmount) : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ');
+  const subOf = (a) => [pkgOf(a), a.online ? '🌐 online' : '', payPaid(a) ? (a.deposit && a.deposit.rest > 0 ? 'avans online, rest ' + K.lei(a.deposit.rest) : 'plătită online') : payOn(a) ? 'plată online ' + K.lei(a.payAmount) : '', a.paidSaleId ? 'plătit' : ''].filter(Boolean).join(' · ');
   function blockHtml(it) {
     const a = it.a, st = stOf(a);
     const top = Math.max(0, (it.s - START * 60) * PPM), h = Math.max(30, (Math.min(it.e, END * 60) - it.s) * PPM - 3);

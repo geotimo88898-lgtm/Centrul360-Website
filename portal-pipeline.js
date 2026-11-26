@@ -223,13 +223,16 @@
     const what = norm(l.interest), form = what ? '' : norm(((l.forms || []).slice(-1)[0] || {}).name);
     // a machine for sale (the owner, 24.11: Aparate, his only; the server sends them to the owner alone)
     const seg = DEVICE_RE.test(what) ? 'aparate' : HIRE_RE.test(what) || HIRE_RE.test(form) ? 'angajari'
-      : CARD_RE.test(what) || CARD_RE.test(form) || (!what && (l.card || l.createdBy === 'card-sarbatori')) ? 'carduri' : 'clienti';
+      : CARD_RE.test(what) || CARD_RE.test(form) || (!what && (l.card || l.createdBy === 'card-sarbatori')) ? 'carduri'
+      // the site (the owner, 26.11: „în pipeline o secțiune cu site, acolo toate leadurile din site”): its forms, its bookings and
+      // the orders started and not paid (api/_lib/pay.js checkoutLeads)
+      : l.source === 'site' ? 'site' : 'clienti';
     segCache.set(l, [l.interest, seg]);
     return seg;
   }
   // without Angajări (reception, the cosmeticians) such a lead stays in Cliente, never hidden
   const tabOf = (l) => { const g = segOf(l); return g === 'angajari' && !canHire() ? 'clienti' : g; };
-  const leadTab = () => (S.mode === 'carduri' ? 'carduri' : S.mode === 'angajari' ? 'angajari' : S.mode === 'aparate' ? 'aparate' : 'clienti');
+  const leadTab = () => (S.mode === 'carduri' ? 'carduri' : S.mode === 'angajari' ? 'angajari' : S.mode === 'aparate' ? 'aparate' : S.mode === 'site' ? 'site' : 'clienti');
   const inCityF = (l) => !S.location || l.location === S.location;
   // the pipeline of one city (Timișoara / Arad) or both, of the tab on screen: what every count and column starts from
   const cityLeads = () => S.leads.filter((l) => inCityF(l) && tabOf(l) === leadTab());
@@ -412,15 +415,15 @@
   const canHire = () => !!(S.ctx.isAdmin || (S.ctx.me && S.ctx.me.role === 'manager'));
   const ownerHires = () => !!S.ctx.isAdmin; // only the owner sets „Angajat”
   let hireList = null;
-  const KINDS = [['clienti', 'Cliente'], ['angajari', 'Angajări'], ['carduri', 'Carduri de Sărbători'], ['aparate', 'Aparate']];
-  const EYEBROW = { clienti: 'Vânzări', angajari: 'Angajări', carduri: 'Carduri de Sărbători', aparate: 'Aparate' };
+  const KINDS = [['clienti', 'Cliente'], ['site', 'Site'], ['angajari', 'Angajări'], ['carduri', 'Carduri de Sărbători'], ['aparate', 'Aparate']];
+  const EYEBROW = { clienti: 'Vânzări', site: 'Site', angajari: 'Angajări', carduri: 'Carduri de Sărbători', aparate: 'Aparate' };
   const kinds = () => KINDS.filter(([k]) => (k !== 'angajari' || canHire()) && (k !== 'aparate' || S.ctx.isAdmin));
   // the tab bar: each kind with how many are in it (in the city chosen; the lost leads and the turned-down candidates not
   // counted), the thumb slides to the tab tapped
   function renderKinds() {
     const bar = root && root.querySelector('[data-kinds]');
     if (!bar) return;
-    const n = { clienti: 0, angajari: 0, carduri: 0, aparate: 0 };
+    const n = { clienti: 0, site: 0, angajari: 0, carduri: 0, aparate: 0 };
     S.leads.forEach((l) => { if (inCityF(l) && l.kind !== 'lost') n[tabOf(l)]++; });
     (hireList || []).forEach((c) => { if ((!S.location || !c.location || c.location === S.location) && c.status !== 'respins') n.angajari++; });
     const cur = leadTab(), list = kinds();
@@ -460,7 +463,7 @@
   }
   // a notification („CANDIDAT NOU” → #pipeline/angajari, a card's request → #pipeline/carduri): straight to that tab
   if (window.K) window.K.on('pipeline:sub', (sub) => {
-    const k = { angajari: 'angajari', carduri: 'carduri', cliente: 'clienti', clienti: 'clienti', aparate: 'aparate' }[String(sub || '').split('/')[0]];
+    const k = { angajari: 'angajari', carduri: 'carduri', cliente: 'clienti', clienti: 'clienti', site: 'site', aparate: 'aparate' }[String(sub || '').split('/')[0]];
     if (k) { if (root) setMode(k); else S.mode = k; }
   });
   // an account made from a candidate (Echipa's form): her card shows it

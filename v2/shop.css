@@ -991,3 +991,14 @@ body:has(.top.away) .bfo-f{ top:auto; }
 .sh-trust .cards{ display:flex; align-items:center; justify-content:center; gap:8px; opacity:.8; }
 .sh-trust .cards svg{ height:13px; width:auto; color:currentColor; }
 .sh-trust .cards span{ font-size:12px; }
+
+/* „Rezerv cu avans” / „Plătesc tot acum” (26.11): two choices above the payment, the deposit first */
+.sh-paymode{ display:grid; gap:10px; margin:14px 0 4px; }
+.sh-pm{ display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; padding:15px 16px; border:0; border-radius:18px; color:#0b0b0d; font:inherit; cursor:pointer; transition:box-shadow .2s; -webkit-tap-highlight-color:transparent; }
+.sh-pm i{ flex:0 0 22px; width:22px; height:22px; margin-top:1px; border-radius:50%; box-shadow:inset 0 0 0 2px rgba(11,11,13,.28); position:relative; transition:box-shadow .2s; }
+.sh-pm.on{ box-shadow:inset 0 0 0 2px #0b0b0d, 0 8px 24px -18px rgba(11,20,30,.3); }
+.sh-pm.on i{ box-shadow:inset 0 0 0 2px #0b0b0d; }
+.sh-pm.on i::after{ content:""; position:absolute; inset:5px; border-radius:50%; background:#0b0b0d; }
+.sh-pm span{ display:grid; gap:3px; min-width:0; }
+.sh-pm b{ font-size:16px; line-height:1.3; font-weight:700; }
+.sh-pm small{ font-size:14px; line-height:1.4; color:#55555c; }

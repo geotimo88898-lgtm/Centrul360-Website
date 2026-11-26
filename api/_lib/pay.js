@@ -156,7 +156,7 @@ const KINDS = {
         const B = require('./booking');
         const r = await require('../booking').place({ cfg: await B.settings({ team: true }), city: h.city, svc: h.svc, date: h.date, time: h.time, name: c.name || 'Clientă site', phone: c.phone,
           page: h.page, src: h.src, cookie: h.cookie, ua: h.app, track: h.track, pay: 'online-pending', payAmount: o.amount, viaCheckout: true, paid: true, holdId: h.id, bonus: o.bonus,
-          order: h.order, multi: h.multi });
+          order: h.order, multi: h.multi, deposit: Number(h.deposit) > 0 && h.svc && Number(h.svc.price) > o.amount ? { paid: o.amount, total: Number(h.svc.price), rest: r2(Number(h.svc.price) - o.amount) } : null });
         if (!r || !r.entry) throw new Error('hold_booking_failed');
         apptId = r.entry.id;
         if (r.entry.overbooked) await ring(o, 'PLĂTITĂ ONLINE, ORA S-A OCUPAT ⚠️', (c.name || '') + ' a plătit ' + h.date + ' ' + h.time + ', dar ora s-a ocupat între timp. Sun-o să mutați ora.');
@@ -700,11 +700,42 @@ async function sweep(opts) {
     }
   }
   if (fresh) return out;
+  out.leads = await checkoutLeads().catch((e) => ({ error: e.message }));
   // the paid ones whose handler failed (kept in a short list by the handler's error)
   const failed = (await readJSON(RETRY, [])).filter(Boolean);
   for (const id of failed.slice(0, 10)) {
     const { data: o } = await readOrder(id);
     if (o && o.status === 'paid' && !o.handled && (await retryLock(o))) { await runHandler(id); out.retried++; }
+  }
+  return out;
+}
+
+// The site's orders started and not paid (the owner, 26.11: „în pipeline o secțiune cu site, acolo toate leadurile din site”):
+// a shop or hold order with her name and phone (she tapped „Plătesc”), still open 20 minutes later, becomes a lead of the
+// Pipeline's Site tab (source 'site', createdBy 'site-checkout'): what she chose, the sum and the hour she had picked, for
+// the desk to call. No message to her (no welcome; the only flow on a site lead is the team's alert), once per order;
+// paid later, her booking moves the same lead on (api/booking.js place). Not the tests, not older than 2 days.
+async function checkoutLeads() {
+  const list = await readJSON(OPEN, []);
+  const now = Date.now(), out = { made: 0 };
+  for (const it of list.slice(-150)) {
+    const age = now - Date.parse(it.at);
+    if (!(age >= 20 * 60e3 && age < 48 * 3600e3)) continue;
+    const { data: o } = await readOrder(it.id);
+    if (!o || o.status !== 'open' || o.test || o.leadId || !['shop', 'hold'].includes(o.kind) || !o.phone) continue;
+    if (String(o.phone).replace(/\D/g, '').slice(-9) === '700000000') continue;
+    const h = o.ref ? await require('./booking-holds').get(o.ref).catch(() => null) : null;
+    const when = h && h.date ? h.date.split('-').reverse().join('.') + ' ' + (h.time || '') : '';
+    const what = String(o.title || '').replace(/^(Comandă online|Avans) · |^Comandă online: /, '');
+    const r = await require('../portal-leads').createLead({
+      name: o.name || 'Clientă site', phone: o.phone, source: 'site', location: cityOf(o.city) || 'Timișoara', createdBy: 'site-checkout', welcome: false,
+      interest: clip('Comandă neplătită: ' + what, 120), value: Math.round(Number(o.amount) || 0),
+      note: 'A început plata pe site și nu a plătit: ' + what + ', ' + Math.round(Number(o.amount) || 0) + ' lei' + (when ? '. Alesese ' + when + ' la ' + (cityOf(o.city) || '') + ' (ora nu mai e ținută)' : '') + '. De sunat.',
+      authorLabel: 'Site · plată neterminată', src: o.src && typeof o.src === 'object' ? o.src : null,
+    }).catch((e) => ({ error: e.message }));
+    if (!r || r.error || !r.lead) { out.error = (r && r.error) || 'no_lead'; continue; }
+    await update(o.id, (x) => { if (x.leadId) return false; x.leadId = r.lead.id; x.leadAt = nowISO(); });
+    out.made++;
   }
   return out;
 }
@@ -835,4 +866,4 @@ async function cardGo(cardId) {
   return { error: 'busy', page };
 }
 
-module.exports = { requestState, cardLink, cardTokenOk, cardGo, INDEX, touch, lastActivity, markRecovery, requestWords, later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
+module.exports = { checkoutLeads, requestState, cardLink, cardTokenOk, cardGo, INDEX, touch, lastActivity, markRecovery, requestWords, later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };

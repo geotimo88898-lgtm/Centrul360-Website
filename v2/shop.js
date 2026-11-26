@@ -1353,6 +1353,8 @@
   }
   // a few quiet reasons to trust the payment, under it (the owner, 25.11: „elemente de încredere subtile, nu foarte evidente”):
   // the real Google rating, that a visit can be moved (the terms: „anunți din timp orice reprogramare”), the cards taken
+  // the deposit that keeps the cart's price (api/_lib/shop.js DEPOSIT; the server's sum is the one paid)
+  var DEPOSIT = 49;
   var TRUST = '<div class="sh-trust" aria-label="De ce e sigur">' +
     '<p><span class="st" aria-hidden="true">★★★★★</span> 5,0 pe Google · 300+ recenzii</p>' +
     '<p>Nu mai poți ajunge? Ne anunți din timp și mutăm programarea.</p>' +
@@ -1367,17 +1369,24 @@
     // what this payment holds: the treatments, and the card when the server takes them together
     var mix = mixOn() && t.cards.length > 0, pl = mix ? t.lines : t.tl;
     t = { lines: pl, amount: pl.reduce(function (s, x) { return s + x.p.price * x.qty; }, 0), full: pl.reduce(function (s, x) { return s + x.p.full * x.qty; }, 0) };
+    // „Rezerv cu avans” (the owner, 26.11: new clients reached the payment and did not pay the whole treatment online): 49 lei now,
+    // the price kept, the rest at the clinic (api/_lib/shop.js DEPOSIT); the first choice. Not with the card in the cart
+    var canDep = !mix && t.amount > DEPOSIT, dep = canDep && S.payFull !== true, rest = t.amount - DEPOSIT;
+    var modes = canDep ? '<div class="sh-paymode" role="radiogroup" aria-label="Cum plătești">' +
+      '<button type="button" role="radio" class="sh-pm sh-card' + (dep ? ' on' : '') + '" aria-checked="' + dep + '" data-paymode="dep"><i></i><span><b>Rezerv cu ' + lei(DEPOSIT) + ' avans</b><small>Prețul de ' + lei(t.amount) + ' rămâne al tău. Restul de ' + lei(rest) + ' îl plătești la clinică.</small></span></button>' +
+      '<button type="button" role="radio" class="sh-pm sh-card' + (dep ? '' : ' on') + '" aria-checked="' + !dep + '" data-paymode="full"><i></i><span><b>Plătesc tot acum, ' + lei(t.amount) + '</b><small>La clinică nu mai plătești nimic.</small></span></button></div>' : '';
     el.innerHTML = '<div class="sh-sum sh-card"><div><i>' + I.cal + '</i><span><b>' + esc(nice(S.date).replace(/^./, function (c) { return c.toUpperCase(); })) + ', ora ' + esc(S.time) + '</b><small>' + (S.visit === 'consult' ? 'Consultația gratuită, 30 min' : 'Prima ședință') + ' · Centrul360 ' + esc(S.city) + '</small></span></div>' +
       '<div><i>' + I.bag + '</i><span><b>' + t.lines.map(function (x) { return esc(nameOf(x.p, x.zone)) + (x.qty > 1 ? ' × ' + x.qty : ''); }).join('<br>') + '</b><small>' + esc(ADDR[S.city]) + '</small></span></div></div>' +
-      '<div data-pay><div class="sh-wait">Pregătesc plata…</div></div>' + TRUST;
+      modes + '<div data-pay><div class="sh-wait">Pregătesc plata…</div></div>' + TRUST;
     fev('pay');
     var src = null; try { src = window.C360Src ? window.C360Src() : null; } catch (e) { /* none */ }
+    var prevHold = S.hold; S.hold = null;
     var fail = function () { if (S.payRun === mine) $('[data-pay]', el).innerHTML = '<div class="sh-alert">Nu am putut porni plata. Verifică internetul și încearcă din nou.</div><button type="button" class="sh-go" data-go="when" style="margin-top:14px">Înapoi</button>'; };
     payScript().then(function (P) {
       return P.ready().then(function (on) {
         if (S.payRun !== mine) return;
         if (!on) { $('[data-pay]', el).innerHTML = '<div class="sh-alert">Plata online nu e pornită încă pe această pagină.</div>'; return; }
-        var holdP = fetch('/api/shop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'hold', city: S.city, items: t.lines.filter(function (x) { return !x.p.card; }).map(function (x) { return { id: x.p.id, zone: x.zone, qty: x.qty }; }), card: mix ? { tier: totals().cards[0].p.card, qty: 1 } : undefined, visit: S.visit, date: S.date, time: S.time, page: location.pathname, src: src }) })
+        var holdP = fetch('/api/shop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'hold', city: S.city, items: t.lines.filter(function (x) { return !x.p.card; }).map(function (x) { return { id: x.p.id, zone: x.zone, qty: x.qty }; }), card: mix ? { tier: totals().cards[0].p.card, qty: 1 } : undefined, deposit: dep, prev: prevHold ? prevHold.id : undefined, prevKey: prevHold ? prevHold.key : undefined, visit: S.visit, date: S.date, time: S.time, page: location.pathname, src: src }) })
           .then(function (r) { return r.json(); }, function () { return { error: 'net' }; })
           .then(function (d) {
             if (S.payRun !== mine) { if (d && d.hold) fetch('/api/booking', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ release: d.hold.id, key: d.hold.key }) }).catch(function () {}); return Promise.reject({ code: 'gone' }); }
@@ -1388,7 +1397,8 @@
         var me = null; try { me = JSON.parse(localStorage.getItem('c360-book-me') || 'null'); } catch (e) { /* none */ }
         P.open({
           kind: 'shop', ref: holdP, city: S.city, page: location.pathname, mount: $('[data-pay]', el),
-          preview: { amount: t.amount, full: t.full, title: t.lines.map(function (x) { return nameOf(x.p, x.zone) + (x.qty > 1 ? ' × ' + x.qty : ''); }).join(' + '), bonusText: '-' + pct() + '% Black Friday' },
+          preview: dep ? { amount: DEPOSIT, full: DEPOSIT, title: 'Avans · ' + t.lines.map(function (x) { return nameOf(x.p, x.zone) + (x.qty > 1 ? ' × ' + x.qty : ''); }).join(' + '), bonusText: 'Avans · restul de ' + lei(rest) + ' la clinică' }
+            : { amount: t.amount, full: t.full, title: t.lines.map(function (x) { return nameOf(x.p, x.zone) + (x.qty > 1 ? ' × ' + x.qty : ''); }).join(' + '), bonusText: '-' + pct() + '% Black Friday' },
           contact: me && me.name ? { name: me.name, phone: me.phone } : undefined,
           onContact: function (c) { try { localStorage.setItem('c360-book-me', JSON.stringify({ name: c.name, phone: c.phone })); } catch (e) { /* private mode */ } },
           onError: function (code) {
@@ -1398,7 +1408,7 @@
           },
           onPaid: function (r) {
             if (S.payRun !== mine) return;
-            S.paid = { amount: r.amount || t.amount, confirmed: r.confirmed, date: S.date, time: S.time, city: S.city, lines: t.lines.map(function (x) { return x.p.card ? x.p.name : nameOf(x.p, x.zone) + ', ' + sesWord(x.qty); }), visit: S.visit };
+            S.paid = { amount: r.amount || (dep ? DEPOSIT : t.amount), rest: dep ? rest : 0, confirmed: r.confirmed, date: S.date, time: S.time, city: S.city, lines: t.lines.map(function (x) { return x.p.card ? x.p.name : nameOf(x.p, x.zone) + ', ' + sesWord(x.qty); }), visit: S.visit };
             S.hold = null; S.cart = mix ? [] : S.cart.filter(function (l) { return cardTier(l.id); }); save(); S.time = ''; S.days = null; daysKey = '';
             go('done'); changed(); repaintAll();
           },
@@ -1465,9 +1475,9 @@
       return;
     }
     var left = totals().cards[0];
-    el.innerHTML = '<div class="sh-done"><div class="ok">' + I.check + '</div><h2>Plătit. Ne vedem ' + esc(nice(p.date)) + '.</h2><p>' + (p.confirmed ? 'Programarea e confirmată. Îți trimitem confirmarea și pe WhatsApp.' : 'Banca mai confirmă plata câteva clipe. Îți scriem pe WhatsApp imediat ce vine.') + '</p>' +
+    el.innerHTML = '<div class="sh-done"><div class="ok">' + I.check + '</div><h2>' + (p.rest > 0 ? 'Rezervat' : 'Plătit') + '. Ne vedem ' + esc(nice(p.date)) + '.</h2><p>' + (p.confirmed ? 'Programarea e confirmată. Îți trimitem confirmarea și pe WhatsApp.' : 'Banca mai confirmă plata câteva clipe. Îți scriem pe WhatsApp imediat ce vine.') + '</p>' +
       '<div class="sh-sum sh-card"><div><i>' + I.cal + '</i><span><b>' + esc(nice(p.date).replace(/^./, function (c) { return c.toUpperCase(); })) + ', ora ' + esc(p.time) + '</b><small>' + (p.visit === 'consult' ? 'Consultația gratuită' : 'Prima ședință') + '</small></span></div>' +
-      '<div><i>' + I.bag + '</i><span><b>' + lei(p.amount) + ', plătit online</b><small>' + p.lines.map(esc).join('<br>') + '</small></span></div>' +
+      '<div><i>' + I.bag + '</i><span><b>' + lei(p.amount) + (p.rest > 0 ? ' avans, plătit online' : ', plătit online') + '</b><small>' + (p.rest > 0 ? 'Restul de ' + lei(p.rest) + ' îl plătești la clinică.<br>' : '') + p.lines.map(esc).join('<br>') + '</small></span></div>' +
       '<div><i>' + I.pin + '</i><span><b>Centrul360 ' + esc(p.city) + '</b><small>' + esc(ADDR[p.city]) + ' · <a href="' + MAPS[p.city] + '" target="_blank" rel="noopener">Vezi pe hartă</a></small></span></div></div>' +
       (left ? '<div class="sh-cdnext sh-card"><b>Mai ai în coș: ' + esc(left.p.name) + '</b><small>Plătești ' + lei(left.p.price) + '. Primești ' + lei(left.p.get) + ' pe tratamente.</small></div>' : '') + '</div>';
     foot(left ? '<button type="button" class="sh-go l" data-close>Închide</button><button type="button" class="sh-go" data-cardpay>Plătește cardul' + I.arrow + '</button>' : '<button type="button" class="sh-go" data-close style="flex:1">Închide</button>');
@@ -1537,6 +1547,7 @@
     var op = t.closest('[data-opt]'); if (op) { optimal(op.getAttribute('data-opt')); return; }
     var pk = t.closest('[data-pack]'); if (pk) { toPack(pk.getAttribute('data-pk-from'), pk.getAttribute('data-pack')); return; }
     var pln = t.closest('[data-plan]'); if (pln) { choosePlan(pln.getAttribute('data-plan')); return; }
+    var pm = t.closest('[data-paymode]'); if (pm) { var full = pm.getAttribute('data-paymode') === 'full'; if (full !== (S.payFull === true) && S.step === 'pay' && S.hold) { S.payFull = full; panePay(); } return; }
     var plus = t.closest('[data-plus]');
     if (plus) {
       var id = plus.getAttribute('data-plus'), q = byId(id), z2 = plus.getAttribute('data-pz') || (q ? zoneOf(q) : ''), had = !!lineOf(id, z2);
