@@ -581,6 +581,10 @@ const JOBS = [
   // deposit (new clients reached the payment and did not pay the whole treatment): in each Black Friday site campaign only the
   // two ads with the cheapest clicks stay (TM: HIFU Gușă 31 clicks at 2 lei, HIFU Pomeți 10 at 2,4; AR: BioLifting Full Face
   // 8 at 1,8, HIFU Frunte 10 at 2,9), the other v2 ads paused, the budget 150 lei, then the campaign on
+  // the first copy's HIFU Full Face (v1, made before the v2 copy, left out of bf-site-v1-off): not among George's best four
+  { id: 'bf-site-best-ff-off-2026-11-26', act: 'act_4502494523405059', why: 'Black Friday pe site: doar cele mai bune 4', actions: [
+    { campaignId: '120252119914370103', name: 'TM · HIFU Full Face · alb (v1)', status: 'PAUSED', why: 'nu e printre cele mai bune' },
+  ] },
   { id: 'bf-site-best-2026-11-26', act: 'act_4502494523405059', why: 'George: site-ul din nou, doar cele mai bune, 150 lei pe oraș', actions: [
     ...[['120252120000310103', 'TM · HIFU Gât · v2'], ['120252120091190103', 'TM · HIFU Contur · v2'], ['120252120092360103', 'TM · HIFU Frunte · v2'], ['120252120093170103', 'TM · HIFU Full Face · v2'],
       ['120252120095230103', 'TM · BioLifting Full Face · v2'], ['120252120099900103', 'TM · Red Sculpt Abdomen · v2'], ['120252120103120103', 'TM · Red Sculpt Coapse · v2'], ['120252120109830103', 'TM · Red Sculpt Brațe · v2'],
