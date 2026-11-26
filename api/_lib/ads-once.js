@@ -581,6 +581,17 @@ const JOBS = [
   // deposit (new clients reached the payment and did not pay the whole treatment): in each Black Friday site campaign only the
   // two ads with the cheapest clicks stay (TM: HIFU Gușă 31 clicks at 2 lei, HIFU Pomeți 10 at 2,4; AR: BioLifting Full Face
   // 8 at 1,8, HIFU Frunte 10 at 2,9), the other v2 ads paused, the budget 150 lei, then the campaign on
+  // 27.11 ~01:00, George: „să lăsăm doar cea cu HIFU Gușă aprinsă, 100 lei per oraș”: in each Black Friday site campaign only
+  // HIFU Gușă v2 (TM: the one that sold, 510 lei; AR: switched on, it had barely run next to the others), the rest paused,
+  // the budget 100 lei a city
+  { id: 'bf-site-gusa-only-2026-11-27', act: 'act_4502494523405059', why: 'George: pe site doar HIFU Gușă, 100 lei pe oraș', actions: [
+    { campaignId: '120252120123520103', name: 'AR · HIFU Gușă · v2', status: 'ACTIVE', why: 'George: doar HIFU Gușă' },
+    { campaignId: '120252120091500103', name: 'TM · HIFU Pomeți · v2', status: 'PAUSED', why: 'George: doar HIFU Gușă' },
+    { campaignId: '120252120137790103', name: 'AR · HIFU Frunte · v2', status: 'PAUSED', why: 'George: doar HIFU Gușă' },
+    { campaignId: '120252120141970103', name: 'AR · BioLifting Full Face · v2', status: 'PAUSED', why: 'George: doar HIFU Gușă' },
+    { campaignId: '120252119339640103', name: 'C360 · TM · Black Friday · site', daily: 100, why: 'George: 100 lei pe oraș' },
+    { campaignId: '120252120121800103', name: 'C360 · AR · Black Friday · site', daily: 100, why: 'George: 100 lei pe oraș' },
+  ] },
   // the first copy's HIFU Full Face (v1, made before the v2 copy, left out of bf-site-v1-off): not among George's best four
   { id: 'bf-site-best-ff-off-2026-11-26', act: 'act_4502494523405059', why: 'Black Friday pe site: doar cele mai bune 4', actions: [
     { campaignId: '120252119914370103', name: 'TM · HIFU Full Face · alb (v1)', status: 'PAUSED', why: 'nu e printre cele mai bune' },
