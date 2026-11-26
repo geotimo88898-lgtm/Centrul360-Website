@@ -219,7 +219,7 @@ async function paid(days) {
       const bk = (appts || []).find((a) => a && ((a.paidOnline && a.paidOnline.orderId === x.id) || (x.ref && a.holdId === x.ref)));
       return Object.assign({ kind: x.payKind, lei: x.lei, at: x.at, paidAt: x.paidAt || '', from: x.from || NONE }, x.det || {},
         { known: { leads: ls.slice(-5), visitsBefore: vs.length, firstVisit: vs.map((a) => a.date).sort()[0] || '' },
-          handled: x.handled, booking: bk ? { date: bk.date, time: bk.time, location: bk.location, status: bk.status, amount: bk.amount, paidOnline: bk.paidOnline ? bk.paidOnline.amount : 0, rest: bk.deposit ? bk.deposit.rest : 0, sale: !!(bk.paidOnline && bk.paidOnline.saleId) } : null });
+          handled: x.handled, booking: bk ? { what: String(bk.treatment || '').replace(/^(Prima ședință|Consultație gratuită) · comandă online: /, '').slice(0, 120), date: bk.date, time: bk.time, location: bk.location, status: bk.status, amount: bk.amount, paidOnline: bk.paidOnline ? bk.paidOnline.amount : 0, rest: bk.deposit ? bk.deposit.rest : 0, sale: !!(bk.paidOnline && bk.paidOnline.saleId) } : null });
     });
 }
 module.exports = { report, byAd, paid, SITE_ZERO };
