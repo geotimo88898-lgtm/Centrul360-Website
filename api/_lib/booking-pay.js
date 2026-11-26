@@ -38,10 +38,10 @@ async function recordSale(a, p) {
   const had = sales.find((s) => s && s.source === 'incasare' && s.bookingPay && s.appointmentId === a.id && s.kind !== 'refund');
   if (had) return had;
   const entry = {
-    id: crypto.randomUUID(), source: 'incasare', bookingPay: true, label: 'Plată online programare', appointmentId: a.id, online: true, // a myPOS link, never a POS terminal's
+    id: crypto.randomUUID(), source: 'incasare', bookingPay: true, label: a.deposit ? 'Avans online programare' : 'Plată online programare', ...(a.deposit ? { deposit: true } : {}), appointmentId: a.id, online: true, // a myPOS link, never a POS terminal's
     employeeId: 'site-booking', performedBy: '', clientId: a.clientId || '', client: a.clientName || '', clientPhone: a.clientPhone || '',
     date: roDay(Date.parse(p.at) || Date.now()), location: a.location || '', categories: a.categories || [], category: a.category || '',
-    treatment: (a.treatment || 'Programare') + (a.payGift ? ' · plătită online · cadou: ' + a.payGift : ' · plătită online, cu ' + (Number(a.payBonus) || 10) + '% reducere'), amount: r2(p.amount), bookedAmount: 0, upsell: 0,
+    treatment: (a.treatment || 'Programare') + (a.deposit ? ' · avans online, restul de ' + a.deposit.rest + ' lei la clinică' : a.payGift ? ' · plătită online · cadou: ' + a.payGift : ' · plătită online, cu ' + (Number(a.payBonus) || 10) + '% reducere'), amount: r2(p.amount), bookedAmount: 0, upsell: 0,
     ...(a.payGift ? { gift: a.payGift } : {}),
     method: 'card', split: null, status: 'recorded', commission: 0, note: 'Online (myPOS) · programarea din ' + a.date + ' ' + (a.time || '') + (p.orderId ? ' · comanda ' + p.orderId : ''),
     ...(p.orderId ? { payOrderId: p.orderId } : {}),
@@ -94,8 +94,8 @@ async function markPaid(apptId, p, by) {
     const msg = await confirmMsg(a).catch((e) => ({ error: e.message }));
     await require('./notify').notifyMany({ readJSON, writeJSON }, await desk(a.location), {
       kind: 'booking', tone: 'good', go: 'programari', tag: 'paid-' + a.id,
-      title: 'PLĂTITĂ ONLINE ' + ({ 'Timișoara': 'TM', Arad: 'AR' })[a.location] + ' 💳 - ' + lei(p.amount) + ' lei',
-      text: (a.clientName || '') + ' · ' + (a.treatment || '') + ' · ' + a.date + ' ' + (a.time || '') + (a.package && a.paidOnSite ? ' · a plătit mai multe ședințe: programează-le pe celelalte' : '') + (msg && (msg.sent || msg.dup) ? '' : ' · confirmarea pe WhatsApp nu a plecat, anunț-o tu'),
+      title: (a.deposit ? 'AVANS ONLINE ' : 'PLĂTITĂ ONLINE ') + ({ 'Timișoara': 'TM', Arad: 'AR' })[a.location] + ' 💳 - ' + lei(p.amount) + ' lei',
+      text: (a.clientName || '') + ' · ' + (a.treatment || '') + ' · ' + a.date + ' ' + (a.time || '') + (a.deposit ? ' · la clinică mai plătește ' + lei(a.deposit.rest) + ' lei' : '') + (a.package && a.paidOnSite ? ' · a plătit mai multe ședințe: programează-le pe celelalte' : '') + (msg && (msg.sent || msg.dup) ? '' : ' · confirmarea pe WhatsApp nu a plecat, anunț-o tu'),
     }).catch(() => {});
     // the sale goes back to Meta (Conversions API) as a Purchase in RON, with her browser's ids from the booking (like the card)
     try {

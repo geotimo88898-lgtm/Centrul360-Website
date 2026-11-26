@@ -93,7 +93,9 @@ async function place(o) {
     clientId: client.id, clientName: client.name || name, clientPhone: client.phone || phone,
     treatment: svc.title, categories: [svc.cat || 'corporale'], category: svc.cat || 'corporale',
     amount: svc.price || 0, location: city, cosmeticianId: who ? who.id : '', cosmeticianName: who ? who.name : '', status: 'programata', package: !!o.multi,
-    note: clip([Array.isArray(o.order) && o.order.length ? 'Comandă online plătită: ' + o.order.join('; ') + (o.multi ? '. Azi e prima ședință; restul se programează de recepție' : '') : '', 'Programare online pe site', svc.id === 'consult' ? '' : svc.price ? svc.price + ' lei' : '', payAmount ? 'Plată online ' + payAmount + ' lei' + (viaCheckout ? ', pe site' : ', de verificat în myPOS') : '',
+    // a deposit (26.11): 49 lei paid online, the rest at the clinic, at the price of the order (Black Friday kept)
+    note: clip([o.deposit ? 'AVANS ONLINE ' + o.deposit.paid + ' lei. DE ÎNCASAT LA CLINICĂ: ' + o.deposit.rest + ' lei (prețul comenzii, păstrat)' : '',
+      Array.isArray(o.order) && o.order.length ? (o.deposit ? 'Comandă online cu avans: ' : 'Comandă online plătită: ') + o.order.join('; ') + (o.multi ? '. Azi e prima ședință; restul se programează de recepție' : '') : '', 'Programare online pe site', svc.id === 'consult' ? '' : svc.price ? svc.price + ' lei' : '', payAmount && !o.deposit ? 'Plată online ' + payAmount + ' lei' + (viaCheckout ? ', pe site' : ', de verificat în myPOS') : '',
       o.bonus && o.bonus.type === 'gift' ? 'Cadou la plata online: ' + o.bonus.gift : '', clip(o.page, 120)].filter(Boolean).join(' · '), 500),
     // track: her browser's ids, for the Purchase when she pays
     ...(payAmount ? { pay, payAmount, track: o.track || null, ...(viaCheckout ? { payVia: 'checkout', payBonus: o.bonus && o.bonus.type === 'gift' ? 0 : (o.bonus && o.bonus.pct) || P.BONUS_PCT, ...(o.bonus && o.bonus.type === 'gift' ? { payGift: o.bonus.gift } : {}) } : {}) } : pay === 'clinic' ? { pay } : {}),
@@ -101,6 +103,7 @@ async function place(o) {
     ...(o.holdId ? { holdId: o.holdId } : {}),
     // paid before it was made (the shop, 25.11): it is confirmed, so no „confirm it” message and no call to confirm it
     ...(o.paid ? { paidOnSite: true } : {}),
+    ...(o.deposit && o.deposit.rest > 0 ? { deposit: { paid: o.deposit.paid, total: o.deposit.total, rest: o.deposit.rest } } : {}),
     online: true, createdBy: 'site', createdAt: at, updatedAt: at,
     src: B.sourceOf(o.src, o.cookie, o.ua), // where she came from: saved, not shown in the Calendar
   };

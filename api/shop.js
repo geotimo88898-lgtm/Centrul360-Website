@@ -46,6 +46,8 @@ async function hold(req, res, b) {
     // what she bought, for the desk (25.11, the audit: the title is clipped; the rest of the sessions are planned by the desk)
     order: q.lines.map((l) => clip(l.name + (l.qty > 1 ? ' × ' + l.qty : ''), 90)).slice(0, 12),
     multi: q.lines.length > 1 || q.lines.some((l) => l.qty > 1 || /ședințe/.test(l.name || '') || /^pachet-/.test(l.id || '')),
+    // „Rezerv cu avans” (26.11): 49 lei now, the rest at the clinic (api/_lib/shop.js DEPOSIT)
+    ...(b.deposit === true && S.depositOf(q.amount, !!b.card) ? { deposit: S.depositOf(q.amount, !!b.card) } : {}),
     date, time, endTime: B.hhmm(B.toMin(time) + minutes), page: clip(b.page, 120), src: b.src && typeof b.src === 'object' && JSON.stringify(b.src).length < 4000 ? b.src : null,
     cookie: /(^|;\s*)_fbc=fb\./.test(String((req.headers && req.headers.cookie) || '')) ? '_fbc=fb.' : '',
     app: B.appOf(req.headers && req.headers['user-agent']), track: capi.fromRequest(req, b.page),
@@ -57,7 +59,7 @@ async function hold(req, res, b) {
     res.status(409).json({ error: 'taken' });
     return;
   }
-  res.status(200).json({ ok: true, hold: { id: h.id, key: h.key, until: (mine || h).until, minutes: H.HOLD_MIN }, quote: q });
+  res.status(200).json({ ok: true, hold: { id: h.id, key: h.key, until: (mine || h).until, minutes: H.HOLD_MIN, deposit: h.deposit || 0 }, quote: q });
 }
 
 module.exports = async (req, res) => {
