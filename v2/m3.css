@@ -27,6 +27,8 @@
 /* the photo keeps its 4:5 picture, the box cuts the black under the subject (--cut, v2/m3.js: the row's deepest subject) and
    fades its last few pixels into the card */
 .bft{ --cut:1; }
+/* v2/m3.js measures each card's words at their own height (the row not stretching them) for a moment */
+.bfo-g.tiles.m3-measure{ align-items:start; }
 .bft > .pic{ width:100%; height:0; padding-top:calc(125% * var(--cut)); aspect-ratio:auto; margin:0; overflow:hidden;
   -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent); mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent); }
 .bft > .pic img,.bft > .pic img.pb{ inset:0 0 auto 0; height:auto; aspect-ratio:4 / 5; }

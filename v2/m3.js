@@ -10,10 +10,10 @@
     liposonix: 'Elimină grăsimea localizată, contur mai suplu', hifu: 'Strânge pielea lăsată, aspect de lifting',
     restart: 'Ten luminos, curat și odihnit, imediat', biolifting: 'Piele mai fermă, mai puține riduri fine',
     ems: 'Tonifiază mușchii, abdomen mai ferm', 'hifu-corp': 'Strânge pielea lăsată și o face mai fermă',
-    radiofrecventa: 'Reduce celulita, strânge pielea', cavitatie: 'Reduce grăsimea localizată, piele mai netedă',
+    radiofrecventa: 'Reduce celulita, strânge și netezește pielea', cavitatie: 'Reduce grăsimea localizată, piele mai netedă',
     impachetare: 'Reduce retenția de apă, picioare ușoare', hidratare: 'Hidratare în profunzime, ten fin și catifelat',
     antirid: 'Diminuează ridurile, piele mai fermă', redness: 'Calmează roșeața, ten mai uniform',
-    'sebum-off': 'Curăță porii, ten fără luciu', 'masaj-facial': 'Relaxare profundă, ten odihnit'
+    'sebum-off': 'Curăță porii în profunzime, ten fără luciu', 'masaj-facial': 'Relaxare profundă, ten odihnit'
   };
   // the next reason starts in lower case after the comma, a name in capitals stays (HIFU, EMS); a first word said again goes
   var low = function (s) { var w = s.split(' ')[0]; return /^[A-ZĂÂÎȘȚ0-9]{2,}$/.test(w) ? s : s.charAt(0).toLowerCase() + s.slice(1); };
@@ -31,21 +31,35 @@
   }
   var all = function (root) { if (root.querySelectorAll) root.querySelectorAll('.bft-l').forEach(join); };
 
-  // ---- the photos end where their picture ends (the owner, 27.11: „elimină acum spațiul negru inutil”). The photos are
-  // square, their lower part black: how far down each one's subject goes, as a share of the card's 4:5 photo (measured on
-  // the photos, 27.11). A row's cards get the deepest of the row, so their names stay on one line; a photo not measured keeps
-  // its whole 4:5. The photo is the same size as before, only the black under the subject is cut (v2/m3.css --cut).
+  // ---- no black left over in a card (the owner, 27.11: „elimină acum spațiul negru inutil”, then „încă e puțin mai mult spațiu
+  // negru inutil, rezolvă să arate bine tot cadranul”). The cards of a row are as tall as each other; a card with fewer words
+  // used to keep a black hole between its reason and its price. Now each card's photo takes exactly what its words leave: the
+  // row's height is the least that shows every subject whole (how far down each one goes, as a share of the card's 4:5 photo,
+  // measured on the photos, 27.11) above all its words, and every card fills it with its own photo, so the price and the
+  // button sit at the foot of each card with nothing empty above them. A photo not measured keeps its whole 4:5.
   var DEPTH = { liposonix: 0.58, hifu: 0.64, restart: 0.72, biolifting: 0.79, ems: 0.59, 'hifu-corp': 0.78, radiofrecventa: 0.59, cavitatie: 0.67,
     impachetare: 0.55, hidratare: 0.56, antirid: 0.51, redness: 0.59, 'sebum-off': 0.55, 'masaj-facial': 0.72 };
   var EDGE = 0.08; // under the subject: room for the photo to fade into the card
   function cut(grid) {
     var cards = [].slice.call(grid.querySelectorAll(':scope > .bft')).filter(function (c) { return c.offsetParent; });
+    if (!cards.length) return;
+    // each card's words at their own height (the row not stretching them while measured)
+    grid.classList.add('m3-measure');
     var rows = {};
     cards.forEach(function (c) { var t = Math.round(c.offsetTop); (rows[t] = rows[t] || []).push(c); });
+    var set = [];
     Object.keys(rows).forEach(function (t) {
-      var r = rows[t], d = Math.max.apply(null, r.map(function (c) { var v = DEPTH[c.getAttribute('data-p')]; return v == null ? 1 : v + EDGE; }));
-      r.forEach(function (c) { c.style.setProperty('--cut', Math.min(1, d).toFixed(3)); });
+      var r = rows[t];
+      var need = r.map(function (c) {
+        var body = c.querySelector(':scope > .bft-b'), v = DEPTH[c.getAttribute('data-p')], w = c.offsetWidth * 1.25;
+        var words = body ? body.offsetHeight : 0;
+        return { c: c, w: w, words: words, min: w * Math.min(1, v == null ? 1 : v + EDGE) };
+      });
+      var tall = Math.max.apply(null, need.map(function (n) { return n.min + n.words; }));
+      need.forEach(function (n) { set.push([n.c, Math.max(n.min, tall - n.words) / n.w]); });
     });
+    grid.classList.remove('m3-measure');
+    set.forEach(function (x) { x[0].style.setProperty('--cut', Math.min(1.3, x[1]).toFixed(3)); });
   }
   var cutAll = function () { document.querySelectorAll('.bfo-g.tiles').forEach(cut); };
   var soon = 0;
@@ -59,4 +73,5 @@
   }).observe(document.documentElement, { childList: true, subtree: true });
   all(document);
   cutAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(later);
 })();
