@@ -362,13 +362,21 @@
       store.set('c360-pay-pending', { orderId: order.orderId, key: order.key, amount: order.amount, title: order.title, kind: order.kind || o.kind, at: Date.now() });
       paint(stateHtml('wait', 'Plătește în fila myPOS', 'S-a deschis cu ' + lei(order.amount) + ' completat. Când ai plătit, revino aici: se actualizează singur.',
         '<button type="button" class="cp-btn" data-cp-again>Deschide din nou plata</button>' + (o.onClinic ? '<button type="button" class="cp-ghost" data-cp-clinic>Plătesc în clinică</button>' : '')));
-      const mine = ++polling, t0 = Date.now();
+      const mine = ++polling, t0 = Date.now(), said = {};
       const tick = async () => {
         if (mine !== polling || done) return;
         let r = {};
         try { r = await post({ action: 'check', orderId: order.orderId, key: order.key }); } catch (e) { r = {}; }
         if (mine !== polling || done) return;
         if (r.paid) { paidNow(true); return; }
+        // the payment did not pass on myPOS's page (27.11): she hears it here, and what to do; the desk calls her too
+        if (r.refused && !said.refused) {
+          said.refused = true;
+          paint(stateHtml('bad', 'Plata nu a trecut', 'Banii nu au fost luați. Poți încerca din nou, cu același card sau cu altul. La sume mari, unele bănci au o limită pentru plățile online, pe care o poți mări din aplicația băncii.' + ((who.phone || fv('phone')) ? ' Dacă tot nu merge, te sunăm noi.' : ''),
+            '<button type="button" class="cp-btn" data-cp-again>Încearcă din nou</button>' + (o.onClinic ? '<button type="button" class="cp-ghost" data-cp-clinic>Plătesc în clinică</button>' : '')));
+        }
+        // the money is in the account already, myPOS's word about the order not yet
+        if (r.confirming && !said.confirming) { said.confirming = true; paint(stateHtml('wait', 'Plata se confirmă', 'Am văzut plata de ' + lei(order.amount) + '. Confirmarea vine de obicei în câteva minute și pagina se actualizează singură. Nu plăti a doua oară.')); }
         if (r.status === 'failed' || r.status === 'mismatch' || r.status === 'double') { fail(r.status === 'double' ? 'E deja plătită. A doua plată se întoarce singură pe card.' : 'Plata a expirat sau a fost anulată. Banii nu au fost luați.'); return; }
         if (Date.now() - t0 < 45 * 60e3) setTimeout(tick, document.hidden ? 8000 : 2500);
       };

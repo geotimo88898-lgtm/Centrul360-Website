@@ -962,7 +962,8 @@ module.exports = async (req, res) => {
         out.push({ id: o.id, at: o.createdAt, kind: o.kind, amount: o.amount, status: o.status, test: !!o.test, provider: o.provider || '', who: hp(o.phone), contact: !!o.phone,
           app: src.app || '', from: src.from || '', land: src.land || '', request: o.request && o.request.code ? sec(o.request.at) : null, tried: o.requestTried ? sec(o.requestTried) : null,
           linkError: o.linkError ? [o.linkError.code, o.linkError.status, String(o.linkError.message || '').slice(0, 140)].join(' ') : '',
-          trace: (o.trace || []).map((e) => sec(e.at) + 's ' + e.step + ':' + e.code), mypos: mp, paid: o.paidAt ? sec(o.paidAt) : null, method: (o.mypos || {}).method || '', fallback: o.fallback ? o.fallback.kind : '' });
+          trace: (o.trace || []).map((e) => sec(e.at) + 's ' + e.step + ':' + e.code), mypos: mp, paid: o.paidAt ? sec(o.paidAt) : null, method: (o.mypos || {}).method || '', fallback: o.fallback ? o.fallback.kind : '',
+          refused: o.refusedAt ? sec(o.refusedAt) : null, refusedTold: !!o.refusedTold, probable: o.probable ? o.probable.ref + ' ' + sec(o.probable.at) + 's' : '', lead: !!o.leadId });
       }
       res.status(200).json({ days, n: out.length, orders: out });
       return;

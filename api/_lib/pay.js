@@ -293,11 +293,11 @@ async function recordSale(o, note) {
   await writeJSON('data/sales.json', sales);
   return entry;
 }
-async function ring(o, title, text, ownerOnly) {
+async function ring(o, title, text, ownerOnly, look) {
   try {
     const N = require('./notify');
     const ids = ownerOnly ? await N.adminIds(S) : await N.deskIds(S, o.city || '');
-    await N.notifyMany(S, ids, { kind: 'money', tone: 'good', go: 'incasari', tag: 'pay-' + o.id, title: title + ' - ' + Math.round(o.amount) + ' lei', text: clip(text, 300) });
+    await N.notifyMany(S, ids, Object.assign({ kind: 'money', tone: 'good', go: 'incasari', tag: 'pay-' + o.id, title: title + ' - ' + Math.round(o.amount) + ' lei', text: clip(text, 300) }, look || {}));
   } catch (e) { console.error('pay ring:', e.message); }
 }
 // an offer or a treatment paid before it is booked: Încasări, the desk calls her to pick the hour, Meta hears the Purchase
@@ -476,6 +476,11 @@ async function check(orderId, key) {
   } catch (e) { await rqFail(e); return { paid: false, status: 'open', error: e.code || 'mypos_failed' }; }
   if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(orderId, st, 'status'); return { paid: !!r.ok, status: r.ok ? 'paid' : r.double ? 'double' : 'open', kind: o.kind }; }
   if (st && (st.status === 3 || st.status === 4) && baseOf(st.orderId) === o.id) return { paid: false, status: 'failed' };
+  // the payment did not pass on myPOS's page (the bank, or a limit: only the myPOS app says which; she can try again there):
+  // her page tells her, and what to do
+  if (st && st.raw === 'Failed') { later(refused(o)); return { paid: false, status: 'open', refused: true }; }
+  // the money is in the account already, myPOS's word about the order not yet: her page says it is being confirmed
+  if (o.probable) return { paid: false, status: 'open', confirming: true };
   return { paid: false, status: 'open' };
 }
 // myPOS's answer about an order is about this order, for its sum, in lei (else it is not taken: a made-up answer of the test
@@ -673,6 +678,7 @@ async function sweep(opts) {
   // its myPOS request can't be paid: it is let go after 2 hours without asking anyone, so every real request is asked)
   const items = fresh ? byNew.filter((it) => { const a = now - Date.parse(it.at); return a >= 20e3 && a < 3 * 3600e3; }).slice(0, 25)
     : byNew.slice(0, 150);
+  if (fresh && items.length) out.probable = await probableScan(items).catch((e) => ({ error: e.message }));
   for (const it of items) {
     const age = now - Date.parse(it.at);
     if (!fresh && age < 120e3) continue;
@@ -684,8 +690,9 @@ async function sweep(opts) {
       if (age > 2 * 3600e3) { await update(o.id, (x) => { if (x.status !== 'open' || (x.request && x.request.code)) return false; x.status = 'expired'; x.failWhy = 'no_request'; }); await openList((l) => l.filter((x) => x.id !== it.id)); out.gone++; }
       continue;
     }
-    // (every minute only for the 15 minutes after her last sign of life: then the 5-minute round, George 23.11)
-    if (fresh && now - lastActivity(o) > 15 * 60e3) continue;
+    // (every minute only for the 15 minutes after her last sign of life: then the 5-minute round, George 23.11; an order whose
+    // money is already in the account (probable, below) is asked every minute until myPOS says so of the order)
+    if (fresh && now - lastActivity(o) > 15 * 60e3 && !o.probable) continue;
     out.asked++;
     let st = null;
     try {
@@ -693,6 +700,8 @@ async function sweep(opts) {
       else { if (!IPC.ready(c)) continue; st = await askBoth(c, o); }
     } catch (e) { await rqFail(e); continue; }
     if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(o.id, st, fresh ? 'status-1min' : 'status'); if (r.ok) out.paid++; continue; }
+    if ((st && st.raw === 'Failed') || (o.refusedAt && !o.refusedTold)) { if (await refused(o)) out.refused = (out.refused || 0) + 1; }
+    if (o.probable && !o.probable.told && now - Date.parse(o.probable.seenAt) > 90 * 60e3) { if (await probableTold(o)) out.unconfirmed = (out.unconfirmed || 0) + 1; }
     if (fresh) continue;
     if (age > 48 * 3600e3 || (st && baseOf(st.orderId) === o.id && (st.status === 3 || st.status === 4) && age > 30 * 60e3)) {
       await update(o.id, (x) => { if (x.status !== 'open') return false; x.status = st && st.status === 4 ? 'failed' : 'expired'; });
@@ -722,22 +731,124 @@ async function checkoutLeads() {
     const age = now - Date.parse(it.at);
     if (!(age >= 20 * 60e3 && age < 48 * 3600e3)) continue;
     const { data: o } = await readOrder(it.id);
-    if (!o || o.status !== 'open' || o.test || o.leadId || !['shop', 'hold'].includes(o.kind) || !o.phone) continue;
-    if (String(o.phone).replace(/\D/g, '').slice(-9) === '700000000') continue;
-    const h = o.ref ? await require('./booking-holds').get(o.ref).catch(() => null) : null;
-    const when = h && h.date ? h.date.split('-').reverse().join('.') + ' ' + (h.time || '') : '';
-    const what = String(o.title || '').replace(/^(Comandă online|Avans) · |^Comandă online: /, '');
-    const r = await require('../portal-leads').createLead({
-      name: o.name || 'Clientă site', phone: o.phone, source: 'site', location: cityOf(o.city) || 'Timișoara', createdBy: 'site-checkout', welcome: false,
-      interest: clip('Comandă neplătită: ' + what, 120), value: Math.round(Number(o.amount) || 0),
-      note: 'A început plata pe site și nu a plătit: ' + what + ', ' + Math.round(Number(o.amount) || 0) + ' lei' + (when ? '. Alesese ' + when + ' la ' + (cityOf(o.city) || '') + ' (ora nu mai e ținută)' : '') + '. De sunat.',
-      authorLabel: 'Site · plată neterminată', src: o.src && typeof o.src === 'object' ? o.src : null,
-    }).catch((e) => ({ error: e.message }));
-    if (!r || r.error || !r.lead) { out.error = (r && r.error) || 'no_lead'; continue; }
-    await update(o.id, (x) => { if (x.leadId) return false; x.leadId = r.lead.id; x.leadAt = nowISO(); });
-    out.made++;
+    // money already in the account for it (probable): not a client to call about an unpaid order, until 90 minutes pass
+    // without myPOS's word (then her lead says to look in myPOS first)
+    if (!o || o.status !== 'open' || (o.probable && !o.probable.told)) continue;
+    const r = await checkoutLead(o, o.probable ? 'check' : '');
+    if (r && r.error) out.error = r.error; else if (r && r.made) out.made++;
   }
   return out;
+}
+// one order's lead in the Pipeline's Site tab (once per order): the unpaid one after 20 minutes (a shop or hold order); a
+// payment that did not pass, at once (mode 'refused': any order with her phone, the desk calls her while she still wants it);
+// a payment seen in myPOS that myPOS never confirmed for the order (mode 'check': the desk looks in myPOS first)
+async function checkoutLead(o, mode) {
+  if (!o || o.status !== 'open' || o.test || o.leadId || !o.phone) return null;
+  const refusedNow = mode === 'refused', toCheck = mode === 'check' && !!o.probable;
+  if (!refusedNow && !['shop', 'hold'].includes(o.kind)) return null;
+  if (String(o.phone).replace(/\D/g, '').slice(-9) === '700000000') return null;
+  const h = o.ref ? await require('./booking-holds').get(o.ref).catch(() => null) : null;
+  const when = h && h.date ? h.date.split('-').reverse().join('.') + ' ' + (h.time || '') : '';
+  const what = String(o.title || '').replace(/^(Comandă online|Avans) · |^Comandă online: /, '');
+  const sum = Math.round(Number(o.amount) || 0) + ' lei';
+  const r = await require('../portal-leads').createLead({
+    name: o.name || 'Clientă site', phone: o.phone, source: 'site', location: cityOf(o.city) || 'Timișoara', createdBy: 'site-checkout', welcome: false,
+    interest: clip((refusedNow ? 'Plata nu a trecut: ' : toCheck ? 'Plată de verificat: ' : 'Comandă neplătită: ') + what, 120), value: Math.round(Number(o.amount) || 0),
+    note: refusedNow
+      ? 'A încercat să plătească pe site ' + what + ', ' + sum + ', și plata nu a trecut' + (when ? '. Alesese ' + when + ' la ' + (cityOf(o.city) || '') : '') + '. De sunat acum: alt card, limita de plăți online din aplicația băncii (la sume mari) sau plata în clinică.'
+      : toCheck
+        ? 'În myPOS a intrat la ' + hm(o.probable.at) + ' o plată online de ' + sum + ', poate a ei, dar myPOS nu a confirmat-o pentru comanda ei de pe site (' + what + (when ? ', ' + when + ' la ' + (cityOf(o.city) || '') : '') + '). Uită-te în myPOS cine a plătit înainte să o suni: dacă e ea, nu-i cere încă o dată banii.'
+        : 'A început plata pe site și nu a plătit: ' + what + ', ' + sum + (when ? '. Alesese ' + when + ' la ' + (cityOf(o.city) || '') + ' (ora nu mai e ținută)' : '') + '. De sunat.',
+    authorLabel: refusedNow ? 'Site · plata nu a trecut' : toCheck ? 'Site · plată de verificat' : 'Site · plată neterminată', src: o.src && typeof o.src === 'object' ? o.src : null,
+  }).catch((e) => ({ error: e.message }));
+  if (!r || r.error || !r.lead) return { error: (r && r.error) || 'no_lead' };
+  await update(o.id, (x) => { if (x.leadId) return false; x.leadId = r.lead.id; x.leadAt = nowISO(); });
+  return { made: true };
+}
+
+// A payment that did not pass (myPOS: „Failed”; 26.11: a large payment refused, nobody knew): noted the first time; if she
+// has not paid 3 minutes later (a new try on the same page often passes), the desk hears it at once and her lead is made at
+// once (not after the 20 minutes of an unpaid order), so someone calls her while she still wants it. → true when told now
+async function refused(o) {
+  if (o.test || o.status !== 'open') return false;
+  // (a try of hours ago, her last sign of life more than 3 hours old: the desk has her as an unpaid order already)
+  if (!o.refusedAt && Date.now() - lastActivity(o) > 3 * 3600e3) return false;
+  if (!o.refusedAt) { await update(o.id, (x) => { if (x.refusedAt || x.status !== 'open') return false; x.refusedAt = nowISO(); }); return false; }
+  if (o.refusedTold || Date.now() - Date.parse(o.refusedAt) < 3 * 60e3) return false;
+  const claimed = await update(o.id, (x) => { if (x.refusedTold || x.status !== 'open') return false; x.refusedTold = nowISO(); });
+  if (!claimed) return false;
+  const what = String(o.title || '').replace(/^(Comandă online|Avans) · |^Comandă online: /, '');
+  const lead = await checkoutLead(o, 'refused').catch((e) => ({ error: e.message }));
+  if (lead && lead.error) console.error('pay refused lead:', lead.error);
+  const inPipe = !!(lead && lead.made) || !!o.leadId;
+  await ring(o, 'PLATA NU A TRECUT', (o.name || 'O clientă') + ' a încercat să plătească pe site ' + what + ' și plata nu a trecut (banca sau limita myPOS, motivul e în aplicația myPOS). Sun-o acum: alt card, limita de plăți online din aplicația băncii sau plata în clinică.' + (inPipe ? ' E în Pipeline, la Site.' : ''), false, inPipe ? { tone: 'bad', go: 'pipeline' } : { tone: 'bad' });
+  return true;
+}
+
+// myPOS's own word on a payment request sometimes comes 25 to 60 minutes after the money (27.11: paid at 07:07, the request
+// still „Seen” at 07:17, „Paid” at 07:36; 25.11: an hour). The account's transactions show the payment at once, without the
+// order: an online payment (type 035) of exactly an open order's sum, made after that order's page and within 3 hours of it,
+// that no paid order of that sum explains, when no other open order waits for that sum, marks the order „probable”. Never
+// paid on it (only myPOS's word about the order pays it): it is asked every minute until that word comes, no „unpaid” lead
+// and no recovery message go to a client who paid, and after 90 minutes without the word the owner hears it (probableTold).
+// At most every 2 minutes, only while an order with a myPOS page waits; a payment the card's or the booking's matcher took
+// is theirs, a payment more than an hour after her last sign of life is not taken for hers.
+const PROBE = 'data/pay-tx-scan.json';
+const hm = (iso) => { try { return new Date(iso).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } };
+async function probableScan(items) {
+  const now = Date.now();
+  const orders = [];
+  for (const it of items) { const { data: o } = await readOrder(it.id); if (o && o.status === 'open' && !o.test && o.provider === 'requests' && o.request && o.request.code) orders.push(o); }
+  const waiting = orders.filter((o) => !o.probable);
+  if (!waiting.length) return { orders: orders.length, scanned: false };
+  const last = await readJSON(PROBE, {}).catch(() => ({}));
+  if (last && last.at && now - Date.parse(last.at) < 110e3) return { orders: orders.length, scanned: false };
+  await writeJSON(PROBE, { at: nowISO() }, { quiet: true }).catch(() => {});
+  const M = require('./mypos');
+  const conn = await M.loadConn(readJSON).catch(() => null);
+  if (!conn || !conn.clientId) return { orders: orders.length, scanned: false, why: 'no_connection' };
+  const from = Math.min(...waiting.map((o) => Date.parse(o.request.at) || now)) - 60e3;
+  const txs = (await M.listTransactions(conn, from, now)).filter((t) => String(t.transaction_type || '').padStart(3, '0') === '035' && String(t.sign || 'C') === 'C');
+  if (!txs.length) return { orders: orders.length, scanned: true, txs: 0 };
+  const amt = (t) => Math.round(Number(String(t.original_amount != null && t.original_amount !== '' ? t.original_amount : t.transaction_amount).replace(',', '.')) * 100) / 100;
+  const same = (a, b) => Math.abs(Number(a) - Number(b)) < 0.01;
+  // the paid checkout orders of the last hours explain their own payments (the word may have come before or after the money)
+  const paid = ((await readJSON(PAID, [])) || []).filter((x) => x && now - Date.parse(x.at) < 6 * 3600e3);
+  // the payments the card's PayLinks or the booking links took already are theirs
+  const taken = await claimedRefs();
+  const used = new Set(), out = { orders: orders.length, scanned: true, txs: txs.length, marked: 0 };
+  for (const t of txs.sort((a, b) => (a.date < b.date ? -1 : 1))) {
+    const at = Date.parse(t.date), sum = amt(t), ref = String(t.payment_reference || t.id || '');
+    if (!ref || !Number.isFinite(at) || taken.has(ref) || taken.has('mypos-' + ref)) continue;
+    const ex = paid.find((x) => !used.has(x.id) && same(x.amount, sum) && Date.parse(x.at) > at - 10 * 60e3 && Date.parse(x.at) < at + 3 * 3600e3);
+    if (ex) { used.add(ex.id); continue; }
+    if (orders.some((o) => o.probable && o.probable.ref === ref)) continue;
+    // (her page made before the payment, the payment within an hour of her last sign of life and 3 hours of the page)
+    const cands = orders.filter((o) => same(o.amount, sum) && Date.parse(o.request.at) <= at + 60e3 && at - Date.parse(o.request.at) < 3 * 3600e3 && at - lastActivity(o) < 60 * 60e3);
+    if (cands.length !== 1 || cands[0].probable) continue;
+    const o = cands[0];
+    if (await update(o.id, (x) => { if (x.probable || x.status !== 'open') return false; x.probable = { ref, at: new Date(at).toISOString(), seenAt: nowISO() }; })) { o.probable = { ref }; out.marked++; }
+  }
+  return out;
+}
+
+// the payment references the old matchers took (the card's orders and checks, the booking links)
+async function claimedRefs() {
+  const out = new Set();
+  const card = await readJSON('data/card-sarbatori.json', []).catch(() => []);
+  (Array.isArray(card) ? card : []).forEach((r) => { if (r && r.match && r.match.ref) out.add(String(r.match.ref)); if (r && r.checkout && r.checkout.scan) out.add(String(r.checkout.scan)); });
+  const checks = await readJSON('data/card-sarbatori-check.json', []).catch(() => []);
+  (Array.isArray(checks) ? checks : []).forEach((c) => { if (c && c.ref && c.state !== 'none') out.add(String(c.ref)); });
+  const bp = await readJSON('data/booking-paid-refs.json', []).catch(() => []);
+  (Array.isArray(bp) ? bp : []).forEach((c) => { if (c && c.ref && c.state !== 'none') out.add(String(c.ref)); });
+  return out;
+}
+// a probable one without myPOS's word 90 minutes on (25.11: the word came after an hour): the owner hears it, to look in the
+// myPOS app; from then her lead is made as an unpaid order's, saying to look in myPOS first. → true when told now
+async function probableTold(o) {
+  if (!(await update(o.id, (x) => { if (!x.probable || x.probable.told || x.status !== 'open') return false; x.probable.told = nowISO(); }))) return false;
+  await ring(o, 'PLATĂ ÎN MYPOS NECONFIRMATĂ', 'În myPOS a intrat la ' + hm(o.probable.at) + ' o plată online de ' + Math.round(o.amount) + ' lei care pare a comenzii ' + (o.title || o.id) + (o.name ? ' (' + o.name + ')' : '') + ', dar myPOS nu a confirmat-o pentru comandă de 90 de minute. Uită-te în aplicația myPOS cine a plătit.', true, { tone: 'bad' });
+  return true;
 }
 
 // Is this myPOS payment (seen in the account's transactions by an old matcher: the card's PayLinks, booking-pay's links) one of
