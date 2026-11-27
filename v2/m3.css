@@ -25,7 +25,13 @@
 /* ---- 2. the offers' cards ---- */
 .bfo-g.tiles{ gap:18px 14px; }
 .bft > .pic{ width:100%; height:auto; aspect-ratio:4 / 5; margin:0; }
-.bft-b{ margin-top:-38px; padding:0 14px 16px; }
+/* the words under the photo, never over it (the owner, 27.11: „intră scrisul și titlul peste poze cât timp lăsăm spațiu negru
+   jos”): the photo fades only at its very foot, the name starts on the black below it */
+.bft > .pic img{ -webkit-mask-image:linear-gradient(to left,#000 50%,transparent 100%),linear-gradient(to bottom,#000 82%,transparent 100%); -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to left,#000 50%,transparent 100%),linear-gradient(to bottom,#000 82%,transparent 100%); mask-composite:intersect; }
+.bft > .pic img.pb{ -webkit-mask-image:linear-gradient(to left,#000 72%,transparent 100%),linear-gradient(to bottom,#000 86%,transparent 100%); -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to left,#000 72%,transparent 100%),linear-gradient(to bottom,#000 86%,transparent 100%); mask-composite:intersect; }
+.bft-b{ margin-top:0; padding:12px 14px 16px; }
 .bft h3{ font-size:18px; line-height:1.2; }
 .bft-l{ margin-top:8px; gap:5px; }
 .bft-l li{ font-size:14px; }
@@ -37,10 +43,10 @@
 /* a category with one treatment keeps its row: the photo on the left, as tall as the card */
 .bfo-g.tiles > .bft:only-of-type > .pic{ width:auto; height:auto; aspect-ratio:auto; }
 .bfo-g.tiles > .bft:only-of-type .bft-b{ margin:0; }
-@media (max-width:359px){ .bft h3{ font-size:16px; } .bft-l li{ font-size:13px; } .bft .pr b{ font-size:19px; } .bft .btn.book{ height:42px; font-size:14px; } .bft-b{ padding:0 10px 12px; } }
+@media (max-width:359px){ .bft h3{ font-size:16px; } .bft-l li{ font-size:13px; } .bft .pr b{ font-size:19px; } .bft .btn.book{ height:42px; font-size:14px; } .bft-b{ padding:10px 10px 12px; } }
 @media (min-width:700px){
   .bfo-g.tiles{ gap:24px 20px; }
-  .bft-b{ padding:0 16px 18px; }
+  .bft-b{ padding:14px 16px 18px; }
   .bft h3{ font-size:19px; }
   .bft-l li{ font-size:14.5px; }
   .bft .pr b{ font-size:24px; }
