@@ -43,7 +43,7 @@
   function mount(p) {
     panel = p;
     panel.classList.add('k-panel', 'tf');
-    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Campanii</h2>' +
+    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Rezultate card</h2>' +
       '<p class="k-lede" data-cplede></p></div><div class="k-head-actions" data-tfhead></div></div>' +
       '<div class="cp-pick" data-cppick></div>' +
       '<div data-tfbody><div class="k-skel" style="height:520px"></div></div>';

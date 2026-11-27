@@ -14,7 +14,7 @@
   function mount(p) {
     panel = p;
     panel.classList.add('k-panel', 'lf');
-    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Lead filter</h2>' +
+    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Formular pachete</h2>' +
       '<p class="k-lede">Leadurile din formularele cu pachete: ce zonă, ce pachet, ce oraș și ce s-a întâmplat după.</p></div>' +
       '<div class="k-head-actions"><div class="k-seg" data-lfspan>' + [['today', 'Azi'], ['week', '7 zile']].map(([v, l]) =>
         '<button type="button" data-v="' + v + '" class="' + (S.span === v ? 'is-on' : '') + '">' + l + '</button>').join('') + '</div></div></div>' +

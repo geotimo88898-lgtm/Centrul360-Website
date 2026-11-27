@@ -627,13 +627,14 @@
     Object.keys(sections).forEach((id) => { const s = sections[id]; if (s.data) { try { s.data(d); } catch (e) { console.error(e); } } });
   }
   function badge(tab, n, tone) {
-    const b = document.querySelector('#tabsNav button[data-tab="' + tab + '"]');
-    if (!b) return;
-    let el = b.querySelector('.k-nav-badge');
-    if (!n) { if (el) el.remove(); return; }
-    if (!el) { el = document.createElement('b'); el.className = 'k-nav-badge'; b.appendChild(el); }
-    el.classList.toggle('is-hot', tone === 'hot');
-    if (el.textContent !== String(n)) { el.textContent = n > 99 ? '99+' : n; el.classList.remove('is-pop'); void el.offsetWidth; el.classList.add('is-pop'); }
+    // every button of that page: a page can be in the team's group and in the owner's (one of them hidden, 27.11)
+    document.querySelectorAll('#tabsNav button[data-tab="' + tab + '"]').forEach((b) => {
+      let el = b.querySelector('.k-nav-badge');
+      if (!n) { if (el) el.remove(); return; }
+      if (!el) { el = document.createElement('b'); el.className = 'k-nav-badge'; b.appendChild(el); }
+      el.classList.toggle('is-hot', tone === 'hot');
+      if (el.textContent !== String(n)) { el.textContent = n > 99 ? '99+' : n; el.classList.remove('is-pop'); void el.offsetWidth; el.classList.add('is-pop'); }
+    });
   }
   // a section, or a section's own page („continut/program”: the section hears `continut:sub` with „program”)
   const go = (tab) => {

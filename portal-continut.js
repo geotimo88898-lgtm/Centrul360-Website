@@ -98,7 +98,7 @@
   function mount(p) {
     panel = p;
     panel.classList.add('k-panel', 'cn');
-    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Content</h2></div><div class="k-head-actions" data-cthead></div></div><div data-ctbody><div class="k-skel" style="height:420px"></div></div>';
+    panel.innerHTML = '<div class="k-head"><div><div class="k-eyebrow">Marketing</div><h2>Conținut</h2></div><div class="k-head-actions" data-cthead></div></div><div data-ctbody><div class="k-skel" style="height:420px"></div></div>';
     panel.addEventListener('click', async (e) => {
       // the star: a favourite on or off (Transit, the grid, Galerie)
       const fv = e.target.closest('[data-ctfav]');

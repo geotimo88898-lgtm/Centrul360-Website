@@ -67,7 +67,7 @@
     if (locked) S.loc = K.data.city;
     S.from = K.thisMonth() + '-01'; S.to = K.today();
     panel.innerHTML =
-      '<div class="k-head"><div><div class="k-eyebrow">Clinică</div><h2>Încasări</h2></div>' +
+      '<div class="k-head"><div><div class="k-eyebrow">' + (K.data && K.data.isAdmin ? 'Bani' : 'Clinică') + '</div><h2>Încasări</h2></div>' +
       '<div class="k-head-actions"><button type="button" class="k-btn is-outline" data-act="customize">' + icon('sliders') + 'Personalizează</button><button type="button" class="k-btn is-outline" data-act="csv">' + icon('download') + 'Export</button>' +
       '<button type="button" class="k-btn is-outline" data-act="print">' + icon('printer') + 'Printează</button>' +
       (K.frontDesk && K.frontDesk() ? '<button type="button" class="k-btn is-accent" data-act="new">' + icon('plus') + 'Încasare<kbd>N</kbd></button>' : '') + '</div></div>' +
