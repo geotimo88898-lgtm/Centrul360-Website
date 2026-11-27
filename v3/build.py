@@ -15,7 +15,9 @@ robots: noindex,nofollow    (optional; the preview is always noindex)
 pixel: Lead                 (optional: Meta pixel events besides PageView, e.g. on a thank-you page; uses ?eid=)
 -->
 Inside a page, {{base}} is the site root (/v3/ in the preview). Tracking goes between <!--live--> and <!--/live-->: the preview
-leaves it out. No long dashes, no interpuncts in what she reads (the build refuses them: the reel's sign 02)."""
+leaves it out. No long dashes, no interpuncts in what she reads (the build refuses them: the reel's sign 02).
+Before v3 replaces the live pages: qa/price-list.cjs builds api/_lib/price-list.gen.json (the server's prices) from the hidden
+#lista of v2/src/preturi.html; keep that file (or move that source) when the swap is done."""
 import json, os, re, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, 'src')
