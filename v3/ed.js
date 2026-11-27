@@ -12,7 +12,7 @@
    ============================================================ */
 (function () {
   'use strict';
-  var B = /^\/v3\//.test(location.pathname) ? '/v3/' : '/';
+  var B = /^\/v3(\/|$)/.test(location.pathname) ? '/v3/' : '/';
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };

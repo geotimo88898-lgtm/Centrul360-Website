@@ -232,7 +232,7 @@
 (function () {
   var fig = document.querySelector('[data-spin]'); if (!fig) return;
   var img = fig.querySelector('.mh-cut'), cv = fig.querySelector('canvas'), ctx = cv.getContext('2d'), mh = fig.closest('.mh');
-  var N = 61, REST = 6, B = location.pathname.indexOf('/v3/') === 0 ? '/v3/' : '/';
+  var N = 61, REST = 6, B = /^\/v3(\/|$)/.test(location.pathname) ? '/v3/' : '/';
   var calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var fr = {}, left = N, pos = REST, drawn = -1, anim = null, raf = 0, drag = null, played = false;
   var two = function (i) { return (i < 10 ? '0' : '') + i; };
