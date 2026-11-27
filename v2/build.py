@@ -103,7 +103,9 @@ def build(name):
     # reason per card): only the /v2/ pages load it; the swap (base /) leaves it out until the owner says yes
     if BASE == '/v2/':
         last = list(re.finditer(r'<link rel="stylesheet" href="[^"]+">', out))[-1]   # after every other style, the shop's included
-        out = out[:last.end()] + '\n<link rel="stylesheet" href="/v2/m3.css">\n<script src="/v2/m3.js" defer></script>' + out[last.end():]
+        # and the liquid glass on what floats over the page (27.11, v2/lg.js: Chrome only, the rest unchanged)
+        out = out[:last.end()] + '\n<link rel="stylesheet" href="/v2/m3.css">\n<script src="/v2/m3.js" defer></script>' + \
+            '\n<link rel="stylesheet" href="/v2/lg.css">\n<script src="/v2/lg.js" defer></script>' + out[last.end():]
     if '—' in out or '–' in out: sys.exit(name + ': a long dash slipped in')
     os.makedirs(OUT, exist_ok=True)
     open(os.path.join(OUT, path + '.html'), 'w', encoding='utf-8').write(out)

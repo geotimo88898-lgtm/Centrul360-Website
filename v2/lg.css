@@ -1,0 +1,13 @@
+/* Centrul360, the preview's liquid glass (v2/lg.js; the owner, 27.11: „da”). Only where the browser can bend the page behind
+   a piece (Chrome: html.lg-on, the piece .lg): the tints lighter, so the bent picture shows through the rim, and a light edge
+   on top, like the rim of a glass. Everywhere else nothing here applies and the bars stay as they are. */
+html.lg-on .top .bar.lg{ background:rgba(255,255,255,.72);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95), inset 0 0 0 .5px rgba(255,255,255,.7), inset 0 -1px 2px rgba(255,255,255,.3), 0 14px 34px -18px rgba(11,40,38,.35); }
+html.lg-on .top.dk .bar.lg{ background:rgba(22,22,24,.6);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22), inset 0 0 0 .5px rgba(255,255,255,.18), 0 14px 34px -20px rgba(0,0,0,.7); }
+html.lg-on .dock.lg{ background:rgba(255,255,255,.72);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95), inset 0 0 0 .5px rgba(255,255,255,.7), inset 0 -1px 2px rgba(255,255,255,.3), 0 18px 40px -18px rgba(11,40,38,.4); }
+html.lg-on .sh-bar.lg{ background:rgba(18,18,20,.62);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28), inset 0 0 0 .5px rgba(255,255,255,.2), inset 0 -1px 2px rgba(255,255,255,.08), 0 20px 44px -18px rgba(0,0,0,.6); }
+html.lg-on .bft > .pct.lg,html.lg-on .bfc .pct.lg{ background:linear-gradient(125deg,rgba(236,186,170,.86),rgba(250,226,215,.82) 50%,rgba(222,164,147,.86));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85), inset 0 0 0 .5px rgba(255,255,255,.6), 0 4px 12px -6px rgba(0,0,0,.35); }
