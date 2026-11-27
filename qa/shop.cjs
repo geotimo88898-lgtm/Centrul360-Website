@@ -65,9 +65,15 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   check('short names, a zone where it has one, two short lines', tm.concat(ar).every((p) => p.name.length <= (p.bundle ? 62 : p.need === "epilare" || p.pack ? 40 : p.base ? 30 : 26) && p.b.length >= 2 && p.b.every((x) => x.length <= (p.bundle ? 90 : 36))), tm.filter((p) => p.name.length > (p.need === "epilare" ? 40 : 26) || p.b.some((x) => x.length > 36)).map((p) => p.name));
   // „Toate zonele” (the owner, 25.11): the twin of a body treatment with zones, one session on every zone, the sum of the zones
   const lt = tm.find((p) => p.id === 'liposonix-toate');
-  check('Liposonix Full Body: 5 zones, 3.200 → 1.600, no zones of its own, opens the Liposonix page', lt && lt.base === 'liposonix' && lt.full === 3200 && lt.price === 1600 && !lt.zones.length && lt.minutes <= 90, lt);
+  check('Liposonix Full Body: 7 zones (the abdomen and the thighs are 2 each, 27.11), 4.480 → 2.240, no zones of its own, opens the Liposonix page', lt && lt.base === 'liposonix' && lt.full === 4480 && lt.price === 2240 && !lt.zones.length && lt.minutes <= 90, lt);
+  // one zone of Liposonix and HIFU corporal is half of the abdomen or of the thighs (the owner, 27.11: „la 320 nu e tot abdomenul”)
+  const lz = tm.find((p) => p.id === 'liposonix'), hz = tm.find((p) => p.id === 'hifu-corp'), ez = tm.find((p) => p.id === 'ems');
+  check('zones: Liposonix and HIFU corporal by halves (abdomen inferior / superior, coapse interior / exterior), EMS and the others whole', lz.zones.join() === 'Abdomen inferior,Abdomen superior,Flancuri,Coapse interior,Coapse exterior,Brațe,Zona lombară' && hz.zones.join() === 'Abdomen inferior,Abdomen superior,Brațe,Coapse interior,Coapse exterior,Gambe,Zona lombară' && ez.zones.join() === 'Abdomen,Coapse,Brațe', [lz.zones, hz.zones, ez.zones]);
+  check('a package of Liposonix with EMS: offered on the halves of the abdomen', (tm.find((p) => p.id === 'pachet-tonifiere') || {}).zones.join() === 'Abdomen inferior,Abdomen superior');
+  const qo = await S.quote('Timișoara', [{ id: 'liposonix', zone: 'Abdomen' }]);
+  check('a cart or a link of before (Liposonix „Abdomen”): its first half, at the price of one zone', qo.lines[0].zone === 'Abdomen inferior' && qo.amount === 320, qo.lines);
   const qt = await S.quote('Timișoara', [{ id: 'liposonix-toate', qty: 2 }]);
-  check('the twin in the cart: priced by the server', !qt.error && qt.amount === 3200 && qt.lines[0].name === 'Liposonix Full Body', qt);
+  check('the twin in the cart: priced by the server', !qt.error && qt.amount === 4480 && qt.lines[0].name === 'Liposonix Full Body', qt);
   check('no twin for the face or for a treatment with one zone', !tm.some((p) => p.allOf && p.need !== 'corp'));
   // the price list's packages (the owner, 25.11: „-50% și la pachete”), sold from the cart under the session they contain
   const rf6 = tm.find((p) => p.id === 'radiofrecventa-x6'), lp2 = tm.find((p) => p.id === 'liposonix-x2');
@@ -90,16 +96,16 @@ const H = require(path.join(LIB, 'booking-holds.js'));
   const bg = tm.find((p) => p.id === 'pachet-gusa'), bt = ar.find((p) => p.id === 'pachet-tonifiere');
   check('problem package: Gușă și contur = HIFU 290 + BioLifting × 4 680 = 970 → 485, on the zones its name fits (gușă, contur, gât; 25.11), booked as HIFU', bg && bg.bundle && bg.full === 970 && bg.price === 485 && bg.zones.join() === 'Gușă,Gât,Contur mandibular' && bg.ref === 'hifu-o-zona-mica-faciala-1-sedinta' && bg.ses === 5, bg);
   check('problem package: none in a city without one of its treatments (EMS in Arad)', !bt && tm.some((p) => p.id === 'pachet-tonifiere'));
-  const qb = await S.quote('Timișoara', [{ id: 'pachet-grasime', zone: 'Coapse' }]);
-  check('a problem package in the cart: „Zonă mai suplă în 8 săptămâni, Coapse” 2.400 → 1.200', !qb.error && qb.amount === 1200 && qb.full === 2400 && qb.lines[0].name === 'Zonă mai suplă în 8 săptămâni, Coapse', qb);
+  const qb = await S.quote('Timișoara', [{ id: 'pachet-grasime', zone: 'Coapse interior' }]);
+  check('a problem package in the cart: „Zonă mai suplă în 8 săptămâni, Coapse interior” 2.400 → 1.200', !qb.error && qb.amount === 1200 && qb.full === 2400 && qb.lines[0].name === 'Zonă mai suplă în 8 săptămâni, Coapse interior', qb);
   const qp = await S.quote('Arad', [{ id: 'biolifting-x4', zone: 'Gușă' }]);
   check('a package in the cart: BioLifting Gușă · 4 ședințe = 4 × 170 = 680 → 340, its first session booked on the package', !qp.error && qp.amount === 340 && qp.full === 680 && qp.lines[0].name === 'BioLifting Gușă · 4 ședințe' && qp.main.id === 'radiofrecventa-o-zona-mica-faciala-4-sedinte', qp);
   check('pairs only of the same city', ar.every((p) => p.pairs.every((id) => ar.some((x) => x.id === id))));
-  let q = await S.quote('Timișoara', [{ id: 'liposonix', zone: 'Abdomen', qty: 2 }, { id: 'ems', zone: 'Coapse' }]);
+  let q = await S.quote('Timișoara', [{ id: 'liposonix', zone: 'Abdomen inferior', qty: 2 }, { id: 'ems', zone: 'Coapse' }]);
   // 2 sessions of Liposonix are its 2-session package, at half of 2 sessions (640, full 1.280), never 490 (the owner, 26.11)
   check('cart: Liposonix Abdomen × 2 is its 2-session package (640) + EMS Coapse (125) = 765, full 1.530', q.amount === 765 && q.full === 1530 && q.saved === 765, q);
-  check('the names carry the zone', q.lines[0].name === 'Liposonix Abdomen · 2 ședințe' && q.lines[1].name === 'EMS Coapse' && S.summary(q) === 'Liposonix Abdomen · 2 ședințe + EMS Coapse', S.summary(q));
-  check('a zone that is not the product’s: its first zone', (await S.quote('Timișoara', [{ id: 'liposonix', zone: 'Nas' }])).lines[0].zone === 'Abdomen');
+  check('the names carry the zone', q.lines[0].name === 'Liposonix Abdomen inferior · 2 ședințe' && q.lines[1].name === 'EMS Coapse' && S.summary(q) === 'Liposonix Abdomen inferior · 2 ședințe + EMS Coapse', S.summary(q));
+  check('a zone that is not the product’s: its first zone', (await S.quote('Timișoara', [{ id: 'liposonix', zone: 'Nas' }])).lines[0].zone === 'Abdomen inferior');
   check('at most 10 sessions of one', (await S.quote('Timișoara', [{ id: 'liposonix', qty: 99 }])).lines[0].qty === 10);
   check('no volume bonuses for now', q.reached.length === 0 && !q.next, q.reached);
   check('the main treatment is the dearest line (the Liposonix package, a session of 45 min)', q.main.minutes === 45 && q.main.id === 'liposonix-o-zona-corporala-2-sedinte', q.main);

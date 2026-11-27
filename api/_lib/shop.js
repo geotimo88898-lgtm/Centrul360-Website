@@ -42,7 +42,13 @@ const NEEDS = [
   { id: 'fata', title: 'Față' },
   { id: 'epilare', title: 'Epilare' },
 ];
-const ZB = ['Abdomen', 'Flancuri', 'Coapse', 'Brațe', 'Zona lombară'];
+// one zone of Liposonix and of HIFU corporal (the owner, 27.11: „o zonă înseamnă abdomen inferior sau superior, coapse interior
+// sau exterior; la 320 nu e tot abdomenul; asta doar la Lipo și HIFU”): the whole abdomen is 2 zones, the thighs too
+const ZB = ['Abdomen inferior', 'Abdomen superior', 'Flancuri', 'Coapse interior', 'Coapse exterior', 'Brațe', 'Zona lombară'];
+const ZHB = ['Abdomen inferior', 'Abdomen superior', 'Brațe', 'Coapse interior', 'Coapse exterior', 'Gambe', 'Zona lombară'];
+// a half zone belongs to its whole one (a package of Liposonix with EMS on „Abdomen”, a link or a cart of before 27.11)
+const famOf = (z) => (/^Abdomen /.test(z) ? 'Abdomen' : /^Coapse /.test(z) ? 'Coapse' : z);
+const zoneIn = (zones, z) => (zones.includes(z) ? z : zones.find((x) => famOf(x) === z || x === famOf(z) || famOf(x) === famOf(z)) || '');
 const ZF = ['Gușă', 'Gât', 'Contur mandibular', 'Pomeți', 'Frunte'];
 // the price list row's id (its 1 session) → the product
 const P = {
@@ -50,7 +56,7 @@ const P = {
   'cavitatie-o-zona-corporala-1-sedinta': { id: 'cavitatie', name: '40K Slim', zones: ['Abdomen', 'Coapse', 'Brațe'], need: 'corp', ph: 'oferte/cavitatie.webp', b: ['Reduce grăsimea localizată', 'Fără durere, fără recuperare'] },
   'ems-o-zona-1-sedinta': { id: 'ems', name: 'EMS', zones: ['Abdomen', 'Coapse', 'Brațe'], need: 'corp', ph: 'concern-tonifiere.webp', b: ['20.000 de contracții într-o ședință', 'Tonifiază mușchii, fără efort'] },
   'radiofrecventa-o-zona-corporala-1-sedinta': { id: 'radiofrecventa', name: 'Red Sculpt', zones: ['Abdomen', 'Coapse', 'Brațe'], need: 'corp', ph: 'concern-cellulite-2.webp', b: ['Reduce aspectul de celulită', 'Strânge pielea'] },
-  'hifu-o-zona-corporala-1-sedinta': { id: 'hifu-corp', name: 'HIFU', zones: ['Abdomen', 'Brațe', 'Coapse', 'Gambe', 'Zona lombară'], need: 'corp', ph: 'concern-belly-2.webp', b: ['Strânge pielea lăsată', 'Lifting fără operație'] },
+  'hifu-o-zona-corporala-1-sedinta': { id: 'hifu-corp', name: 'HIFU', zones: ZHB, need: 'corp', ph: 'concern-belly-2.webp', b: ['Strânge pielea lăsată', 'Lifting fără operație'] },
   'impachetare-impachetare-la-cald-1-sedinta': { id: 'impachetare', name: 'Împachetare la cald', need: 'corp', ph: 'concern-detox.webp', b: ['Detoxifiere și drenaj', 'Piele mai netedă'] },
   'hifu-o-zona-mica-faciala-1-sedinta': { id: 'hifu', name: 'HIFU', zones: ZF, need: 'gusa', ph: 'concern-gusa.webp', b: ['Strânge pielea de sub bărbie', 'Fără ace, fără pauză'] },
   'radiofrecventa-o-zona-mica-faciala-1-sedinta': { id: 'biolifting', name: 'BioLifting', zones: ZF, need: 'gusa', ph: 'concern-chin-3.webp', b: ['Stimulează colagenul', 'Piele mai fermă'] },
@@ -217,7 +223,9 @@ function catalog(city, at) {
   for (const B of BUNDLES) {
     const parts = B.parts.map(([id, n]) => ({ p: byId.get(id), n }));
     if (parts.some((x) => !x.p)) continue;
-    const zoned = parts.filter((x) => x.p.zones.length), zones = (zoned.length ? zoned[0].p.zones.filter((z) => zoned.every((x) => x.p.zones.includes(z))) : []).filter((z) => !B.only || B.only.includes(z));
+    // its zones: the finest list of its parts (Liposonix's halves), each one every part can do (by the whole zone, famOf)
+    const zoned = parts.filter((x) => x.p.zones.length), fine = zoned.slice().sort((a, b) => b.p.zones.length - a.p.zones.length)[0];
+    const zones = (fine ? fine.p.zones.filter((z) => zoned.every((x) => zoneIn(x.p.zones, z))) : []).filter((z) => !B.only || B.only.includes(z) || B.only.includes(famOf(z)));
     if (zoned.length && !zones.length) continue;
     const forIds = [...new Set(parts.map((x) => (x.p.base || x.p.id).replace(/-toate$/, '')))];
     const cities = parts.reduce((c, x) => c.filter((y) => x.p.cities.includes(y)), parts[0].p.cities.slice());
@@ -259,7 +267,7 @@ async function quote(city, items, at) {
     const p = all.get(it.id);
     if (!p) return { error: 'not_found', id: it.id };
     if (!p.cities.includes(city)) return { error: 'not_in_city', id: it.id };
-    const zone = p.zones.length ? (p.zones.includes(it.zone) ? it.zone : p.zones[0]) : '';
+    const zone = p.zones.length ? (zoneIn(p.zones, it.zone) || p.zones[0]) : '';
     lines.push({ id: p.id, ref: p.ref, zone, qty: it.qty, name: p.bundle ? p.name + (zone ? ', ' + zone : '') : p.pack && zone ? p.name.replace(' · ', ' ' + zone + ' · ') : p.name + (zone ? ' ' + zone : ''), minutes: p.minutes, unit: p.full, unitPrice: p.price, full: p.full * it.qty, price: p.price * it.qty });
   }
   if (!lines.length) return { error: 'empty' };

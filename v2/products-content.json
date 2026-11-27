@@ -9,9 +9,11 @@
    "Arad"
   ],
   "zones": [
-   "Abdomen",
+   "Abdomen inferior",
+   "Abdomen superior",
    "Flancuri",
-   "Coapse",
+   "Coapse interior",
+   "Coapse exterior",
    "Brațe",
    "Zona lombară"
   ],
@@ -639,9 +641,11 @@
    "Arad"
   ],
   "zones": [
-   "Abdomen",
+   "Abdomen inferior",
+   "Abdomen superior",
    "Brațe",
-   "Coapse",
+   "Coapse interior",
+   "Coapse exterior",
    "Gambe",
    "Zona lombară"
   ],

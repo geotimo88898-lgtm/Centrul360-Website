@@ -34,7 +34,8 @@
     try {
       var z = new URLSearchParams(location.search).get('zona'); if (!z || EPI) return;
       var f = function (t) { return String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
-      var m = (CFG.zones || []).concat([ALLZ, FF]).filter(function (x) { return f(x) === f(z); })[0];
+      var all = (CFG.zones || []).concat([ALLZ, FF]);
+      var m = all.filter(function (x) { return f(x) === f(z); })[0] || all.filter(function (x) { return f(x).indexOf(f(z) + '-') === 0; })[0];
       if (m) S.zone = m;
     } catch (e) { /* the first zone */ }
   })();
