@@ -27,7 +27,7 @@ const MAX_STATES = Number(arg('max-states', 40));
 const IDS = Object.assign({ admin: 'e-adm', manager: 'e-mgr', receptie: 'e-rec', cosmetician: 'e-c1' },
   Object.fromEntries((arg('ids', '') || '').split(',').filter(Boolean).map((p) => p.split('='))));
 // things that open a drawer or a dialog without changing data
-const OPENERS = ['[data-emp]', '[data-lead]', '[data-appt]', '.k-table tbody tr[data-id]', '[data-client]', '[data-new]', '.pf-row [data-pf-open]', '[data-pf-costs]'];
+const OPENERS = ['[data-emp]', '[data-lead]', '[data-appt]', '.k-table tbody tr[data-id]', '[data-client]', '[data-new]', '.pf-row [data-pf-open]', '[data-pf-costs]', '[data-so-id]'];
 
 process.env.PORTAL_SECRET = process.env.PORTAL_SECRET || 'dev-secret-only-local';
 const auth = require('../api/_lib/auth.js');

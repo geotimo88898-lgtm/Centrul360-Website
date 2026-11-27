@@ -330,3 +330,33 @@ w('data/candidates.json', [cand(1, 'Candidată Proba Unu', 'nou', 'Timișoara'),
   cand(4, 'Candidată Proba Patru', 'sunat', 'Arad', { notes: [{ at: iso(300), by: 'Ioana Proba', text: 'Vine la interviu joi la 11.' }] }), cand(5, 'Candidată Proba Cinci', 'interviu', 'Timișoara'), cand(6, 'Candidată Proba Șase', 'respins', 'Arad')]);
 console.log('Pipeline tabs seeded: card leads', tiers.length, '· candidates 6');
 })();
+
+// 11. Admin → Site → Comenzi și plăți (27.11): the site's orders in every state, long names and titles, big sums, a win-back
+// message sent, a gift, an order with steps and a source (portal-site-orders.js)
+(() => {
+const f = (p) => path.join(DATA, p.replace(/\//g, '__'));
+const w = (p, d) => fs.writeFileSync(f(p), JSON.stringify(d));
+const now = Date.now(), iso = (m) => new Date(now - m * 60e3).toISOString();
+const fb = { tag: { source: 'facebook', medium: 'paid', campaign: 'C360 Site Timișoara Black Friday', content: 'Liposonix abdomen înainte după' }, land: '/oferte', at: iso(400) };
+const L = [
+  ['po1', 'Alexandra-Ioana Constantinescu-Bărbulescu', '0722000901', 'paid', 'shop', 'Comandă online: Liposonix Abdomen inferior, Red Sculpt Abdomen superior, HIFU corporal Coapse exterior', 2120, 4240, 'Timișoara', 30, { paidAt: iso(20), src: fb, gift: { name: 'Masaj facial clasic', at: iso(19) } }],
+  ['po2', 'Maria Popescu', '0722000902', 'open', 'hold', 'Comandă online: HIFU facial Gușă', 145, 290, 'Arad', 50, { refusedAt: iso(45), trace: [{ at: iso(49), step: 'ua', code: 'ios-ig' }, { at: iso(48), step: 'tap', code: 'go' }], request: { code: 'X1', at: iso(48) }, leadId: 'l-card-0' }],
+  ['po3', 'Ioana Marinescu', '0722000903', 'open', 'treatment', 'Tratament online: BioLifting Full Face', 380, 760, 'Timișoara', 90, { probable: { ref: 't', at: iso(80) } }],
+  ['po4', 'Card de Sărbători, fără nume', '0722000904', 'expired', 'card', 'Card de Sărbători 990', 990, 990, 'Arad', 600, {}],
+  ['po5', 'Elena Dumitrescu', '0722000905', 'open', 'shop', 'Comandă online: 40K Slim Abdomen', 160, 320, 'Timișoara', 10, {}],
+  ['po6', 'Roxana Stoica', '0722000906', 'expired', 'shop', 'Comandă online: Red Sculpt Brațe', 300, 600, 'Timișoara', 1500, { failWhy: 'clinic' }],
+  ['po7', 'Diana Georgescu', '0722000907', 'expired', 'offer', 'Ofertă: Transformare 360 în 90 de zile, Abdomen inferior', 2850, 5700, 'Timișoara', 2900, {}],
+];
+const idx = [], open = [];
+L.forEach(([k, name, phone, status, kind, title, amount, full, city, ago, more]) => {
+  const id = 'C360-qa' + k + 'x0';
+  const o = Object.assign({ id, key: 'k' + k, kind, ref: 'r' + k, amount, full, title, city, name, phone, status, createdAt: iso(ago), paidAt: '', provider: 'requests', src: { tag: {}, at: iso(ago + 5) } }, more);
+  w('data/pay/' + id + '.json', o);
+  idx.push({ id, at: o.createdAt, kind });
+  if (status === 'open') open.push({ id, at: o.createdAt });
+});
+w('data/pay-index.json', idx);
+w('data/pay-open.json', open);
+w('data/pay-winback.json', { sent: [{ p9: '722000907', id: 'C360-qapo7x0', at: iso(120), city: 'Timișoara', msgId: 'm', by: 'toate' }], failed: [], gifts: [{ p9: '722000901', id: 'C360-qapo1x0', at: iso(19) }] });
+console.log('Site orders seeded:', L.length);
+})();

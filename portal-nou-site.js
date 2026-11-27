@@ -161,8 +161,11 @@
       if (f > t) { var x = f; f = t; t = x; }
       perSet({ p: 'range', from: f, to: t });
     });
+    // Comenzi și plăți (portal-site-orders.js, the owner 27.11): its switch on top, this page under „Trafic”
+    if (window.C360SiteOrders) window.C360SiteOrders.attach(panel);
   }
   function show() {
+    if (window.C360SiteOrders) window.C360SiteOrders.shown();
     if (S.per.p === 'now') lvEnter();
     stats(); health(false);
     clearInterval(timer); clearInterval(htimer);

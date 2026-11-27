@@ -5,18 +5,20 @@
 //   and never paid since the checkout began (24.11): her name, what she chose, the gift, and a button to her saved checkout.
 //   The button opens her order as it was (the same lines, the same price) with one more line, the facial massage, „Gratuit”,
 //   and one button to pay it (/api/pay-go?w=<order>.<token>; an order the clock let go is opened again, a myPOS page that
-//   expired is made again). Paid until the gift's end (Friday 27.11 23:59, Romania): the desk hears it, her booking carries it.
+//   expired is made again). Paid the same day as her message (Romania; the message says „azi”): the desk hears it, her booking
+//   carries it.
 //   Never: a test order, the test number, a phone that paid any order since, a phone with a booking from today on, a card
 //   paid another way, a phone already sent this, any order myPOS says is paid, the quiet hours (21:00 to 9:00).
-//   data/pay-winback.json { sent: [{ p9, id, at, city, msgId }], failed: [{ p9, id, at, error }], gifts: [{ p9, id, at }] }
+//   One order by hand (sendOne: Admin → Site → Comenzi și plăți, the owner's „Trimite mesaj”): the same message, at most once a
+//   day to a phone, never to a paid order or a phone that paid since.
+//   data/pay-winback.json { sent: [{ p9, id, at, city, msgId, by? }], failed: [{ p9, id, at, error }], gifts: [{ p9, id, at }] }
 const crypto = require('crypto');
 const { readJSON, writeJSON } = require('./store');
 
 const KEY = 'data/pay-winback.json';
 const SINCE = '2026-11-24T00:00:00Z';
-const GIFT_UNTIL = '2026-11-27T21:59:59Z'; // the gift: paid today, Friday 27.11, 23:59 in Romania
 const GIFT = { id: 'masaj-facial', name: 'Masaj facial clasic', full: 160 };
-// left out by George's word: their phone gets nothing (27.11 ~10:40: „exclude-o pe aia de 2120 lei, e acum la salon și achită acolo”)
+// left out by George's word: their phone gets nothing (27.11 ~10:40: she pays at the clinic)
 const EXCLUDE_ORDERS = ['C360-mwxxsl1943dc13f2'];
 const SITE = 'https://www.centrul360.com';
 const TPL = {
@@ -33,7 +35,9 @@ const roHour = (ms) => Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Euro
 const quiet = (ms) => { const h = roHour(ms); return h >= 21 || h < 9; };
 const first = (name) => { const f = String(name || '').trim().split(/\s+/)[0].replace(/[^\p{L}-]/gu, ''); return f.length >= 2 ? f.slice(0, 30) : 'dragă'; };
 const what = (o) => String(o.title || 'comanda ta').replace(/^(Comandă online|Avans)\s*[·:]\s*/i, '').replace(/\s+/g, ' ').trim().slice(0, 60) || 'comanda ta';
-const giftOn = (t) => (t || Date.now()) <= Date.parse(GIFT_UNTIL);
+// the gift goes with a message (its text says „azi”): paid the same day, in Romania, as the last message her phone got
+const sentDay = (doc, phone) => { const k = p9(phone); const at = ((doc && doc.sent) || []).filter((x) => x && x.p9 === k).map((x) => String(x.at || '')).sort().pop(); return at ? dayRO(Date.parse(at)) : ''; };
+const giftFor = (doc, phone, t) => { const d = sentDay(doc, phone); return !!d && d === dayRO(t || Date.now()); };
 
 // the link's secret: the order id signed with the portal's secret (never the order's own key, which pays it from the page)
 function token(id) {
@@ -203,7 +207,7 @@ async function checkoutOf(o) {
   let giftFull = GIFT.full;
   try { const g = require('./shop').catalog(o.city || 'Timișoara').find((p) => p.id === GIFT.id); if (g && g.full) giftFull = g.full; } catch (e) { /* the list's price above */ }
   const full = lines.reduce((s, l) => s + (Number(l.full) || Number(l.price) || 0), 0) + giftFull;
-  return { lines, gift: { name: GIFT.name, full: giftFull }, amount: Number(o.amount), saved: Math.max(0, full - Number(o.amount)), city: o.city || '', hour, kind: o.kind, giftOn: giftOn() };
+  return { lines, gift: { name: GIFT.name, full: giftFull }, amount: Number(o.amount), saved: Math.max(0, full - Number(o.amount)), city: o.city || '', hour, kind: o.kind, giftOn: giftFor(await load(), o.phone) };
 }
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -260,8 +264,8 @@ async function go(id) {
   return P.link(o.id, o.key);
 }
 
-// ---- the gift, on her payment (api/_lib/pay.js markPaid): any order of a phone that got the message, paid until the gift's
-// end. Once per order: the order carries it, her booking's note says it, the desk hears it.
+// ---- the gift, on her payment (api/_lib/pay.js markPaid): any order of a phone that got the message, paid the same day as
+// that message. Once per order: the order carries it, her booking's note says it, the desk hears it.
 async function onPaid(orderId) {
   const P = require('./pay');
   const { data: o } = await P.readOrder(orderId);
@@ -269,9 +273,10 @@ async function onPaid(orderId) {
   const doc = await load();
   const k = p9(o.phone);
   if (!k || !doc.sent.some((x) => x.p9 === k)) return null;
-  if (!giftOn(Date.parse(o.paidAt) || Date.now())) return null;
-  const text = 'CADOU: ' + GIFT.name + ' (mesajul de pe WhatsApp, 27.11)';
-  const saved = await P.setGift(o.id, { name: GIFT.name, why: 'winback-27.11', at: nowISO() });
+  if (!giftFor(doc, o.phone, Date.parse(o.paidAt) || Date.now())) return null;
+  const day = sentDay(doc, o.phone);
+  const text = 'CADOU: ' + GIFT.name + ' (mesajul de pe WhatsApp, ' + day.slice(8, 10) + '.' + day.slice(5, 7) + ')';
+  const saved = await P.setGift(o.id, { name: GIFT.name, why: 'winback-' + day, at: nowISO() });
   if (!saved) return null;
   // her booking (the held hour placed by the payment, or the booking she paid)
   let apptId = '';
@@ -292,11 +297,62 @@ async function onPaid(orderId) {
   return { gift: true, appt: !!apptId };
 }
 
+// ---- one order, by hand (Admin → Site → Comenzi și plăți, the owner's „Trimite mesaj”, 27.11): the same message to her phone,
+// for this order. His tap is his word for this one message. Not to a test, a paid order, a phone that paid any order since this
+// one, or a second time the same day to a phone (two taps, two screens: one sends); never in the quiet hours.
+// deps (tests): { now, send, template, words }
+async function sendOne(orderId, opts) {
+  opts = opts || {};
+  const deps = opts.deps || {}, now = deps.now || Date.now();
+  const P = require('./pay');
+  const { data: o } = await P.readOrder(orderId);
+  if (!o || o.test || o.kind === 'test') return { error: 'not_found' };
+  if (o.status === 'paid') return { error: 'already_paid' };
+  // money of her sum came into myPOS right after her try: most likely paid, never told it was not
+  if (o.probable) return { error: 'checking' };
+  const k = p9(o.phone);
+  if (!k || k.length < 9 || k === '700000000') return { error: 'no_phone' };
+  if (quiet(now)) return { error: 'quiet_hours' };
+  const doc = await load();
+  if (sentDay(doc, o.phone) === dayRO(now)) return { error: 'sent_today' };
+  // an order of hers paid since this one: she is done
+  const idx = ((await readJSON(P.INDEX, [])) || []).filter((x) => x && x.id !== o.id && String(x.at || '') >= String(o.createdAt || '')).slice(-400);
+  for (const it of idx) { const { data: x } = await P.readOrder(it.id); if (x && x.status === 'paid' && p9(x.phone) === k) return { error: 'paid_other' }; }
+  // myPOS asked right before: paid there → marked paid, no message
+  if (o.request && o.request.code) {
+    let words = [];
+    try { words = deps.words ? await deps.words(o) : (await P.requestWords(o)).words; } catch (e) { return { error: 'mypos' }; }
+    if (words.includes('Paid')) { await P.check(o.id, o.key).catch(() => null); return { error: 'already_paid' }; }
+  }
+  const tpl = deps.template ? await deps.template() : await template().catch((e) => ({ state: 'eroare: ' + e.message }));
+  if (tpl.state !== 'APPROVED') return { error: 'template_' + String(tpl.state).toLowerCase().replace(/[^a-z_]/g, '') };
+  const lk = 'locks/pay-winback/' + k + '-' + dayRO(now) + '.txt';
+  let lock = true;
+  try { lock = await require('./store').createOnce(lk, o.id); } catch (e) { lock = false; }
+  if (!lock) return { error: 'sent_today' };
+  const vars = { prenume: first(o.name), serviciu: what(o) };
+  const x = deps.send ? await deps.send(o, vars, wOf(o.id)) : await sendNow(o, vars, tpl);
+  const by = clip(opts.by, 40) || 'admin';
+  const d2 = await load();
+  if (x.sent) d2.sent.push({ p9: k, id: o.id, at: new Date(now).toISOString(), city: x.city || o.city, msgId: x.id || '', by });
+  else { d2.failed.push({ p9: k, id: o.id, at: new Date(now).toISOString(), error: clip(x.error, 200), by }); await require('./store').writeJSON(lk, null).catch(() => {}); }
+  await writeJSON(KEY, d2, { quiet: true });
+  return x.sent ? { ok: true, city: x.city || o.city, at: new Date(now).toISOString(), text: textOf(vars) } : { error: 'send_failed', detail: clip(x.error, 160) };
+}
+
+// what the admin shows of one phone: the messages it got (when, for which order, by whom) and whether a payment today brings the gift
+async function forPhone(phone, now) {
+  const d = await load(), k = p9(phone);
+  if (!k) return { sent: [], failed: [], giftToday: false };
+  return { sent: d.sent.filter((x) => x.p9 === k).map((x) => ({ id: x.id, at: x.at, city: x.city || '', by: x.by || 'toate' })),
+    failed: d.failed.filter((x) => x.p9 === k).map((x) => ({ id: x.id, at: x.at, error: x.error })), giftToday: giftFor(d, phone, now), gifts: d.gifts.filter((x) => x.p9 === k).map((x) => ({ id: x.id, at: x.at })) };
+}
+
 async function status() {
   const d = await load();
   const t = await template().catch((e) => ({ state: 'eroare: ' + e.message }));
   return { template: t.state, accounts: t.accounts, sent: d.sent.length, failed: d.failed.length, gifts: d.gifts.length, lastSent: (d.sent[d.sent.length - 1] || {}).at || '',
-    errors: d.failed.slice(-5).map((x) => x.error), giftUntil: GIFT_UNTIL };
+    errors: d.failed.slice(-5).map((x) => x.error), gift: 'plătit în ziua mesajului' };
 }
 
-module.exports = { KEY, SINCE, GIFT_UNTIL, TPL, token, wOf, fromW, recipients, template, send, checkoutOf, pageHtml, go, onPaid, status, quiet };
+module.exports = { KEY, SINCE, TPL, GIFT, token, wOf, fromW, recipients, template, send, sendOne, forPhone, load, sentDay, giftFor, textOf, checkoutOf, pageHtml, go, onPaid, status, quiet };
