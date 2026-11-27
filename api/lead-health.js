@@ -941,6 +941,33 @@ module.exports = async (req, res) => {
   // it, the booking text match), no names or phones; ?payopen=sweep runs the sweep once
   if (req.query && req.query.payopen) {
     const P = require('./_lib/pay'), RQ = require('./_lib/mypos-requests'), ST = require('./_lib/store');
+    // ?payopen=diag&days=7[&ask=1]: every checkout order of those days as the payment saw it (read only; no names, no phones):
+    // its kind, sum and status, where she came from and in which app's browser, what the page did (the trace, in seconds from
+    // the order), the myPOS request and the error kept; ask=1 asks myPOS again for the last word on the unpaid ones. One short
+    // hash per phone, so one client's tries show together (and whether a later try was paid). The owner, 27.11: „dai un deep
+    // dig pentru erori, ne-ar costa cei mai mulți bani”.
+    if (req.query.payopen === 'diag') {
+      const days = Math.min(30, Math.max(1, Number(req.query.days) || 7)), since = Date.now() - days * 864e5;
+      const idx = ((await ST.readJSON('data/pay-index.json', [])) || []).filter((x) => x && Date.parse(x.at) >= since);
+      const hp = (ph) => { const d = String(ph || '').replace(/\D/g, '').slice(-9); return d ? require('crypto').createHash('sha256').update('c360|' + d).digest('hex').slice(0, 8) : ''; };
+      const ask = !!req.query.ask, rq = ask ? await RQ.active(ST).catch(() => null) : null;
+      const out = [];
+      for (const x of idx) {
+        const o = await ST.readJSON('data/pay/' + x.id + '.json', null).catch(() => null);
+        if (!o) continue;
+        const t0 = Date.parse(o.createdAt) || 0, sec = (a) => (Date.parse(a) ? Math.round((Date.parse(a) - t0) / 1000) : null);
+        let mp = '';
+        if (rq && o.request && o.request.code && o.status !== 'paid') { try { mp = (await RQ.status(rq, o.request.code)).status; } catch (e) { mp = 'eroare ' + (e.status || e.code || ''); } }
+        const src = o.src || {};
+        out.push({ id: o.id, at: o.createdAt, kind: o.kind, amount: o.amount, status: o.status, test: !!o.test, provider: o.provider || '', who: hp(o.phone), contact: !!o.phone,
+          app: src.app || '', from: src.from || '', land: src.land || '', request: o.request && o.request.code ? sec(o.request.at) : null, tried: o.requestTried ? sec(o.requestTried) : null,
+          linkError: o.linkError ? [o.linkError.code, o.linkError.status, String(o.linkError.message || '').slice(0, 140)].join(' ') : '',
+          trace: (o.trace || []).map((e) => sec(e.at) + 's ' + e.step + ':' + e.code), mypos: mp, paid: o.paidAt ? sec(o.paidAt) : null, method: (o.mypos || {}).method || '', fallback: o.fallback ? o.fallback.kind : '',
+          refused: o.refusedAt ? sec(o.refusedAt) : null, refusedTold: !!o.refusedTold, probable: o.probable ? o.probable.ref + ' ' + sec(o.probable.at) + 's' : '', lead: !!o.leadId });
+      }
+      res.status(200).json({ days, n: out.length, orders: out });
+      return;
+    }
     // ?payopen=link&id=<order>: that order as the checkout left it (read only: it makes nothing at myPOS): contact given or
     // not, its request code, the last error myPOS gave (linkError) and what the page and the tap's tab saw (trace)
     if (req.query.payopen === 'link') {

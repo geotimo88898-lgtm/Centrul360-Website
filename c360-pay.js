@@ -124,6 +124,15 @@
   function css() { if (!document.getElementById('cp-css')) { const s = document.createElement('style'); s.id = 'cp-css'; s.textContent = CSS; document.head.appendChild(s); } }
   // an app's own browser (Facebook, Instagram, TikTok…): it may open no new tab; the payment goes on in the same one
   const IN_APP = /FBAN|FBAV|FB_IAB|FBIOS|Instagram|musical_ly|TikTok|BytedanceWebview|Snapchat|Pinterest|LinkedInApp|\bLine\//i;
+  // the phone and the browser, in one word for the payment's diagnostics (the owner, 27.11: „deep dig pentru erori”): ios-safari,
+  // android-fb, mac-chrome… (no other detail of the device)
+  const uaWord = () => {
+    const u = navigator.userAgent || '';
+    const os = /iPhone|iPad|iPod/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1) ? 'ios' : /Android/.test(u) ? 'android' : /Mac OS X/.test(u) ? 'mac' : /Windows/.test(u) ? 'win' : 'other';
+    const br = /Instagram/.test(u) ? 'ig' : /FBAN|FBAV|FB_IAB|FBIOS/.test(u) ? 'fb' : /TikTok|musical_ly|Bytedance/.test(u) ? 'tt' : /Edg\//.test(u) ? 'edge' : /SamsungBrowser/.test(u) ? 'samsung'
+      : /CriOS|Chrome\//.test(u) ? 'chrome' : /FxiOS|Firefox\//.test(u) ? 'firefox' : /Safari\//.test(u) ? 'safari' : 'other';
+    return os + '-' + br;
+  };
   const ERR = {
     off: 'Plata online nu e pornită acum.', already_paid: 'E deja plătită.', cancelled: 'Programarea nu mai e activă.', not_found: 'Nu am găsit ce vrei să plătești.', expired: 'Ora ținută a expirat. Alege din nou ora.',
     not_in_city: 'Asta nu se face în clinica aleasă.', missing_contact: 'Scrie numele și telefonul.', card_not_ready: 'Plata pentru card nu e gata încă.', net: 'Nu avem internet acum. Încearcă din nou.',
@@ -213,6 +222,7 @@
         if (known && !order.contactError && known.name === fv('name') && known.phone === fv('phone')) saidContact(known);
         order.kind = o.kind;
         if (o.onOrder) o.onOrder({ orderId: order.orderId, key: order.key, amount: order.amount });
+        post({ action: 'trace', orderId: order.orderId, key: order.key, step: 'ua', code: uaWord() }, true).catch(() => {});
         if ((order.provider || st.provider) !== way) { way = order.provider; screen(); } else refreshSum();
         if (way === 'embedded') embedded();
         if (valid()) saveContact().then(() => { if (way === 'requests') prep(); }, () => {});
@@ -352,13 +362,21 @@
       store.set('c360-pay-pending', { orderId: order.orderId, key: order.key, amount: order.amount, title: order.title, kind: order.kind || o.kind, at: Date.now() });
       paint(stateHtml('wait', 'Plătește în fila myPOS', 'S-a deschis cu ' + lei(order.amount) + ' completat. Când ai plătit, revino aici: se actualizează singur.',
         '<button type="button" class="cp-btn" data-cp-again>Deschide din nou plata</button>' + (o.onClinic ? '<button type="button" class="cp-ghost" data-cp-clinic>Plătesc în clinică</button>' : '')));
-      const mine = ++polling, t0 = Date.now();
+      const mine = ++polling, t0 = Date.now(), said = {};
       const tick = async () => {
         if (mine !== polling || done) return;
         let r = {};
         try { r = await post({ action: 'check', orderId: order.orderId, key: order.key }); } catch (e) { r = {}; }
         if (mine !== polling || done) return;
         if (r.paid) { paidNow(true); return; }
+        // the payment did not pass on myPOS's page (27.11): she hears it here, and what to do; the desk calls her too
+        if (r.refused && !said.refused) {
+          said.refused = true;
+          paint(stateHtml('bad', 'Plata nu a trecut', 'Banii nu au fost luați. Poți încerca din nou, cu același card sau cu altul. La sume mari, unele bănci au o limită pentru plățile online, pe care o poți mări din aplicația băncii.' + ((who.phone || fv('phone')) ? ' Dacă tot nu merge, te sunăm noi.' : ''),
+            '<button type="button" class="cp-btn" data-cp-again>Încearcă din nou</button>' + (o.onClinic ? '<button type="button" class="cp-ghost" data-cp-clinic>Plătesc în clinică</button>' : '')));
+        }
+        // the money is in the account already, myPOS's word about the order not yet
+        if (r.confirming && !said.confirming) { said.confirming = true; paint(stateHtml('wait', 'Plata se confirmă', 'Am văzut plata de ' + lei(order.amount) + '. Confirmarea vine de obicei în câteva minute și pagina se actualizează singură. Nu plăti a doua oară.')); }
         if (r.status === 'failed' || r.status === 'mismatch' || r.status === 'double') { fail(r.status === 'double' ? 'E deja plătită. A doua plată se întoarce singură pe card.' : 'Plata a expirat sau a fost anulată. Banii nu au fost luați.'); return; }
         if (Date.now() - t0 < 45 * 60e3) setTimeout(tick, document.hidden ? 8000 : 2500);
       };

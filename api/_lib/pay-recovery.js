@@ -124,7 +124,7 @@ async function run(P, opts) {
   const item = (o, x) => out.items.push(Object.assign({ id: o.id, kind: o.kind }, x));
   for (const it of cands) {
     let { data: o } = await P.readOrder(it.id);
-    if (!o || o.status !== 'open' || !KINDS.includes(o.kind) || o.test || o.recovery || !o.phone || o.provider !== 'requests') continue;
+    if (!o || o.status !== 'open' || !KINDS.includes(o.kind) || o.test || o.recovery || !o.phone || o.provider !== 'requests' || o.probable) continue;
     const due = dueAt(P.lastActivity(o));
     if (now < due) continue;
     const skip = async (why) => { out.skipped++; item(o, { skip: why }); if (!dry) { await P.markRecovery(o.id, { skipped: why, at: nowISO() }, true); log.counts.skipped++; dirty = true; } };

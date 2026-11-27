@@ -77,7 +77,7 @@ def build(name):
     slot = ' data-slot="%s"' % city if city else ' data-slot'
     dock = '' if meta.get('dock') == 'off' else (
         # no free consultation any more (the owner, 25.11): the phone's dock leads to the offers, paid online at -50%
-        '<div class="dock"><div class="t"><b>-50%% la plata online</b>până vineri, 27 noiembrie</div>'
+        '<div class="dock"><div class="t"><b>-50%% la plata online</b>până duminică, 29 noiembrie</div>'
         '<a class="btn book gold" href="%soferte">Vezi ofertele</a></div>' % BASE)
     path = meta.get('path', name)
     url = '' if path == 'index' else path

@@ -911,7 +911,7 @@ def page(x):
     # ---- 10. the reviews (only the real ones) and the last call
     out.append('<section class="tp-s tp-rev" id="recenzii"><div class="wrap"><div class="tp-score rv"><span class="g">%s</span><b>5,0</b><span class="st">%s</span><p>300+ recenzii Google · Timișoara și Arad</p></div><div class="tp-revs">%s</div></div></section>' % (
         GLOGO, STAR * 5, ''.join('<figure class="rv"><span class="st">%s</span><blockquote>„%s”</blockquote><figcaption><b>%s</b> · %s</figcaption></figure>' % (STAR * 5, e(t), e(n), e(c)) for n, c, t in REVIEWS)))
-    out.append('<section class="tp-s tp-end"><div class="wrap"><div class="tp-end-c">%s<h2>%s, <em>la jumătate de preț.</em></h2><p>Doar la plata online, cu cardul, până vineri 27.11, la 23:59. Alegi ziua și ora după.</p>'
+    out.append('<section class="tp-s tp-end"><div class="wrap"><div class="tp-end-c">%s<h2>%s, <em>la jumătate de preț.</em></h2><p>Doar la plata online, cu cardul, până duminică 29.11, la 23:59. Alegi ziua și ora după.</p>'
                '<div class="tp-cells" data-tp-tm role="timer" aria-label="Timpul rămas">%s</div><div class="tp-end-pr"><b data-tp-price>%s</b> <s data-tp-full>%s</s></div><button type="button" class="btn book gold tp-cta" data-tp-add>Rezervă oferta%s</button></div></div></section>' % (
                    eyebrow('Black Friday · -50%', ' dk'), e(x['name']), TM_CELLS, bf(full), lei(full), ARROW))
 
