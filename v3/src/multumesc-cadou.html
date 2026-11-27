@@ -1,0 +1,44 @@
+<!--meta
+robots: noindex,nofollow
+title: Mulțumim! | Centrul360
+description: Cererea ta a fost trimisă. Te sunăm în cel mai scurt timp ca să-ți confirmăm programarea și masajul facial cadou.
+dock: off
+pixel: Lead
+-->
+<!--live--><!-- the Google Ads conversion for this page, as on the current site (the shell loads the Google tag) -->
+<script>gtag('event', 'conversion', {'send_to': 'AW-16691853931/IZjkCMfL1ekcEOv0pZc-', 'value': 1.0, 'currency': 'RON'});</script><!--/live-->
+<style>
+/* thank-you: the word, what happens next, the two ways to reach us */
+.ty-acts{ display:flex; flex-wrap:wrap; gap:12px; margin-top:clamp(36px,4vw,52px); }
+.ty-back{ margin-top:28px; }
+@media (max-width:520px){ .ty-acts .btn{ width:100%; } }
+</style>
+
+<section class="ph" aria-label="Mulțumim">
+  <div class="wrap">
+    <h1 class="ph-w" data-fit data-fvh=".4"><span aria-hidden="true">Mulțumim</span><b class="sr">Mulțumim! Cererea ta a fost trimisă.</b></h1>
+    <div class="ph-g">
+      <p class="lead">Cererea ta a fost trimisă.</p>
+    </div>
+  </div>
+</section>
+
+<section class="s tight" aria-label="Ce urmează"><div class="wrap">
+  <ol class="rows">
+    <li><span class="lbl">În cel mai scurt timp</span><div class="rw"><b>Te sunăm noi</b><p>Ca să-ți confirmăm programarea și masajul facial cadou.</p></div></li>
+    <li><span class="lbl">Dacă vrei să fie mai rapid</span><div class="rw"><b>Scrie-ne direct pe WhatsApp</b><p>Sau sună-ne acum.</p></div></li>
+  </ol>
+  <p class="ty-acts"><a class="btn lg" href="https://wa.me/40750452002?text=Buna%20ziua!%20Tocmai%20am%20completat%20formularul%20de%20pe%20site%20pentru%20masajul%20facial%20cadou." target="_blank" rel="noopener"><span>Scrie-ne pe WhatsApp</span></a><a class="btn lg ol" href="tel:+40750452002"><span>Sună acum, 0750 452 002</span></a></p>
+  <p class="ty-back"><a class="lk" href="{{base}}">Înapoi la centrul360.com</a></p>
+</div></section>
+
+<script>
+// the request came from Arad: the buttons lead to Arad's number
+(function () {
+  if (!/(^|[?&])oras=arad/.test(location.search)) return;
+  document.querySelectorAll('.ty-acts a').forEach(function (a) {
+    a.href = a.href.replace('wa.me/40750452002', 'wa.me/40750277394').replace('tel:+40750452002', 'tel:+40750277394');
+    if (a.href.indexOf('tel:') === 0) a.querySelector('span').textContent = 'Sună acum, 0750 277 394';
+  });
+})();
+</script>

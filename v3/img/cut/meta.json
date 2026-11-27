@@ -1,0 +1,327 @@
+{
+"antirid": {
+"w": 896,
+"h": 900,
+"cutB": true
+},
+"biolifting--contur-mandibular": {
+"w": 665,
+"h": 900,
+"cutB": true
+},
+"biolifting--frunte": {
+"w": 1107,
+"h": 900,
+"cutB": false
+},
+"biolifting--gat": {
+"w": 895,
+"h": 881,
+"cutB": false
+},
+"biolifting--gusa": {
+"w": 1191,
+"h": 900,
+"cutB": true
+},
+"biolifting--pometi": {
+"w": 1116,
+"h": 900,
+"cutB": true
+},
+"biolifting-full-face": {
+"w": 877,
+"h": 900,
+"cutB": true
+},
+"biolifting": {
+"w": 665,
+"h": 900,
+"cutB": true
+},
+"cavitatie--abdomen": {
+"w": 1070,
+"h": 724,
+"cutB": false
+},
+"cavitatie--brate": {
+"w": 1200,
+"h": 848,
+"cutB": false
+},
+"cavitatie--coapse": {
+"w": 897,
+"h": 317,
+"cutB": false
+},
+"cavitatie": {
+"w": 880,
+"h": 686,
+"cutB": false
+},
+"ems--abdomen": {
+"w": 1126,
+"h": 698,
+"cutB": false
+},
+"ems--brate": {
+"w": 1200,
+"h": 900,
+"cutB": false
+},
+"ems--coapse": {
+"w": 694,
+"h": 235,
+"cutB": false
+},
+"ems": {
+"w": 1126,
+"h": 698,
+"cutB": false
+},
+"hidratare": {
+"w": 758,
+"h": 900,
+"cutB": true
+},
+"hifu--contur-mandibular": {
+"w": 1095,
+"h": 900,
+"cutB": true
+},
+"hifu--frunte": {
+"w": 1158,
+"h": 883,
+"cutB": true
+},
+"hifu--gat": {
+"w": 998,
+"h": 900,
+"cutB": false
+},
+"hifu--gusa": {
+"w": 765,
+"h": 900,
+"cutB": true
+},
+"hifu--pometi": {
+"w": 1000,
+"h": 900,
+"cutB": true
+},
+"hifu-corp--abdomen": {
+"w": 1142,
+"h": 858,
+"cutB": false
+},
+"hifu-corp--brate": {
+"w": 1015,
+"h": 883,
+"cutB": false
+},
+"hifu-corp--coapse": {
+"w": 625,
+"h": 637,
+"cutB": false
+},
+"hifu-corp--gambe": {
+"w": 1200,
+"h": 900,
+"cutB": false
+},
+"hifu-corp--zona-lombara": {
+"w": 615,
+"h": 335,
+"cutB": false
+},
+"hifu-corp": {
+"w": 1015,
+"h": 883,
+"cutB": false
+},
+"hifu-full-face": {
+"w": 975,
+"h": 900,
+"cutB": true
+},
+"hifu": {
+"w": 765,
+"h": 900,
+"cutB": true
+},
+"home-antirid": {
+"w": 940,
+"h": 1200,
+"cutB": true
+},
+"home-biolifting-full-face": {
+"w": 966,
+"h": 1200,
+"cutB": true
+},
+"home-hidratare": {
+"w": 892,
+"h": 1200,
+"cutB": true
+},
+"home-hifu-full-face": {
+"w": 833,
+"h": 1200,
+"cutB": true
+},
+"home-restart": {
+"w": 966,
+"h": 1200,
+"cutB": true
+},
+"home-sebum-off": {
+"w": 930,
+"h": 1200,
+"cutB": true
+},
+"impachetare": {
+"w": 1165,
+"h": 900,
+"cutB": false
+},
+"liposonix--abdomen": {
+"w": 764,
+"h": 625,
+"cutB": false
+},
+"liposonix--brate": {
+"w": 1200,
+"h": 880,
+"cutB": false
+},
+"liposonix--coapse": {
+"w": 661,
+"h": 507,
+"cutB": false
+},
+"liposonix--flancuri": {
+"w": 643,
+"h": 636,
+"cutB": false
+},
+"liposonix--zona-lombara": {
+"w": 608,
+"h": 299,
+"cutB": false
+},
+"liposonix": {
+"w": 764,
+"h": 625,
+"cutB": false
+},
+"masaj-facial": {
+"w": 910,
+"h": 769,
+"cutB": false
+},
+"p-antirid": {
+"w": 596,
+"h": 551,
+"cutB": false
+},
+"p-biolifting": {
+"w": 567,
+"h": 900,
+"cutB": true
+},
+"p-cavitatie": {
+"w": 379,
+"h": 351,
+"cutB": false
+},
+"p-ems": {
+"w": 623,
+"h": 449,
+"cutB": false
+},
+"p-hidratare": {
+"w": 505,
+"h": 550,
+"cutB": false
+},
+"p-hifu-corp": {
+"w": 290,
+"h": 500,
+"cutB": false
+},
+"p-hifu": {
+"w": 609,
+"h": 900,
+"cutB": true
+},
+"p-impachetare": {
+"w": 637,
+"h": 585,
+"cutB": false
+},
+"p-liposonix": {
+"w": 384,
+"h": 382,
+"cutB": false
+},
+"p-masaj-facial": {
+"w": 683,
+"h": 678,
+"cutB": false
+},
+"p-radiofrecventa": {
+"w": 601,
+"h": 518,
+"cutB": false
+},
+"p-redness": {
+"w": 575,
+"h": 675,
+"cutB": false
+},
+"p-restart": {
+"w": 616,
+"h": 900,
+"cutB": true
+},
+"p-sebum-off": {
+"w": 506,
+"h": 576,
+"cutB": false
+},
+"radiofrecventa--abdomen": {
+"w": 1093,
+"h": 582,
+"cutB": false
+},
+"radiofrecventa--brate": {
+"w": 1069,
+"h": 760,
+"cutB": false
+},
+"radiofrecventa--coapse": {
+"w": 1144,
+"h": 739,
+"cutB": false
+},
+"radiofrecventa": {
+"w": 1144,
+"h": 739,
+"cutB": false
+},
+"redness": {
+"w": 837,
+"h": 900,
+"cutB": true
+},
+"restart": {
+"w": 795,
+"h": 900,
+"cutB": true
+},
+"sebum-off": {
+"w": 732,
+"h": 900,
+"cutB": true
+}
+}

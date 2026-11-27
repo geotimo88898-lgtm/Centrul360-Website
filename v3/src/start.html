@@ -1,0 +1,93 @@
+<!--meta
+title: Centrul360 | Începe aici
+description: Cardul de Sărbători, pachetul potrivit pentru tine în 30 de secunde, rezultate reale și prețurile online, în Timișoara și Arad.
+path: start
+robots: noindex,follow
+dock: off
+-->
+<style>
+/* the link in bio (the owner, 21.11): who comes from a reel or a story sees in 3 seconds what she can do here, and does it in one
+   tap; the topic of the reel she came from (?din=) on top. The ways are big words on hairlines, the whole line is the tap. */
+.st-ph{ padding-bottom:clamp(36px,6vh,72px); }
+.st-ph .ph-w{ margin-bottom:clamp(20px,4vh,40px); }
+.st-go{ border-top:1px solid var(--ln); }
+.st-go > a,.st-go > button{ display:grid; gap:8px; width:100%; padding:24px 0; border:0; border-bottom:1px solid var(--ln); border-radius:0; background:none; color:var(--tx);
+  font:inherit; text-align:left; text-decoration:none; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:padding .5s var(--e); }
+.st-go [hidden]{ display:none !important; }
+.st-go > * > :not(.st-th){ grid-column:1; }
+.st-go > :hover{ padding-left:6px; }
+.st-go b{ font:600 clamp(26px,3.4vw,44px)/1.08 var(--fd); letter-spacing:-.03em; transition:color .25s; }
+.st-go > :hover b{ color:var(--tx2); }
+.st-go small{ font-size:16px; line-height:1.45; color:var(--tx2); max-width:54ch; }
+.st-go .st-left{ font-size:15px; font-weight:500; color:var(--tx); }
+.st-go .st-left b{ font:inherit; letter-spacing:0; color:inherit; }
+.st-tx{ display:grid; gap:8px; align-self:center; }
+.st-th{ display:flex; gap:8px; margin-top:8px; }
+.st-th img{ height:104px; width:auto; border-radius:4px; background:var(--bg1); }
+.st-ft{ margin-top:28px; }
+@media (min-width:760px){
+  .st-go > a,.st-go > button{ grid-template-columns:minmax(0,1fr) auto; column-gap:40px; }
+  .st-go .st-th{ grid-column:2; grid-row:1; align-self:center; margin:0; }
+  .st-th img{ height:120px; }
+}
+</style>
+
+<section class="ph st-ph" aria-label="Începe aici">
+  <div class="wrap">
+    <h1 class="ph-w" data-fit data-fvh=".4"><span aria-hidden="true">Începe aici</span><b class="sr">Centrul360: ce vrei să faci azi?</b></h1>
+    <div class="ph-g">
+      <p class="lead">Ce vrei să faci azi?</p>
+      <div class="ph-f"><span class="lbl">Pe Google</span><span class="val">5,0 din peste 300 de recenzii, Timișoara și Arad</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="s tight" aria-label="Ce poți face aici"><div class="wrap">
+  <div class="st-go">
+    <button type="button" data-lf data-st-topic hidden><b data-st-topic-t>Vezi ce ți se potrivește</b><small><span data-st-from></span>4 întrebări, 30 de secunde: vezi pachetul pentru zona ta și ce primești în el.</small></button>
+    <a href="/card-sarbatori" data-st-keep><b>Cardul de Sărbători</b><small>Plătești 990 lei, primești 2.500 lei în tratamente. Pentru tine sau cadou, până pe 24 decembrie.</small><span class="st-left" data-st-left hidden>Au mai rămas doar <b data-st-n></b> carduri</span></a>
+    <button type="button" data-lf data-st-lf><b>Află ce ți se potrivește</b><small>Alegi zona și ce te deranjează, vezi pachetul și ce primești în el. Durează 30 de secunde și nu plătești nimic acum.</small></button>
+    <a href="{{base}}rezultate" data-st-keep><span class="st-tx"><b>Rezultate reale</b><small>Clientele noastre, fotografiate la noi, înainte și după.</small></span><span class="st-th"><img src="/brand_asset/catalog/cazul-16-hifu-gusa-tm-4.webp" alt="Înainte și după: HIFU gușă, Timișoara" width="1283" height="1400" loading="lazy" decoding="async"><img src="/brand_asset/catalog/cazul-08-pachet-mini-belly.webp" alt="Înainte și după: Pachet Mini Belly, Timișoara" width="1287" height="1400" loading="lazy" decoding="async"></span></a>
+    <a href="{{base}}oferte" data-st-keep><b>Toate tratamentele</b><small>Cu prețul online lângă fiecare. Plătești online, apoi îți alegi tu ziua și ora.</small></a>
+  </div>
+  <p class="fine st-ft">Timișoara, Str. Bucegi 7. Arad, Str. Ioan Alexandru <span class="nw">16-18</span>.</p>
+</div></section>
+
+<section class="end"><div class="wrap">
+  <h2 class="t2">Află în 30 de secunde ce ți se potrivește.</h2>
+  <p class="lead">Patru întrebări, apoi vezi pachetul pentru zona ta și ce primești în el.</p>
+  <button type="button" class="btn lg" data-lf data-st-end>Află ce ți se potrivește</button>
+</div></section>
+
+<script>
+/* the link in bio: the reel's topic on top (?din=gusa), the source kept on the way to the card (its order counts it), the cards left */
+(function () {
+  var q = location.search;
+  document.querySelectorAll('[data-st-keep]').forEach(function (a) { if (q) a.href = a.getAttribute('href') + q; });
+  var LABEL = { 'abdomen-talie': 'abdomen și talie', 'coapse-fese': 'coapse și fese', brate: 'brațe', 'gusa-contur': 'gușă și bărbie dublă', fata: 'față', 'par-nedorit': 'epilare' };
+  function topic() {
+    var z = window.C360LF && window.C360LF.zone;
+    if (!z || !LABEL[z]) return;
+    var b = document.querySelector('[data-st-topic]');
+    b.setAttribute('data-lf-zone', z); b.hidden = false;
+    b.querySelector('[data-st-topic-t]').textContent = 'Ai venit pentru ' + LABEL[z] + '?';
+    document.querySelector('[data-st-lf]').hidden = true;
+    // the last word's button opens it on the same zone
+    var e2 = document.querySelector('[data-st-end]'); if (e2) e2.setAttribute('data-lf-zone', z);
+    // the smallest real price of that zone's packages (both clinics have the same ladder)
+    window.C360LF.load().then(function (d) {
+      var zs = d && d.cities && (d.cities['Timișoara'] || []).concat(d.cities['Arad'] || []).filter(function (x) { return x.key === z; });
+      var min = Infinity; (zs || []).forEach(function (x) { Object.keys(x.packs || {}).forEach(function (t) { min = Math.min(min, Number(x.packs[t].price) || Infinity); }); });
+      if (isFinite(min)) b.querySelector('[data-st-from]').textContent = 'Variante de la ' + min.toLocaleString('ro-RO') + ' lei. ';
+    });
+  }
+  if (window.C360LF) topic(); else addEventListener('DOMContentLoaded', topic);
+  fetch('/api/card-sarbatori').then(function (r) { return r.json(); }).then(function (d) {
+    if (!d || typeof d.left !== 'number' || !d.open || d.left <= 0) return;
+    var n = d.left, el = document.querySelector('[data-st-left]');
+    if (n === 1) el.textContent = 'A mai rămas doar un card';
+    else { document.querySelector('[data-st-n]').textContent = n; if (n % 100 === 0 || n % 100 > 19) el.lastChild.textContent = ' de carduri'; }
+    el.hidden = false;
+  }).catch(function () {});
+})();
+</script>
