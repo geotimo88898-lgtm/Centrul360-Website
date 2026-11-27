@@ -1,0 +1,85 @@
+<!--meta
+title: Clubul 360 | Lista de așteptare | Centrul360
+description: Clubul 360, aplicația clientelor Centrul360, se deschide în curând: mici cadouri în fiecare lună, reduceri doar pentru membre, programare cu prioritate, tombole și giveaway-uri. Rezervă-ți locul pe lista de așteptare.
+path: club-360
+dock: off
+-->
+<style>
+/* Clubul 360: the waiting list for the clients' app (the owner, 21.11). The form, its fields and its script as they were; the look is v3's. */
+.cl-pk{ border-top:1px solid var(--ln); }
+.cl-pk li{ padding:20px 0; border-bottom:1px solid var(--ln); font:600 clamp(24px,3.2vw,44px)/1.1 var(--fd); letter-spacing:-.03em; color:var(--tx); }
+.cl-j{ max-width:520px; margin:0 auto; text-align:left; }
+.cl-j [hidden]{ display:none !important; }
+.cl-j .cl-err:empty{ display:none; }
+.cl-j .fm .btn{ width:100%; }
+.cl-j .fm .btn[disabled]{ opacity:.6; pointer-events:none; }
+.cl-card{ margin-bottom:24px; padding:18px 0; border-top:1px solid var(--ln); border-bottom:1px solid var(--ln); color:var(--tx); }
+.cl-done{ display:grid; gap:12px; text-align:center; }
+.cl-done b{ font:700 clamp(30px,3.4vw,44px)/1.05 var(--fd); letter-spacing:-.035em; }
+.cl-done .lead{ margin:0 auto; }
+</style>
+
+<section class="ph" aria-label="Clubul 360">
+  <div class="wrap">
+    <h1 class="ph-w" data-fit data-fvh=".4"><span aria-hidden="true">Clubul 360</span><b class="sr">Clubul 360, aplicația clientelor Centrul360</b></h1>
+    <div class="ph-g">
+      <p class="lead">Aplicația clientelor Centrul360. Lista de așteptare e deschisă: cine e pe listă află prima când se deschide.</p>
+      <div class="ph-f"><span class="lbl">Clubul 360</span><span class="val">Se deschide în curând</span><p style="margin-top:24px"><a class="btn" href="#lista">Rezervă-mi locul</a></p></div>
+    </div>
+  </div>
+</section>
+
+<section class="s" id="beneficii"><div class="wrap">
+  <div class="sh"><h2 class="t2">Mici bucurii, tot anul.</h2><p class="lead">Ce primești în club.</p></div>
+  <ul class="cl-pk">
+    <li>Mici cadouri în fiecare lună</li>
+    <li>Reduceri doar pentru membre</li>
+    <li>Programare cu prioritate</li>
+    <li>Tombole și giveaway-uri</li>
+    <li>Comunitatea 360</li>
+  </ul>
+</div></section>
+
+<section class="end" id="lista"><div class="wrap">
+  <h2 class="t2">Locul tău pe lista de așteptare.</h2>
+  <p class="lead">Lasă-ne numele și telefonul ca să te anunțăm când se deschide.</p>
+  <div class="cl-j">
+    <p class="cl-card" data-cl-card hidden>Ai Cardul de Sărbători: locul tău e deja rezervat. Lasă-ne numele și telefonul ca să te anunțăm.</p>
+    <form class="fm" data-cl-form novalidate>
+      <label>Nume<input type="text" name="name" autocomplete="name" placeholder="Numele tău"></label>
+      <label>Telefon<input type="tel" name="phone" inputmode="tel" autocomplete="tel" placeholder="Telefon (WhatsApp)"></label>
+      <label class="cl-hp sr" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+      <label class="chk"><input type="checkbox" name="consent"><span>Sunt de acord să fiu anunțată pe WhatsApp sau telefonic de Centrul360 când se deschide Clubul 360.</span></label>
+      <p class="err cl-err" role="alert"></p>
+      <button type="submit" class="btn lg">Rezervă-mi locul</button>
+    </form>
+    <div class="cl-done" data-cl-done hidden aria-live="polite"><b>Ești pe listă.</b><p class="lead" data-cl-msg></p></div>
+  </div>
+</div></section>
+
+<script>
+(function () {
+  'use strict';
+  var form = document.querySelector('[data-cl-form]'); if (!form) return;
+  var code = (new URLSearchParams(location.search).get('cod') || '').trim().toUpperCase().slice(0, 20);
+  var post = function (b) { return fetch('/api/club-360', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json(); }); };
+  if (code) post({ code: code }).then(function (d) { if (d && d.holder) document.querySelector('[data-cl-card]').hidden = false; }).catch(function () {});
+  var MSG = { missing_name: 'Scrie numele tău.', bad_phone: 'Scrie un număr de telefon valid.', missing_consent: 'Bifează acordul, ca să te putem anunța.', too_many: 'Prea multe încercări. Încearcă din nou în câteva minute.' };
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var err = form.querySelector('.cl-err'), btn = form.querySelector('button');
+    var b = { name: form.name.value.trim(), phone: form.phone.value.trim(), consent: form.consent.checked, website: form.website.value, code: code };
+    if (b.name.length < 2) { err.textContent = MSG.missing_name; return; }
+    if (b.phone.replace(/\D/g, '').length < 9) { err.textContent = MSG.bad_phone; return; }
+    if (!b.consent) { err.textContent = MSG.missing_consent; return; }
+    err.textContent = ''; btn.disabled = true;
+    post(b).then(function (d) {
+      btn.disabled = false;
+      if (!d.ok) { err.textContent = MSG[d.error] || 'Nu am putut trimite. Încearcă din nou.'; return; }
+      form.hidden = true; document.querySelector('[data-cl-card]').hidden = true;
+      document.querySelector('[data-cl-msg]').textContent = (d.holder ? 'Ai Cardul de Sărbători, deci locul tău e confirmat. ' : '') + (d.again ? 'Erai deja pe listă. ' : '') + 'Te anunțăm pe WhatsApp când se deschide Clubul 360.';
+      document.querySelector('[data-cl-done]').hidden = false;
+    }).catch(function () { btn.disabled = false; err.textContent = 'Nu am putut trimite. Încearcă din nou.'; });
+  });
+})();
+</script>

@@ -1,0 +1,258 @@
+<!--meta
+title: Clinica Arad | Centrul360, Str. Ioan Alexandru 16-18
+description: Centrul360 Arad, Str. Ioan Alexandru 16-18: HIFU, remodelare corporală și tratamente faciale non-invazive. 5,0 pe Google, din peste 300 de recenzii.
+path: arad
+-->
+<link rel="stylesheet" href="{{base}}shop.css">
+<style>
+/* the clinic's page (v2's parts, the editorial look): the facts under the name; the photos, a few chosen and the rest under
+   „Vezi toate” (the owner, 13.11), a tap opens one large; the map, dark, loaded only when it comes near */
+.ph-f .val + .lbl{ margin-top:12px; }
+.cty-gal figure{ cursor:zoom-in; -webkit-tap-highlight-color:transparent; }
+.cty-gal figure:focus-visible{ outline-offset:-2px; }
+.cty-gal figcaption{ margin-top:10px; font-size:14px; line-height:1.4; color:var(--tx3); }
+.cty-more{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .9s var(--e), margin-top .9s var(--e); }
+.cty-more > .gal{ min-height:0; overflow:hidden; }
+.cty-more.open{ grid-template-rows:1fr; margin-top:var(--gap); }
+.cty-all{ margin-top:40px; }
+@media (max-width:899px){ .cty-gal .gal{ grid-auto-flow:row dense; } .cty-gal .wm{ grid-column:1/-1; } .cty-gal .wm img{ aspect-ratio:16/9; } }
+.cty-svc .ix a{ grid-template-columns:minmax(0,1fr); gap:6px; }
+.cty-svc .ix a span{ text-align:left; }
+.cty-svc .ix + h3{ margin-top:44px; }
+.cty-map{ position:relative; overflow:hidden; aspect-ratio:1; border-radius:4px; background:var(--bg1); isolation:isolate; }
+.cty-map::before{ content:""; position:absolute; inset:0; background-image:linear-gradient(var(--ln) 1px,transparent 1px),linear-gradient(90deg,var(--ln) 1px,transparent 1px); background-size:44px 44px;
+  -webkit-mask-image:radial-gradient(70% 70% at 50% 50%,#000,transparent 85%); mask-image:radial-gradient(70% 70% at 50% 50%,#000,transparent 85%); }
+.cty-gl{ position:absolute; inset:0; opacity:0; transition:opacity 1.2s var(--e); }
+.cty-map.live .cty-gl{ opacity:1; }
+.cty-pin0{ position:absolute; left:50%; top:50%; transform:translate(-50%,-100%); transition:opacity .6s var(--e); }
+.cty-map.live .cty-pin0{ opacity:0; }
+.cty-mk{ display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
+.cty-mk b{ padding:8px 14px; border-radius:999px; background:#fff; color:#060607; font:600 13px/1.2 var(--ft); letter-spacing:-.01em; white-space:nowrap; }
+.cty-mk i{ width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 0 0 4px rgba(255,255,255,.2); }
+.cty-map .maplibregl-ctrl-group:not(:empty){ background:var(--bg2); border-radius:12px; box-shadow:0 0 0 1px var(--ln2); overflow:hidden; }
+.cty-map .maplibregl-ctrl-group button + button{ border-top:1px solid var(--ln); }
+.cty-map .maplibregl-ctrl-group .maplibregl-ctrl-icon,.cty-map .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button{ filter:invert(1); }
+.cty-map .maplibregl-ctrl-attrib.maplibregl-compact{ background:var(--bg2); color:var(--tx2); }
+.cty-map .maplibregl-ctrl-attrib a{ color:var(--tx2); }
+.cty-lb{ position:fixed; inset:0; z-index:130; display:grid; place-items:center; padding:72px var(--pad) 100px; background:var(--bg); visibility:hidden; opacity:0;
+  transition:opacity .45s var(--e), visibility 0s .45s; }
+.cty-lb.open{ visibility:visible; opacity:1; transition:opacity .45s var(--e); }
+.cty-lb figure{ display:grid; gap:14px; justify-items:center; max-width:min(1100px,100%); transform:scale(.97); transition:transform .6s var(--e); }
+.cty-lb.open figure{ transform:none; }
+.cty-lb img{ max-width:100%; max-height:calc(100svh - 196px); width:auto; height:auto; border-radius:4px; transition:opacity .35s var(--e); }
+.cty-lb figcaption{ font-size:15px; color:var(--tx2); text-align:center; }
+.cty-lb .btn{ position:absolute; }
+.cty-lb .x{ top:calc(14px + env(safe-area-inset-top)); right:var(--pad); }
+.cty-lb .pv{ left:var(--pad); bottom:calc(24px + env(safe-area-inset-bottom)); }
+.cty-lb .nx{ right:var(--pad); bottom:calc(24px + env(safe-area-inset-bottom)); }
+@media (prefers-reduced-motion:reduce){ .cty-more,.cty-lb,.cty-lb figure,.cty-lb img,.cty-gl,.cty-pin0{ transition:none; } }
+.cty-na{ margin-top:44px; }
+.cty-na > p{ margin:-4px 0 14px; }
+.cty-na .ix a{ color:var(--tx2); }
+</style>
+
+<section class="ph" aria-label="Arad">
+  <div class="wrap">
+    <h1 class="ph-w" data-fit data-fvh=".62"><span aria-hidden="true">Arad</span><b class="sr">Clinica de medicină estetică non-invazivă din Arad</b></h1>
+    <div class="ph-g">
+      <p class="lead">Pe Str. Ioan Alexandru 16-18 găsești tratamente faciale și corporale non-invazive, cu aceleași standarde ca la Timișoara.</p>
+      <div class="ph-f"><span class="lbl">Adresa</span><span class="val">Str. Ioan Alexandru 16-18, Arad</span><span class="lbl">Telefon</span><span class="val"><a href="tel:+40750277394">0750 277 394</a></span></div>
+    </div>
+  </div>
+</section>
+
+<section class="s tight" id="clinica"><div class="wrap">
+  <div class="sh"><h2 class="t2">Un spațiu primitor, la fel de îngrijit.</h2><p class="lead">Atmosfera caldă și aparatura de ultimă generație din clinica Centrul360 Arad. Apasă pe o fotografie ca s-o mărești.</p></div>
+  <div class="cty-gal">
+    <div class="gal">
+      <figure class="w"><img src="/brand_asset/g-ar-4.webp" alt="Intrarea cu plante, clinica Centrul360 Arad" width="1200" height="900" loading="lazy" decoding="async"><figcaption>Intrarea</figcaption></figure>
+      <figure><img src="/brand_asset/loc-arad-sala.webp?v=2" alt="Sala de tratament a clinicii Centrul360 Arad" width="1200" height="1600" loading="lazy" decoding="async"><figcaption>Sala de tratament</figcaption></figure>
+      <figure><img src="/brand_asset/g-ar-9.webp" alt="Zona de așteptare Centrul360 Arad" width="1200" height="900" loading="lazy" decoding="async"><figcaption>Zona de așteptare</figcaption></figure>
+      <figure class="wm"><img src="/brand_asset/g-ar-2.webp" style="object-position:30% 50%" alt="Branding Centrul360 în clinica din Arad" width="1200" height="900" loading="lazy" decoding="async"><figcaption>Detalii</figcaption></figure>
+    </div>
+    <div class="cty-more" id="mai-multe" aria-hidden="true" inert><div class="gal">
+      <figure><img src="/brand_asset/g-ar-8.webp" alt="Sală de tratament cu lumină naturală, Centrul360 Arad" width="1200" height="900" loading="lazy" decoding="async"><figcaption>Sala de tratament</figcaption></figure>
+      <figure><img src="/brand_asset/g-ar-6.webp" alt="Ușa de la intrare, cu plante, clinica Centrul360 Arad" width="1200" height="900" loading="lazy" decoding="async"><figcaption>Spre clinică</figcaption></figure>
+      <figure class="wm"><img src="/brand_asset/g-ar-1.webp" alt="Materiale informative Centrul360 Arad" width="1200" height="900" loading="lazy" decoding="async"><figcaption>Detalii</figcaption></figure>
+    </div></div>
+    <p class="cty-all"><button type="button" class="btn ol" data-more data-label="Vezi toate cele 7 fotografii" aria-expanded="false" aria-controls="mai-multe"><span>Vezi toate cele 7 fotografii</span></button></p>
+  </div>
+</div></section>
+
+<section class="s tight" id="unde"><div class="wrap">
+  <div class="sh"><h2 class="t2">Unde ne găsești.</h2></div>
+  <div class="split">
+    <ul class="rows">
+      <li><span class="lbl">Adresa</span><div class="rw"><b>Str. Ioan Alexandru 16-18, Arad</b></div></li>
+      <li><span class="lbl">Program</span><div class="rw"><b>Luni până vineri, 11:00 la 19:00</b></div></li>
+      <li><span class="lbl">Telefon</span><div class="rw"><b><a href="tel:+40750277394">0750 277 394</a></b></div></li>
+      <li><span class="lbl">Cum ajungi</span><div class="rw"><b><a href="https://www.google.com/maps/dir/?api=1&amp;destination=Centrul360%20Strada%20Ioan%20Alexandru%2016-18%20Arad" target="_blank" rel="noopener">Navighează cu Google Maps</a></b></div></li>
+    </ul>
+    <div class="cty-map" data-lat="46.182332" data-lng="21.330247" data-label="Centrul360, Str. Ioan Alexandru 16-18" role="region" aria-label="Hartă Centrul360 Arad, Str. Ioan Alexandru 16-18">
+      <div class="cty-gl"></div>
+      <div class="cty-pin0"><div class="cty-mk"><b>Centrul360, Str. Ioan Alexandru 16-18</b><i></i></div></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="s tight" id="tratamente"><div class="wrap">
+  <div class="sh"><h2 class="t2">Tratamente disponibile la Arad.</h2><p class="lead">Tratamente faciale și corporale non-invazive, cu aceleași standarde ca la Timișoara.</p></div>
+  <div class="fit cty-svc">
+    <div>
+      <h3>Corp</h3>
+      <nav class="ix" aria-label="Corp">
+        <a href="{{base}}grasime-localizata"><b>Grăsime localizată</b><span>Liposonix, 40K Slim</span></a>
+        <a href="{{base}}celulita"><b>Celulită</b><span>Red Sculpt, masaj</span></a>
+      </nav>
+      <div class="cty-na">
+        <h3>Doar la Timișoara</h3>
+        <p class="fine">Următoarele tratamente nu se efectuează momentan în clinica din Arad.</p>
+        <nav class="ix" aria-label="Doar la Timișoara">
+          <a href="{{base}}tonifiere-musculara"><b>Electrostimulare (EMS)</b><span>Tonifiere musculară, la Timișoara</span></a>
+          <a href="{{base}}detox-drenaj"><b>Împachetare la cald</b><span>Detox și drenaj, la Timișoara</span></a>
+          <a href="{{base}}epilare-laser"><b>Epilare laser</b><span>Elysion Pro, la Timișoara</span></a>
+        </nav>
+      </div>
+    </div>
+    <div>
+      <h3>Față</h3>
+      <nav class="ix" aria-label="Față">
+        <a href="{{base}}riduri-linii-fine"><b>Riduri și lifting</b><span>Anti-aging, lifting, fermitate</span></a>
+        <a href="{{base}}gusa-barbie-dubla"><b>Gușă și bărbie dublă</b><span>HIFU, contur facial</span></a>
+        <a href="{{base}}ten-problematic"><b>Ten problematic</b><span>Acnee, sebum, pori dilatați</span></a>
+        <a href="{{base}}ten-lipsit-de-stralucire"><b>Ten fără strălucire</b><span>Hidratare, revitalizare, luminozitate</span></a>
+      </nav>
+    </div>
+  </div>
+</div></section>
+
+<section class="s tight" id="oferta"><div class="wrap">
+  <div class="sh"><h2 class="t2">Prețul online, la Arad.</h2><p class="lead">Plătești online, cu cardul, apoi îți alegi ziua și ora.</p></div>
+  <div class="pl-box" data-shop-ids="liposonix,hifu,restart,biolifting,hifu-full-face" data-city="Arad" data-max="4"></div>
+  <p style="margin-top:40px"><a class="btn ol" href="{{base}}preturi">Vezi toate prețurile</a></p>
+</div></section>
+
+<section class="s tight" id="recenzii"><div class="wrap">
+  <div class="sh"><h2 class="t2">Ce spun clientele.</h2><p class="lead">Recenziile sunt de pe Google, scrise de clientele noastre din Timișoara și Arad.</p></div>
+  <div class="rv-score"><b>5,0</b><span>din 5 pe Google, din peste 300 de recenzii</span></div>
+  <div class="rv-q">
+    <figure><blockquote>„O experiență foarte plăcută, atmosfera relaxantă, iar rezultatul a fost exact pe măsura așteptărilor.”</blockquote><figcaption>Maria Muntean, Timișoara</figcaption></figure>
+    <figure><blockquote>„O experiență minunată, d-na Andreea m-a abordat cu căldură și profesionalism.”</blockquote><figcaption>Alina Galuțiu, Arad</figcaption></figure>
+    <figure><blockquote>„Locație frumoasă, curată, liniștită. Domnișoara este minunată, rezultatul este vizibil.”</blockquote><figcaption>Simona-Mihaela J., Timișoara</figcaption></figure>
+  </div>
+</div></section>
+
+<section class="s tight" id="intrebari"><div class="wrap qa-g">
+  <div class="sh"><h2 class="t2">Întrebări</h2></div>
+  <div class="qa">
+    <details><summary>Ce program are clinica?<i aria-hidden="true"></i></summary><div class="a"><p>De luni până vineri, între 11:00 și 19:00. Ne găsești pe Str. Ioan Alexandru 16-18.</p></div></details>
+    <details><summary>Se fac EMS, împachetarea sau epilarea laser la Arad?<i aria-hidden="true"></i></summary><div class="a"><p>Momentan, EMS, împachetarea la cald și epilarea laser se fac doar în clinica din Timișoara, pe Str. Bucegi 7.</p></div></details>
+    <details><summary>Cum cumpăr?<i aria-hidden="true"></i></summary><div class="a"><p>Alegi tratamentul și câte ședințe vrei, apeși „Rezervă”, apoi alegi clinica, ziua și ora. Plătești online, cu cardul, direct pe site.</p></div></details>
+    <details><summary>Pot veni întâi la prima ședință?<i aria-hidden="true"></i></summary><div class="a"><p>Da. Când alegi ora, alegi „Vin întâi la prima ședință”. Îți spunem exact ce ți se potrivește și câte ședințe sunt necesare.</p></div></details>
+    <details><summary>Când e confirmată programarea?<i aria-hidden="true"></i></summary><div class="a"><p>Imediat după plată. Confirmarea îți vine și pe WhatsApp.</p></div></details>
+  </div>
+</div>
+<div class="wrap"><p style="margin-top:36px"><a class="lk" href="https://wa.me/40750277394?text=Buna%20ziua!%20Am%20o%20intrebare." target="_blank" rel="noopener">Nu găsești răspunsul? Scrie-ne pe WhatsApp</a></p></div></section>
+
+<section class="end"><div class="wrap">
+  <h2 class="t2">Te așteptăm în Arad.</h2>
+  <p class="lead">Str. Ioan Alexandru 16-18, de luni până vineri, între 11:00 și 19:00. Plătești cu cardul pe site și îți alegi ora.</p>
+  <a class="btn lg" href="{{base}}oferte">Vezi ofertele</a>
+</div></section>
+
+<div class="cty-lb" role="dialog" aria-modal="true" aria-label="Fotografie mărită" aria-hidden="true">
+  <figure><img alt=""><figcaption></figcaption></figure>
+  <button type="button" class="btn ol sm x">Închide</button>
+  <button type="button" class="btn ol sm pv">Înapoi</button>
+  <button type="button" class="btn ol sm nx">Înainte</button>
+</div>
+
+<script>
+/* The clinic's page (as on v2): the map, loaded only when it is about to scroll into view (OpenFreeMap, no key, every label
+   taken out so the only name on it is the clinic's; drawn dark for v3), and the photos, which open large on a tap;
+   „Vezi toate” opens the rest under the chosen few. */
+(function () {
+  var box = document.querySelector('.cty-map');
+  if (box) {
+    var started = false, lat = +box.getAttribute('data-lat'), lng = +box.getAttribute('data-lng');
+    var load = function (src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); };
+    var quiet = function (style) {
+      style.layers = style.layers.filter(function (l) { return l.type !== 'symbol' && l.type !== 'raster' && !/boundary|aeroway|ne2|ice_shelf|glacier/.test(l.id); });
+      style.layers.forEach(function (l) {
+        var p = l.paint = l.paint || {};
+        if (l.type === 'background') p['background-color'] = '#0b0b0d';
+        else if (l.type === 'fill') {
+          p['fill-color'] = l.id === 'water' ? '#15181c' : l.id === 'building' ? '#17171b' : /park|wood/.test(l.id) ? '#0f1110' : '#0d0d10';
+          if (l.id === 'building') p['fill-outline-color'] = '#202025';
+        }
+        else if (l.type === 'line') p['line-color'] = l.id === 'waterway' ? '#15181c' : /dashline|pier/.test(l.id) ? '#0b0b0d' : /casing/.test(l.id) ? '#1b1b20' : /inner/.test(l.id) ? '#3a3a42' : /path/.test(l.id) ? '#1f1f24' : '#2a2a30';
+      });
+      delete style.sources.ne2_shaded;
+      return style;
+    };
+    var go = function () {
+      if (started) return; started = true;
+      var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css'; document.head.appendChild(css);
+      var style = fetch('https://tiles.openfreemap.org/styles/positron').then(function (r) { return r.json(); }).then(quiet);
+      Promise.all([load('https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js'), style]).then(function (r) {
+        var touch = matchMedia('(pointer:coarse)').matches;
+        var map = new maplibregl.Map({ container: box.querySelector('.cty-gl'), style: r[1], center: [lng, lat], zoom: 15.4, attributionControl: false,
+          scrollZoom: false, dragRotate: false, pitchWithRotate: false, touchPitch: false, dragPan: !touch, keyboard: false });
+        map.touchZoomRotate.disableRotation();
+        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+        map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+        var mk = box.querySelector('.cty-pin0 .cty-mk').cloneNode(true);
+        new maplibregl.Marker({ element: mk, anchor: 'bottom', offset: [0, 4] }).setLngLat([lng, lat]).addTo(map);
+        map.once('load', function () {
+          box.classList.add('live');
+          var at = box.querySelector('.maplibregl-compact-show'); if (at) at.classList.remove('maplibregl-compact-show'); // the credits stay one tap away
+        });
+        addEventListener('resize', function () { map.resize(); });
+      }).catch(function () { /* the drawn map with the pin stays */ });
+    };
+    if ('IntersectionObserver' in window) { var io = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { io.disconnect(); go(); } }, { rootMargin: '800px 0px' }); io.observe(box); }
+    else go();
+  }
+
+  var lb = document.querySelector('.cty-lb'), cases = document.querySelector('.cty-gal');
+  if (!lb || !cases) return;
+  var imgs = Array.prototype.slice.call(cases.querySelectorAll('figure img')), big = lb.querySelector('img'), cap = lb.querySelector('figcaption'), at = 0, from = null, sx = 0, sy = 0;
+  var name = function (im) { var c = im.parentNode.querySelector('figcaption'); return c ? c.textContent : im.alt; };
+  var show = function (k) {
+    at = (k + imgs.length) % imgs.length;
+    var src = imgs[at];
+    big.style.opacity = '0';
+    var pre = new Image(); pre.onload = pre.onerror = function () { big.src = src.getAttribute('src'); big.alt = src.alt; cap.textContent = name(src) + ', ' + (at + 1) + ' din ' + imgs.length; big.style.opacity = '1'; };
+    pre.src = src.getAttribute('src');
+  };
+  var open = function (k) { from = document.activeElement; show(k); lb.classList.add('open'); lb.setAttribute('aria-hidden', 'false'); document.documentElement.style.overflow = 'hidden'; setTimeout(function () { lb.querySelector('.x').focus({ preventScroll: true }); }, 50); };
+  var close = function () { lb.classList.remove('open'); lb.setAttribute('aria-hidden', 'true'); document.documentElement.style.overflow = ''; if (from && from.focus) from.focus({ preventScroll: true }); };
+  cases.addEventListener('pointerdown', function (e) { sx = e.clientX; sy = e.clientY; });
+  cases.addEventListener('click', function (e) {
+    var ph = e.target.closest('figure'); if (!ph) return;
+    if (Math.abs(e.clientX - sx) > 8 || Math.abs(e.clientY - sy) > 8) return; // it was a drag
+    open(imgs.indexOf(ph.querySelector('img')));
+  });
+  imgs.forEach(function (im) { var ph = im.parentNode; ph.setAttribute('tabindex', '0'); ph.setAttribute('role', 'button'); ph.setAttribute('aria-label', 'Mărește: ' + im.alt);
+    ph.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(imgs.indexOf(im)); } }); });
+  var mb = cases.querySelector('[data-more]'), mo = cases.querySelector('.cty-more');
+  if (mb && mo) mb.addEventListener('click', function () {
+    var o = !mo.classList.contains('open');
+    mo.classList.toggle('open', o); mo.inert = !o; mo.setAttribute('aria-hidden', o ? 'false' : 'true');
+    mb.setAttribute('aria-expanded', String(o)); mb.querySelector('span').textContent = o ? 'Arată mai puține' : mb.getAttribute('data-label');
+    if (!o) setTimeout(function () { var r = cases.getBoundingClientRect(); if (r.top < 0) cases.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+  });
+  lb.querySelector('.x').addEventListener('click', close);
+  lb.querySelector('.pv').addEventListener('click', function () { show(at - 1); });
+  lb.querySelector('.nx').addEventListener('click', function () { show(at + 1); });
+  lb.addEventListener('click', function (e) { if (e.target === lb || e.target.tagName === 'FIGURE') close(); });
+  addEventListener('keydown', function (e) {
+    if (!lb.classList.contains('open')) return;
+    if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') show(at - 1); else if (e.key === 'ArrowRight') show(at + 1);
+  });
+  var tx = 0;
+  lb.addEventListener('touchstart', function (e) { tx = e.touches[0].clientX; }, { passive: true });
+  lb.addEventListener('touchend', function (e) { var d = e.changedTouches[0].clientX - tx; if (Math.abs(d) > 50) show(at + (d < 0 ? 1 : -1)); }, { passive: true });
+})();
+</script>
+<script src="{{base}}shop.js" defer></script>

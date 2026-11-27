@@ -1,0 +1,82 @@
+<!--meta
+title: Prețuri | Lista completă de prețuri | Centrul360 Timișoara și Arad
+description: Prețuri transparente pentru tratamente faciale, HIFU, BioLifting, Red Sculpt, Liposonix, EMS și 40K Slim, în Timișoara și Arad. Prețul unei ședințe, la plata online.
+path: preturi
+-->
+<style>
+/* Prețuri: the shop's groups, each with its title on the left and its rows on the right on a large screen; a row is its
+   treatment's page (the whole row is the link, the name is its words) */
+.ph-f .val + .lbl{ margin-top:14px; }
+.pl-wait{ min-height:50vh; }
+.pt-g + .pt-g{ margin-top:clamp(72px,8vw,120px); }
+.pt > div{ position:relative; }
+.pt b a{ color:inherit; text-decoration:none; }
+.pt b a::after{ content:""; position:absolute; inset:0; }
+@media (hover:hover){ .pt > div:hover b a{ text-decoration:underline; text-decoration-color:var(--ln2); } }
+@media (min-width:900px){
+  .pt-g{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:var(--gap); align-items:start; }
+  .s .pt-g > .sh{ grid-column:1/6; display:block; margin:0; position:sticky; top:calc(var(--hd) + 24px); }
+  .s .pt-g > .sh .lead{ margin-top:18px; }
+  .pt-g > .pt{ grid-column:7/13; }
+}
+</style>
+
+<section class="ph" aria-label="Prețuri">
+  <div class="wrap">
+    <h1 class="ph-w" data-fit data-fvh=".4"><span aria-hidden="true">Prețuri</span><b class="sr">Prețuri transparente, rezultate reale</b></h1>
+    <div class="ph-g">
+      <p class="lead">Tot ce facem, cu prețul lângă. Prețul unei ședințe la plata online, cu prețul întreg tăiat.</p>
+      <div class="ph-f"><span class="lbl">Doar în Timișoara</span><span class="val">EMS, împachetarea la cald și epilarea laser</span><span class="lbl">Pe Google</span><span class="val">5,0 din peste 300 de recenzii</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="s tight" id="pret"><div class="wrap">
+  <div data-pl><p class="fine pl-wait">Încarc prețurile…</p></div>
+</div></section>
+<script>
+/* Prețuri (the owner, 25.11): every treatment the shop sells, one session, grouped like the shop; a row opens its treatment's
+   page. The same catalog as the shop (/api/shop), so a price is never different from the cart's. v3: the price list's look
+   (.pt): the name and its line on the left, the online price and the whole one (struck) on the right; a group with no
+   treatment is not shown (the laser, while it is not sold). */
+(function () {
+  var box = document.querySelector('[data-pl]');
+  if (!box) return;
+  var B = '{{base}}';
+  var esc = function (t) { return String(t).replace(/ \u00b7 /g, ', ').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var lei = function (n) { return Math.round(n).toLocaleString('ro-RO') + ' lei'; };
+  var G = [['corp', 'Corp'], ['gusa', 'Gușă și contur'], ['fata', 'Față'], ['epilare', 'Epilare laser']];
+  var row = function (p) {
+    var url = B + 'tratament-' + (p.need === 'epilare' ? 'epilare' : p.id);
+    // its line: the minutes, the one clinic (when it is only in one), the zones (the price is for one of them); commas, no dots
+    var sub = [p.minutes ? p.minutes + ' min' : '', p.cities.length === 1 ? 'doar ' + p.cities[0] : '', p.zones && p.zones.length ? 'o zonă: ' + p.zones.join(', ') : ''].filter(Boolean).join(', ');
+    sub = sub.charAt(0).toUpperCase() + sub.slice(1);
+    var pr = p.price < p.full ? lei(p.price) + '<s>' + lei(p.full) + '</s>' : lei(p.full);
+    return '<div><b><a href="' + url + '">' + esc(p.name) + '</a></b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '<span class="pr">' + pr + '</span></div>';
+  };
+  var group = function (title, lead, rows) {
+    return '<div class="pt-g"><div class="sh"><h2 class="t2">' + title + '</h2>' + (lead ? '<p class="lead">' + lead + '</p>' : '') + '</div><div class="pt">' + rows + '</div></div>';
+  };
+  var pre = window.C360Pre && window.C360Pre.shop;
+  var get = function () { return fetch('/api/shop', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }); };
+  (pre ? pre.catch(get) : get()).then(function (d) {
+    if (!d || !d.ok) throw new Error('shop');
+    var list = d.products.filter(function (p) { return !p.allOf && !p.pack && !p.bundle; });
+    var html = G.map(function (g) {
+      var l = list.filter(function (p) { return p.need === g[0]; });
+      if (!l.length) return '';
+      if (g[0] !== 'epilare') return group(g[1], '', l.map(row).join(''));
+      var w = l.filter(function (p) { return !/ bărbați$/.test(p.name); }), m = l.filter(function (p) { return / bărbați$/.test(p.name); });
+      return group(g[1], 'Elysion Pro, doar în Timișoara.', w.map(row).join('') + (m.length ? '<h3>Bărbați</h3>' + m.map(row).join('') : ''));
+    }).join('');
+    if (!html) throw new Error('empty');
+    box.innerHTML = html;
+  }).catch(function () { box.innerHTML = '<p class="fine pl-wait">Nu am putut încărca prețurile. Reîncarcă pagina.</p>'; });
+})();
+</script>
+
+<section class="end"><div class="wrap">
+  <h2 class="t2">Reducerea e doar la plata online.</h2>
+  <p class="lead">Alegi tratamentul, plătești cu cardul pe site și îți alegi ora.</p>
+  <a class="btn lg" href="{{base}}oferte">Vezi ofertele</a>
+</div></section>
