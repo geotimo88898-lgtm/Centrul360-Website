@@ -1,6 +1,6 @@
 /* ============================================================
    Centrul360, the Black Friday shop (the owner, 24-25.11). Every treatment of the price list, one session at -50%, paid online
-   by card, until Friday 27.11 23:59:59 in Romania (the same end for everyone). The look: Apple / glass / Tesla / Nike and
+   by card, until Sunday 29.11 23:59:59 in Romania (the same end for everyone). The look: Apple / glass / Tesla / Nike and
    Summitlane; the motion: „Tap. Don't cut. Carry.” (what opens grows from the button that opened it and goes back into it).
    The sums are always the server's (/api/shop); the payment is api/shop.js hold → c360-pay.js kind 'shop'.
 
@@ -39,7 +39,7 @@
   var KEY = 'c360-shop3';
   var BASE = /^\/v2\//.test(location.pathname) ? '/v2/' : '/';
   var OFFERS = BASE + 'oferte';
-  var END0 = '2026-11-27T21:59:59.000Z'; // the server's end (api/_lib/shop.js BF.end); the timer starts with it, the server's word replaces it
+  var END0 = '2026-11-29T21:59:59.000Z'; // the server's end (api/_lib/shop.js BF.end); the timer starts with it, the server's word replaces it
   var ADDR = { 'Timișoara': 'Str. Bucegi 7, Timișoara', Arad: 'Str. Ioan Alexandru 16-18, Arad' };
   var MAPS = { 'Timișoara': 'https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Bucegi%207%20Timisoara', Arad: 'https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Ioan%20Alexandru%2016-18%20Arad' };
   var WD = ['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'];

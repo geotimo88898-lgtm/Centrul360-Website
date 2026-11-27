@@ -3,7 +3,7 @@
 //
 // Everything is decided here, never by the page:
 //   the catalog  the price list (price-list.gen.json, made from Prețuri): one session of each treatment
-//   the price    Black Friday (BF): 50% off the price list, paid online by card, until Friday 27.11.2026 23:59:59 (Romania);
+//   the price    Black Friday (BF): 50% off the price list, paid online by card, until Sunday 29.11.2026 23:59:59 (Romania);
 //                the same end for every visitor (the timer on the page counts down to it). After it: the list price minus
 //                the site's usual online bonus (pay.js BONUS_PCT). Nothing else adds up on top (the owner, 24.11).
 //                The Card de Sărbători keeps its own offer and is not sold in this cart.
@@ -18,7 +18,7 @@ const { readJSON } = require('./store');
 
 const BF = {
   start: '2026-11-24T08:00:00.000Z', // Tuesday 24.11, 10:00 in Romania (the same start as the card's)
-  end: '2026-11-27T21:59:59.000Z', // Friday 27.11, 23:59:59 in Romania (the owner, 24.11)
+  end: '2026-11-29T21:59:59.000Z', // Sunday 29.11, 23:59:59 in Romania (the owner, 27.11: „prelungim până duminică”; was Friday 27.11)
   pct: 50,
 };
 const bfOn = (t) => { const x = t || Date.now(); return x >= Date.parse(BF.start) && x <= Date.parse(BF.end); };

@@ -39,7 +39,7 @@
   var KEY = 'c360-shop3';
   var BASE = /^\/v3(\/|$)/.test(location.pathname) ? '/v3/' : '/';
   var OFFERS = BASE + 'oferte';
-  var END0 = '2026-11-27T21:59:59.000Z'; // the server's end (api/_lib/shop.js BF.end); the timer starts with it, the server's word replaces it
+  var END0 = '2026-11-29T21:59:59.000Z'; // the server's end (api/_lib/shop.js BF.end); the timer starts with it, the server's word replaces it
   var ADDR = { 'Timișoara': 'Str. Bucegi 7, Timișoara', Arad: 'Str. Ioan Alexandru 16-18, Arad' };
   var MAPS = { 'Timișoara': 'https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Bucegi%207%20Timisoara', Arad: 'https://www.google.com/maps/search/?api=1&query=Centrul360%20Strada%20Ioan%20Alexandru%2016-18%20Arad' };
   var WD = ['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'];
