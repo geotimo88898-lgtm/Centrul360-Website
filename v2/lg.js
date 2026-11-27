@@ -2,7 +2,7 @@
 // bottom bar, the cart's bar and the -50% pills on the photos bend what passes behind them at their rim, like a thick glass
 // lens, instead of only blurring it. Only Chrome (Android, a computer) can bend the page behind an element (an SVG filter in
 // backdrop-filter): there html gets .lg-on and each piece .lg (v2/lg.css: lighter tints, a light rim); Safari and Firefox
-// keep everything exactly as it is. Only the /v2/ preview loads this file (v2/build.py, next to m3), until the owner says yes.
+// keep everything exactly as it is. Every page loads it (v2/build.py, next to m3), live since the owner's „bun, publish” (27.11).
 (function () {
   'use strict';
   var ua = navigator.userAgentData;

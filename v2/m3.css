@@ -1,6 +1,6 @@
-/* Centrul360, what the preview takes from v3 onto the current design (the owner, 27.11: „ce putem prelua sunt animațiile
-   când deschizi meniul, coșul... și mărimea cardurilor, dar pe designul actual”). Only the /v2/ preview loads this file
-   (v2/build.py); the live pages get it when the owner says yes.
+/* Centrul360, what the site takes from v3 onto the current design (the owner, 27.11: „ce putem prelua sunt animațiile
+   când deschizi meniul, coșul... și mărimea cardurilor, dar pe designul actual”; live since his „bun, publish”, 27.11).
+   v2/build.py loads it on every page, the preview's and the live ones.
    1. The menu opens the way v3's does: one circle grows from the button and uncovers the whole menu at once (nothing fades in
       after it), slow at its start and at its end; it closes back into the button.
    2. The offers' cards have v3's size: the photo as wide as the card and taller (4:5), bigger words, the button as wide as the
@@ -43,7 +43,7 @@
 .bft .pr s{ font-size:13px; }
 /* the struck price in a red seen nowhere else on the site (the owner, 27.11: „o culoare aprinsă neîntâlnită în site la
    prețul redus, poate roșu”, then „mă refeream la prețul tăiat, nu la cel normal”); the price she pays stays white */
-.bft .pr s{ color:#ff3b3b; font-weight:600; text-decoration-color:#ff3b3b; text-decoration-thickness:2px; }
+.bft .pr s{ font-size:14px; font-weight:700; color:#ff2b2b; text-decoration-color:#ff2b2b; text-decoration-thickness:2px; }
 /* the button a little wider than the words' column, so „Rezervă oferta” has room inside (the owner, 27.11) */
 .bft .btn.book,.bft .pr + .btn.book{ width:calc(100% + 16px); margin:12px -8px 0; height:46px; padding:0 12px; font-size:15px; }
 .bft .btn.book svg{ width:15px; height:15px; }
