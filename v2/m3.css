@@ -24,13 +24,16 @@
 
 /* ---- 2. the offers' cards ---- */
 .bfo-g.tiles{ gap:18px 14px; }
-.bft > .pic{ width:100%; height:auto; aspect-ratio:4 / 5; margin:0; }
+/* the photo keeps its 4:5 picture, the box cuts the black under the subject (--cut, v2/m3.js: the row's deepest subject) and
+   fades its last few pixels into the card */
+.bft{ --cut:1; }
+.bft > .pic{ width:100%; height:0; padding-top:calc(125% * var(--cut)); aspect-ratio:auto; margin:0; overflow:hidden;
+  -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent); mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent); }
+.bft > .pic img,.bft > .pic img.pb{ inset:0 0 auto 0; height:auto; aspect-ratio:4 / 5; }
 /* the words under the photo, never over it (the owner, 27.11: „intră scrisul și titlul peste poze cât timp lăsăm spațiu negru
    jos”): the photo fades only at its very foot, the name starts on the black below it */
-.bft > .pic img{ -webkit-mask-image:linear-gradient(to left,#000 50%,transparent 100%),linear-gradient(to bottom,#000 82%,transparent 100%); -webkit-mask-composite:source-in;
-  mask-image:linear-gradient(to left,#000 50%,transparent 100%),linear-gradient(to bottom,#000 82%,transparent 100%); mask-composite:intersect; }
-.bft > .pic img.pb{ -webkit-mask-image:linear-gradient(to left,#000 72%,transparent 100%),linear-gradient(to bottom,#000 86%,transparent 100%); -webkit-mask-composite:source-in;
-  mask-image:linear-gradient(to left,#000 72%,transparent 100%),linear-gradient(to bottom,#000 86%,transparent 100%); mask-composite:intersect; }
+.bft > .pic img{ -webkit-mask-image:linear-gradient(to left,#000 50%,transparent 100%); mask-image:linear-gradient(to left,#000 50%,transparent 100%); }
+.bft > .pic img.pb{ -webkit-mask-image:linear-gradient(to left,#000 72%,transparent 100%); mask-image:linear-gradient(to left,#000 72%,transparent 100%); }
 .bft-b{ margin-top:0; padding:12px 14px 16px; }
 .bft h3{ font-size:18px; line-height:1.2; }
 .bft-l{ margin-top:8px; gap:5px; }
@@ -38,10 +41,15 @@
 .bft .pr{ padding-top:12px; }
 .bft .pr b{ font-size:22px; }
 .bft .pr s{ font-size:13px; }
-.bft .btn.book,.bft .pr + .btn.book{ height:46px; margin-top:12px; font-size:15px; }
+/* the price she pays in a red seen nowhere else on the site (the owner, 27.11: „o culoare aprinsă neîntâlnită în site la
+   prețul redus, poate roșu”) */
+.bft .pr b{ color:#ff3b3b; }
+/* the button a little wider than the words' column, so „Rezervă oferta” has room inside (the owner, 27.11) */
+.bft .btn.book,.bft .pr + .btn.book{ width:calc(100% + 16px); margin:12px -8px 0; height:46px; padding:0 12px; font-size:15px; }
 .bft .btn.book svg{ width:15px; height:15px; }
 /* a category with one treatment keeps its row: the photo on the left, as tall as the card */
-.bfo-g.tiles > .bft:only-of-type > .pic{ width:auto; height:auto; aspect-ratio:auto; }
+.bfo-g.tiles > .bft:only-of-type > .pic{ width:auto; height:auto; padding-top:0; aspect-ratio:auto; -webkit-mask-image:none; mask-image:none; }
+.bfo-g.tiles > .bft:only-of-type > .pic img{ inset:0; height:100%; aspect-ratio:auto; }
 .bfo-g.tiles > .bft:only-of-type .bft-b{ margin:0; }
 @media (max-width:359px){ .bft h3{ font-size:16px; } .bft-l li{ font-size:13px; } .bft .pr b{ font-size:19px; } .bft .btn.book{ height:42px; font-size:14px; } .bft-b{ padding:10px 10px 12px; } }
 @media (min-width:700px){
