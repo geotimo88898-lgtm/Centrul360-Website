@@ -124,6 +124,15 @@
   function css() { if (!document.getElementById('cp-css')) { const s = document.createElement('style'); s.id = 'cp-css'; s.textContent = CSS; document.head.appendChild(s); } }
   // an app's own browser (Facebook, Instagram, TikTok…): it may open no new tab; the payment goes on in the same one
   const IN_APP = /FBAN|FBAV|FB_IAB|FBIOS|Instagram|musical_ly|TikTok|BytedanceWebview|Snapchat|Pinterest|LinkedInApp|\bLine\//i;
+  // the phone and the browser, in one word for the payment's diagnostics (the owner, 27.11: „deep dig pentru erori”): ios-safari,
+  // android-fb, mac-chrome… (no other detail of the device)
+  const uaWord = () => {
+    const u = navigator.userAgent || '';
+    const os = /iPhone|iPad|iPod/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1) ? 'ios' : /Android/.test(u) ? 'android' : /Mac OS X/.test(u) ? 'mac' : /Windows/.test(u) ? 'win' : 'other';
+    const br = /Instagram/.test(u) ? 'ig' : /FBAN|FBAV|FB_IAB|FBIOS/.test(u) ? 'fb' : /TikTok|musical_ly|Bytedance/.test(u) ? 'tt' : /Edg\//.test(u) ? 'edge' : /SamsungBrowser/.test(u) ? 'samsung'
+      : /CriOS|Chrome\//.test(u) ? 'chrome' : /FxiOS|Firefox\//.test(u) ? 'firefox' : /Safari\//.test(u) ? 'safari' : 'other';
+    return os + '-' + br;
+  };
   const ERR = {
     off: 'Plata online nu e pornită acum.', already_paid: 'E deja plătită.', cancelled: 'Programarea nu mai e activă.', not_found: 'Nu am găsit ce vrei să plătești.', expired: 'Ora ținută a expirat. Alege din nou ora.',
     not_in_city: 'Asta nu se face în clinica aleasă.', missing_contact: 'Scrie numele și telefonul.', card_not_ready: 'Plata pentru card nu e gata încă.', net: 'Nu avem internet acum. Încearcă din nou.',
@@ -213,6 +222,7 @@
         if (known && !order.contactError && known.name === fv('name') && known.phone === fv('phone')) saidContact(known);
         order.kind = o.kind;
         if (o.onOrder) o.onOrder({ orderId: order.orderId, key: order.key, amount: order.amount });
+        post({ action: 'trace', orderId: order.orderId, key: order.key, step: 'ua', code: uaWord() }, true).catch(() => {});
         if ((order.provider || st.provider) !== way) { way = order.provider; screen(); } else refreshSum();
         if (way === 'embedded') embedded();
         if (valid()) saveContact().then(() => { if (way === 'requests') prep(); }, () => {});
