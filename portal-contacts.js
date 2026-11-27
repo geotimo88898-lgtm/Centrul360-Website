@@ -367,7 +367,9 @@
         body: '<div class="ct-quick">' + (c.phone ? '<a class="k-btn is-outline" href="' + K.tel(c.phone) + '">' + icon('phone') + 'Sună</a><a class="k-btn is-outline" href="#mesaje" data-chat="' + esc(c.phone) + '" data-chat-name="' + esc(c.name || '') + '" data-chat-city="' + esc(c.location || '') + '">' + icon('chat') + 'Mesaje</a>' : '') +
             // what the desk does next with her, from her sheet (16.11): book her, take the rest of a package, her lead
             (desk() && c.phone ? '<button type="button" class="k-btn is-outline" data-book>' + icon('calendar') + 'Programează</button>' : '') +
-            '<button type="button" class="k-btn is-outline" data-edit>' + icon('pen') + 'Editează</button></div>' +
+            '<button type="button" class="k-btn is-outline" data-edit>' + icon('pen') + 'Editează</button>' +
+            // the owner only (27.11: „să pot șterge contacte”)
+            (admin ? '<button type="button" class="k-btn is-danger" data-del-contact>' + icon('trash') + 'Șterge</button>' : '') + '</div>' +
           nextHtml() +
           formsHtml() +
           '<div class="ct-tabs">' + K.seg('cttab', [['fise', 'Fișe & mențiuni', 'file'], ['poze', 'Poze înainte / după', 'image'], ['istoric', 'Istoric', 'clock']], st.tab, 'is-big') + '</div>' +
@@ -375,6 +377,22 @@
         onMount(el) {
           el.querySelector('input[name=cttab]').addEventListener('change', (e) => { st.tab = e.target.value; paintPane(); });
           el.querySelector('[data-edit]').addEventListener('click', () => editContact(st, () => paintAll()));
+          const dc = el.querySelector('[data-del-contact]');
+          if (dc) dc.addEventListener('click', async () => {
+            const x = st.c, who = x.name || x.phone || 'contactul';
+            const ok = await K.ui().confirm({ title: x.isClient ? 'Ștergi contactul?' : 'Ștergi leadul?', danger: true, confirmText: 'Șterge definitiv',
+              message: x.isClient
+                ? who + ' dispare din Contacte, cu fișele, mențiunile și pozele ei (și de pe site, dacă erau publicate), plus leadurile ei din Pipeline. Programările, încasările și mesajele ei rămân.'
+                : who + ' dispare din Contacte și din Pipeline. Mesajele rămân.' });
+            if (!ok) return;
+            await K.busy(dc, async () => {
+              try {
+                await api('delete', { id: st.id });
+                K.ui().toast((x.isClient ? 'Contact șters' : 'Lead șters') + ': ' + who + '.');
+                S.dirty = true; d.close();
+              } catch (e) { K.ui().toast(errText(e)); }
+            });
+          });
           const bk = el.querySelector('[data-book]');
           if (bk) bk.addEventListener('click', () => { const x = st.c; d.close(); K.emit('calendar:new', { clientName: x.name || '', clientPhone: x.phone || '', location: x.location || '', leadId: st.leadId || '' }); });
           const body = el.querySelector('.k-dbody'); // the drawer shell is shared by every drawer: listen on its body only

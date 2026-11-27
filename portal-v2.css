@@ -238,6 +238,8 @@ div.pay-appt{ cursor:default; }
 .ct-more{ margin:1rem auto 0; display:flex; }
 .ct-count{ text-align:center; color:var(--muted-2); font-size:.8rem; margin:.8rem 0 0; }
 .ct-quick{ display:flex; gap:.5rem; flex-wrap:wrap; }
+/* the owner's „Șterge” on a contact (27.11): red, so it never reads like the other buttons */
+html.ui-nou .ct-quick .k-btn.is-danger,html.ui-nou .ct-quick .k-btn.is-danger .k-ic{ color:var(--bad); }
 /* her sheet, under the buttons (16.11): the rest of a package to take, her lead in the Pipeline */
 .ct-nexts{ display:flex; flex-direction:column; gap:.45rem; margin-top:.7rem; }
 .ct-next{ display:flex; align-items:center; gap:.7rem; width:100%; min-width:0; padding:.65rem .8rem; border-radius:14px; border:1px solid var(--line); background:var(--glass); color:var(--fg); font:inherit; text-align:left; cursor:pointer; transition:background .15s ease, border-color .15s ease; }

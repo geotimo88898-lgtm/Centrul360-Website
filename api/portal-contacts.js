@@ -21,7 +21,7 @@
 //
 // Actions: list · get · create · update · note_add · note_delete · file_add · file_delete ·
 //          session_add · session_update · session_delete · photo_set · photo_delete · consent ·
-//          frames_set · publish · unpublish · import (admin: contacts exported from HighLevel)
+//          frames_set · publish · unpublish · import (admin: contacts exported from HighLevel) · delete (admin)
 
 const crypto = require('crypto');
 const { readJSON, writeJSON, writeBinary, removeBinary } = require('./_lib/store');
@@ -251,6 +251,39 @@ module.exports = async (req, res) => {
       // her lead (the newest with her phone): „Vezi leadul” in her sheet
       const newest = leads.slice().sort((x, y) => String(y.updatedAt || y.createdAt).localeCompare(String(x.updatedAt || x.createdAt)))[0];
       res.status(200).json({ ok: true, contact: contactRow(client), detail, appointments: appts, payments, forms: formsOf(leads), dues, lastCame, leadId: newest ? newest.id : '' });
+      return;
+    }
+
+    // ---------------------------------------------------------------- delete (the owner only, 27.11: „să pot șterge contacte”)
+    // A client: her card, her sheets, notes, files and photos, her cases taken off the site, and her leads (the same phone, so
+    // she does not come back into Contacte as a lead). A lead that is only a lead: that lead and her other leads (the same
+    // phone, the same person). What the clinic must keep stays:
+    // her appointments (Calendar), her payments (Încasări) and her chat (Mesaje), with her name as it was written there.
+    if (action === 'delete') {
+      if (session.role !== 'admin') return fail(403, 'forbidden');
+      const phone = normalizePhone((client || lead).phone);
+      const allLeads = await readJSON('data/leads.json', []);
+      const goLeads = allLeads.filter((l) => (lead && l.id === lead.id) || (phone && normalizePhone(l.phone) === phone));
+      let files = 0;
+      if (client) {
+        const det = await readDetail(client.id);
+        for (const p of det.published || []) await removeCase(p.caseId).catch(() => {});
+        const paths = new Set((det.files || []).map((f) => f && f.path));
+        (det.sessions || []).forEach((s) => [s.before, s.after].concat(s.photos || []).forEach((ph) => { if (ph && ph.path) paths.add(ph.path); }));
+        paths.delete(undefined); paths.delete('');
+        files = paths.size;
+        await Promise.all([...paths].map((p) => removeBinary(p)));
+        await removeBinary(detailPath(client.id));
+        const fresh = await readJSON('data/clients.json', []);
+        await writeJSON('data/clients.json', fresh.filter((c) => c.id !== client.id));
+      }
+      if (goLeads.length) {
+        const ids = new Set(goLeads.map((l) => l.id));
+        const freshLeads = await readJSON('data/leads.json', []);
+        await writeJSON('data/leads.json', freshLeads.filter((l) => !ids.has(l.id)));
+      }
+      console.log('portal-contacts: deleted', client ? 'a client' : 'a lead', 'by', session.employeeId, '·', files, 'files ·', goLeads.length, 'leads');
+      res.status(200).json({ ok: true, deleted: client ? 'client' : 'lead', files, leads: goLeads.length });
       return;
     }
 
