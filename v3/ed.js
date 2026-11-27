@@ -59,7 +59,7 @@
   // ---- the header
   var hd = $('.hd');
   if (hd) {
-    var first = $('.mh, .ph, [data-first]');
+    var first = $('.hx, .mh, .ph, [data-first]');
     var solid = function () { var lim = first ? Math.max(10, first.offsetHeight - hd.offsetHeight - 10) : 10; hd.classList.toggle('solid', scrollY > lim); };
     addEventListener('scroll', solid, { passive: true }); addEventListener('resize', solid); solid();
   }
@@ -139,6 +139,9 @@
     var ft = $('.ft');
     if (ft && 'IntersectionObserver' in window) new IntersectionObserver(function (es) { dk.classList.toggle('off', es[0].isIntersecting); }, { rootMargin: '0px 0px -40% 0px' }).observe(ft);
   }
+  // every dock (this one, a product's) steps aside while the first screen's own button is in sight
+  var hcta = $('.hx-cta');
+  if (hcta && 'IntersectionObserver' in window) new IntersectionObserver(function (es) { $$('.dk').forEach(function (d) { d.classList.toggle('hid', es[0].isIntersecting); }); }).observe(hcta);
 
   // ---- the online price of the moment, as words on a page ([data-terms]: the offers' first screen), from the server's terms
   var tw = $('[data-terms]');

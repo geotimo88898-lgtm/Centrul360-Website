@@ -77,18 +77,18 @@ def page(pid):
     n = c['cut']; whole = CUT.get(n) == 2
     out = ['<!--meta\ntitle: %s\ndescription: %s\npath: %s\ndock_href: #tratamente\ndock_cta: Vezi prețurile\n-->' % (title, desc, pid)]
     out.append('<link rel="preload" as="image" href="{{base}}img/cut/%s.webp" fetchpriority="high">\n<link rel="stylesheet" href="{{base}}shop.css">' % n)
-    # the first screen
+    # the first screen (27.11, the owner: conversion, warmth, nothing for decor): her problem, the page's headline, what we do,
+    # one button to the prices, the results one tap away, the proof
+    has_rz = bool(sec(s, 'rezultate'))
     out.append(''.join([
-        '<section class="mh pre" aria-label="%s">' % html.escape(c['name']),
-        '<div class="mh-light" aria-hidden="true"></div>',
-        '<h1 class="mh-w" data-fit data-fvh="%s">%s<b class="sr">%s</b></h1>' % ('.42' if len(c['word'][0]) < 7 else '.34', ''.join('<span aria-hidden="true">%s</span>' % w for w in c['word']), h1),
-        '<div class="mh-fig%s"><img class="mh-cut" src="{{base}}img/cut/%s.webp" alt="" fetchpriority="high" decoding="async"></div>' % (' whole' if whole else '', n),
-        '<span class="mh-sh" aria-hidden="true"%s></span>' % ('' if whole else ' hidden'),
-        '<div class="mh-c tl"><span class="lbl">Ce rezolvăm</span><span class="val">%s</span></div>' % c['name'],
-        '<div class="mh-c tr"><span class="lbl">Cu ce</span><span class="val">%s</span><span class="lbl">Unde</span><span class="val">%s</span></div>' % (c['tr'], c['where']),
-        '<div class="mh-c bl"><p>%s</p></div>' % (c.get('promise') or h1),
-        '<div class="mh-c br"><span class="lbl">Pe Google</span><span class="val">5,0 din peste 300 de recenzii</span></div>',
-        '</section>']))
+        '<section class="hx" aria-label="%s"><div class="wrap hx-g"><div class="hx-t">' % html.escape(c['name']),
+        '<span class="hx-eye">%s</span>' % c['name'],
+        '<h1>%s</h1>' % h1,
+        '<p class="hx-p">%s</p>' % hero_lead,
+        '<div class="hx-cta"><a class="btn lg" href="#tratamente">Vezi tratamentele și prețurile</a>%s</div>' % ('<a class="lk" href="#rezultate">Vezi rezultatele</a>' if has_rz else ''),
+        '<ul class="hx-ok"><li class="st"><i aria-hidden="true">★★★★★</i>5,0 pe Google, din peste 300 de recenzii</li><li><span data-terms>Prețuri mai mici la plata online</span></li><li>Cu %s, %s</li></ul>' % (c['tr'], ('doar' + c['where'][4:]) if c['where'].startswith('Doar') else 'în ' + c['where']),
+        '</div><div class="hx-fig"><img src="{{base}}img/cut/%s.webp" alt="" fetchpriority="high" decoding="async"></div>' % n,
+        '</div></section>']))
     # the promise, in a sentence; why it does not go away (the old „scrub”)
     sc = sec(s, has='class="scrub"')
     st = txt(re.search(r'<p class="scrub"[^>]*>(.*?)</p>', sc, re.S).group(1)) if sc else ''

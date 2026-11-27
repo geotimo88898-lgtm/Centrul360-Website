@@ -427,3 +427,96 @@ body.ck-open .dk{ bottom:calc(96px + env(safe-area-inset-bottom)); }
 .tp-bag i{ position:absolute; top:-2px; right:-2px; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:#fff; color:#000; font:700 11px/18px var(--ft); font-style:normal; text-align:center; }
 .tp-bag i:empty{ display:none; }
 .tp-end .tp-pr{ margin:6px 0 18px; }
+
+/* ============================================================
+   27.11, the owner on the preview: „foarte fain, doar nu e optimizat deloc pentru conversie, îi lipsește puțin suflet, e puțin
+   încărcat, elemente trântite … cu bun simț, optimizat pentru conversie, fără prea multă încărcătură; motive concrete să apese”.
+   The first screen says what she gets, shows the proof, the price and ONE button, read in five seconds; the real results come
+   right after it; real people (the team, the clients' words) carry the warmth; nothing pinned to corners, no word for decor.
+   ============================================================ */
+.hx{ position:relative; isolation:isolate; overflow:hidden; padding:calc(var(--hd) + 26px) 0 0; background:var(--bg); }
+.hx::before{ content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  background:radial-gradient(80% 55% at 78% 8%, rgba(255,255,255,.11), rgba(255,255,255,0) 62%), radial-gradient(60% 40% at 10% 100%, rgba(255,255,255,.05), rgba(255,255,255,0) 70%); }
+.hx-g{ display:grid; grid-template-columns:minmax(0,1fr); align-items:end; }
+.hx-t{ position:relative; z-index:2; padding-bottom:30px; }
+.hx-eye{ display:block; font-size:15px; line-height:1.4; font-weight:500; color:var(--tx2); margin:0 0 14px; }
+.hx h1{ font-family:var(--fd); font-weight:700; letter-spacing:-.035em; line-height:1.02; font-size:clamp(38px,10.2vw,78px); max-width:13ch; text-wrap:balance; color:var(--tx); }
+.hx-p{ margin-top:16px; font-size:clamp(17px,4.5vw,21px); line-height:1.5; color:var(--tx2); max-width:34ch; text-wrap:pretty; }
+.hx-p b{ color:var(--tx); font-weight:600; }
+.hx-pr{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin-top:22px; }
+.hx-pr b{ font-family:var(--fd); font-weight:700; font-size:clamp(36px,9.4vw,52px); letter-spacing:-.03em; line-height:1; }
+.hx-pr s{ font-size:18px; color:var(--tx3); }
+.hx-pr span{ font-size:15px; color:var(--tx2); }
+.hx-cta{ display:flex; flex-wrap:wrap; align-items:center; gap:12px 18px; margin-top:24px; }
+.hx-cta .btn{ min-width:min(100%,260px); }
+.hx-cta .lk{ font-size:16px; }
+.hx-ok{ display:grid; gap:8px; margin-top:22px; font-size:15px; line-height:1.4; color:var(--tx2); }
+.hx-ok li{ display:flex; gap:10px; align-items:flex-start; }
+.hx-ok li::before{ content:""; flex:none; width:16px; height:16px; margin-top:2px; border-radius:50%; background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23060607' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/11px no-repeat; }
+.hx-ok .st{ color:var(--tx); font-weight:500; }
+.hx-ok .st::before{ display:none; }
+.hx-ok .st i{ font-style:normal; letter-spacing:.06em; color:#f5c451; margin-right:8px; }
+.hx-fig{ position:relative; z-index:1; height:clamp(240px,40vh,380px); margin:0 calc(var(--pad) * -1); display:flex; justify-content:center; align-items:flex-end; overflow:hidden; }
+.hx-fig img{ height:100%; width:auto; max-width:none; object-fit:contain; object-position:50% 100%;
+  -webkit-mask-image:linear-gradient(180deg,#000 72%,transparent 100%); mask-image:linear-gradient(180deg,#000 72%,transparent 100%); }
+.hx-fig.r img{ border-radius:24px 24px 0 0; -webkit-mask-image:none; mask-image:none; width:100%; height:100%; object-fit:cover; object-position:50% 30%; }
+@media (min-width:900px){
+  .hx{ padding-top:calc(var(--hd) + 24px); }
+  .hx-g{ grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:var(--gap); height:min(calc(100svh - var(--hd) - 24px),820px); min-height:600px; }
+  .hx-t{ align-self:center; padding:0 0 6vh; }
+  .hx h1{ font-size:clamp(46px,4.7vw,70px); max-width:14ch; }
+  .hx-fig{ height:100%; margin:0; overflow:hidden; }
+  .hx-fig img{ width:100%; height:100%; object-fit:contain; object-position:50% 100%; }
+}
+/* the dock steps aside while the first screen's own button is in sight (one button at a time) */
+.dk.hid{ transform:translate(-50%, 140%); opacity:0; pointer-events:none; }
+
+/* ---- the real results, right after the first screen: the approved before / after, side by side to swipe (phone) ---- */
+.rb{ display:grid; grid-auto-flow:column; grid-auto-columns:min(78%,340px); gap:14px; overflow-x:auto; scroll-snap-type:x mandatory; margin:0 calc(var(--pad) * -1); padding:2px var(--pad) 8px; scrollbar-width:none; }
+.rb::-webkit-scrollbar{ display:none; }
+.rb figure{ scroll-snap-align:start; }
+.rb img{ width:100%; height:auto; border-radius:18px; background:var(--bg2); } /* the photo exactly as it is: never cropped */
+.rb{ align-items:start; }
+.rb figcaption{ margin-top:12px; }
+.rb figcaption b{ display:block; font-size:17px; font-weight:600; color:var(--tx); }
+.rb figcaption span{ display:block; margin-top:2px; font-size:15px; color:var(--tx3); }
+@media (min-width:900px){ .rb{ grid-auto-flow:row; grid-template-columns:repeat(3,minmax(0,1fr)); grid-auto-columns:auto; overflow:visible; margin:0; padding:0; gap:var(--gap); } }
+
+/* ---- the people: her words, her face, then the plain reasons (no icons, no cards) ---- */
+.pp2{ display:grid; gap:28px; align-items:center; }
+.pp2-f{ display:flex; gap:16px; align-items:center; }
+.pp2-f img{ width:72px; height:72px; border-radius:50%; object-fit:cover; flex:none; }
+.pp2-f b{ display:block; font-size:17px; }
+.pp2-f span{ display:block; font-size:15px; color:var(--tx3); }
+.pp2 blockquote{ font-family:var(--fd); font-weight:600; letter-spacing:-.02em; font-size:clamp(24px,4.4vw,40px); line-height:1.2; color:var(--tx); max-width:26ch; text-wrap:balance; }
+.why{ display:grid; gap:0; margin-top:48px; border-top:1px solid var(--ln); }
+.why li{ display:grid; gap:4px; padding:20px 0; border-bottom:1px solid var(--ln); }
+.why b{ font-size:18px; font-weight:600; color:var(--tx); }
+.why span{ font-size:16px; line-height:1.5; color:var(--tx2); max-width:52ch; }
+@media (min-width:900px){ .pp2{ grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr); } .why{ grid-template-columns:1fr 1fr; column-gap:var(--gap); } }
+
+/* ---- what bothers her: the rows, each with where it starts (the price comes from the shop) ---- */
+.ix a .fr{ color:var(--tx); font-weight:600; }
+
+/* ---- the footer: no giant word ---- */
+.ft-w{ display:none!important; }
+
+/* ---- the other pages' first word: a headline, not decor ---- */
+.ph-w{ margin:0 0 3vh; text-transform:none; letter-spacing:-.035em; line-height:1.02; font-weight:700; }
+.ph-w > span{ display:block; width:auto; white-space:normal; font-size:clamp(40px,9vw,84px)!important; padding:0; margin:0; background:none; -webkit-background-clip:border-box; background-clip:border-box; color:var(--tx); -webkit-text-fill-color:var(--tx); }
+
+.hx h1 .tp-hz{ display:block; color:var(--tx2); }
+.hx h1 .tp-hz.sw{ opacity:0; }
+.hx h1 .tp-hz{ transition:opacity .25s var(--e); }
+
+/* the other pages: less empty room above their headline */
+.ph{ padding:calc(var(--hd) + 36px) 0 6vh; }
+
+.tp-zdef{ margin-top:12px; max-width:46ch; }
+
+/* the buy block alone: one column, the choice, the price of the choice, the button */
+.tp-cfg{ grid-template-columns:minmax(0,1fr)!important; }
+.tp-cfg-b{ grid-column:auto!important; max-width:640px; padding-top:0!important; }
+.tp-cfg-b .t3{ margin-bottom:22px; }
+.tp-cfg-b .tp-pr{ margin-top:26px; }
+.tp-cfg-b .tp-cta{ width:100%!important; }

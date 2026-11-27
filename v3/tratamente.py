@@ -42,27 +42,33 @@ def cut_of(x, z0):
 
 
 def hero(x, zones, z0):
+    """the first screen (27.11, the owner: conversion, warmth, nothing for decor): what it is, for what, the price and one button;
+    the zone, the promise, the price follow her choice (v3/pp.js: [data-tp-zn], [data-tp-promise], [data-tp-price], [data-tp-img])"""
     i = x['id']
     n = cut_of(x, z0)
-    whole = CUT.get(n) == 2
-    lines = WORDS.get(i, [x['name']])
-    city = 'Doar în Timișoara' if x['cities'] == ['Timișoara'] else 'Timișoara și Arad'
+    city = 'Doar în Timișoara' if x['cities'] == ['Timișoara'] else 'În Timișoara și Arad'
     mins = t2.ro_min(x.get('minutesLabel') or x['minutes']) if x.get('minutes') else ''
     kind = clean(x['kind'])
-    tl = ('<div class="mh-c tl"><span class="lbl" data-tp-eye>%s</span><span class="val" data-tp-zn>%s</span></div>' % (e(kind), e(z0))) if z0 else \
-         ('<div class="mh-c tl"><span class="lbl">Tratament</span><span class="val" data-tp-eye>%s</span></div>' % e(kind))
+    full = x['full']
     return ''.join([
-        '<section class="mh pre tp-mh" aria-label="%s">' % e(x['name']),
-        '<div class="mh-light" aria-hidden="true"></div>',
-        '<h1 class="mh-w" data-fit data-fvh="%s">%s<b class="sr">%s</b></h1>' % ('.3' if len(lines) > 1 else '.42', ''.join('<span aria-hidden="true">%s</span>' % e(w) for w in lines), e(x['name'])),
-        ('<div class="mh-fig%s"><img class="mh-cut" data-tp-img src="{{base}}img/cut/%s.webp" alt="%s" fetchpriority="high" decoding="async" style="view-transition-name:pic-%s"></div>'
-         % (' whole' if whole else '', n, e(x['name']), re.sub(r'[^a-z0-9-]', '', x.get('pp') or i))) if n else '',
-        '<span class="mh-sh" aria-hidden="true"%s></span>' % ('' if whole else ' hidden'),
-        tl,
-        '<div class="mh-c tr"><span class="lbl">O ședință</span><span class="val">%s</span><span class="lbl">Unde</span><span class="val">%s</span></div>' % (e(mins), e(city)),
-        '<div class="mh-c bl"><p data-tp-promise>%s</p></div>' % e(clean(x['promise'])),
-        '<div class="mh-c br"><span class="lbl">Pe Google</span><span class="val">5,0 din peste 300 de recenzii</span></div>',
-        '</section>'])
+        '<section class="hx tp-hx" aria-label="%s"><div class="wrap hx-g"><div class="hx-t">' % e(x['name']),
+        '<span class="hx-eye" data-tp-eye>%s</span>' % e(kind),
+        '<h1>%s%s</h1>' % (e(x['name']), (' <span class="tp-hz" data-tp-zn>%s</span>' % e(z0)) if z0 else ''),
+        '<p class="hx-p" data-tp-promise>%s</p>' % e(clean(x['promise'])),
+        '<p class="hx-pr"><b data-tp-price>%s</b><s data-tp-full>%s</s><span data-terms>la plata online</span></p>' % (t2.bf(full), lei(full)),
+        '<div class="hx-cta"><a class="btn lg" href="#cumpara">%s</a></div>' % ('Alege zona și rezervă' if zones else 'Rezervă'),
+        '<ul class="hx-ok" data-tp-bul><li class="st"><i aria-hidden="true">★★★★★</i>5,0 pe Google, din peste 300 de recenzii</li>%s</ul>' % ''.join(
+            '<li><span>%s</span></li>' % e(clean(b)) for b in x['bullets']),
+        '</div>',
+        ('<div class="hx-fig"><img data-tp-img src="{{base}}img/cut/%s.webp" alt="%s" fetchpriority="high" decoding="async" style="view-transition-name:pic-%s"></div>'
+         % (n, e(x['name']), re.sub(r'[^a-z0-9-]', '', x.get('pp') or i))) if n else '',
+        '</div></section>'])
+
+# what one zone is (the owner, 27.11: „la 320 nu e tot abdomenul”; only Liposonix and HIFU corporal)
+ZONE_NOTE = {
+    'liposonix': 'O zonă: abdomenul inferior sau superior, coapsele interior sau exterior, flancurile, brațele sau zona lombară. Tot abdomenul înseamnă 2 zone.',
+    'hifu-corp': 'O zonă: abdomenul inferior sau superior, coapsele interior sau exterior, brațele, gambele sau zona lombară. Tot abdomenul înseamnă 2 zone.',
+}
 
 
 def buy(x, zones, sess, full, z0):
@@ -73,17 +79,17 @@ def buy(x, zones, sess, full, z0):
         extra = ''
         if i in ALL_BODY and len(zones) > 1: extra = '<button type="button" data-tp-zone="Full Body" aria-pressed="false">Full Body</button>'
         if i in ALL_FACE: extra = '<button type="button" data-tp-zone="Full Face" aria-pressed="false">Full Face</button>'
-        opts.append('<div class="tp-o"><span class="lbl">Zona</span><div class="tp-ch" role="group" aria-label="Zona">%s%s</div></div>' % (
-            ''.join('<button type="button" data-tp-zone="%s" aria-pressed="%s">%s</button>' % (e(z), 'true' if k == 0 else 'false', e(z)) for k, z in enumerate(zones)), extra))
+        opts.append('<div class="tp-o"><span class="lbl">Zona</span><div class="tp-ch" role="group" aria-label="Zona">%s%s</div>%s</div>' % (
+            ''.join('<button type="button" data-tp-zone="%s" aria-pressed="%s">%s</button>' % (e(z), 'true' if k == 0 else 'false', e(z)) for k, z in enumerate(zones)), extra,
+            ('<p class="fine tp-zdef">%s</p>' % e(ZONE_NOTE[i])) if i in ZONE_NOTE else ''))
     opts.append('<div class="tp-o"><span class="lbl">Câte ședințe</span><div class="tp-ch" role="group" aria-label="Câte ședințe">%s</div></div>' % ''.join(
         '<button type="button" data-tp-n="%d" aria-pressed="%s">%s</button>' % (n, 'true' if n == 1 else 'false', '1 ședință' if n == 1 else '%d ședințe' % n) for n in sess))
     return ''.join([
         '<section class="s tp-buy" id="cumpara"><div class="wrap"><div class="tp-cfg" data-tp-buy>',
-        '<div class="tp-cfg-a"><h2 class="t2" data-tp-name>%s</h2>' % e(x['name'] + (' ' + z0 if z0 else '')),
+        '<div class="tp-cfg-b"><h2 class="t3">Alege și rezervă</h2>%s' % ''.join(opts),
         '<p class="tp-pr"><b data-tp-price>%s</b><s data-tp-full>%s</s></p><p class="tp-per"><span data-tp-per>o ședință</span>, <span data-tp-save>Economisești %s</span></p>' % (t2.bf(full), lei(full), t2.bf(full)),
-        '<ul class="tp-bul" data-tp-bul>%s</ul></div>' % ''.join('<li><span>%s</span></li>' % e(clean(b)) for b in x['bullets']),
-        '<div class="tp-cfg-b">%s<button type="button" class="btn lg tp-cta" data-tp-add>Rezervă</button>' % ''.join(opts),
-        '<p class="fine">Plătești online, cu cardul. Alegi clinica, ziua și ora imediat după plată.</p></div>',
+        '<button type="button" class="btn lg tp-cta" data-tp-add>Rezervă</button>',
+        '<p class="fine">Plătești online, cu cardul. %s Alegi ziua și ora imediat după plată.</p></div>' % ('Doar în Timișoara.' if x['cities'] == ['Timișoara'] else 'Alegi clinica, Timișoara sau Arad.'),
         ('<script type="application/json" data-tp-zc>%s</script>' % json.dumps(dict(x['zoneCopy'], _={'kind': x['kind'], 'promise': x['promise'], 'bullets': x['bullets']}), ensure_ascii=False).replace('</', '<\\/')) if x.get('zoneCopy') else '',
         '</div></div></section>'])
 
@@ -216,7 +222,7 @@ if __name__ == '__main__':
         if x['id'] == 'epilare':
             # laser epilation, not sold for now (the owner, 25.11): its shop page leads to the device's page
             s = ('<!--meta\ntitle: Epilare laser, Elysion Pro | Centrul360\ndescription: Epilare laser cu Elysion Pro, la Centrul360 Timișoara.\n'
-                 'robots: noindex,follow\ndock: off\n-->\n<script>location.replace("{{base}}epilare-laser" + location.search + location.hash)</script>\n'
+                 'robots: noindex,follow\ndock: off\n-->\n<style>@view-transition{navigation:none}</style><script>location.replace("{{base}}epilare-laser" + location.search + location.hash)</script>\n'
                  '<section class="s"><div class="wrap"><p class="lead"><a class="lk" href="{{base}}epilare-laser">Epilare laser, Elysion Pro</a></p></div></section>\n')
         else:
             s = page(x)
