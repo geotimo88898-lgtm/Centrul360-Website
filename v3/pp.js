@@ -17,7 +17,7 @@
   var root = document.querySelector('[data-tp]'), dataEl = document.getElementById('tp-data');
   if (!root || !dataEl) return;
   var CFG; try { CFG = JSON.parse(dataEl.textContent); } catch (e) { return; }
-  var BASE = /^\/v3\//.test(location.pathname) ? '/v3/' : '/';
+  var BASE = /^\/v3(\/|$)/.test(location.pathname) ? '/v3/' : '/';
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };

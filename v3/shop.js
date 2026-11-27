@@ -37,7 +37,7 @@
   'use strict';
   if (window.C360Shop) return;
   var KEY = 'c360-shop3';
-  var BASE = /^\/v3\//.test(location.pathname) ? '/v3/' : '/';
+  var BASE = /^\/v3(\/|$)/.test(location.pathname) ? '/v3/' : '/';
   var OFFERS = BASE + 'oferte';
   var END0 = '2026-11-27T21:59:59.000Z'; // the server's end (api/_lib/shop.js BF.end); the timer starts with it, the server's word replaces it
   var ADDR = { 'Timișoara': 'Str. Bucegi 7, Timișoara', Arad: 'Str. Ioan Alexandru 16-18, Arad' };
