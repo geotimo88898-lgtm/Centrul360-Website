@@ -506,6 +506,8 @@ def body_parts(m=False):
 
 BODY_Z = {  # zone → (side, shape, geometry) in the 300 x 610 box of one figure
  'Abdomen': ('f', 'ellipse', (150, 262, 30, 30)), 'Flancuri': ('f', 'pair', (150, 262, 30, 9, 24)), 'Coapse': ('f', 'pair', (150, 396, 25, 21, 40)),
+ 'Abdomen superior': ('f', 'ellipse', (150, 246, 28, 14)), 'Abdomen inferior': ('f', 'ellipse', (150, 280, 28, 15)),
+ 'Coapse interior': ('f', 'pair', (150, 400, 14, 10, 36)), 'Coapse exterior': ('f', 'pair', (150, 392, 36, 10, 38)),
  'Brațe': ('f', 'pair', (150, 204, 58, 11, 36)), 'Gambe': ('f', 'pair', (150, 512, 23, 13, 34)), 'Zona lombară': ('b', 'ellipse', (150, 264, 32, 20)),
  'Fese': ('b', 'pair', (150, 320, 22, 22, 24)), 'Zona sutien': ('b', 'ellipse', (150, 190, 40, 14)),
 }
@@ -591,6 +593,11 @@ def head(eye, h2, lead='', cls=''):
 def bf(full): return lei(full * (100 - PCT) / 100)
 
 TM_CELLS = ''.join('<i><b data-u="%d">00</b><small data-uu="%d">%s</small></i>' % (k, k, u) for k, u in enumerate(('zile', 'ore', 'min', 'sec')))
+# what one zone is (the owner, 27.11: „la 320 nu e tot abdomenul”; only Liposonix and HIFU corporal)
+ZONE_NOTE = {
+ 'liposonix': 'O zonă: abdomenul inferior sau superior, coapsele interior sau exterior, flancurile, brațele sau zona lombară. Tot abdomenul înseamnă 2 zone.',
+ 'hifu-corp': 'O zonă: abdomenul inferior sau superior, coapsele interior sau exterior, brațele, gambele sau zona lombară. Tot abdomenul înseamnă 2 zone.',
+}
 def buybox(x, zones, sess, full, epi):
     out = ['<div class="tp-buy" data-tp-buy id="cumpara">',
            '<div class="tp-buy-h"><span class="tp-bf"><i></i>Black Friday · -%d%%</span><span class="tp-cd-l">Oferta se încheie în</span></div>' % PCT,
@@ -606,6 +613,7 @@ def buybox(x, zones, sess, full, epi):
             + ('<button type="button" data-tp-zone="Full Body" aria-pressed="false" class="all">Full Body</button>' if x['id'] in ('liposonix', 'cavitatie', 'radiofrecventa', 'hifu-corp', 'ems') and len(zones) > 1 else '')
             # „Full Face” on the face's zones (the owner, 25.11): HIFU Full Face, BioLifting Full Face (v2/pp.js FULLF)
             + ('<button type="button" data-tp-zone="Full Face" aria-pressed="false" class="all">Full Face</button>' if x['id'] in ('hifu', 'biolifting') else '')))
+    if zones and not epi and x['id'] in ZONE_NOTE: out.append('<p class="tp-zdef">%s</p>' % e(ZONE_NOTE[x['id']]))
     out.append('<div class="tp-opt"><p class="tp-l">Câte ședințe</p><div class="tp-seg" role="group" aria-label="Câte ședințe">%s</div></div>' % ''.join(
         '<button type="button" data-tp-n="%d" aria-pressed="%s">%d×</button>' % (n, 'true' if n == 1 else 'false', n) for n in sess))
     out.append('<div class="tp-pr"><b data-tp-price>%s</b><s data-tp-full>%s</s><span class="tp-pct">-%d%%</span></div>' % (bf(full), lei(full), PCT))
@@ -654,6 +662,7 @@ def buybox_opts(x, zones, sess, epi):
             '<button type="button" data-tp-zone="%s" aria-pressed="%s">%s</button>' % (e(z), 'true' if i == 0 else 'false', e(z)) for i, z in enumerate(zones))
             + ('<button type="button" data-tp-zone="Full Body" aria-pressed="false" class="all">Full Body</button>' if x['id'] in ('liposonix', 'cavitatie', 'radiofrecventa', 'hifu-corp', 'ems') and len(zones) > 1 else '')
             + ('<button type="button" data-tp-zone="Full Face" aria-pressed="false" class="all">Full Face</button>' if x['id'] in ('hifu', 'biolifting') else '')))
+    if zones and not epi and x['id'] in ZONE_NOTE: out.append('<p class="tp-zdef">%s</p>' % e(ZONE_NOTE[x['id']]))
     out.append('<div class="tp-opt"><p class="tp-l">Câte ședințe</p><div class="tp-seg" role="group" aria-label="Câte ședințe">%s</div></div>' % ''.join(
         '<button type="button" data-tp-n="%d" aria-pressed="%s">%d×</button>' % (n, 'true' if n == 1 else 'false', n) for n in sess))
     return '<div class="tp-opts">%s</div>' % ''.join(out)
@@ -911,7 +920,7 @@ def page(x):
     # ---- 10. the reviews (only the real ones) and the last call
     out.append('<section class="tp-s tp-rev" id="recenzii"><div class="wrap"><div class="tp-score rv"><span class="g">%s</span><b>5,0</b><span class="st">%s</span><p>300+ recenzii Google · Timișoara și Arad</p></div><div class="tp-revs">%s</div></div></section>' % (
         GLOGO, STAR * 5, ''.join('<figure class="rv"><span class="st">%s</span><blockquote>„%s”</blockquote><figcaption><b>%s</b> · %s</figcaption></figure>' % (STAR * 5, e(t), e(n), e(c)) for n, c, t in REVIEWS)))
-    out.append('<section class="tp-s tp-end"><div class="wrap"><div class="tp-end-c">%s<h2>%s, <em>la jumătate de preț.</em></h2><p>Doar la plata online, cu cardul, până duminică 29.11, la 23:59. Alegi ziua și ora după.</p>'
+    out.append('<section class="tp-s tp-end"><div class="wrap"><div class="tp-end-c">%s<h2>%s, <em>la jumătate de preț.</em></h2><p>Doar la plata online, cu cardul, până vineri 27.11, la 23:59. Alegi ziua și ora după.</p>'
                '<div class="tp-cells" data-tp-tm role="timer" aria-label="Timpul rămas">%s</div><div class="tp-end-pr"><b data-tp-price>%s</b> <s data-tp-full>%s</s></div><button type="button" class="btn book gold tp-cta" data-tp-add>Rezervă oferta%s</button></div></div></section>' % (
                    eyebrow('Black Friday · -50%', ' dk'), e(x['name']), TM_CELLS, bf(full), lei(full), ARROW))
 

@@ -937,6 +937,26 @@ module.exports = async (req, res) => {
     } catch (e) { res.status(200).json({ error: e.code || 'mypos_failed', status: e.status || 0, message: String(e.message || '').slice(0, 200) }); }
     return;
   }
+  // ?winback=list|status|template, POST ?winback=send { go: true }: the win-back of the site's unfinished payments (George 27.11,
+  // api/_lib/pay-winback.js): counts and kinds only, never a name or a phone. ?winback=testlink&id=<test order>: the saved
+  // checkout's link of a test order (to look at the page)
+  if (req.query && req.query.winback) {
+    const W = require('./_lib/pay-winback');
+    const q = String(req.query.winback);
+    let r;
+    if (q === 'send') {
+      if (req.method !== 'POST') { res.status(405).json({ error: 'post_only' }); return; }
+      let b = req.body || {}; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
+      r = await W.send({ go: b.go === true });
+    } else if (q === 'template') { const t = await W.template(true); r = { state: t.state, sentNow: t.sentNow, name: t.name, accounts: t.accounts }; }
+    else if (q === 'list') r = await W.send({ go: false });
+    else if (q === 'testlink') {
+      const { data: o } = await require('./_lib/pay').readOrder(String(req.query.id || ''));
+      r = o && o.test ? { url: 'https://www.centrul360.com/api/pay-go?w=' + W.wOf(o.id) } : { error: 'only_test_orders' };
+    } else r = await W.status();
+    res.status(r && r.error && q !== 'send' && q !== 'list' ? 400 : 200).json(r);
+    return;
+  }
   // ?payopen=1: the checkout's open orders and what myPOS says of each payment request now (kind, sum, status as myPOS writes
   // it, the booking text match), no names or phones; ?payopen=sweep runs the sweep once
   if (req.query && req.query.payopen) {

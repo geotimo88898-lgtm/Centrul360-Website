@@ -23,7 +23,7 @@
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var lei = function (n) { return Math.round(Number(n) || 0).toLocaleString('ro-RO') + ' lei'; };
   var EPI = CFG.epi || null;
-  var END = Date.parse('2026-11-29T21:59:59.000Z'), offset = 0;
+  var END = Date.parse('2026-11-27T21:59:59.000Z'), offset = 0;
   var S = { zone: (CFG.zones && CFG.zones[0]) || '', key: 'full-body', g: 'f', n: 1, pct: CFG.pct || 50, inCart: {} };
   var CAT = null; // the server's products by id
   var ALLZ = 'Full Body'; // the twin <id>-toate (the owner, 25.11: „Full Body”, not „Toate zonele”)
@@ -34,7 +34,8 @@
     try {
       var z = new URLSearchParams(location.search).get('zona'); if (!z || EPI) return;
       var f = function (t) { return String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
-      var m = (CFG.zones || []).concat([ALLZ, FF]).filter(function (x) { return f(x) === f(z); })[0];
+      var all = (CFG.zones || []).concat([ALLZ, FF]);
+      var m = all.filter(function (x) { return f(x) === f(z); })[0] || all.filter(function (x) { return f(x).indexOf(f(z) + '-') === 0; })[0];
       if (m) S.zone = m;
     } catch (e) { /* the first zone */ }
   })();

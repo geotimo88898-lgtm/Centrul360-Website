@@ -152,6 +152,14 @@ const KINDS = {
         return { sale: sale.id, orphan: true };
       }
       let apptId = h.bookingId || ((await readJSON('data/appointments.json', [])).find((a) => a && a.holdId === h.id) || {}).id;
+      // her hour passed before she paid (an order opened again from its message, 27.11): no booking in the past; the money in
+      // Încasări and the desk calls her to choose the hour
+      const startMs = h.date && h.time ? Date.parse(h.date + 'T' + h.time + ':00+02:00') : 0;
+      if (!apptId && startMs && startMs < Date.now() + 60 * 60e3) {
+        const sale = await recordSale(o, 'ora de ales');
+        await ring(o, 'PLĂTIT ONLINE, ORA E DE ALES 💳', (c.name || 'O clientă') + ' a plătit ' + String(o.title || '').replace(/^Comandă online\s*[·:]\s*/, '') + ', ' + Math.round(o.amount) + ' lei. Ora aleasă (' + h.date.split('-').reverse().join('.') + ' ' + h.time + ') a trecut: sun-o să-și aleagă alta.');
+        return { sale: sale.id, hourPassed: true };
+      }
       if (!apptId) {
         const B = require('./booking');
         const r = await require('../booking').place({ cfg: await B.settings({ team: true }), city: h.city, svc: h.svc, date: h.date, time: h.time, name: c.name || 'Clientă site', phone: c.phone,
@@ -434,6 +442,8 @@ async function markPaid(orderId, info, src) {
   const lock = mine ? await store.createOnce('data/pay/run-' + orderId + '-1', nowISO()) : false;
   if (!lock && !(await retryLock(o))) return { ok: true, dup: true };
   await runHandler(orderId);
+  // the gift promised by the win-back message (api/_lib/pay-winback.js, 27.11): her booking's note, the desk told
+  await require('./pay-winback').onPaid(orderId).catch((e) => console.error('pay winback gift:', e.message));
   return { ok: true, dup: !mine };
 }
 async function retryLock(o) {
@@ -775,8 +785,11 @@ async function refused(o) {
   if (!o.refusedAt && Date.now() - lastActivity(o) > 3 * 3600e3) return false;
   if (!o.refusedAt) { await update(o.id, (x) => { if (x.refusedAt || x.status !== 'open') return false; x.refusedAt = nowISO(); }); return false; }
   if (o.refusedTold || Date.now() - Date.parse(o.refusedAt) < 3 * 60e3) return false;
-  const claimed = await update(o.id, (x) => { if (x.refusedTold || x.status !== 'open') return false; x.refusedTold = nowISO(); });
-  if (!claimed) return false;
+  // (update() gives the order back even when the change is declined: the claim is ours only when our own stamp is on it;
+  // two clocks in the same minute: one tells)
+  const stamp = nowISO() + '#' + crypto.randomBytes(3).toString('hex');
+  const claimed = await update(o.id, (x) => { if (x.refusedTold || x.status !== 'open') return false; x.refusedTold = stamp; });
+  if (!claimed || claimed.refusedTold !== stamp) return false;
   const what = String(o.title || '').replace(/^(Comandă online|Avans) · |^Comandă online: /, '');
   const lead = await checkoutLead(o, 'refused').catch((e) => ({ error: e.message }));
   if (lead && lead.error) console.error('pay refused lead:', lead.error);
@@ -827,10 +840,36 @@ async function probableScan(items) {
     const cands = orders.filter((o) => same(o.amount, sum) && Date.parse(o.request.at) <= at + 60e3 && at - Date.parse(o.request.at) < 3 * 3600e3 && at - lastActivity(o) < 60 * 60e3);
     if (cands.length !== 1 || cands[0].probable) continue;
     const o = cands[0];
-    if (await update(o.id, (x) => { if (x.probable || x.status !== 'open') return false; x.probable = { ref, at: new Date(at).toISOString(), seenAt: nowISO() }; })) { o.probable = { ref }; out.marked++; }
+    const mk = await update(o.id, (x) => { if (x.probable || x.status !== 'open') return false; x.probable = { ref, at: new Date(at).toISOString(), seenAt: nowISO() }; });
+    if (mk && mk.probable && mk.probable.ref === ref) { o.probable = { ref }; out.marked++; }
   }
   return out;
 }
+
+// an order the clock let go (expired / failed), opened again by her own tap (api/_lib/pay-winback.js: her saved checkout): open,
+// on the clock's list again (the sweep asks it every minute while she is on it), its old myPOS page left for link() to judge
+async function reopen(orderId, why) {
+  const stamp = nowISO();
+  const o = await update(orderId, (x) => {
+    if (!['expired', 'failed'].includes(x.status) || x.failWhy === 'double' || x.test) return false;
+    x.reopened = (x.reopened || []).concat({ at: stamp, from: x.status, why: clip(why, 40) }).slice(-5);
+    x.status = 'open'; delete x.failWhy; x.activityAt = stamp;
+  });
+  if (!o || o.status !== 'open') return o || null;
+  await openList((l) => l.filter((y) => y.id !== orderId).concat({ id: orderId, at: stamp, amount: o.amount }));
+  return o;
+}
+// a myPOS page that myPOS let expire: put aside (requestsOld), so link() makes a new one → the order, or null
+async function dropRequest(orderId) {
+  const o = await update(orderId, (x) => { if (x.status !== 'open' || !x.request || !x.request.code) return false; x.requestsOld = (x.requestsOld || []).concat(x.request).slice(-5); delete x.request; delete x.requestTried; });
+  return o && !o.request ? o : null;
+}
+// a gift given with a paid order (once) → the order when set now, else null
+async function setGift(orderId, gift) {
+  const o = await update(orderId, (x) => { if (x.gift || x.status !== 'paid') return false; x.gift = gift; });
+  return o && o.gift && o.gift.at === gift.at ? o : null;
+}
+const ringDesk = (o, title, text, look) => ring(o, title, text, false, look);
 
 // the payment references the old matchers took (the card's orders and checks, the booking links)
 async function claimedRefs() {
@@ -846,7 +885,9 @@ async function claimedRefs() {
 // a probable one without myPOS's word 90 minutes on (25.11: the word came after an hour): the owner hears it, to look in the
 // myPOS app; from then her lead is made as an unpaid order's, saying to look in myPOS first. → true when told now
 async function probableTold(o) {
-  if (!(await update(o.id, (x) => { if (!x.probable || x.probable.told || x.status !== 'open') return false; x.probable.told = nowISO(); }))) return false;
+  const stamp = nowISO() + '#' + crypto.randomBytes(3).toString('hex');
+  const c = await update(o.id, (x) => { if (!x.probable || x.probable.told || x.status !== 'open') return false; x.probable.told = stamp; });
+  if (!c || !c.probable || c.probable.told !== stamp) return false;
   await ring(o, 'PLATĂ ÎN MYPOS NECONFIRMATĂ', 'În myPOS a intrat la ' + hm(o.probable.at) + ' o plată online de ' + Math.round(o.amount) + ' lei care pare a comenzii ' + (o.title || o.id) + (o.name ? ' (' + o.name + ')' : '') + ', dar myPOS nu a confirmat-o pentru comandă de 90 de minute. Uită-te în aplicația myPOS cine a plătit.', true, { tone: 'bad' });
   return true;
 }
@@ -977,4 +1018,4 @@ async function cardGo(cardId) {
   return { error: 'busy', page };
 }
 
-module.exports = { checkoutLeads, requestState, cardLink, cardTokenOk, cardGo, INDEX, touch, lastActivity, markRecovery, requestWords, later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
+module.exports = { reopen, dropRequest, setGift, ringDesk, checkoutLeads, requestState, cardLink, cardTokenOk, cardGo, INDEX, touch, lastActivity, markRecovery, requestWords, later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };

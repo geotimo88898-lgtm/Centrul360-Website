@@ -83,10 +83,52 @@ async function cardTap(req, res) {
   res.end(goTo(r.page || 'https://www.centrul360.com/card-sarbatori?plata=' + encodeURIComponent(id)));
 }
 
+// ---- GET ?w=<order>.<token>: her saved checkout, from the win-back message (api/_lib/pay-winback.js, George 27.11): her order
+// as she left it, plus the facial massage „Gratuit”, and one button; ?w=…&go=1 (that button): the order opened again when the
+// clock let it go, a working myPOS page, then myPOS. A link preview only reads a title.
+async function winbackTap(req, res) {
+  const W = require('./_lib/pay-winback');
+  const w = String(req.query.w || '').slice(0, 80), id = W.fromW(w);
+  if (!id) { page(res, 404, 'not_found'); return; }
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('X-Robots-Tag', 'noindex');
+  if (PREVIEW_UA.test(String(req.headers['user-agent'] || ''))) { res.end(top().replace('<title>Plata</title>', '<title>Comanda ta · Centrul360</title><meta property="og:title" content="Comanda ta e salvată · Centrul360"><meta property="og:description" content="Plus un masaj facial cadou.">') + '</body></html>'); return; }
+  const ip = String(req.headers['x-forwarded-for'] || req.headers['cf-connecting-ip'] || '').split(',')[0].trim() || 'x';
+  const now = Date.now(), mine = (tries.get(ip) || []).filter((x) => now - x < 10 * 60e3);
+  if (mine.length >= 30) { page(res, 429, 'too_many'); return; }
+  tries.set(ip, mine.concat(now));
+  const { data: o } = await P.readOrder(id);
+  if (!o) { page(res, 404, 'not_found'); return; }
+  if (o.status === 'paid') { page(res, 200, 'already_paid'); return; }
+  if (!req.query.go) {
+    let c;
+    try { c = await W.checkoutOf(o); } catch (e) { console.error('pay-go winback page:', e.message); c = null; }
+    if (!c) { page(res, 500, 'failed'); return; }
+    res.end(W.pageHtml(c, w, o.name));
+    P.later(P.trace(id, o.key, 'winback', 'page'));
+    return;
+  }
+  res.write(top() + WAIT);
+  const failed = (code, extra) => { res.end('<style>#w{display:none}</style>' + failHtml(code, extra) + '</body></html>'); };
+  try {
+    const r = await W.go(id);
+    if (r.ok && okUrl(r.url)) { res.end(goTo(r.url)); P.later(P.trace(id, o.key, 'winback', 'go')); return; }
+    // a card no longer to be had (sold out, the offer closed): the card's own word; its other trouble: its own page
+    if (o.kind === 'card' && CARD_SAY[r.error]) { res.end(cardPage(res, r.error)); return; }
+    if (o.kind === 'card' && r.page && okUrl(r.page)) { res.end(goTo(r.page)); return; }
+    const fb = r.error && !['not_found', 'already_paid', 'not_open'].includes(r.error) ? await P.cardFallback(id, o.key) : null;
+    if (fb) { res.end(goTo(fb)); return; }
+    failed(r.error || 'failed', r.status ? 'Cod myPOS: ' + r.status : '');
+    P.later(P.trace(id, o.key, 'winback-fail', r.error || 'failed'));
+  } catch (e) { console.error('pay-go winback:', e.message); failed('failed'); }
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (!ourOrigin(String(req.headers.origin || ''))) { page(res, 403, 'forbidden'); return; }
   if (req.method === 'GET' && req.query && req.query.c) { await cardTap(req, res); return; }
+  if (req.method === 'GET' && req.query && req.query.w) { await winbackTap(req, res); return; }
   if (req.method !== 'POST') { page(res, 405, 'not_found'); return; }
   let b = req.body || {};
   if (typeof b === 'string') { try { b = /^\s*\{/.test(b) ? JSON.parse(b) : Object.fromEntries(new URLSearchParams(b)); } catch (e) { b = {}; } }

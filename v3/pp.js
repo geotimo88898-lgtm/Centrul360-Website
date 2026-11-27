@@ -23,7 +23,7 @@
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var lei = function (n) { return Math.round(Number(n) || 0).toLocaleString('ro-RO') + ' lei'; };
   var EPI = CFG.epi || null;
-  var END = Date.parse('2026-11-29T21:59:59.000Z'), offset = 0;
+  var END = Date.parse('2026-11-27T21:59:59.000Z'), offset = 0;
   var S = { zone: (CFG.zones && CFG.zones[0]) || '', key: 'full-body', g: 'f', n: 1, pct: CFG.pct || 50, inCart: {} };
   var CAT = null; // the server's products by id
   var ALLZ = 'Full Body'; // the twin <id>-toate (the owner, 25.11: „Full Body”, not „Toate zonele”)
