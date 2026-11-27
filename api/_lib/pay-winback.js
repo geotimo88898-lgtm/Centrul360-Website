@@ -245,6 +245,11 @@ async function go(id) {
   let { data: o } = await P.readOrder(id);
   if (!o) return { error: 'not_found' };
   if (o.status === 'paid') return { error: 'already_paid' };
+  // a card: the card's own one-tap way (its stock, its end, its order made again or the open one: api/_lib/pay.js cardGo)
+  if (o.kind === 'card' && /^[0-9a-f-]{36}$/.test(String(o.ref || ''))) {
+    const r = await P.cardGo(String(o.ref)).catch((e) => ({ error: 'failed', message: e.message }));
+    return r && r.url ? { ok: true, url: r.url } : { error: (r && r.error) || 'failed', page: r && r.page };
+  }
   if (o.status !== 'open') { const r = await P.reopen(o.id, 'winback'); if (!r || r.status !== 'open') return { error: 'not_open' }; o = r; }
   if (o.request && o.request.code) {
     const st = await P.requestState(o.id).catch(() => null);

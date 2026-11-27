@@ -114,6 +114,9 @@ async function winbackTap(req, res) {
   try {
     const r = await W.go(id);
     if (r.ok && okUrl(r.url)) { res.end(goTo(r.url)); P.later(P.trace(id, o.key, 'winback', 'go')); return; }
+    // a card no longer to be had (sold out, the offer closed): the card's own word; its other trouble: its own page
+    if (o.kind === 'card' && CARD_SAY[r.error]) { res.end(cardPage(res, r.error)); return; }
+    if (o.kind === 'card' && r.page && okUrl(r.page)) { res.end(goTo(r.page)); return; }
     const fb = r.error && !['not_found', 'already_paid', 'not_open'].includes(r.error) ? await P.cardFallback(id, o.key) : null;
     if (fb) { res.end(goTo(fb)); return; }
     failed(r.error || 'failed', r.status ? 'Cod myPOS: ' + r.status : '');
