@@ -1,0 +1,59 @@
+/* Centrul360, what the preview takes from v3 onto the current design (the owner, 27.11: „ce putem prelua sunt animațiile
+   când deschizi meniul, coșul... și mărimea cardurilor, dar pe designul actual”). Only the /v2/ preview loads this file
+   (v2/build.py); the live pages get it when the owner says yes.
+   1. The menu opens the way v3's does: one circle grows from the button and uncovers the whole menu at once (nothing fades in
+      after it), slow at its start and at its end; it closes back into the button.
+   2. The offers' cards have v3's size: the photo as wide as the card and taller (4:5), bigger words, the button as wide as the
+      card, a wider grid on a computer. The card itself stays the current one: dark, the photo fading into it, the two reasons,
+      the rose-gold button.
+   3. One bar at the bottom: the cart's bar takes the dock's place when something goes into the cart.
+   The cart itself (opening, its steps, adding and taking out) is the same code in both. */
+
+/* ---- 1. the menu ---- */
+.menu{ -webkit-clip-path:circle(0 at var(--ox,calc(100% - 34px)) var(--oy,38px)); clip-path:circle(0 at var(--ox,calc(100% - 34px)) var(--oy,38px));
+  transition:clip-path .7s cubic-bezier(.65,0,.35,1), -webkit-clip-path .7s cubic-bezier(.65,0,.35,1), visibility 0s linear .7s; }
+.menu.open{ -webkit-clip-path:circle(150% at var(--ox,calc(100% - 34px)) var(--oy,38px)); clip-path:circle(150% at var(--ox,calc(100% - 34px)) var(--oy,38px));
+  transition:clip-path .8s cubic-bezier(.65,0,.35,1), -webkit-clip-path .8s cubic-bezier(.65,0,.35,1), visibility 0s; }
+.menu .mg a,.menu .mg .eye,.menu .wrap > .btn,.menu .hx-mp > a,
+.menu.open .mg a,.menu.open .mg .eye,.menu.open .wrap > .btn,.menu.open .hx-mp > a,.menu.open .hx-mp > a + a{
+  opacity:1; transform:none; transition:color .3s, transform .5s var(--e); transition-delay:0s; }
+@media (prefers-reduced-motion:reduce){
+  .menu,.menu.open{ -webkit-clip-path:none; clip-path:none; opacity:0; transition:opacity .2s, visibility 0s linear .2s; }
+  .menu.open{ opacity:1; transition:opacity .2s; }
+}
+
+/* ---- 2. the offers' cards ---- */
+.bfo-g.tiles{ gap:18px 14px; }
+.bft > .pic{ width:100%; height:auto; aspect-ratio:4 / 5; margin:0; }
+.bft-b{ margin-top:-38px; padding:0 14px 16px; }
+.bft h3{ font-size:18px; line-height:1.2; }
+.bft-l{ margin-top:8px; gap:5px; }
+.bft-l li{ font-size:14px; }
+.bft .pr{ padding-top:12px; }
+.bft .pr b{ font-size:22px; }
+.bft .pr s{ font-size:13px; }
+.bft .btn.book,.bft .pr + .btn.book{ height:46px; margin-top:12px; font-size:15px; }
+.bft .btn.book svg{ width:15px; height:15px; }
+/* a category with one treatment keeps its row: the photo on the left, as tall as the card */
+.bfo-g.tiles > .bft:only-of-type > .pic{ width:auto; height:auto; aspect-ratio:auto; }
+.bfo-g.tiles > .bft:only-of-type .bft-b{ margin:0; }
+@media (max-width:359px){ .bft h3{ font-size:16px; } .bft-l li{ font-size:13px; } .bft .pr b{ font-size:19px; } .bft .btn.book{ height:42px; font-size:14px; } .bft-b{ padding:0 10px 12px; } }
+@media (min-width:700px){
+  .bfo-g.tiles{ gap:24px 20px; }
+  .bft-b{ padding:0 16px 18px; }
+  .bft h3{ font-size:19px; }
+  .bft-l li{ font-size:14.5px; }
+  .bft .pr b{ font-size:24px; }
+}
+@media (min-width:1100px){
+  .bfo > .wrap{ width:min(1240px, calc(100% - 40px)); }
+  .bfo-g.tiles{ gap:28px 24px; }
+  .bft h3{ font-size:22px; }
+  .bft-l li{ font-size:15px; }
+}
+
+/* ---- 3. one bar at the bottom (v3): when something goes into the cart, the page's dock slides down out of the way and the
+   cart's bar comes up in its place; with the cart empty again they swap back ---- */
+@media (max-width:640px){ body:has(.sh-bar.on) .dock.in{ transform:translateY(170%); pointer-events:none; } }
+@media (min-width:641px) and (max-width:920px){ body:has(.sh-bar.on) .dock.in{ transform:translate(-50%,170%); pointer-events:none; } }
+@media (max-width:920px){ body:has(.dock.in) .sh-bar{ bottom:calc(12px + env(safe-area-inset-bottom)); } }

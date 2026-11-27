@@ -99,6 +99,11 @@ def build(name):
     if BASE == '/v2/': out = re.sub(r'<!--live-->.*?<!--/live-->', '', out, flags=re.S)
     else: out = out.replace('<!--live-->', '').replace('<!--/live-->', '')
     out = late(out) if SHOP_MARK.search(body) else LATE.sub(lambda m: m.group(1), out)
+    # what the preview tries before the live site (the owner, 27.11: v3's menu motion and v3's card size, on this design): only
+    # the /v2/ pages load it; the swap (base /) leaves it out until the owner says yes
+    if BASE == '/v2/':
+        last = list(re.finditer(r'<link rel="stylesheet" href="[^"]+">', out))[-1]   # after every other style, the shop's included
+        out = out[:last.end()] + '\n<link rel="stylesheet" href="/v2/m3.css">' + out[last.end():]
     if '—' in out or '–' in out: sys.exit(name + ': a long dash slipped in')
     os.makedirs(OUT, exist_ok=True)
     open(os.path.join(OUT, path + '.html'), 'w', encoding='utf-8').write(out)
