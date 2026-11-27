@@ -574,6 +574,13 @@ const BF_SITE = [
  }
 ];
 const JOBS = [
+  // 27.11 ~10:05, George: „prelungim până duminică”: -50% on the site until Sunday 29.11 23:59 (api/_lib/shop.js BF.end). The two
+  // site campaigns speak of Black Friday -50%: they stop with the offer, at the hourly run after Sunday 23:00 (Romania), never
+  // before (notBefore), so no ad promises -50% once the site shows the usual price
+  { id: 'bf-site-stop-2026-11-29', act: 'act_4502494523405059', notBefore: '2026-11-29T21:00:00Z', why: 'Black Friday pe site se termină duminică la 23:59', actions: [
+    { campaignId: '120252119339640103', name: 'C360 · TM · Black Friday · site', status: 'PAUSED', why: 'oferta -50% se termină duminică 23:59' },
+    { campaignId: '120252120121800103', name: 'C360 · AR · Black Friday · site', status: 'PAUSED', why: 'oferta -50% se termină duminică 23:59' },
+  ] },
   // 26.11 ~12:30, George: „campaniile cu cel mai mare ROAS, HIFU gușă / Liposonix, rulează?”: by ROAS since 16.10 (Admin →
   // Clasament), the two Liposonix Timișoara with sales back on at their 50 lei a day: stai întinsă v2 (its ad, paused 25.11 by
   // weak-off; a 2.000 lei client came from it: ROAS 21,8) and fără efort (2 clients, 1.770 lei, ROAS 12,2)
@@ -1427,7 +1434,8 @@ async function run() {
   // a read that fails throws: nothing is applied and nothing overwritten this hour (a doc read as empty would apply
   // every job again, on an account that is already as the owners want it)
   const doc = Object.assign({ done: {}, log: [] }, (await readJSON(KEY, {})) || {});
-  const todo = JOBS.filter((j) => !doc.done[j.id]);
+  // (a job with notBefore waits for that moment: e.g. an offer's campaigns stopped when the offer ends)
+  const todo = JOBS.filter((j) => !doc.done[j.id] && !(j.notBefore && Date.now() < Date.parse(j.notBefore)));
   if (!todo.length) return { skipped: 'nothing' };
   // one run at a time: two clocks landing together (GitHub's late run and Vercel's cron) would apply a job twice
   if (doc.running && Date.now() - Date.parse(doc.running) < 5 * 60e3) return { skipped: 'running' };
