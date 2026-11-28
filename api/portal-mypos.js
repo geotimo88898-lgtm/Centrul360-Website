@@ -33,7 +33,8 @@ async function checkout() {
   const c = IPC.adminOf(await IPC.load(store));
   const open = await readJSON('data/pay-open.json', []);
   const pv = await require('./_lib/pay').provider();
-  return Object.assign(c, { waiting: (open || []).length, provider: pv ? pv.name : '', requests: RQ.adminOf(await RQ.active(store)), requestsError: ((await RQ.load(store)) || {}).error || '' });
+  // provider: the way being set up or in use (the online store waiting for its test counts); site: the one the site pays with now
+  return Object.assign(c, { waiting: (open || []).length, provider: pv ? (pv.next || pv).name : '', site: pv ? pv.name : '', requests: RQ.adminOf(await RQ.active(store)), requestsError: ((await RQ.load(store)) || {}).error || '' });
 }
 
 const CITIES = ['Timișoara', 'Arad'];

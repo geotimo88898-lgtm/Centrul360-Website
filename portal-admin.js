@@ -1739,7 +1739,7 @@
     const err = co && co.requestsError;
     const st = !c.saved ? ['is-wait', 'clock', 'Fără chei. Cu ele, plata online merge de acum, pe pagina myPOS, deschisă într-o filă nouă.']
       : err ? ['is-wait', 'alert', 'Oprită: ' + (RQ_ERR[err] || err) + ' Pune cheile din nou mai jos.']
-      : co && co.provider === 'embedded' ? ['is-ok', 'checkCircle', 'Salvată, de rezervă: acum plătește prin magazinul online (în pagină).']
+      : co && co.provider === 'embedded' ? ['is-ok', 'checkCircle', co.site === 'requests' ? 'Pornită pe site până pornești magazinul online (după testul lui de 1 leu).' : 'Salvată, de rezervă: acum plătește prin magazinul online (în pagină).']
       : c.demo ? ['is-wait', 'clock', 'Cont demo myPOS: merge doar pe previzualizare (/v2).']
       : c.live ? ['is-ok', 'checkCircle', 'Pornită pe site · testul de 1 leu a trecut ' + mpWhen(c.testPassedAt)]
       : c.testPassedAt ? ['is-ok', 'checkCircle', 'Testul de 1 leu a trecut. Merge pe previzualizare; pe site o pornești de aici.']

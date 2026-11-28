@@ -40,9 +40,14 @@ async function provider() {
 }
 async function provider1() {
   const [c, r] = await Promise.all([IPC.load(S), RQ.active(S)]);
-  if (IPC.ready(c) && !c.error) return { name: 'embedded', c, sandbox: !!c.sandbox, live: !!c.live && !c.sandbox };
-  if (r && !r.error) return { name: 'requests', c: r, sandbox: !!r.demo, live: !!r.live && !r.demo };
-  return null;
+  const em = IPC.ready(c) && !c.error ? { name: 'embedded', c, sandbox: !!c.sandbox, live: !!c.live && !c.sandbox } : null;
+  const rq = r && !r.error ? { name: 'requests', c: r, sandbox: !!r.demo, live: !!r.live && !r.demo } : null;
+  // the online store's form pays as soon as it is on for the site. While its keys are new (saved, before its 1 leu test and
+  // its switch on) the site keeps the way that is on (28.11: in between, the site said „Plata online nu e pornită”), and the
+  // store waits as `next`: its 1 leu test is made on it and the admin shows it as the way being set up
+  if (em && em.live) return em;
+  if (rq && rq.live) return em ? Object.assign({}, rq, { next: em }) : rq;
+  return em || rq || null;
 }
 // a refusal of the Partners keys stops that way at once (myPOS locks the clinic's keys after three refused sessions)
 async function rqFail(e) {
@@ -381,7 +386,9 @@ async function createOrder({ kind, ref, input, host, track }) {
   if (!K) return { error: 'bad_kind' };
   ref = clip(ref, 120);
   if (!ref) return { error: 'missing_ref' };
-  const [pv, q] = await Promise.all([provider(), K.quote({ ref, input: input || {} })]);
+  let [pv, q] = await Promise.all([provider(), K.quote({ ref, input: input || {} })]);
+  // the admin's 1 leu test runs on the way being set up (the online store, before it is on for the site)
+  if (kind === 'test' && pv && pv.next) pv = pv.next;
   if (!pv) return { error: 'off' };
   const c = pv.c;
   if (!q || q.error) return { error: (q && q.error) || 'not_found' };
