@@ -10,7 +10,7 @@ const B = require('./booking');
 const W = require('./pay-winback');
 
 const KIND = { shop: 'Coș online', hold: 'Coș cu ora aleasă', treatment: 'Pagina tratamentului', offer: 'Ofertă', booking: 'Programare', card: 'Card de Sărbători', custom: 'Link de plată' };
-const STATE = { paid: 'Plătită', checking: 'De verificat în myPOS', refused: 'Plata nu a trecut', open: 'În curs', unfinished: 'Neterminată', later: 'A plătit altă comandă', clinic: 'Plătește la clinică', double: 'Plată dublă oprită' };
+const STATE = { paid: 'Plătită', partial: 'Plătită parțial', checking: 'De verificat în myPOS', refused: 'Plata nu a trecut', open: 'În curs', unfinished: 'Neterminată', later: 'A plătit altă comandă', clinic: 'Plătește la clinică', double: 'Plată dublă oprită' };
 const p9 = (p) => String(p || '').replace(/\D/g, '').slice(-9);
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 const dayRO = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
@@ -32,6 +32,8 @@ function stateOf(o, laterPaid) {
   if (o.status === 'paid') return 'paid';
   if (o.failWhy === 'clinic') return 'clinic';
   if (o.failWhy === 'double') return 'double';
+  // a split order (over 990 lei, paid in parts, 28.11) with a part paid and the rest not: money came in, never „unpaid”
+  if (Number(o.partsPaid) > 0) return 'partial';
   if (laterPaid) return 'later';
   if (o.status === 'open' && o.probable) return 'checking';
   if (o.refusedAt) return 'refused';
@@ -57,12 +59,13 @@ function rowOf(o, ctx) {
   const state = stateOf(o, laterPaid);
   const msgs = k ? ctx.sent.filter((x) => x.p9 === k) : [];
   const last = msgs[msgs.length - 1] || null;
-  const canMsg = !['paid', 'clinic', 'double', 'later', 'checking'].includes(state) && k.length === 9 && k !== '700000000' && W.sentDay({ sent: msgs }, o.phone) !== dayRO(Date.now());
+  const canMsg = !['paid', 'partial', 'clinic', 'double', 'later', 'checking'].includes(state) && k.length === 9 && k !== '700000000' && W.sentDay({ sent: msgs }, o.phone) !== dayRO(Date.now());
   return {
     id: o.id, at: o.createdAt, kind: o.kind, kindLabel: KIND[o.kind] || o.kind, title: clean(o.title), amount: r2(o.amount), full: r2(o.full || o.amount), city: o.city || '',
     state, stateLabel: STATE[state], paidAt: o.paidAt || '', name: o.name || '', phone: o.phone || '', src: sourceOf(o).from,
     tries: k ? (ctx.byPhone.get(k) || 0) : 1, msg: last ? { at: last.at, by: last.by || 'toate' } : null, gift: o.gift ? o.gift.name : '', canMsg, lead: o.leadId || '',
     deposit: !!(o.bonusText && /avans/i.test(o.bonusText)) || /^Avans/i.test(String(o.title || '')),
+    parts: Array.isArray(o.parts) && o.parts.length ? { count: o.parts.length, paid: Number(o.partsPaid) || 0, paidLei: r2(o.parts.filter((x) => x.paidAt).reduce((t, x) => t + Number(x.amount), 0)) } : null,
   };
 }
 
@@ -84,13 +87,15 @@ async function list(opts) {
   const ctx = await ctxOf(orders);
   const rows = orders.map((o) => rowOf(o, ctx));
   const sum = (f) => r2(rows.filter(f).reduce((s, r) => s + r.amount, 0));
-  const lost = (r) => ['unfinished', 'refused'].includes(r.state);
+  // a sum paid in parts and left halfway (28.11): what came in counts as paid online, what is left as unfinished
+  const lost = (r) => ['unfinished', 'refused', 'partial'].includes(r.state);
+  const inLei = (r) => (r.state === 'partial' && r.parts ? r.parts.paidLei : 0), leftLei = (r) => r2(r.amount - inLei(r));
   const lostPhones = new Set(rows.filter(lost).map((r) => p9(r.phone)).filter(Boolean));
   return {
     days, at: new Date().toISOString(), rows,
     totals: {
-      paid: rows.filter((r) => r.state === 'paid').length, paidLei: sum((r) => r.state === 'paid'),
-      lost: rows.filter(lost).length, lostLei: sum(lost), lostPeople: lostPhones.size,
+      paid: rows.filter((r) => r.state === 'paid').length, paidLei: r2(sum((r) => r.state === 'paid') + rows.reduce((s, r) => s + inLei(r), 0)),
+      lost: rows.filter(lost).length, lostLei: r2(rows.filter(lost).reduce((s, r) => s + leftLei(r), 0)), lostPeople: lostPhones.size,
       checking: rows.filter((r) => r.state === 'checking').length, open: rows.filter((r) => r.state === 'open').length,
       messaged: rows.filter((r) => lost(r) && r.msg).length, gifts: rows.filter((r) => r.gift).length,
       all: rows.length,

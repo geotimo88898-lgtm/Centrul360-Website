@@ -78,7 +78,7 @@ async function recipients(now) {
   const today = dayRO(now);
   const out = [], skipped = [];
   for (const [k, list] of byPhone) {
-    const unpaid = list.filter((o) => ['open', 'expired', 'failed'].includes(o.status) && o.failWhy !== 'double' && Number(o.amount) >= 1)
+    const unpaid = list.filter((o) => ['open', 'expired', 'failed'].includes(o.status) && o.failWhy !== 'double' && o.failWhy !== 'partial' && !(Number(o.partsPaid) > 0) && Number(o.amount) >= 1)
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
     if (!unpaid.length) continue;
     const o = unpaid[0];
@@ -310,6 +310,8 @@ async function sendOne(orderId, opts) {
   if (o.status === 'paid') return { error: 'already_paid' };
   // money of her sum came into myPOS right after her try: most likely paid, never told it was not
   if (o.probable) return { error: 'checking' };
+  // a split order with a part paid: the desk calls her for the rest, no „you did not pay” message
+  if (Number(o.partsPaid) > 0 || o.failWhy === 'partial') return { error: 'partial' };
   const k = p9(o.phone);
   if (!k || k.length < 9 || k === '700000000') return { error: 'no_phone' };
   if (quiet(now)) return { error: 'quiet_hours' };

@@ -346,6 +346,9 @@ const L = [
   ['po5', 'Elena Dumitrescu', '0722000905', 'open', 'shop', 'Comandă online: 40K Slim Abdomen', 160, 320, 'Timișoara', 10, {}],
   ['po6', 'Roxana Stoica', '0722000906', 'expired', 'shop', 'Comandă online: Red Sculpt Brațe', 300, 600, 'Timișoara', 1500, { failWhy: 'clinic' }],
   ['po7', 'Diana Georgescu', '0722000907', 'expired', 'offer', 'Ofertă: Transformare 360 în 90 de zile, Abdomen inferior', 2850, 5700, 'Timișoara', 2900, {}],
+  // over 990 lei, paid in parts (28.11): the first of three paid, the rest not
+  ['po8', 'Alexandra-Ioana Constantinescu-Bărbulescu', '0722000908', 'expired', 'shop', 'Comandă online: HIFU Full Face, Red Sculpt Abdomen inferior, 40K Slim Coapse exterior', 2120, 4240, 'Arad', 200,
+    { failWhy: 'partial', partsPaid: 1, parts: [{ n: 1, amount: 707, paidAt: iso(180) }, { n: 2, amount: 707 }, { n: 3, amount: 706 }] }],
 ];
 const idx = [], open = [];
 L.forEach(([k, name, phone, status, kind, title, amount, full, city, ago, more]) => {

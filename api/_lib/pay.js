@@ -96,7 +96,36 @@ const validId = (id) => /^C360-[a-z0-9]{6,30}$/.test(String(id || ''));
 // myPOS takes an order id once: the card form pays the order under its own id, Apple Pay / Google Pay under id + '-w' (their
 // session reserves the id it is made with). Either way it is the same order.
 const WALLET = '-w';
-const baseOf = (id) => String(id || '').replace(/-w$/, '');
+const baseOf = (id) => String(id || '').replace(/-(w|t\d{1,2})$/, '');
+// A sum above PART_MAX is paid now, online, in parts (George, 28.11: „la plata în myPOS vreau totul acum, 1000+”): myPOS takes
+// no single online payment above ~1.000 lei on this account (every paid one ≤ 990 lei, every one above refused on its page),
+// so the order's sum is split in equal parts of at most PART_MAX lei (whole lei, the first ones a leu more, the bani on the
+// last), paid one after another; each part its own payment request (its booking text <order>-t<n>), made when she opens it.
+// The order is paid when the last part is (its whole sum: the booking, the desk, the reports as before); a part paid and the
+// rest not is never lost (the desk hears it, the admin shows it). Only the Partners way (payment requests): the embedded
+// form has no such split.
+const PART_MAX = 990;
+const r2p = (v) => Math.round(Number(v) * 100) / 100;
+function splitParts(amount) {
+  const total = Math.round(Number(amount) * 100), n = Math.max(1, Math.ceil(total / (PART_MAX * 100)));
+  const whole = Math.floor(total / 100), cents = total - whole * 100, base = Math.floor(whole / n), extra = whole - base * n;
+  return Array.from({ length: n }, (_, i) => ({ n: i + 1, amount: r2p(base + (i < extra ? 1 : 0) + (i === n - 1 ? cents / 100 : 0)) }));
+}
+const splitOf = (o) => !!o && o.provider === 'requests' && Number(o.amount) > PART_MAX;
+// the order's parts (kept on it from its first page) and where she is: cur = the part to pay now (none: all paid)
+function partsOf(o) {
+  if (!splitOf(o)) return null;
+  const parts = Array.isArray(o.parts) && o.parts.length ? o.parts : splitParts(o.amount);
+  const i = parts.findIndex((x) => !x.paidAt), paid = parts.filter((x) => x.paidAt);
+  const paidLei = r2p(paid.reduce((t, x) => t + Number(x.amount), 0));
+  return { parts, i, cur: i < 0 ? null : parts[i], count: parts.length, paid: paid.length, paidLei, left: r2p(Number(o.amount) - paidLei) };
+}
+// what her page hears of the parts: the one to pay now (n of count, its sum), what is paid and what is left, every part's sum
+const partWord = (P) => (P ? { n: P.cur ? P.cur.n : P.count, count: P.count, amount: P.cur ? P.cur.amount : 0, paid: P.paid, paidLei: P.paidLei, left: P.left, amounts: P.parts.map((x) => x.amount) } : undefined);
+// the sum of the request asked now (its part's, else the order's)
+const partAmount = (o, n) => { const P = partsOf(o); const x = P && P.parts[n - 1]; return x ? Number(x.amount) : NaN; };
+// said to the desk with a part paid: what came in online and what is left
+const partNote = (o) => { const P = partsOf(o); return P && P.paid ? ' A plătit deja online ' + P.paidLei + ' lei din ' + Number(o.amount) + ' (' + P.paid + ' din ' + P.count + ' plăți), mai are ' + P.left + ' lei.' : ''; };
 const S = { readJSON, writeJSON };
 RQ.useStore(S); // myPOS's token and session kept in the store with their expiry (every instance)
 
@@ -375,7 +404,7 @@ async function createOrder({ kind, ref, input, host, track }) {
     kind === 'hold' || kind === 'shop' ? require('./booking-holds').patch(ref, (h) => { h.orderIds = (h.orderIds || []).concat(id).slice(-10); }) : null,
   ]);
   // the Partners way: the payment request is made once her name is known (action 'link'); its page opens in a new tab
-  if (pv.name === 'requests') return { ok: true, provider: 'requests', orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, bonus: o.bonus, bonusText: o.bonusText, title: o.title, sandbox: pv.sandbox };
+  if (pv.name === 'requests') return { ok: true, provider: 'requests', orderId: id, key: o.key, amount, full: o.full, bonusPct: o.bonusPct, bonus: o.bonus, bonusText: o.bonusText, title: o.title, sandbox: pv.sandbox, ...(splitOf(o) ? { parts: splitParts(amount).map((x) => x.amount) } : {}) };
   // the wallets' session (Apple Pay / Google Pay): signed, the sum fixed here. Without it the card form still works.
   let session = { token: '', expires: '' };
   try { session = await IPC.sessionCreate(c, { orderId: id + WALLET, amount, title: o.title }); } catch (e) { console.error('pay session:', e.code, e.message); }
@@ -471,6 +500,43 @@ async function runHandler(orderId) {
   }
 }
 
+// one part of a split order paid (its request: Paid, for its part's sum): kept on the order, its money on the paid list (the
+// card's own matching and the „probable” scan never take it for something else), the next part's page made when she opens it.
+// The last part pays the order, for its whole sum (markPaid). → { last, order } | { none }
+async function partPaid(orderId, st) {
+  let mine = false, last = false;
+  const o = await update(orderId, (x) => {
+    if (x.status !== 'open' || !x.request || Number(x.request.part) !== Number(st.part)) return false;
+    const P = partsOf(x);
+    if (!P) return false;
+    x.parts = P.parts;
+    const p = x.parts[st.part - 1];
+    if (!p || p.paidAt) return false;
+    Object.assign(p, { paidAt: nowISO(), ref: clip(st.ref, 80), code: p.code || x.request.code });
+    x.partsPaid = x.parts.filter((q) => q.paidAt).length;
+    last = x.partsPaid === x.parts.length;
+    // the next part gets its own page when she opens it (the last keeps its request: markPaid notes it)
+    if (!last) { delete x.request; delete x.requestTried; delete x.refusedAt; delete x.refusedTold; }
+    x.activityAt = nowISO();
+    mine = true;
+  });
+  if (!mine) {
+    const P = partsOf(o);
+    return P && !P.cur ? { last: true, order: o } : { none: true, order: o };
+  }
+  // every part's money on the paid list under its own sum (the last one too: the order's entry markPaid adds carries the whole
+  // sum, which no single payment in myPOS has), so the sum matchers never take a part for another order's payment
+  const p = o.parts[st.part - 1];
+  await listEdit(PAID, (l) => l.concat({ id: orderId + '-t' + st.part, amount: Number(p.amount), at: p.paidAt, refs: [p.ref, p.code].filter(Boolean) }).slice(-300));
+  return { last, order: o };
+}
+// a request's word about a split order's part → the order's own word: a part paid and more left („part”), or the whole sum
+async function settlePart(orderId, st) {
+  const pp = await partPaid(orderId, st);
+  if (pp.last) return { st: Object.assign({}, st, { amount: Number(pp.order.amount), orderId }) };
+  return { part: partWord(partsOf(pp.order)) };
+}
+
 // she says the payment went through (the form's onSuccess): myPOS is asked (signed answer), never believed on her word
 async function check(orderId, key) {
   const { data: o } = await readOrder(orderId);
@@ -484,18 +550,22 @@ async function check(orderId, key) {
     if (o.provider === 'requests') { const r = await rqActive(); if (!r) return { paid: false, status: 'open' }; st = await askRequest(r, await recoverRequest(r, o)); }
     else { const c = await IPC.load(S); if (!IPC.ready(c)) return { paid: false, status: 'open' }; st = await askBoth(c, o); }
   } catch (e) { await rqFail(e); return { paid: false, status: 'open', error: e.code || 'mypos_failed' }; }
-  if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(orderId, st, 'status'); return { paid: !!r.ok, status: r.ok ? 'paid' : r.double ? 'double' : 'open', kind: o.kind }; }
+  if (st && st.status === 1 && fits(o, st)) {
+    if (st.part) { const sp = await settlePart(orderId, st); if (sp.part) return { paid: false, status: 'open', part: sp.part, partPaid: true }; st = sp.st; }
+    const r = await markPaid(orderId, st, 'status'); return { paid: !!r.ok, status: r.ok ? 'paid' : r.double ? 'double' : 'open', kind: o.kind };
+  }
   if (st && (st.status === 3 || st.status === 4) && baseOf(st.orderId) === o.id) return { paid: false, status: 'failed' };
   // the payment did not pass on myPOS's page (the bank, or a limit: only the myPOS app says which; she can try again there):
   // her page tells her, and what to do
-  if (st && st.raw === 'Failed') { later(refused(o)); return { paid: false, status: 'open', refused: true }; }
+  const part = partWord(partsOf(o));
+  if (st && st.raw === 'Failed') { later(refused(o)); return { paid: false, status: 'open', refused: true, part }; }
   // the money is in the account already, myPOS's word about the order not yet: her page says it is being confirmed
-  if (o.probable) return { paid: false, status: 'open', confirming: true };
-  return { paid: false, status: 'open' };
+  if (o.probable) return { paid: false, status: 'open', confirming: true, part };
+  return { paid: false, status: 'open', part };
 }
 // myPOS's answer about an order is about this order, for its sum, in lei (else it is not taken: a made-up answer of the test
 // environment, or a sum changed in the browser, which its notification reports and reverses)
-const fits = (o, st) => baseOf(st.orderId) === o.id && Math.abs(Number(st.amount) - Number(o.amount)) < 0.005 && String(st.currency).toUpperCase() === 'RON';
+const fits = (o, st) => baseOf(st.orderId) === o.id && Math.abs(Number(st.amount) - (st.part ? partAmount(o, st.part) : Number(o.amount))) < 0.005 && String(st.currency).toUpperCase() === 'RON';
 // the card's id first, then the wallets' one: the answer that is a payment of this order, else the card's answer
 async function askBoth(c, o) {
   const a = await IPC.paymentStatus(c, o.id);
@@ -566,19 +636,23 @@ async function link(orderId, key, pre) {
   if (o.provider !== 'requests') return { error: 'bad_provider' };
   if (o.status === 'paid') return { error: 'already_paid' };
   if (o.status !== 'open') return { error: 'not_open' };
-  if (o.request && o.request.code && o.request.url) return { ok: true, url: o.request.url };
+  if (o.request && o.request.code && o.request.url) return { ok: true, url: o.request.url, part: partWord(partsOf(o)) };
   if (['hold', 'shop', 'offer', 'treatment'].includes(o.kind) && !o.phone) return { error: 'missing_contact' };
   const r = await rqActive();
   if (!r || r.error) return { error: 'off' };
+  // a sum above PART_MAX: the request of the part to pay now (its own booking text and sum)
+  const P = partsOf(o);
+  if (P && !P.cur) return { error: 'already_paid' };
+  const bt = P ? o.id + '-t' + P.cur.n : o.id, due = P ? Number(P.cur.amount) : Number(o.amount);
   // one request per order, saved before its page is given out: a request made before for this order (its answer lost, a
   // second tap) is found by the order id in its booking text and used again; a new one only when there is none
   let req = null;
   try {
-    if (o.requestTried) req = (await RQ.findByOrder(r, o.id)).find((x) => !['Expired', 'Cancelled'].includes(x.status) && Math.abs(x.amount - o.amount) < 0.005) || null;
+    if (o.requestTried) req = (await RQ.findByOrder(r, bt)).find((x) => !['Expired', 'Cancelled'].includes(x.status) && Math.abs(x.amount - due) < 0.005) || null;
     if (!req) {
       // „tried” noted while myPOS makes it (a lost answer is then looked for by the order id, never made twice)
-      const tried = update(orderId, (x) => { x.requestTried = nowISO(); }, pre.etag ? pre : null).catch((e) => console.error('pay tried:', e.message));
-      try { req = await RQ.create(r, { orderId: o.id, amount: o.amount, title: o.title, clientName: o.name }); } finally { await tried; }
+      const tried = update(orderId, (x) => { x.requestTried = nowISO(); if (P && !x.parts) x.parts = P.parts; }, pre.etag ? pre : null).catch((e) => console.error('pay tried:', e.message));
+      try { req = await RQ.create(r, { orderId: bt, amount: due, title: P ? 'Plata ' + P.cur.n + ' din ' + P.count + ' · ' + o.title : o.title, clientName: o.name }); } finally { await tried; }
     }
   } catch (e) {
     console.error('pay link:', e.code, e.status, e.message);
@@ -586,9 +660,14 @@ async function link(orderId, key, pre) {
     later(Promise.all([rqFail(e), update(orderId, (x) => { x.linkError = { code: e.code || 'mypos_failed', status: e.status || 0, message: String(e.message || '').slice(0, 300), at: nowISO() }; })]));
     return { error: e.code || 'mypos_failed', status: e.status || 0, message: e.message || '' };
   }
-  const saved = await update(orderId, (x) => { delete x.linkError; if (x.request && x.request.code) return; x.request = { code: req.code, url: req.url, at: nowISO() }; });
+  const saved = await update(orderId, (x) => {
+    delete x.linkError;
+    if (x.request && x.request.code) return;
+    x.request = Object.assign({ code: req.code, url: req.url, at: nowISO() }, P ? { part: P.cur.n } : {});
+    if (P) { if (!x.parts) x.parts = P.parts; x.parts[P.cur.n - 1] = Object.assign({}, x.parts[P.cur.n - 1], { code: req.code, at: nowISO() }); }
+  });
   if (!saved || !saved.request || !saved.request.code || !saved.request.url) return { error: 'mypos_failed', message: 'cererea nu s-a putut salva' };
-  return { ok: true, url: saved.request.url };
+  return { ok: true, url: saved.request.url, part: partWord(partsOf(saved)) };
 }
 const rqActive = async () => { const pv = await provider(); return pv && pv.name === 'requests' ? pv.c : await RQ.active(S); };
 // a card whose myPOS page could not be made: the card's own PayLink (made by the owner in myPOS, one per card), only when
@@ -619,9 +698,12 @@ async function trace(orderId, key, step, code) {
 // an open order of the Partners way without a saved code (its request made, the answer lost): found again at myPOS
 async function recoverRequest(r, o) {
   if (o.request && o.request.code) return o;
-  const found = (await RQ.findByOrder(r, o.id)).find((x) => Math.abs(x.amount - o.amount) < 0.005) || null;
+  const P = partsOf(o);
+  if (P && !P.cur) return o;
+  const bt = P ? o.id + '-t' + P.cur.n : o.id, due = P ? Number(P.cur.amount) : Number(o.amount);
+  const found = (await RQ.findByOrder(r, bt)).find((x) => Math.abs(x.amount - due) < 0.005) || null;
   if (!found) return o;
-  const saved = await update(o.id, (x) => { if (x.request && x.request.code) return false; x.request = { code: found.code, url: found.url, at: nowISO(), recovered: true }; });
+  const saved = await update(o.id, (x) => { if (x.request && x.request.code) return false; x.request = Object.assign({ code: found.code, url: found.url, at: nowISO(), recovered: true }, P ? { part: P.cur.n } : {}); if (P && !x.parts) x.parts = P.parts; });
   return saved || o;
 }
 // what myPOS says of the order's payment request, as the embedded way's answer (status 1 paid, 3 failed, 4 gone)
@@ -629,7 +711,8 @@ async function askRequest(r, o) {
   if (!o.request || !o.request.code) return null;
   const st = await RQ.status(r, o.request.code);
   const map = { Paid: 1, Pending: 2, Seen: 2, Failed: 2, Expired: 4, Cancelled: 4 }; // a failed try can be tried again on the same page
-  return { orderId: st.bookingText === o.id ? o.id : st.bookingText, status: map[st.status] || 0, amount: st.amount, currency: st.currency, ref: o.request.code, method: 'request', at: nowISO(), raw: st.status };
+  const part = Number(o.request.part) || 0, bt = part ? o.id + '-t' + part : o.id;
+  return { orderId: st.bookingText === bt ? o.id : st.bookingText, status: map[st.status] || 0, amount: st.amount, currency: st.currency, ref: o.request.code, method: 'request', at: nowISO(), raw: st.status, part };
 }
 
 // what myPOS says now of one order's payment request (read only; the diagnostics): { status, amount, currency } or null
@@ -647,6 +730,7 @@ async function toClinic(orderId, key) {
   const { data: o } = await readOrder(orderId);
   if (!o || !safeEq(o.key, key) || !['booking', 'hold'].includes(o.kind)) return { error: 'not_found' };
   if (o.status === 'paid') return { error: 'paid' };
+  if (Number(o.partsPaid) > 0) return { error: 'paid' }; // a part of it paid online already: the desk settles the rest
   if (o.kind === 'hold') {
     // nothing was booked yet: the held hour is let go (the slip books it at the clinic with her name and phone)
     await require('./booking-holds').release(o.ref);
@@ -697,6 +781,7 @@ async function sweep(opts) {
     if (!o || o.status !== 'open') { if (!fresh) { await openList((l) => l.filter((x) => x.id !== it.id)); out.gone++; } continue; }
     if (fresh && o.provider === 'requests' && !(o.request && o.request.code)) continue;
     if (!fresh && o.provider === 'requests' && !(o.request && o.request.code)) {
+      if (age > 2 * 3600e3 && partsOf(o) && partsOf(o).paid) { if (await partialEnd(o)) out.partial = (out.partial || 0) + 1; await openList((l) => l.filter((x) => x.id !== it.id)); continue; }
       if (age > 2 * 3600e3) { await update(o.id, (x) => { if (x.status !== 'open' || (x.request && x.request.code)) return false; x.status = 'expired'; x.failWhy = 'no_request'; }); await openList((l) => l.filter((x) => x.id !== it.id)); out.gone++; }
       continue;
     }
@@ -709,11 +794,15 @@ async function sweep(opts) {
       if (o.provider === 'requests') { if (!r || r.error) continue; st = await askRequest(r, fresh ? o : await recoverRequest(r, o)); }
       else { if (!IPC.ready(c)) continue; st = await askBoth(c, o); }
     } catch (e) { await rqFail(e); continue; }
-    if (st && st.status === 1 && fits(o, st)) { const r = await markPaid(o.id, st, fresh ? 'status-1min' : 'status'); if (r.ok) out.paid++; continue; }
+    if (st && st.status === 1 && fits(o, st)) {
+      if (st.part) { const sp = await settlePart(o.id, st); if (sp.part) { out.parts = (out.parts || 0) + 1; continue; } st = sp.st; }
+      const r = await markPaid(o.id, st, fresh ? 'status-1min' : 'status'); if (r.ok) out.paid++; continue;
+    }
     if ((st && st.raw === 'Failed') || (o.refusedAt && !o.refusedTold)) { if (await refused(o)) out.refused = (out.refused || 0) + 1; }
     if (o.probable && !o.probable.told && now - Date.parse(o.probable.seenAt) > 90 * 60e3) { if (await probableTold(o)) out.unconfirmed = (out.unconfirmed || 0) + 1; }
     if (fresh) continue;
     if (age > 48 * 3600e3 || (st && baseOf(st.orderId) === o.id && (st.status === 3 || st.status === 4) && age > 30 * 60e3)) {
+      if (partsOf(o) && partsOf(o).paid) { if (await partialEnd(o)) out.partial = (out.partial || 0) + 1; await openList((l) => l.filter((x) => x.id !== it.id)); out.gone++; continue; }
       await update(o.id, (x) => { if (x.status !== 'open') return false; x.status = st && st.status === 4 ? 'failed' : 'expired'; });
       await openList((l) => l.filter((x) => x.id !== it.id)); out.gone++;
     }
@@ -727,6 +816,20 @@ async function sweep(opts) {
     if (o && o.status === 'paid' && !o.handled && (await retryLock(o))) { await runHandler(id); out.retried++; }
   }
   return out;
+}
+
+// a split order with a part paid and the rest not, given up (no page for the next part 2 hours on, or 48 hours): the money
+// that came in is never lost: the order ends „partial” (the admin shows what came and what is left) and the desk and the
+// owner hear it once, to call her for the rest (online or at the clinic). → true when told now
+async function partialEnd(o) {
+  const P = partsOf(o);
+  if (!P || !P.paid) return false;
+  let mine = false;
+  await update(o.id, (x) => { if (x.status !== 'open') return false; x.status = 'expired'; x.failWhy = 'partial'; x.partialAt = nowISO(); mine = true; });
+  if (!mine) return false;
+  const what = String(o.title || '').replace(/^(Comandă online|Avans) · |^Comandă online: /, '');
+  await ring(o, 'PLATĂ ONLINE PE JUMĂTATE 💳', (o.name || 'O clientă') + ' a plătit pe site doar o parte din ' + what + ': ' + P.paidLei + ' lei din ' + Number(o.amount) + ' (' + P.paid + ' din ' + P.count + ' plăți). Mai are ' + P.left + ' lei. Sun-o pentru rest (online sau la clinică); comanda ' + o.id + '.' + (o.phone ? ' Telefon: ' + o.phone + '.' : ''));
+  return true;
 }
 
 // The site's orders started and not paid (the owner, 26.11: „în pipeline o secțiune cu site, acolo toate leadurile din site”):
@@ -768,7 +871,7 @@ async function checkoutLead(o, mode) {
       ? 'A încercat să plătească pe site ' + what + ', ' + sum + ', și plata nu a trecut' + (when ? '. Alesese ' + when + ' la ' + (cityOf(o.city) || '') : '') + '. De sunat acum: alt card, limita de plăți online din aplicația băncii (la sume mari) sau plata în clinică.'
       : toCheck
         ? 'În myPOS a intrat la ' + hm(o.probable.at) + ' o plată online de ' + sum + ', poate a ei, dar myPOS nu a confirmat-o pentru comanda ei de pe site (' + what + (when ? ', ' + when + ' la ' + (cityOf(o.city) || '') : '') + '). Uită-te în myPOS cine a plătit înainte să o suni: dacă e ea, nu-i cere încă o dată banii.'
-        : 'A început plata pe site și nu a plătit: ' + what + ', ' + sum + (when ? '. Alesese ' + when + ' la ' + (cityOf(o.city) || '') + ' (ora nu mai e ținută)' : '') + '. De sunat.',
+        : 'A început plata pe site și nu a plătit: ' + what + ', ' + sum + (when ? '. Alesese ' + when + ' la ' + (cityOf(o.city) || '') + ' (ora nu mai e ținută)' : '') + '.' + partNote(o) + ' De sunat.',
     authorLabel: refusedNow ? 'Site · plata nu a trecut' : toCheck ? 'Site · plată de verificat' : 'Site · plată neterminată', src: o.src && typeof o.src === 'object' ? o.src : null,
   }).catch((e) => ({ error: e.message }));
   if (!r || r.error || !r.lead) return { error: (r && r.error) || 'no_lead' };
@@ -794,7 +897,7 @@ async function refused(o) {
   const lead = await checkoutLead(o, 'refused').catch((e) => ({ error: e.message }));
   if (lead && lead.error) console.error('pay refused lead:', lead.error);
   const inPipe = !!(lead && lead.made) || !!o.leadId;
-  await ring(o, 'PLATA NU A TRECUT', (o.name || 'O clientă') + ' a încercat să plătească pe site ' + what + ' și plata nu a trecut (banca sau limita myPOS, motivul e în aplicația myPOS). Sun-o acum: alt card, limita de plăți online din aplicația băncii sau plata în clinică.' + (inPipe ? ' E în Pipeline, la Site.' : ''), false, inPipe ? { tone: 'bad', go: 'pipeline' } : { tone: 'bad' });
+  await ring(o, 'PLATA NU A TRECUT', (o.name || 'O clientă') + ' a încercat să plătească pe site ' + what + ' și plata nu a trecut (banca sau limita myPOS, motivul e în aplicația myPOS).' + partNote(o) + ' Sun-o acum: alt card, limita de plăți online din aplicația băncii sau plata în clinică.' + (inPipe ? ' E în Pipeline, la Site.' : ''), false, inPipe ? { tone: 'bad', go: 'pipeline' } : { tone: 'bad' });
   return true;
 }
 
@@ -811,7 +914,7 @@ const hm = (iso) => { try { return new Date(iso).toLocaleTimeString('ro-RO', { t
 async function probableScan(items) {
   const now = Date.now();
   const orders = [];
-  for (const it of items) { const { data: o } = await readOrder(it.id); if (o && o.status === 'open' && !o.test && o.provider === 'requests' && o.request && o.request.code) orders.push(o); }
+  for (const it of items) { const { data: o } = await readOrder(it.id); if (o && o.status === 'open' && !o.test && o.provider === 'requests' && o.request && o.request.code && !splitOf(o)) orders.push(o); }
   const waiting = orders.filter((o) => !o.probable);
   if (!waiting.length) return { orders: orders.length, scanned: false };
   const last = await readJSON(PROBE, {}).catch(() => ({}));
@@ -1018,4 +1121,4 @@ async function cardGo(cardId) {
   return { error: 'busy', page };
 }
 
-module.exports = { reopen, dropRequest, setGift, ringDesk, checkoutLeads, requestState, cardLink, cardTokenOk, cardGo, INDEX, touch, lastActivity, markRecovery, requestWords, later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };
+module.exports = { PART_MAX, splitParts, partsOf, reopen, dropRequest, setGift, ringDesk, checkoutLeads, requestState, cardLink, cardTokenOk, cardGo, INDEX, touch, lastActivity, markRecovery, requestWords, later, contactLink, cardFallback, trace, recoverRequest, bonusFor, bonusOfOffer, bonusOfTreatment, saveSettings, SETTINGS, isCheckoutPayment, link, provider, TEST, contact, baseOf, BONUS_PCT, bonusPrice, KINDS, registerKind, createOrder, markPaid, check, toClinic, sweep, status, treatment, priceList, readOrder, validId, runHandler };

@@ -204,10 +204,19 @@
         (way === 'embedded'
           ? '<div class="cp-box"><div class="cp-w" id="cpW' + n + '"></div><button type="button" class="cp-tap" data-cp-tap hidden aria-label="Scrie întâi numele și telefonul"></button></div><p class="cp-or" id="cpO' + n + '" hidden>sau cu cardul</p>' +
             '<div class="cp-box"><div class="cp-card" id="cpC' + n + '"><div class="cp-load"><div><i></i>Se încarcă formularul securizat…</div></div></div><button type="button" class="cp-tap" data-cp-tap aria-label="Scrie întâi numele și telefonul"' + (ask ? '' : ' hidden') + '></button></div>'
-          : '<button type="button" class="cp-btn" data-cp-pay>Plătesc ' + lei((order || view).amount) + '</button>') +
+          : '<button type="button" class="cp-btn" data-cp-pay>' + payLabel() + '</button><p class="cp-note" data-cp-parts' + (partsLine() ? '>' + partsLine() : ' hidden>') + '</p>') +
         '<p class="cp-safe">' + ICON.lock + (way === 'embedded' ? 'Plată securizată prin myPOS. Datele cardului nu ajung la noi.' : 'Pe pagina securizată myPOS completezi doar cardul. Emailul și telefonul de acolo nu sunt obligatorii.') + '</p>');
     }
-    const refreshSum = () => { const s = $('[data-cp-sum]'); if (s && order) s.innerHTML = sumInner(order); const b = $('[data-cp-pay]'); if (b && order) b.textContent = 'Plătesc ' + lei(order.amount); };
+    // a sum over 990 lei is paid in parts, one after another (28.11: myPOS takes at most ~1.000 lei in one online payment here)
+    const partsOfOrder = () => (order && Array.isArray(order.parts) && order.parts.length > 1 ? order.parts : null);
+    const payLabel = () => { const ps = partsOfOrder(); return ps ? 'Plătesc ' + lei(ps[0]) + ' (plata 1 din ' + ps.length + ')' : 'Plătesc ' + lei((order || view).amount); };
+    const partsLine = () => { const ps = partsOfOrder(); return ps ? 'Suma trece de 990 lei, așa că o plătești acum în ' + ps.length + ' plăți, una după alta: ' + ps.map(lei).join(' + ') + '. Totalul rămâne ' + lei(order.amount) + '.' : ''; };
+    const refreshSum = () => {
+      const s = $('[data-cp-sum]'); if (s && order) s.innerHTML = sumInner(order);
+      const b = $('[data-cp-pay]'); if (b && order) b.textContent = payLabel();
+      const l = $('[data-cp-parts]'); if (l) { l.textContent = partsLine(); l.hidden = !partsLine(); }
+    };
+    let part = null; // the server's word on the parts: { n, count, amount, paid, paidLei, left }
 
     // ---- the order, in the background
     async function makeOrder() {
@@ -305,6 +314,7 @@
         if (order && (order.kind === 'booking' || order.kind === 'hold')) post({ action: 'clinic', orderId: order.orderId, key: order.key }).then(leave, leave); else leave();
         return;
       }
+      if (b.hasAttribute('data-cp-next')) { e.preventDefault(); const inApp = IN_APP.test(navigator.userAgent || ''); link = null; linkP = null; note('tap', 'next'); go(inApp ? '_self' : '_blank'); return; }
       if (!b.hasAttribute('data-cp-pay') && !b.hasAttribute('data-cp-again')) return;
       e.preventDefault();
       if (b.hasAttribute('data-cp-pay') && !valid()) { needContact(); return; }
@@ -360,7 +370,8 @@
     // she pays in the myPOS tab; this one asks the server every few seconds (at once when she comes back)
     function waitPaid() {
       store.set('c360-pay-pending', { orderId: order.orderId, key: order.key, amount: order.amount, title: order.title, kind: order.kind || o.kind, at: Date.now() });
-      paint(stateHtml('wait', 'Plătește în fila myPOS', 'S-a deschis cu ' + lei(order.amount) + ' completat. Când ai plătit, revino aici: se actualizează singur.',
+      const pw = part && part.count > 1 && part.amount ? part : partsOfOrder() ? { n: 1, count: partsOfOrder().length, amount: partsOfOrder()[0] } : null;
+      paint(stateHtml('wait', pw ? 'Plătește în fila myPOS (' + pw.n + ' din ' + pw.count + ')' : 'Plătește în fila myPOS', 'S-a deschis cu ' + lei(pw ? pw.amount : order.amount) + ' completat. Când ai plătit, revino aici: se actualizează singur.',
         '<button type="button" class="cp-btn" data-cp-again>Deschide din nou plata</button>' + (o.onClinic ? '<button type="button" class="cp-ghost" data-cp-clinic>Plătesc în clinică</button>' : '')));
       const mine = ++polling, t0 = Date.now(), said = {};
       const tick = async () => {
@@ -369,6 +380,16 @@
         try { r = await post({ action: 'check', orderId: order.orderId, key: order.key }); } catch (e) { r = {}; }
         if (mine !== polling || done) return;
         if (r.paid) { paidNow(true); return; }
+        // one part paid, more to pay: the next part's button (its own myPOS page, made when she taps)
+        if (r.part) {
+          const was = part ? part.paid : 0;
+          part = r.part;
+          if (part.paid > was && part.paid < part.count) {
+            link = null; linkP = null; said.refused = false;
+            paint(stateHtml('ok', 'Plata ' + part.paid + ' din ' + part.count + ' a trecut', 'Au intrat ' + lei(part.paidLei) + '. Mai ai ' + lei(part.left) + ': plata ' + part.n + ' din ' + part.count + ', de ' + lei(part.amount) + '.',
+              '<button type="button" class="cp-btn" data-cp-next>Plătesc ' + lei(part.amount) + ' (' + part.n + ' din ' + part.count + ')</button>'));
+          }
+        }
         // the payment did not pass on myPOS's page (27.11): she hears it here, and what to do; the desk calls her too
         if (r.refused && !said.refused) {
           said.refused = true;
@@ -454,11 +475,19 @@
       if (stop) return;
       if (r.paid) { try { localStorage.removeItem('c360-pay-pending'); } catch (e) { /* private mode */ } say('ok', 'Plătit', (p.amount ? lei(p.amount) + ' · ' : '') + ((r.kind || p.kind) === 'card' ? 'Plata e confirmată 🎉 Cardul tău de Sărbători vine acum pe WhatsApp.' : 'Programarea e confirmată. Confirmarea vine și pe WhatsApp.')); return; }
       if (r.status && r.status !== 'open') { try { localStorage.removeItem('c360-pay-pending'); } catch (e) { /* private mode */ } if (q.get('plata')) say('bad', 'Plata nu a trecut', 'Banii nu au fost luați. Poți încerca din nou din programare.'); else shut(); return; }
+      // a sum paid in parts, one paid and more left (28.11): the next one opens from here, in this tab
+      if (r.part && r.part.paid > 0 && r.part.paid < r.part.count) {
+        show();
+        box.innerHTML = '<div class="cp-state"><div class="cp-ico">' + ICON.check + '</div><h3>Plata ' + r.part.paid + ' din ' + r.part.count + ' a trecut</h3><p>Au intrat ' + lei(r.part.paidLei) + '. Mai ai ' + lei(r.part.left) + ': plata ' + r.part.n + ' din ' + r.part.count + ', de ' + lei(r.part.amount) + '.</p><button type="button" class="cp-btn" data-cp-goon>Plătesc ' + lei(r.part.amount) + ' (' + r.part.n + ' din ' + r.part.count + ')</button></div>';
+        const b = box.querySelector('[data-cp-goon]');
+        if (b) b.addEventListener('click', () => { b.disabled = true; b.textContent = 'Se pregătește plata…'; post({ action: 'link', orderId: p.orderId, key: p.key }).then((x) => { if (x && x.url) { try { localStorage.setItem('c360-pay-pending', JSON.stringify(Object.assign({}, p, { at: Date.now() }))); } catch (e) { /* private mode */ } location.assign(x.url); } else { b.disabled = false; b.textContent = 'Încearcă din nou'; } }, () => { b.disabled = false; b.textContent = 'Încearcă din nou'; }); });
+        return;
+      }
       if (n < 20) setTimeout(() => check(n + 1), 3000);
     }, () => {});
     // shown only once there is something to say (a payment still waiting on her side shows nothing until it is paid)
     post({ action: 'check', orderId: p.orderId, key: p.key }).then((r) => {
-      if (!r.paid && !q.get('plata') && (!r.status || r.status === 'open')) { const t = setInterval(() => post({ action: 'check', orderId: p.orderId, key: p.key }).then((x) => { if (x.paid) { clearInterval(t); show(); check(0); } }, () => {}), 5000); setTimeout(() => clearInterval(t), 10 * 60e3); return; }
+      if (!r.paid && !q.get('plata') && (!r.status || r.status === 'open') && !(r.part && r.part.paid > 0 && r.part.paid < r.part.count)) { const t = setInterval(() => post({ action: 'check', orderId: p.orderId, key: p.key }).then((x) => { if (x.paid) { clearInterval(t); show(); check(0); } }, () => {}), 5000); setTimeout(() => clearInterval(t), 10 * 60e3); return; }
       show(); say('wait', 'Verificăm plata…', 'Durează câteva secunde.'); check(0);
     }, () => {});
     function show() { if (sheet.isConnected) return; document.body.appendChild(sheet); sheet.offsetWidth; sheet.classList.add('open'); document.documentElement.style.overflow = 'hidden'; }

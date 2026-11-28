@@ -13,7 +13,7 @@ const P = require('./_lib/pay');
 const SAY = {
   not_found: 'Comanda nu mai există.', already_paid: 'Comanda e deja plătită.', no_phone: 'Comanda nu are un telefon bun.',
   quiet_hours: 'Între 21:00 și 9:00 nu trimitem mesaje. Încearcă după 9:00.', sent_today: 'Telefonul ei a primit deja mesajul azi.',
-  paid_other: 'A plătit între timp altă comandă.', checking: 'Banii par intrați în myPOS pentru comanda ei: verifică întâi în myPOS.', mypos: 'myPOS nu a răspuns. Încearcă din nou.', send_failed: 'WhatsApp nu a trimis mesajul.',
+  paid_other: 'A plătit între timp altă comandă.', partial: 'A plătit deja o parte online: sun-o pentru rest.', checking: 'Banii par intrați în myPOS pentru comanda ei: verifică întâi în myPOS.', mypos: 'myPOS nu a răspuns. Încearcă din nou.', send_failed: 'WhatsApp nu a trimis mesajul.',
 };
 
 module.exports = async (req, res) => {

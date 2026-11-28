@@ -22,10 +22,10 @@
     if (d === y) return 'ieri, ' + hm(iso);
     return Number(d.slice(8, 10)) + '.' + d.slice(5, 7) + ', ' + hm(iso);
   };
-  var TONE = { paid: 'is-good', checking: 'is-warn', refused: 'is-bad', unfinished: 'is-bad', open: 'is-accent', later: '', clinic: '', double: '' };
+  var TONE = { paid: 'is-good', partial: 'is-warn', checking: 'is-warn', refused: 'is-bad', unfinished: 'is-bad', open: 'is-accent', later: '', clinic: '', double: '' };
   var FILTERS = [['all', 'Toate'], ['paid', 'Plătite'], ['lost', 'Neterminate'], ['checking', 'De verificat']];
   var DAYS = [['1', 'Azi'], ['7', '7 zile'], ['30', '30 de zile']];
-  var inFilter = function (r, f) { return f === 'all' || (f === 'paid' ? r.state === 'paid' : f === 'lost' ? ['unfinished', 'refused', 'open'].indexOf(r.state) > -1 : r.state === 'checking'); };
+  var inFilter = function (r, f) { return f === 'all' || (f === 'paid' ? r.state === 'paid' : f === 'lost' ? ['unfinished', 'refused', 'open', 'partial'].indexOf(r.state) > -1 : r.state === 'checking'); };
 
   var S = { view: mem('c360.site.view') === 'traffic' ? 'traffic' : 'orders', days: ['1', '7', '30'].indexOf(mem('c360.orders.days')) > -1 ? mem('c360.orders.days') : '7', filter: 'all', q: '', d: null, err: null, seq: 0, at: 0 };
   var panel = null, box = null, timer = 0;
@@ -118,7 +118,8 @@
     });
     if (!rows.length) { el.innerHTML = K().empty('card', q ? 'Nimic pentru „' + esc(S.q) + '”' : 'Nicio comandă aici', S.days === '1' ? 'Azi încă nimic. Alege 7 zile sau 30 de zile.' : ''); return; }
     el.innerHTML = '<ul class="so-rows">' + rows.map(function (r) {
-      var meta = [when(r.at), r.city, r.src, r.tries > 1 ? r.tries + ' încercări' : ''].filter(Boolean).map(esc).join(' · ');
+      // a sum over 990 lei paid in parts (28.11): how much of it came in
+      var meta = [when(r.at), r.city, r.src, r.tries > 1 ? r.tries + ' încercări' : '', r.parts ? 'în ' + r.parts.count + ' plăți: ' + r.parts.paid + (r.parts.paid === 1 ? ' plătită, ' : ' plătite, ') + lei(r.parts.paidLei) : ''].filter(Boolean).map(esc).join(' · ');
       var msg = r.msg ? '<span class="so-msg">' + ic('chat') + 'Mesaj ' + esc(when(r.msg.at)) + '</span>' : '';
       return '<li class="so-r" data-so-id="' + esc(r.id) + '" tabindex="0" role="button" aria-label="' + esc((r.name || 'Comandă') + ', ' + r.stateLabel) + '">' +
         '<div class="so-r-a"><b>' + esc(r.name || 'Fără nume') + '</b><span class="so-r-w">' + esc(String(r.title || '').toLowerCase().indexOf(String(r.kindLabel).toLowerCase()) > -1 ? r.title : r.kindLabel + ': ' + (r.title || '')) + '</span><small>' + meta + '</small></div>' +
