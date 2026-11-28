@@ -574,6 +574,15 @@ const BF_SITE = [
  }
 ];
 const JOBS = [
+  // 28.11 ~12:00, George: „oprește reclamele că nu merg bine”: every ad of ours still running in centru pls (what=live, 10:18:
+  // 5 active; the Summitlane accounts spend nothing), all paused. Not started again without him.
+  { id: 'stop-all-2026-11-28', act: 'act_4502494523405059', why: 'George: oprește reclamele, nu merg bine', actions: [
+    { campaignId: '120252163382960103', name: 'C360 · TM · HIFU Full Face · site', status: 'PAUSED', why: 'George 28.11: oprește reclamele' },
+    { campaignId: '120252163439480103', name: 'C360 · AR · HIFU Full Face · site', status: 'PAUSED', why: 'George 28.11: oprește reclamele' },
+    { campaignId: '120252119339640103', name: 'C360 · TM · Black Friday · site', status: 'PAUSED', why: 'George 28.11: oprește reclamele' },
+    { campaignId: '120252120121800103', name: 'C360 · AR · Black Friday · site', status: 'PAUSED', why: 'George 28.11: oprește reclamele' },
+    { campaignId: '120251418156000103', name: 'tm vid 3 lipo 09.09 - copie', status: 'PAUSED', why: 'George 28.11: oprește reclamele' },
+  ] },
   // 28.11 ~08:50, George: „alt angle complet diferit bazat pe date... Timișoara și Arad 75 lei per oraș, un creative per
   // campanie, ... un motiv clar să apese pe link”. The data (Reclame → Clasament, 28.11): what the people from the site ads
   // paid for was HIFU Full Face at 510 lei (none of the 145 lei single-zone carts); HIFU pays back most; the 50+ cover did best.
