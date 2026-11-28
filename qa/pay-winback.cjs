@@ -140,6 +140,27 @@ const ringsOf = (t) => rings.filter((r) => String(r.title).startsWith(t));
   await P.markPaid('C360-wblll1', { amount: 145, currency: 'RON', ref: 'tx3', method: 'request', at: new RealDate(NOW).toISOString() }, 'status');
   check('paid after Friday 23:59: no gift', !get('C360-wblll1').gift && ringsOf('🎁 CADOU MASAJ FACIAL').length === 1);
 
+  // ---- a sum above 990 lei (28.11): her page says the parts, the tap puts aside the old page made for the whole sum (myPOS
+  // refuses it) and opens part 1; part 1 paid, the next tap opens part 2 (never „already paid”); the last one pays the order
+  const B = order('C360-wbbig1', { phone: '+40700000320', name: 'Bia Proba', kind: 'offer', amount: 3200, full: 6400, title: 'Ofertă: Zonă mai suplă', status: 'expired', createdAt: '2026-11-27T19:56:00.000Z' });
+  STATUS['RQ-C360-wbbig1'] = { status: 'Seen', amount: 3200, currency: 'RON', bookingText: 'C360-wbbig1' };
+  const cb = await W.checkoutOf(get(B.id)), hb = W.pageHtml(cb, W.wOf(B.id), 'Bia Proba');
+  check('big: her page says 4 parts of 800 and the button pays part 1', cb.parts && cb.parts.count === 4 && cb.parts.amount === 800 && /în 4 plăți, una după alta: 800 lei \+ 800 lei \+ 800 lei \+ 800 lei/.test(hb) && /Plătesc 800 lei \(plata 1 din 4\)/.test(hb) && !/[\u2013\u2014]/.test(hb), { parts: cb.parts });
+  const madeBefore = made;
+  const gb1 = await W.go(B.id);
+  const ob1 = get(B.id);
+  check('big: the tap puts the whole-sum page aside and opens part 1 (800 lei, its own booking text)', gb1.ok && gb1.part && gb1.part.n === 1 && gb1.part.amount === 800 && made === madeBefore + 1 && ob1.request.part === 1 && STATUS[ob1.request.code].bookingText === B.id + '-t1' && STATUS[ob1.request.code].amount === 800 && (ob1.requestsOld || []).some((x) => x.code === 'RQ-C360-wbbig1'), { gb1, req: ob1.request });
+  STATUS[ob1.request.code].status = 'Paid';
+  const gb2 = await W.go(B.id);
+  const ob2 = get(B.id);
+  check('big: part 1 paid, the next tap opens part 2 (not „already paid”)', gb2.ok && gb2.part && gb2.part.n === 2 && gb2.part.paid === 1 && ob2.partsPaid === 1 && STATUS[ob2.request.code].bookingText === B.id + '-t2', { gb2, partsPaid: ob2.partsPaid });
+  const hb2 = W.pageHtml(await W.checkoutOf(get(B.id)), W.wOf(B.id), 'Bia Proba');
+  check('big: her page then says what came in and the next part', /Ai plătit deja 800 lei \(1 din 4 plăți\)\. Mai ai 2\.400 lei: plata 2 din 4, de 800 lei\./.test(hb2) && /Plătesc 800 lei \(plata 2 din 4\)/.test(hb2));
+  for (const n of [2, 3]) { STATUS[get(B.id).request.code].status = 'Paid'; await W.go(B.id); }
+  STATUS[get(B.id).request.code].status = 'Paid';
+  const gb4 = await W.go(B.id);
+  check('big: the last part paid: the order is paid, for its whole sum', gb4.error === 'already_paid' && get(B.id).status === 'paid' && get(B.id).partsPaid === 4, { gb4, st: get(B.id).status });
+
   console.log('\n' + ok + ' ok, ' + fails.length + ' failed');
   process.exit(fails.length ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

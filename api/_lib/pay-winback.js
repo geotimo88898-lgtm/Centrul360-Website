@@ -207,12 +207,25 @@ async function checkoutOf(o) {
   let giftFull = GIFT.full;
   try { const g = require('./shop').catalog(o.city || 'Timișoara').find((p) => p.id === GIFT.id); if (g && g.full) giftFull = g.full; } catch (e) { /* the list's price above */ }
   const full = lines.reduce((s, l) => s + (Number(l.full) || Number(l.price) || 0), 0) + giftFull;
-  return { lines, gift: { name: GIFT.name, full: giftFull }, amount: Number(o.amount), saved: Math.max(0, full - Number(o.amount)), city: o.city || '', hour, kind: o.kind, giftOn: giftFor(await load(), o.phone) };
+  return { lines, gift: { name: GIFT.name, full: giftFull }, amount: Number(o.amount), saved: Math.max(0, full - Number(o.amount)), city: o.city || '', hour, kind: o.kind, giftOn: giftFor(await load(), o.phone), parts: partsView(o) };
 }
+// a sum above 990 lei is paid in parts, one after another (George, 28.11: „vreau totul acum, 1000+”): the part due now, what
+// is paid and what is left (an order whose page was made for the whole sum before the parts gets its parts at the tap, go())
+function partsView(o) {
+  const P = require('./pay');
+  if (!o || o.provider !== 'requests' || !(Number(o.amount) > P.PART_MAX)) return null;
+  const PP = P.partsOf(o), list = PP ? PP.parts : P.splitParts(o.amount);
+  const paid = list.filter((x) => x.paidAt), cur = list.find((x) => !x.paidAt);
+  const paidLei = Math.round(paid.reduce((t, x) => t + Number(x.amount), 0) * 100) / 100;
+  return { count: list.length, amounts: list.map((x) => Number(x.amount)), paid: paid.length, paidLei, left: Math.round((Number(o.amount) - paidLei) * 100) / 100, n: cur ? cur.n : list.length, amount: cur ? Number(cur.amount) : 0 };
+}
+// a sum with its bani when it has any (the parts: 607,50 lei), else whole lei
+const leiX = (n) => (Math.round(Number(n) * 100) % 100 ? (Math.round(Number(n) * 100) / 100).toFixed(2).replace('.', ',') + ' lei' : lei(n));
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const WA_NUM = { 'Timișoara': '40750452002', Arad: '40750277394' };
 function pageHtml(c, w, name) {
+  const pt = c.parts && c.parts.amount ? c.parts : null;
   const row = (l) => '<li><span class="n">' + esc(l.name) + '</span><span class="p">' + (l.full && Number(l.full) > Number(l.price) ? '<s>' + lei(l.full) + '</s>' : '') + '<b>' + lei(l.price) + '</b></span></li>';
   const gift = c.giftOn ? '<li class="g"><span class="n"><i>🎁</i> ' + esc(c.gift.name) + '<small>cadoul tău</small></span><span class="p"><s>' + lei(c.gift.full) + '</s><b>Gratuit</b></span></li>' : '';
   const wa = WA_NUM[c.city] || WA_NUM['Timișoara'];
@@ -237,7 +250,11 @@ function pageHtml(c, w, name) {
     '<div class="card"><ul>' + c.lines.map(row).join('') + gift + '</ul>' +
     '<div class="tot"><span>Total</span><b>' + lei(c.amount) + '</b></div>' + (c.saved > 0 ? '<div class="sv">Economisești ' + lei(c.saved) + '</div>' : '') + '</div>' +
     (c.city ? '<p class="meta">' + esc(c.city) + (c.hour ? ' · ' + esc(c.hour) + ' (o confirmăm după plată)' : ' · ora o alegi cu noi după plată, te sunăm') + '</p>' : '') +
-    '<a class="b" href="/api/pay-go?w=' + esc(w) + '&amp;go=1">Plătesc ' + lei(c.amount) + '</a>' +
+    (pt ? '<p class="meta pt">' + (pt.paid
+      ? 'Ai plătit deja ' + leiX(pt.paidLei) + ' (' + pt.paid + ' din ' + pt.count + ' plăți). Mai ai ' + leiX(pt.left) + ': plata ' + pt.n + ' din ' + pt.count + ', de ' + leiX(pt.amount) + '.'
+      : 'Suma trece de 990 lei, așa că o plătești în ' + pt.count + ' plăți, una după alta: ' + pt.amounts.map(leiX).join(' + ') + '.') +
+      ' După fiecare plată, revino la acest link pentru următoarea.</p>' : '') +
+    '<a class="b" href="/api/pay-go?w=' + esc(w) + '&amp;go=1">Plătesc ' + (pt ? leiX(pt.amount) + ' (plata ' + pt.n + ' din ' + pt.count + ')' : lei(c.amount)) + '</a>' +
     '<ul class="tr"><li>Plată securizată prin myPOS, cu cardul</li><li>Prețul rămâne cel din coș</li>' + (c.giftOn ? '<li>Masajul facial cadou e valabil pentru plățile de azi</li>' : '') + '</ul>' +
     '<p class="help">O întrebare sau o problemă cu cardul? <a href="https://wa.me/' + wa + '">Scrie-ne pe WhatsApp</a></p>' +
     '</main></body></html>';
@@ -257,8 +274,16 @@ async function go(id) {
   if (o.status !== 'open') { const r = await P.reopen(o.id, 'winback'); if (!r || r.status !== 'open') return { error: 'not_open' }; o = r; }
   if (o.request && o.request.code) {
     const st = await P.requestState(o.id).catch(() => null);
-    if (st && st.status === 'Paid') { await P.check(o.id, o.key).catch(() => null); return { error: 'already_paid' }; }
-    if (st && ['Expired', 'Cancelled'].includes(st.status)) { const d = await P.dropRequest(o.id); if (d) o = d; }
+    if (st && st.status === 'Paid') {
+      // a part of a sum paid in parts (28.11): settled, then the next part's page; the whole order paid: nothing to pay
+      const r = await P.check(o.id, o.key).catch(() => null);
+      if (!(r && !r.paid && r.part && r.part.paid > 0 && r.part.paid < r.part.count)) return { error: 'already_paid' };
+      o = (await P.readOrder(o.id)).data || o;
+    } else if (st && ['Expired', 'Cancelled'].includes(st.status)) { const d = await P.dropRequest(o.id); if (d) o = d; }
+  }
+  // a sum above 990 lei whose page was made for the whole sum before the parts (myPOS refuses it): put aside, so the parts start
+  if (o.provider === 'requests' && Number(o.amount) > P.PART_MAX && o.request && o.request.code && !o.request.part && !(Array.isArray(o.parts) && o.parts.length)) {
+    const d = await P.dropRequest(o.id); if (d) o = d;
   }
   await P.touch(o.id).catch(() => {});
   return P.link(o.id, o.key);
