@@ -5,6 +5,8 @@
 // there means a new public key here.
 //   GET /api/claude-report?what=ads&period=today|yesterday|7d|30d|max   (Reclame → Clasament)
 //   GET /api/claude-report?what=pay&days=1..60                          (Site → Comenzi și plăți, without who)
+//   GET /api/claude-report?what=once&job=<id>                            (a one-time ads job of api/_lib/ads-once.js: done,
+//                                                                         its ids, its last steps; kept 1 minute, not 10)
 // → { v: 1, at, k, iv, data } in base64: the answer as AES-256-GCM, its key wrapped with RSA-OAEP (SHA-256). The same question
 // is answered from the last answer for 10 minutes (kept), so asking often costs Meta and the store nothing.
 const store = require('./_lib/store');
@@ -33,6 +35,11 @@ async function ads(period) {
   return r;
 }
 
+async function once(job) {
+  const d = (await store.readJSON('data/ads-once.json', {})) || {};
+  return { job, done: (d.done || {})[job] || '', site: (d.site || {})[job] || null, log: (d.log || []).filter((e) => e.job === job).slice(-20), running: d.running || null };
+}
+
 async function pay(days) {
   const r = await require('./_lib/pay-orders').list({ days });
   const rows = (r.rows || []).map(({ name, phone, msg, lead, ...x }) => Object.assign(x, { messaged: !!msg }));
@@ -43,16 +50,18 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'GET') { res.status(405).json({ error: 'method' }); return; }
   const q = req.query || {};
-  const what = ['ads', 'pay'].includes(q.what) ? q.what : '';
+  const what = ['ads', 'pay', 'once'].includes(q.what) ? q.what : '';
   if (!what) { res.status(400).json({ error: 'what' }); return; }
   const period = ['today', 'yesterday', '7d', '30d', 'max'].includes(q.period) ? q.period : '7d';
   const days = Math.max(1, Math.min(60, Number(q.days) || 14));
-  const name = 'data/claude-report/' + what + '-' + (what === 'ads' ? period : days) + '.json';
+  const job = String(q.job || '').replace(/[^\w-]/g, '').slice(0, 80);
+  if (what === 'once' && !job) { res.status(400).json({ error: 'job' }); return; }
+  const name = 'data/claude-report/' + what + '-' + (what === 'ads' ? period : what === 'once' ? job : days) + '.json';
   try {
     const kept = await store.readJSON(name, null).catch(() => null);
-    if (kept && kept.at && Date.now() - Date.parse(kept.at) < KEEP && kept.data) { res.status(200).json(kept); return; }
-    const answer = what === 'ads' ? await ads(period) : await pay(days);
-    const sealed = await seal({ what, period: what === 'ads' ? period : undefined, days: what === 'pay' ? days : undefined, answer });
+    if (kept && kept.at && Date.now() - Date.parse(kept.at) < (what === 'once' ? 60e3 : KEEP) && kept.data) { res.status(200).json(kept); return; }
+    const answer = what === 'ads' ? await ads(period) : what === 'once' ? await once(job) : await pay(days);
+    const sealed = await seal({ what, period: what === 'ads' ? period : undefined, days: what === 'pay' ? days : undefined, job: what === 'once' ? job : undefined, answer });
     await store.writeJSON(name, sealed, { quiet: true }).catch(() => {});
     res.status(200).json(sealed);
   } catch (e) {
