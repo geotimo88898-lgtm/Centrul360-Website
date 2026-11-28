@@ -574,6 +574,27 @@ const BF_SITE = [
  }
 ];
 const JOBS = [
+  // 28.11 ~08:50, George: „alt angle complet diferit bazat pe date... Timișoara și Arad 75 lei per oraș, un creative per
+  // campanie, ... un motiv clar să apese pe link”. The data (Reclame → Clasament, 28.11): what the people from the site ads
+  // paid for was HIFU Full Face at 510 lei (none of the 145 lei single-zone carts); HIFU pays back most; the 50+ cover did best.
+  // So: the whole face, women 35-65+, the reason to tap is the sum on a receipt (1.020, -50%, 510 lei, until Sunday 23:59).
+  // One campaign per city, one ad each (its 4:5 and its 9:16), 75 lei a day, the site's Purchase; Meta ends them with the offer
+  { id: 'ff-site-2026-11-28', why: 'HIFU Full Face pe site: TM și AR, câte 75 lei pe zi, până duminică la 23:59', site: {
+    pixelId: '2276074362800484', goal: 'purchase', cta: 'SHOP_NOW', ages: [35, 65], urlTags: 'c360_ad={{ad.id}}', endTime: '2026-11-29T23:59:00+02:00',
+    campaigns: [
+      { name: 'C360 · TM · HIFU Full Face · site', utm: 'c360-tm-ff-site', city: 'Timișoara', budget: 75, radiusKm: 8, adsetName: 'Timișoara 8 km · femei 35-65+', ads: [
+        { name: "TM · HIFU Full Face · bon", image: "ff-tm-hifu-full-face.jpg", story: "ff-tm-hifu-full-face-story.jpg",
+        path: "tratament-hifu?zona=full-face&oras=timisoara", utmContent: 'ff-bon', cta: 'SHOP_NOW',
+        text: "TIMIȘOARA! 📍 Efect de lifting pe toată fața, fără bisturiu: 510 lei în loc de 1.020.\n\nPentru doamnele care vor o față mai fermă, nu doar o bărbie mai definită.\n✅ HIFU Full Face: frunte, obraji, linia maxilarului și gât, într-o singură ședință\n✅ Fără ace, fără bisturiu, fără zile de pauză\n✅ 5,0 pe Google, peste 300 de recenzii\n\n⏰ -50% doar până duminică la 23:59. Apoi revine la 1.020 lei.\n👉 Plătești pe centrul360.com și îți alegi ziua.\n\nRezultatele diferă de la o persoană la alta.",
+        headlines: ["HIFU PE TOATĂ FAȚA: 510 LEI 👉", "DOAR PÂNĂ DUMINICĂ LA 23:59 ⏰💨", "EFECT DE LIFTING, FĂRĂ BISTURIU 👉"], description: "Plătești online, îți alegi ziua" },
+      ] },
+      { name: 'C360 · AR · HIFU Full Face · site', utm: 'c360-ar-ff-site', city: 'Arad', budget: 75, radiusKm: 8, adsetName: 'Arad 8 km · femei 35-65+', ads: [
+        { name: "AR · HIFU Full Face · bon", image: "ff-ar-hifu-full-face.jpg", story: "ff-ar-hifu-full-face-story.jpg",
+        path: "tratament-hifu?zona=full-face&oras=arad", utmContent: 'ff-bon', cta: 'SHOP_NOW',
+        text: "ARAD! 📍 Efect de lifting pe toată fața, fără bisturiu: 510 lei în loc de 1.020.\n\nPentru doamnele care vor o față mai fermă, nu doar o bărbie mai definită.\n✅ HIFU Full Face: frunte, obraji, linia maxilarului și gât, într-o singură ședință\n✅ Fără ace, fără bisturiu, fără zile de pauză\n✅ 5,0 pe Google, peste 300 de recenzii\n\n⏰ -50% doar până duminică la 23:59. Apoi revine la 1.020 lei.\n👉 Plătești pe centrul360.com și îți alegi ziua.\n\nRezultatele diferă de la o persoană la alta.",
+        headlines: ["HIFU PE TOATĂ FAȚA: 510 LEI 👉", "DOAR PÂNĂ DUMINICĂ LA 23:59 ⏰💨", "EFECT DE LIFTING, FĂRĂ BISTURIU 👉"], description: "Plătești online, îți alegi ziua" },
+      ] },
+    ] } },
   // 27.11 ~10:05, George: „prelungim până duminică”: -50% on the site until Sunday 29.11 23:59 (api/_lib/shop.js BF.end). The two
   // site campaigns speak of Black Friday -50%: they stop with the offer, at the hourly run after Sunday 23:00 (Romania), never
   // before (notBefore), so no ad promises -50% once the site shows the usual price
