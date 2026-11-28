@@ -9,6 +9,8 @@
 //                                                                         its ids, its last steps; kept 1 minute, not 10)
 //   GET /api/claude-report?what=live                                     (every running ad of ours as Meta sees it now: in
 //                                                                         review, approved, refused and why; kept 1 minute)
+//   GET /api/claude-report?what=paydiag&days=1..14                       (each site order's way to the payment: her device,
+//                                                                         the taps, the myPOS page, myPOS's errors; no who)
 // → { v: 1, at, k, iv, data } in base64: the answer as AES-256-GCM, its key wrapped with RSA-OAEP (SHA-256). The same question
 // is answered from the last answer for 10 minutes (kept), so asking often costs Meta and the store nothing.
 const store = require('./_lib/store');
@@ -53,6 +55,29 @@ async function live() {
   return { ok: true, ads: r.ads.map((a) => ({ id: a.id, name: a.name, status: a.status, review: a.review, issues: a.issues, campaignStatus: a.campaignStatus, campaignId: a.campaignId, campaign: a.campaign, adset: a.adset })) };
 }
 
+// each site order's way to the payment (George, 28.11: „websiteul 100% funcțional fără erori”, before any ad): where it
+// stopped. The steps the page and the server noted (her device in one word, the taps, a page that did not get ready), the
+// myPOS page and myPOS's own error, refused, paid. Never her name, phone or messages.
+async function paydiag(days) {
+  const P = require('./_lib/pay');
+  const r = await require('./_lib/pay-orders').list({ days });
+  const rows = [];
+  for (let i = 0; i < r.rows.length; i += 16) {
+    const part = await Promise.all(r.rows.slice(i, i + 16).map((row) => P.readOrder(row.id).then((x) => [row, x.data], () => [row, null])));
+    part.forEach(([row, o]) => {
+      if (!o) return;
+      const le = o.linkError || null;
+      rows.push({ id: o.id, at: o.createdAt, kind: o.kind, amount: o.amount, city: o.city || '', state: row.state, status: o.status, failWhy: o.failWhy || '', src: row.src, tries: row.tries,
+        trace: (o.trace || []).map((t) => ({ at: t.at, step: t.step, code: t.code })),
+        contactAt: (o.notice && o.notice.at) || '', request: o.request ? { at: o.request.at, part: o.request.part || 0, recovered: !!o.request.recovered } : null,
+        oldRequests: (o.requestsOld || []).length, requestTried: o.requestTried || '',
+        linkError: le ? { code: le.code, status: le.status, message: String(le.message || '').slice(0, 200), at: le.at } : null,
+        refusedAt: o.refusedAt || '', probableAt: (o.probable && o.probable.at) || '', paidAt: o.paidAt || '', parts: row.parts || null, reopened: (o.reopened || []).length });
+    });
+  }
+  return { days: r.days, at: r.at, rows };
+}
+
 async function pay(days) {
   const r = await require('./_lib/pay-orders').list({ days });
   const rows = (r.rows || []).map(({ name, phone, msg, lead, ...x }) => Object.assign(x, { messaged: !!msg }));
@@ -63,7 +88,7 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'GET') { res.status(405).json({ error: 'method' }); return; }
   const q = req.query || {};
-  const what = ['ads', 'pay', 'once', 'live'].includes(q.what) ? q.what : '';
+  const what = ['ads', 'pay', 'once', 'live', 'paydiag'].includes(q.what) ? q.what : '';
   if (!what) { res.status(400).json({ error: 'what' }); return; }
   const period = ['today', 'yesterday', '7d', '30d', 'max'].includes(q.period) ? q.period : '7d';
   const days = Math.max(1, Math.min(60, Number(q.days) || 14));
@@ -72,9 +97,9 @@ module.exports = async (req, res) => {
   const name = 'data/claude-report/' + what + (what === 'live' ? '' : '-' + (what === 'ads' ? period : what === 'once' ? job : days)) + '.json';
   try {
     const kept = await store.readJSON(name, null).catch(() => null);
-    if (kept && kept.at && Date.now() - Date.parse(kept.at) < (what === 'once' || what === 'live' ? 60e3 : KEEP) && kept.data) { res.status(200).json(kept); return; }
-    const answer = what === 'ads' ? await ads(period) : what === 'once' ? await once(job) : what === 'live' ? await live() : await pay(days);
-    const sealed = await seal({ what, period: what === 'ads' ? period : undefined, days: what === 'pay' ? days : undefined, job: what === 'once' ? job : undefined, answer });
+    if (kept && kept.at && Date.now() - Date.parse(kept.at) < (what === 'once' || what === 'live' || what === 'paydiag' ? 60e3 : KEEP) && kept.data) { res.status(200).json(kept); return; }
+    const answer = what === 'ads' ? await ads(period) : what === 'once' ? await once(job) : what === 'live' ? await live() : what === 'paydiag' ? await paydiag(Math.min(days, 14)) : await pay(days);
+    const sealed = await seal({ what, period: what === 'ads' ? period : undefined, days: what === 'pay' || what === 'paydiag' ? days : undefined, job: what === 'once' ? job : undefined, answer });
     await store.writeJSON(name, sealed, { quiet: true }).catch(() => {});
     res.status(200).json(sealed);
   } catch (e) {
