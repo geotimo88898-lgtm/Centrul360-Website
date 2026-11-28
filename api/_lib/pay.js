@@ -111,7 +111,10 @@ function splitParts(amount) {
   const whole = Math.floor(total / 100), cents = total - whole * 100, base = Math.floor(whole / n), extra = whole - base * n;
   return Array.from({ length: n }, (_, i) => ({ n: i + 1, amount: r2p(base + (i < extra ? 1 : 0) + (i === n - 1 ? cents / 100 : 0)) }));
 }
-const splitOf = (o) => !!o && o.provider === 'requests' && Number(o.amount) > PART_MAX;
+// (an order whose myPOS page was made for its whole sum before the parts existed keeps that page, as before: a payment made
+// on it is still found by its code)
+const splitOf = (o) => !!o && o.provider === 'requests' && Number(o.amount) > PART_MAX
+  && !(o.request && o.request.code && !o.request.part && !(Array.isArray(o.parts) && o.parts.length));
 // the order's parts (kept on it from its first page) and where she is: cur = the part to pay now (none: all paid)
 function partsOf(o) {
   if (!splitOf(o)) return null;

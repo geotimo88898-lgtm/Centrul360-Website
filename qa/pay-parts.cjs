@@ -139,6 +139,16 @@ const paidList = () => mem.get('data/pay-paid.json') || [];
   const rd = ringsOf('PLATA NU A TRECUT');
   check('D: the desk hears it, with the 707 lei already paid and what is left', rd.length === 1 && /707 lei din 2120/.test(rd[0].text) && /1413 lei/.test(rd[0].text), rd.map((r) => r.text));
 
+  // ---- E: an order started before the parts, its page made for the whole sum: it keeps that page and its sum, as before
+  const E = order('C360-testpartsee', { amount: 2120, request: { code: 'RQ-old-E', url: 'https://mypos.com/pr/RQ-old-E', at: at(-30) }, requestTried: at(-30) });
+  STATUS['RQ-old-E'] = { status: 'Pending', amount: 2120, currency: 'RON', bookingText: E.id };
+  setMin(300);
+  const le = await P.link(E.id, E.key);
+  check('E: the order made before keeps its own page, no parts', le.ok && le.url === 'https://mypos.com/pr/RQ-old-E' && !le.part && P.partsOf(get(E.id)) === null && madeFor(E.id + '-t1').length === 0, le);
+  STATUS['RQ-old-E'].status = 'Paid';
+  const ce = await P.check(E.id, E.key); await settle();
+  check('E: paid on that page for the whole sum: the order is paid, as before', ce.paid === true && get(E.id).status === 'paid' && !ce.part, ce);
+
   console.log('\n' + ok + ' ok, ' + fails.length + ' failed');
   if (fails.length) { console.log(fails.map((f) => '  - ' + f).join('\n')); process.exit(1); }
 })().catch((e) => { console.error(e); process.exit(1); });
